@@ -7,6 +7,10 @@ import {
 } from 'ltijs'
 import { PostgresDatabaseManager } from './database.js'
 import {
+  createLaunchOriginCompatibility,
+  parseToolOrigin,
+} from './launchOrigin.js'
+import {
   appendJwt,
   getChatbotLaunchBinding,
   resolveLaunchTarget,
@@ -45,12 +49,19 @@ const database = new PostgresDatabaseManager(
 const port = Number(process.env.LTI_PORT ?? 4000)
 
 // No browser calls the LTI service cross-origin, so CORS stays off.
-const requestLogging = createRequestLogging()
+const toolOrigin = parseToolOrigin(process.env.APP_ORIGIN_LTI)
+const requestLogging = createRequestLogging(toolOrigin)
 const httpHandler = new ExpressHttpHandler(requestLogging.logger, {
   port,
   cors: false,
 })
 httpHandler.app.use(requestLogging.middleware)
+httpHandler.app.use(
+  createLaunchOriginCompatibility(
+    toolOrigin,
+    requestLogging.originCompatibility
+  )
+)
 
 // ltijs 7 keeps the launch state in the browser's localStorage instead of
 // cookies, so launches inside an LMS iframe also work when the browser blocks

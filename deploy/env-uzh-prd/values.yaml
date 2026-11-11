@@ -501,10 +501,39 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 4
+  # Three static replicas leave one voluntary disruption under the baseline
+  # budget's minimum of two; the burst tier adds up to five on spot.
+  replicaCount: 3
 
   autoscaling:
     enabled: false
+
+  # Spot burst tier next to the static replicas, which carry full load on
+  # their own. Its replicas are owned by the burst HPA, which the prd Argo CD
+  # Application excludes from replica drift.
+  burst:
+    enabled: true
+    maxReplicas: 5
+    # Soft spread, so losing one spot node does not remove the whole tier
+    # while a tight pool can still place every burst pod. The selector names
+    # the tier label, so baseline pods do not count toward the skew.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+
+  preStopSleepSeconds: 5
 
   affinity:
     podAntiAffinity:
@@ -522,7 +551,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.91
 
   ingress:
     className: haproxy
@@ -550,6 +579,11 @@ frontendPWA:
       memory: 320Mi
     limits:
       memory: 1Gi
+
+  # Serves /_next/static from its own Deployment, so pages of an earlier
+  # release keep their assets during and after a rollout.
+  releaseAssets:
+    enabled: true
 
 frontendManage:
   priorityClassName: production-workload
@@ -960,7 +994,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.91
 
     ingress:
       className: haproxy
@@ -988,6 +1022,26 @@ assessment:
         memory: 200Mi
       limits:
         memory: 1Gi
+
+    # Serves /_next/static from its own Deployment, so pages of an earlier
+    # release keep their assets during and after a rollout. It runs on the
+    # reserved assessment nodes like the frontend it serves.
+    releaseAssets:
+      enabled: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickerasm
+                    operator: In
+                    values:
+                      - reserved
+      tolerations:
+        - key: klickerasm
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
 
   backendGraphql:
     priorityClassName: production-workload

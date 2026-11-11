@@ -3012,6 +3012,7 @@ type ElementGenerationTypeCapability {
   supportsDifficulty: Boolean!
   supportsFocusTopic: Boolean!
   supportsIncompletePublication: Boolean!
+  supportsIndividualRegeneration: Boolean!
   supportsRetry: Boolean!
   supportsSourceScopes: Boolean!
 }
@@ -3077,6 +3078,16 @@ type ElementOptionsAnswerCollectionEntry {
 enum ElementOrderType {
   SEQUENTIAL
   SPACED_REPETITION
+}
+
+type ElementRevisionBuild {
+  createdAt: Date!
+  errorCode: String
+  errorMessage: String
+  errorRetryable: Boolean
+  id: ID!
+  note: String
+  status: ElementGenerationBuildStatus!
 }
 
 type ElementStack {
@@ -3391,6 +3402,7 @@ enum GeneratedElementDecision {
   ACCEPTED
   OPEN
   REJECTED
+  REVISION_REQUESTED
 }
 
 type GeneratedElementDraft {
@@ -3401,6 +3413,7 @@ type GeneratedElementDraft {
   decision: GeneratedElementDecision!
   duplicationIndex: Int!
   elementType: GeneratableElementType!
+  evidencePurged: Boolean!
   id: ID!
   order: Int!
   original: GeneratedElementEditable!
@@ -3409,6 +3422,9 @@ type GeneratedElementDraft {
   provenance: Json
   qualityFlags: [String!]!
   revision: Int!
+  revisionBuilds: [ElementRevisionBuild!]!
+  revisionNote: String
+  revisionOfDraftId: ID
   savedAt: Date
   savedElementId: Int
   sourceElementId: ID!
@@ -5233,6 +5249,7 @@ type SelectionInstanceEvaluation {
 input SetGeneratedElementDecisionInput {
   decision: GeneratedElementDecision!
   draftId: ID!
+  note: String
 }
 
 type SharingRequestResponse {

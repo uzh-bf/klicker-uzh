@@ -1,4 +1,5 @@
 import { MAX_SOURCES } from '../sources/normalizeSources'
+import { parseTimestampSeconds } from '../sources/sourceDisplay'
 import { maskCodeRegions } from './streamingMath'
 
 // Transforms `[n]` and contiguous `[n–m]` citation markers (written by the
@@ -38,11 +39,11 @@ export interface MarkdownAstNode {
 // inside code never reaches the `text`-node branch in the first place.
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 
-// A page detail that some models append inside a marker, e.g.
-// `[1, p. 6–7]` or `[1, S. 8-18]`. A labelled video clock is also stripped
-// to the source number; its timestamp belongs to the source card. A
-// bare `[1, 2]` is overwhelmingly a coordinate or a bracket list in real
-// course answers, while no observed course citation omits the label.
+// A labelled detail that some models append inside a marker, e.g.
+// `[1, p. 6–7]`, `[1, S. 8-18]`, or `[1, t. 12:34]`. The rendered chip keeps
+// only the source number; the detail belongs to the source card. A bare
+// `[1, 2]` is overwhelmingly a coordinate or a bracket list in real course
+// answers, while no observed course citation omits the label.
 //
 // The label must be followed by digits, so a Roman chapter numeral
 // (`Kapitel IV`) never matches and such a marker stays literal. Both
@@ -59,20 +60,22 @@ const PAGE_LABEL = '(?:pages?|seiten?|kapitel|kap\\.|p{1,2}\\.|s\\.|p{1,2}|s)'
 // as a page. Clock minutes and seconds stay within their valid range.
 const CLOCK_REFERENCE = String.raw`(?:\d{1,2}:)?[0-5]?\d:[0-5]\d`
 const PAGE_REFERENCE = `(?:${PAGE_LABEL}[ \t]*(?:(\\d{1,3})(?:[ \t]*[-–—][ \t]*(\\d{1,3}))?|${CLOCK_REFERENCE}(?:[ \t]*[-–—][ \t]*${CLOCK_REFERENCE})?))`
+const VIDEO_REFERENCE = `(?:t\\.[ \t]*(${CLOCK_REFERENCE}))`
+const CITATION_REFERENCE = `(?:${PAGE_REFERENCE}|${VIDEO_REFERENCE})`
 
 // Complete numbered marker, e.g. `[1]`, `[12]`, `[2–4]`, or `[2–4, S. 10–12]`.
 // Hyphen and em dash variants are accepted because models do not reliably emit
 // one dash character. No `g` flag — safe to `.test()` repeatedly without
 // shared-state bugs; the `g`-flagged exec below is a separate regex instance
 // used only inside `splitCitationMarkers`. Its groups are 1 the marker index,
-// 2 the end of a contiguous index range, and 3 and 4 the start and end page of
-// the labelled detail.
+// 2 the end of a contiguous index range, 3 and 4 the start and end page of a
+// page detail, and 5 the full clock of a single-source video detail.
 export const HAS_CITATION_MARKER_RE = new RegExp(
-  `\\[\\d{1,2}(?:[ \\t]*[-–—][ \\t]*\\d{1,2})?(?:[ \\t]*,[ \\t]*${PAGE_REFERENCE})?\\]`,
+  `\\[\\d{1,2}(?:[ \\t]*[-–—][ \\t]*\\d{1,2})?(?:[ \\t]*,[ \\t]*${CITATION_REFERENCE})?\\]`,
   'i'
 )
 const CITATION_MARKER_EXEC_RE = new RegExp(
-  `\\[(\\d{1,2})(?:[ \\t]*[-–—][ \\t]*(\\d{1,2}))?(?:[ \\t]*,[ \\t]*${PAGE_REFERENCE})?\\]`,
+  `\\[(\\d{1,2})(?:[ \\t]*[-–—][ \\t]*(\\d{1,2}))?(?:[ \\t]*,[ \\t]*${CITATION_REFERENCE})?\\]`,
   'gi'
 )
 
@@ -200,6 +203,39 @@ export function extractCitedPages(source: string): Map<number, number[]> {
       if (!pages.includes(page)) pages.push(page)
     }
     cited.set(index, pages)
+  }
+
+  return cited
+}
+
+/**
+ * The video clocks an answer actually cites, keyed by source index. Only a
+ * single-source `[n, t. [h:]mm:ss]` marker carries a clock; grouped markers
+ * cannot attribute one passage to every source. This uses the same masked
+ * marker grammar as rendering and page extraction, so code, partial markers,
+ * and malformed clocks stay literal.
+ */
+export function extractCitedTimestamps(source: string): Map<number, number[]> {
+  const cited = new Map<number, number[]>()
+  const masked = maskCodeRegions(source)
+  CITATION_MARKER_EXEC_RE.lastIndex = 0
+
+  while (true) {
+    const match = CITATION_MARKER_EXEC_RE.exec(masked)
+    if (!match) break
+
+    const [, firstDigits, lastDigits, , , clock] = match
+    if (lastDigits !== undefined && Number(lastDigits) !== Number(firstDigits))
+      continue
+    if (!clock) continue
+
+    const timestamp = parseTimestampSeconds(clock)
+    if (timestamp === undefined) continue
+
+    const index = Number(firstDigits)
+    const timestamps = cited.get(index) ?? []
+    if (!timestamps.includes(timestamp)) timestamps.push(timestamp)
+    cited.set(index, timestamps)
   }
 
   return cited

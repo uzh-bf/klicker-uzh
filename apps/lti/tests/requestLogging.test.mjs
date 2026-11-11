@@ -18,7 +18,7 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     consoleCalls.push(args)
     records.push(JSON.parse(args[0]))
   })
-  const logging = createRequestLogging()
+  const logging = createRequestLogging('https://tool.example.test')
   const handler = new ExpressHttpHandler(logging.logger, {
     port: 0,
     cors: false,
@@ -82,6 +82,7 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
         authorization: 'Bearer SYNTHETIC_PRIVATE_AUTHORIZATION',
         'user-agent': 'SYNTHETIC_PRIVATE_BROWSER',
         referer: 'https://example.test/SYNTHETIC_PRIVATE_REFERRER',
+        origin: 'https://SYNTHETIC_PRIVATE_ORIGIN.example.test',
       }
     ),
     post(
@@ -134,6 +135,8 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
         'event',
         'idTokenPresent',
         'method',
+        'origin',
+        'originCompatibilityApplied',
         'recoveredState',
         'route',
         'secFetchDest',

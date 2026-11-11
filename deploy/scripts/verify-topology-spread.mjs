@@ -74,6 +74,12 @@ export const expectedSpread = [
     valuesPath: 'mcpLecturer',
     origin: 'pre-existing',
   },
+  {
+    component: 'frontend-pwa',
+    tier: 'burst',
+    valuesPath: 'frontendPWA.burst',
+    origin: 'this-change',
+  },
 ]
 
 // The staging contract: only the PWA burst tier spreads there. Its selector

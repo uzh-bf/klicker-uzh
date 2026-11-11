@@ -1583,8 +1583,9 @@ Service and, above one replica, a disruption budget. They run the PWA image
 with a distinct component label, so the PWA Service and budgets do not select
 them. Ingress sends `/_next/static` (`Prefix`) to the asset Service and
 everything else to the PWA Service. The resources carry Argo CD sync wave `-1`,
-so the asset Pods are healthy before the PWA Pods change. Staging enables it;
-production does not yet.
+so the asset Pods are healthy before the PWA Pods change. Staging and
+production enable it. In production the assessment asset Pods carry the same
+reserved-node affinity and toleration as the assessment frontend.
 
 The PWA Dockerfile accepts the build argument `PREVIOUS_IMAGE`. When set, the
 build merges that image's `.next/static` into its own without overwriting any

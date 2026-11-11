@@ -1,19 +1,21 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementDisplayMode,
+  ElementGenerationBuildStatus,
   ElementStatus,
   ElementType,
   GeneratableElementType,
   GeneratedElementDecision,
   GetUserTagsDocument,
   KeepGeneratedElementDraftDocument,
+  RetryElementGenerationDocument,
   SaveGeneratedElementsDocument,
   SetGeneratedElementDecisionDocument,
   type Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import ElementEditForm from '../manipulation/ElementEditForm'
 import { ElementEditMode } from '../manipulation/ElementEditModal'
 import {
@@ -21,9 +23,11 @@ import {
   prepareFlashcardArgs,
 } from '../manipulation/helpers'
 import type { ElementFormTypes } from '../manipulation/types'
-import type {
-  ElementGenerationBuildData,
-  GeneratedElementDraftData,
+import {
+  draftHasUnfinishedRevision,
+  type ElementGenerationBuildData,
+  type GeneratedElementDraftData,
+  isRevisionBuildFinished,
 } from './elementGenerationTypes'
 import GeneratedTagSelector from './GeneratedTagSelector'
 import {
@@ -35,6 +39,23 @@ import {
 import useGeneratedTagSelection from './useGeneratedTagSelection'
 
 type ReviewFilter = 'all' | 'open' | 'attention' | 'kept' | 'discarded'
+
+const MAX_REVISION_NOTE_LENGTH = 1000
+
+// Request history of a draft, oldest first; the newest request is the one that
+// drives the draft's current state.
+function sortedRevisionBuilds(draft: GeneratedElementDraftData) {
+  return [...draft.revisionBuilds].sort(
+    (left, right) =>
+      new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+  )
+}
+
+function revisionRequestState(status: ElementGenerationBuildStatus) {
+  if (!isRevisionBuildFinished(status)) return 'running'
+  if (status === ElementGenerationBuildStatus.Failed) return 'failed'
+  return 'completed'
+}
 
 function toGeneratableElementType(type: ElementType) {
   switch (type) {
@@ -112,7 +133,8 @@ function draftMatchesFilter(
       return true
     case 'open':
       return (
-        draft.decision === GeneratedElementDecision.Open &&
+        (draft.decision === GeneratedElementDecision.Open ||
+          draft.decision === GeneratedElementDecision.RevisionRequested) &&
         !draftNeedsAttention(draft)
       )
     case 'attention':
@@ -132,12 +154,12 @@ function draftStatusClass(
   needsAttention: boolean
 ) {
   if (draft.decision === GeneratedElementDecision.Accepted && !needsAttention) {
-    return 'rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
+    return 'inline-block rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
   }
   if (draft.decision === GeneratedElementDecision.Rejected) {
-    return 'rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
+    return 'inline-block rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
   }
-  return 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
+  return 'inline-block rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
 }
 
 function difficultyLabelKey(level: number | null | undefined) {
@@ -535,11 +557,234 @@ function GeneratedDraftEditor({
   )
 }
 
-export default function GeneratedElementReview({
+function RevisionState({
   build,
+  draft,
   onChanged,
 }: {
   build: ElementGenerationBuildData
+  draft: GeneratedElementDraftData
+  onChanged: () => Promise<void>
+}) {
+  const t = useTranslations('manage.elementGeneration')
+  const format = useFormatter()
+  const [retryGeneration, retryState] = useMutation(
+    RetryElementGenerationDocument
+  )
+  const [retryFailed, setRetryFailed] = useState(false)
+  const requests = sortedRevisionBuilds(draft)
+  const latest = requests.at(-1)
+  const latestState = latest ? revisionRequestState(latest.status) : undefined
+  const original = draft.revisionOfDraftId
+    ? build.drafts.find((candidate) => candidate.id === draft.revisionOfDraftId)
+    : undefined
+
+  return (
+    <>
+      {draft.revisionOfDraftId ? (
+        <div
+          className="mt-2 rounded border border-cyan-200 bg-cyan-50 p-2 text-xs text-cyan-950"
+          data-cy={`generated-element-revision-of-${draft.id}`}
+        >
+          <div className="font-semibold">
+            {t('review.revision.revisionOf', {
+              name: original?.current.name ?? t('review.revision.earlierDraft'),
+            })}
+          </div>
+          {draft.revisionNote ? (
+            <div className="mt-1">
+              {t('review.revision.noteShown', { note: draft.revisionNote })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {latest ? (
+        <div
+          className="mt-2 text-xs text-slate-700"
+          data-cy={`generated-element-revision-status-${draft.id}`}
+          data-state={latestState}
+          role="status"
+        >
+          {latestState === 'running' ? (
+            <div className="font-medium text-amber-900">
+              {t('review.revision.running')}
+            </div>
+          ) : null}
+          {latestState === 'failed' ? (
+            <div className="font-medium text-red-800">
+              {t('review.revision.failed')}
+              {latest.errorMessage ? ` ${latest.errorMessage}` : ''}
+              {latest.errorRetryable ? (
+                <Button
+                  type="button"
+                  className={{ root: 'ml-2' }}
+                  disabled={retryState.loading}
+                  onClick={async () => {
+                    setRetryFailed(false)
+                    try {
+                      await retryGeneration({
+                        variables: { input: { buildId: latest.id } },
+                      })
+                    } catch {
+                      setRetryFailed(true)
+                      return
+                    }
+                    try {
+                      await onChanged()
+                    } catch {
+                      toast({ type: 'error', message: t('review.actionError') })
+                    }
+                  }}
+                  data={{ cy: `generated-element-revision-retry-${draft.id}` }}
+                >
+                  <Button.Label>{t('review.revision.retry')}</Button.Label>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+          {latestState === 'completed' ? (
+            <div>{t('review.revision.completed')}</div>
+          ) : null}
+          {latest.note ? (
+            <div className="mt-1">
+              {t('review.revision.noteShown', { note: latest.note })}
+            </div>
+          ) : null}
+          {retryFailed ? (
+            <div className="mt-1 text-red-800">{t('review.actionError')}</div>
+          ) : null}
+        </div>
+      ) : null}
+      {requests.length > 1 ? (
+        <details
+          className="mt-1 text-xs text-slate-600"
+          data-cy={`generated-element-revision-history-${draft.id}`}
+          data-count={requests.length - 1}
+        >
+          <summary>
+            {t('review.revision.history', { count: requests.length - 1 })}
+          </summary>
+          <ul className="mt-1 space-y-1">
+            {requests.slice(0, -1).map((request) => (
+              <li key={request.id}>
+                {format.dateTime(new Date(request.createdAt), {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+                {' · '}
+                {t(`statuses.${request.status}`)}
+                {request.note ? ` · ${request.note}` : ''}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </>
+  )
+}
+
+function RevisionRequestPanel({
+  draft,
+  onCancel,
+  onRequested,
+}: {
+  draft: GeneratedElementDraftData
+  onCancel: () => void
+  onRequested: () => Promise<void>
+}) {
+  const t = useTranslations('manage.elementGeneration')
+  const [setDecision, { loading }] = useMutation(
+    SetGeneratedElementDecisionDocument
+  )
+  const [note, setNote] = useState('')
+  const [failed, setFailed] = useState(false)
+
+  return (
+    <div
+      className="sticky left-0 max-w-[calc(100vw-3rem)] space-y-2 p-2"
+      data-cy={`generated-element-revision-panel-${draft.id}`}
+    >
+      <label className="block font-medium text-slate-900">
+        {t('review.revision.noteLabel')}
+        <textarea
+          className="mt-1 block w-full rounded-md border border-slate-300 p-2 text-sm font-normal"
+          data-cy={`generated-element-revision-note-${draft.id}`}
+          maxLength={MAX_REVISION_NOTE_LENGTH}
+          rows={3}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+        />
+      </label>
+      <p className="text-xs text-slate-600">
+        {t('review.revision.noteHint', {
+          count: note.length,
+          max: MAX_REVISION_NOTE_LENGTH,
+        })}
+      </p>
+      {draft.evidencePurged ? (
+        <p
+          className="text-xs font-medium text-amber-900"
+          data-cy={`generated-element-evidence-purged-${draft.id}`}
+        >
+          {t('review.revision.evidencePurged')}
+        </p>
+      ) : null}
+      {failed ? (
+        <p className="text-xs text-red-800" role="alert">
+          {t('review.actionError')}
+        </p>
+      ) : null}
+      <div className="flex gap-2">
+        <Button
+          primary
+          type="button"
+          disabled={loading}
+          onClick={async () => {
+            setFailed(false)
+            try {
+              const result = await setDecision({
+                variables: {
+                  input: {
+                    draftId: draft.id,
+                    decision: GeneratedElementDecision.RevisionRequested,
+                    ...(note.trim() ? { note: note.trim() } : {}),
+                  },
+                },
+              })
+              if (
+                result.data?.setGeneratedElementDecision.decision !==
+                GeneratedElementDecision.RevisionRequested
+              ) {
+                throw new Error('Revision was not requested')
+              }
+              await onRequested()
+            } catch {
+              setFailed(true)
+            }
+          }}
+          data={{ cy: `generated-element-revision-submit-${draft.id}` }}
+        >
+          <Button.Label>{t('review.revision.submit')}</Button.Label>
+        </Button>
+        <Button
+          type="button"
+          onClick={onCancel}
+          data={{ cy: `generated-element-revision-cancel-${draft.id}` }}
+        >
+          <Button.Label>{t('review.revision.cancel')}</Button.Label>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export default function GeneratedElementReview({
+  build,
+  canRequestRevision,
+  onChanged,
+}: {
+  build: ElementGenerationBuildData
+  canRequestRevision: boolean
   onChanged: () => Promise<void>
 }) {
   const t = useTranslations('manage.elementGeneration')
@@ -550,6 +795,7 @@ export default function GeneratedElementReview({
   const [saveElements, saveState] = useMutation(SaveGeneratedElementsDocument)
   const [setDecision] = useMutation(SetGeneratedElementDecisionDocument)
   const [savedCount, setSavedCount] = useState<number>()
+  const [revisionDraftId, setRevisionDraftId] = useState<string>()
   const [saveError, setSaveError] = useState(false)
 
   const counts = {
@@ -678,9 +924,20 @@ export default function GeneratedElementReview({
               const needsAttention = draftNeedsAttention(draft)
               const reasonKeys = draftQualityReasonKeys(draft)
               const difficultyKey = difficultyLabelKey(draft.targetDifficulty)
+              const revisionInProgress = draftHasUnfinishedRevision(draft)
               const editable =
-                draft.decision === GeneratedElementDecision.Open ||
-                needsAttention
+                !revisionInProgress &&
+                (draft.decision === GeneratedElementDecision.Open ||
+                  draft.decision ===
+                    GeneratedElementDecision.RevisionRequested ||
+                  needsAttention)
+              const canRequest =
+                canRequestRevision &&
+                draft.elementType !== GeneratableElementType.Flashcard &&
+                !revisionInProgress &&
+                draft.savedElementId === null &&
+                draft.decision !== GeneratedElementDecision.Rejected &&
+                draft.decision !== GeneratedElementDecision.Accepted
               const sourceTypes = [
                 ...new Set(
                   draft.citations.flatMap((citation) => {
@@ -690,120 +947,164 @@ export default function GeneratedElementReview({
                 ),
               ]
               return (
-                <tr
-                  key={draft.id}
-                  data-cy={`generated-element-row-${draft.id}`}
-                >
-                  <td className="max-w-sm px-4 py-3">
-                    <div className="font-medium text-slate-900">
-                      {draft.current.name}
-                    </div>
-                    <div className="mt-1 line-clamp-2 text-xs text-slate-600">
-                      {draft.current.prompt}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {t(`elementTypes.${draft.elementType}.label`)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {sourceLabel(
-                      build,
-                      draft,
-                      (page) => t('review.sourcePage', { page }),
-                      (from, to) => t('review.sourcePages', { from, to })
-                    ) ?? t('review.sourceUnavailable')}
-                    {sourceTypes.length > 0 ? (
-                      <div className="mt-1 text-xs text-slate-500">
-                        {sourceTypes
-                          .map((type) => t(`review.sourceTypes.${type}`))
-                          .join(', ')}
+                <Fragment key={draft.id}>
+                  <tr data-cy={`generated-element-row-${draft.id}`}>
+                    <td className="max-w-sm px-4 py-3">
+                      <div className="font-medium text-slate-900">
+                        {draft.current.name}
                       </div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    <div>
-                      {draft.bloomLevel
-                        ? t('review.bloomLevel', {
-                            level: t(`bloom.${draft.bloomLevel}`),
-                          })
-                        : t('review.notApplicable')}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {difficultyKey
-                        ? t('review.difficultyLevel', {
-                            level: t(difficultyKey),
-                          })
-                        : t('review.notApplicable')}
-                    </div>
-                    {reasonKeys.length > 0 ? (
-                      <ul
-                        className="mt-1 space-y-1 text-xs font-medium text-amber-800"
-                        aria-label={
-                          draft.qualityFlags.length > 0
-                            ? t('review.qualityAttention')
-                            : undefined
-                        }
-                      >
-                        {reasonKeys.map((reasonKey) => (
-                          <li key={reasonKey}>{t(reasonKey)}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={draftStatusClass(draft, needsAttention)}>
-                      {needsAttention
-                        ? t('review.states.ATTENTION')
-                        : t(`review.states.${draft.decision}`)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {format.dateTime(new Date(draft.updatedAt), {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      {editable ? (
-                        <Button
-                          type="button"
-                          onClick={() => setSelectedDraft(draft)}
-                          data={{ cy: `element-generation-open-${draft.id}` }}
-                        >
-                          <Button.Label>{t('review.open')}</Button.Label>
-                        </Button>
+                      <div className="mt-1 line-clamp-2 text-xs text-slate-600">
+                        {draft.current.prompt}
+                      </div>
+                      <RevisionState
+                        build={build}
+                        draft={draft}
+                        onChanged={onChanged}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {t(`elementTypes.${draft.elementType}.label`)}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {sourceLabel(
+                        build,
+                        draft,
+                        (page) => t('review.sourcePage', { page }),
+                        (from, to) => t('review.sourcePages', { from, to })
+                      ) ?? t('review.sourceUnavailable')}
+                      {sourceTypes.length > 0 ? (
+                        <div className="mt-1 text-xs text-slate-500">
+                          {sourceTypes
+                            .map((type) => t(`review.sourceTypes.${type}`))
+                            .join(', ')}
+                        </div>
                       ) : null}
-                      {draft.savedElementId ? (
-                        <a
-                          data-cy={`element-generation-open-saved-${draft.id}`}
-                          className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2"
-                          href={`/?editElementId=${draft.savedElementId}`}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      <div>
+                        {draft.bloomLevel
+                          ? t('review.bloomLevel', {
+                              level: t(`bloom.${draft.bloomLevel}`),
+                            })
+                          : t('review.notApplicable')}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {difficultyKey
+                          ? t('review.difficultyLevel', {
+                              level: t(difficultyKey),
+                            })
+                          : t('review.notApplicable')}
+                      </div>
+                      {reasonKeys.length > 0 ? (
+                        <ul
+                          className="mt-1 space-y-1 text-xs font-medium text-amber-800"
+                          aria-label={
+                            draft.qualityFlags.length > 0
+                              ? t('review.qualityAttention')
+                              : undefined
+                          }
                         >
-                          {t('review.openSaved')}
-                        </a>
+                          {reasonKeys.map((reasonKey) => (
+                            <li key={reasonKey}>{t(reasonKey)}</li>
+                          ))}
+                        </ul>
                       ) : null}
-                      {draft.decision === GeneratedElementDecision.Rejected ? (
-                        <Button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const result = await setDecision({
-                                variables: {
-                                  input: {
-                                    draftId: draft.id,
-                                    decision: GeneratedElementDecision.Open,
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={draftStatusClass(draft, needsAttention)}>
+                        {needsAttention
+                          ? t('review.states.ATTENTION')
+                          : t(`review.states.${draft.decision}`)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {format.dateTime(new Date(draft.updatedAt), {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        {editable ? (
+                          <Button
+                            type="button"
+                            onClick={() => setSelectedDraft(draft)}
+                            data={{ cy: `element-generation-open-${draft.id}` }}
+                          >
+                            <Button.Label>{t('review.open')}</Button.Label>
+                          </Button>
+                        ) : null}
+                        {canRequest ? (
+                          <Button
+                            type="button"
+                            onClick={() => setRevisionDraftId(draft.id)}
+                            data={{
+                              cy: `element-generation-revise-${draft.id}`,
+                            }}
+                          >
+                            <Button.Label>
+                              {t('review.revision.request')}
+                            </Button.Label>
+                          </Button>
+                        ) : null}
+                        {draft.savedElementId ? (
+                          <a
+                            data-cy={`element-generation-open-saved-${draft.id}`}
+                            className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2"
+                            href={`/?editElementId=${draft.savedElementId}`}
+                          >
+                            {t('review.openSaved')}
+                          </a>
+                        ) : null}
+                        {draft.decision ===
+                        GeneratedElementDecision.Rejected ? (
+                          <Button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const result = await setDecision({
+                                  variables: {
+                                    input: {
+                                      draftId: draft.id,
+                                      decision: GeneratedElementDecision.Open,
+                                    },
                                   },
-                                },
-                              })
-                              if (
-                                result.data?.setGeneratedElementDecision
-                                  .decision !== GeneratedElementDecision.Open
-                              ) {
-                                throw new Error(
-                                  'Generated element was not restored'
-                                )
+                                })
+                                if (
+                                  result.data?.setGeneratedElementDecision
+                                    .decision !== GeneratedElementDecision.Open
+                                ) {
+                                  throw new Error(
+                                    'Generated element was not restored'
+                                  )
+                                }
+                                await onChanged()
+                              } catch {
+                                toast({
+                                  type: 'error',
+                                  message: t('review.actionError'),
+                                })
                               }
+                            }}
+                            data={{
+                              cy: `element-generation-restore-${draft.id}`,
+                            }}
+                          >
+                            <Button.Label>{t('review.restore')}</Button.Label>
+                          </Button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                  {revisionDraftId === draft.id ? (
+                    <tr>
+                      <td colSpan={7}>
+                        <RevisionRequestPanel
+                          draft={draft}
+                          onCancel={() => setRevisionDraftId(undefined)}
+                          onRequested={async () => {
+                            setRevisionDraftId(undefined)
+                            try {
                               await onChanged()
                             } catch {
                               toast({
@@ -812,16 +1113,11 @@ export default function GeneratedElementReview({
                               })
                             }
                           }}
-                          data={{
-                            cy: `element-generation-restore-${draft.id}`,
-                          }}
-                        >
-                          <Button.Label>{t('review.restore')}</Button.Label>
-                        </Button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
+                        />
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
               )
             })}
             {drafts.length === 0 ? (

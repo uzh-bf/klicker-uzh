@@ -26,6 +26,7 @@ const fixtures = vi.hoisted(() => ({
 
 vi.mock('../src/services/elementGenerationProvider.js', () => ({
   canonicalElementGenerationJson: (value: unknown) => value,
+  isElementRevisionWorkerEnabled: () => false,
   elementGenerationArtifactPayload: (ref: {
     containerName: string
     blobName: string
@@ -333,6 +334,7 @@ function failedBuildContext(
     elementGenerationRuntime: runtime,
     prisma: {
       elementGenerationBuild: {
+        findMany: vi.fn(async () => []),
         findFirst: vi.fn(async () => build),
         updateMany: vi.fn(async () => ({ count: 1 })),
       },
@@ -1903,6 +1905,7 @@ describe('partial question-generation delivery lifecycle', () => {
         log: createLogger({ service: 'graphql-test', level: 'silent' }),
         prisma: {
           elementGenerationBuild: {
+            findMany: vi.fn(async () => []),
             findFirst,
             updateMany,
           },
