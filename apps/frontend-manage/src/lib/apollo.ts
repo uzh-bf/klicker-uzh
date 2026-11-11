@@ -55,7 +55,11 @@ function catchUpAfterReconnect() {
   catchUpTimer = setTimeout(() => {
     catchUpTimer = undefined
     lastCatchUp = Date.now()
-    void apolloClient?.refetchQueries({ include: 'active' })
+    void apolloClient
+      ?.refetchQueries({ include: 'active' })
+      .catch((error) =>
+        console.error('Failed to refetch after subscription reconnect', error)
+      )
   }, wait)
 }
 
