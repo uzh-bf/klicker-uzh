@@ -682,7 +682,7 @@ backendGraphql:
   priorityClassName: production-workload
 
   knowledgeGraph:
-    host: 'prd-falkordb-aigeneric-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
+    host: 'prd-falkordb-aigeneric-ha-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
