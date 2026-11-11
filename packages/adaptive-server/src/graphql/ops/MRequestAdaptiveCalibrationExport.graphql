@@ -1,0 +1,26 @@
+mutation RequestAdaptiveCalibrationExport(
+  $treeId: String!
+  $scaleVersionId: String!
+  $datasetVersion: String!
+) {
+  requestAdaptiveCalibrationExport(
+    treeId: $treeId
+    scaleVersionId: $scaleVersionId
+    datasetVersion: $datasetVersion
+  ) {
+    id
+    treeId
+    scaleVersionId
+    datasetVersion
+    splitPolicyVersion
+    status
+    artifactChecksum
+    rowCount
+    failureCode
+    createdAt
+    startedAt
+    completedAt
+    expiresAt
+    downloadUrl
+  }
+}

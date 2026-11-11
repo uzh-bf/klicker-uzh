@@ -1,0 +1,87 @@
+{{- if and .Values.assessmentAudit.enabled .Values.assessmentAudit.sealer.enabled }}
+{{- if eq .Values.assessmentAudit.sealer.serviceAccountName .Values.assessmentAudit.worker.serviceAccountName }}
+{{- fail "The audit sealer requires a separate service account" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-sealer
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-sealer
+  annotations:
+    reloader.stakater.com/auto: 'true'
+spec:
+  revisionHistoryLimit: 5
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: assessment-audit-sealer
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-audit-sealer.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+        {{- with .Values.assessmentAudit.worker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: assessment-audit-sealer
+        azure.workload.identity/use: 'true'
+    spec:
+      terminationGracePeriodSeconds: 90
+      serviceAccountName: {{ required "assessmentAudit.sealer.serviceAccountName is required when assessment audit is enabled" .Values.assessmentAudit.sealer.serviceAccountName }}
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.assessmentAudit.worker.priorityClassName }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: assessment-audit-sealer
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.assessmentAudit.worker.image.repository | required "assessmentAudit.worker.image.repository is required when assessment audit is enabled" }}:{{ .Values.global.imageTag | default .Values.assessmentAudit.worker.image.tag | required "assessmentAudit.worker.image.tag is required when assessment audit is enabled and global.imageTag is unset" }}"
+          imagePullPolicy: {{ .Values.assessmentAudit.worker.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-assessment-audit-sealer
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-hatchet-worker-general
+          env:
+            - name: HATCHET_WORKER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: health
+              containerPort: 8001
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.assessmentAudit.worker.resources | nindent 12 }}
+      {{- with .Values.assessmentAudit.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessmentAudit.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessmentAudit.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

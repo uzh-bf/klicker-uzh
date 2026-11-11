@@ -14,19 +14,15 @@ function validateElementInputs({
   // validate if required fields are present when creating a new element
   if (typeof id === 'undefined' || id === null) {
     if (!status) {
-      console.error('Status is required')
       return false
     }
     if (!type) {
-      console.error('Type is required')
       return false
     }
     if (!name || name === '') {
-      console.error('Name is required')
       return false
     }
     if (!content || content.match(/^(<br>(\n)*)$/g) || content === '') {
-      console.error('Content is required')
       return false
     }
     if (
@@ -35,7 +31,6 @@ function validateElementInputs({
         explanation.match(/^(<br>(\n)*)$/g) ||
         explanation === '')
     ) {
-      console.error('Explanation is required for flashcards')
       return false
     }
     if (
@@ -43,7 +38,6 @@ function validateElementInputs({
       type !== DB.ElementType.CONTENT &&
       type !== DB.ElementType.FLASHCARD
     ) {
-      console.error('Base points setting is required')
       return false
     }
     if (
@@ -51,20 +45,15 @@ function validateElementInputs({
       type !== DB.ElementType.CONTENT &&
       type !== DB.ElementType.FLASHCARD
     ) {
-      console.error(
-        'Points multiplier is required (except for flashcard and content elements)'
-      )
       return false
     }
   }
 
   // validate enum values
   if (status && !Object.values(DB.ElementStatus).includes(status)) {
-    console.error('Invalid status')
     return false
   }
   if (!Object.values(DB.ElementType).includes(type)) {
-    console.error('Invalid type')
     return false
   }
 
@@ -73,7 +62,6 @@ function validateElementInputs({
     typeof name !== 'undefined' &&
     (typeof name !== 'string' || name === '')
   ) {
-    console.error('Name must be a string')
     return false
   }
 
@@ -84,7 +72,6 @@ function validateElementInputs({
       content.match(/^(<br>(\n)*)$/g) ||
       content === '')
   ) {
-    console.error('Content must be a string')
     return false
   }
 
@@ -96,7 +83,6 @@ function validateElementInputs({
       explanation.match(/^(<br>(\n)*)$/g) ||
       explanation === '')
   ) {
-    console.error('Explanation must be a string')
     return false
   }
 
@@ -105,7 +91,6 @@ function validateElementInputs({
     typeof pointsMultiplier !== 'undefined' &&
     (typeof pointsMultiplier !== 'number' || pointsMultiplier <= 0)
   ) {
-    console.error('Points multiplier must be a positive number')
     return false
   }
 
