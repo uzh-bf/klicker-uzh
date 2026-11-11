@@ -1377,15 +1377,19 @@ async function scheduleLiveQuizBlockClose(
       `Failed to schedule the close of block ${blockId} in live quiz ${quizId}:`,
       error
     )
+
+    // The failed request can return after closeAt has passed. node-schedule
+    // never runs a job for a past date, so an overdue close runs in a second.
+    const runAt = new Date(Math.max(closeAt.getTime(), Date.now() + 1000))
+    scheduledJobs[blockId] = schedule.scheduleJob(runAt, async () => {
+      await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+    })
+
     await sendTeamsNotification({
       scope: 'graphql/activateLiveQuizBlock',
       text: `WARNING - failed to schedule the durable close of block ${blockId} in live quiz ${quizId}, falling back to an in-process timer: ${error?.message || error}`,
     })
   }
-
-  scheduledJobs[blockId] = schedule.scheduleJob(closeAt, async () => {
-    await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
-  })
 }
 
 export async function deactivateLiveQuizBlock(

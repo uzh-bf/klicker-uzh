@@ -154,17 +154,36 @@ describe('activateLiveQuizBlock', () => {
   })
 
   it('falls back to an in-process timer when scheduling fails', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: expiresAt })
     const schedule = vi.fn().mockRejectedValue(new Error('Hatchet unavailable'))
 
     await activateLiveQuizBlock(
       { quizId, blockId },
       activationContext(schedule)
     )
+    vi.useRealTimers()
 
     expect(mocks.scheduleJob).toHaveBeenCalledWith(
       new Date(expiresAt.getTime() + 10_000),
       expect.any(Function)
     )
     expect(mocks.sendTeamsNotification).toHaveBeenCalled()
+  })
+
+  it('closes an overdue block shortly after a late scheduling failure', async () => {
+    const now = new Date(expiresAt.getTime() + 60_000)
+    vi.useFakeTimers({ toFake: ['Date'], now })
+    const schedule = vi.fn().mockRejectedValue(new Error('Hatchet timeout'))
+
+    await activateLiveQuizBlock(
+      { quizId, blockId },
+      activationContext(schedule)
+    )
+    vi.useRealTimers()
+
+    expect(mocks.scheduleJob).toHaveBeenCalledWith(
+      new Date(now.getTime() + 1000),
+      expect.any(Function)
+    )
   })
 })
