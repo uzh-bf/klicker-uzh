@@ -33,7 +33,22 @@ function category(value: unknown, allowed: readonly string[]) {
   return typeof value === 'string' && allowed.includes(value) ? value : 'other'
 }
 
-function requestFields(request: DiagnosticRequest) {
+function classifyOrigin(value: unknown, toolOrigin: string) {
+  if (value === undefined) return 'missing'
+  if (value === 'null') return 'null'
+  if (typeof value !== 'string') return 'invalid'
+  try {
+    const url = new URL(value)
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== value) {
+      return 'invalid'
+    }
+    return value === toolOrigin ? 'same-origin' : 'cross-origin'
+  } catch {
+    return 'invalid'
+  }
+}
+
+function requestFields(request: DiagnosticRequest, toolOrigin: string) {
   const body =
     typeof request.body === 'object' &&
     request.body !== null &&
@@ -42,6 +57,8 @@ function requestFields(request: DiagnosticRequest) {
       : {}
   const recovered = body.ltijs_recovered_state
   return {
+    origin: classifyOrigin(request.headers.origin, toolOrigin),
+    originCompatibilityApplied: false,
     route: category(request.path, ['/', '/login', '/handoff', '/keys']),
     method: category(request.method, [
       'GET',
@@ -88,7 +105,7 @@ function write(record: Record<string, unknown>) {
   console.error(JSON.stringify({ ts: new Date().toISOString(), ...record }))
 }
 
-export function createRequestLogging() {
+export function createRequestLogging(toolOrigin: string) {
   const context = new AsyncLocalStorage<RequestContext>()
   const debugLogger = new DefaultLogger()
   const logger: Logger = {
@@ -116,18 +133,25 @@ export function createRequestLogging() {
     response: DiagnosticResponse,
     next: () => void
   ) {
-    const fields: RequestContext = requestFields(request)
+    const fields: RequestContext = requestFields(request, toolOrigin)
     response.once('finish', () => {
-      if (response.statusCode < 400 && fields.errorCode === undefined) return
+      const failed =
+        response.statusCode >= 400 || fields.errorCode !== undefined
+      if (!failed && !fields.originCompatibilityApplied) return
       write({
-        event: 'lti_request_failed',
+        event: failed ? 'lti_request_failed' : 'lti_origin_compatibility',
         ...fields,
-        errorCode: fields.errorCode ?? 'HTTP_ERROR',
+        ...(failed ? { errorCode: fields.errorCode ?? 'HTTP_ERROR' } : {}),
         status: response.statusCode,
       })
     })
     context.run(fields, next)
   }
 
-  return { logger, middleware }
+  function originCompatibility() {
+    const current = context.getStore()
+    if (current) current.originCompatibilityApplied = true
+  }
+
+  return { logger, middleware, originCompatibility }
 }
