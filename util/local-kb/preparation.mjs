@@ -476,8 +476,10 @@ async function requireProcessorResumePrefix(
   }
   try {
     if (
-      JSON.stringify((await readdir(attempt)).sort()) !==
-      JSON.stringify(Object.keys(expected).sort())
+      JSON.stringify(
+        (await readdir(attempt)).sort((a, b) => a.localeCompare(b))
+      ) !==
+      JSON.stringify(Object.keys(expected).sort((a, b) => a.localeCompare(b)))
     )
       throw new Error()
     for (const [name, value] of Object.entries(expected))
