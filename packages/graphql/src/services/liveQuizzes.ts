@@ -1387,7 +1387,11 @@ async function scheduleLiveQuizBlockClose(
     // never runs a job for a past date, so an overdue close runs in a second.
     const runAt = new Date(Math.max(closeAt.getTime(), Date.now() + 1000))
     scheduledJobs[blockId] = schedule.scheduleJob(runAt, async () => {
-      await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+      if (
+        await isBlockCloseCurrent(ctx.prisma, { quizId, blockId, expiresAt })
+      ) {
+        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+      }
     })
 
     await sendTeamsNotification({
@@ -1395,6 +1399,36 @@ async function scheduleLiveQuizBlockClose(
       text: `WARNING - failed to schedule the durable close of block ${blockId} in live quiz ${quizId}, falling back to an in-process timer: ${error?.message || error}`,
     })
   }
+}
+
+// A scheduled close is stale when the lecturer closed the block, another block
+// is active, or the quiz was reset or the block activated again since.
+async function isBlockCloseCurrent(
+  prisma: LiveQuizBlockCloseContext['prisma'],
+  {
+    quizId,
+    blockId,
+    expiresAt,
+  }: { quizId: string; blockId: number; expiresAt: Date }
+) {
+  const quiz = await prisma.liveQuiz.findUnique({
+    where: { id: quizId },
+    select: {
+      activeBlockId: true,
+      blocks: {
+        where: { id: blockId },
+        select: { status: true, expiresAt: true },
+      },
+    },
+  })
+  const block = quiz?.blocks[0]
+
+  return (
+    !!block &&
+    quiz?.activeBlockId === blockId &&
+    block.status === DB.ElementBlockStatus.ACTIVE &&
+    block.expiresAt?.getTime() === expiresAt.getTime()
+  )
 }
 
 export async function deactivateLiveQuizBlock(
@@ -3351,25 +3385,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
 // Returning false completes the task; only a thrown error retries it.
 export const handleCloseExpiredLiveQuizBlock: HatchetHandlers['handleCloseExpiredLiveQuizBlock'] =
   async ({ liveQuizId, blockId, expiresAt }, globalCtx, executionCtx) => {
-    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
-      where: { id: liveQuizId },
-      select: {
-        activeBlockId: true,
-        blocks: {
-          where: { id: blockId },
-          select: { status: true, expiresAt: true },
-        },
-      },
+    const isCurrent = await isBlockCloseCurrent(globalCtx.prisma, {
+      quizId: liveQuizId,
+      blockId,
+      expiresAt: new Date(expiresAt),
     })
-    const block = quiz?.blocks[0]
 
-    if (
-      !quiz ||
-      !block ||
-      quiz.activeBlockId !== blockId ||
-      block.status !== DB.ElementBlockStatus.ACTIVE ||
-      block.expiresAt?.getTime() !== new Date(expiresAt).getTime()
-    ) {
+    if (!isCurrent) {
       executionCtx.logger.info(
         `Skipping the close of block ${blockId} in live quiz ${liveQuizId}: it is no longer the block this schedule was created for`
       )
