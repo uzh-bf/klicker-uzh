@@ -315,6 +315,28 @@ describe('video frame selection', () => {
     expect(videoFrameCandidates(titled)[0]?.title).toBe('lecture-01.mp4')
   })
 
+  it.each([
+    undefined,
+    'N/A',
+  ])('uses the citation reference fallback for title %s', (title) => {
+    const payload = structuredClone(fixture)
+    payload.sources[0].title = title
+    delete payload.sources[0].display_name
+    delete payload.sources[0].file_name
+    payload.sources[0].reference = 'https://video.example.edu/lecture.mp4'
+    expect(videoFrameCandidates(payload)[0]?.title).toBe('lecture.mp4')
+  })
+
+  it('does not expose an unnamed ingestion reference as a frame caption', () => {
+    const payload = structuredClone(fixture)
+    payload.sources[0].reference =
+      'https://api.example.org/api/ingestion/resources/item/versions/3'
+    delete payload.sources[0].title
+    delete payload.sources[0].display_name
+    delete payload.sources[0].file_name
+    expect(videoFrameCandidates(payload)).toEqual([])
+  })
+
   it('resolves the authoritative JPEG occurrence and verifies its hash', async () => {
     const bytes = await readVideoFrame(candidate, root)
     expect([...bytes.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff])

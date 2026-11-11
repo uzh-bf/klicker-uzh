@@ -73,17 +73,13 @@ function chunkVideoFrames(rawChunk: unknown, title: string): VideoFrame[] {
   return frames
 }
 
-function sourceVideoFrames(rawSource: unknown): VideoFrame[] {
+function sourceVideoFrames(rawSource: unknown, title: string): VideoFrame[] {
   const source = record(rawSource)
   if (
     !source ||
     ![source.source_type, source.reference_type].some(isVideoSourceType)
   )
     return []
-  const title = [source.title, source.display_name, source.file_name]
-    .map((value) => (typeof value === 'string' ? value.trim() : undefined))
-    .find((value) => value !== undefined && value.length > 0)
-  if (!title) return []
   return boundedArray(source.chunks, MAX_VIDEO_CHUNKS_PER_SOURCE).flatMap(
     (chunk) => chunkVideoFrames(chunk, title)
   )
@@ -105,9 +101,10 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
         result: { ...payload, sources: [source] },
       },
     ])
-    for (const frame of sourceVideoFrames(source)) {
+    if (!citation) continue
+    for (const frame of sourceVideoFrames(source, citation.title)) {
       if (found.size < MAX_VIDEO_FRAME_CANDIDATES)
-        found.set(frame.asset_id, { ...frame, source_id: citation?.id })
+        found.set(frame.asset_id, { ...frame, source_id: citation.id })
     }
   }
   return [...found.values()]
