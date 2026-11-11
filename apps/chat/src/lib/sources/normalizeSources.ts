@@ -2,7 +2,6 @@ import { extractCitationIndexes } from '@klicker-uzh/util/citations'
 import type { ResponseExampleSearchEvidence } from '@klicker-uzh/util/response-example-runtime'
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
 import { maskCodeRegions } from '../markdown/streamingMath'
-import { findVideoPassage, parseTimestampSeconds } from './sourceDisplay'
 import { getPublicSourceUrl } from './sourceUrl'
 import type {
   ChatSource,
@@ -31,11 +30,8 @@ const SANITIZED_DOCUMENT_REFERENCE_RE = /^document-[0-9a-f]{16}$/
 const DOC_QUERY_TOOL_NAME_RE = new RegExp(
   `(^|_)doc_query(_[0-9a-f]{${TOOL_NAME_SUFFIX_LENGTH}})?$`
 )
-// The shared citation scanner recognizes bare [n] markers. Chat's labelled
-// video locator is an additional grammar, so evidence validation supplements
-// that result here without changing the shared parser.
-const VIDEO_CITATION_INDEX_RE =
-  /\[(\d{1,2})[ \t]*,[ \t]*t\.[ \t]*((?:\d{1,2}:)?[0-5]?\d:[0-5]\d)\]/gi
+const VIDEO_CLOCK_MARKER_RE =
+  /\[\d{1,2}[ \t]*,[ \t]*t\.[ \t]*(?:\d{1,2}:)?[0-5]?\d:[0-5]\d\]/i
 
 /**
  * Minimal structural shape shared by live (streamed) and persisted assistant
@@ -60,9 +56,7 @@ interface SourceCandidate {
   labeledPageEnd?: string
   startSec?: number
   endSec?: number
-  videoPassages?: (ChatSourceVideoPassage & {
-    evidence?: Omit<ResponseExampleSourceEvidence, 'citationIndex'>
-  })[]
+  videoPassages?: ChatSourceVideoPassage[]
   url?: string
   excerpt?: string
   dedupeKey: string
@@ -115,9 +109,7 @@ export function normalizeSourcesFromParts(
     labeledPageEnd: candidate.labeledPageEnd,
     startSec: candidate.startSec,
     endSec: candidate.endSec,
-    videoPassages: candidate.videoPassages?.map(
-      ({ startSec, endSec, excerpt }) => ({ startSec, endSec, excerpt })
-    ),
+    videoPassages: candidate.videoPassages,
     url: candidate.url,
     excerpt: candidate.excerpt,
   }))
@@ -127,50 +119,21 @@ export function normalizeResponseExampleEvidenceFromParts(
   parts: readonly ChatSourcePart[],
   referenceAnswer: string
 ): ResponseExampleSourceEvidence[] | null {
-  const bareIndexes = new Set(extractCitationIndexes(referenceAnswer))
-  const times = new Map<number, number[]>()
-  for (const match of maskCodeRegions(referenceAnswer).matchAll(
-    VIDEO_CITATION_INDEX_RE
-  )) {
-    const seconds = parseTimestampSeconds(match[2] ?? '')
-    if (seconds === undefined) continue
-    const index = Number(match[1])
-    const clocks = times.get(index) ?? []
-    clocks.push(seconds)
-    times.set(index, clocks)
-  }
-  const citationIndexes = [...new Set([...bareIndexes, ...times.keys()])].sort(
-    (a, b) => a - b
-  )
+  // Saved examples support bare citation indexes only. Do not issue a receipt
+  // for an answer whose video locators cannot be replayed by capture.
+  if (VIDEO_CLOCK_MARKER_RE.test(maskCodeRegions(referenceAnswer))) return null
+
+  const citationIndexes = [
+    ...new Set(extractCitationIndexes(referenceAnswer)),
+  ].sort((left, right) => left - right)
   if (citationIndexes.length === 0) return null
 
   const candidates = normalizeSourceCandidatesFromParts(parts)
   const evidence: ResponseExampleSourceEvidence[] = []
   for (const citationIndex of citationIndexes) {
     const candidate = candidates[citationIndex - 1]
-    if (!candidate) return null
-    // A saved example has only one lineage record per source index. Preserve
-    // it only when every reference to that index identifies the same chunk.
-    const clocks = times.get(citationIndex) ?? []
-    const lineages = clocks.map((clock) =>
-      candidate.type === 'video'
-        ? findVideoPassage(candidate.videoPassages ?? [], clock)?.evidence
-        : undefined
-    )
-    if (bareIndexes.has(citationIndex)) lineages.push(candidate.evidence)
-    const selectedEvidence = lineages[0]
-    if (
-      !selectedEvidence ||
-      !lineages.every(
-        (item) =>
-          item?.sourceId === selectedEvidence.sourceId &&
-          item.chunkId === selectedEvidence.chunkId &&
-          item.contentHash === selectedEvidence.contentHash &&
-          item.citationAnchor === selectedEvidence.citationAnchor
-      )
-    )
-      return null
-    evidence.push({ citationIndex, ...selectedEvidence })
+    if (!candidate?.evidence) return null
+    evidence.push({ citationIndex, ...candidate.evidence })
   }
 
   return evidence
@@ -442,10 +405,9 @@ function cleanVideoRange(source: Record<string, unknown>): {
 }
 
 function getVideoPassages(
-  rawChunks: readonly unknown[],
-  source: Record<string, unknown>
-): NonNullable<SourceCandidate['videoPassages']> {
-  const passages: NonNullable<SourceCandidate['videoPassages']> = []
+  rawChunks: readonly unknown[]
+): ChatSourceVideoPassage[] {
+  const passages: ChatSourceVideoPassage[] = []
   for (const rawChunk of rawChunks) {
     if (!isChunkRecord(rawChunk)) continue
     const { startSec, endSec } = cleanVideoRange(rawChunk)
@@ -454,7 +416,6 @@ function getVideoPassages(
       startSec,
       endSec,
       excerpt: truncateExcerpt(cleanString(rawChunk.content)),
-      evidence: cleanEvidence(source, rawChunk),
     })
   }
   return passages
@@ -759,7 +720,7 @@ function normalizeDocumentsModeSources(
       .join(' ')
     const type = inferSourceType(typeHint, url)
     const videoPassages =
-      type === 'video' ? getVideoPassages(rawChunks, source) : undefined
+      type === 'video' ? getVideoPassages(rawChunks) : undefined
 
     candidates.push({
       type,

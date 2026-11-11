@@ -1053,7 +1053,7 @@ describe('normalizeResponseExampleEvidenceFromParts', () => {
     ])
   })
 
-  test('includes a video clock marker excluded by the shared plain-marker scanner', () => {
+  test('withholds capture for video locators unsupported by saved examples', () => {
     const parts = [
       toolCallPart('IW_doc_query', {
         mode: 'documents',
@@ -1086,28 +1086,17 @@ describe('normalizeResponseExampleEvidenceFromParts', () => {
     ]
 
     expect(
-      normalizeResponseExampleEvidenceFromParts(
-        parts,
-        'Use `[1, t. 12:34]` literally. Grounded here [1, T. 12:34].'
-      )
-    ).toEqual([
-      {
-        citationIndex: 1,
-        sourceId,
-        chunkId: 'chunk-12',
-        contentHash,
-        citationAnchor: 'timestamp=12:34',
-      },
-    ])
-    expect(
-      normalizeResponseExampleEvidenceFromParts(
-        parts,
-        '[1, t. 12:34] [1, t. 59:59]'
-      )
+      normalizeResponseExampleEvidenceFromParts(parts, '[1, T. 12:34]')
     ).toBeNull()
     expect(
       normalizeResponseExampleEvidenceFromParts(parts, '[1] [1, t. 12:34]')
     ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'Literal `[1, t. 12:34]`, evidence [1].'
+      )?.[0]?.chunkId
+    ).toBe('earlier-chunk')
   })
 
   test('fails closed for missing lineage or an unresolved citation', () => {

@@ -70,5 +70,5 @@ independent integrated review covers correctness, maintainability and data flow.
 The chat type check and test suite passed. Following the citation chip in a
 synthetic browser fixture focused the course link. The source card and hover
 preview showed the later passage's timestamp and excerpt. An exact displayed
-start wins at a shared boundary. Saved examples keep a single lineage record
-only when every citation to that index identifies the same retrieved chunk.
+start wins at a shared boundary. Saved examples keep their existing bare-index format;
+answers with video locators do not offer capture until that format supports them.
