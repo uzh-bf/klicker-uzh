@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as questionArtifacts from '../src/services/questionGenerationArtifacts.js'
 import { questionGenerationServiceError } from '../src/services/questionGenerationErrors.js'
 import type {
   FlashcardGenerationRuntime,
@@ -23,9 +24,11 @@ const fixtures = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../src/services/elementGenerationProvider.js', () => ({
+vi.mock('../src/services/elementGenerationProvider.js', async (original) => ({
+  ...(await original<
+    typeof import('../src/services/elementGenerationProvider.js')
+  >()),
   canonicalElementGenerationJson: (value: unknown) => value,
-  isElementRevisionWorkerEnabled: () => false,
   elementGenerationArtifactPayload: (ref: {
     containerName: string
     blobName: string
@@ -73,13 +76,18 @@ vi.mock(
   }
 )
 
-vi.mock('../src/services/questionGenerationConfiguration.js', () => ({
-  QuestionGenerationConfigurationError: class extends Error {},
-  normalizeQuestionGenerationConfiguration: () => ({
-    configuration: fixtures.configuration,
-    configurationHash: 'configuration-hash',
-  }),
-}))
+vi.mock(
+  '../src/services/questionGenerationConfiguration.js',
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import('../src/services/questionGenerationConfiguration.js')
+    >()),
+    normalizeQuestionGenerationConfiguration: () => ({
+      configuration: fixtures.configuration,
+      configurationHash: 'configuration-hash',
+    }),
+  })
+)
 
 vi.mock('../src/services/questionGenerationBlueprint.js', () => ({
   createQuestionGenerationBlueprint: vi.fn(async () =>
@@ -99,6 +107,7 @@ vi.mock('../src/services/elementGenerationCompletion.js', () => ({
 }))
 
 import {
+  createElementGenerationBuildWithSpend,
   isFlashcardRetrySpend,
   releaseUnclaimedElementGenerationSpend,
   reserveElementGenerationRetrySpend,
@@ -108,13 +117,17 @@ import { completeElementGeneration } from '../src/services/elementGenerationComp
 import {
   getFlashcardGenerationBuild,
   retryFlashcardGeneration,
+  startFlashcardGeneration,
 } from '../src/services/flashcardGeneration.js'
+import { normalizeFlashcardGenerationConfiguration } from '../src/services/flashcardGenerationConfiguration.js'
 import {
   getQuestionGenerationBuild,
+  questionWorkflowStartManifestSha256,
   retryQuestionGeneration,
   reviewQuestionGenerationDesign,
   startQuestionGeneration,
 } from '../src/services/questionGeneration.js'
+import { questionNativeBudgetFromEnv } from '../src/services/questionGenerationConfiguration.js'
 
 function preparingBuild() {
   return {
@@ -700,6 +713,11 @@ describe('flashcard retry preparation lifecycle', () => {
     } satisfies FlashcardGenerationRuntime
     const ctx = {
       user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: { isEnabled: () => true },
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationBuild: {
@@ -809,6 +827,11 @@ describe('question-generation retry lifecycle', () => {
     } satisfies QuestionGenerationRuntime
     const ctx = {
       user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: { isEnabled: vi.fn(() => true) },
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationBuild: {
@@ -1351,6 +1374,7 @@ describe('question-generation review dispatch lifecycle', () => {
     } satisfies QuestionGenerationRuntime
     const ctx = {
       user: { sub: fixtures.ownerId },
+      featureFlags: { isEnabled: vi.fn(() => false) },
       elementGenerationRuntime: runtime,
       prisma: {
         elementGenerationReview: { create: createReview },
@@ -1385,6 +1409,7 @@ describe('question-generation review dispatch lifecycle', () => {
     expect(result.status).toBe(DB.ElementGenerationBuildStatus.GENERATING_ITEMS)
 
     expect(createReview).toHaveBeenCalledBefore(dispatchReview)
+    expect(ctx.featureFlags.isEnabled).not.toHaveBeenCalled()
     expect(persistedReviewId).not.toBe('')
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
       fixtures.buildId,
@@ -2207,5 +2232,501 @@ describe('partial question-generation delivery lifecycle', () => {
       unresolvedElementCount: 0,
       slotFailures: [],
     })
+  })
+})
+
+describe('flashcard admission lifecycle', () => {
+  const input = {
+    graphBuildId: fixtures.graphBuildId,
+    idempotencyKey: 'stable-request',
+    language: 'de',
+    flashcardCount: 1,
+  }
+
+  function harness(existing: boolean, admission?: () => boolean) {
+    const normalized = normalizeFlashcardGenerationConfiguration(input, {})
+    const current = {
+      ...preparingBuild(),
+      ...normalized,
+      elementType: DB.ElementType.FLASHCARD,
+      status: DB.ElementGenerationBuildStatus
+        .PREPARING_INPUT as DB.ElementGenerationBuildStatus,
+    }
+    const runtime = {
+      ...failedBuildRuntime(vi.fn()),
+      startFlashcards: vi.fn(async (_payload, _scope, _attempt, before) => {
+        await before()
+        return { eventId: 'flashcard-event' }
+      }),
+      publishIncompleteFlashcards: vi.fn(),
+      findRunByFlashcardBuildId: vi.fn(async () => null),
+    }
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: admission ? { isEnabled: vi.fn(admission) } : undefined,
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findUnique: vi.fn(async () => (existing ? current : null)),
+          findFirst: vi.fn(async () => current),
+          updateMany: vi.fn(async ({ data }) => {
+            Object.assign(current, data)
+            return { count: 1 }
+          }),
+        },
+      },
+    }
+    return { current, runtime, ctx }
+  }
+
+  beforeEach(() => {
+    vi.mocked(createElementGenerationBuildWithSpend).mockReset()
+    vi.mocked(reserveFlashcardRetrySpend).mockReset()
+    vi.mocked(isFlashcardRetrySpend).mockResolvedValue(false)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    'missing',
+    'closed',
+    'error',
+  ] as const)('refuses new starts and retries with %s admission before spending', async (mode) => {
+    const h = harness(
+      false,
+      mode === 'missing'
+        ? undefined
+        : () => {
+            if (mode === 'error') throw new Error('Synthetic flag failure')
+            return false
+          }
+    )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    h.current.status =
+      DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION
+    await expect(
+      startFlashcardGeneration(input, h.ctx as never)
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+    })
+    await expect(
+      retryFlashcardGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+    })
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveFlashcardRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.startFlashcards).not.toHaveBeenCalled()
+    expect(
+      h.ctx.prisma.elementGenerationBuild.updateMany
+    ).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('admits a flashcard start without adopting the question budget policy', async () => {
+    const h = harness(false, () => true)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
+    vi.mocked(createElementGenerationBuildWithSpend).mockImplementationOnce(
+      async (_db, args) => {
+        Object.assign(h.current, args.data)
+        return { created: true, buildId: h.current.id } as never
+      }
+    )
+    await startFlashcardGeneration(input, h.ctx as never)
+    expect(createElementGenerationBuildWithSpend).toHaveBeenCalledOnce()
+    expect(h.runtime.startFlashcards).toHaveBeenCalledOnce()
+    expect(h.runtime.startFlashcards.mock.calls[0]![0]).not.toHaveProperty(
+      'budget_policy'
+    )
+    expect(h.current.configuration).not.toHaveProperty('nativeBudget')
+  })
+
+  it.each([
+    'poll',
+    'idempotent start',
+  ] as const)('continues accepted flashcard preparation through %s after admission closes', async (path) => {
+    const h = harness(true, () => false)
+    await (path === 'poll'
+      ? getFlashcardGenerationBuild(h.current.id, h.ctx as never)
+      : startFlashcardGeneration(input, h.ctx as never))
+    expect(h.runtime.startFlashcards).toHaveBeenCalledOnce()
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveFlashcardRetrySpend).not.toHaveBeenCalled()
+    expect(h.ctx.featureFlags?.isEnabled).not.toHaveBeenCalled()
+  })
+})
+
+describe('native question budget build lifetime', () => {
+  const template = {
+    budget_usd: '+5.00',
+    price_ceilings: {
+      'Azure/sol': { prompt: '0.000012', completion: '0.000025' },
+      'azure/embedding': { prompt: '0.000001', completion: '0' },
+    },
+  }
+  const policy = questionNativeBudgetFromEnv({
+    KB_QUESTION_NATIVE_BUDGET_POLICY: JSON.stringify(template),
+  })
+
+  function harness(
+    existing = true,
+    nativeBudget: unknown = policy,
+    admission: (() => boolean) | undefined = () => true
+  ) {
+    const current = {
+      ...preparingBuild(),
+      configuration: { ...fixtures.configuration, nativeBudget },
+      outputArtifactContainer: 'question-results',
+      outputArtifactPrefix: `question-builds/${fixtures.buildId}`,
+      status: DB.ElementGenerationBuildStatus
+        .PREPARING_INPUT as DB.ElementGenerationBuildStatus,
+      errorRetryable: true,
+      stage: 'preparing_input',
+      retryCount: 0,
+    }
+    const runtime = failedBuildRuntime(vi.fn())
+    runtime.findRunByBuildId.mockResolvedValue(null)
+    runtime.start.mockImplementation(
+      async (_payload, _scope, _attempt, before) => {
+        await before()
+        return { eventId: 'native-event' }
+      }
+    )
+    const updateMany = vi.fn(async ({ data }) => {
+      Object.assign(current, data)
+      return { count: 1 }
+    })
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      betaPreference: {
+        userId: fixtures.ownerId,
+        value: Promise.resolve(true),
+      },
+      featureFlags: admission ? { isEnabled: vi.fn(admission) } : undefined,
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findUnique: vi.fn(async () => (existing ? current : null)),
+          findFirst: vi.fn(async () => current),
+          findMany: vi.fn(async () => []),
+          updateMany,
+        },
+      },
+    }
+    return { current, runtime, ctx }
+  }
+
+  const input = {
+    graphBuildId: fixtures.graphBuildId,
+    idempotencyKey: 'stable-request',
+  }
+
+  beforeEach(() => {
+    vi.mocked(createElementGenerationBuildWithSpend).mockReset()
+    vi.mocked(reserveElementGenerationRetrySpend).mockReset()
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    'missing',
+    'closed',
+    'error',
+  ] as const)('blocks new starts and retries when admission is %s', async (mode) => {
+    const h = harness(false, policy, () => {
+      if (mode === 'error') throw new Error('Synthetic evaluator failure')
+      return false
+    })
+    if (mode === 'missing') h.ctx.featureFlags = undefined
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    h.current.status = DB.ElementGenerationBuildStatus.FAILED
+    await expect(
+      startQuestionGeneration(input as never, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'QUESTION_GENERATION_UNAVAILABLE' })
+    await expect(
+      retryQuestionGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'QUESTION_GENERATION_UNAVAILABLE' })
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+    expect(
+      h.ctx.prisma.elementGenerationBuild.updateMany
+    ).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it.each([
+    'poll',
+    'idempotent start',
+  ] as const)('continues accepted preparation through %s after admission closes', async (path) => {
+    const h = harness(true, policy, () => false)
+    await (path === 'poll'
+      ? getQuestionGenerationBuild(h.current.id, h.ctx as never)
+      : startQuestionGeneration(input as never, h.ctx as never))
+    expect(h.runtime.start).toHaveBeenCalledOnce()
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.ctx.featureFlags?.isEnabled).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    '{}',
+    '[]',
+    'false',
+    '0',
+    '""',
+    '"null"',
+  ])('rejects configured policy %s before product credit, upload or provider contact', async (value) => {
+    const h = harness(false)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
+    await expect(
+      startQuestionGeneration(input as never, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    undefined,
+    JSON.stringify(template),
+  ])('persists server mode before first spend for policy %s', async (value) => {
+    const h = harness(false)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
+    vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'true')
+    vi.mocked(createElementGenerationBuildWithSpend).mockImplementationOnce(
+      async (_db, args) => {
+        Object.assign(h.current, args.data)
+        return { created: true, buildId: h.current.id } as never
+      }
+    )
+    await startQuestionGeneration(input as never, h.ctx as never)
+    expect(h.current).toMatchObject({ slotSpecificationsRequested: true })
+    expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
+      emit_slot_specifications: true,
+    })
+    const expected = questionNativeBudgetFromEnv({
+      KB_QUESTION_NATIVE_BUDGET_POLICY: value,
+    })
+    expect(createElementGenerationBuildWithSpend).toHaveBeenCalledWith(
+      h.ctx.prisma,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          configurationHash: 'configuration-hash',
+          configuration: { ...fixtures.configuration, nativeBudget: expected },
+        }),
+      })
+    )
+    expect(h.runtime.start).toHaveBeenCalledWith(
+      expect.objectContaining(
+        expected.mode === 'budgeted' ? { budget_policy: expected.policy } : {}
+      ),
+      expect.any(String),
+      expect.any(String),
+      expect.any(Function)
+    )
+    if (expected.mode === 'unbudgeted')
+      expect(h.runtime.start.mock.calls[0]![0]).not.toHaveProperty(
+        'budget_policy'
+      )
+  })
+
+  it.each([
+    undefined,
+    '{}',
+    JSON.stringify({ ...template, budget_usd: '9' }),
+  ])('retains persisted policy across environment change %s and duplicate start', async (value) => {
+    const h = harness()
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
+    await startQuestionGeneration(input as never, h.ctx as never)
+    await startQuestionGeneration(input as never, h.ctx as never)
+    expect(h.runtime.start).toHaveBeenCalledOnce()
+    expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
+      budget_policy: policy.mode === 'budgeted' ? policy.policy : null,
+    })
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+  })
+
+  it('uses the persisted race winner rather than the losing environment policy', async () => {
+    const h = harness(false)
+    vi.stubEnv(
+      'KB_QUESTION_NATIVE_BUDGET_POLICY',
+      JSON.stringify({ ...template, budget_usd: '9' })
+    )
+    vi.mocked(createElementGenerationBuildWithSpend).mockResolvedValueOnce({
+      created: false,
+      buildId: h.current.id,
+    } as never)
+    await startQuestionGeneration(input as never, h.ctx as never)
+    expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
+      budget_policy: policy.mode === 'budgeted' ? policy.policy : null,
+    })
+  })
+
+  it('recovers the exact existing native attempt without redispatching or changing policy', async () => {
+    const h = harness()
+    h.runtime.findRunByBuildId.mockResolvedValueOnce({
+      runId: 'existing-native-run',
+      status: 'RUNNING',
+    })
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
+    await startQuestionGeneration(input as never, h.ctx as never)
+    expect(h.runtime.start).not.toHaveBeenCalled()
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(h.runtime.findRunByBuildId).toHaveBeenCalledWith(
+      h.current.id,
+      fixtures.dispatchAttemptId,
+      h.current.createdAt
+    )
+  })
+
+  it.each([
+    true,
+    false,
+    null,
+  ])('keeps the same build, policy, ledger and slot setting %s on retry', async (slotSpecificationsRequested) => {
+    const h = harness()
+    Object.assign(h.current, { slotSpecificationsRequested })
+    vi.stubEnv(
+      'ELEMENT_REVISION_WORKER_ENABLED',
+      String(!slotSpecificationsRequested)
+    )
+    h.current.status = DB.ElementGenerationBuildStatus.FAILED
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
+    vi.mocked(reserveElementGenerationRetrySpend).mockImplementationOnce(
+      async (_db, args) => {
+        Object.assign(h.current, {
+          status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+          providerDispatchAttemptId: args.dispatchAttemptId,
+          stage: 'retry_dispatching',
+        })
+        return true
+      }
+    )
+    await retryQuestionGeneration(h.current.id, h.ctx as never)
+    expect(reserveElementGenerationRetrySpend).toHaveBeenCalledOnce()
+    expect(h.runtime.start.mock.calls[0]![0].emit_slot_specifications).toBe(
+      slotSpecificationsRequested === true ? true : undefined
+    )
+    expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
+      question_build_id: fixtures.buildId,
+      output: {
+        container_name: 'question-results',
+        blob_prefix: 'question-builds',
+      },
+      budget_policy: policy.mode === 'budgeted' ? policy.policy : null,
+    })
+  })
+
+  it.each([
+    'container',
+    'prefix',
+  ])('fences %s drift before credits, upload, dispatch or evidence reads', async (field) => {
+    const h = harness()
+    if (field === 'container')
+      h.runtime.questionOutputContainer = 'other-results'
+    else h.runtime.questionOutputPrefix = 'other-prefix'
+    await expect(
+      startQuestionGeneration(input as never, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    h.current.status = DB.ElementGenerationBuildStatus.FAILED
+    await expect(
+      retryQuestionGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    h.current.status = DB.ElementGenerationBuildStatus.FINALIZING
+    await expect(
+      getQuestionGenerationBuild(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+    expect(h.runtime.downloadImmutable).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    DB.ElementGenerationBuildStatus.COMPLETED,
+    DB.ElementGenerationBuildStatus.INCOMPLETE,
+    DB.ElementGenerationBuildStatus.REJECTED,
+    DB.ElementGenerationBuildStatus.FAILED,
+  ])('keeps settled %s builds readable after output configuration changes', async (status) => {
+    const h = harness()
+    h.current.status = status
+    h.runtime.questionOutputContainer = 'rotated-results'
+    h.runtime.questionOutputPrefix = 'rotated-prefix'
+    await expect(
+      getQuestionGenerationBuild(h.current.id, h.ctx as never)
+    ).resolves.toBe(h.current)
+    await expect(
+      startQuestionGeneration(input as never, h.ctx as never)
+    ).resolves.toBe(h.current)
+    expect(createElementGenerationBuildWithSpend).not.toHaveBeenCalled()
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    null,
+    {},
+    { mode: 'budgeted' },
+    { mode: 'budgeted', policy: null },
+    { mode: 'other' },
+  ])('rejects corrupt stored metadata before retry or acceptance: %j', async (metadata) => {
+    const h = harness(true, metadata)
+    h.current.status = DB.ElementGenerationBuildStatus.FAILED
+    await expect(
+      retryQuestionGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    h.current.status = DB.ElementGenerationBuildStatus.FINALIZING
+    await expect(
+      getQuestionGenerationBuild(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.downloadImmutable).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
+  })
+
+  it('reconstructs provenance from exactly the dispatched frozen policy and worker defaults', async () => {
+    const h = harness()
+    await startQuestionGeneration(input as never, h.ctx as never)
+    const dispatched = h.runtime.start.mock.calls[0]![0]
+    h.runtime.getRun.mockResolvedValueOnce({
+      runId: 'native-run',
+      status: 'RUNNING',
+    })
+    const parsePlan = vi
+      .spyOn(questionArtifacts, 'parseQuestionGenerationPlan')
+      .mockReturnValueOnce({ questionCount: 1, questions: [], warnings: [] })
+    h.runtime.downloadImmutable.mockResolvedValueOnce({
+      ref: {
+        containerName: 'question-results',
+        blobName: 'plans/stems.json',
+        sha256: 'a'.repeat(64),
+      },
+      bytes: Buffer.from('{}'),
+    })
+    h.current.status = DB.ElementGenerationBuildStatus.GENERATING_ITEMS
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', '{}')
+    await getQuestionGenerationBuild(h.current.id, h.ctx as never)
+    expect(parsePlan).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.objectContaining({
+        v3Evidence: expect.objectContaining({
+          startManifestSha256: questionWorkflowStartManifestSha256(dispatched, {
+            currentWorkerDefaults: true,
+          }),
+        }),
+      })
+    )
   })
 })

@@ -1213,6 +1213,7 @@ describe('slot-specification request switch', () => {
         idempotencyKey: `switch-${buildId}`,
         configurationHash: 'switch',
         configuration: configuration as never,
+        slotSpecificationsRequested: true,
         requestedElementCount: 1,
         inputArtifactContainer: 'question-inputs',
         inputArtifactPrefix: `question-builds/${buildId}`,

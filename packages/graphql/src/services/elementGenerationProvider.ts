@@ -1,5 +1,6 @@
 import type { QuestionGenerationArtifactRef } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import {
   assertQuestionGenerationGraphEligible,
@@ -8,6 +9,15 @@ import {
 import type { QuestionGenerationRuntime } from './questionGenerationRuntime.js'
 
 const IDEMPOTENCY_KEY_MAX_LENGTH = 200
+
+export async function assertElementGenerationAdmission(ctx: ContextWithUser) {
+  if (!(await isFeatureFlagEnabled(ctx, 'question-generation-admission'))) {
+    throw questionGenerationServiceError(
+      'QUESTION_GENERATION_UNAVAILABLE',
+      'New element generation is currently unavailable'
+    )
+  }
+}
 
 // The slot-revision worker is deployed separately from this backend and the
 // worker rejects unknown start-input fields, so everything that reaches it

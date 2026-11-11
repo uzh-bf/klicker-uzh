@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
+import { writeFileSync } from 'node:fs'
+import {
+  questionWorkflowStartPayload,
+  questionWorkflowStartManifestSha256,
+} from '../src/services/questionGeneration.js'
+import { questionNativeBudgetFromEnv } from '../src/services/questionGenerationConfiguration.js'
 import {
   createQuestionGenerationRuntimeFromEnv,
   type FlashcardWorkflowIncompletePublicationEvent,
@@ -660,5 +666,90 @@ describe('question-generation runtime', () => {
         new Date('2026-08-26T12:00:00.000Z')
       )
     ).rejects.toMatchObject({ code: 'WORKFLOW_DISPATCH_UNCERTAIN' })
+  })
+})
+
+describe('native question manifest compatibility', () => {
+  const rawPolicy = {
+    budget_usd: '+5.00',
+    price_ceilings: {
+      'azure/route': { prompt: '1e-7', completion: '0.000025' },
+      'Azure/route': { prompt: '0.0000030', completion: '0' },
+    },
+  }
+  const input = {
+    buildId: '123e4567-e89b-42d3-a456-426614174000',
+    graphVersionId: '223e4567-e89b-42d3-a456-426614174000',
+    graphManifest: {
+      containerName: 'kg-graph-artifacts',
+      blobName: 'graphs/test/manifest.json',
+      sha256: 'a'.repeat(64),
+    },
+    storageName: 'synthetic-graph',
+    blueprint: {
+      containerName: 'question-inputs',
+      blobName: 'test/blueprint.json',
+      sha256: 'b'.repeat(64),
+    },
+    output: {
+      containerName: 'question-results',
+      blobPrefix: 'question-builds',
+    },
+    language: 'en' as const,
+  }
+
+  it('matches native normalized hashes for mixed route order, omitted defaults and decimal normalization', () => {
+    const captures = [
+      [
+        'budgeted',
+        questionNativeBudgetFromEnv({
+          KB_QUESTION_NATIVE_BUDGET_POLICY: JSON.stringify(rawPolicy),
+        }),
+        '3562f852e6aa6c751c3bc8268ea348dc0615f21a60030badb40d3a2386fe3d9a',
+      ],
+      [
+        'unbudgeted',
+        questionNativeBudgetFromEnv({}),
+        'dbc4c049ceed3e06484e701527a3a5d130c29b84084e74f79c6fca3e816dad31',
+      ],
+    ] as const
+    const results = captures.map(([mode, nativeBudget, expected]) => {
+      const payload = questionWorkflowStartPayload(input, { nativeBudget })
+      const digest = questionWorkflowStartManifestSha256(payload, {
+        currentWorkerDefaults: true,
+      })
+      expect(digest).toBe(expected)
+      if (nativeBudget.mode === 'unbudgeted')
+        expect(payload).not.toHaveProperty('budget_policy')
+      return { mode, payload, digest }
+    })
+    // Optional local qualification output lets the locked native schema consume
+    // the actual caller payload. Ordinary CI uses the protocol vectors above.
+    if (process.env.KLICKER_NATIVE_HASH_CAPTURE)
+      writeFileSync(
+        process.env.KLICKER_NATIVE_HASH_CAPTURE,
+        JSON.stringify(results)
+      )
+  })
+
+  it('retains metadata-absent historical hashes and unbudgeted wire fields', () => {
+    const payload = questionWorkflowStartPayload(input)
+    expect(payload).not.toHaveProperty('budget_policy')
+    expect(questionWorkflowStartManifestSha256(payload)).toBe(
+      '7bc1f3bf6502251693f1a77eee4efb6619d2e8822c052de642ee5ef18c9cf555'
+    )
+    expect(
+      questionWorkflowStartPayload(input, {
+        nativeBudget: { mode: 'unbudgeted' },
+      })
+    ).toEqual(payload)
+  })
+
+  it('does not disable shared runtime construction on an invalid question-only policy', () => {
+    const { runtime } = createRuntimeHarness({
+      ...runtimeEnvironment,
+      KB_QUESTION_NATIVE_BUDGET_POLICY: '{}',
+    })
+    expect(runtime).toBeDefined()
   })
 })

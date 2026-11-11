@@ -13,6 +13,7 @@ import {
   NEUTRAL_OBJECTIVE_SOURCE,
   QUESTION_GENERATION_CAPABILITIES,
 } from '@klicker-uzh/types'
+import { z } from 'zod'
 
 const MAX_OBJECTIVES = 20
 const MAX_OBJECTIVE_LENGTH = 500
@@ -65,6 +66,113 @@ export class QuestionGenerationConfigurationError extends Error {
 
 function configurationError(message: string): never {
   throw new QuestionGenerationConfigurationError(message)
+}
+
+// Match Decimal's string representation without converting money to a float.
+// Bound the spelling and exponent so configuration cannot expand without limit.
+function nativeDecimal(value: string): string {
+  const match = /^([+-]?)(\d+\.?\d*|\.\d+)(?:[eE]([+-]?\d+))?$/.exec(value)
+  if (!match || value.length > 256) throw new Error('Invalid decimal')
+  const exponent = Number(match[3] ?? 0)
+  if (!Number.isInteger(exponent) || Math.abs(exponent) > 1000) {
+    throw new Error('Invalid decimal exponent')
+  }
+  const [whole, fraction = ''] = match[2]!.split('.')
+  const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/, '')
+  const scale = exponent - fraction.length
+  const adjusted = scale + digits.length - 1
+  const sign = match[1] === '-' ? '-' : ''
+  if (scale <= 0 && adjusted >= -6) {
+    const point = digits.length + scale
+    return (
+      sign +
+      (point > 0
+        ? digits.slice(0, point) + (scale < 0 ? `.${digits.slice(point)}` : '')
+        : `0.${'0'.repeat(-point)}${digits}`)
+    )
+  }
+  return `${sign}${digits[0]}${digits.length > 1 ? `.${digits.slice(1)}` : ''}E${adjusted >= 0 ? '+' : ''}${adjusted}`
+}
+
+function budgetDecimal(positive: boolean) {
+  return z.string().transform((value, ctx) => {
+    try {
+      const normalized = nativeDecimal(value)
+      const nonzero = /[1-9]/.test(normalized.split('E')[0]!)
+      if ((normalized.startsWith('-') && nonzero) || (positive && !nonzero)) {
+        throw new Error('Invalid amount')
+      }
+      return normalized
+    } catch {
+      ctx.addIssue({ code: 'custom', message: 'Invalid native budget amount' })
+      return z.NEVER
+    }
+  })
+}
+
+const nativeBudgetPolicySchema = z.strictObject({
+  schema_version: z.literal(1).default(1),
+  budget_usd: budgetDecimal(true),
+  price_ceilings: z
+    .record(
+      z
+        .string()
+        .min(1)
+        .refine((key) => key === key.trim()),
+      z.strictObject({
+        prompt: budgetDecimal(false),
+        completion: budgetDecimal(false),
+      })
+    )
+    .refine((routes) => Object.keys(routes).length > 0),
+  max_output_tokens: z.number().int().min(1).max(128000).default(16000),
+})
+
+export type QuestionNativeBudgetPolicy = z.infer<
+  typeof nativeBudgetPolicySchema
+>
+
+const nativeBudgetMetadataSchema = z.discriminatedUnion('mode', [
+  z.strictObject({ mode: z.literal('unbudgeted') }),
+  z.strictObject({
+    mode: z.literal('budgeted'),
+    policy: nativeBudgetPolicySchema,
+  }),
+])
+
+export type QuestionNativeBudgetMetadata = z.infer<
+  typeof nativeBudgetMetadataSchema
+>
+
+export function questionNativeBudgetFromEnv(
+  env: Record<string, string | undefined> = process.env
+): QuestionNativeBudgetMetadata {
+  const value = env.KB_QUESTION_NATIVE_BUDGET_POLICY
+  if (value === undefined) return { mode: 'unbudgeted' }
+  try {
+    return {
+      mode: 'budgeted',
+      policy: nativeBudgetPolicySchema.parse(JSON.parse(value)),
+    }
+  } catch {
+    return configurationError('Native question budget configuration is invalid')
+  }
+}
+
+export function questionNativeBudgetMetadata(
+  configuration: unknown
+): QuestionNativeBudgetMetadata | null {
+  if (!configuration || typeof configuration !== 'object') {
+    return configurationError('Stored question configuration is invalid')
+  }
+  if (!Object.hasOwn(configuration, 'nativeBudget')) return null
+  const parsed = nativeBudgetMetadataSchema.safeParse(
+    (configuration as Record<string, unknown>).nativeBudget
+  )
+  if (!parsed.success) {
+    return configurationError('Stored native question budget is invalid')
+  }
+  return parsed.data
 }
 
 function isLanguage(value: string): value is QuestionGenerationLanguage {

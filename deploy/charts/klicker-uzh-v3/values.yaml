@@ -583,6 +583,8 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    # Optional USD policy with decimal-string amounts and per-token prices.
+    nativeBudgetPolicy: null
     cost:
       questionMinorUnits: ''
       flashcardMinorUnits: ''

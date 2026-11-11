@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import type { QuestionGenerationArtifactRef } from '@klicker-uzh/types'
+import type { QuestionNativeBudgetPolicy } from './questionGenerationConfiguration.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -37,6 +38,7 @@ export type QuestionWorkflowStartPayload = {
   // omitted entirely while the rollout gate is closed, so the start-manifest
   // hash of every legacy build stays byte-identical.
   allow_partial_results?: boolean
+  budget_policy?: QuestionNativeBudgetPolicy
   // Asks the worker for slot-specifications.json next to the final bank. The
   // key is omitted while ELEMENT_REVISION_WORKER_ENABLED is off, which keeps
   // the start input and its manifest hash byte-identical for every build.

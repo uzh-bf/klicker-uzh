@@ -25,13 +25,18 @@ vi.mock('../src/services/elementGenerationProvider.js', async (original) => ({
   >()),
   loadReadyElementGenerationGraph: async () => ({ id: fixture.graphId }),
 }))
-vi.mock('../src/services/questionGenerationConfiguration.js', () => ({
-  QuestionGenerationConfigurationError: class extends Error {},
-  normalizeQuestionGenerationConfiguration: () => ({
-    configuration: fixture.configuration,
-    configurationHash: 'failure-ordering',
-  }),
-}))
+vi.mock(
+  '../src/services/questionGenerationConfiguration.js',
+  async (original) => ({
+    ...(await original<
+      typeof import('../src/services/questionGenerationConfiguration.js')
+    >()),
+    normalizeQuestionGenerationConfiguration: () => ({
+      configuration: fixture.configuration,
+      configurationHash: 'failure-ordering',
+    }),
+  })
+)
 vi.mock('../src/services/flashcardGenerationConfiguration.js', () => ({
   FlashcardGenerationConfigurationError: class extends Error {},
   normalizeFlashcardGenerationConfiguration: () => ({
@@ -266,6 +271,10 @@ describe('generation start failure ordering', () => {
       const ctx = {
         prisma: observed,
         user: { sub: ownerId },
+        betaPreference: { userId: ownerId, value: Promise.resolve(true) },
+        featureFlags: {
+          isEnabled: (key: string) => key === 'question-generation-admission',
+        },
         elementGenerationRuntime: {
           questionInputContainer: 'synthetic',
           uploadCreateOnly: async () => {
