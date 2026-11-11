@@ -178,6 +178,29 @@ test('continue-setup accepts --resume-executor only after the seven explicit arg
   }
 })
 
+test('startup recovery accepts one explicit predecessor after the retained app identity', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+    '--retained-app',
+    'c'.repeat(64),
+  ]
+  const option = ['--resume-start-executor', 'd'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-start', [...base, ...option])
+  assert.equal(accepted.status, 1)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
+  for (const extra of [
+    [...base, ...option, ...option],
+    [...base, option[0]],
+    [...base, option[0], 'invalid'],
+  ]) {
+    assert.match(runConfigPlan(input, 'continue-start', extra).stderr, /Usage:/)
+  }
+})
+
 test('ingestion recovery option accepts one immutable predecessor only', () => {
   const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
   const base = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]

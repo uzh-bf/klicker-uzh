@@ -1295,32 +1295,60 @@ async function requirePrivateDirectory(path, message) {
   }
 }
 
+async function readStartupRecoveryClaim(runtime, recovery) {
+  await requirePrivateDirectory(recovery, 'Startup recovery must be private.')
+  const claim = await readOwned(join(recovery, 'claim.json'))
+  if (
+    !sameLifecycleReceipt(claim, lifecycleReceipt(runtime)) ||
+    claim.configurationDigest !== runtime.configurationDigest ||
+    claim.sourcePath !== runtime.checkout ||
+    claim.parent !== 'infrastructure-start' ||
+    !/^[a-f0-9]{40}$/.test(claim.executor ?? '') ||
+    !/^[a-f0-9]{64}$/.test(claim.appContainer ?? '')
+  )
+    throw new Error('Startup recovery claim does not match the runtime.')
+  return claim
+}
+
 async function requireStartedInfrastructure(runtime) {
   const original = join(runtime.directory, 'infrastructure-start')
   const recovery = join(runtime.directory, 'infrastructure-start-recovery')
   const recovered = !(await absent(recovery))
+  let attempt = recovered ? recovery : original
   if (recovered) {
     await requirePrivateDirectory(
       original,
       'Original startup attempt must be private.'
     )
-    await requirePrivateDirectory(recovery, 'Startup recovery must be private.')
     if ((await readdir(original)).length !== 0)
       throw new Error('Startup recovery parent has changed.')
-    const claim = await readOwned(join(recovery, 'claim.json'))
-    if (
-      !sameLifecycleReceipt(claim, lifecycleReceipt(runtime)) ||
-      claim.configurationDigest !== runtime.configurationDigest ||
-      claim.sourcePath !== runtime.checkout ||
-      claim.parent !== 'infrastructure-start' ||
-      !/^[a-f0-9]{40}$/.test(claim.executor ?? '') ||
-      !/^[a-f0-9]{64}$/.test(claim.appContainer ?? '')
-    )
-      throw new Error('Startup recovery claim does not match the runtime.')
+    const claim = await readStartupRecoveryClaim(runtime, recovery)
+    const child = join(recovery, 'resume')
+    if (!(await absent(child))) {
+      if ((await readdir(recovery)).sort().join(',') !== 'claim.json,resume')
+        throw new Error('Resumed startup recovery parent has changed.')
+      await requirePrivateDirectory(
+        child,
+        'Resumed startup recovery must be private.'
+      )
+      const resumed = await readOwned(join(child, 'claim.json'))
+      if (
+        !sameLifecycleReceipt(resumed, claim) ||
+        resumed.configurationDigest !== claim.configurationDigest ||
+        resumed.sourcePath !== claim.sourcePath ||
+        resumed.appContainer !== claim.appContainer ||
+        resumed.parent !== 'infrastructure-start-recovery' ||
+        resumed.parentExecutor !== claim.executor ||
+        !/^[a-f0-9]{40}$/.test(resumed.executor ?? '') ||
+        resumed.executor === claim.executor
+      )
+        throw new Error(
+          'Resumed startup recovery claim does not match its parent.'
+        )
+      attempt = child
+    }
   }
-  const started = await readOwned(
-    join(recovered ? recovery : original, 'complete.json')
-  )
+  const started = await readOwned(join(attempt, 'complete.json'))
   if (!sameLifecycleReceipt(started, lifecycleReceipt(runtime))) {
     throw new Error(
       'Infrastructure startup evidence does not match the runtime.'
@@ -2084,6 +2112,7 @@ export async function continueInfrastructureStart(
   executor,
   appContainer,
   {
+    resumeExecutor,
     runManaged = runLocalManaged,
     runDocker = runLocalDocker,
     runProvider = runProviderCommand,
@@ -2093,6 +2122,13 @@ export async function continueInfrastructureStart(
   requireLocalAiEnvironment(config)
   if (config.aiUpstream?.kind !== 'guarded')
     throw new Error('Startup continuation requires guarded qualification.')
+  if (
+    resumeExecutor !== undefined &&
+    (!/^[a-f0-9]{40}$/.test(resumeExecutor) || resumeExecutor === executor)
+  )
+    throw new Error(
+      'Startup recovery requires a distinct immutable predecessor.'
+    )
   await verifySources(config, candidateRevision, executor)
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'continue-start', async () => {
@@ -2103,13 +2139,23 @@ export async function continueInfrastructureStart(
     )
     if ((await readdir(parent)).length !== 0)
       throw new Error('Initial startup is not an untouched failed attempt.')
-    for (const name of [
-      'infrastructure-resume',
-      'infrastructure-stop',
-      'infrastructure-start-recovery',
-    ])
+    for (const name of ['infrastructure-resume', 'infrastructure-stop'])
       if (!(await absent(join(runtime.directory, name))))
         throw new Error('Startup continuation already has downstream evidence.')
+    const recovery = join(runtime.directory, 'infrastructure-start-recovery')
+    if (resumeExecutor !== undefined) {
+      const claim = await readStartupRecoveryClaim(runtime, recovery)
+      if (
+        (await readdir(recovery)).join(',') !== 'claim.json' ||
+        claim.executor !== resumeExecutor ||
+        claim.appContainer !== appContainer
+      )
+        throw new Error(
+          'Startup recovery predecessor does not match the failed attempt.'
+        )
+    } else if (!(await absent(recovery))) {
+      throw new Error('Startup continuation already has downstream evidence.')
+    }
     const backing = await observeOwnedProviders(config, runtime, runDocker)
     if (
       infrastructureServices.some(
@@ -2161,13 +2207,20 @@ export async function continueInfrastructureStart(
       apps[0].Config?.Labels?.['com.docker.compose.service'] !== 'app'
     )
       throw new Error('Retained managed app identity is unavailable.')
-    const attempt = join(runtime.directory, 'infrastructure-start-recovery')
+    const attempt =
+      resumeExecutor === undefined ? recovery : join(recovery, 'resume')
     await mkdir(attempt, { mode: 0o700 })
     await writeExclusive(join(attempt, 'claim.json'), {
       ...lifecycleReceipt(runtime),
       configurationDigest: runtime.configurationDigest,
       sourcePath: runtime.checkout,
-      parent: 'infrastructure-start',
+      parent:
+        resumeExecutor === undefined
+          ? 'infrastructure-start'
+          : 'infrastructure-start-recovery',
+      ...(resumeExecutor === undefined
+        ? {}
+        : { parentExecutor: resumeExecutor }),
       executor,
       appContainer,
     })

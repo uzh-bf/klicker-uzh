@@ -235,7 +235,10 @@ const recoveryOptions = {
 
 function parseArguments(args) {
   if (
-    args.length === 9 &&
+    (args.length === 9 ||
+      (args.length === 11 &&
+        args[9] === '--resume-start-executor' &&
+        /^[a-f0-9]{40}$/.test(args[10]))) &&
     args[0] === 'continue-start' &&
     args[1] === '--config' &&
     args[3] === '--candidate' &&
@@ -251,6 +254,7 @@ function parseArguments(args) {
       candidateRevision: args[4],
       executorRevision: args[6],
       retainedApp: args[8],
+      resumeStartExecutor: args[10],
     }
   }
 
@@ -297,7 +301,7 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-start --config <path> --candidate <commit> --executor <commit> --retained-app <container-id>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit> | --resume-processor-executor <commit>]'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-start --config <path> --candidate <commit> --executor <commit> --retained-app <container-id> [--resume-start-executor <commit>], or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit> | --resume-processor-executor <commit>]'
   )
 }
 
@@ -312,6 +316,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       resumeIngestionExecutor,
       resumeProcessorExecutor,
       retainedApp,
+      resumeStartExecutor,
     } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
@@ -324,7 +329,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
               config,
               candidateRevision,
               executorRevision,
-              retainedApp
+              retainedApp,
+              { resumeExecutor: resumeStartExecutor }
             )
           )
         )

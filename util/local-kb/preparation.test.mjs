@@ -2871,3 +2871,116 @@ test('initial-start recovery refuses changed evidence and keeps an interrupted c
       assert.deepEqual(f.calls, [])
   }
 })
+
+async function failedStartupRecoveryFixture(t) {
+  const f = await stoppedInitialStartFixture(t)
+  const managed = f.options.runManaged
+  await assert.rejects(
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      nextExecutor,
+      'c'.repeat(64),
+      {
+        ...f.options,
+        runManaged: (args) => {
+          if (args[0] === 'ensure')
+            throw new Error('synthetic provider refusal')
+          return managed(args)
+        },
+      }
+    )
+  )
+  f.calls.length = 0
+  return f
+}
+
+test('explicit startup recovery child preserves its failed claim through stop and resume', async (t) => {
+  const f = await failedStartupRecoveryFixture(t)
+  const parent = join(f.directory, 'infrastructure-start-recovery')
+  const claim = await readFile(join(parent, 'claim.json'), 'utf8')
+  const recover = () =>
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      'a'.repeat(40),
+      'c'.repeat(64),
+      { ...f.options, resumeExecutor: nextExecutor }
+    )
+  assert.equal((await recover()).infrastructureStarted, true)
+  assert.equal(await readFile(join(parent, 'claim.json'), 'utf8'), claim)
+  assert.deepEqual((await readdir(parent)).sort(), ['claim.json', 'resume'])
+  const before = [...f.calls]
+  await assert.rejects(recover())
+  assert.deepEqual(f.calls, before)
+  await stopInfrastructure(f.config, revision, f.managed, f.docker, f.provider)
+  assert.equal(
+    (
+      await resumeInfrastructure(
+        f.config,
+        revision,
+        f.managed,
+        f.docker,
+        f.provider
+      )
+    ).infrastructureStarted,
+    true
+  )
+})
+
+test('startup recovery child rejects changed or interrupted ancestry before another dispatch', async (t) => {
+  for (const failure of [
+    'executor',
+    'binding',
+    'parent-complete',
+    'child',
+    'interruption',
+    'replacement',
+  ]) {
+    const f = await failedStartupRecoveryFixture(t)
+    const parent = join(f.directory, 'infrastructure-start-recovery')
+    if (failure === 'binding') {
+      const p = join(parent, 'claim.json')
+      const claim = JSON.parse(await readFile(p, 'utf8'))
+      await writeFile(
+        p,
+        JSON.stringify({ ...claim, configurationDigest: 'foreign' }),
+        { mode: 0o600 }
+      )
+    }
+    if (failure === 'parent-complete')
+      await writeFile(join(parent, 'complete.json'), '{}', { mode: 0o600 })
+    if (failure === 'child')
+      await mkdir(join(parent, 'resume'), { mode: 0o700 })
+    if (failure === 'interruption' || failure === 'replacement') {
+      const run = f.options.runManaged
+      f.options.runManaged = (args) => {
+        if (args[0] !== 'ensure') return run(args)
+        if (failure === 'interruption')
+          throw new Error('synthetic interruption')
+        return JSON.stringify({
+          managedRuntime: { mountNesting: { container: 'd'.repeat(64) } },
+        })
+      }
+    }
+    const recover = () =>
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        'a'.repeat(40),
+        'c'.repeat(64),
+        {
+          ...f.options,
+          resumeExecutor:
+            failure === 'executor' ? 'e'.repeat(40) : nextExecutor,
+        }
+      )
+    await assert.rejects(recover(), undefined, failure)
+    const before = [...f.calls]
+    await assert.rejects(recover())
+    assert.deepEqual(f.calls, before)
+    if (!['interruption', 'replacement'].includes(failure))
+      assert.deepEqual(f.calls, [])
+    else assert.deepEqual(await readdir(join(parent, 'resume')), ['claim.json'])
+  }
+})
