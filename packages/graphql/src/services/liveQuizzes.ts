@@ -1153,6 +1153,18 @@ export async function activateLiveQuizBlock(
     },
   })
 
+  // Started right after the block becomes active, so a failure in the publish
+  // or cache setup below cannot leave a timed block without a close. It is
+  // awaited only at the end, because scheduling is an HTTP call to the Hatchet
+  // API and must not delay the publish while the countdown is already running.
+  // The promise never rejects: scheduling failures fall back to a local timer.
+  const closeScheduled = updatedQuiz.activeBlock?.expiresAt
+    ? scheduleLiveQuizBlockClose(
+        { quizId, blockId, expiresAt: updatedQuiz.activeBlock.expiresAt },
+        ctx
+      )
+    : Promise.resolve()
+
   // update the quiz with an updated version through the corresponding subscription
   ctx.pubSub.publish('runningLiveQuizUpdated', {
     id: updatedQuiz.id,
@@ -1340,14 +1352,7 @@ export async function activateLiveQuizBlock(
 
   redisMulti.exec()
 
-  // Scheduled after the publish above, because scheduling is an HTTP call to
-  // the Hatchet API while the block's countdown is already running.
-  if (updatedQuiz.activeBlock?.expiresAt) {
-    await scheduleLiveQuizBlockClose(
-      { quizId, blockId, expiresAt: updatedQuiz.activeBlock.expiresAt },
-      ctx
-    )
-  }
+  await closeScheduled
 
   return updatedQuiz
 }
