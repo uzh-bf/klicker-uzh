@@ -5,7 +5,10 @@ import {
   type ChatSourcePart,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
-import { videoFrameCandidates } from '../src/lib/sources/videoFrames'
+import {
+  sourceForVideoFrame,
+  videoFrameCandidates,
+} from '../src/lib/sources/videoFrames'
 import {
   sourceMedia,
   withVideoSourceFrames,
@@ -101,12 +104,33 @@ describe('video source media', () => {
     expect(sources(parts)[0]?.videoFrame).toEqual(selected)
   })
 
-  it('does not borrow a frame from another range or a failed search', () => {
+  it('associates a selected later-chunk frame with its retrieved source', () => {
     const payload = structuredClone(fixture)
-    payload.sources[0].chunks[0].start_sec = 0
-    expect(
-      sources([{ ...query, result: payload }])[0]?.videoFrame
-    ).toBeUndefined()
+    const later = structuredClone(payload.sources[0].chunks[0])
+    later.start_sec = 70
+    later.end_sec = 90
+    Object.assign(later.video_frames.assets[0], {
+      asset_id: 'd'.repeat(64),
+      start_sec: 70,
+      end_sec: 90,
+      timestamp_sec: 80,
+    })
+    payload.sources[0].chunks.push(later)
+    const selected = videoFrameCandidates(payload)[1]!
+    const parts = [
+      { ...query, result: payload },
+      {
+        type: 'tool-call',
+        toolName: 'show_video_frame',
+        result: { status: 'selected', frame: selected },
+      },
+    ]
+    const result = sources(parts)
+    expect(result[0]?.videoFrame).toEqual(selected)
+    expect(sourceForVideoFrame(selected, result)).toBe(result[0])
+    expect(sourceForVideoFrame(videoFrameCandidates(payload)[0]!, result)).toBe(
+      result[0]
+    )
     expect(sources([{ ...query, isError: true }])).toEqual([])
   })
 

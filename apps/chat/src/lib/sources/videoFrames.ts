@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   type ChatSourcePart,
   isDocQueryToolName,
+  normalizeSourcesFromParts,
   parseDocQueryPayload,
 } from './normalizeSources'
 import { isVideoSourceType } from './sourceType'
@@ -33,6 +34,7 @@ export const videoFrameSchema = z
     external_resource_id: z.string().min(1).max(300),
     resource_version: z.number().int().positive(),
     title: z.string().min(1),
+    source_id: z.string().min(1).optional(),
   })
   .refine((frame) => frame.end_sec >= frame.start_sec, {
     message: 'end_sec must not precede start_sec',
@@ -73,7 +75,11 @@ function chunkVideoFrames(rawChunk: unknown, title: string): VideoFrame[] {
 
 function sourceVideoFrames(rawSource: unknown): VideoFrame[] {
   const source = record(rawSource)
-  if (!source || !isVideoSourceType(source.source_type)) return []
+  if (
+    !source ||
+    ![source.source_type, source.reference_type].some(isVideoSourceType)
+  )
+    return []
   const title = [source.title, source.display_name, source.file_name]
     .map((value) => (typeof value === 'string' ? value.trim() : undefined))
     .find((value) => value !== undefined && value.length > 0)
@@ -92,9 +98,16 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
     payload.sources,
     MAX_VIDEO_SOURCES_SCANNED
   )) {
+    const [citation] = normalizeSourcesFromParts([
+      {
+        type: 'tool-call',
+        toolName: 'KB_doc_query',
+        result: { ...payload, sources: [source] },
+      },
+    ])
     for (const frame of sourceVideoFrames(source)) {
       if (found.size < MAX_VIDEO_FRAME_CANDIDATES)
-        found.set(frame.asset_id, frame)
+        found.set(frame.asset_id, { ...frame, source_id: citation?.id })
     }
   }
   return [...found.values()]
@@ -135,6 +148,11 @@ export function sourceForVideoFrame(
   frame: VideoFrame,
   sources: readonly ChatSource[]
 ): ChatSource | undefined {
+  if (frame.source_id) {
+    return sources.find(
+      (source) => source.type === 'video' && source.id === frame.source_id
+    )
+  }
   const matchingRange = sources.filter(
     (source) =>
       source.type === 'video' &&

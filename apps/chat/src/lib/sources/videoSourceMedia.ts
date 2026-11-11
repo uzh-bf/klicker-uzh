@@ -47,13 +47,7 @@ export function withVideoSourceFrames(
         (item) => item.id === normalized?.id && item.type === 'video'
       )
       if (!source) continue
-      const candidates = videoFrameCandidates(result).filter(
-        (frame) =>
-          source.startSec !== undefined &&
-          source.endSec !== undefined &&
-          Math.abs(source.startSec - frame.start_sec) < 0.001 &&
-          Math.abs(source.endSec - frame.end_sec) < 0.001
-      )
+      const candidates = videoFrameCandidates(result)
       const frame =
         candidates.find((item) => selected.has(item.asset_id)) ?? candidates[0]
       if (frame && (!frames.has(source.id) || selected.has(frame.asset_id)))

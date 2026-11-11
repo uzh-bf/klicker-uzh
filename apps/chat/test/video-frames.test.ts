@@ -80,10 +80,18 @@ describe('video frame selection', () => {
     expect(videoFrameCandidates(labelled)).toEqual([candidate])
   })
 
+  it('accepts reference_type without a source_type', () => {
+    const payload = structuredClone(fixture)
+    delete payload.sources[0].source_type
+    payload.sources[0].reference_type = 'video'
+    expect(videoFrameCandidates(payload)).toEqual([candidate])
+  })
+
   it('rejects non-video, failed and reversed-range frame evidence', () => {
     expect(videoFrameCandidates({ isError: true, ...fixture })).toEqual([])
     const broken = structuredClone(fixture)
     broken.sources[0].source_type = 'pdf'
+    broken.sources[0].reference_type = 'pdf'
     expect(videoFrameCandidates(broken)).toEqual([])
     broken.sources[0].source_type = 'video'
     broken.sources[0].chunks[0].video_frames.assets[0].end_sec = 41
@@ -236,10 +244,13 @@ describe('video frame selection', () => {
       },
     ]
 
-    expect(sourceForVideoFrame(candidate, sources)?.index).toBe(1)
+    expect(
+      sourceForVideoFrame({ ...candidate, source_id: undefined }, sources)
+        ?.index
+    ).toBe(1)
     expect(
       sourceForVideoFrame(
-        { ...candidate, title: 'Different recording' },
+        { ...candidate, source_id: undefined, title: 'Different recording' },
         sources
       )
     ).toBeUndefined()
@@ -260,9 +271,12 @@ describe('video frame selection', () => {
       index: 2,
       videoFrame: candidate,
     }
-    expect(sourceForVideoFrame(candidate, [legacy, identified])).toBe(
-      identified
-    )
+    expect(
+      sourceForVideoFrame({ ...candidate, source_id: undefined }, [
+        legacy,
+        identified,
+      ])
+    ).toBe(identified)
   })
 
   it('does not guess among same-title legacy recordings', () => {
@@ -275,13 +289,13 @@ describe('video frame selection', () => {
       endSec: candidate.end_sec,
     }
     expect(
-      sourceForVideoFrame(candidate, [
+      sourceForVideoFrame({ ...candidate, source_id: undefined }, [
         source,
         { ...source, id: 'second', index: 2 },
       ])
     ).toBeUndefined()
     expect(
-      sourceForVideoFrame(candidate, [
+      sourceForVideoFrame({ ...candidate, source_id: undefined }, [
         {
           ...source,
           videoFrame: { ...candidate, external_resource_id: 'other-recording' },
