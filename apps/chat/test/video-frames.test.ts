@@ -245,6 +245,51 @@ describe('video frame selection', () => {
     ).toBeUndefined()
   })
 
+  it('prefers recording identity over an earlier same-title legacy source', () => {
+    const legacy = {
+      id: 'legacy',
+      index: 1,
+      type: 'video' as const,
+      title: candidate.title,
+      startSec: candidate.start_sec,
+      endSec: candidate.end_sec,
+    }
+    const identified = {
+      ...legacy,
+      id: 'identified',
+      index: 2,
+      videoFrame: candidate,
+    }
+    expect(sourceForVideoFrame(candidate, [legacy, identified])).toBe(
+      identified
+    )
+  })
+
+  it('does not guess among same-title legacy recordings', () => {
+    const source = {
+      id: 'first',
+      index: 1,
+      type: 'video' as const,
+      title: candidate.title,
+      startSec: candidate.start_sec,
+      endSec: candidate.end_sec,
+    }
+    expect(
+      sourceForVideoFrame(candidate, [
+        source,
+        { ...source, id: 'second', index: 2 },
+      ])
+    ).toBeUndefined()
+    expect(
+      sourceForVideoFrame(candidate, [
+        {
+          ...source,
+          videoFrame: { ...candidate, external_resource_id: 'other-recording' },
+        },
+      ])
+    ).toBeUndefined()
+  })
+
   it('normalizes the video title exactly like document sources', () => {
     const titled = structuredClone(fixture)
     titled.sources[0].title = '  Lecture recording  '

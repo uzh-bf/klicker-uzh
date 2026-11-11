@@ -135,20 +135,25 @@ export function sourceForVideoFrame(
   frame: VideoFrame,
   sources: readonly ChatSource[]
 ): ChatSource | undefined {
-  return sources.find(
+  const matchingRange = sources.filter(
     (source) =>
       source.type === 'video' &&
-      (source.videoFrame
-        ? source.videoFrame.kb_id === frame.kb_id &&
-          source.videoFrame.external_resource_id ===
-            frame.external_resource_id &&
-          source.videoFrame.source_video_sha256 === frame.source_video_sha256
-        : source.title === frame.title) &&
       source.startSec !== undefined &&
       source.endSec !== undefined &&
       Math.abs(source.startSec - frame.start_sec) < 0.001 &&
       Math.abs(source.endSec - frame.end_sec) < 0.001
   )
+  const identified = matchingRange.find(
+    (source) =>
+      source.videoFrame?.kb_id === frame.kb_id &&
+      source.videoFrame.external_resource_id === frame.external_resource_id &&
+      source.videoFrame.source_video_sha256 === frame.source_video_sha256
+  )
+  if (identified) return identified
+  const legacy = matchingRange.filter(
+    (source) => !source.videoFrame && source.title === frame.title
+  )
+  return legacy.length === 1 ? legacy[0] : undefined
 }
 
 export function isVideoSearchTool(name: string) {
