@@ -1,12 +1,18 @@
 import { useAuiState } from '@assistant-ui/react'
 import { useMemo } from 'react'
 
-import { extractCitedPages } from '@/src/lib/markdown/remarkCitationMarkers'
+import {
+  extractCitedPages,
+  extractCitedTimestamps,
+} from '@/src/lib/markdown/remarkCitationMarkers'
 import {
   type ChatSourcePart,
   normalizeSourcesFromParts,
 } from '@/src/lib/sources/normalizeSources'
-import { formatCitedPageRanges } from '@/src/lib/sources/sourceDisplay'
+import {
+  applyVideoCitationTimes,
+  formatCitedPageRanges,
+} from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource } from '@/src/lib/sources/types'
 
 // Minimal shape this hook needs from the assistant message — kept local
@@ -30,6 +36,7 @@ export interface MessageSources {
 }
 
 const EMPTY_CITED_PAGE_RANGES: ReadonlyMap<number, string> = new Map()
+const EMPTY_CITED_VIDEO_TIMES: ReadonlyMap<number, number[]> = new Map()
 
 /**
  * Normalizes the current assistant message's doc-query tool-call parts into
@@ -90,12 +97,25 @@ export function useMessageSources(): MessageSources {
     }
 
     return ranges.size > 0 ? ranges : EMPTY_CITED_PAGE_RANGES
-    // Keyed on the fingerprint like `sources` above, for the same reason.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fingerprint])
+  }, [answerText])
+
+  const citedVideoTimes = useMemo(() => {
+    if (!/t\./i.test(answerText)) return EMPTY_CITED_VIDEO_TIMES
+    const times = extractCitedTimestamps(answerText)
+    return times.size ? times : EMPTY_CITED_VIDEO_TIMES
+  }, [answerText])
+
+  const displayedSources = useMemo(
+    () => applyVideoCitationTimes(sources, citedVideoTimes),
+    [sources, citedVideoTimes]
+  )
 
   return useMemo(
-    () => ({ messageId: message.id, sources, citedPageRanges }),
-    [message.id, sources, citedPageRanges]
+    () => ({
+      messageId: message.id,
+      sources: displayedSources,
+      citedPageRanges,
+    }),
+    [message.id, displayedSources, citedPageRanges]
   )
 }
