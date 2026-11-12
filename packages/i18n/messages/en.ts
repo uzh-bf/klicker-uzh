@@ -1428,6 +1428,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{required, plural, one {# stage} other {# stages}}{bonus, plural, =0 {} other { + # bonus}}',
       escapeRoomStagesLabel: 'Stages',
       escapeRoomStagesCleared: 'Stages cleared',
+      escapeRoomStageOpen: 'Stage {number}: open',
+      escapeRoomStageCurrent: 'Stage {number}: current',
+      escapeRoomStageSolved: 'Stage {number}: solved',
+      escapeRoomStageRevealed: 'Stage {number}: revealed',
+      escapeRoomStageSkipped: 'Stage {number}: skipped',
+      escapeRoomStageBonusOpen: 'Bonus: open',
+      escapeRoomStageBonusCurrent: 'Bonus: current',
+      escapeRoomStageBonusCorrect: 'Bonus: correct',
+      escapeRoomStageBonusWrong: 'Bonus: missed',
+      escapeRoomTimeWarning:
+        'Less than {minutes, plural, one {# minute} other {# minutes}} left',
+      escapeRoomTimeCritical: 'Less than {seconds} seconds left',
       escapeRoomClearedProgress:
         'You cleared {cleared} of {total} stages before time ran out.',
       escapeRoomStatsTime: 'Escape time',

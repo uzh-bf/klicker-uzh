@@ -12,6 +12,9 @@ import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
+import EscapeRoomStageTracker, {
+  ESCAPE_ROOM_FRAME as FRAME,
+} from './EscapeRoomStageTracker'
 
 // Minimal structural view of an EscapeRoomAttempt as selected by the
 // participant-facing fragments — enough to derive the completion stats.
@@ -290,23 +293,70 @@ export default function EscapeRoomOverlay({
   }
 
   // Active in-progress state: Render the sticky timer banner/bar
-  const isUrgent = remainingSeconds !== null && remainingSeconds < 60
+  const warnAt = Math.max(60, timeLimit / 10)
+  const criticalAt = Math.min(60, timeLimit / 10)
+  const timerState =
+    remainingSeconds === null
+      ? 'normal'
+      : remainingSeconds <= criticalAt
+        ? 'critical'
+        : remainingSeconds <= warnAt
+          ? 'warning'
+          : 'normal'
+  const timerAnnouncement =
+    timerState === 'critical'
+      ? t('pwa.practiceQuiz.escapeRoomTimeCritical', {
+          seconds: Math.ceil(criticalAt),
+        })
+      : timerState === 'warning'
+        ? t('pwa.practiceQuiz.escapeRoomTimeWarning', {
+            minutes: Math.ceil(warnAt / 60),
+          })
+        : ''
+
+  // Markers need room: up to 6 below sm, up to 12 from sm up; beyond that only
+  // the counter chip remains.
+  const stageViews = stages?.stages ?? []
+  const showMarkers = stageViews.length > 0 && stageViews.length <= 12
+  const markersBelowSm = stageViews.length <= 6
+  // the label gives way below sm once the markers need its room
+  const hideLabelBelowSm =
+    showMarkers && markersBelowSm && stageViews.length > 3
 
   return (
-    <div className="sticky top-0 z-[50] flex w-full items-center justify-between border-b border-slate-700 bg-slate-900 px-4 py-2 text-white shadow-md">
-      <div className="flex items-center gap-2 text-sm text-slate-300">
-        <FontAwesomeIcon icon={faDoorOpen} className="text-slate-400" />
-        <span className="font-semibold text-white">
+    <div
+      className={twMerge(
+        'sticky top-0 z-[50] flex w-full items-center justify-between gap-2 border-b px-3 py-2 shadow-md sm:px-4',
+        FRAME.bar
+      )}
+    >
+      <div className="flex flex-none items-center gap-2 text-sm">
+        <FontAwesomeIcon icon={faDoorOpen} className={FRAME.muted} />
+        <span
+          className={twMerge(
+            'font-semibold text-white',
+            hideLabelBelowSm && 'sr-only sm:not-sr-only'
+          )}
+        >
           {t('pwa.practiceQuiz.escapeRoomTitle')}
         </span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+        {showMarkers && (
+          <EscapeRoomStageTracker
+            stages={stageViews}
+            className={markersBelowSm ? undefined : 'max-sm:hidden'}
+          />
+        )}
         {typeof totalStacks === 'number' &&
           totalStacks > 0 &&
           typeof clearedStacks === 'number' && (
             <div
               aria-label={t('pwa.practiceQuiz.escapeRoomStagesCleared')}
-              className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-slate-300"
+              className={twMerge(
+                'flex flex-none items-center gap-1 rounded border px-2 py-1 text-sm whitespace-nowrap',
+                FRAME.chip
+              )}
               data-cy="escape-room-progress-chip"
               data-cleared={clearedStacks}
               data-required={totalStacks}
@@ -320,19 +370,38 @@ export default function EscapeRoomOverlay({
         <div
           role="timer"
           aria-label={t('pwa.practiceQuiz.escapeRoomTimeRemaining')}
+          data-cy="escape-room-timer"
+          data-state={timerState}
           className={twMerge(
-            'flex items-center space-x-2 rounded border border-slate-700 bg-slate-800 px-3 py-1 font-mono text-base font-bold tracking-wider text-amber-400',
-            isUrgent && 'animate-pulse border-red-500 text-red-400'
+            'flex flex-none items-center gap-1.5 rounded border px-2 py-1 font-mono text-sm font-bold tracking-wider whitespace-nowrap sm:text-base',
+            FRAME.panel,
+            timerState === 'normal' && 'text-white',
+            timerState === 'warning' && FRAME.warn,
+            timerState === 'critical' &&
+              twMerge(
+                FRAME.danger,
+                FRAME.dangerBorder,
+                'motion-safe:animate-pulse'
+              )
           )}
         >
           <FontAwesomeIcon
             icon={faClock}
-            className={isUrgent ? 'text-red-400' : 'text-slate-400'}
+            className={
+              timerState === 'normal'
+                ? FRAME.muted
+                : timerState === 'warning'
+                  ? FRAME.warn
+                  : FRAME.danger
+            }
           />
           <span>
             {remainingSeconds !== null ? formatTime(remainingSeconds) : '00:00'}
           </span>
         </div>
+        <span className="sr-only" aria-live="polite">
+          {timerAnnouncement}
+        </span>
       </div>
     </div>
   )
