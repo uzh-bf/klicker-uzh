@@ -227,16 +227,10 @@ export function registerGroupEscapeRoomTests() {
       ).toBeAttached()
       await member2.getByTestId('sc-2-answer-option-0').click()
       await member2.getByTestId('submit-group-activity').click()
-      await expect(
-        member2
-          .getByText(deMessages.pwa.practiceQuiz.escapeRoomCompletedTitle)
-          .first()
-      ).toBeVisible()
-      await expect(
-        member1
-          .getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle)
-          .first()
-      ).toBeVisible({ timeout: 20_000 })
+      await expect(member2.getByTestId('escape-room-completed')).toBeVisible()
+      await expect(member1.getByTestId('escape-room-completed')).toBeVisible({
+        timeout: 20_000,
+      })
       await expect(attemptRow).toContainText(
         messages.manage.evaluation.escapeRoomStatusCompleted,
         { timeout: 20_000 }

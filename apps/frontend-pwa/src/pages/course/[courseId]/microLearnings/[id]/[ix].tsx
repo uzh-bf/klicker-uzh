@@ -154,8 +154,19 @@ function MicrolearningInstance() {
       isCompleted={isCompleted && !bonusActive}
       isExpired={isExpired}
       remainingSeconds={remainingSeconds}
-      timeLimit={microLearning.escapeRoomConfig?.timeLimit ?? 3600}
-      hintPenalty={escapeRoomHintPenalty}
+      mode="microLearning"
+      title={microLearning.displayName}
+      rules={
+        microLearning.escapeRoomConfig ?? {
+          timeLimit: 3600,
+          hintPenalty: escapeRoomHintPenalty,
+        }
+      }
+      flush
+      exit={{
+        label: t('pwa.practiceQuiz.escapeRoomBackToCourse'),
+        onClick: () => router.push(courseId ? `/course/${courseId}` : '/'),
+      }}
       onStart={async () => {
         await startAttempt()
         await refetch()

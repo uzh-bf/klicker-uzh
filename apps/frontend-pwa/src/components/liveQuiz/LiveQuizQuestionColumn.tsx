@@ -149,6 +149,7 @@ function LiveQuizQuestionColumn({
           execution={activeBlock?.execution ?? 0}
           blockId={activeBlock.id}
           escapeRoomConfig={activeBlock.escapeRoomConfig}
+          title={displayName}
           initialEscapeRoomAttempt={activeBlock.escapeRoomAttempts?.at(-1)}
           escapeRoomTotalInstances={activeBlock.escapeRoomTotalInstances}
           escapeRoomClearedInstances={activeBlock.escapeRoomClearedInstances}

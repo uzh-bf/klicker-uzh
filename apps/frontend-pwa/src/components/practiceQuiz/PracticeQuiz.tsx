@@ -295,8 +295,26 @@ function PracticeQuiz({
           isCompleted={isCompleted && !bonusActive}
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
-          timeLimit={quiz.escapeRoomConfig?.timeLimit ?? 3600}
-          hintPenalty={escapeRoomHintPenalty}
+          mode="practiceQuiz"
+          title={quiz.displayName}
+          rules={
+            quiz.escapeRoomConfig ?? {
+              timeLimit: 3600,
+              hintPenalty: escapeRoomHintPenalty,
+            }
+          }
+          flush={!embedded}
+          exit={
+            embedded
+              ? undefined
+              : {
+                  label: t('pwa.practiceQuiz.escapeRoomBackToCourse'),
+                  onClick: () =>
+                    router.push(
+                      `/course/${quiz.course.id}/practiceQuizzes/overview`
+                    ),
+                }
+          }
           onStart={startAttempt}
           loading={attemptLoading}
           attempt={attempt}

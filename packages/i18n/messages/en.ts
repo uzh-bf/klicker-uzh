@@ -1377,7 +1377,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomPenaltyLabel: 'Hint Penalty',
       escapeRoomStartButton: 'Start Attempt',
       escapeRoomExpiredTitle: "Time's Up!",
-      escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
+      escapeRoomExpiredDesc: 'This attempt is over and cannot be restarted.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
         'Congratulations! You cleared every question and completed the escape room.',
@@ -1445,6 +1445,39 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStatsTime: 'Escape time',
       escapeRoomStatsHints: 'Hints used',
       escapeRoomStatsPenalty: 'Time penalty',
+      escapeRoomStatsBonus: 'Bonus credit',
+      escapeRoomStartDescGroup:
+        'Work together to clear the stages in order before the timer runs out.',
+      escapeRoomRulesLabel: 'Rules',
+      escapeRoomRuleHintEach: 'Each hint',
+      escapeRoomRuleHintNumber: 'Hint {number}',
+      escapeRoomRuleWrongAnswer: 'Wrong answer',
+      escapeRoomRuleWait: '{duration} wait',
+      escapeRoomRuleReveal:
+        'Solution revealed after {count, plural, one {# wrong answer} other {# wrong answers}}',
+      escapeRoomRuleSkip: 'Skip a stage',
+      escapeRoomRuleNoPenalty: 'no penalty',
+      escapeRoomRuleBonus: 'Bonus stage',
+      escapeRoomDurationSeconds: '{seconds} s',
+      escapeRoomDurationMinutes: '{minutes} min',
+      escapeRoomDurationMinutesSeconds: '{minutes} min {seconds} s',
+      escapeRoomRankingNote:
+        'Ranked time is your escape time plus all penalties, minus any bonus credit. The ranking puts the most stages solved without a revealed solution or skip first, then the shortest ranked time.',
+      escapeRoomStartWarning:
+        'You get one attempt. The clock starts when you start the attempt and never pauses, not even if you close this page.',
+      escapeRoomStartWarningGroup:
+        'Your group gets one shared attempt. The clock starts for the whole group when one member starts the attempt and never pauses, not even if the page is closed.',
+      escapeRoomNotNow: 'Not now',
+      escapeRoomBackToCourse: 'Back to course',
+      escapeRoomContinue: 'Continue',
+      escapeRoomAssistedTitle: 'Escape room finished',
+      escapeRoomAssistedSummary:
+        '{solved} of {required, plural, one {# stage} other {# stages}} solved without help',
+      escapeRoomRevealedCount: '{count} revealed',
+      escapeRoomSkippedCount: '{count} skipped',
+      escapeRoomRankedTimeLabel: 'Ranked time',
+      escapeRoomWrongAttempts:
+        '{count, plural, one {# wrong answer} other {# wrong answers}}',
       escapeRoomOverviewInfo:
         'Escape room: one timed attempt, solve all stages in order',
     },
