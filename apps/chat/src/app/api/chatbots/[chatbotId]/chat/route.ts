@@ -659,6 +659,13 @@ export async function POST(
       { status: 409 }
     )
   }
+  if (assessment && (images.length > 0 || documentPages.length > 0)) {
+    return NextResponse.json(
+      { error: 'Attachments are disabled', code: 'ATTACHMENTS_DISABLED' },
+      { status: 400 }
+    )
+  }
+
   const sanitizedChatContext = sanitizeKlickerChatContextV2(rawChatContext)
   if (rawChatContext != null && !sanitizedChatContext) {
     return NextResponse.json(

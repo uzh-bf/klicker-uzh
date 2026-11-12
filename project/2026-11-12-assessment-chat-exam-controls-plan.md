@@ -84,3 +84,7 @@ Approval mode: executable batch. Terminal condition: a third stack layer (draft 
 ## Progress
 
 - 2026-11-12: plan drafted from the code map of the stack head. Independent critique returned CHANGES (15 items), all accepted: server-derived parent from the stored tree instead of the client's id, a thread-scoped lock with a 409 for parallel turns and an age bound for abandoned rows, no thread deletion on error paths, client switch to the reused thread, rename left allowed and 409 instead of 403, failed question saves fail the turn, history and failed-answer handling raised as decisions, document-text detection dropped, export proof through a local merge of #6878. User approved the batch with the three recommended rulings. Next: Slice 1.
+- 2026-11-12: Slice 1 (gate) done: regular chat refuses assessment-course chatbots.
+- 2026-11-12: Slice 2 (one conversation) done: locked create-or-reuse, no discard in assessment mode, delete 409, client reopens the thread, thread list and new-chat hidden. The sidebar stays for settings and credits.
+- 2026-11-12: Slice 3 (linear turns) done: the claim stores the question under the server-derived tip, 409 for parallel turns, FAILED marker kept, history built from storage, edit, reload and branch controls hidden. Integration tests ran against local Postgres.
+- 2026-11-12: Slice 4 (no attachments) done: route refuses images and document pages, composer attachments off. Next: Slice 5 (browser proof).

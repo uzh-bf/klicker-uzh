@@ -624,6 +624,9 @@ function SidebarMain({
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              {...(assessment
+                ? { maxImageAttachments: 0, allowDocumentAttachments: false }
+                : {})}
             />
           </ChatKnowledgeGraphPanel>
         </div>
@@ -711,6 +714,9 @@ function AssistantLayout({
               contextualSuggestions={hasQuestionContext}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              {...(assessment
+                ? { maxImageAttachments: 0, allowDocumentAttachments: false }
+                : {})}
             />
           </ChatKnowledgeGraphPanel>
         </div>

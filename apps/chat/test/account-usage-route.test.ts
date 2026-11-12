@@ -1745,6 +1745,16 @@ describe('assessment chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  test.each([
+    ['images', { images: ['data:image/png;base64,AAAA'] }],
+    ['document pages', { documentPages: ['data:image/jpeg;base64,AAAA'] }],
+  ])('refuses %s', async (_name, overrides) => {
+    const response = await POST(assessmentRequest(overrides), params)
+
+    expect(response.status).toBe(400)
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+  })
+
   test('claims the turn for the server to place and answers from the stored history', async () => {
     const response = await POST(assessmentRequest(), params)
 
