@@ -604,6 +604,11 @@ const baseMessages = {
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
       imageAnalyzed: 'Bild analysiert',
     },
+    videoFrames: {
+      source: '{title} · Einzelbild bei {timestamp}',
+      unavailable: 'Dieses Video-Einzelbild ist derzeit nicht verfügbar.',
+      retry: 'Einzelbild erneut laden',
+    },
     sources: {
       title: 'Quellen',
       cited: 'In dieser Antwort zitiert',

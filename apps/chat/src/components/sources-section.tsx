@@ -15,16 +15,16 @@ import {
   useRef,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useSourceMedia } from '@/src/hooks/useSourceMedia'
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
-import { getSourceNavigationUrl } from '@/src/lib/sources/sourceUrl'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
 import { useChatUi } from './chat-ui-context'
 import {
   partitionSources,
   useMessageSourcesContext,
 } from './message-sources-context'
-import { SourceRow } from './source-row'
 import { SourcePreviewContent } from './source-preview-content'
+import { SourceRow } from './source-row'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Module-scope map (not a function returning a component per call) so
@@ -56,6 +56,7 @@ function SourceCard({
   citedPageRange?: string
 }) {
   const t = useTranslations()
+  const { href } = useSourceMedia(source)
   const Icon = SOURCE_TYPE_ICONS[source.type]
   const secondaryLine = getSourceSecondaryLine(source, t, citedPageRange)
 
@@ -101,7 +102,7 @@ function SourceCard({
           </span>
         )}
       </span>
-      {source.url && (
+      {href && (
         <ExternalLinkIcon
           aria-hidden="true"
           className="text-muted-foreground mt-0.5 size-3 shrink-0"
@@ -119,17 +120,12 @@ function SourceCard({
       // stay visible even though the card itself isn't a link. All cards use
       // the same passive tooltip for their source details.
       'border-border bg-background focus-visible:ring-ring flex h-full min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
-      source.url && 'hover:bg-accent hover:text-accent-foreground'
+      href && 'hover:bg-accent hover:text-accent-foreground'
     ),
   }
 
-  const card = source.url ? (
-    <a
-      {...sharedProps}
-      href={getSourceNavigationUrl(source.url, source.page)}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+  const card = href ? (
+    <a {...sharedProps} href={href} target="_blank" rel="noopener noreferrer">
       {inner}
       {/* `target="_blank"` is otherwise only signalled visually (the
             external-link icon above is aria-hidden), so the accessible name
@@ -146,7 +142,7 @@ function SourceCard({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{card}</TooltipTrigger>
-      <TooltipContent className="max-w-64 text-left">
+      <TooltipContent className="max-w-80 text-left">
         <SourcePreviewContent source={source} />
       </TooltipContent>
     </Tooltip>
