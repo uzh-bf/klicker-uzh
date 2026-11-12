@@ -297,7 +297,7 @@ export type ElementGenerationSlotSpecification = {
   bloom_level: string
   content_type: string
   difficulty_scale: number
-  difficulty_mechanism: string
+  difficulty_mechanism: string | null
   planned_true_count: number | null
   permitted_aids: unknown
   evidence_target: string | null
