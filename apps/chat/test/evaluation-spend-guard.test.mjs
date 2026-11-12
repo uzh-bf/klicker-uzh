@@ -16,14 +16,14 @@ import {
   readBudgetLedger,
   reserveProviderSpend,
   validateBudgetLedger,
-} from '../../../evaluation/evaluation-budget.mjs'
+} from '../scripts/evaluation-budget.mjs'
 import {
   createSpendGuard,
   main,
   requestReservation,
   validatePricingPolicy,
   verifyGuardQualification,
-} from '../../../evaluation/evaluation-spend-guard.mjs'
+} from '../scripts/evaluation-spend-guard.mjs'
 
 const policy = {
   version: 1,

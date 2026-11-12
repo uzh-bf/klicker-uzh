@@ -72,10 +72,11 @@ stipulated and claims no real legal or organizational policy.
 
 ## Offline preparation
 
-From the application root, validate the corpus with the existing importer schema:
+From the klicker-uzh-catalyst root (the importer lives there), validate the
+corpus with the existing importer schema:
 
 ```bash
-python -c 'import json; from pathlib import Path; from evaluation.adapters.klicker_trajectories import _validate_corpus; _validate_corpus(json.loads(Path("evaluation/data/explainer-compression/corpus.json").read_text()), "development")'
+python -c 'import json; from pathlib import Path; from evaluation.adapters.klicker_trajectories import _validate_corpus; _validate_corpus(json.loads(Path("../klicker-uzh/apps/chat/evaluation/explainer-compression/corpus.json").read_text()), "development")'
 ```
 
 Use `"reserved"` instead of `"development"` to validate only the new cases, or
@@ -110,7 +111,7 @@ The [current migration plan](../../../project/2026-10-17-trajectory-contract-pla
 owns the source boundary. Approval covers data/docs and
 offline checks only, not execution of the following capture commands.
 
-Reuse Klicker's existing `evaluation/run-tutor-trajectories.mjs`; despite its
+Reuse Klicker's existing `apps/chat/scripts/run-tutor-trajectories.mjs`; despite its
 name it already supports Explainer. No new capture or scoring script is needed.
 Once separately authorized and qualified, run four serial blocks in order
 baseline-1, candidate-1, candidate-2, baseline-2, each using all six cases and
@@ -122,8 +123,8 @@ each file remains truthful; preserve the external block label for comparison.
 From the Klicker root, the existing runner command for the first block is:
 
 ```bash
-node evaluation/run-tutor-trajectories.mjs \
-  --corpus evaluation/data/explainer-compression/corpus.json --arm baseline --repeats 1 \
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus apps/chat/evaluation/explainer-compression/corpus.json --arm baseline --repeats 1 \
   --budget-file <one-shared-authorized-ledger.json> \
   --output <new-baseline-1.jsonl>
 ```
@@ -135,12 +136,12 @@ comparison measures the full trajectory rather than isolating compression
 conditional on identical generated context. Required first-turn `KB_doc_query`
 completion still applies when the prompt supplies material.
 
-Import each block separately from the application root:
+Import each block separately from the klicker-uzh-catalyst root:
 
 ```bash
 python evaluation/adapters/klicker_trajectories.py \
   <new-baseline-1.jsonl> \
-  --corpus evaluation/data/explainer-compression/corpus.json \
+  --corpus ../klicker-uzh/apps/chat/evaluation/explainer-compression/corpus.json \
   --output <new-baseline-1-conversations.json>
 ```
 
