@@ -101,6 +101,10 @@ async function confirmResponseDeletionIfAvailable(
   )
   const confirmResponses = page.getByTestId('confirm-deletion-responses')
 
+  // The dialog renders only once its summary has loaded; the visibility
+  // checks below do not wait, so they must not run before that.
+  await expect(dialog).toBeVisible()
+
   if (await confirmResponses.isVisible().catch(() => false)) {
     if (expectedResponsesText) {
       await expect(page.locator('body')).toContainText(expectedResponsesText)
