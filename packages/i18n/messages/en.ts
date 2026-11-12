@@ -1428,6 +1428,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStagesCleared: 'Stages cleared',
       escapeRoomStageOpen: 'Stage {number}: open',
       escapeRoomStageCurrent: 'Stage {number}: current',
+      escapeRoomStageUnsolved: 'Stage {number}: not solved',
       escapeRoomStageSolved: 'Stage {number}: solved',
       escapeRoomStageRevealed: 'Stage {number}: revealed',
       escapeRoomStageSkipped: 'Stage {number}: skipped',

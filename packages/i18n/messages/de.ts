@@ -1444,6 +1444,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStagesCleared: 'Gelöste Stationen',
       escapeRoomStageOpen: 'Station {number}: offen',
       escapeRoomStageCurrent: 'Station {number}: aktuell',
+      escapeRoomStageUnsolved: 'Station {number}: nicht gelöst',
       escapeRoomStageSolved: 'Station {number}: gelöst',
       escapeRoomStageRevealed: 'Station {number}: aufgedeckt',
       escapeRoomStageSkipped: 'Station {number}: übersprungen',
