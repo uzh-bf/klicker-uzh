@@ -1,5 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { NoLoginSelfHeal } from '@/src/components/NoLoginSelfHeal'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
+import { getChatBaseUrl, getPwaBaseUrl } from '@/src/lib/server/publicUrls'
 import Link from 'next/link'
 
 interface NoLoginPageProps {
@@ -12,9 +14,7 @@ interface NoLoginPageProps {
 function getChatRedirectUrl(redirectTo: string | undefined) {
   if (!redirectTo) return undefined
 
-  const chatBaseUrl = process.env.NEXT_PUBLIC_CHAT_URL
-    ? process.env.NEXT_PUBLIC_CHAT_URL.replace(/\/$/, '')
-    : 'https://chat.klicker.uzh.ch'
+  const chatBaseUrl = getChatBaseUrl()
 
   try {
     const chatUrl = new URL(chatBaseUrl)
@@ -37,15 +37,18 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const isLtiContext =
     (Array.isArray(ltiParam) ? ltiParam[0] : ltiParam) === '1'
 
-  const loginBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
-    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
-    : 'https://pwa.klicker.uzh.ch'
-  const redirectUrl = getChatRedirectUrl(redirectTo)
+  const loginBaseUrl = getPwaBaseUrl()
+  const assessment = isAssessmentMode()
+  // The exam chat has no login of its own: the assessment PWA signs students
+  // in and brings them back through the course chatbot page.
+  const redirectUrl = assessment ? undefined : getChatRedirectUrl(redirectTo)
   const t = await getTranslations()
 
-  const loginHref = redirectUrl
-    ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
-    : `${loginBaseUrl}/login`
+  const loginHref = assessment
+    ? loginBaseUrl
+    : redirectUrl
+      ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
+      : `${loginBaseUrl}/login`
 
   return (
     <main
@@ -54,7 +57,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
       data-cy="chat-no-login"
       className="bg-muted flex min-h-screen w-full items-center justify-center px-4"
     >
-      <NoLoginSelfHeal redirectTo={redirectTo} />
+      <NoLoginSelfHeal redirectTo={assessment ? undefined : redirectTo} />
       <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
         <h1
           data-cy="chat-no-login-title"

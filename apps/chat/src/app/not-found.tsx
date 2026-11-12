@@ -1,12 +1,11 @@
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { ChatRecoveryCard } from '../components/chat-recovery-card'
+import { getPwaBaseUrl } from '../lib/server/publicUrls'
 
 export default async function NotFound() {
   const t = await getTranslations()
-  const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
-    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
-    : 'https://pwa.klicker.uzh.ch'
+  const pwaBaseUrl = getPwaBaseUrl()
 
   return (
     <ChatRecoveryCard

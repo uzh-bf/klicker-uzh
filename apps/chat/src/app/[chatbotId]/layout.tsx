@@ -15,6 +15,7 @@ import {
   resolveParticipantIdentity,
 } from '../../lib/server/apiGuards'
 import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
+import { getPwaBaseUrl } from '../../lib/server/publicUrls'
 
 interface ChatLayoutProps {
   children: React.ReactNode
@@ -28,9 +29,7 @@ interface ChatLayoutProps {
 // not-found response.
 async function renderAccessDenied() {
   const t = await getTranslations()
-  const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
-    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
-    : 'https://pwa.klicker.uzh.ch'
+  const pwaBaseUrl = getPwaBaseUrl()
 
   return (
     <ChatRecoveryCard
@@ -127,6 +126,7 @@ export default async function ChatLayout({
         }}
         initialModeOptions={initialModeOptions}
         knowledgeGraphVisible={chatbot.knowledgeGraphVisible}
+        pwaUrl={getPwaBaseUrl()}
       />
       {children}
     </>

@@ -2,6 +2,8 @@
   "$schema": "https://turborepo.org/schema.json",
   "globalEnv": [
     "CHAT_ASSESSMENT_MODE",
+    "CHAT_PUBLIC_PWA_URL",
+    "CHAT_PUBLIC_URL",
     "CHAT_COURSE_IMAGE_STORE_PATH",
     "CHAT_COURSE_IMAGE_VISION_ENABLED",
     "COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING",

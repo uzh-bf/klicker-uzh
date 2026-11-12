@@ -9,6 +9,7 @@ import type { Metadata, Viewport } from 'next'
 import { hasLocale } from 'next-intl'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
+import { getPwaBaseUrl } from '../lib/server/publicUrls'
 import { RootIntlProvider } from './RootIntlProvider'
 import './globals.css'
 
@@ -68,7 +69,11 @@ export default async function RootLayout({
         >
           {t('chat.a11y.skipToContent')}
         </a>
-        <RootIntlProvider locale={locale} messages={messages}>
+        <RootIntlProvider
+          locale={locale}
+          messages={messages}
+          pwaUrl={getPwaBaseUrl()}
+        >
           {children}
         </RootIntlProvider>
       </body>
