@@ -15,7 +15,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { EscapeRoomStages, getEscapeRankedSeconds } from '@lib/escapeRoomStages'
+import {
+  type EscapeRoomStages,
+  type EscapeRoomStageView,
+  getEscapeRankedSeconds,
+} from '@lib/escapeRoomStages'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode, useEffect, useId, useRef } from 'react'
@@ -176,15 +180,35 @@ function RuleList({ rows, label }: { rows: RuleRow[]; label: string }) {
   )
 }
 
-function StageRecap({ stages }: { stages: EscapeRoomStages }) {
+function StageRecap({
+  stages,
+  ended = false,
+}: {
+  stages: EscapeRoomStages
+  ended?: boolean
+}) {
   const t = useTranslations()
   if (stages.stages.length === 0) return null
 
   return (
-    <div className="w-full space-y-3 text-sm" data-cy="escape-room-stage-recap">
+    <div
+      className="w-full space-y-3 text-left text-sm"
+      data-cy="escape-room-stage-recap"
+    >
       <ul className="space-y-1.5">
-        {stages.stages.map((stage) => {
+        {stages.stages.map((rawStage) => {
+          // once the attempt is over, no stage is in progress any more
+          const stage: EscapeRoomStageView =
+            ended && rawStage.state === 'current'
+              ? { ...rawStage, state: 'open' }
+              : rawStage
           const marker = getEscapeRoomStageMarker(stage, t)
+          const label =
+            ended && stage.state === 'open' && stage.kind !== 'bonus'
+              ? t('pwa.practiceQuiz.escapeRoomStageUnsolved', {
+                  number: stage.index + 1,
+                })
+              : marker.label
           return (
             <li
               key={stage.index}
@@ -202,7 +226,7 @@ function StageRecap({ stages }: { stages: EscapeRoomStages }) {
               >
                 <FontAwesomeIcon icon={marker.icon} />
               </span>
-              <span className="flex-1 text-slate-300">{marker.label}</span>
+              <span className="flex-1 text-slate-300">{label}</span>
               {!!stage.wrongAttempts && (
                 <span className={twMerge('text-xs', FRAME.muted)}>
                   {t('pwa.practiceQuiz.escapeRoomWrongAttempts', {
@@ -577,7 +601,7 @@ export default function EscapeRoomOverlay({
               })}
             </p>
           )}
-        {stages && <StageRecap stages={stages} />}
+        {stages && <StageRecap stages={stages} ended />}
         {exit && (
           <Button
             primary
