@@ -472,14 +472,32 @@ function assertAssessmentChatContract(resources, source) {
   )
   assert.ok(deployment, `${source}: expected a chat-assessment Deployment`)
 
-  const envFrom = deployment.spec.template.spec.containers[0].envFrom.map(
-    (entry) => entry.configMapRef?.name ?? entry.secretRef?.name
+  // An older image would serve a regular chat on the exam host.
+  const chatDeployment = resources.find(
+    (resource) =>
+      resource.kind === 'Deployment' &&
+      resource.metadata?.labels?.[componentLabel] === 'chat'
   )
-  const suffixes = envFrom.map((name) => name.slice(fullname.length + 1))
+  assert.equal(
+    deployment.spec.template.spec.containers[0].image,
+    chatDeployment?.spec.template.spec.containers[0].image,
+    `${source}: chat-assessment must run the regular chat image and tag`
+  )
+
+  const envFrom = deployment.spec.template.spec.containers[0].envFrom
+  const suffixes = envFrom.map((entry) =>
+    (entry.configMapRef?.name ?? entry.secretRef?.name).slice(
+      fullname.length + 1
+    )
+  )
   assert.deepEqual(
     suffixes.slice(0, 4),
     ['config-global', 'config-chat', 'config-chat-assessment', 'secret-chat'],
     `${source}: chat-assessment must load the overlay after config-chat`
+  )
+  assert.ok(
+    envFrom.slice(4).every((entry) => !entry.configMapRef),
+    `${source}: no ConfigMap may follow the chat-assessment overlay`
   )
 
   const overlay = resources.find(
@@ -487,7 +505,16 @@ function assertAssessmentChatContract(resources, source) {
       resource.kind === 'ConfigMap' &&
       resource.metadata?.name === `${fullname}-config-chat-assessment`
   )
-  assert.equal(overlay?.data?.CHAT_ASSESSMENT_MODE, 'true')
+  assert.equal(
+    overlay?.data?.CHAT_ASSESSMENT_MODE,
+    'true',
+    `${source}: chat-assessment overlay must enable assessment mode`
+  )
+  assert.equal(
+    overlay?.data?.ALLOWED_FRAME_ANCESTORS,
+    "'self'",
+    `${source}: the exam chat must not be frameable`
+  )
   assert.ok(overlay?.data?.CHAT_PUBLIC_PWA_URL, `${source}: missing PWA URL`)
   assert.ok(overlay?.data?.CHAT_PUBLIC_URL, `${source}: missing chat URL`)
   assert.ok(
@@ -511,6 +538,11 @@ function assertAssessmentChatContract(resources, source) {
     (resource) =>
       resource.kind === 'Ingress' &&
       resource.metadata?.name === `${fullname}-chat-assessment`
+  )
+  const publicHost = new URL(overlay.data.CHAT_PUBLIC_URL).host
+  assert.ok(
+    (ingress?.spec?.rules ?? []).some((rule) => rule.host === publicHost),
+    `${source}: chat-assessment Ingress must serve ${publicHost}`
   )
   const backends = (ingress?.spec?.rules ?? []).flatMap((rule) =>
     rule.http.paths.map((path) => path.backend.service)
