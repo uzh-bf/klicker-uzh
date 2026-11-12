@@ -85,6 +85,7 @@ function GroupActivityDetails() {
     isCompleted,
     isExpired,
     remainingSeconds,
+    lockoutRemaining,
     startAttempt,
     loading: attemptLoading,
     refetch: refetchEscapeRoom,
@@ -398,6 +399,7 @@ function GroupActivityDetails() {
                           attempt?.status === EscapeRoomStatus.InProgress,
                         bonusInstanceId,
                         bonusOpen: bonusActive && bonusAvailable,
+                        lockoutRemaining,
                       }
                     : undefined
                 }

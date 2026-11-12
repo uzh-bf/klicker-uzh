@@ -99,7 +99,7 @@ function formatTime(seconds: number) {
 }
 
 // "30 s", "2 min", "2 min 30 s"
-function formatDuration(seconds: number, t: EscapeRoomTranslate) {
+export function formatDuration(seconds: number, t: EscapeRoomTranslate) {
   const safe = Math.max(0, Math.round(seconds))
   const minutes = Math.floor(safe / 60)
   const secs = safe % 60
@@ -139,6 +139,7 @@ interface RuleRow {
   value: ReactNode
   seconds?: number
   count?: number
+  lockout?: number
 }
 
 function RuleList({ rows, label }: { rows: RuleRow[]; label: string }) {
@@ -158,6 +159,7 @@ function RuleList({ rows, label }: { rows: RuleRow[]; label: string }) {
           data-cy={row.cy}
           data-seconds={row.seconds}
           data-count={row.count}
+          data-lockout={row.lockout}
         >
           <FontAwesomeIcon
             icon={row.icon}
@@ -402,7 +404,7 @@ export default function EscapeRoomOverlay({
           .filter(Boolean)
           .join(' · '),
         seconds: wrongPenalty,
-        count: lockout,
+        lockout,
       })
     }
     if (!isLive) {
@@ -434,7 +436,11 @@ export default function EscapeRoomOverlay({
           seconds: rules.skipPenalty,
         })
       }
-      if (rules.bonusSeconds != null && (stages?.bonusCount ?? 0) > 0) {
+      if (
+        rules.bonusSeconds != null &&
+        rules.bonusSeconds > 0 &&
+        (stages?.bonusCount ?? 0) > 0
+      ) {
         rows.push({
           cy: 'escape-room-rule-bonus',
           icon: faStar,
@@ -701,7 +707,7 @@ export default function EscapeRoomOverlay({
             >
               <Button.Label>
                 {t('pwa.practiceQuiz.escapeRoomBonusOffer', {
-                  seconds: bonus.seconds,
+                  duration: formatDuration(bonus.seconds, t),
                 })}
               </Button.Label>
             </Button>
@@ -711,10 +717,11 @@ export default function EscapeRoomOverlay({
           <p
             className="text-center text-sm font-semibold text-amber-400"
             data-cy="escape-room-bonus-result"
+            data-outcome={bonus.outcome}
           >
             {bonus.outcome === 'BONUS_CORRECT'
               ? t('pwa.practiceQuiz.escapeRoomBonusCorrect', {
-                  seconds: bonus.seconds,
+                  duration: formatDuration(bonus.seconds, t),
                 })
               : bonus.outcome === 'BONUS_WRONG'
                 ? t('pwa.practiceQuiz.escapeRoomBonusWrong')
@@ -728,7 +735,7 @@ export default function EscapeRoomOverlay({
             className="w-full space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left text-xs"
             data-cy="escape-room-completed-stats"
           >
-            {escapeSeconds !== null && (
+            {escapeSeconds !== null && !isLive && (
               <StatRow
                 label={t('pwa.practiceQuiz.escapeRoomStatsTime')}
                 value={

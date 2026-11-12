@@ -1386,7 +1386,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStartDesc:
         'Schalte Fragen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
       escapeRoomTimeLimitLabel: 'Zeitlimit',
-      escapeRoomPenaltyLabel: 'Hinweis-Strafzeit',
       escapeRoomStartButton: 'Versuch starten',
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
       escapeRoomExpiredDesc:
@@ -1401,7 +1400,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomLockoutToast:
         'Falsch — du bist für kurze Zeit gesperrt, bevor du es erneut versuchen kannst.',
       escapeRoomLockoutCountdown:
-        'Gesperrt. Du kannst es in {seconds}s erneut versuchen.',
+        'Gesperrt. Du kannst es in {duration} erneut versuchen.',
       escapeRoomIncorrectToast: 'Falsche Antwort! Bitte versuche es erneut.',
       escapeRoomExpiredToast:
         'Die Zeit ist abgelaufen — dieser Escape-Room-Versuch ist verfallen.',
@@ -1409,33 +1408,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
       escapeRoomForbiddenToast:
         'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
-      escapeRoomRequestHint: 'Hinweis anzeigen (+{penalty}s Wertungszeit)',
+      escapeRoomRequestHint: 'Hinweis anzeigen (+{duration} Wertungszeit)',
       escapeRoomHintRevealedToast:
-        'Hinweis angezeigt — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+        'Hinweis angezeigt. {duration} zu deiner Wertungszeit hinzugefügt.',
       escapeRoomNextHint:
-        'Nächsten Hinweis anzeigen (+{penalty}s Wertungszeit)',
+        'Nächsten Hinweis anzeigen (+{duration} Wertungszeit)',
       escapeRoomTriesLeft:
         '{count, plural, one {Noch ein Versuch} other {Verbleibende Versuche: #}}',
       escapeRoomWrongTriesToast:
         'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
       escapeRoomRevealedNotice:
-        'Keine Versuche mehr. Die Frage gilt als abgeschlossen (+{penalty}s Wertungszeit).',
+        'Keine Versuche mehr. Die Frage gilt als abgeschlossen (+{duration} Wertungszeit).',
       escapeRoomRevealedToast:
         'Keine Versuche mehr — die Frage gilt als abgeschlossen. Weiter geht es.',
-      escapeRoomSkip: 'Frage überspringen (+{penalty}s Wertungszeit)',
+      escapeRoomSkip: 'Frage überspringen (+{duration} Wertungszeit)',
       escapeRoomSkipConfirm:
-        'Diese Frage überspringen? Sie gilt als abgeschlossen und addiert {penalty}s zu deiner Wertungszeit.',
+        'Diese Frage überspringen? Sie gilt als abgeschlossen und addiert {duration} zu deiner Wertungszeit.',
       escapeRoomSkipConfirmButton: 'Ja, überspringen',
       escapeRoomSkippedToast:
-        'Frage übersprungen — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+        'Frage übersprungen. {duration} zu deiner Wertungszeit hinzugefügt.',
       escapeRoomSkipDisabledToast:
         'Überspringen ist in diesem Escape Room nicht erlaubt.',
       escapeRoomBonusOffer:
-        'Bonus: Bei richtiger Antwort −{seconds}s Wertungszeit',
+        'Bonus: Bei richtiger Antwort −{duration} Wertungszeit',
       escapeRoomBonusDesc:
         'Eine Bonusfrage ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
       escapeRoomBonusCorrect:
-        'Bonusfrage richtig beantwortet: −{seconds}s Wertungszeit.',
+        'Bonusfrage richtig beantwortet: −{duration} Wertungszeit.',
       escapeRoomBonusWrong:
         'Bonusfrage falsch beantwortet: keine Zeitgutschrift.',
       escapeRoomBonusSubmitted: 'Bonus-Antwort abgegeben.',

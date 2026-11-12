@@ -139,6 +139,7 @@ function PracticeQuiz({
     isCompleted,
     isExpired,
     remainingSeconds,
+    lockoutRemaining,
     startAttempt,
     loading: attemptLoading,
   } = useEscapeRoom({
@@ -367,6 +368,7 @@ function PracticeQuiz({
             setCurrentIx={handleSetCurrentIx}
             navigableUntilIx={navigableUntilIx}
             readOnly={hostNavigation}
+            hidePoints={isEscapeRoom}
             resetLocalStorage={
               // hidden in escape mode: local progress mirrors the server-side
               // attempt, so a local reset would only desync the participant view
@@ -449,6 +451,7 @@ function PracticeQuiz({
                     activityType: 'practiceQuiz',
                     hintPenalty: escapeRoomHintPenalty,
                     onStateChanged: resolvedRefetch,
+                    lockoutRemaining,
                     ...getEscapeRoomStageRules({
                       config: quiz.escapeRoomConfig!,
                       attempt,

@@ -100,7 +100,7 @@ export function registerEscapeRoomRulesTests() {
       page.locator('[data-cy^="escape-room-hint-text-"]').first()
     ).toContainText(RULES_QUIZ.hints[0]!)
     const nextHint = page.getByTestId('escape-room-next-hint')
-    await expect(nextHint).toContainText('240')
+    await expect(nextHint).toHaveAttribute('data-seconds', '240')
     await nextHint.click()
     await expect(
       page.locator('[data-cy^="escape-room-hint-text-"]')
@@ -112,9 +112,8 @@ export function registerEscapeRoomRulesTests() {
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
-    // a resubmit within the lockout window is rejected with a countdown
+    // the lockout window shows a countdown while the wrong answer is retried
     await page.getByTestId('sc-0-answer-option-1').click()
-    await page.getByTestId('student-stack-submit').click()
     await expect(
       page.getByTestId('escape-room-lockout-countdown')
     ).toBeVisible()
@@ -151,8 +150,9 @@ export function registerEscapeRoomRulesTests() {
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
-    await expect(page.getByTestId('escape-room-bonus-result')).toContainText(
-      '180'
+    await expect(page.getByTestId('escape-room-bonus-result')).toHaveAttribute(
+      'data-outcome',
+      'BONUS_CORRECT'
     )
     await expect(page.getByTestId('escape-room-bonus')).not.toBeAttached()
   })

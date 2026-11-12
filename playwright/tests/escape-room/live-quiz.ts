@@ -149,13 +149,13 @@ export function registerLiveQuizEscapeRoomTests() {
         student.getByText(messages.pwa.practiceQuiz.escapeRoomIncorrectToast)
       ).toBeVisible()
       await expect(
-        student.getByText(/Locked out\. You can try again in \d+s\./)
+        student.getByTestId('escape-room-lockout-countdown')
       ).toBeVisible()
 
       await student.reload()
       await expect(student.getByText(SC1.content).first()).toBeVisible()
-      const lockoutCountdown = student.getByText(
-        /Locked out\. You can try again in \d+s\./
+      const lockoutCountdown = student.getByTestId(
+        'escape-room-lockout-countdown'
       )
       await expect(lockoutCountdown).toBeVisible()
       await expect(lockoutCountdown).toBeHidden({ timeout: 15_000 })

@@ -286,11 +286,9 @@ export function registerPracticeEscapeRoomTests() {
     const hintButton = page
       .locator('[data-cy^="request-escape-room-hint-"]')
       .first()
-    await expect(hintButton).toContainText(
-      messages.pwa.practiceQuiz.escapeRoomRequestHint.replace(
-        '{penalty}',
-        QUIZ.hintPenaltySeconds
-      )
+    await expect(hintButton).toHaveAttribute(
+      'data-seconds',
+      QUIZ.hintPenaltySeconds
     )
     await hintButton.click()
     await expect(
@@ -439,26 +437,32 @@ export function registerPracticeEscapeRoomTests() {
     // wrong answer: grading sets a server-side lockout window
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
+    await expect(page.getByTestId('escape-room-incorrect-notice')).toBeVisible()
     await page.getByTestId('student-stack-continue').click()
 
-    // the stage remounts for a retry instead of advancing or leaving
+    // the stage remounts for a retry instead of advancing or leaving, and the
+    // server-side lockout window keeps the submit disabled
     await expect(page.getByText(SC2.content).first()).toBeVisible()
-    await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
-
-    // resubmitting within the lockout window surfaces the countdown and
-    // keeps the submit disabled (clicks must land within ~5s of grading)
-    await page.getByTestId('sc-0-answer-option-1').click()
-    await page.getByTestId('student-stack-submit').click()
     await expect(
       page.getByTestId('escape-room-lockout-countdown')
     ).toBeVisible()
     await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
 
+    // a reload under the skewed device clock restores the countdown from
+    // server data (the assertion must land within the ~5s lockout)
+    await page.reload()
+    await page.getByTestId('start-practice-quiz').click()
+    await page.getByTestId('practice-quiz-progress-1').click()
+    await expect(
+      page.getByTestId('escape-room-lockout-countdown')
+    ).toBeVisible()
+    await expect(page.getByText(SC2.content).first()).toBeVisible()
+
     // once the lockout elapses the stage can be solved
+    await page.getByTestId('sc-0-answer-option-0').click()
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled({
       timeout: 15_000,
     })
-    await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
     await expect(page.getByText(CT1.content).first()).toBeVisible()

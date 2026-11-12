@@ -58,6 +58,7 @@ function MicrolearningInstance() {
     isCompleted,
     isExpired,
     remainingSeconds,
+    lockoutRemaining,
     startAttempt,
     loading: attemptLoading,
   } = useEscapeRoom({
@@ -262,7 +263,11 @@ function MicrolearningInstance() {
             isMaxVisible
             formatter={(v) => v}
             value={ix + 1}
-            max={(microLearning?.stacks?.length ?? -1) + 1}
+            max={
+              isEscapeRoom
+                ? escapeTotalStacks
+                : (microLearning?.stacks?.length ?? -1) + 1
+            }
           />
           {previewMode ? (
             <PreviewMessage
@@ -309,6 +314,7 @@ function MicrolearningInstance() {
                     activityType: 'microLearning',
                     hintPenalty: escapeRoomHintPenalty,
                     onStateChanged: refetch,
+                    lockoutRemaining,
                     ...getEscapeRoomStageRules({
                       config: microLearning.escapeRoomConfig!,
                       attempt,
