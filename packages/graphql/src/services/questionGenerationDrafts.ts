@@ -450,7 +450,13 @@ function revisionSlotSummaries(
 ) {
   const design = parent.designSummary as QuestionGenerationDesignSummary | null
   const plan = parent.planSummary as QuestionGenerationPlanSummary | null
-  const slot = design?.slots.find((entry) => entry.sourceQuestionId === slotId)
+  // A draft carries its question id; the design slot is found through the
+  // stored slot specification, whose question id names that draft's question.
+  const slot = design?.slots.find((entry) =>
+    entry.specification
+      ? entry.specification.question_id === slotId
+      : entry.sourceQuestionId === slotId
+  )
   const question = plan?.questions.find(
     (entry) => entry.sourceQuestionId === slotId
   )
