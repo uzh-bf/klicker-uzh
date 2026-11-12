@@ -96,6 +96,71 @@ describe('orderThreadMessages', () => {
       'second',
     ])
   })
+
+  it('keeps an edited first question as a sibling branch', () => {
+    const { ordered, hasBranches } = orderThreadMessages([
+      message('q1', 0),
+      message('a1', 1, { parentId: 'q1', role: 'assistant' }),
+      message('q1-edit', 2),
+      message('a1-edit', 3, { parentId: 'q1-edit', role: 'assistant' }),
+    ])
+
+    expect(hasBranches).toBe(true)
+    expect(ordered.map(({ message, branch }) => [message.id, branch])).toEqual([
+      ['q1', '1.1'],
+      ['a1', '1.1'],
+      ['q1-edit', '1.2'],
+      ['a1-edit', '1.2'],
+    ])
+  })
+
+  it('exports messages caught in a parent cycle', () => {
+    const { ordered } = orderThreadMessages([
+      message('q1', 0),
+      message('x', 1, { parentId: 'y' }),
+      message('y', 2, { parentId: 'x' }),
+      message('self', 3, { parentId: 'self' }),
+    ])
+
+    expect(ordered.map(({ message }) => message.id).sort()).toEqual([
+      'q1',
+      'self',
+      'x',
+      'y',
+    ])
+  })
+})
+
+describe('buildConversationExport status', () => {
+  it('marks a student-stopped answer as incomplete', () => {
+    const result = buildConversationExport({
+      metadata,
+      roster: [rosterEntry()],
+      threads: [
+        {
+          id: 't1',
+          participantId: 'p1',
+          title: null,
+          createdAt: new Date(Date.UTC(2026, 11, 16, 9, 0)),
+          messages: [
+            message('q1', 0),
+            message('a1', 1, {
+              parentId: 'q1',
+              role: 'assistant',
+              content: [
+                { type: 'text', text: 'partial' },
+                { type: 'data', name: 'chat-stopped', data: {} },
+              ],
+            }),
+          ],
+        },
+      ],
+    })
+
+    const [student] = result.students
+    expect(student.incompleteAnswers).toBe(1)
+    expect(student.threads[0].messages[1].status).toBe('incomplete')
+  })
 })
 
 describe('buildConversationExport', () => {

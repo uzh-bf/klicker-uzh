@@ -131,16 +131,32 @@ export function extractVisibleText(content: unknown): string {
 }
 
 function messageStatus(
-  lifecycleStatus: ExportMessage['lifecycleStatus']
+  message: Pick<ExportMessage, 'lifecycleStatus' | 'content'>
 ): ExportedMessage['status'] {
-  if (lifecycleStatus === 'IN_PROGRESS') return 'incomplete'
-  if (lifecycleStatus === 'FAILED') return 'failed'
+  if (message.lifecycleStatus === 'IN_PROGRESS') return 'incomplete'
+  if (message.lifecycleStatus === 'FAILED') return 'failed'
+  // A student-stopped answer is stored as COMPLETED with a marker part.
+  if (
+    Array.isArray(message.content) &&
+    message.content.some(
+      (part) =>
+        !!part &&
+        typeof part === 'object' &&
+        (part as { type?: unknown }).type === 'data' &&
+        (part as { name?: unknown }).name === 'chat-stopped'
+    )
+  ) {
+    return 'incomplete'
+  }
   return 'complete'
 }
 
 // Orders a thread's messages depth-first along the parentId tree and labels
-// alternatives. Messages without a parent (rows written before branching was
-// recorded) form one linear chain in creation order.
+// alternatives. In a thread without any recorded parent (rows written before
+// branching was recorded) the messages form one linear chain in creation
+// order. Otherwise a message without a usable parent is a root, so an edited
+// first question becomes a sibling branch. Messages the walk cannot reach
+// (a cyclic parentId) are appended as extra roots so none is dropped.
 export function orderThreadMessages(messages: ExportMessage[]): {
   ordered: Array<{ message: ExportMessage; branch: string }>
   hasBranches: boolean
@@ -149,12 +165,18 @@ export function orderThreadMessages(messages: ExportMessage[]): {
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
   )
   const ids = new Set(byCreation.map((m) => m.id))
+  const usableParent = (message: ExportMessage) =>
+    message.parentId &&
+    message.parentId !== message.id &&
+    ids.has(message.parentId)
+      ? message.parentId
+      : null
+  const legacyChain = byCreation.every((m) => usableParent(m) === null)
   const children = new Map<string | null, ExportMessage[]>()
   let previousRoot: string | null = null
   for (const message of byCreation) {
-    let parent =
-      message.parentId && ids.has(message.parentId) ? message.parentId : null
-    if (parent === null) {
+    let parent = usableParent(message)
+    if (parent === null && legacyChain) {
       parent = previousRoot
       previousRoot = message.id
     }
@@ -164,18 +186,31 @@ export function orderThreadMessages(messages: ExportMessage[]): {
   }
 
   const ordered: Array<{ message: ExportMessage; branch: string }> = []
+  const emitted = new Set<string>()
   let hasBranches = false
-  const visit = (parent: string | null, branch: string) => {
-    const siblings = children.get(parent) ?? []
+  const visit = (siblings: ExportMessage[], branch: string) => {
     if (siblings.length > 1) hasBranches = true
     siblings.forEach((message, index) => {
+      if (emitted.has(message.id)) return
+      emitted.add(message.id)
       const childBranch =
         siblings.length > 1 ? `${branch}.${index + 1}` : branch
       ordered.push({ message, branch: childBranch })
-      visit(message.id, childBranch)
+      visit(children.get(message.id) ?? [], childBranch)
     })
   }
-  visit(null, '1')
+  const roots = [...(children.get(null) ?? [])]
+  for (const message of byCreation) {
+    if (!emitted.has(message.id) && roots.length === 0) roots.push(message)
+  }
+  visit(roots, '1')
+  let extraRoot = 1
+  for (const message of byCreation) {
+    if (emitted.has(message.id)) continue
+    hasBranches = true
+    extraRoot += 1
+    visit([message], `${extraRoot}`)
+  }
   return { ordered, hasBranches }
 }
 
@@ -275,7 +310,7 @@ export function buildConversationExport({
             text: extractVisibleText(message.content),
             chatMode: message.chatMode,
             modelId: message.modelId,
-            status: messageStatus(message.lifecycleStatus),
+            status: messageStatus(message),
             attachments: message.attachmentTypes,
             createdAt: message.createdAt.toISOString(),
           })),

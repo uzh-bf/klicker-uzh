@@ -8,6 +8,7 @@ import {
   toIndexCsv,
   toTranscriptHtml,
 } from '@/src/lib/server/conversationExport'
+import { IMAGE_ROW_FILTER } from '@/src/lib/attachments/attachmentState'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 
@@ -96,7 +97,10 @@ async function loadExport({
                 modelId: true,
                 lifecycleStatus: true,
                 createdAt: true,
-                attachments: { select: { type: true } },
+                attachments: {
+                  where: IMAGE_ROW_FILTER,
+                  select: { type: true },
+                },
               },
             },
           },
@@ -171,7 +175,12 @@ async function loadExport({
         })),
       })
     },
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      // A whole course snapshot can outlast Prisma's 5 s default.
+      timeout: 60_000,
+      maxWait: 10_000,
+    }
   )
 }
 
