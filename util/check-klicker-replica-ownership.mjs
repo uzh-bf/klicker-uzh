@@ -462,6 +462,45 @@ function assertWorkerDisruptionBudgets(resources, source, expectedBudgets) {
   }
 }
 
+// The exam chat reuses the regular chat's secret and ConfigMap, then applies
+// its own overlay last, so the overlay's mode flag and public URLs win.
+function assertAssessmentChatContract(resources, source) {
+  const deployment = resources.find(
+    (resource) =>
+      resource.kind === 'Deployment' &&
+      resource.metadata?.labels?.[componentLabel] === 'chat-assessment'
+  )
+  assert.ok(deployment, `${source}: expected a chat-assessment Deployment`)
+
+  const envFrom = deployment.spec.template.spec.containers[0].envFrom.map(
+    (entry) => entry.configMapRef?.name ?? entry.secretRef?.name
+  )
+  const suffixes = envFrom.map((name) => name.slice(fullname.length + 1))
+  assert.deepEqual(
+    suffixes.slice(0, 4),
+    [
+      'config-global',
+      'config-chat',
+      'config-chat-assessment',
+      'secret-chat',
+    ],
+    `${source}: chat-assessment must load the overlay after config-chat`
+  )
+
+  const overlay = resources.find(
+    (resource) =>
+      resource.kind === 'ConfigMap' &&
+      resource.metadata?.name === `${fullname}-config-chat-assessment`
+  )
+  assert.equal(overlay?.data?.CHAT_ASSESSMENT_MODE, 'true')
+  assert.ok(overlay?.data?.CHAT_PUBLIC_PWA_URL, `${source}: missing PWA URL`)
+  assert.ok(overlay?.data?.CHAT_PUBLIC_URL, `${source}: missing chat URL`)
+  assert.ok(
+    deployment.spec.template.metadata.annotations['checksum/config-assessment'],
+    `${source}: chat-assessment must checksum its overlay`
+  )
+}
+
 function assertWorkerRuntimeContracts(resources, source) {
   const workerContracts = [
     {
@@ -713,7 +752,7 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    { base: 17, stg: 20, prd: 20 }[environment.name]
+    { base: 17, stg: 21, prd: 20 }[environment.name]
   )
   if (['stg', 'prd'].includes(environment.name)) {
     assertPwaBurstTier(resources, environment.name)
@@ -748,6 +787,9 @@ for (const environment of environments) {
     }[environment.name]
   )
   assertWorkerRuntimeContracts(resources, environment.name)
+  if (environment.name === 'stg') {
+    assertAssessmentChatContract(resources, environment.name)
+  }
   assertArgoReplicaExceptions(resources, environment.name)
 }
 

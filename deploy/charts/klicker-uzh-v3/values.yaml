@@ -81,6 +81,7 @@ global:
     control: ''
     assessmentApi: ''
     assessmentPwa: ''
+    assessmentChat: ''
 
 hatchet:
   client:
@@ -276,6 +277,38 @@ chat:
     limits:
       memory: 400Mi
 
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+# Separate chat deployment for exams. It runs the regular chat image (and tag)
+# with CHAT_ASSESSMENT_MODE, so students sign in through the assessment PWA and
+# only assessment-enabled courses are served. Secrets, probes, course images
+# and the shared model gateway come from the regular `chat` settings.
+chatAssessment:
+  enabled: false
+  priorityClassName: production-workload
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      memory: 400Mi
 
   nodeSelector: {}
 
