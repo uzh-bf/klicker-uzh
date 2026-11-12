@@ -494,6 +494,38 @@ function assertAssessmentChatContract(resources, source) {
     deployment.spec.template.metadata.annotations['checksum/config-assessment'],
     `${source}: chat-assessment must checksum its overlay`
   )
+
+  // The exam host is only reachable when its Ingress backend names a Service
+  // that selects these pods on the port the Ingress targets.
+  const service = resources.find(
+    (resource) =>
+      resource.kind === 'Service' &&
+      resource.metadata?.name === `${fullname}-chat-assessment`
+  )
+  assert.equal(
+    service?.spec?.selector?.[componentLabel],
+    'chat-assessment',
+    `${source}: expected a Service selecting the chat-assessment pods`
+  )
+  const ingress = resources.find(
+    (resource) =>
+      resource.kind === 'Ingress' &&
+      resource.metadata?.name === `${fullname}-chat-assessment`
+  )
+  const backends = (ingress?.spec?.rules ?? []).flatMap((rule) =>
+    rule.http.paths.map((path) => path.backend.service)
+  )
+  assert.ok(
+    backends.length > 0,
+    `${source}: expected a chat-assessment Ingress`
+  )
+  for (const backend of backends) {
+    assert.equal(backend.name, service.metadata.name)
+    assert.ok(
+      service.spec.ports.some(({ port }) => port === backend.port.number),
+      `${source}: Ingress port ${backend.port.number} is not on the Service`
+    )
+  }
 }
 
 function assertWorkerRuntimeContracts(resources, source) {
