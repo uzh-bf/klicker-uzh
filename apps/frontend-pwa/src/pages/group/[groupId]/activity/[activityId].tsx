@@ -130,16 +130,23 @@ function GroupActivityDetails() {
   const escapeStages = (groupActivity.stacks[0]?.elements ?? []).filter(
     (element) => isGroupEscapeRoomResponseType(element.elementType)
   )
-  // The bonus stage is the last response element; a decision records the
-  // team's answer and the stage outcome records whether it was correct.
+  // Locked stages are withheld, so the total comes from the server.
+  const escapeStageTotal =
+    groupActivity.escapeRoomStageCount ?? escapeStages.length
+  const hasEscapeBonus =
+    isEscapeRoom && hasBonusStage(escapeRoomConfig, escapeStageTotal)
+  // The bonus stage is the last response element, known once every stage is
+  // exposed; a decision records the team's answer and the stage outcome
+  // records whether it was correct.
   const bonusInstanceId =
-    isEscapeRoom && hasBonusStage(escapeRoomConfig, escapeStages.length)
+    hasEscapeBonus && escapeStages.length === escapeStageTotal
       ? escapeStages[escapeStages.length - 1]?.id
       : undefined
   const lastEscapeAttempt = groupActivity.escapeRoomAttempts?.at(-1)
   const escapeRoomStages = getGroupEscapeRoomStages({
     stageInstanceIds: escapeStages.map((element) => element.id),
-    hasBonus: bonusInstanceId !== undefined,
+    totalStages: escapeStageTotal,
+    hasBonus: hasEscapeBonus,
     stageDecisions: lastEscapeAttempt?.stageDecisions,
     stageOutcomes: lastEscapeAttempt?.stageOutcomes,
   })
@@ -399,7 +406,9 @@ function GroupActivityDetails() {
                           attempt?.status === EscapeRoomStatus.InProgress,
                         bonusInstanceId,
                         bonusOpen: bonusActive && bonusAvailable,
-                        lockoutRemaining,
+                        // the bonus answer is accepted during a lockout
+                        lockoutRemaining:
+                          bonusActive && bonusAvailable ? 0 : lockoutRemaining,
                       }
                     : undefined
                 }

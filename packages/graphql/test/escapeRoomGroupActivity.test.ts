@@ -530,6 +530,8 @@ describe('submitGroupActivityDecisions - ordered escape stages', () => {
     expect(details!.stacks[0]!.elements.map((element) => element.id)).toEqual([
       first!.id,
     ])
+    // the total still counts the locked stage
+    expect(details!.escapeRoomStageCount).toBe(2)
   })
 
   it('grades QR scan decisions against the private source code', async () => {
