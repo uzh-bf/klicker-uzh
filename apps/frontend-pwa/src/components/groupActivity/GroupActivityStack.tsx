@@ -469,7 +469,7 @@ function GroupActivityStack({
                     stack.elements?.map((element) => element.id) ?? []
                   }
                   showSeparator={element.elementType === ElementType.Flashcard}
-                  withParticipant
+                  withParticipant={!escapeRoomRules}
                 />
                 <StudentElement
                   element={element}
