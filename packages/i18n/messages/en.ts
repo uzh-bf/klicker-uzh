@@ -3089,7 +3089,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomUnitMinutes: 'minutes',
       escapeRoomHintPenalty: 'Hint penalty',
       escapeRoomHintPenaltyTooltip:
-        'Seconds added to the ranked time for every hint a student opens. Required; 0 makes hints free. Ignored when escalating penalties are set.',
+        'Seconds added to the ranked time for every hint a student opens. Required; 0 makes hints free. With escalating penalties it applies to hints beyond that list.',
       escapeRoomAssessmentIncompatible:
         'An Escape Room cannot be combined with assessment (graded) mode.',
       escapeRoomNoQrOutside:
@@ -3119,7 +3119,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomGroupBonus: 'Bonus',
       escapeRoomHintPenalties: 'Escalating penalties',
       escapeRoomHintPenaltiesTooltip:
-        'Optional seconds for the first, second, third hint and so on, separated by commas. Overrides the hint penalty; empty means every hint costs the hint penalty.',
+        'Optional seconds for the first, second, third hint and so on, separated by commas. Hints beyond the list cost the hint penalty; empty means every hint costs the hint penalty.',
       escapeRoomHintPenaltiesPlaceholder: 'e.g. 60, 120, 240',
       escapeRoomHintPenaltiesInvalid:
         'Enter up to 10 whole numbers between 0 and 3600, separated by commas',
