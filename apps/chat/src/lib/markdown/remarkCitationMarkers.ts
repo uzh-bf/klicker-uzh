@@ -208,13 +208,28 @@ export function extractCitedPages(source: string): Map<number, number[]> {
   return cited
 }
 
-/**
- * The video clocks an answer actually cites, keyed by source index. Only a
- * single-source `[n, t. [h:]mm:ss]` marker carries a clock; grouped markers
- * cannot attribute one passage to every source. This uses the same masked
- * marker grammar as rendering and page extraction, so code, partial markers,
- * and malformed clocks stay literal.
- */
+// Older answers sometimes name the passage start in prose and close the
+// paragraph with a bare citation. Attribute it only when the paragraph has
+// one clock value, one citation, and an explicit video or passage start.
+function legacyPassageClock(paragraph: string) {
+  const marker = /\[(\d{1,2})\][.!?]?\s*$/.exec(paragraph)
+  if (!marker) return
+  const prose = paragraph.slice(0, marker.index).replace(/\*+/g, '')
+  if (/[[\]\n]/.test(prose.trim())) return
+  const clocks = new Set(prose.match(/\b\d+(?::\d+)+\b/g))
+  if (clocks.size !== 1) return
+  const [clock] = clocks
+  if (!VALID_VIDEO_CLOCK.test(clock)) return
+  const cue =
+    /\b(?:video|passage|segment|clip)\b[^.!?;:\n]{0,80}?\bstarts?(?:\s+at|\s*:)?\s*$/i
+  const at = prose.indexOf(clock)
+  if (!cue.test(prose.slice(0, at))) return
+  return { index: Number(marker[1]), timestamp: parseTimestampSeconds(clock) }
+}
+
+const VALID_VIDEO_CLOCK = new RegExp(`^${CLOCK_REFERENCE}$`)
+
+/** Extracts explicit citation clocks first; prose is a per-source fallback. */
 export function extractCitedTimestamps(source: string): Map<number, number[]> {
   const cited = new Map<number, number[]>()
   const masked = maskCodeRegions(source)
@@ -236,6 +251,20 @@ export function extractCitedTimestamps(source: string): Map<number, number[]> {
     const timestamps = cited.get(index) ?? []
     if (!timestamps.includes(timestamp)) timestamps.push(timestamp)
     cited.set(index, timestamps)
+  }
+
+  const explicitSources = new Set(cited.keys())
+  for (const paragraph of masked.split(/\n\s*\n/)) {
+    const legacy = legacyPassageClock(paragraph)
+    if (
+      !legacy ||
+      legacy.timestamp === undefined ||
+      explicitSources.has(legacy.index)
+    )
+      continue
+    const times = cited.get(legacy.index) ?? []
+    if (!times.includes(legacy.timestamp)) times.push(legacy.timestamp)
+    cited.set(legacy.index, times)
   }
 
   return cited
