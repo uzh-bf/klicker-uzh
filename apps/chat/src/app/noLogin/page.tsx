@@ -45,9 +45,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const t = await getTranslations()
 
   let loginHref = `${loginBaseUrl}/login`
-  if (assessment) {
-    loginHref = loginBaseUrl
-  } else if (redirectUrl) {
+  if (redirectUrl) {
     loginHref = `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
   }
 
@@ -79,7 +77,9 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           </>
         ) : (
           <p className="text-muted-foreground mt-4 text-base">
-            {t('chat.noLogin.message')}
+            {assessment
+              ? t('chat.noLogin.assessmentMessage')
+              : t('chat.noLogin.message')}
           </p>
         )}
         {redirectUrl && (
@@ -93,7 +93,9 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           prefetch={false}
         >
-          {t('chat.noLogin.loginButton')}
+          {assessment
+            ? t('chat.noLogin.assessmentLoginButton')
+            : t('chat.noLogin.loginButton')}
         </Link>
       </div>
     </main>
