@@ -105,6 +105,21 @@ describe('individual escape room stages', () => {
     })
     assert.deepEqual(states(result), ['solved', 'current'])
   })
+
+  it('keeps the cleared stages of an expired attempt without stacks', () => {
+    const result = getIndividualEscapeRoomStages({
+      stacks: [],
+      totalStages: 4,
+      hasBonus: false,
+      stageOutcomes: [
+        { stageKey: 'a', outcome: 'SOLVED' },
+        { stageKey: 'b', outcome: 'REVEALED', wrongAttempts: 3 },
+        { stageKey: 'c', wrongAttempts: 1 },
+      ],
+    })
+    assert.deepEqual(states(result), ['solved', 'revealed', 'current', 'open'])
+    assert.equal(result.clearedCount, 2)
+  })
 })
 
 describe('group escape room stages', () => {
