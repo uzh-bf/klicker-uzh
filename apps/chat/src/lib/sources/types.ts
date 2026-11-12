@@ -1,3 +1,5 @@
+import type { VideoFrame } from './videoFrames'
+
 export type ChatSourceType = 'document' | 'link' | 'video' | 'image'
 
 export interface ChatSourceVideoPassage {
@@ -28,4 +30,5 @@ export interface ChatSource {
   citedStartSecs?: number[]
   url?: string
   excerpt?: string
+  videoFrame?: VideoFrame
 }
