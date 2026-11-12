@@ -167,8 +167,13 @@ spec:
         app.kubernetes.io/component: frontend-pwa
         klicker.uzh.ch/tier: burst
     spec:
-      {{- include "chart.frontendPWAPodSpec" . | nindent 6 }}
+      {{- $podResources := mergeOverwrite (deepCopy .Values.frontendPWA.resources) ($burst.resources | default dict) }}
+      {{- include "chart.frontendPWAPodSpec" (merge (dict "podResources" $podResources) .) | nindent 6 }}
       terminationGracePeriodSeconds: {{ $burst.terminationGracePeriodSeconds }}
+      {{- with $burst.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       # Burst pods run only on spot nodes. The baseline node scheduling values
       # are not inherited because they could place burst pods on regular
       # capacity or omit the spot taint tolerations.
