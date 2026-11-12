@@ -557,17 +557,19 @@ function GroupActivityStack({
                       />
                     )}
                     {lockoutRemaining > 0 && (
-                      <UserNotification
-                        type="warning"
-                        className={{ root: 'mt-2' }}
-                        message={t(
-                          'pwa.practiceQuiz.escapeRoomLockoutCountdown',
-                          {
-                            duration: formatDuration(lockoutRemaining, t),
-                          }
-                        )}
-                        data={{ cy: 'escape-room-lockout-countdown' }}
-                      />
+                      <div aria-live="off">
+                        <UserNotification
+                          type="warning"
+                          className={{ root: 'mt-2' }}
+                          message={t(
+                            'pwa.practiceQuiz.escapeRoomLockoutCountdown',
+                            {
+                              duration: formatDuration(lockoutRemaining, t),
+                            }
+                          )}
+                          data={{ cy: 'escape-room-lockout-countdown' }}
+                        />
+                      </div>
                     )}
                   </div>
                 )}
