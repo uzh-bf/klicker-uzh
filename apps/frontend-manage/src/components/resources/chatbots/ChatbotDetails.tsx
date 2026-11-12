@@ -1900,10 +1900,16 @@ function ChatbotDetails({
               <a
                 key={format}
                 href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-primary-100 font-medium hover:underline"
                 data-cy={`chatbot-conversation-export-${format}`}
               >
                 {label}
+                <span className="sr-only">
+                  {' '}
+                  {t('chat.common.opensInNewTab')}
+                </span>
               </a>
             ))}
           </div>
