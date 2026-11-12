@@ -3,7 +3,8 @@
 // the fallback model through the chat-completions API. LiteLLM's mock cannot
 // stream on the Responses API. Run it inside the container:
 //   devrouter exec . -- node util/load-test/chat-mock-registry.mjs
-// It copies the running chat process's environment, so no secret is read from
+// Extra KEY=VALUE arguments are added to the chat environment, for example
+// CHAT_ASSESSMENT_MODE=true. It copies the running chat process's environment, so no secret is read from
 // or written to a file. A later `devrouter ensure` or stop returns chat to the
 // default registry.
 import { spawn } from 'node:child_process'
@@ -40,6 +41,12 @@ const env = Object.fromEntries(
 env.CHAT_MODEL_REGISTRY_JSON = JSON.stringify(
   JSON.parse(readFileSync(registryFile, 'utf8'))
 )
+
+for (const assignment of process.argv.slice(2)) {
+  const separator = assignment.indexOf('=')
+  if (separator < 1) throw new Error('Extra arguments must be KEY=VALUE')
+  env[assignment.slice(0, separator)] = assignment.slice(separator + 1)
+}
 
 for (const pid of pids) {
   try {

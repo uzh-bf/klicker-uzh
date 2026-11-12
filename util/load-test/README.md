@@ -91,7 +91,7 @@ devrouter exec . -- bash -c 'cd packages/prisma-data && \
 
 # 2. Route chat to the mock model (stops the real litellm container; run after `ensure`).
 LITELLM_CONTAINER=<project>-litellm-1 util/load-test/mock-litellm.sh start
-devrouter exec . -- node util/load-test/chat-mock-registry.mjs
+devrouter exec . -- node util/load-test/chat-mock-registry.mjs   # add KEY=VALUE args, e.g. CHAT_ASSESSMENT_MODE=true CHAT_PUBLIC_PWA_URL=... CHAT_PUBLIC_URL=...
 #    (chat restarts outside turbo; the other apps stop being served until the next `ensure`)
 
 # 3. Run. The dev APP_SECRET is read from the committed dev-only env file.
