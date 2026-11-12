@@ -26,6 +26,8 @@ export interface ApiThread {
   lastChatMode?: string | null
   // Conversation origin ('elearning' | 'pwa'); null for legacy threads.
   origin?: string | null
+  // Thread creation only: false when the exam chat returned the existing thread.
+  created?: boolean
 }
 
 /**

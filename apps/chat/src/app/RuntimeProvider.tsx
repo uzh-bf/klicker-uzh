@@ -65,7 +65,7 @@ export function RuntimeProvider({
   initialModeOptions: ChatModeOptions
   children: React.ReactNode
 }>) {
-  const { embedded } = useChatUi()
+  const { embedded, assessment } = useChatUi()
   const { threadId: routeThreadId } = useParams<{
     chatbotId: string
     threadId?: string
@@ -217,6 +217,16 @@ export function RuntimeProvider({
     if (!threadsLoaded) return
 
     if (!threadId) {
+      // The exam conversation is the student's only thread: reopen it.
+      const examThread = assessment
+        ? useChatStore.getState().threads[0]
+        : undefined
+      if (examThread) {
+        router.replace(
+          `/${chatbotId}/threads/${examThread.id}${queryString ? `?${queryString}` : ''}`
+        )
+        return
+      }
       if (activeThreadId !== null) {
         useChatStore.setState({ activeThreadId: null })
       }
@@ -292,8 +302,10 @@ export function RuntimeProvider({
     })
   }, [
     activeThreadId,
+    assessment,
     chatbotId,
     missingThreadRedirectPath,
+    queryString,
     resyncModeFromThread,
     router,
     switchToThread,

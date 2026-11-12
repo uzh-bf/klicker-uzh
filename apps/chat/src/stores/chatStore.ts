@@ -319,6 +319,20 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         const newThread = convertApiThreadToThread(apiThread)
 
+        // The exam chat answers a create with the student's existing thread.
+        // Open it with its messages instead of adding an empty entry.
+        if (apiThread.created === false) {
+          set((state) => ({
+            threads: state.threads.some((t) => t.id === newThread.id)
+              ? state.threads
+              : [newThread, ...state.threads],
+            isLoading: false,
+          }))
+          await get().switchToThread(chatbotId, newThread.id)
+          clearParticipationNotice()
+          return newThread.id
+        }
+
         set((state) => {
           return {
             threads: [newThread, ...state.threads],

@@ -15,11 +15,13 @@ const OWNER_ID = randomUUID()
 const COURSE_ID = randomUUID()
 const CHATBOT_ID = randomUUID()
 const PARTICIPANT_ID = randomUUID()
+const EXAM_PARTICIPANT_ID = randomUUID()
 const THREAD_ONE_ID = randomUUID()
 const THREAD_TWO_ID = randomUUID()
 const TEST_KEY = `u2-account-${OWNER_ID.slice(0, 8)}`
 const initialEnforcement = process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED
 const initialLifecycleWrites = process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED
+const initialAssessmentMode = process.env.CHAT_ASSESSMENT_MODE
 
 let prisma: PrismaClient
 let accountUsage: typeof import('../src/services/accountUsage')
@@ -116,7 +118,9 @@ async function resetToPreviousUsage(usedCredits = 0, budgetCredits = 10) {
 async function cleanup() {
   const { requireDisposableDatabase } = await import('@klicker-uzh/prisma')
   await requireDisposableDatabase(prisma)
-  await prisma.participant.deleteMany({ where: { id: PARTICIPANT_ID } })
+  await prisma.participant.deleteMany({
+    where: { id: { in: [PARTICIPANT_ID, EXAM_PARTICIPANT_ID] } },
+  })
   await prisma.user.deleteMany({ where: { id: OWNER_ID } })
 }
 
@@ -159,7 +163,18 @@ describePostgres('account usage PostgreSQL integration', () => {
       data: {
         id: PARTICIPANT_ID,
         username: TEST_KEY,
-        password: 'synthetic-not-a-login-secret',
+        password: randomUUID(),
+      },
+    })
+    const { id: _id, ...examParticipant } =
+      await prisma.participant.findUniqueOrThrow({
+        where: { id: PARTICIPANT_ID },
+      })
+    await prisma.participant.create({
+      data: {
+        ...examParticipant,
+        id: EXAM_PARTICIPANT_ID,
+        username: `${TEST_KEY}-exam`,
       },
     })
     await prisma.chatThread.createMany({
@@ -197,6 +212,11 @@ describePostgres('account usage PostgreSQL integration', () => {
       delete process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED
     } else {
       process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = initialLifecycleWrites
+    }
+    if (initialAssessmentMode === undefined) {
+      delete process.env.CHAT_ASSESSMENT_MODE
+    } else {
+      process.env.CHAT_ASSESSMENT_MODE = initialAssessmentMode
     }
   }, 60_000)
 
@@ -986,5 +1006,45 @@ describePostgres('account usage PostgreSQL integration', () => {
       },
     })
     expect(usage.usedCredits.toString()).toBe('1.1')
+  })
+
+  describe('exam conversation (assessment mode)', () => {
+    const BOUND_MS = 90_000
+
+    async function examThread() {
+      const { thread } = await threadService.ThreadService.createThread(
+        EXAM_PARTICIPANT_ID,
+        CHATBOT_ID
+      )
+      return thread.id
+    }
+
+    beforeEach(async () => {
+      process.env.CHAT_ASSESSMENT_MODE = 'true'
+      await prisma.chatThread.deleteMany({
+        where: { participantId: EXAM_PARTICIPANT_ID },
+      })
+    })
+
+    test('two concurrent creates agree on one thread', async () => {
+      const results = await Promise.all([
+        threadService.ThreadService.createThread(
+          EXAM_PARTICIPANT_ID,
+          CHATBOT_ID
+        ),
+        threadService.ThreadService.createThread(
+          EXAM_PARTICIPANT_ID,
+          CHATBOT_ID
+        ),
+      ])
+
+      expect(results[0].thread.id).toBe(results[1].thread.id)
+      expect(results.filter((result) => result.created)).toHaveLength(1)
+      expect(
+        await prisma.chatThread.count({
+          where: { participantId: EXAM_PARTICIPANT_ID, chatbotId: CHATBOT_ID },
+        })
+      ).toBe(1)
+    })
   })
 })

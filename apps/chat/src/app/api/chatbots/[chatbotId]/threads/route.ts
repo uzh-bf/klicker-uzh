@@ -61,14 +61,14 @@ export async function POST(
       resolveElearningThreadOrigin({
         learnerBinding: authResult.learnerBinding,
       }) ?? undefined
-    const thread = await ThreadService.createThread(
+    const { thread, created } = await ThreadService.createThread(
       participantId,
       chatbotId,
       body.title,
       undefined,
       origin
     )
-    return NextResponse.json(thread)
+    return NextResponse.json({ ...thread, created })
   } catch (error) {
     console.error('Failed to create thread:', error)
     return NextResponse.json(

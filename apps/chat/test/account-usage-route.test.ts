@@ -865,7 +865,10 @@ describe('account usage chat route', () => {
   })
 
   test('discards a transient thread when its ownership lookup fails', async () => {
-    mocks.createThread.mockResolvedValueOnce({ id: 'thread-new' })
+    mocks.createThread.mockResolvedValueOnce({
+      thread: { id: 'thread-new' },
+      created: true,
+    })
     mocks.threadFindFirst.mockRejectedValueOnce(new Error('ownership failed'))
 
     await expect(
@@ -884,7 +887,10 @@ describe('account usage chat route', () => {
   })
 
   test('discards a transient thread when claim acquisition fails', async () => {
-    mocks.createThread.mockResolvedValueOnce({ id: 'thread-new' })
+    mocks.createThread.mockResolvedValueOnce({
+      thread: { id: 'thread-new' },
+      created: true,
+    })
     mocks.threadFindFirst.mockResolvedValueOnce({ id: 'thread-new' })
     mocks.claimChatTurn.mockRejectedValueOnce(new Error('claim failed'))
 

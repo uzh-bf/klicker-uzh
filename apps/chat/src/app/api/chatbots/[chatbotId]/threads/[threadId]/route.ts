@@ -1,3 +1,4 @@
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { ThreadService } from '@/src/services/threads'
 import { NextRequest, NextResponse } from 'next/server'
@@ -16,6 +17,15 @@ export async function DELETE(
     return authResult.response
   }
   const { participantId } = authResult
+
+  // The exam conversation is a record; students cannot delete it. 409 rather
+  // than 403, which the client reads as a participation notice.
+  if (isAssessmentMode()) {
+    return NextResponse.json(
+      { error: 'Conversations cannot be deleted' },
+      { status: 409 }
+    )
+  }
 
   try {
     const deleted = await ThreadService.deleteThread(

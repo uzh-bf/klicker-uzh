@@ -44,6 +44,7 @@ import {
   answerStyleSchema,
   answerToneSchema,
 } from '@/src/lib/server/answerStyleInstructions'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
@@ -1031,7 +1032,7 @@ export async function POST(
         assistantMessageId
       )
       if (!currentThreadId) {
-        const newThread = await ThreadService.createThread(
+        const { thread: newThread, created } = await ThreadService.createThread(
           participantId,
           chatbotId,
           null,
@@ -1042,7 +1043,9 @@ export async function POST(
           })
         )
         currentThreadId = newThread.id
-        createdThreadId = newThread.id
+        // The exam conversation is the student's only thread and a record of
+        // the exam, so no error path discards it.
+        if (created && !isAssessmentMode()) createdThreadId = newThread.id
       }
     } catch (error) {
       console.error('Failed to resolve or create thread:', {
