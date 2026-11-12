@@ -200,6 +200,33 @@ export function prepareHatchetTasks({
 
   // ! LIVE QUIZ RESULT AGGREGATION TASKS
   // #region
+  // Scheduled when a timed block starts; closes it after its countdown even
+  // when the GraphQL Pod that started it has ended.
+  const closeExpiredLiveQuizBlock = hatchet.task({
+    name: 'close-expired-live-quiz-block',
+    retries: 3,
+    defaultPriority: Priority.HIGH,
+    fn: async (
+      {
+        liveQuizId,
+        blockId,
+        expiresAt,
+      }: {
+        liveQuizId: string
+        blockId: number
+        expiresAt: string
+      },
+      executionContext
+    ) => {
+      const success = await handlers.handleCloseExpiredLiveQuizBlock(
+        { liveQuizId, blockId, expiresAt },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   const aggregateLiveQuizBlockResultsStandard = hatchet.task({
     name: 'aggregate-block-closure-standard',
     retries: 3,
@@ -403,6 +430,7 @@ export function prepareHatchetTasks({
     publishScheduledPracticeQuiz,
     endExpiredGroupActivity,
     endExpiredMicroLearning,
+    closeExpiredLiveQuizBlock,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,

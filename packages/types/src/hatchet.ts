@@ -95,6 +95,15 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleCloseExpiredLiveQuizBlock: (
+    {
+      liveQuizId,
+      blockId,
+      expiresAt,
+    }: { liveQuizId: string; blockId: number; expiresAt: string },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleStandardLiveQuizBlockClosureAggregation: (
     { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
     globalCtx: HatchetHandlerGlobalContext,
@@ -150,6 +159,10 @@ export interface PreparedHatchetTasks {
   >
   endExpiredGroupActivity: TaskWorkflowDeclaration<
     { groupActivityId: string },
+    { success: boolean }
+  >
+  closeExpiredLiveQuizBlock: TaskWorkflowDeclaration<
+    { liveQuizId: string; blockId: number; expiresAt: string },
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsStandard: TaskWorkflowDeclaration<
