@@ -43,7 +43,10 @@ it('does not leak an object URL when navigation aborts during the download', asy
   expect(create).not.toHaveBeenCalled()
 })
 
-it('adds the scoped Bearer token without putting it in the URL', async () => {
+it.each([
+  '/api/figure',
+  '/api/chatbots/b/threads/t/messages/m/frames/frame',
+])('adds the scoped Bearer token without putting it in the URL: %s', async (src) => {
   vi.stubGlobal('sessionStorage', {
     getItem: (key: string) =>
       key === 'chat_participant_token' ? 'synthetic-guest' : null,
@@ -52,8 +55,8 @@ it('adds the scoped Bearer token without putting it in the URL', async () => {
     .spyOn(globalThis, 'fetch')
     .mockResolvedValue(new Response('png'))
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:figure')
-  await loadCourseImageUrl('/api/figure', new AbortController().signal)
-  expect(request.mock.calls[0]?.[0]).toBe('/api/figure')
+  await loadCourseImageUrl(src, new AbortController().signal)
+  expect(request.mock.calls[0]?.[0]).toBe(src)
   expect(
     new Headers(request.mock.calls[0]?.[1]?.headers).get('Authorization')
   ).toBe('Bearer synthetic-guest')

@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file. See [standa
 * **chat:** expand course images in a zoomable viewer ([88ca8fc](https://github.com/uzh-bf/klicker-uzh/commit/88ca8fc3258c014fed74de4d1f6923340bd75e99))
 * **chat:** gate retrieved figure vision behind an opt-in toggle ([894d21d](https://github.com/uzh-bf/klicker-uzh/commit/894d21d9f812006e7875ac16d446e81799fe3ed4))
 * **chat:** place selected course figures inline with original captions ([e44c9c5](https://github.com/uzh-bf/klicker-uzh/commit/e44c9c5c06632a16bd2c89998ebb32c8d6f3f1a2))
+* **chat:** show recording frames with shared image viewer and citations ([#6315](https://github.com/uzh-bf/klicker-uzh/issues/6315)) ([20c6959](https://github.com/uzh-bf/klicker-uzh/commit/20c6959d2e39183faa49a17de8318f1d3fa9ebc1))
 * **chat:** validate and serve resource-bound course images ([18a02b2](https://github.com/uzh-bf/klicker-uzh/commit/18a02b26aeb8a50076920599b1ac7961671a3e65))
 * **generation:** let lecturers request a revision of one generated question ([#6837](https://github.com/uzh-bf/klicker-uzh/issues/6837)) ([01bb4fa](https://github.com/uzh-bf/klicker-uzh/commit/01bb4fa1ded2e0c99b23a47f108c60f8e72a5d1e))
 
