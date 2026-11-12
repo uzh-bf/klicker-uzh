@@ -57,7 +57,7 @@ function resolveTarget(env) {
         'Set KLICKER_ALLOW_SIDE_EFFECTS=true to acknowledge chat-turn writes and provider cost on a remote host'
       )
     }
-    if (target.protocol !== 'https:') {
+    if (target.protocol !== 'https') {
       throw new Error(
         'Refusing a non-local http:// target: the session cookie must not travel in plaintext'
       )

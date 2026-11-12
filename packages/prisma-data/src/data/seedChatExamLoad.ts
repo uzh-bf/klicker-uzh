@@ -5,7 +5,10 @@
 // synthetic so the k6 scenario can derive them without reading the database.
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
-import { getZurichMonthStart } from '@klicker-uzh/util'
+import {
+  getZurichMonthStart,
+  isChatUsageClassEntitled,
+} from '@klicker-uzh/util'
 import { USER_ID_TEST } from './constants.js'
 import { prepareCourse } from './helpers.js'
 
@@ -51,12 +54,26 @@ async function seedChatExamLoad() {
 
   const owner = await prisma.user.findUnique({
     where: { id: USER_ID_TEST },
-    select: { id: true },
+    select: {
+      id: true,
+      aiFeaturesEnabled: true,
+      aiSubscriptionTier: true,
+      aiChatbotCostCenter: true,
+    },
   })
   if (!owner) {
     throw new Error(
       `The development lecturer ${USER_ID_TEST} must exist before seeding the ${FIXTURE_NAME}.`
     )
+  }
+
+  // The selected model decides the usage class, so the owner needs both.
+  for (const usageClass of ['BASE', 'ADVANCED'] as const) {
+    if (!isChatUsageClassEntitled({ usageClass, ...owner })) {
+      throw new Error(
+        `The development lecturer ${USER_ID_TEST} is not entitled to ${usageClass} chat usage (needs aiFeaturesEnabled, and for ADVANCED the ADVANCED tier plus aiChatbotCostCenter); chat turns would be rejected.`
+      )
+    }
   }
 
   const existingCourse = await prisma.course.findUnique({

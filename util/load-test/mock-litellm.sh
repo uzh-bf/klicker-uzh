@@ -29,10 +29,15 @@ case "${1:-}" in
 start)
   image="$(docker inspect --format '{{.Config.Image}}' "$ORIGINAL")"
   network="$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' "$ORIGINAL" | head -n1)"
-  docker rm -f "$MOCK" >/dev/null 2>&1 || true
+  remove_mock() {
+    if docker inspect "$MOCK" >/dev/null 2>&1; then
+      docker rm -f "$MOCK" >/dev/null
+    fi
+  }
+  remove_mock
   docker stop "$ORIGINAL" >/dev/null
   restore_original() {
-    docker rm -f "$MOCK" >/dev/null 2>&1 || true
+    remove_mock
     docker start "$ORIGINAL" >/dev/null 2>&1 || true
   }
   trap restore_original ERR
@@ -40,8 +45,18 @@ start)
   docker run -d --name "$MOCK" --network "$network" --network-alias litellm \
     -v "$ROOT/util/litellm/load-test.config.yaml:/app/config.yaml:ro" \
     "$image" --config=/app/config.yaml --port=4000 >/dev/null
-  sleep 5
-  if [ "$(docker inspect --format '{{.State.Running}}' "$MOCK" 2>/dev/null)" != true ]; then
+  ready=0
+  for _ in $(seq 1 60); do
+    if docker exec "$MOCK" python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)" >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
+    if [ "$(docker inspect --format '{{.State.Running}}' "$MOCK" 2>/dev/null)" != true ]; then
+      break
+    fi
+    sleep 1
+  done
+  if [ "$ready" != 1 ]; then
     echo "mock LiteLLM failed to start; restoring $ORIGINAL" >&2
     restore_original
     exit 1
@@ -50,7 +65,9 @@ start)
   echo "mock LiteLLM running as $MOCK ; original $ORIGINAL stopped"
   ;;
 stop)
-  docker rm -f "$MOCK" >/dev/null 2>&1 || true
+  if docker inspect "$MOCK" >/dev/null 2>&1; then
+    docker rm -f "$MOCK" >/dev/null
+  fi
   docker start "$ORIGINAL" >/dev/null
   echo "mock removed; original $ORIGINAL restarted"
   ;;
