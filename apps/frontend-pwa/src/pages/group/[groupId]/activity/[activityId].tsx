@@ -186,8 +186,19 @@ function GroupActivityDetails() {
           isCompleted={isCompleted && !(bonusActive && bonusAvailable)}
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
-          timeLimit={groupActivity.escapeRoomConfig?.timeLimit ?? 3600}
-          hintPenalty={escapeRoomHintPenalty}
+          mode="groupActivity"
+          title={groupActivity.displayName}
+          rules={
+            groupActivity.escapeRoomConfig ?? {
+              timeLimit: 3600,
+              hintPenalty: escapeRoomHintPenalty,
+            }
+          }
+          flush
+          exit={{
+            label: t('pwa.practiceQuiz.escapeRoomBackToCourse'),
+            onClick: () => router.push(`/course/${groupActivity.course.id}`),
+          }}
           onStart={async () => {
             await startAttempt()
             await refetch()

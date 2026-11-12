@@ -1390,7 +1390,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStartButton: 'Versuch starten',
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
       escapeRoomExpiredDesc:
-        'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
+        'Dieser Versuch ist beendet und kann nicht neu gestartet werden.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
         'Herzlichen Glückwunsch! Du hast alle Fragen hinter dir und den Escape Room abgeschlossen.',
@@ -1460,6 +1460,39 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStatsTime: 'Fluchtzeit',
       escapeRoomStatsHints: 'Genutzte Hinweise',
       escapeRoomStatsPenalty: 'Zeitstrafe',
+      escapeRoomStatsBonus: 'Bonus-Gutschrift',
+      escapeRoomStartDescGroup:
+        'Löst gemeinsam die Stationen der Reihe nach, bevor die Zeit abläuft.',
+      escapeRoomRulesLabel: 'Regeln',
+      escapeRoomRuleHintEach: 'Jeder Hinweis',
+      escapeRoomRuleHintNumber: 'Hinweis {number}',
+      escapeRoomRuleWrongAnswer: 'Falsche Antwort',
+      escapeRoomRuleWait: '{duration} Wartezeit',
+      escapeRoomRuleReveal:
+        'Lösung nach {count, plural, one {# falschen Antwort} other {# falschen Antworten}}',
+      escapeRoomRuleSkip: 'Station überspringen',
+      escapeRoomRuleNoPenalty: 'ohne Strafzeit',
+      escapeRoomRuleBonus: 'Bonus-Station',
+      escapeRoomDurationSeconds: '{seconds} s',
+      escapeRoomDurationMinutes: '{minutes} Min.',
+      escapeRoomDurationMinutesSeconds: '{minutes} Min. {seconds} s',
+      escapeRoomRankingNote:
+        'Die Wertungszeit ist deine Fluchtzeit plus alle Strafzeiten, minus eine allfällige Bonus-Gutschrift. In der Rangliste stehen zuerst die meisten Stationen ohne angezeigte Lösung oder Überspringen, danach die kürzeste Wertungszeit.',
+      escapeRoomStartWarning:
+        'Du hast einen einzigen Versuch. Die Zeit läuft ab dem Start des Versuchs und wird nie angehalten, auch nicht, wenn du diese Seite schliesst.',
+      escapeRoomStartWarningGroup:
+        'Eure Gruppe hat einen gemeinsamen Versuch. Die Zeit läuft für die ganze Gruppe, sobald ein Mitglied den Versuch startet, und wird nie angehalten, auch nicht, wenn die Seite geschlossen wird.',
+      escapeRoomNotNow: 'Jetzt nicht',
+      escapeRoomBackToCourse: 'Zurück zum Kurs',
+      escapeRoomContinue: 'Weiter',
+      escapeRoomAssistedTitle: 'Escape Room abgeschlossen',
+      escapeRoomAssistedSummary:
+        '{solved} von {required, plural, one {# Station} other {# Stationen}} ohne Hilfe gelöst',
+      escapeRoomRevealedCount: '{count} aufgedeckt',
+      escapeRoomSkippedCount: '{count} übersprungen',
+      escapeRoomRankedTimeLabel: 'Wertungszeit',
+      escapeRoomWrongAttempts:
+        '{count, plural, one {# falsche Antwort} other {# falsche Antworten}}',
       escapeRoomOverviewInfo:
         'Escape Room: ein zeitlich begrenzter Versuch, löse alle Stationen der Reihe nach',
     },

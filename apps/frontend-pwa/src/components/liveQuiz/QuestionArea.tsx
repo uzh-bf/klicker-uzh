@@ -61,8 +61,11 @@ interface QuestionAreaProps {
   escapeRoomConfig?: {
     timeLimit: number
     hintPenalty: number
+    hintPenalties: number[]
+    lockoutSeconds: number
     introText?: string | null
   } | null
+  title?: string
   initialEscapeRoomAttempt?: LiveQuizEscapeRoomAttempt | null
   escapeRoomTotalInstances?: number | null
   escapeRoomClearedInstances?: number | null
@@ -80,6 +83,7 @@ function QuestionArea({
   execution,
   blockId,
   escapeRoomConfig,
+  title,
   initialEscapeRoomAttempt,
   escapeRoomTotalInstances,
   escapeRoomClearedInstances,
@@ -601,6 +605,7 @@ function QuestionArea({
     <LiveQuizEscapeRoomOverlay
       controller={escapeRoom}
       config={escapeRoomConfig}
+      title={title}
       clearedInstances={
         escapeRoomClearedInstances ??
         instances.length - (remainingQuestions?.length ?? 0)

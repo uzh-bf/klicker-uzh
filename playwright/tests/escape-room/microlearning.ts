@@ -8,7 +8,7 @@ import {
   loginStudent,
   selectOption,
 } from '../../util/workflow.js'
-import { COURSE, MICRO, SC1, SC2, expect, messages } from './shared.js'
+import { COURSE, MICRO, SC1, SC2, expect } from './shared.js'
 
 async function createEscapeRoomMicroLearning(page: Page) {
   await page.getByTestId('create-microlearning').click()
@@ -123,8 +123,6 @@ export function registerMicrolearningFlowTest() {
 
     // clearing the last stage completes the server-side attempt and the
     // completion overlay takes over without a continue click
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-completed')).toBeVisible()
   })
 }

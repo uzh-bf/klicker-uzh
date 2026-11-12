@@ -57,6 +57,8 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
     escapeRoomConfig {
       timeLimit
       hintPenalty
+      hintPenalties
+      lockoutSeconds
       introText
     }
     escapeRoomAttempts {

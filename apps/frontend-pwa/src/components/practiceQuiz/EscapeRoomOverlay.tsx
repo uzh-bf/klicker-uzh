@@ -1,19 +1,29 @@
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import {
+  faCircleXmark,
   faClock,
+  faDoorClosed,
   faDoorOpen,
+  faEye,
+  faForward,
   faHourglassEnd,
-  faPlayCircle,
+  faLayerGroup,
+  faLightbulb,
+  faStar,
+  faTriangleExclamation,
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { EscapeRoomStages } from '@lib/escapeRoomStages'
+import { EscapeRoomStages, getEscapeRankedSeconds } from '@lib/escapeRoomStages'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useId, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EscapeRoomStageTracker, {
   ESCAPE_ROOM_FRAME as FRAME,
+  type EscapeRoomTranslate,
+  getEscapeRoomStageMarker,
 } from './EscapeRoomStageTracker'
 
 // Minimal structural view of an EscapeRoomAttempt as selected by the
@@ -25,13 +35,35 @@ interface EscapeRoomAttemptStats {
   hintsUsed?: unknown | null
 }
 
+export type EscapeRoomMode =
+  | 'practiceQuiz'
+  | 'microLearning'
+  | 'groupActivity'
+  | 'liveQuiz'
+
+// Structural subset of the escape room config the start dialog lists. The
+// Live Quiz only enforces hints and the lockout wait and ignores the rest.
+export interface EscapeRoomRules {
+  timeLimit: number // in seconds
+  hintPenalty: number // in seconds
+  hintPenalties?: number[] | null
+  lockoutSeconds?: number | null
+  wrongAnswerPenalty?: number | null
+  maxWrongAttempts?: number | null
+  revealPenalty?: number | null
+  skipPenalty?: number | null
+  bonusSeconds?: number | null
+}
+
 interface EscapeRoomOverlayProps {
+  mode: EscapeRoomMode
+  // activity name shown as the heading of the start dialog
+  title?: string | null
+  rules: EscapeRoomRules
   isStarted: boolean
   isCompleted: boolean
   isExpired: boolean
   remainingSeconds: number | null
-  timeLimit: number // in seconds
-  hintPenalty: number // in seconds
   onStart: () => Promise<void>
   loading?: boolean
   attempt?: EscapeRoomAttemptStats | null
@@ -40,6 +72,13 @@ interface EscapeRoomOverlayProps {
   // lecturer-authored story shown on the start screen instead of the
   // generic mode description (markdown supported)
   introText?: string | null
+  // where the student continues from the dialogs; omitted when there is
+  // nowhere to go (e.g. an embedded Practice Quiz)
+  exit?: { label: string; onClick: () => void }
+  // make the in-attempt bar span the full width of a Layout body (cancels its
+  // p-4 padding, including the sticky offset, which is measured from the
+  // padding-free content edge) instead of sitting inside it
+  flush?: boolean
   // set when the room has a bonus stage that follows completion; the bonus
   // question is answered once while the clock still runs
   bonus?: {
@@ -59,30 +98,234 @@ function formatTime(seconds: number) {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-function StatRow({ label, value }: { label: string; value: ReactNode }) {
+// "30 s", "2 min", "2 min 30 s"
+function formatDuration(seconds: number, t: EscapeRoomTranslate) {
+  const safe = Math.max(0, Math.round(seconds))
+  const minutes = Math.floor(safe / 60)
+  const secs = safe % 60
+  if (minutes === 0) {
+    return t('pwa.practiceQuiz.escapeRoomDurationSeconds', { seconds: secs })
+  }
+  if (secs === 0) {
+    return t('pwa.practiceQuiz.escapeRoomDurationMinutes', { minutes })
+  }
+  return t('pwa.practiceQuiz.escapeRoomDurationMinutesSeconds', {
+    minutes,
+    seconds: secs,
+  })
+}
+
+function StatRow({
+  label,
+  value,
+  dataCy,
+}: {
+  label: string
+  value: ReactNode
+  dataCy?: string
+}) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between" data-cy={dataCy}>
       <span className="text-slate-400">{label}:</span>
       <span className="font-semibold">{value}</span>
     </div>
   )
 }
 
+interface RuleRow {
+  cy: string
+  icon: IconDefinition
+  label: string
+  value: ReactNode
+  seconds?: number
+  count?: number
+}
+
+function RuleList({ rows, label }: { rows: RuleRow[]; label: string }) {
+  return (
+    <ul
+      aria-label={label}
+      className={twMerge(
+        'w-full divide-y divide-slate-700 rounded-lg border bg-slate-900/50 text-sm',
+        FRAME.panel
+      )}
+      data-cy="escape-room-rules"
+    >
+      {rows.map((row, index) => (
+        <li
+          key={`${row.cy}-${index}`}
+          className="flex items-center gap-3 px-3 py-2"
+          data-cy={row.cy}
+          data-seconds={row.seconds}
+          data-count={row.count}
+        >
+          <FontAwesomeIcon
+            icon={row.icon}
+            className={twMerge('w-4 flex-none', FRAME.muted)}
+            aria-hidden="true"
+          />
+          <span className="flex-1 text-slate-300">{row.label}</span>
+          <span className="text-right font-semibold text-white">
+            {row.value}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function StageRecap({ stages }: { stages: EscapeRoomStages }) {
+  const t = useTranslations()
+  if (stages.stages.length === 0) return null
+
+  return (
+    <div className="w-full space-y-3 text-sm" data-cy="escape-room-stage-recap">
+      <ul className="space-y-1.5">
+        {stages.stages.map((stage) => {
+          const marker = getEscapeRoomStageMarker(stage, t)
+          return (
+            <li
+              key={stage.index}
+              className="flex items-center gap-2"
+              data-cy="escape-room-stage-recap-row"
+              data-state={stage.state}
+            >
+              <span
+                className={twMerge(
+                  'flex h-5 w-5 flex-none items-center justify-center rounded-full border text-[10px]',
+                  FRAME.marker,
+                  marker.className
+                )}
+                aria-hidden="true"
+              >
+                <FontAwesomeIcon icon={marker.icon} />
+              </span>
+              <span className="flex-1 text-slate-300">{marker.label}</span>
+              {!!stage.wrongAttempts && (
+                <span className={twMerge('text-xs', FRAME.muted)}>
+                  {t('pwa.practiceQuiz.escapeRoomWrongAttempts', {
+                    count: stage.wrongAttempts,
+                  })}
+                </span>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+
+// Shared shell of the start, completed and expired dialogs: dark backdrop and
+// one card that scrolls as a whole. Focus moves into the card on open, stays
+// inside while it is mounted and returns to the previous element on close.
+function DialogShell({
+  labelledBy,
+  className,
+  children,
+  ...dataAttributes
+}: {
+  labelledBy: string
+  className?: string
+  children: ReactNode
+  'data-cy'?: string
+  'data-outcome'?: string
+}) {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const card = cardRef.current
+    if (!card) return
+    const previous = document.activeElement as HTMLElement | null
+    card.focus({ preventScroll: true })
+
+    const focusables = () =>
+      Array.from(card.querySelectorAll<HTMLElement>(FOCUSABLE))
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const items = focusables()
+      if (items.length === 0) {
+        event.preventDefault()
+        card.focus()
+        return
+      }
+      const first = items[0]!
+      const last = items[items.length - 1]!
+      const active = document.activeElement
+      if (!card.contains(active)) {
+        event.preventDefault()
+        first.focus()
+      } else if (event.shiftKey && (active === first || active === card)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    const onFocusIn = (event: FocusEvent) => {
+      if (!card.contains(event.target as Node)) {
+        ;(focusables()[0] ?? card).focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
+      if (previous && document.contains(previous)) {
+        previous.focus({ preventScroll: true })
+      }
+    }
+  }, [])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-4 text-white backdrop-blur-sm">
+      <div
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        tabIndex={-1}
+        className={twMerge(
+          'w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border bg-slate-800 p-6 shadow-2xl outline-none motion-safe:animate-fade-in sm:p-8',
+          className
+        )}
+        {...dataAttributes}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function EscapeRoomOverlay({
+  mode,
+  title,
+  rules,
   isStarted,
   isCompleted,
   isExpired,
   remainingSeconds,
-  timeLimit,
-  hintPenalty,
   onStart,
   loading = false,
   attempt,
   stages,
   introText,
+  exit,
+  flush = false,
   bonus,
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
+  const headingId = useId()
+  const isLive = mode === 'liveQuiz'
+  const isGroup = mode === 'groupActivity'
+  const timeLimit = rules.timeLimit
 
   const totalStacks = stages?.requiredCount
   const clearedStacks = stages?.clearedCount
@@ -99,53 +342,171 @@ export default function EscapeRoomOverlay({
 
   // Full page block overlays for start, completed, expired states
   if (!isStarted) {
+    const rows: RuleRow[] = []
+    if (typeof totalStacks === 'number' && totalStacks > 0) {
+      rows.push({
+        cy: 'escape-room-rule-stages',
+        icon: faLayerGroup,
+        label: t('pwa.practiceQuiz.escapeRoomStagesLabel'),
+        value: t('pwa.practiceQuiz.escapeRoomStageCount', {
+          required: stages?.requiredCount ?? 0,
+          bonus: stages?.bonusCount ?? 0,
+        }),
+        count: stages?.requiredCount,
+      })
+    }
+    rows.push({
+      cy: 'escape-room-rule-time-limit',
+      icon: faClock,
+      label: t('pwa.practiceQuiz.escapeRoomTimeLimitLabel'),
+      value: formatDuration(timeLimit, t),
+      seconds: timeLimit,
+    })
+    const hintPenalties = rules.hintPenalties ?? []
+    if (hintPenalties.length > 0) {
+      hintPenalties.forEach((penalty, index) => {
+        rows.push({
+          cy: 'escape-room-rule-hint',
+          icon: faLightbulb,
+          label: t('pwa.practiceQuiz.escapeRoomRuleHintNumber', {
+            number: index + 1,
+          }),
+          value: `+${formatDuration(penalty, t)}`,
+          seconds: penalty,
+        })
+      })
+    } else if (rules.hintPenalty > 0) {
+      rows.push({
+        cy: 'escape-room-rule-hint',
+        icon: faLightbulb,
+        label: t('pwa.practiceQuiz.escapeRoomRuleHintEach'),
+        value: `+${formatDuration(rules.hintPenalty, t)}`,
+        seconds: rules.hintPenalty,
+      })
+    }
+    const wrongPenalty = isLive ? 0 : (rules.wrongAnswerPenalty ?? 0)
+    const lockout = rules.lockoutSeconds ?? 0
+    if (wrongPenalty > 0 || lockout > 0) {
+      rows.push({
+        cy: 'escape-room-rule-wrong-answer',
+        icon: faCircleXmark,
+        label: t('pwa.practiceQuiz.escapeRoomRuleWrongAnswer'),
+        value: [
+          wrongPenalty > 0 ? `+${formatDuration(wrongPenalty, t)}` : null,
+          lockout > 0
+            ? t('pwa.practiceQuiz.escapeRoomRuleWait', {
+                duration: formatDuration(lockout, t),
+              })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        seconds: wrongPenalty,
+        count: lockout,
+      })
+    }
+    if (!isLive) {
+      if (rules.maxWrongAttempts != null && rules.maxWrongAttempts > 0) {
+        const revealPenalty = rules.revealPenalty ?? 0
+        rows.push({
+          cy: 'escape-room-rule-reveal',
+          icon: faEye,
+          label: t('pwa.practiceQuiz.escapeRoomRuleReveal', {
+            count: rules.maxWrongAttempts,
+          }),
+          value:
+            revealPenalty > 0
+              ? `+${formatDuration(revealPenalty, t)}`
+              : t('pwa.practiceQuiz.escapeRoomRuleNoPenalty'),
+          seconds: revealPenalty,
+          count: rules.maxWrongAttempts,
+        })
+      }
+      if (rules.skipPenalty != null) {
+        rows.push({
+          cy: 'escape-room-rule-skip',
+          icon: faForward,
+          label: t('pwa.practiceQuiz.escapeRoomRuleSkip'),
+          value:
+            rules.skipPenalty > 0
+              ? `+${formatDuration(rules.skipPenalty, t)}`
+              : t('pwa.practiceQuiz.escapeRoomRuleNoPenalty'),
+          seconds: rules.skipPenalty,
+        })
+      }
+      if (rules.bonusSeconds != null && (stages?.bonusCount ?? 0) > 0) {
+        rows.push({
+          cy: 'escape-room-rule-bonus',
+          icon: faStar,
+          label: t('pwa.practiceQuiz.escapeRoomRuleBonus'),
+          value: `−${formatDuration(rules.bonusSeconds, t)}`,
+          seconds: rules.bonusSeconds,
+        })
+      }
+    }
+
     return (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('pwa.practiceQuiz.escapeRoomStartTitle')}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm"
-      >
-        <div className="animate-fade-in flex w-full max-w-md flex-col items-center space-y-6 rounded-xl border border-slate-700 bg-slate-800 p-8 text-center shadow-2xl">
-          <div className="bg-primary flex h-16 w-16 items-center justify-center rounded-full text-3xl text-white">
-            <FontAwesomeIcon icon={faPlayCircle} />
+      <DialogShell key="start" labelledBy={headingId} className="space-y-5">
+        <div className="space-y-1">
+          <div
+            className={twMerge(
+              'flex items-center gap-2 text-xs font-semibold tracking-wide uppercase',
+              FRAME.muted
+            )}
+          >
+            <FontAwesomeIcon icon={faDoorClosed} aria-hidden="true" />
+            <span>{t('pwa.practiceQuiz.escapeRoomTitle')}</span>
           </div>
-          <H3 className={{ root: 'text-2xl font-bold text-white' }}>
-            {t('pwa.practiceQuiz.escapeRoomStartTitle')}
-          </H3>
-          {introText ? (
-            <div
-              className="prose prose-sm prose-invert max-h-56 w-full overflow-y-auto text-left leading-relaxed text-slate-300"
-              data-cy="escape-room-intro-text-display"
+          <div id={headingId}>
+            <H3
+              className={{ root: 'text-2xl font-bold break-words text-white' }}
             >
-              <DynamicMarkdown content={introText} />
-            </div>
-          ) : (
-            <p className="text-sm leading-relaxed text-slate-300">
-              {t('pwa.practiceQuiz.escapeRoomStartDesc')}
-            </p>
-          )}
-          <div className="w-full space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left text-xs">
-            {typeof totalStacks === 'number' && totalStacks > 0 && (
-              <StatRow
-                label={t('pwa.practiceQuiz.escapeRoomStagesLabel')}
-                value={t('pwa.practiceQuiz.escapeRoomStageCount', {
-                  required: stages?.requiredCount ?? 0,
-                  bonus: stages?.bonusCount ?? 0,
-                })}
-              />
-            )}
-            <StatRow
-              label={t('pwa.practiceQuiz.escapeRoomTimeLimitLabel')}
-              value={`${Math.round(timeLimit / 60)} min`}
-            />
-            {hintPenalty > 0 && (
-              <StatRow
-                label={t('pwa.practiceQuiz.escapeRoomPenaltyLabel')}
-                value={<span className="text-amber-400">+{hintPenalty}s</span>}
-              />
-            )}
+              {title || t('pwa.practiceQuiz.escapeRoomStartTitle')}
+            </H3>
           </div>
+        </div>
+        {introText ? (
+          <div
+            className="prose prose-sm prose-invert w-full leading-relaxed text-slate-300"
+            data-cy="escape-room-intro-text-display"
+          >
+            <DynamicMarkdown content={introText} />
+          </div>
+        ) : (
+          <p className="text-sm leading-relaxed text-slate-300">
+            {isGroup
+              ? t('pwa.practiceQuiz.escapeRoomStartDescGroup')
+              : t('pwa.practiceQuiz.escapeRoomStartDesc')}
+          </p>
+        )}
+        <RuleList
+          rows={rows}
+          label={t('pwa.practiceQuiz.escapeRoomRulesLabel')}
+        />
+        {!isLive && (
+          <p className={twMerge('text-xs leading-relaxed', FRAME.muted)}>
+            {t('pwa.practiceQuiz.escapeRoomRankingNote')}
+          </p>
+        )}
+        <div
+          className={twMerge(
+            'flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-950/30 p-3 text-sm leading-snug',
+            FRAME.warn
+          )}
+          data-cy="escape-room-start-warning"
+        >
+          <FontAwesomeIcon
+            icon={faTriangleExclamation}
+            className="mt-0.5 flex-none"
+            aria-hidden="true"
+          />
+          <p>
+            {isGroup
+              ? t('pwa.practiceQuiz.escapeRoomStartWarningGroup')
+              : t('pwa.practiceQuiz.escapeRoomStartWarning')}
+          </p>
+        </div>
+        <div className="space-y-2">
           <Button
             primary
             disabled={loading}
@@ -159,136 +520,265 @@ export default function EscapeRoomOverlay({
                 : t('pwa.practiceQuiz.escapeRoomStartButton')}
             </Button.Label>
           </Button>
+          {exit && (
+            <Button
+              basic
+              className={{
+                root: 'w-full justify-center text-slate-300 hover:text-white',
+              }}
+              onClick={exit.onClick}
+              data={{ cy: 'escape-room-start-exit' }}
+            >
+              <Button.Label>
+                {t('pwa.practiceQuiz.escapeRoomNotNow')}
+              </Button.Label>
+            </Button>
+          )}
         </div>
-      </div>
+      </DialogShell>
     )
   }
 
   if (isExpired) {
     return (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('pwa.practiceQuiz.escapeRoomExpiredTitle')}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm"
+      <DialogShell
+        key="expired"
+        labelledBy={headingId}
+        className="space-y-5 border-red-900/50 text-center"
+        data-cy="escape-room-expired"
       >
-        <div className="animate-fade-in flex w-full max-w-md flex-col items-center space-y-6 rounded-xl border border-red-900/50 bg-slate-800 p-8 text-center shadow-2xl">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-3xl text-white">
-            <FontAwesomeIcon icon={faHourglassEnd} />
-          </div>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-3xl text-white">
+          <FontAwesomeIcon icon={faHourglassEnd} aria-hidden="true" />
+        </div>
+        <div id={headingId}>
           <H3 className={{ root: 'text-2xl font-bold text-red-400' }}>
             {t('pwa.practiceQuiz.escapeRoomExpiredTitle')}
           </H3>
-          <p className="text-sm leading-relaxed text-slate-300">
-            {t('pwa.practiceQuiz.escapeRoomExpiredDesc')}
-          </p>
-          {typeof totalStacks === 'number' &&
-            totalStacks > 0 &&
-            typeof clearedStacks === 'number' && (
-              <p
-                className="text-sm font-semibold text-amber-400"
-                data-cy="escape-room-expired-progress"
-              >
-                {t('pwa.practiceQuiz.escapeRoomClearedProgress', {
-                  cleared: clearedStacks,
-                  total: totalStacks,
-                })}
-              </p>
-            )}
-          <p className="text-xs leading-relaxed text-slate-400">
-            {t('pwa.practiceQuiz.escapeRoomContactLecturer')}
-          </p>
         </div>
-      </div>
+        <p className="text-sm leading-relaxed text-slate-300">
+          {t('pwa.practiceQuiz.escapeRoomExpiredDesc')}
+        </p>
+        {typeof totalStacks === 'number' &&
+          totalStacks > 0 &&
+          typeof clearedStacks === 'number' && (
+            <p
+              className="text-sm font-semibold text-amber-400"
+              data-cy="escape-room-expired-progress"
+            >
+              {t('pwa.practiceQuiz.escapeRoomClearedProgress', {
+                cleared: clearedStacks,
+                total: totalStacks,
+              })}
+            </p>
+          )}
+        {stages && <StageRecap stages={stages} />}
+        {exit && (
+          <Button
+            primary
+            className={{ root: 'h-11 w-full font-bold' }}
+            onClick={exit.onClick}
+            data={{ cy: 'escape-room-exit' }}
+          >
+            <Button.Label>{exit.label}</Button.Label>
+          </Button>
+        )}
+        <p className="text-xs leading-relaxed text-slate-400">
+          {t('pwa.practiceQuiz.escapeRoomContactLecturer')}
+        </p>
+      </DialogShell>
     )
   }
 
   if (isCompleted) {
+    const requiredStages =
+      stages?.stages.filter((stage) => stage.kind === 'regular') ?? []
+    const revealedCount = requiredStages.filter(
+      (stage) => stage.state === 'revealed'
+    ).length
+    const skippedCount = requiredStages.filter(
+      (stage) => stage.state === 'skipped'
+    ).length
+    const solvedCount = requiredStages.filter(
+      (stage) => stage.state === 'solved'
+    ).length
+    const isAssisted = revealedCount + skippedCount > 0
+    const bonusCredited = bonus?.outcome === 'BONUS_CORRECT'
+    const rankedSeconds = isLive
+      ? null
+      : getEscapeRankedSeconds({
+          startedAt: attempt?.startedAt,
+          completedAt: attempt?.completedAt,
+          penaltySeconds: attempt?.penaltySeconds,
+          bonusSeconds: bonus?.seconds ?? rules.bonusSeconds,
+          bonusOutcome: bonus?.outcome,
+        })
+    const headlineSeconds = isLive
+      ? escapeSeconds !== null
+        ? Math.max(0, Math.round(escapeSeconds))
+        : null
+      : rankedSeconds !== null
+        ? Math.max(0, rankedSeconds)
+        : null
+    const bonusOffered = !!bonus?.available && !!bonus.onStart
+
     return (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('pwa.practiceQuiz.escapeRoomCompletedTitle')}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 p-6 text-white backdrop-blur-sm"
+      <DialogShell
+        key="completed"
+        labelledBy={headingId}
+        className="space-y-5 border-green-900/50"
+        data-cy="escape-room-completed"
+        data-outcome={isAssisted ? 'assisted' : 'clean'}
       >
-        <div className="animate-fade-in flex w-full max-w-md flex-col items-center space-y-6 rounded-xl border border-green-900/50 bg-slate-800 p-8 text-center shadow-2xl">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-600 text-3xl text-white">
-            <FontAwesomeIcon icon={faTrophy} />
+        <div className="space-y-4 text-center">
+          <div
+            className={twMerge(
+              'mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl text-white',
+              isAssisted ? 'bg-slate-600' : 'bg-green-600'
+            )}
+          >
+            <FontAwesomeIcon
+              icon={isAssisted ? faDoorOpen : faTrophy}
+              aria-hidden="true"
+            />
           </div>
-          <H3 className={{ root: 'text-2xl font-bold text-green-400' }}>
-            {t('pwa.practiceQuiz.escapeRoomCompletedTitle')}
-          </H3>
-          <p className="text-sm leading-relaxed text-slate-300">
-            {t('pwa.practiceQuiz.escapeRoomCompletedDesc')}
-          </p>
-          {bonus?.available && bonus.onStart && (
-            <div className="w-full space-y-3 rounded-lg border border-amber-700/50 bg-slate-900/50 p-4 text-sm text-slate-300">
-              <p>{t('pwa.practiceQuiz.escapeRoomBonusDesc')}</p>
-              <Button
-                primary
-                className={{ root: 'w-full font-bold' }}
-                onClick={bonus.onStart}
-                data={{ cy: 'escape-room-bonus' }}
-              >
-                <Button.Label>
-                  {t('pwa.practiceQuiz.escapeRoomBonusOffer', {
-                    seconds: bonus.seconds,
-                  })}
-                </Button.Label>
-              </Button>
-            </div>
-          )}
-          {bonus?.outcome && (
-            <p
-              className="text-sm font-semibold text-amber-400"
-              data-cy="escape-room-bonus-result"
+          <div id={headingId}>
+            <H3
+              className={{
+                root: twMerge(
+                  'text-2xl font-bold',
+                  isAssisted ? 'text-white' : 'text-green-400'
+                ),
+              }}
             >
-              {bonus.outcome === 'BONUS_CORRECT'
-                ? t('pwa.practiceQuiz.escapeRoomBonusCorrect', {
-                    seconds: bonus.seconds,
-                  })
-                : bonus.outcome === 'BONUS_WRONG'
-                  ? t('pwa.practiceQuiz.escapeRoomBonusWrong')
-                  : t('pwa.practiceQuiz.escapeRoomBonusSubmitted')}
+              {isAssisted
+                ? t('pwa.practiceQuiz.escapeRoomAssistedTitle')
+                : t('pwa.practiceQuiz.escapeRoomCompletedTitle')}
+            </H3>
+          </div>
+          {isAssisted ? (
+            <p className="text-sm leading-relaxed text-slate-300">
+              {t('pwa.practiceQuiz.escapeRoomAssistedSummary', {
+                solved: solvedCount,
+                required: requiredStages.length,
+              })}
+              {revealedCount > 0 &&
+                `, ${t('pwa.practiceQuiz.escapeRoomRevealedCount', { count: revealedCount })}`}
+              {skippedCount > 0 &&
+                `, ${t('pwa.practiceQuiz.escapeRoomSkippedCount', { count: skippedCount })}`}
+            </p>
+          ) : (
+            <p className="text-sm leading-relaxed text-slate-300">
+              {t('pwa.practiceQuiz.escapeRoomCompletedDesc')}
             </p>
           )}
-          {(escapeSeconds !== null ||
-            hintsUsedCount !== null ||
-            penaltySeconds > 0) && (
-            <div
-              className="w-full space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left text-xs"
-              data-cy="escape-room-completed-stats"
-            >
-              {escapeSeconds !== null && (
-                <StatRow
-                  label={t('pwa.practiceQuiz.escapeRoomStatsTime')}
-                  value={
-                    <span className="text-green-400">
-                      {formatTime(escapeSeconds)}
-                    </span>
-                  }
-                />
-              )}
-              {hintsUsedCount !== null && (
-                <StatRow
-                  label={t('pwa.practiceQuiz.escapeRoomStatsHints')}
-                  value={hintsUsedCount}
-                />
-              )}
-              {penaltySeconds > 0 && (
-                <StatRow
-                  label={t('pwa.practiceQuiz.escapeRoomStatsPenalty')}
-                  value={
-                    <span className="text-amber-400">
-                      +{formatTime(penaltySeconds)}
-                    </span>
-                  }
-                />
-              )}
-            </div>
-          )}
         </div>
-      </div>
+        {headlineSeconds !== null && (
+          <div className="text-center">
+            <div className={twMerge('text-xs uppercase', FRAME.muted)}>
+              {isLive
+                ? t('pwa.practiceQuiz.escapeRoomStatsTime')
+                : t('pwa.practiceQuiz.escapeRoomRankedTimeLabel')}
+            </div>
+            <div
+              className="text-4xl font-bold text-white"
+              data-cy={
+                isLive ? 'escape-room-escape-time' : 'escape-room-ranked-time'
+              }
+              data-seconds={headlineSeconds}
+            >
+              {formatDuration(headlineSeconds, t)}
+            </div>
+          </div>
+        )}
+        {bonusOffered && (
+          <div className="w-full space-y-3 rounded-lg border border-amber-700/50 bg-slate-900/50 p-4 text-sm text-slate-300">
+            <p>{t('pwa.practiceQuiz.escapeRoomBonusDesc')}</p>
+            <Button
+              primary
+              className={{ root: 'w-full font-bold' }}
+              onClick={bonus.onStart}
+              data={{ cy: 'escape-room-bonus' }}
+            >
+              <Button.Label>
+                {t('pwa.practiceQuiz.escapeRoomBonusOffer', {
+                  seconds: bonus.seconds,
+                })}
+              </Button.Label>
+            </Button>
+          </div>
+        )}
+        {bonus?.outcome && (
+          <p
+            className="text-center text-sm font-semibold text-amber-400"
+            data-cy="escape-room-bonus-result"
+          >
+            {bonus.outcome === 'BONUS_CORRECT'
+              ? t('pwa.practiceQuiz.escapeRoomBonusCorrect', {
+                  seconds: bonus.seconds,
+                })
+              : bonus.outcome === 'BONUS_WRONG'
+                ? t('pwa.practiceQuiz.escapeRoomBonusWrong')
+                : t('pwa.practiceQuiz.escapeRoomBonusSubmitted')}
+          </p>
+        )}
+        {(escapeSeconds !== null ||
+          hintsUsedCount !== null ||
+          penaltySeconds > 0) && (
+          <div
+            className="w-full space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left text-xs"
+            data-cy="escape-room-completed-stats"
+          >
+            {escapeSeconds !== null && (
+              <StatRow
+                label={t('pwa.practiceQuiz.escapeRoomStatsTime')}
+                value={
+                  <span className="text-green-400">
+                    {formatTime(escapeSeconds)}
+                  </span>
+                }
+              />
+            )}
+            {hintsUsedCount !== null && (
+              <StatRow
+                label={t('pwa.practiceQuiz.escapeRoomStatsHints')}
+                value={hintsUsedCount}
+              />
+            )}
+            {penaltySeconds > 0 && (
+              <StatRow
+                label={t('pwa.practiceQuiz.escapeRoomStatsPenalty')}
+                value={
+                  <span className="text-amber-400">
+                    +{formatTime(penaltySeconds)}
+                  </span>
+                }
+              />
+            )}
+            {bonusCredited && !isLive && (
+              <StatRow
+                dataCy="escape-room-stats-bonus"
+                label={t('pwa.practiceQuiz.escapeRoomStatsBonus')}
+                value={
+                  <span className="text-green-400">
+                    −{formatTime(bonus?.seconds ?? 0)}
+                  </span>
+                }
+              />
+            )}
+          </div>
+        )}
+        {stages && <StageRecap stages={stages} />}
+        {exit && (
+          <Button
+            primary={!bonusOffered}
+            className={{ root: 'h-11 w-full font-bold' }}
+            onClick={exit.onClick}
+            data={{ cy: 'escape-room-exit' }}
+          >
+            <Button.Label>{exit.label}</Button.Label>
+          </Button>
+        )}
+      </DialogShell>
     )
   }
 
@@ -327,7 +817,8 @@ export default function EscapeRoomOverlay({
     <div
       className={twMerge(
         'sticky top-0 z-[50] flex w-full items-center justify-between gap-2 border-b px-3 py-2 shadow-md sm:px-4',
-        FRAME.bar
+        FRAME.bar,
+        flush && '-top-4 -mx-4 -mt-4 w-auto'
       )}
     >
       <div className="flex flex-none items-center gap-2 text-sm">

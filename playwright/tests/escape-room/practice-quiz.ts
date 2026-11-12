@@ -226,19 +226,20 @@ export function registerPracticeEscapeRoomTests() {
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
 
-    // start overlay with the authored intro story and the stats row
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomStartTitle).first()
-    ).toBeVisible()
+    // start overlay with the authored intro story and the rules list
+    await expect(page.getByTestId('escape-room-rules')).toBeVisible()
     await expect(
       page.getByTestId('escape-room-intro-text-display')
     ).toContainText(QUIZ.introText)
     await expect(
-      page.getByText(`${QUIZ.timeLimitMinutes} min`).first()
-    ).toBeVisible()
+      page.getByTestId('escape-room-rule-time-limit')
+    ).toHaveAttribute(
+      'data-seconds',
+      String(Number(QUIZ.timeLimitMinutes) * 60)
+    )
     await expect(
-      page.getByText(`+${QUIZ.hintPenaltySeconds}s`).first()
-    ).toBeVisible()
+      page.getByTestId('escape-room-rule-hint').first()
+    ).toHaveAttribute('data-seconds', QUIZ.hintPenaltySeconds)
 
     await page.getByTestId('escape-room-start').click()
 
@@ -484,9 +485,7 @@ export function registerPracticeEscapeRoomTests() {
 
     // clearing the last stage completes the server-side attempt and the
     // completion overlay with escape stats takes over
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-completed')).toBeVisible()
     const stats = page.getByTestId('escape-room-completed-stats')
     await expect(stats).toBeVisible()
     await expect(stats).toContainText(
@@ -658,10 +657,6 @@ export function registerQrFallbackTest() {
     await manualCode.fill(QR.code)
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled()
     await page.getByTestId('student-stack-submit').click()
-    await expect(
-      page
-        .getByText(deMessages.pwa.practiceQuiz.escapeRoomCompletedTitle)
-        .first()
-    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-completed')).toBeVisible()
   })
 }

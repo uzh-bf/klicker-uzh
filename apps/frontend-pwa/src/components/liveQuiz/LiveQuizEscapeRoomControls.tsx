@@ -3,6 +3,7 @@ import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { getLiveEscapeRoomStages } from '@lib/escapeRoomStages'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import type { useLiveQuizEscapeRoom } from '../hooks/useLiveQuizEscapeRoom'
 
 type LiveQuizEscapeRoomController = ReturnType<typeof useLiveQuizEscapeRoom>
@@ -10,28 +11,51 @@ type LiveQuizEscapeRoomController = ReturnType<typeof useLiveQuizEscapeRoom>
 type EscapeRoomConfig = {
   timeLimit: number
   hintPenalty: number
+  hintPenalties: number[]
+  lockoutSeconds: number
   introText?: string | null
 }
 
 export function LiveQuizEscapeRoomOverlay({
   controller,
   config,
+  title,
   clearedInstances,
   totalInstances,
 }: {
   controller: LiveQuizEscapeRoomController
   config: EscapeRoomConfig
+  title?: string
   clearedInstances: number
   totalInstances: number
 }) {
+  const t = useTranslations()
+  const isEnded = controller.isCompleted || controller.isExpired
+  // The ending is dismissed for the attempt state it was dismissed in; any
+  // change (new attempt, reset, other ending) brings it back.
+  const endingKey = `${controller.attempt?.id ?? ''}|${controller.isCompleted}|${controller.isExpired}`
+  const [dismissedEndingKey, setDismissedEndingKey] = useState<string | null>(
+    null
+  )
+  if (isEnded && dismissedEndingKey === endingKey) return null
+
   return (
     <EscapeRoomOverlay
+      mode="liveQuiz"
+      title={title}
+      rules={config}
+      exit={
+        isEnded
+          ? {
+              label: t('pwa.practiceQuiz.escapeRoomContinue'),
+              onClick: () => setDismissedEndingKey(endingKey),
+            }
+          : undefined
+      }
       isStarted={!!controller.attempt}
       isCompleted={controller.isCompleted}
       isExpired={controller.isExpired}
       remainingSeconds={controller.remainingSeconds}
-      timeLimit={config.timeLimit}
-      hintPenalty={config.hintPenalty}
       onStart={controller.startAttempt}
       loading={controller.starting}
       attempt={controller.attempt}

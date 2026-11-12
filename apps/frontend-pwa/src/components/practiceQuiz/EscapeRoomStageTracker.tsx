@@ -55,15 +55,64 @@ const BONUS_STAR: Partial<Record<EscapeRoomStageState, string>> = {
   current: FRAME.ring,
 }
 
+// Translator accepted by the helpers below; the bivariant method signature lets
+// the typed next-intl translator be passed with dynamically built keys.
+export type EscapeRoomTranslate = {
+  bivarianceHack(key: string, values?: Record<string, string | number>): string
+}['bivarianceHack']
+
+// Marker icon, colour classes and accessible label of one stage; shared with
+// the stage recap of the ending dialogs.
+export function getEscapeRoomStageMarker(
+  stage: EscapeRoomStageView,
+  t: EscapeRoomTranslate
+) {
+  const isBonus = stage.kind === 'bonus'
+  const isBonusResult =
+    stage.state === 'bonusCorrect' || stage.state === 'bonusWrong'
+  const marker =
+    isBonus && !isBonusResult
+      ? {
+          icon: faStar,
+          className: twMerge(FRAME.muted, BONUS_STAR[stage.state]),
+        }
+      : MARKERS[stage.state]
+  const label = isBonus
+    ? t(
+        `pwa.practiceQuiz.escapeRoomStageBonus${
+          stage.state === 'bonusCorrect'
+            ? 'Correct'
+            : stage.state === 'bonusWrong'
+              ? 'Wrong'
+              : stage.state === 'current'
+                ? 'Current'
+                : 'Open'
+        }`
+      )
+    : t(
+        `pwa.practiceQuiz.escapeRoomStage${
+          stage.state === 'current'
+            ? 'Current'
+            : stage.state === 'solved'
+              ? 'Solved'
+              : stage.state === 'revealed'
+                ? 'Revealed'
+                : stage.state === 'skipped'
+                  ? 'Skipped'
+                  : 'Open'
+        }`,
+        { number: stage.index + 1 }
+      )
+  return { ...marker, label }
+}
+
 interface EscapeRoomStageTrackerProps {
   stages: EscapeRoomStageView[]
-  size?: 'sm' | 'md'
   className?: string
 }
 
 export default function EscapeRoomStageTracker({
   stages,
-  size = 'sm',
   className,
 }: EscapeRoomStageTrackerProps) {
   const t = useTranslations()
@@ -75,47 +124,12 @@ export default function EscapeRoomStageTracker({
       data-cy="escape-room-stage-tracker"
     >
       {stages.map((stage) => {
-        const isBonus = stage.kind === 'bonus'
-        const isBonusResult =
-          stage.state === 'bonusCorrect' || stage.state === 'bonusWrong'
-        const marker =
-          isBonus && !isBonusResult
-            ? {
-                icon: faStar,
-                className: twMerge(FRAME.muted, BONUS_STAR[stage.state]),
-              }
-            : MARKERS[stage.state]
-        const label = isBonus
-          ? t(
-              `pwa.practiceQuiz.escapeRoomStageBonus${
-                stage.state === 'bonusCorrect'
-                  ? 'Correct'
-                  : stage.state === 'bonusWrong'
-                    ? 'Wrong'
-                    : stage.state === 'current'
-                      ? 'Current'
-                      : 'Open'
-              }`
-            )
-          : t(
-              `pwa.practiceQuiz.escapeRoomStage${
-                stage.state === 'current'
-                  ? 'Current'
-                  : stage.state === 'solved'
-                    ? 'Solved'
-                    : stage.state === 'revealed'
-                      ? 'Revealed'
-                      : stage.state === 'skipped'
-                        ? 'Skipped'
-                        : 'Open'
-              }`,
-              { number: stage.index + 1 }
-            )
+        const marker = getEscapeRoomStageMarker(stage, t)
 
         return (
           <li
             key={stage.index}
-            aria-label={label}
+            aria-label={marker.label}
             aria-current={stage.state === 'current' ? 'step' : undefined}
             data-cy="escape-room-stage-marker"
             data-state={stage.state}
@@ -123,7 +137,7 @@ export default function EscapeRoomStageTracker({
             className={twMerge(
               'flex flex-none items-center justify-center rounded-full border',
               FRAME.marker,
-              size === 'sm' ? 'h-5 w-5 text-[10px]' : 'h-7 w-7 text-xs',
+              'h-5 w-5 text-[10px]',
               marker.className
             )}
           >

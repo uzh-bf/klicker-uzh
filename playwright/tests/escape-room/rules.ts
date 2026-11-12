@@ -131,9 +131,16 @@ export function registerEscapeRoomRulesTests() {
     await expect(page.getByText(SC2.content).first()).toBeVisible()
     await page.getByTestId('escape-room-skip').click()
     await page.getByTestId('escape-room-skip-confirm').click()
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+    // a revealed and a skipped stage make the ending an assisted one
+    await expect(page.getByTestId('escape-room-completed')).toHaveAttribute(
+      'data-outcome',
+      'assisted'
+    )
+    await expect(page.getByTestId('escape-room-exit')).toBeVisible()
+    await expect(page.getByTestId('escape-room-ranked-time')).toHaveAttribute(
+      'data-seconds',
+      /^[1-9]\d*$/
+    )
 
     await captureEvidence(page, 'rules-bonus-offer-en-desktop.png')
 
