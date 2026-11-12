@@ -88,14 +88,16 @@ function MicrolearningIntroduction({
     dayjs()
   )
 
-  // escape rooms withhold their stacks until an attempt starts, so the count
-  // comes from numOfStacks
+  // escape rooms withhold their stacks from participants until an attempt
+  // starts, so the count comes from numOfStacks when it is reported
+  const escapeTotalStages =
+    microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
   const escapeStages = microLearning.escapeRoomConfig
     ? getIndividualEscapeRoomStages({
-        totalStages: microLearning.numOfStacks,
+        totalStages: escapeTotalStages,
         hasBonus: hasBonusStage(
           microLearning.escapeRoomConfig,
-          microLearning.numOfStacks ?? 0
+          escapeTotalStages
         ),
       })
     : undefined

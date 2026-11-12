@@ -29,7 +29,7 @@ type EscapeRoomAttempt = EscapeRoomProgressType['attempts'][number]
 // Ranked attempts by rank, then attempts in progress (most stages cleared
 // first), then participants or groups that have not started. Ties keep the
 // incoming order.
-export function sortEscapeRoomAttempts<
+function sortEscapeRoomAttempts<
   T extends Pick<EscapeRoomAttempt, 'rank' | 'status' | 'clearedStacks'>,
 >(attempts: T[]): T[] {
   function bucket(attempt: T) {

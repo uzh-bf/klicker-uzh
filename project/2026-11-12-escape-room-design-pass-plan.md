@@ -85,3 +85,6 @@ A slice that fails verification is fixed or reverted before the next one starts.
 
 - 2026-11-12: plan written; branch created at `c247f51ab3`.
 - 2026-11-12: independent plan critique returned "revise". Accepted: per-mode stage adapter, named ranked-time formula, server-relative lockout restore, keeping step markers, per-mode way out, scrollable dialog, stable `data-cy` hooks, frame slice before play screen, client-side dashboard sort, explicit out-of-scope list. Deferred to the user: splitting the lecturer slices into their own layer.
+- 2026-11-12: slices 1 to 5 implemented and committed; draft PR #6884 opened on top of #6826 and added to stack 5228. One independent review per slice group; findings fixed or recorded below.
+- Deviations: the dashboard sort helper has no unit test, because `apps/frontend-manage` has no test runner and the helper stays private to its component. The Microlearning participant query needed a one-line server fix to report the stage total. The lecturer slices landed in this layer; moving them to their own layer is still the user's decision.
+- Known gaps: Group Activity, Microlearning and Live Quiz student screens and the expired screen were not all checked in a browser; Live Quiz participation runs only in CI; the lockout-after-reload Playwright step has to land within the fixed 5 s lockout.
