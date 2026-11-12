@@ -619,6 +619,9 @@ export default {
         'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
       redirectNotice: 'Nach der Anmeldung kehrst Du zu diesem Chatbot zurück.',
       loginButton: 'Zur KlickerUZH-Anmeldung',
+      assessmentMessage:
+        'Melde Dich mit Deiner Edu-ID in der Prüfungs-App an und öffne danach den Chatbot-Link erneut.',
+      assessmentLoginButton: 'Zur Prüfungsanmeldung',
     },
     response: {
       errorLabel: 'Fehler',
