@@ -285,6 +285,12 @@ chat:
   mcp:
     key: ''
 
+  courseImages:
+    existingSecret: ''
+    connectionStringKey: connectionString
+    container: doc-processing
+    prefix: projection
+
   docQueryScope:
     issuer: ''
     audience: ''

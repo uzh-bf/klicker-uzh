@@ -5,6 +5,7 @@ import {
   extractCitedPages,
   extractCitedTimestamps,
 } from '@/src/lib/markdown/remarkCitationMarkers'
+import { courseImageSourceMap } from '@/src/lib/sources/courseImages'
 import {
   type ChatSourcePart,
   normalizeSourcesFromParts,
@@ -27,6 +28,7 @@ type MessageWithSourceParts = {
 export interface MessageSources {
   messageId: string
   sources: ChatSource[]
+  courseImageSourcesByAssetId: ReadonlyMap<string, ChatSource>
   /**
    * Source index -> the pages this answer cites for it, as the smallest
    * covering ranges (`6–7, 12`). A source the answer cites without a page
@@ -35,8 +37,8 @@ export interface MessageSources {
   citedPageRanges: ReadonlyMap<number, string>
 }
 
-const EMPTY_CITED_PAGE_RANGES: ReadonlyMap<number, string> = new Map()
 const EMPTY_CITED_VIDEO_TIMES: ReadonlyMap<number, number[]> = new Map()
+const EMPTY_CITED_PAGE_RANGES: ReadonlyMap<number, string> = new Map()
 
 /**
  * Normalizes the current assistant message's doc-query tool-call parts into
@@ -60,7 +62,6 @@ export function useMessageSources(): MessageSources {
     if (part.type === 'text') {
       const text = part.text ?? ''
       answerText += `${text}\n`
-      fingerprint += `|t${text.length}`
       continue
     }
 
@@ -75,6 +76,7 @@ export function useMessageSources(): MessageSources {
     fingerprint += `|${'toolCallId' in part ? String(part.toolCallId) : ''}:${part.isError ? 1 : 0}:${resultMark}`
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: parts are intentionally keyed by a stable fingerprint.
   const sources = useMemo(
     () => normalizeSourcesFromParts(parts),
     // Deliberately keyed on the fingerprint: `parts` is referentially
@@ -99,8 +101,17 @@ export function useMessageSources(): MessageSources {
     return ranges.size > 0 ? ranges : EMPTY_CITED_PAGE_RANGES
   }, [answerText])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: parts are intentionally keyed by the same stable fingerprint as sources.
+  const courseImageSourcesByAssetId = useMemo(
+    () => courseImageSourceMap(sources, parts),
+    // Tool results use the same fingerprint and lifecycle as source
+    // normalization above; `sources` changes whenever that fingerprint does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fingerprint, sources]
+  )
+
   const citedVideoTimes = useMemo(() => {
-    if (!/t\./i.test(answerText)) return EMPTY_CITED_VIDEO_TIMES
+    if (!answerText.includes(':')) return EMPTY_CITED_VIDEO_TIMES
     const times = extractCitedTimestamps(answerText)
     return times.size ? times : EMPTY_CITED_VIDEO_TIMES
   }, [answerText])
@@ -115,7 +126,8 @@ export function useMessageSources(): MessageSources {
       messageId: message.id,
       sources: displayedSources,
       citedPageRanges,
+      courseImageSourcesByAssetId,
     }),
-    [message.id, displayedSources, citedPageRanges]
+    [message.id, displayedSources, citedPageRanges, courseImageSourcesByAssetId]
   )
 }

@@ -273,6 +273,30 @@ describe('extractCitedPages', () => {
 })
 
 describe('extractCitedTimestamps', () => {
+  test('attributes distinct prose-labelled passage starts to a bare source', () => {
+    const text = [
+      '**Passage start: 0:12** in the example. It illustrates the rule [3].',
+      'The next video segment **starts at 1:14** [3].',
+      'The clip starts at 1:14 [3].',
+    ].join('\n\n')
+    expect(extractCitedTimestamps(text)).toEqual(new Map([[3, [12, 74]]]))
+    expect(extractCitedTimestamps(text + '\n\nSee [3, t. 0:20].')).toEqual(
+      new Map([[3, [20]]])
+    )
+  })
+
+  test.each([
+    'The meeting starts at 0:12 [1].',
+    'The video starts at 0:12 and ends at 0:22 [1].',
+    'The video starts at 0:12 [1] [2].',
+    'The video starts at 0:12 [1](https://example.org).',
+    'The video starts at 0:72 [1].',
+    'The video starts at 0:12.\n\nAnother claim [1].',
+    '`The video starts at 0:12 [1]`.',
+  ])('leaves ambiguous or unrelated prose clocks alone: %s', (text) => {
+    expect(extractCitedTimestamps(text).size).toBe(0)
+  })
+
   test('reads single-source minute and hour clocks case-insensitively', () => {
     expect([
       ...extractCitedTimestamps('See [1, T. 02:34] and [2,t. 1:02:03].'),

@@ -332,17 +332,15 @@ async function installKbMocks(page: Page, state: DomainMockState) {
 
     if (operationName === 'UpdateKb') {
       const body = request.postDataJSON() as {
-        variables?: Record<string, unknown>
+        variables?: Partial<StoredKbDomain> & { id?: string }
       } | null
       const variables = body?.variables ?? {}
       state.updateVariables.push(variables)
-      // The settings refetch the knowledge base after saving, so the mocked
-      // save must also be what that refetch reports.
+      // The real update persists the selection before the UI refetches the KB.
       state.kbDomain = {
-        domainPolicyId: (variables.domainPolicyId as string) ?? null,
-        domainPolicyVersion: (variables.domainPolicyVersion as number) ?? null,
-        domainPolicyLanguage:
-          (variables.domainPolicyLanguage as string) ?? null,
+        domainPolicyId: variables.domainPolicyId ?? null,
+        domainPolicyVersion: variables.domainPolicyVersion ?? null,
+        domainPolicyLanguage: variables.domainPolicyLanguage ?? null,
       }
       await route.fulfill({
         status: 200,
@@ -354,9 +352,7 @@ async function installKbMocks(page: Page, state: DomainMockState) {
               id: variables.id ?? null,
               name: state.kbName,
               description: null,
-              domainPolicyId: variables.domainPolicyId ?? null,
-              domainPolicyVersion: variables.domainPolicyVersion ?? null,
-              domainPolicyLanguage: variables.domainPolicyLanguage ?? null,
+              ...state.kbDomain,
             },
           },
         }),
@@ -525,7 +521,15 @@ test.describe('Knowledge base subject area and language', () => {
         domainPolicyLanguage: 'English',
       })
 
-      // The saved pair replaces the read view.
+      // The saved pair survives the UI's refetch and a full page reload.
+      await expect(page.getByTestId('kb-domain-settings-save')).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-domain-settings-subject-value')
+      ).toHaveText(EN_DOMAIN_LABELS.business)
+      await expect(
+        page.getByTestId('kb-domain-settings-language-value')
+      ).toHaveText(EN_LANGUAGE_LABELS.English)
+      await page.reload()
       await expect(
         page.getByTestId('kb-domain-settings-subject-value')
       ).toHaveText(EN_DOMAIN_LABELS.business)
@@ -534,11 +538,6 @@ test.describe('Knowledge base subject area and language', () => {
       ).toHaveText(EN_LANGUAGE_LABELS.English)
 
       // The interface locale changes only the labels of the stored pair.
-      state.kbDomain = {
-        domainPolicyId: 'business',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'English',
-      }
       await page.goto(`${manageUrl}/de${detailPath}`)
       await expect(
         page.getByTestId('kb-domain-settings-subject-value')

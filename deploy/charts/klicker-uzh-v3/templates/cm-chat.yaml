@@ -16,6 +16,10 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  {{- if .Values.chat.courseImages.existingSecret }}
+  COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER: {{ .Values.chat.courseImages.container | quote }}
+  COURSE_IMAGE_PROJECTION_STORAGE_PREFIX: {{ .Values.chat.courseImages.prefix | quote }}
+  {{- end }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
   KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
