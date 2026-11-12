@@ -116,7 +116,11 @@ export function LiveQuizEscapeRoomQuestionControls({
             <EscapeRoomHintButton
               penalty={config.hintPenalty}
               loading={controller.requestingHint}
-              disabled={controller.lockoutRemaining > 0}
+              disabled={
+                controller.lockoutRemaining > 0 ||
+                controller.isCompleted ||
+                controller.isExpired
+              }
               onClick={controller.requestHint}
               dataCy="live-quiz-escape-room-hint"
             />
