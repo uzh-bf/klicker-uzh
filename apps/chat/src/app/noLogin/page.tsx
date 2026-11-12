@@ -44,11 +44,12 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const redirectUrl = assessment ? undefined : getChatRedirectUrl(redirectTo)
   const t = await getTranslations()
 
-  const loginHref = assessment
-    ? loginBaseUrl
-    : redirectUrl
-      ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
-      : `${loginBaseUrl}/login`
+  let loginHref = `${loginBaseUrl}/login`
+  if (assessment) {
+    loginHref = loginBaseUrl
+  } else if (redirectUrl) {
+    loginHref = `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
+  }
 
   return (
     <main
