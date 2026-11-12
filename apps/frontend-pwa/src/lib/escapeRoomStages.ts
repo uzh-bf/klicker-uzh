@@ -137,19 +137,47 @@ export function getIndividualEscapeRoomStages({
 
 // Group Activity: the stage key is the element instance id. A solved stage is
 // only recorded as a decision; reveal, skip and bonus results are outcomes.
+// The server withholds locked stages, so the ids cover the stages up to the
+// current one and the total comes separately; unknown stages stay open.
 export function getGroupEscapeRoomStages({
   stageInstanceIds,
+  totalStages,
   hasBonus,
   stageDecisions,
   stageOutcomes,
 }: {
   stageInstanceIds: readonly (string | number)[]
+  totalStages?: number | null
   hasBonus: boolean
   stageDecisions?: ReadonlyArray<{ instanceId: string | number }> | null
   stageOutcomes?: ReadonlyArray<EscapeRoomStageOutcomeEntry> | null
 }): EscapeRoomStages {
-  const bonusIndex = hasBonus ? stageInstanceIds.length - 1 : -1
-  const resolved = stageInstanceIds.map((instanceId, index): ResolvedStage => {
+  const total = Math.max(totalStages ?? 0, stageInstanceIds.length)
+  const bonusCount = hasBonus && total > 1 ? 1 : 0
+
+  // After expiry every stage is withheld. Cleared stages can still be
+  // counted, but not placed in order, so only the counts are reported.
+  if (stageInstanceIds.length === 0) {
+    const clearedKeys = new Set([
+      ...(stageDecisions ?? []).map((decision) => String(decision.instanceId)),
+      ...(stageOutcomes ?? [])
+        .filter((entry) => entry.outcome && !entry.outcome.startsWith('BONUS'))
+        .map((entry) => entry.stageKey),
+    ])
+    if (clearedKeys.size > 0) {
+      return {
+        stages: [],
+        requiredCount: total - bonusCount,
+        bonusCount,
+        clearedCount: Math.min(clearedKeys.size, total - bonusCount),
+      }
+    }
+  }
+
+  const bonusIndex = hasBonus ? total - 1 : -1
+  const resolved = Array.from({ length: total }, (_, index): ResolvedStage => {
+    const instanceId = stageInstanceIds[index]
+    if (instanceId === undefined) return {}
     const fromOutcome = resolveFromOutcome(
       stageOutcomes?.find((outcome) => outcome.stageKey === String(instanceId))
     )

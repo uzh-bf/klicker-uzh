@@ -137,6 +137,45 @@ describe('group escape room stages', () => {
     assert.equal(result.clearedCount, 2)
   })
 
+  it('keeps the total and the bonus stage while later stages are locked', () => {
+    const result = getGroupEscapeRoomStages({
+      stageInstanceIds: ['1', '2'],
+      totalStages: 4,
+      hasBonus: true,
+      stageDecisions: [{ instanceId: '1' }],
+    })
+    assert.deepEqual(states(result), ['solved', 'current', 'open', 'open'])
+    assert.deepEqual(
+      result.stages.map((stage) => stage.kind),
+      ['regular', 'regular', 'regular', 'bonus']
+    )
+    assert.equal(result.requiredCount, 3)
+    assert.equal(result.clearedCount, 1)
+  })
+
+  it('reports only counts once an expired attempt hides every stage', () => {
+    const untouched = getGroupEscapeRoomStages({
+      stageInstanceIds: [],
+      totalStages: 3,
+      hasBonus: false,
+    })
+    assert.deepEqual(states(untouched), ['current', 'open', 'open'])
+
+    const expired = getGroupEscapeRoomStages({
+      stageInstanceIds: [],
+      totalStages: 3,
+      hasBonus: false,
+      stageDecisions: [{ instanceId: '1' }],
+      stageOutcomes: [
+        { stageKey: '2', outcome: 'REVEALED' },
+        { stageKey: '3', wrongAttempts: 1 },
+      ],
+    })
+    assert.deepEqual(expired.stages, [])
+    assert.equal(expired.requiredCount, 3)
+    assert.equal(expired.clearedCount, 2)
+  })
+
   it('shows reveal, open and bonus results', () => {
     const revealed = getGroupEscapeRoomStages({
       stageInstanceIds: ids,
