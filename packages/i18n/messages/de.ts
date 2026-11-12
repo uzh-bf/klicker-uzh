@@ -3130,7 +3130,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomUnitMinutes: 'Minuten',
       escapeRoomHintPenalty: 'Hinweis-Strafe',
       escapeRoomHintPenaltyTooltip:
-        'Sekunden, die der Wertungszeit für jeden geöffneten Hinweis hinzugefügt werden. Pflichtfeld; 0 macht Hinweise kostenlos. Wird ignoriert, wenn steigende Strafen gesetzt sind.',
+        'Sekunden, die der Wertungszeit für jeden geöffneten Hinweis hinzugefügt werden. Pflichtfeld; 0 macht Hinweise kostenlos. Bei steigenden Strafen gilt sie für Hinweise, die über diese Liste hinausgehen.',
       escapeRoomAssessmentIncompatible:
         'Ein Escape Room kann nicht mit dem Bewertungsmodus kombiniert werden.',
       escapeRoomNoQrOutside:
@@ -3163,7 +3163,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomGroupBonus: 'Bonus',
       escapeRoomHintPenalties: 'Steigende Strafen',
       escapeRoomHintPenaltiesTooltip:
-        'Optionale Sekunden für den ersten, zweiten, dritten Hinweis usw., durch Kommas getrennt. Überschreibt die Hinweis-Strafe; leer bedeutet, dass jeder Hinweis die Hinweis-Strafe kostet.',
+        'Optionale Sekunden für den ersten, zweiten, dritten Hinweis usw., durch Kommas getrennt. Weitere Hinweise kosten die Hinweis-Strafe; leer bedeutet, dass jeder Hinweis die Hinweis-Strafe kostet.',
       escapeRoomHintPenaltiesPlaceholder: 'z. B. 60, 120, 240',
       escapeRoomHintPenaltiesInvalid:
         'Bis zu 10 ganze Zahlen zwischen 0 und 3600, durch Kommas getrennt',
