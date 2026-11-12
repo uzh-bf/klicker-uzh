@@ -542,37 +542,39 @@ describe('revision request decision', () => {
   })
 })
 
+// The worker names a design slot and the question generated for it
+// differently, so the fixtures keep the two ids apart.
+const specification = {
+  question_id: 'slot-1',
+  design_slot_id: 'design-1',
+  module_id: 'module-1',
+  module_name: 'Synthetic module',
+  objective_id: null,
+  objective_source: null,
+  learning_objective: 'synthetic objective',
+  topic_targets: [],
+  item_format: 'SC',
+  bloom_level: 'understand',
+  content_type: 'concept',
+  difficulty_scale: 2,
+  difficulty_mechanism: null,
+  planned_true_count: null,
+  permitted_aids: null,
+  evidence_target: null,
+  question_kind: 'definition',
+  difficulty_label: 'medium',
+  graph_resolution: {},
+  evidence: [{ id: 'chunk-1', text: 'synthetic evidence' }],
+  assertions: [
+    {
+      id: 'assertion-1',
+      version: 1,
+      statement: 'synthetic claim',
+      rationale: 'synthetic reason',
+    },
+  ],
+}
 describe('slot specifications', () => {
-  const specification = {
-    question_id: 'slot-1',
-    design_slot_id: 'design-1',
-    module_id: 'module-1',
-    module_name: 'Synthetic module',
-    objective_id: null,
-    objective_source: null,
-    learning_objective: 'synthetic objective',
-    topic_targets: [],
-    item_format: 'SC',
-    bloom_level: 'understand',
-    content_type: 'concept',
-    difficulty_scale: 2,
-    difficulty_mechanism: 'synthetic',
-    planned_true_count: null,
-    permitted_aids: null,
-    evidence_target: null,
-    question_kind: 'definition',
-    difficulty_label: 'medium',
-    graph_resolution: {},
-    evidence: [{ id: 'chunk-1', text: 'synthetic evidence' }],
-    assertions: [
-      {
-        id: 'assertion-1',
-        version: 1,
-        statement: 'synthetic claim',
-        rationale: 'synthetic reason',
-      },
-    ],
-  }
   const designSummary = {
     title: 'Synthetic design',
     questionCount: 1,
@@ -582,7 +584,7 @@ describe('slot specifications', () => {
     warnings: [],
     slots: [
       {
-        sourceQuestionId: 'slot-1',
+        sourceQuestionId: 'design-1',
         moduleId: 'module-1',
         objectiveId: null,
         bloomLevel: null,
@@ -989,6 +991,39 @@ describe('revision child build dispatch and completion', () => {
     ]) {
       expect(payload).not.toHaveProperty(key)
     }
+  })
+
+  it('finds the design slot of a draft through its stored specification', async () => {
+    await setup('purged')
+    await prisma.elementGenerationBuild.update({
+      where: { id: parentId },
+      data: {
+        designSummary: {
+          title: 'Synthetic design',
+          questionCount: 3,
+          objectives: [],
+          modules: [{ moduleId: 'M1', moduleName: 'Module', questionCount: 3 }],
+          sources: [],
+          warnings: [],
+          slots: [{ ...slot, sourceQuestionId: 'design-1', specification }],
+        } as never,
+      },
+    })
+    const fake = fakeRuntime()
+    const context = await request(fake.runtime)
+
+    await getQuestionGenerationBuild(parentId, context)
+
+    expect(fake.startSlotRevision).toHaveBeenCalledTimes(1)
+    const payload = fake.startSlotRevision.mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >
+    expect(payload).toMatchObject({
+      question_id: 'slot-1',
+      design_slot_id: 'design-1',
+      slot_specification: { question_id: 'slot-1' },
+    })
   })
 
   it('sends graph references and digests while the graph exists', async () => {
