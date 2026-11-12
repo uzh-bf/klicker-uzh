@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { isAssessmentMode } from '../../lib/assessmentMode'
 import Link from 'next/link'
 import { ManageAssistant } from '../../components/manage-assistant'
 import { getManageAssistantCapability } from '../../lib/server/featureFlags'

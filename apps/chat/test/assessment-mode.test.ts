@@ -21,6 +21,9 @@ import {
   getParticipantId,
   withChatbotAuth,
 } from '../src/lib/server/apiGuards'
+import { mintParticipantMcpJwt } from '../src/lib/server/mcpAuthMint'
+import { signChatGuestToken } from '../src/lib/server/ltiGuest'
+import { signPwaEmbedSessionToken } from '../src/lib/server/pwaEmbed'
 import { proxy } from '../src/proxy'
 
 const SIGNING_KEY = 'assessment-test-signing-key'
@@ -32,15 +35,17 @@ const ASSESSMENT_COOKIE = 'next-auth.participant-session-token'
 async function sign({
   issuer,
   role = 'PARTICIPANT',
+  claims = { scope: 'EDUID' },
   expiresIn = '1h',
   signingKey = SIGNING_KEY,
 }: {
   issuer: string
   role?: string
+  claims?: Record<string, unknown>
   expiresIn?: string
   signingKey?: string
 }) {
-  return new SignJWT({ role })
+  return new SignJWT({ role, ...claims })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject('participant-1')
     .setIssuer(issuer)
@@ -64,6 +69,7 @@ beforeEach(() => {
   vi.stubEnv('APP_SECRET', SIGNING_KEY)
   vi.stubEnv('APP_ORIGIN_AUTH', AUTH_ISSUER)
   vi.stubEnv('APP_ORIGIN_API', API_ISSUER)
+  vi.stubEnv('APP_CHAT_GUEST_SECRET', 'guest-signing-key')
   mocks.participantFindUnique.mockResolvedValue({
     isActive: true,
     accounts: [{ type: 'oidc' }],
@@ -111,15 +117,53 @@ describe('assessment mode identity resolution', () => {
   })
 
   test('ignores guest and embed cookies and bearer tokens', async () => {
+    const guest = await signChatGuestToken('participant-1')
+    const embed = await signPwaEmbedSessionToken({
+      chatbotId: CHATBOT_ID,
+      courseId: 'course-1',
+      participantId: 'participant-1',
+    })
+    const transports: Record<string, string>[] = [
+      { cookie: `chat_participant_token=${guest}` },
+      { cookie: `chat_pwa_embed_token=${embed}` },
+      { authorization: `Bearer ${guest}` },
+      { authorization: `Bearer ${embed}` },
+    ]
+    for (const headers of transports) {
+      const result = await getParticipantId(
+        new NextRequest(new URL('/api', 'https://assessment-chat.test'), {
+          headers,
+        })
+      )
+      expect(result).toHaveProperty('response')
+    }
+  })
+
+  test('refuses the chat student MCP token as a session', async () => {
+    const mcpToken = await mintParticipantMcpJwt('participant-1', 'account')
     const result = await getParticipantId(
-      new NextRequest(new URL('/api', 'https://assessment-chat.test'), {
-        headers: {
-          cookie: 'chat_participant_token=x; chat_pwa_embed_token=y',
-          authorization: 'Bearer z',
-        },
-      })
+      request('/api', { [ASSESSMENT_COOKIE]: mcpToken })
     )
     expect(result).toHaveProperty('response')
+
+    const response = await proxy(
+      request(`/${CHATBOT_ID}`, { [ASSESSMENT_COOKIE]: mcpToken })
+    )
+    expect(response.headers.get('location')).toContain('/noLogin')
+  })
+
+  test('fails closed when the auth issuer is not configured', async () => {
+    vi.stubEnv('APP_ORIGIN_AUTH', '')
+    const token = await sign({ issuer: AUTH_ISSUER })
+    const result = await getParticipantId(
+      request('/api', { [ASSESSMENT_COOKIE]: token })
+    )
+    expect('response' in result && result.response.status).toBe(500)
+
+    const response = await proxy(
+      request(`/${CHATBOT_ID}`, { [ASSESSMENT_COOKIE]: token })
+    )
+    expect(response.headers.get('location')).toContain('/noLogin')
   })
 
   test('regular mode still reads participant_token with the API issuer', async () => {

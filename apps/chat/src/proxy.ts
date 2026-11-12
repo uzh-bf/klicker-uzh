@@ -8,6 +8,7 @@ import {
   getAccountSessionConfig,
   isAssessmentBlockedPath,
   isAssessmentMode,
+  isAssessmentSessionPayload,
 } from '@/src/lib/assessmentMode'
 import {
   CHAT_SCOPED_TOKEN_HEADER,
@@ -117,10 +118,7 @@ async function verifyAssessmentSessionInProxy(token: string): Promise<boolean> {
       algorithms: ['HS256'],
       requiredClaims: ['exp'],
     })
-    return (
-      typeof result.payload.sub === 'string' &&
-      result.payload.role === 'PARTICIPANT'
-    )
+    return isAssessmentSessionPayload(result.payload)
   } catch {
     return false
   }

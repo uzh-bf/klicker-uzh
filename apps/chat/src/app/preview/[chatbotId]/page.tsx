@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { z } from 'zod'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { OwnerPreviewAssistant } from '@/src/components/owner-preview-assistant'
 import {
   getDefaultReasoningEffort,
@@ -24,6 +25,8 @@ type OwnerPreviewPageProps = {
 export default async function OwnerPreviewPage({
   params,
 }: OwnerPreviewPageProps) {
+  if (isAssessmentMode()) notFound()
+
   const { chatbotId } = await params
   if (!z.string().guid().safeParse(chatbotId).success) notFound()
 

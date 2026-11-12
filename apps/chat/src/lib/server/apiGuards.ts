@@ -12,6 +12,7 @@ import { z } from 'zod'
 import {
   getAccountSessionConfig,
   isAssessmentMode,
+  isAssessmentSessionPayload,
 } from '@/src/lib/assessmentMode'
 import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -288,7 +289,11 @@ export async function getParticipantIdFromToken(
         ? jwtPayload.payload.sub
         : null
 
-    if (!participantId || jwtPayload.payload.role !== UserRole.PARTICIPANT) {
+    if (
+      !participantId ||
+      jwtPayload.payload.role !== UserRole.PARTICIPANT ||
+      (isAssessmentMode() && !isAssessmentSessionPayload(jwtPayload.payload))
+    ) {
       return {
         response: NextResponse.json(
           { error: 'Invalid authentication token' },

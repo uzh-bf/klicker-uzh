@@ -33,6 +33,25 @@ export function getAccountSessionConfig(): AccountSessionConfig {
       }
 }
 
+/**
+ * Claim check for the auth-app participant session. The signing key and issuer
+ * are shared with other tokens the chat mints for the same participant (the
+ * student MCP token), so the claims must say which kind this is: only the
+ * Edu-ID login scope qualifies, and a token carrying a `purpose` claim is
+ * never a session.
+ */
+export function isAssessmentSessionPayload(
+  payload: Record<string, unknown>
+): boolean {
+  return (
+    typeof payload.sub === 'string' &&
+    payload.sub.length > 0 &&
+    payload.role === 'PARTICIPANT' &&
+    payload.scope === 'EDUID' &&
+    payload.purpose === undefined
+  )
+}
+
 // Entry points that exist for other audiences (LMS launches, embedded PWA
 // chat, lecturer tools). The assessment chat serves none of them.
 const ASSESSMENT_BLOCKED_PREFIXES = [
