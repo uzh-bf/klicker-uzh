@@ -75,6 +75,42 @@ KLICKER_SESSION_TOKEN=<session-token> \
 
 ---
 
+### 5. `chat-exam.js` (Exam-shaped Load Against the Local Mock Model)
+
+Simulates an exam: N students (default 100), one chat turn per student every 45 s for 30 minutes (at most 40 per student, never two in flight per student), all starting at the same instant, plus a page reload with history fetch every 10th slot. Each student authenticates through the chat `/auth/pwa-embed` bridge with an embed exchange token signed by the development `APP_SECRET`, the exam's real transport. No Edu-ID and no paid model is involved.
+
+**Targets local only by default.** The script refuses any host other than `localhost`, `127.0.0.1` or `*.localhost`. A remote host also needs `KLICKER_ALLOW_REMOTE_TARGET=true` and `KLICKER_ALLOW_SIDE_EFFECTS=true` (plus `KLICKER_ALLOW_PRODUCTION=true` for production). Remote runs need separate authorization and a real seeded course; the seeder below is local-only.
+
+Runbook, from the host, for a linked worktree runtime started with `devrouter ensure . --profile chat,ai`:
+
+```bash
+# 1. Seed synthetic fixtures (course, PUBLISHED chatbot, participants 100-125,
+#    accepted disclaimers, owner budget). Refuses non-local databases.
+devrouter exec . -- bash -c 'cd packages/prisma-data && \
+  CHAT_EXAM_LOAD_WRITE=true CHAT_EXAM_LOAD_PARTICIPANTS=100 pnpm run seed:chat-exam-load'
+
+# 2. Route chat to the mock model (stops the real litellm container; run after `ensure`).
+LITELLM_CONTAINER=<project>-litellm-1 util/load-test/mock-litellm.sh start
+devrouter exec . -- node util/load-test/chat-mock-registry.mjs
+
+# 3. Run. The dev APP_SECRET is read from the committed dev-only env file.
+KLICKER_APP_SECRET="$(grep '^APP_SECRET=' .devcontainer/devcontainer.env | cut -d= -f2-)" \
+  KLICKER_BASE_URL=https://chat.klicker.<workspace>.localhost \
+  k6 run util/load-test/chat-exam.js
+
+# 4. Restore: LITELLM_CONTAINER=... util/load-test/mock-litellm.sh stop; devrouter stop .
+```
+
+Short smoke: `STUDENTS=10 DURATION_MINUTES=2 RELOAD_EVERY_SLOTS=1`. Other knobs: `INTERVAL_SECONDS` (45), `MAX_PER_STUDENT` (40), `WARMUP_SECONDS` (30, synchronized-start delay), `LATE_THRESHOLD_SECONDS` (2), `KLICKER_SELECTED_MODEL` (`gpt-6-luna`).
+
+Counters: `chat_requests_scheduled` (slots reached), `_admitted` (sent), `_late` (sent more than the threshold after the slot start), `_missed` (previous turn ran past the whole slot; skipped, not queued), `_failed` (non-2xx, no `finish` event, or an `error` event). Trends: `chat_first_byte_ms` and `chat_full_response_ms`. The run fails if any request is missed or failed.
+
+**Mock model route.** `util/litellm/load-test.config.yaml` maps every chat alias to a LiteLLM `mock_response` with `mock_delay: 8`. LiteLLM v1.96's mock does not stream on the Responses API (it returns a non-stream object and the proxy answers 500), so `util/litellm/load-test.registry.json` registers the fallback model with `usesResponsesApi: false` and chat uses chat completions. The delay is applied before the mock emits its chunks, so each chat request stays in flight for about 8 s, but the model stream itself arrives as one burst. Concurrency of in-flight chat requests is therefore realistic; model-side stream duration is not. The shared `util/litellm/config.yaml` is never edited.
+
+**What it does not measure.** First text delta (k6 buffers the body, so `chat_first_byte_ms` is the time to the first response byte, which is the stream `start` event and precedes any text); real model latency, token counts and provider rate limits; MCP/retrieval and knowledge-graph calls (the seeded chatbot has none); thread title generation; browser rendering, JavaScript or reconnect behavior; Edu-ID, Traefik/Azure ingress or production database sizing. A fast local machine also understates production resource contention.
+
+---
+
 ## Pre-requisites for Chatbot Testing
 
 1. **Course enrollment:** The test participant must be enrolled in the course hosting the target chatbot (`Participation` record).
