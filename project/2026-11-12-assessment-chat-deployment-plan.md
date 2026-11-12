@@ -55,11 +55,13 @@ Approval mode: executable batch. Terminal condition: a two-layer draft stack int
 
 - Slice 3. Chart: a `chatAssessment` values block plus Deployment, Service, Ingress and PodDisruptionBudget following `deployment-chat.yaml` and `deployment-assessment.yaml`. `envFrom`: `config-global`, `config-chat`, then a small `config-chat-assessment` overlay (`CHAT_ASSESSMENT_MODE`, public URLs); checksum both ConfigMaps. Reuse `secret-chat`, the probes, grace period, course-image env and optional GrowthBook secret. Pin to `klickerasm=reserved`. Production 3 replicas, staging 1. Same `chat-arm` image and tag as the regular chat. Update `deploy/scripts/verify-topology-spread.mjs`, `util/check-klicker-replica-ownership.mjs`, `apps/chat/test/modelRegistryParity.test.ts` if affected, and `docs/ci-and-deployment.md`. Add `appOrigins.assessmentChat` to `cm-global.yaml` and both values files.
 - Slice 4. Entry: set a literal `APP_ORIGIN_ASSESSMENT_CHAT` in `apps/frontend-pwa/.env.assessment.prd` and `.env.assessment.stg`, and point the assessment chatbot page at it. Hide the embedded course chat drawer in the assessment build. This replaces the `APP_ORIGIN_CHAT` line in #6878, which is trimmed to the export.
-- Slice 5. Local route and browser proof: add `assessment` and `assessment-chat` routes to `.devrouter.yml` if absent, sharing the local cookie domain. With synthetic data: the assessment login opens an assessment-course chatbot full-page on the assessment chat, sends one turn against a local mock model, reloads; a non-assessment chatbot returns 404 there; a regular login and an embed token are refused there; the regular chat still works. Screenshots in PR 2.
+- Slice 5. Local route and browser proof: add `assessment` and `assessment-chat` routes to `.devrouter.yml` if absent, sharing the local cookie domain. With synthetic data: the assessment login opens an assessment-course chatbot full-page on the assessment chat, sends one turn against a local mock model, reloads; a non-assessment chatbot returns 404 there; a regular login and an embed token are refused there; the regular chat still works. Use an untouched participant who completes the data-use step through the assessment PWA, and a chatbot with a disclaimer, so no gate is bypassed by hand. Screenshots in PR 2.
 
 ### Topology
 
-A two-layer stack into `v3-ai` under the repository's stacked-PR rule: PR 1 is the app seam with its tests, PR 2 the chart, values, PWA entry and local route. Neither touches the staging promoter.
+A two-layer stack into `v3-ai` under the repository's stacked-PR rule: PR 1 is the app seam with its tests, PR 2 the chart, staging values, PWA entry and local route. Neither touches the staging promoter.
+
+Delivery paths differ by environment. Staging builds from `v3-adaptive-learning`, which receives `v3-ai` through the maintained sync. Production Argo (`app-klicker`) deploys the chart and `deploy/env-uzh-prd/values.yaml` from `v3`, with image tags cut from `v3-ai` releases. The production chart and values therefore need a separate PR into `v3` after the staging rehearsal (gated, listed below). The production values pin a `chat-arm` tag that contains the assessment mode; an older tag would serve a regular chat on the exam host.
 
 ### Recovery
 
@@ -71,10 +73,12 @@ A two-layer stack into `v3-ai` under the repository's stacked-PR rule: PR 1 is t
 ### Separately gated after the stack (not in this batch)
 
 1. DNS and TLS for `assessment-chat.klicker.uzh.ch` and the staging host. Longest lead time; request it early.
-2. Merge, sync to the staging source, staging rollout and a load rehearsal; then the production release and rollout.
-3. Exam chatbot configuration: fixed to `gpt-5.6-sol` at the chosen effort, exam mode settings, budget.
-4. Audit logging of assessment chat activity (separate package, builds on the `v3-audit` audit facility).
+2. Merge, sync to the staging source, staging rollout and a load rehearsal; then a release tag containing the assessment mode, a PR into `v3` with the chart and production values pinned to that tag, and the production rollout. After rollout, check on the exam host that a regular `participant_token` is refused and an assessment session is accepted.
+3. Model qualification on GPT-5.6 Sol: one high-effort request through the production gateway, confirmation that the gateway route uses the dedicated deployment, the exam prompts re-checked on GPT-5.6 Sol (they were evaluated on GPT-6.1 Sol), time to first visible text with hidden reasoning, and an ADVANCED credit budget for about 100 students × 40 turns.
+4. Exam chatbot configuration: fixed to `gpt-5.6-sol` at the chosen effort, exam mode settings, budget.
+5. Audit logging of assessment chat activity (separate package, builds on the `v3-audit` audit facility).
 
 ## Progress
 
 - 2026-11-12: plan drafted from the assessment PWA inventory. Independent critique returned CHANGES (12 items). Accepted and folded in: policy-valid registry with per-chatbot restriction, one image with runtime URLs, a shared token resolver that also closes the guest, embed, LTI, e-learning and lecturer entry points, no `apps/auth` change, an overlay ConfigMap reusing `secret-chat`, a literal assessment chat origin in both PWA env files, the regular-chat exposure recorded as a decision, registry parity and chart check updates, a two-layer stack, and early DNS/TLS. Next: user approval.
+- 2026-11-12: Layer 1 committed (`dc12b95c80`, `8416539b29`); 1,953 chat tests pass. Advisor review added: production deploys from `v3` (separate gated PR with a pinned tag and a post-rollout refusal check), an untouched participant and a disclaimer in Slice 5, and GPT-5.6 Sol qualification as a gated pre-exam step. Independent auth review of Layer 1 is running; push waits for it.
