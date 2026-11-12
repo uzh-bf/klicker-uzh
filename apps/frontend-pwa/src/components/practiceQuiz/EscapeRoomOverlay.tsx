@@ -530,7 +530,7 @@ export default function EscapeRoomOverlay({
             <Button
               basic
               className={{
-                root: 'w-full justify-center text-slate-300 hover:text-white',
+                root: 'w-full justify-center text-slate-300 hover:bg-slate-700 hover:text-white',
               }}
               onClick={exit.onClick}
               data={{ cy: 'escape-room-start-exit' }}
@@ -778,7 +778,14 @@ export default function EscapeRoomOverlay({
         {exit && (
           <Button
             primary={!bonusOffered}
-            className={{ root: 'h-11 w-full font-bold' }}
+            className={{
+              // the secondary variant is light, so it needs dark text on the
+              // dark card
+              root: twMerge(
+                'h-11 w-full font-bold',
+                bonusOffered && 'text-slate-900'
+              ),
+            }}
             onClick={exit.onClick}
             data={{ cy: 'escape-room-exit' }}
           >
