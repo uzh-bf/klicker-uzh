@@ -16,7 +16,6 @@ const FIXTURE_NAME = 'chat exam load fixture'
 const COURSE_ID = 'e0e0e0e0-0000-4000-8000-00000000c001'
 const CHATBOT_ID = 'e0e0e0e0-0000-4000-8000-00000000c002'
 const DISCLAIMER_ID = 'e0e0e0e0-0000-4000-8000-00000000c003'
-const COURSE_PIN_CODE = 987640000
 const FIRST_PARTICIPANT = 100
 const DEFAULT_PARTICIPANT_COUNT = 100
 const MAX_PARTICIPANT_COUNT = 125
@@ -95,7 +94,7 @@ async function seedChatExamLoad() {
       isGroupCreationEnabled: false,
       ownerId: USER_ID_TEST,
       color: '#016272',
-      pinCode: COURSE_PIN_CODE,
+      pinCode: null,
       startDate: new Date('2026-01-01T00:00:00.000Z'),
       endDate: new Date('2030-01-01T00:00:00.000Z'),
       groupDeadlineDate: new Date('2029-12-01T00:00:00.000Z'),

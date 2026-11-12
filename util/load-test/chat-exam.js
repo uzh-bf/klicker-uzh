@@ -125,6 +125,11 @@ const slotCount = Math.min(
   maxPerStudent,
   Math.floor((durationMinutes * 60) / intervalSeconds)
 )
+if (slotCount < 1) {
+  throw new Error(
+    'DURATION_MINUTES and INTERVAL_SECONDS produce no chat slots; lower INTERVAL_SECONDS or raise DURATION_MINUTES'
+  )
+}
 
 export const options = {
   insecureSkipTLSVerify: target.isLocal,

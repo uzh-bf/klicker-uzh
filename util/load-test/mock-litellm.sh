@@ -41,13 +41,15 @@ start)
     docker start "$ORIGINAL" >/dev/null 2>&1 || true
   }
   trap restore_original ERR
+  trap 'restore_original; exit 130' INT
+  trap 'restore_original; exit 143' TERM
   # Only the mock config is mounted; the container gets no upstream key.
   docker run -d --name "$MOCK" --network "$network" --network-alias litellm \
     -v "$ROOT/util/litellm/load-test.config.yaml:/app/config.yaml:ro" \
     "$image" --config=/app/config.yaml --port=4000 >/dev/null
   ready=0
   for _ in $(seq 1 60); do
-    if docker exec "$MOCK" python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)" >/dev/null 2>&1; then
+    if docker exec "$MOCK" python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness', timeout=3).status == 200 else 1)" >/dev/null 2>&1; then
       ready=1
       break
     fi
