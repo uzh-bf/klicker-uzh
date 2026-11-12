@@ -3,11 +3,41 @@ import * as Prisma from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { v5 as uuidv5 } from 'uuid'
 import { COURSE_ID_DUPLICATION_STRESS, USER_ID_TEST } from './constants.js'
-import { assertLocalDatabase, prepareCourse } from './helpers.js'
+import { prepareCourse } from './helpers.js'
 
 const STRESS_ACTIVITY_COUNT = 200
 const STRESS_ACTIVITY_CONCURRENCY = 20
 const STRESS_PIN_CODE_START = 987650000
+
+function assertLocalDatabase() {
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) {
+    throw new Error(
+      'DATABASE_URL is required to seed the course duplication stress fixture.'
+    )
+  }
+
+  let hostname: string
+  try {
+    hostname = new URL(databaseUrl).hostname
+  } catch {
+    throw new Error('DATABASE_URL is not a valid development database URL.')
+  }
+
+  const isLocalHost =
+    hostname === 'postgres' ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname === '[::1]' ||
+    hostname.endsWith('.localhost')
+
+  if (!isLocalHost) {
+    throw new Error(
+      'The course duplication stress fixture refuses non-local database hosts.'
+    )
+  }
+}
 
 function activityId(index: number) {
   return uuidv5(
@@ -23,7 +53,7 @@ async function seedCourseDuplicationStress() {
     )
   }
 
-  assertLocalDatabase('course duplication stress fixture')
+  assertLocalDatabase()
 
   if (process.env.COURSE_DUPLICATION_STRESS_WRITE !== 'true') {
     console.log(

@@ -15,6 +15,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ORIGINAL="${LITELLM_CONTAINER:?Set LITELLM_CONTAINER to the workspace litellm container name}"
 MOCK="${ORIGINAL}-mock"
 
+# Refuse to touch any litellm service that is not this checkout's own. The
+# runtime mounts util/litellm/config.yaml read-only and offers no override
+# hook, so the swap below is the only way to serve the mock config.
+service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$ORIGINAL")"
+workdir="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$ORIGINAL")"
+if [ "$service" != litellm ] || [ "$workdir" != "$ROOT/.devcontainer" ]; then
+  echo "refusing: $ORIGINAL is not the litellm service of $ROOT" >&2
+  exit 1
+fi
+
 case "${1:-}" in
 start)
   image="$(docker inspect --format '{{.Config.Image}}' "$ORIGINAL")"

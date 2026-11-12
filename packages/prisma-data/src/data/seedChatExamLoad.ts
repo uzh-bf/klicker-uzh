@@ -3,11 +3,11 @@
 // participants with participations, accepted disclaimers and credits, and BASE
 // usage headroom for the course owner. All identifiers are fixed and
 // synthetic so the k6 scenario can derive them without reading the database.
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { getZurichMonthStart } from '@klicker-uzh/util'
 import { USER_ID_TEST } from './constants.js'
-import { assertLocalDatabase, prepareCourse } from './helpers.js'
+import { prepareCourse } from './helpers.js'
 
 const FIXTURE_NAME = 'chat exam load fixture'
 const COURSE_ID = 'e0e0e0e0-0000-4000-8000-00000000c001'
@@ -15,8 +15,8 @@ const CHATBOT_ID = 'e0e0e0e0-0000-4000-8000-00000000c002'
 const DISCLAIMER_ID = 'e0e0e0e0-0000-4000-8000-00000000c003'
 const COURSE_PIN_CODE = 987640000
 const FIRST_PARTICIPANT = 100
-const DEFAULT_PARTICIPANT_COUNT = 26
-const MAX_PARTICIPANT_COUNT = 200
+const DEFAULT_PARTICIPANT_COUNT = 100
+const MAX_PARTICIPANT_COUNT = 125
 // Not a valid hash, so no password can ever match it.
 const LOGIN_DISABLED = '!'
 // Far above what the scenario can spend, so owner budget never ends a run.
@@ -31,7 +31,7 @@ async function seedChatExamLoad() {
   if (process.env.ENV !== 'development') {
     throw new Error(`The ${FIXTURE_NAME} is available only in development.`)
   }
-  assertLocalDatabase(FIXTURE_NAME)
+  await requireDisposableDatabase(prisma)
 
   const count = Number(
     process.env.CHAT_EXAM_LOAD_PARTICIPANTS ?? DEFAULT_PARTICIPANT_COUNT
@@ -74,7 +74,7 @@ async function seedChatExamLoad() {
       displayName: 'Chat exam load fixture',
       description: 'Development-only course for the chat exam load harness.',
       isGamificationEnabled: false,
-      isAssessmentEnabled: false,
+      isAssessmentEnabled: true,
       isGroupCreationEnabled: false,
       ownerId: USER_ID_TEST,
       color: '#016272',

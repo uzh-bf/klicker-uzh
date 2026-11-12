@@ -1082,30 +1082,3 @@ export async function prepareContentElements(
 
   return elements
 }
-
-/** Refuses to run a fixture seeder unless DATABASE_URL points at a local host. */
-export function assertLocalDatabase(fixtureName: string) {
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) {
-    throw new Error(`DATABASE_URL is required to seed the ${fixtureName}.`)
-  }
-
-  let hostname: string
-  try {
-    hostname = new URL(databaseUrl).hostname
-  } catch {
-    throw new Error('DATABASE_URL is not a valid development database URL.')
-  }
-
-  const isLocalHost =
-    hostname === 'postgres' ||
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '::1' ||
-    hostname === '[::1]' ||
-    hostname.endsWith('.localhost')
-
-  if (!isLocalHost) {
-    throw new Error(`The ${fixtureName} refuses non-local database hosts.`)
-  }
-}

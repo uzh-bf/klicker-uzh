@@ -1,9 +1,8 @@
 // Exam-shaped chat load: N students, one chat turn per student every
 // INTERVAL_SECONDS, no overlap per student, synchronized start, plus a page
-// reload with history fetch at a few slots. Authenticates each virtual
-// student through the chat /auth/pwa-embed bridge with an embed exchange
-// token signed by the local development APP_SECRET, the same transport the
-// exam uses. Meant for the local mock model route (see README); remote
+// reload with history fetch at a few slots. Each virtual student gets a
+// participant session cookie signed with the local development APP_SECRET
+// (see sessionAuth below). Meant for the local mock model route (see README); remote
 // targets are refused unless explicitly acknowledged.
 //
 // Usage (see README for the full runbook):
@@ -20,10 +19,8 @@ import { isProductionHostname, parseOrigin } from './chatbot-login.js'
 
 // Fixed synthetic identifiers shared with
 // packages/prisma-data/src/data/seedChatExamLoad.ts.
-const COURSE_ID = 'e0e0e0e0-0000-4000-8000-00000000c001'
 const CHATBOT_ID = 'e0e0e0e0-0000-4000-8000-00000000c002'
 const FIRST_PARTICIPANT_INDEX = 100
-const EXCHANGE_SCOPE = 'PWA_CHAT_EMBED_EXCHANGE'
 
 function intEnv(name, fallback, min, max) {
   const value = Number(__ENV[name] || fallback)
@@ -70,7 +67,44 @@ if (!appSecret) {
   throw new Error('KLICKER_APP_SECRET (the development APP_SECRET) is required')
 }
 
-const students = intEnv('STUDENTS', 100, 1, 200)
+// Participant session transports. 'assessment' is the assessment chat's
+// cookie (HS256, iss = APP_ORIGIN_AUTH, scope EDUID); 'regular' is today's
+// chat participant_token (iss = APP_ORIGIN_API). The issuer defaults to the
+// chat origin with its `chat.` host label swapped for `auth.` or `api.`, which
+// matches the routed development origins; override it with
+// KLICKER_AUTH_ISSUER. The cookie name can be overridden with
+// KLICKER_AUTH_COOKIE.
+const authVariants = {
+  assessment: {
+    cookie: 'next-auth.participant-session-token',
+    issuerLabel: 'auth',
+    scope: 'EDUID',
+  },
+  regular: {
+    cookie: 'participant_token',
+    issuerLabel: 'api',
+    scope: undefined,
+  },
+}
+const authMode = __ENV.KLICKER_AUTH_MODE || 'assessment'
+const variant = authVariants[authMode]
+if (!variant) {
+  throw new Error('KLICKER_AUTH_MODE must be assessment or regular')
+}
+const sessionAuth = {
+  cookie: __ENV.KLICKER_AUTH_COOKIE || variant.cookie,
+  issuer:
+    __ENV.KLICKER_AUTH_ISSUER ||
+    target.origin.replace('://chat.', `://${variant.issuerLabel}.`),
+  scope: variant.scope,
+}
+if (sessionAuth.issuer === target.origin) {
+  throw new Error(
+    'Set KLICKER_AUTH_ISSUER: the chat host does not start with chat.'
+  )
+}
+
+const students = intEnv('STUDENTS', 100, 1, 125)
 const durationMinutes = intEnv('DURATION_MINUTES', 30, 1, 60)
 const intervalSeconds = intEnv('INTERVAL_SECONDS', 45, 5, 600)
 const maxPerStudent = intEnv('MAX_PER_STUDENT', 40, 1, 40)
@@ -115,20 +149,35 @@ function participantId(index) {
     .padStart(12, '0')}`
 }
 
-function signExchangeToken(participant) {
+function signSessionToken(participant, lifetimeSeconds) {
   const now = Math.floor(Date.now() / 1000)
   const encode = (value) => encoding.b64encode(JSON.stringify(value), 'rawurl')
-  const signingInput = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({
+  const claims = {
+    iss: sessionAuth.issuer,
     sub: participant,
-    scope: EXCHANGE_SCOPE,
-    chatbotId: CHATBOT_ID,
-    cookiesAvailable: true,
-    courseId: COURSE_ID,
+    role: 'PARTICIPANT',
     iat: now,
-    exp: now + 120,
-  })}`
+    exp: now + lifetimeSeconds,
+  }
+  if (sessionAuth.scope) claims.scope = sessionAuth.scope
+  const signingInput = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode(claims)}`
   const signature = hmac('sha256', appSecret, signingInput, 'binary')
   return `${signingInput}.${encoding.b64encode(signature, 'rawurl')}`
+}
+
+// The one place that turns a student into a ready session cookie.
+function openSession(participant) {
+  const lifetime = warmupSeconds + slotCount * intervalSeconds + 900
+  http
+    .cookieJar()
+    .set(
+      target.origin,
+      sessionAuth.cookie,
+      signSessionToken(participant, lifetime),
+      {
+        path: '/',
+      }
+    )
 }
 
 export function setup() {
@@ -201,7 +250,7 @@ function sendTurn(state) {
 }
 
 function reloadPage(state) {
-  http.get(`${target.origin}/${CHATBOT_ID}?embed=true`, {
+  http.get(`${target.origin}/${CHATBOT_ID}`, {
     tags: { name: 'page-reload' },
     redirects: 0,
   })
@@ -221,17 +270,7 @@ function reloadPage(state) {
 
 export default function (setupData) {
   const index = FIRST_PARTICIPANT_INDEX + exec.vu.idInTest - 1
-  const exchangeToken = signExchangeToken(participantId(index))
-  const bridge = http.get(
-    `${target.origin}/auth/pwa-embed?token=${exchangeToken}`,
-    { tags: { name: 'embed-bridge' }, redirects: 0 }
-  )
-  check(bridge, { 'embed bridge opened a session': (r) => r.status === 200 })
-  if (bridge.status !== 200) {
-    failed.add(slotCount)
-    scheduled.add(slotCount)
-    return
-  }
+  openSession(participantId(index))
 
   const created = http.post(
     `${target.origin}/api/chatbots/${CHATBOT_ID}/threads`,
@@ -256,7 +295,7 @@ export default function (setupData) {
       continue
     }
     admitted.add(1)
-    if (Date.now() - slotStart > lateThresholdSeconds * 1000) late.add(1)
+    late.add(Date.now() - slotStart > lateThresholdSeconds * 1000 ? 1 : 0)
     sendTurn(state)
     if ((slot + 1) % reloadEverySlots === 0) reloadPage(state)
   }
