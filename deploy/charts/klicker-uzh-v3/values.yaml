@@ -239,6 +239,12 @@ chat:
   mcp:
     key: ''
 
+  videoBlob:
+    accountName: ''
+    container: ''
+    existingSecret: ''
+    accessKeyKey: BLOB_STORAGE_ACCESS_KEY
+
   courseImages:
     existingSecret: ''
     connectionStringKey: connectionString
