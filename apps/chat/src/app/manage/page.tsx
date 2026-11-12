@@ -12,6 +12,8 @@ interface ManageAssistantPageProps {
 export default async function ManageAssistantPage({
   searchParams,
 }: ManageAssistantPageProps) {
+  if (isAssessmentMode()) notFound()
+
   const manageUser = await getAuthenticatedManageUser()
   const resolvedSearchParams = (await searchParams) ?? {}
   const embedded = isEmbeddedParam(resolvedSearchParams.embed)
