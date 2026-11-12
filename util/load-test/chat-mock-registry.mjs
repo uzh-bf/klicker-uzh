@@ -7,6 +7,7 @@
 // CHAT_ASSESSMENT_MODE=true. It copies the running chat process's environment, so no secret is read from
 // or written to a file. A later `devrouter ensure` or stop returns chat to the
 // default registry.
+import { connect } from 'node:net'
 import { spawn } from 'node:child_process'
 import { openSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
 
@@ -49,16 +50,27 @@ for (const assignment of process.argv.slice(2)) {
 }
 
 for (const pid of pids) {
+  // The script may itself run from the chat directory.
+  if (pid === process.pid) continue
   try {
     process.kill(pid, 'SIGTERM')
   } catch {
     // already exited
   }
 }
-await new Promise((resolve) => setTimeout(resolve, 3000))
+
+const portOpen = () =>
+  new Promise((resolve) => {
+    const socket = connect(3004, '127.0.0.1')
+    socket.once('connect', () => (socket.destroy(), resolve(true)))
+    socket.once('error', () => resolve(false))
+  })
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+for (let i = 0; i < 20 && (await portOpen()); i++) await sleep(500)
+if (await portOpen()) throw new Error('Port 3004 is still in use after SIGTERM')
 
 const log = openSync('/tmp/chat-load.log', 'a')
-spawn(
+const child = spawn(
   'pnpm',
   [
     'exec',
@@ -71,7 +83,17 @@ spawn(
     '3004',
   ],
   { cwd: chatDir, env, stdio: ['ignore', log, log], detached: true }
-).unref()
+)
+let exited = false
+child.once('error', (error) => {
+  throw error
+})
+child.once('exit', () => (exited = true))
+for (let i = 0; i < 120 && !exited && !(await portOpen()); i++) await sleep(500)
+if (exited || !(await portOpen())) {
+  throw new Error('Chat did not start on port 3004; see /tmp/chat-load.log')
+}
+child.unref()
 console.log(
   'chat restarted with the load-test registry; log: /tmp/chat-load.log'
 )

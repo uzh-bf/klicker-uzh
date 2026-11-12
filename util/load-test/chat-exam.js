@@ -57,6 +57,11 @@ function resolveTarget(env) {
         'Set KLICKER_ALLOW_SIDE_EFFECTS=true to acknowledge chat-turn writes and provider cost on a remote host'
       )
     }
+    if (target.protocol !== 'https:') {
+      throw new Error(
+        'Refusing a non-local http:// target: the session cookie must not travel in plaintext'
+      )
+    }
   }
   return { origin: target.origin, isLocal }
 }
@@ -72,7 +77,8 @@ if (!appSecret) {
 // chat participant_token (iss = APP_ORIGIN_API). The issuer defaults to the
 // chat origin with its `chat.` host label swapped for `auth.` or `api.`, which
 // matches the routed development origins; override it with
-// KLICKER_AUTH_ISSUER. The cookie name can be overridden with
+// KLICKER_AUTH_ISSUER, which is required for non-local targets because the
+// deployed API and auth hosts do not follow the label swap. The cookie name can be overridden with
 // KLICKER_AUTH_COOKIE.
 const authVariants = {
   assessment: {
@@ -86,10 +92,13 @@ const authVariants = {
     scope: undefined,
   },
 }
-const authMode = __ENV.KLICKER_AUTH_MODE || 'assessment'
+const authMode = __ENV.KLICKER_AUTH_MODE || 'regular'
 const variant = authVariants[authMode]
 if (!variant) {
   throw new Error('KLICKER_AUTH_MODE must be assessment or regular')
+}
+if (!target.isLocal && !__ENV.KLICKER_AUTH_ISSUER) {
+  throw new Error('Set KLICKER_AUTH_ISSUER for a non-local target')
 }
 const sessionAuth = {
   cookie: __ENV.KLICKER_AUTH_COOKIE || variant.cookie,
@@ -249,21 +258,40 @@ function sendTurn(state) {
   }
 }
 
+function countReloadFailure(res, phase) {
+  if (res.status < 200 || res.status >= 300) {
+    failed.add(1, { phase, status: String(res.status) })
+  }
+}
+
 function reloadPage(state) {
-  http.get(`${target.origin}/${CHATBOT_ID}`, {
-    tags: { name: 'page-reload' },
-    redirects: 0,
-  })
-  http.get(`${target.origin}/api/chatbots/${CHATBOT_ID}/threads`, {
-    tags: { name: 'history-threads' },
-  })
-  http.get(`${target.origin}/api/chatbots/${CHATBOT_ID}/credits`, {
-    tags: { name: 'credits' },
-  })
+  // redirects: 0 so a bounce to the login page counts as a failure.
+  countReloadFailure(
+    http.get(`${target.origin}/${CHATBOT_ID}`, {
+      tags: { name: 'page-reload' },
+      redirects: 0,
+    }),
+    'page-reload'
+  )
+  countReloadFailure(
+    http.get(`${target.origin}/api/chatbots/${CHATBOT_ID}/threads`, {
+      tags: { name: 'history-threads' },
+    }),
+    'history-threads'
+  )
+  countReloadFailure(
+    http.get(`${target.origin}/api/chatbots/${CHATBOT_ID}/credits`, {
+      tags: { name: 'credits' },
+    }),
+    'credits'
+  )
   if (state.threadId) {
-    http.get(
-      `${target.origin}/api/chatbots/${CHATBOT_ID}/threads/${state.threadId}/messages`,
-      { tags: { name: 'history-messages' } }
+    countReloadFailure(
+      http.get(
+        `${target.origin}/api/chatbots/${CHATBOT_ID}/threads/${state.threadId}/messages`,
+        { tags: { name: 'history-messages' } }
+      ),
+      'history-messages'
     )
   }
 }
@@ -280,7 +308,14 @@ export default function (setupData) {
       tags: { name: 'thread-create' },
     }
   )
-  const state = { threadId: created.json('id') || null, parentId: null }
+  const threadId =
+    created.status >= 200 && created.status < 300 ? created.json('id') : null
+  if (typeof threadId !== 'string') {
+    // Without a reusable thread the run would measure a different shape.
+    failed.add(1, { phase: 'thread-create', status: String(created.status) })
+    return
+  }
+  const state = { threadId, parentId: null }
 
   const intervalMs = intervalSeconds * 1000
   for (let slot = 0; slot < slotCount; slot++) {

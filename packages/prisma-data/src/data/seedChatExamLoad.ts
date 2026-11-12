@@ -105,7 +105,7 @@ async function seedChatExamLoad() {
     systemPrompts: {
       tutor: { prompt: 'You are a concise tutor.', description: 'Tutor' },
     },
-    modelSelection: false,
+    modelSelection: true,
     allowedModelIds: [],
     status: Prisma.ChatbotStatus.PUBLISHED,
     publishedAt: new Date(),
@@ -172,7 +172,7 @@ async function seedChatExamLoad() {
         courseId_participantId: { courseId: COURSE_ID, participantId: id },
       },
       update: {},
-      create: { courseId: COURSE_ID, participantId: id, isActive: false },
+      create: { courseId: COURSE_ID, participantId: id, isActive: true },
     })
     await prisma.chatUsageCredits.upsert({
       where: {

@@ -29,11 +29,24 @@ case "${1:-}" in
 start)
   image="$(docker inspect --format '{{.Config.Image}}' "$ORIGINAL")"
   network="$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' "$ORIGINAL" | head -n1)"
+  docker rm -f "$MOCK" >/dev/null 2>&1 || true
   docker stop "$ORIGINAL" >/dev/null
+  restore_original() {
+    docker rm -f "$MOCK" >/dev/null 2>&1 || true
+    docker start "$ORIGINAL" >/dev/null 2>&1 || true
+  }
+  trap restore_original ERR
   # Only the mock config is mounted; the container gets no upstream key.
   docker run -d --name "$MOCK" --network "$network" --network-alias litellm \
     -v "$ROOT/util/litellm/load-test.config.yaml:/app/config.yaml:ro" \
     "$image" --config=/app/config.yaml --port=4000 >/dev/null
+  sleep 5
+  if [ "$(docker inspect --format '{{.State.Running}}' "$MOCK" 2>/dev/null)" != true ]; then
+    echo "mock LiteLLM failed to start; restoring $ORIGINAL" >&2
+    restore_original
+    exit 1
+  fi
+  trap - ERR
   echo "mock LiteLLM running as $MOCK ; original $ORIGINAL stopped"
   ;;
 stop)
