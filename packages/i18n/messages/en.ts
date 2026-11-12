@@ -1440,7 +1440,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Less than {minutes, plural, one {# minute} other {# minutes}} left',
       escapeRoomTimeCritical: 'Less than {seconds} seconds left',
       escapeRoomClearedProgress:
-        'You cleared {cleared} of {total} stages before time ran out.',
+        'You cleared {cleared} of {total, plural, one {# stage} other {# stages}} before time ran out.',
       escapeRoomStatsTime: 'Escape time',
       escapeRoomStatsHints: 'Hints used',
       escapeRoomStatsPenalty: 'Time penalty',

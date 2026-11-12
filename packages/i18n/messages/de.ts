@@ -1456,7 +1456,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Weniger als {minutes, plural, one {# Minute} other {# Minuten}} verbleibend',
       escapeRoomTimeCritical: 'Weniger als {seconds} Sekunden verbleibend',
       escapeRoomClearedProgress:
-        'Du hast {cleared} von {total} Stationen abgeschlossen, bevor die Zeit abgelaufen ist.',
+        'Du hast {cleared} von {total, plural, one {# Station} other {# Stationen}} abgeschlossen, bevor die Zeit abgelaufen ist.',
       escapeRoomStatsTime: 'Fluchtzeit',
       escapeRoomStatsHints: 'Genutzte Hinweise',
       escapeRoomStatsPenalty: 'Zeitstrafe',
