@@ -1424,6 +1424,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Bonus answered correctly: −{seconds}s ranked time.',
       escapeRoomBonusWrong: 'Bonus answered incorrectly: no time credit.',
       escapeRoomBonusSubmitted: 'Bonus answer submitted.',
+      escapeRoomStageCount:
+        '{required, plural, one {# stage} other {# stages}}{bonus, plural, =0 {} other { + # bonus}}',
       escapeRoomStagesLabel: 'Stages',
       escapeRoomStagesCleared: 'Stages cleared',
       escapeRoomClearedProgress:

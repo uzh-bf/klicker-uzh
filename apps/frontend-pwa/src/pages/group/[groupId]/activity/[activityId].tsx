@@ -11,6 +11,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { getGroupEscapeRoomStages } from '@lib/escapeRoomStages'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -128,12 +129,22 @@ function GroupActivityDetails() {
   const escapeStages = (groupActivity.stacks[0]?.elements ?? []).filter(
     (element) => isGroupEscapeRoomResponseType(element.elementType)
   )
-  // The bonus stage is the last response element; only the team's answer is
-  // recorded for it, so its result is not known here.
+  // The bonus stage is the last response element; a decision records the
+  // team's answer and the stage outcome records whether it was correct.
   const bonusInstanceId =
     isEscapeRoom && hasBonusStage(escapeRoomConfig, escapeStages.length)
       ? escapeStages[escapeStages.length - 1]?.id
       : undefined
+  const lastEscapeAttempt = groupActivity.escapeRoomAttempts?.at(-1)
+  const escapeRoomStages = getGroupEscapeRoomStages({
+    stageInstanceIds: escapeStages.map((element) => element.id),
+    hasBonus: bonusInstanceId !== undefined,
+    stageDecisions: lastEscapeAttempt?.stageDecisions,
+    stageOutcomes: lastEscapeAttempt?.stageOutcomes,
+  })
+  const bonusOutcome = lastEscapeAttempt?.stageOutcomes?.find(
+    (entry) => entry.stageKey === String(bonusInstanceId)
+  )?.outcome
   const bonusAnswered =
     bonusInstanceId !== undefined &&
     !!attempt &&
@@ -183,13 +194,15 @@ function GroupActivityDetails() {
           }}
           loading={attemptLoading}
           attempt={attempt}
+          stages={escapeRoomStages}
           introText={groupActivity.escapeRoomConfig?.introText}
           bonus={
             bonusInstanceId !== undefined
               ? {
                   seconds: escapeRoomConfig?.bonusSeconds ?? 0,
                   available: bonusAvailable,
-                  outcome: bonusAnswered ? 'SUBMITTED' : undefined,
+                  outcome:
+                    bonusOutcome ?? (bonusAnswered ? 'SUBMITTED' : undefined),
                   onStart: () => setBonusActive(true),
                 }
               : undefined

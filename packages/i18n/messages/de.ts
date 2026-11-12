@@ -1439,6 +1439,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomBonusWrong:
         'Bonusfrage falsch beantwortet: keine Zeitgutschrift.',
       escapeRoomBonusSubmitted: 'Bonus-Antwort abgegeben.',
+      escapeRoomStageCount:
+        '{required, plural, one {# Station} other {# Stationen}}{bonus, plural, =0 {} other { + # Bonus}}',
       escapeRoomStagesLabel: 'Stationen',
       escapeRoomStagesCleared: 'Gelöste Stationen',
       escapeRoomClearedProgress:
