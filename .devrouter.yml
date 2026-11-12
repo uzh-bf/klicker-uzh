@@ -146,24 +146,8 @@ profiles:
     processes: [klicker-dev]
     default: true
   # Devrouter reserves full as an unconditional union, including test services.
-  # Readiness skips assessment and assessment-chat, which only listen when
-  # started by hand.
   full:
     apps: ['*']
-    readiness:
-      [
-        api,
-        auth,
-        blob,
-        chat,
-        control,
-        lti,
-        manage,
-        oidc,
-        olat-api,
-        pwa,
-        response-api,
-      ]
     devcontainerServices: ['*']
     processes: ['*']
 apps:
@@ -249,21 +233,6 @@ apps:
     protocol: http
     runtime: proxy
     upstream: ${WORKSPACE}-app:3004
-
-  # exam deployment of the chat (CHAT_ASSESSMENT_MODE) and the assessment build
-  # of the PWA. Neither is started by a profile: run them by hand beside the
-  # regular apps, as described in .devcontainer/README.md ("Assessment chat").
-  - name: assessment-chat
-    host: assessment-chat.klicker.localhost
-    protocol: http
-    runtime: proxy
-    upstream: ${WORKSPACE}-app:3014
-
-  - name: assessment
-    host: assessment.klicker.localhost
-    protocol: http
-    runtime: proxy
-    upstream: ${WORKSPACE}-app:3011
 
   # local Edu-ID replacement: the OIDC mock shares the app container's network
   # namespace, so devrouter reaches it on devnet as ${WORKSPACE}-app:8090. The

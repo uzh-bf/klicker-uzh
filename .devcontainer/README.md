@@ -364,11 +364,12 @@ Linked worktrees keep the routed HTTPS issuer and publish no fixed host port.
 
 ### Assessment chat
 
-`.devrouter.yml` declares `assessment-chat.klicker.<workspace>.localhost` (port 3014) and `assessment.klicker.<workspace>.localhost` (port 3011) for checking the
-exam deployment. No profile starts or routes them, because the managed process
-table and the Playwright runtime contract know only the regular apps. A
-retained runtime must be recreated to pick the routes up, and a selective
-profile must name them explicitly.
+No profile or route starts the exam deployment; a local check runs it by hand.
+The routed regular apps cannot stand in for it: `post-start.sh` points
+`NEXT_PUBLIC_CHAT_URL` and `NEXT_PUBLIC_ASSESSMENT_URL` at the regular chat and
+PWA hosts, and the auth app accepts student logins only from the hosts in
+`AUTH_STUDENT_ALLOWED_HOSTS`. A manual run sets all three for the hosts it
+serves the exam pair on.
 
 The exam chat is the regular chat started with `CHAT_ASSESSMENT_MODE=true`,
 `CHAT_PUBLIC_PWA_URL` and `CHAT_PUBLIC_URL`. It reads the Edu-ID participant
