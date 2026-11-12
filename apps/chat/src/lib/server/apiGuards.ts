@@ -10,6 +10,10 @@ import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
+  getAccountSessionConfig,
+  isAssessmentMode,
+} from '@/src/lib/assessmentMode'
+import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
@@ -68,8 +72,18 @@ export interface ChatIdentityResolutionContext {
 export function extractChatTransportTokens(
   req: NextRequest
 ): ChatTransportTokens {
+  if (isAssessmentMode()) {
+    // The exam chat accepts only the assessment account session: guest, embed
+    // and scoped-fallback transports are never read.
+    return {
+      participantToken: req.cookies.get(getAccountSessionConfig().cookieName)
+        ?.value,
+    }
+  }
+
   return {
-    participantToken: req.cookies.get('participant_token')?.value,
+    participantToken: req.cookies.get(getAccountSessionConfig().cookieName)
+      ?.value,
     chatGuestToken: req.cookies.get('chat_participant_token')?.value,
     pwaEmbedToken: req.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
     // The Authorization header carries a scoped token for the
@@ -109,6 +123,10 @@ export async function resolveParticipantIdentity(
   }: ChatTransportTokens,
   context?: ChatIdentityResolutionContext
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
+  if (isAssessmentMode()) {
+    return getParticipantIdFromToken(participantToken)
+  }
+
   if (chatGuestToken) {
     try {
       const payload = await verifyChatGuestToken(chatGuestToken)
@@ -249,7 +267,7 @@ export async function getParticipantIdFromToken(
   // the backend signs into it: signature, issuer, expiry (enforced by
   // `jwtVerify`) and the participant role. A token minted for another
   // audience, such as a lecturer session, is not a participant identity.
-  const issuer = process.env.APP_ORIGIN_API
+  const { issuer } = getAccountSessionConfig()
   if (!issuer) {
     return {
       response: NextResponse.json(
@@ -375,7 +393,10 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   const row = (await prisma.chatbot.findUnique({
     where: {
       id: parsedId.data,
-      course: { deletionRequestedAt: null },
+      // The exam chat serves only chatbots of assessment-enabled courses.
+      course: isAssessmentMode()
+        ? { deletionRequestedAt: null, isAssessmentEnabled: true }
+        : { deletionRequestedAt: null },
     },
     // `status` is always selected on top of the caller's projection so this one
     // guard can enforce publication for every participant route.

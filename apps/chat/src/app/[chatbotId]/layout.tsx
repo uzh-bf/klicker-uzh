@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Assistant } from '../../components/assistant'
 import { ChatRecoveryCard } from '../../components/chat-recovery-card'
+import { getAccountSessionConfig } from '../../lib/assessmentMode'
 import {
   CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -59,7 +60,8 @@ export default async function ChatLayout({
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
   const identityResult = await resolveParticipantIdentity(
     {
-      participantToken: cookieStore.get('participant_token')?.value,
+      participantToken: cookieStore.get(getAccountSessionConfig().cookieName)
+        ?.value,
       chatGuestToken: cookieStore.get('chat_participant_token')?.value,
       pwaEmbedToken: cookieStore.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
       // Cookie-less transports (blocked third-party cookies) arrive in the
