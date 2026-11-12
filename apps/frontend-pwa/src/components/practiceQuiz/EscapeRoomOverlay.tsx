@@ -842,6 +842,12 @@ export default function EscapeRoomOverlay({
           })
         : ''
 
+  // Layout drops its horizontal padding inside a frame (LMS embeds), so the
+  // bar must not reach past it there.
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
+
   // Markers need room: up to 6 below sm, up to 12 from sm up; beyond that only
   // the counter chip remains.
   const stageViews = stages?.stages ?? []
@@ -856,7 +862,8 @@ export default function EscapeRoomOverlay({
       className={twMerge(
         'sticky top-0 z-[50] flex w-full items-center justify-between gap-2 border-b px-3 py-2 shadow-md sm:px-4',
         FRAME.bar,
-        flush && '-top-4 -mx-4 -mt-4 w-auto'
+        flush && '-top-4 -mt-4',
+        flush && !pageInFrame && '-mx-4 w-auto'
       )}
     >
       <div className="flex flex-none items-center gap-2 text-sm">
