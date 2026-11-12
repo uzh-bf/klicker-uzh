@@ -121,6 +121,7 @@ export interface INumericalActivityEvaluationData
 export interface IFreeElementEvaluationResults {
   totalAnswers: number
   anonymousAnswers: number
+  respondents?: number | null
   maxLength?: number | null
   solutions?: string[] | null
   responses: {
@@ -444,6 +445,7 @@ export const FreeElementResults = FreeElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
     anonymousAnswers: t.exposeInt('anonymousAnswers'),
+    respondents: t.exposeInt('respondents', { nullable: true }),
     maxLength: t.exposeInt('maxLength', { nullable: true }),
     solutions: t.exposeStringList('solutions', { nullable: true }),
     responses: t.expose('responses', {
