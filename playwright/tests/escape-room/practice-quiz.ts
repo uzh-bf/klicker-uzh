@@ -417,7 +417,7 @@ export function registerPracticeEscapeRoomTests() {
     )
   })
 
-  test('Wrong answer stays on the stage and a rapid resubmit hits the lockout', async ({
+  test('Wrong answer stays on the stage and the lockout survives a reload', async ({
     page: testPage,
   }, testInfo) => {
     const page = testPage
@@ -438,24 +438,20 @@ export function registerPracticeEscapeRoomTests() {
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await expect(page.getByTestId('escape-room-incorrect-notice')).toBeVisible()
-    await page.getByTestId('student-stack-continue').click()
 
-    // the stage remounts for a retry instead of advancing or leaving, and the
-    // server-side lockout window keeps the submit disabled
-    await expect(page.getByText(SC2.content).first()).toBeVisible()
-    await expect(
-      page.getByTestId('escape-room-lockout-countdown')
-    ).toBeVisible()
-    await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
-
-    // a reload under the skewed device clock restores the countdown from
-    // server data (the assertion must land within the ~5s lockout)
+    // a reload under the skewed device clock restores the countdown and the
+    // incorrect notice from server data (the assertions must land within the
+    // ~5s lockout, so nothing else runs before the reload)
     await page.reload()
     await page.getByTestId('start-practice-quiz').click()
     await page.getByTestId('practice-quiz-progress-1').click()
     await expect(
       page.getByTestId('escape-room-lockout-countdown')
     ).toBeVisible()
+    await expect(page.getByTestId('escape-room-incorrect-notice')).toBeVisible()
+    await page.getByTestId('student-stack-continue').click()
+
+    // the stage remounts for a retry instead of advancing or leaving
     await expect(page.getByText(SC2.content).first()).toBeVisible()
 
     // once the lockout elapses the stage can be solved

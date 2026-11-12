@@ -204,21 +204,29 @@ export function useLiveQuizEscapeRoom({
       // snapshot there keeps the countdown exact without a refetch.
       const serverNowMs =
         new Date(result.lockoutUntil).getTime() - lockoutSeconds * 1000
-      setAttempt((current) =>
-        current
-          ? {
-              ...current,
-              lockoutUntil: result.lockoutUntil,
-              remainingSeconds: Math.max(
-                0,
-                Math.ceil(
-                  current.timeLimit -
-                    (serverNowMs - new Date(current.startedAt).getTime()) / 1000
-                )
-              ),
-            }
-          : current
-      )
+      setAttempt((current) => {
+        // a rejected resubmit returns the running lockout, which says nothing
+        // about the current server time
+        if (!current || current.lockoutUntil === result.lockoutUntil) {
+          return current
+        }
+        const remainingSeconds = Math.max(
+          0,
+          Math.ceil(
+            current.timeLimit -
+              (serverNowMs - new Date(current.startedAt).getTime()) / 1000
+          )
+        )
+        return {
+          ...current,
+          lockoutUntil: result.lockoutUntil,
+          remainingSeconds,
+          // the expiry clock restarts with the snapshot, so it moves along
+          expiresInSeconds:
+            remainingSeconds +
+            (current.expiresInSeconds - current.remainingSeconds),
+        }
+      })
     },
     [lockoutSeconds]
   )
