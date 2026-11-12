@@ -539,6 +539,19 @@ function assertAssessmentChatContract(resources, source) {
       resource.kind === 'Ingress' &&
       resource.metadata?.name === `${fullname}-chat-assessment`
   )
+  // The no-login page sends exam students to this origin, so it must be the
+  // host the assessment PWA Ingress serves.
+  const pwaIngress = resources.find(
+    (resource) =>
+      resource.kind === 'Ingress' &&
+      resource.metadata?.name === `${fullname}-frontend-assessment`
+  )
+  const pwaHost = new URL(overlay.data.CHAT_PUBLIC_PWA_URL).host
+  assert.ok(
+    (pwaIngress?.spec?.rules ?? []).some((rule) => rule.host === pwaHost),
+    `${source}: CHAT_PUBLIC_PWA_URL must be an assessment PWA host`
+  )
+
   const publicHost = new URL(overlay.data.CHAT_PUBLIC_URL).host
   assert.ok(
     (ingress?.spec?.rules ?? []).some((rule) => rule.host === publicHost),
