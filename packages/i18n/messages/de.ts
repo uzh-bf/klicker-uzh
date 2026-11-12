@@ -1382,9 +1382,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
-      escapeRoomStartTitle: 'Escape-Room-Modus',
+      escapeRoomStartTitle: 'Escape Room',
       escapeRoomStartDesc:
-        'Schalte Fragen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
+        'Schalte die Stationen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
       escapeRoomTimeLimitLabel: 'Zeitlimit',
       escapeRoomStartButton: 'Versuch starten',
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
@@ -1392,7 +1392,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Versuch ist beendet und kann nicht neu gestartet werden.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
-        'Herzlichen Glückwunsch! Du hast alle Fragen hinter dir und den Escape Room abgeschlossen.',
+        'Herzlichen Glückwunsch! Du hast alle Stationen hinter dir und den Escape Room abgeschlossen.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Verbleibende Zeit',
       escapeRoomContactLecturer:
@@ -1405,7 +1405,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomExpiredToast:
         'Die Zeit ist abgelaufen — dieser Escape-Room-Versuch ist verfallen.',
       escapeRoomGatedToast:
-        'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
+        'Löse die vorherigen Stationen, bevor du diese Station bearbeitest.',
       escapeRoomForbiddenToast:
         'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
       escapeRoomRequestHint: 'Hinweis anzeigen (+{duration} Wertungszeit)',
@@ -1418,25 +1418,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomWrongTriesToast:
         'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
       escapeRoomRevealedNotice:
-        'Keine Versuche mehr. Die Frage gilt als abgeschlossen (+{duration} Wertungszeit).',
+        'Keine Versuche mehr. Die Station gilt als abgeschlossen (+{duration} Wertungszeit).',
       escapeRoomRevealedToast:
-        'Keine Versuche mehr — die Frage gilt als abgeschlossen. Weiter geht es.',
-      escapeRoomSkip: 'Frage überspringen (+{duration} Wertungszeit)',
+        'Keine Versuche mehr — die Station gilt als abgeschlossen. Weiter geht es.',
+      escapeRoomSkip: 'Station überspringen (+{duration} Wertungszeit)',
       escapeRoomSkipConfirm:
-        'Diese Frage überspringen? Sie gilt als abgeschlossen und addiert {duration} zu deiner Wertungszeit.',
+        'Diese Station überspringen? Sie gilt als abgeschlossen und addiert {duration} zu deiner Wertungszeit.',
       escapeRoomSkipConfirmButton: 'Ja, überspringen',
       escapeRoomSkippedToast:
-        'Frage übersprungen. {duration} zu deiner Wertungszeit hinzugefügt.',
+        'Station übersprungen. {duration} zu deiner Wertungszeit hinzugefügt.',
       escapeRoomSkipDisabledToast:
         'Überspringen ist in diesem Escape Room nicht erlaubt.',
       escapeRoomBonusOffer:
         'Bonus: Bei richtiger Antwort −{duration} Wertungszeit',
       escapeRoomBonusDesc:
-        'Eine Bonusfrage ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
+        'Die Bonus-Station ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
       escapeRoomBonusCorrect:
-        'Bonusfrage richtig beantwortet: −{duration} Wertungszeit.',
+        'Bonus-Station richtig beantwortet: −{duration} Wertungszeit.',
       escapeRoomBonusWrong:
-        'Bonusfrage falsch beantwortet: keine Zeitgutschrift.',
+        'Bonus-Station falsch beantwortet: keine Zeitgutschrift.',
       escapeRoomBonusSubmitted: 'Bonus-Antwort abgegeben.',
       escapeRoomStageCount:
         '{required, plural, one {# Station} other {# Stationen}}{bonus, plural, =0 {} other { + # Bonus}}',
@@ -3122,7 +3122,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes können alle verfügbaren Element-Typen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
-      escapeRoomMode: 'Escape-Room-Modus',
+      escapeRoomMode: 'Escape Room',
       escapeRoomTimeLimit: 'Zeitlimit',
       escapeRoomTimeLimitTooltip:
         'Minuten, die Studierende oder Gruppen nach dem Start des Versuchs für den gesamten Escape Room haben. Pflichtfeld.',
@@ -3131,7 +3131,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomHintPenaltyTooltip:
         'Sekunden, die der Wertungszeit für jeden geöffneten Hinweis hinzugefügt werden. Pflichtfeld; 0 macht Hinweise kostenlos. Wird ignoriert, wenn steigende Strafen gesetzt sind.',
       escapeRoomAssessmentIncompatible:
-        'Der Escape-Room-Modus kann nicht mit dem Bewertungsmodus kombiniert werden.',
+        'Ein Escape Room kann nicht mit dem Bewertungsmodus kombiniert werden.',
       escapeRoomNoQrOutside:
         'QR-Scan-Fragen können nur in Escape-Room-Blöcken verwendet werden.',
       escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
@@ -3171,7 +3171,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sekunden, die der Wertungszeit für jede falsche Antwort hinzugefügt werden. Leer oder 0 bedeutet, dass falsche Antworten nichts kosten.',
       escapeRoomMaxWrongAttempts: 'Max. falsche Antworten',
       escapeRoomMaxWrongAttemptsTooltip:
-        'Falsche Antworten bei einer Frage, nach denen die Lösung aufgedeckt wird. Leer bedeutet, dass die Lösung nie aufgedeckt wird.',
+        'Falsche Antworten bei einer Station, nach denen die Lösung aufgedeckt wird. Leer bedeutet, dass die Lösung nie aufgedeckt wird.',
       escapeRoomMaxWrongAttemptsRange:
         'Muss eine ganze Zahl zwischen 1 und 50 sein',
       escapeRoomRevealPenalty: 'Strafe Aufdecken',

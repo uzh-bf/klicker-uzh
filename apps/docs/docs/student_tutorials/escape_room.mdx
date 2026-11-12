@@ -4,7 +4,7 @@ title: Escape Room
 
 ## What Is an Escape Room?
 
-An Escape Room is a timed challenge available in four activity types: Practice Quiz, Microlearning, Group Activity, and Live Quiz. Practice Quiz and Microlearning present questions in ordered stacks. Live Quiz runs the challenge question by question inside a single block. Group Activity gives the whole group one shared challenge, with questions unlocked one at a time.
+An Escape Room is a timed challenge available in four activity types: Practice Quiz, Microlearning, Group Activity, and Live Quiz. The challenge consists of stages that unlock one after another. In Practice Quiz and Microlearning, a stage can contain more than one question. Live Quiz runs the stages inside a single block. Group Activity gives the whole group one shared challenge.
 
 For a full overview of how lecturers set up Escape Rooms, see the [lecturer tutorial](/tutorials/escape_room).
 
@@ -12,36 +12,42 @@ For a full overview of how lecturers set up Escape Rooms, see the [lecturer tuto
 
 Students must be logged in and enrolled in the course before accessing an Escape Room. Group Activity Escape Rooms additionally require group membership. Live Quiz Escape Rooms require a regular participant account; temporary participation is not eligible.
 
-The activity may display introductory text before the attempt begins; reading that introduction does not start the timer. The countdown begins only when the student (or, in a Group Activity, any group member) selects **Start Attempt**.
+Before the attempt begins, a start dialog shows the activity's name, the story, and a list of rules; reading it does not start the timer. The rules list the number of stages (including a bonus stage), the time limit, the hint prices, the penalty for a wrong answer and the short wait that follows, after how many wrong answers the solution is revealed, whether you can skip a stage, and the bonus. A Live Quiz Escape Room lists only the hint prices and the wait, because that is all it enforces. The countdown begins only when the student (or, in a Group Activity, any group member) selects **Start Attempt**. Select **Not now** to leave without starting.
 
 :::warning One attempt only – and the timer keeps running
-Each logged-in participant has exactly one attempt in Practice Quiz, Microlearning, and Live Quiz Escape Room blocks. In a Group Activity, the group shares a single attempt. The timer continues across browser closes, connection losses, and page reloads; it does not pause or reset. Plan accordingly before selecting **Start Attempt**.
+Each logged-in participant has exactly one attempt in Practice Quiz, Microlearning, and Live Quiz Escape Room blocks. In a Group Activity, the group shares a single attempt. The timer continues across browser closes, connection losses, and page reloads; it does not pause or reset. The start dialog repeats this warning. Plan accordingly before selecting **Start Attempt**.
 :::
 
 ## Working Through the Challenge
 
-In Practice Quiz and Microlearning, questions are grouped into ordered stacks – a stack may contain more than one question, and the next stack unlocks only after every question in the current stack is answered correctly. In a Live Quiz Escape Room, questions progress one at a time within the block; the next question unlocks after the current answer is correct. In a Group Activity, the group works through the questions one at a time; a correct answer by any member unlocks the next question for everyone.
+In Practice Quiz and Microlearning, a stage may contain more than one question, and the next stage unlocks only after every question in the current stage is answered correctly. In a Live Quiz Escape Room, stages progress one at a time within the block; the next stage unlocks after the current answer is correct. In a Group Activity, the group works through the stages one at a time; a correct answer by any member unlocks the next stage for everyone.
 
-A wrong submission does not reset progress – the current question stays open, and a short lockout may apply before another attempt can be made.
+A bar at the top shows one marker per stage (locked, current, solved, revealed, skipped, or bonus) next to an "x / N" counter of cleared stages and the remaining time. The timer turns amber in the last tenth of the time limit and red in the last minute. Bookmarks, feedback controls, and points are hidden during an attempt.
 
-If the lecturer added hints to a question, a **Reveal hint** button appears. Each hint adds the penalty shown on the button to your penalty time; a question can have several hints, revealed one after another. Hints that have already been revealed are restored on reload. Penalties never shorten the countdown.
+A wrong submission does not reset progress – the current stage stays open. A warning announces any penalty, and a short wait follows. During the wait, the submit and hint buttons are disabled and a countdown is shown; the countdown also continues after a reload.
+
+If the lecturer added hints to a question, a **Show hint** button appears. The button shows its price as a duration, for example "+2 min", which is added to your ranked time; a question can have several hints, revealed one after another. Revealed hints appear as blue notices and are restored on reload. Penalties never shorten the countdown.
 
 Depending on the lecturer's rules, Practice Quiz, Microlearning, and Group Activity Escape Rooms may also:
 
-- show how many tries are left on a question; after the last wrong try, the solution counts as revealed, a penalty is added, and the next question unlocks;
-- let you **skip** the current question for a penalty;
-- end with a **bonus question** that becomes available after all other questions are cleared and can be answered once – a correct answer reduces your ranked time.
+- show how many tries are left on a stage; after the last wrong try, the solution is revealed (forced reveal), a penalty is added, and the next stage unlocks;
+- let you **skip** the current stage for a penalty, shown on the button as a duration; you confirm the skip before it counts;
+- end with a **bonus stage** that becomes available after all other stages are cleared and can be answered once – a correct answer reduces your ranked time.
 
 Reloading restores server-recorded progress. The timer keeps running during a reload, so there is no benefit to refreshing mid-attempt.
 
 ## QR Scan Stages
 
-Some stages require scanning a QR code at a physical station in the room. To scan, select **Scan QR code** and grant camera access when prompted. If the camera is unavailable or if permission is denied, select **Enter code manually** instead – each station has its own code printed beside its QR code. Decoy stations may appear in the room; only the code from the real station advances the stage. Entering a decoy station's code is treated as a wrong answer and triggers the same lockout period as any other incorrect submission.
+Some stages require scanning a QR code at a physical station in the room. To scan, select **Scan QR code** and grant camera access when prompted. If the camera is unavailable or if permission is denied, select **Enter code manually** instead – each station has its own code printed beside its QR code. Decoy stations may appear in the room; only the code from the real station advances the stage. Entering a decoy station's code is treated as a wrong answer and triggers the same wait as any other incorrect submission.
 
 ## Group Activity: One Attempt, Shared by All
 
-In a Group Activity Escape Room, the attempt, the current question, revealed hints, any lockout period, and completion are shared across the group. Any member may answer the current question for the group, and the next question unlocks for everyone. Group members cannot reset the shared attempt themselves; a lecturer reset restores access to the entire group.
+In a Group Activity Escape Room, the attempt, the current stage, revealed hints, any wait, and completion are shared across the group. Any member may answer the current stage for the group, and the next stage unlocks for everyone. Group members cannot reset the shared attempt themselves; a lecturer reset restores access to the entire group.
 
 ## Completion and Results
 
-After completing an Escape Room, the result screen shows the escape time, hints used, and total penalty. If time expires, it additionally shows how many stages were cleared. Lecturers rank attempts by the number of questions solved without reveal or skip, then by ranked time: the time until the last regular question was cleared, plus penalties, minus any bonus credit. Results are final unless a lecturer resets the attempt.
+The headline says "Escaped successfully!" only when every stage was solved without a reveal or skip. Otherwise, a neutral "finished" headline shows how many stages you solved without help. The result screen shows your ranked time: the escape time plus all penalties, minus any bonus credit. In a Live Quiz Escape Room, it shows the escape time only. A breakdown lists the escape time, hints used, time penalty, and bonus credit, and a recap shows the outcome of each stage. If a bonus stage is offered, you can start it from this screen; its result is shown afterwards. A button leads back to the course (in a Live Quiz, **Continue**).
+
+If time expires, the time-up screen shows how many stages were cleared, the same recap, and the same way out.
+
+Lecturers rank attempts by the number of stages solved without reveal or skip, then by ranked time. Results are final unless a lecturer resets the attempt.
