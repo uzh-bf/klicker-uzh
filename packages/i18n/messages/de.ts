@@ -1443,6 +1443,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{required, plural, one {# Station} other {# Stationen}}{bonus, plural, =0 {} other { + # Bonus}}',
       escapeRoomStagesLabel: 'Stationen',
       escapeRoomStagesCleared: 'Gelöste Stationen',
+      escapeRoomStageOpen: 'Station {number}: offen',
+      escapeRoomStageCurrent: 'Station {number}: aktuell',
+      escapeRoomStageSolved: 'Station {number}: gelöst',
+      escapeRoomStageRevealed: 'Station {number}: aufgedeckt',
+      escapeRoomStageSkipped: 'Station {number}: übersprungen',
+      escapeRoomStageBonusOpen: 'Bonus: offen',
+      escapeRoomStageBonusCurrent: 'Bonus: aktuell',
+      escapeRoomStageBonusCorrect: 'Bonus: richtig',
+      escapeRoomStageBonusWrong: 'Bonus: verpasst',
+      escapeRoomTimeWarning:
+        'Weniger als {minutes, plural, one {# Minute} other {# Minuten}} verbleibend',
+      escapeRoomTimeCritical: 'Weniger als {seconds} Sekunden verbleibend',
       escapeRoomClearedProgress:
         'Du hast {cleared} von {total} Stationen abgeschlossen, bevor die Zeit abgelaufen ist.',
       escapeRoomStatsTime: 'Fluchtzeit',
