@@ -146,8 +146,24 @@ profiles:
     processes: [klicker-dev]
     default: true
   # Devrouter reserves full as an unconditional union, including test services.
+  # Readiness skips assessment and assessment-chat, which only listen when
+  # started by hand.
   full:
     apps: ['*']
+    readiness:
+      [
+        api,
+        auth,
+        blob,
+        chat,
+        control,
+        lti,
+        manage,
+        oidc,
+        olat-api,
+        pwa,
+        response-api,
+      ]
     devcontainerServices: ['*']
     processes: ['*']
 apps:
