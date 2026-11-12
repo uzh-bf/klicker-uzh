@@ -92,14 +92,16 @@ export function LiveQuizEscapeRoomQuestionControls({
               message={t('pwa.practiceQuiz.escapeRoomIncorrectToast')}
               data={{ cy: 'escape-room-incorrect-notice' }}
             />
-            <UserNotification
-              type="warning"
-              className={{ root: 'mt-2' }}
-              message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
-                duration: formatDuration(controller.lockoutRemaining, t),
-              })}
-              data={{ cy: 'escape-room-lockout-countdown' }}
-            />
+            <div aria-live="off">
+              <UserNotification
+                type="warning"
+                className={{ root: 'mt-2' }}
+                message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
+                  duration: formatDuration(controller.lockoutRemaining, t),
+                })}
+                data={{ cy: 'escape-room-lockout-countdown' }}
+              />
+            </div>
           </>
         )}
       </div>
