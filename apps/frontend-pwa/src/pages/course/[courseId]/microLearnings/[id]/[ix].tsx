@@ -7,6 +7,7 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { getIndividualEscapeRoomStages } from '@lib/escapeRoomStages'
 import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -125,7 +126,13 @@ function MicrolearningInstance() {
     microLearning.escapeRoomConfig,
     escapeTotalStacks
   )
-  const escapeRequiredStacks = escapeTotalStacks - (escapeHasBonus ? 1 : 0)
+  const escapeStages = getIndividualEscapeRoomStages({
+    stacks: microLearning.stacks,
+    totalStages: escapeTotalStacks,
+    hasBonus: escapeHasBonus,
+    stageOutcomes: attempt?.stageOutcomes,
+  })
+  const escapeRequiredStacks = escapeStages.requiredCount
   const bonusStack =
     escapeHasBonus &&
     isCompleted &&
@@ -155,14 +162,7 @@ function MicrolearningInstance() {
       }}
       loading={attemptLoading}
       attempt={attempt}
-      clearedStacks={
-        microLearning.stacks?.filter(
-          (stack, stackIx) =>
-            stackIx < escapeRequiredStacks &&
-            (stack.isCorrect || isStageCleared(attempt, stack.id))
-        ).length ?? 0
-      }
-      totalStacks={escapeRequiredStacks}
+      stages={escapeStages}
       introText={microLearning.escapeRoomConfig?.introText}
       bonus={
         bonusStack

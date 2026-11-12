@@ -13,6 +13,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getIndividualEscapeRoomStages } from '@lib/escapeRoomStages'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
@@ -24,6 +25,7 @@ import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import { hasBonusStage } from '../../../../../components/hooks/useEscapeRoom'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({
@@ -85,6 +87,18 @@ function MicrolearningIntroduction({
   const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
     dayjs()
   )
+
+  // escape rooms withhold their stacks until an attempt starts, so the count
+  // comes from numOfStacks
+  const escapeStages = microLearning.escapeRoomConfig
+    ? getIndividualEscapeRoomStages({
+        totalStages: microLearning.numOfStacks,
+        hasBonus: hasBonusStage(
+          microLearning.escapeRoomConfig,
+          microLearning.numOfStacks ?? 0
+        ),
+      })
+    : undefined
 
   return (
     <Layout
@@ -153,10 +167,15 @@ function MicrolearningIntroduction({
         <div className="mb-4 grid grid-cols-1 gap-y-1 text-sm md:mb-0 md:grid-cols-2">
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
-            <div>
-              {t('pwa.microLearning.numOfQuestionSets', {
-                number: microLearning.stacks?.length ?? 0,
-              })}
+            <div data-cy="microlearning-stage-count">
+              {escapeStages
+                ? t('pwa.practiceQuiz.escapeRoomStageCount', {
+                    required: escapeStages.requiredCount,
+                    bonus: escapeStages.bonusCount,
+                  })
+                : t('pwa.microLearning.numOfQuestionSets', {
+                    number: microLearning.stacks?.length ?? 0,
+                  })}
             </div>
           </div>
           <div className="flex flex-row items-center gap-2">

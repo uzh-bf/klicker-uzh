@@ -7,6 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { EscapeRoomStages } from '@lib/escapeRoomStages'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode } from 'react'
@@ -31,8 +32,8 @@ interface EscapeRoomOverlayProps {
   onStart: () => Promise<void>
   loading?: boolean
   attempt?: EscapeRoomAttemptStats | null
-  clearedStacks?: number
-  totalStacks?: number
+  // stage counts and per-stage states from the mode's stage adapter
+  stages?: EscapeRoomStages
   // lecturer-authored story shown on the start screen instead of the
   // generic mode description (markdown supported)
   introText?: string | null
@@ -74,13 +75,14 @@ export default function EscapeRoomOverlay({
   onStart,
   loading = false,
   attempt,
-  clearedStacks,
-  totalStacks,
+  stages,
   introText,
   bonus,
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
 
+  const totalStacks = stages?.requiredCount
+  const clearedStacks = stages?.clearedCount
   const hintsUsedCount = Array.isArray(attempt?.hintsUsed)
     ? attempt.hintsUsed.length
     : null
@@ -124,7 +126,10 @@ export default function EscapeRoomOverlay({
             {typeof totalStacks === 'number' && totalStacks > 0 && (
               <StatRow
                 label={t('pwa.practiceQuiz.escapeRoomStagesLabel')}
-                value={totalStacks}
+                value={t('pwa.practiceQuiz.escapeRoomStageCount', {
+                  required: stages?.requiredCount ?? 0,
+                  bonus: stages?.bonusCount ?? 0,
+                })}
               />
             )}
             <StatRow
@@ -303,6 +308,9 @@ export default function EscapeRoomOverlay({
               aria-label={t('pwa.practiceQuiz.escapeRoomStagesCleared')}
               className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-sm text-slate-300"
               data-cy="escape-room-progress-chip"
+              data-cleared={clearedStacks}
+              data-required={totalStacks}
+              data-bonus={stages?.bonusCount ?? 0}
             >
               <span className="font-semibold text-white">{clearedStacks}</span>
               <span>/</span>

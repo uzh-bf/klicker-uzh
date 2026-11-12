@@ -1,5 +1,6 @@
 import EscapeRoomOverlay from '@components/practiceQuiz/EscapeRoomOverlay'
 import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
+import { getLiveEscapeRoomStages } from '@lib/escapeRoomStages'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { useLiveQuizEscapeRoom } from '../hooks/useLiveQuizEscapeRoom'
@@ -34,8 +35,10 @@ export function LiveQuizEscapeRoomOverlay({
       onStart={controller.startAttempt}
       loading={controller.starting}
       attempt={controller.attempt}
-      clearedStacks={clearedInstances}
-      totalStacks={totalInstances}
+      stages={getLiveEscapeRoomStages({
+        clearedCount: clearedInstances,
+        totalCount: totalInstances,
+      })}
       introText={config.introText}
     />
   )

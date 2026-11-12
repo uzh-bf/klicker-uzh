@@ -7,6 +7,7 @@ import {
   StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { getIndividualEscapeRoomStages } from '@lib/escapeRoomStages'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
@@ -144,6 +145,13 @@ function PracticeQuiz({
     activity: quiz,
     activityType: 'practiceQuiz',
     refetch: resolvedRefetch,
+  })
+
+  const escapeStages = getIndividualEscapeRoomStages({
+    stacks: quiz.stacks,
+    totalStages: escapeTotalStacks,
+    hasBonus: escapeHasBonus,
+    stageOutcomes: attempt?.stageOutcomes,
   })
 
   // The bonus stage can be answered once after completion, while time remains
@@ -292,14 +300,7 @@ function PracticeQuiz({
           onStart={startAttempt}
           loading={attemptLoading}
           attempt={attempt}
-          clearedStacks={
-            quiz.stacks?.filter(
-              (stack, ix) =>
-                ix < escapeRequiredStacks &&
-                (stack.isCorrect || isStageCleared(attempt, stack.id))
-            ).length ?? 0
-          }
-          totalStacks={escapeRequiredStacks}
+          stages={escapeStages}
           introText={quiz.escapeRoomConfig?.introText}
           bonus={
             bonusStack
@@ -382,6 +383,7 @@ function PracticeQuiz({
             setCurrentIx={handleStartQuiz}
             previewOnly={previewOnly}
             isEscapeRoom={isEscapeRoom}
+            escapeStages={isEscapeRoom ? escapeStages : undefined}
           />
         )}
 
