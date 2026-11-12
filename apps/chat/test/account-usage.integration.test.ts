@@ -1019,6 +1019,70 @@ describePostgres('account usage PostgreSQL integration', () => {
       return thread.id
     }
 
+    function examClaim(
+      threadId: string,
+      userId: string,
+      assistantId: string,
+      now?: Date
+    ) {
+      return accountUsage.claimChatTurn({
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        threadId,
+        assistantMessageId: assistantId,
+        // A client-chosen parent the server must ignore.
+        parentId: randomUUID(),
+        assessmentTurn: {
+          userMessage: {
+            id: userId,
+            content: `Question ${userId.slice(0, 4)}`,
+            chatMode: 'tutor',
+            modelId: null,
+          },
+          inProgressBoundMs: BOUND_MS,
+          ...(now ? { now } : {}),
+        },
+      })
+    }
+
+    async function answer(
+      threadId: string,
+      userId: string,
+      assistantId: string,
+      lifecycleAttemptId: string | null
+    ) {
+      await accountUsage.finalizeChatTurn({
+        ...turnInput(assistantId, { threadId, parentId: userId }),
+        participantId: EXAM_PARTICIPANT_ID,
+        lifecycleAttemptId,
+      })
+    }
+
+    // Every stored message has at most one child, and following the chain from
+    // the root reaches every message.
+    async function expectLinear(threadId: string, expectedIds: string[]) {
+      const rows = await prisma.chatMessage.findMany({ where: { threadId } })
+      const children = new Map<string | null, string[]>()
+      for (const row of rows) {
+        children.set(row.parentId, [
+          ...(children.get(row.parentId) ?? []),
+          row.id,
+        ])
+      }
+      for (const siblings of children.values()) {
+        expect(siblings).toHaveLength(1)
+      }
+      const chain: string[] = []
+      for (
+        let next = children.get(null)?.[0];
+        next;
+        next = children.get(next)?.[0]
+      ) {
+        chain.push(next)
+      }
+      expect(chain).toEqual(expectedIds)
+    }
+
     beforeEach(async () => {
       process.env.CHAT_ASSESSMENT_MODE = 'true'
       await prisma.chatThread.deleteMany({
@@ -1045,6 +1109,129 @@ describePostgres('account usage PostgreSQL integration', () => {
           where: { participantId: EXAM_PARTICIPANT_ID, chatbotId: CHATBOT_ID },
         })
       ).toBe(1)
+    })
+
+    test.each([
+      ['on', 'true'],
+      ['off', 'false'],
+    ])('keeps one chain through a failed answer with lifecycle writes %s', async (_name, lifecycle) => {
+      process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = lifecycle
+      const threadId = await examThread()
+      const [u1, a1, u2, a2, u3, a3] = Array.from({ length: 6 }, randomUUID)
+
+      const first = await examClaim(threadId, u1, a1)
+      expect(first).toMatchObject({ outcome: 'claimed' })
+      await answer(threadId, u1, a1, first.lifecycleAttemptId)
+
+      const second = await examClaim(threadId, u2, a2)
+      expect(second).toMatchObject({
+        outcome: 'claimed',
+        history: [
+          { id: u1, role: 'user' },
+          { id: a1, role: 'assistant' },
+          { id: u2, role: 'user' },
+        ],
+      })
+      await accountUsage.failChatTurn({
+        assistantMessageId: a2,
+        threadId,
+        lifecycleAttemptId: second.lifecycleAttemptId,
+        keepFailedMarker: true,
+      })
+      const failed = await prisma.chatMessage.findUniqueOrThrow({
+        where: { id: a2 },
+      })
+      expect(failed.lifecycleStatus).toBe('FAILED')
+
+      const third = await examClaim(threadId, u3, a3)
+      expect(third).toMatchObject({
+        outcome: 'claimed',
+        history: [
+          { id: u1, role: 'user' },
+          { id: a1, role: 'assistant' },
+          { id: u2, role: 'user' },
+          { id: u3, role: 'user' },
+        ],
+      })
+      await answer(threadId, u3, a3, third.lifecycleAttemptId)
+
+      await expectLinear(threadId, [u1, a1, u2, a2, u3, a3])
+    })
+
+    test('an empty answer without lifecycle writes stays as a failed marker', async () => {
+      process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+      const threadId = await examThread()
+      const [u1, a1] = [randomUUID(), randomUUID()]
+      await examClaim(threadId, u1, a1)
+
+      await accountUsage.finalizeChatTurn({
+        ...turnInput(a1, { threadId, parentId: u1, content: [] }),
+        participantId: EXAM_PARTICIPANT_ID,
+        lifecycleAttemptId: null,
+        keepFailedMarker: true,
+      })
+
+      const row = await prisma.chatMessage.findUniqueOrThrow({
+        where: { id: a1 },
+      })
+      expect(row.lifecycleStatus).toBe('FAILED')
+    })
+
+    test('a second tab cannot fork or run in parallel with a turn in progress', async () => {
+      const threadId = await examThread()
+      const [u1, a1, u2, a2] = Array.from({ length: 4 }, randomUUID)
+      await examClaim(threadId, u1, a1)
+
+      const parallel = await examClaim(threadId, u2, a2)
+
+      expect(parallel.outcome).toBe('in_progress')
+      expect(
+        await prisma.chatMessage.count({ where: { id: { in: [u2, a2] } } })
+      ).toBe(0)
+    })
+
+    test('two simultaneous turns claim exactly once', async () => {
+      const threadId = await examThread()
+      const claims = await Promise.all([
+        examClaim(threadId, randomUUID(), randomUUID()),
+        examClaim(threadId, randomUUID(), randomUUID()),
+      ])
+
+      expect(claims.map((claim) => claim.outcome).sort()).toEqual([
+        'claimed',
+        'in_progress',
+      ])
+    })
+
+    test('an abandoned in-progress answer stops blocking and is marked failed', async () => {
+      const threadId = await examThread()
+      const [u1, a1, u2, a2] = Array.from({ length: 4 }, randomUUID)
+      await examClaim(threadId, u1, a1)
+
+      const later = await examClaim(
+        threadId,
+        u2,
+        a2,
+        new Date(Date.now() + BOUND_MS + 1000)
+      )
+
+      expect(later.outcome).toBe('claimed')
+      const abandoned = await prisma.chatMessage.findUniqueOrThrow({
+        where: { id: a1 },
+      })
+      expect(abandoned.lifecycleStatus).toBe('FAILED')
+      await expectLinear(threadId, [u1, a1, u2, a2])
+    })
+
+    test('refuses a reused question id', async () => {
+      const threadId = await examThread()
+      const [u1, a1] = [randomUUID(), randomUUID()]
+      const first = await examClaim(threadId, u1, a1)
+      await answer(threadId, u1, a1, first.lifecycleAttemptId)
+
+      await expect(
+        examClaim(threadId, u1, randomUUID())
+      ).rejects.toBeInstanceOf(accountUsage.ChatTurnConflictError)
     })
   })
 })

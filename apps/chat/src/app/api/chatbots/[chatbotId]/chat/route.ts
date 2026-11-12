@@ -23,6 +23,7 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import {
   appendTextToModelContent,
   buildDocumentPageSummaryRow,
@@ -44,7 +45,6 @@ import {
   answerStyleSchema,
   answerToneSchema,
 } from '@/src/lib/server/answerStyleInstructions'
-import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
@@ -624,8 +624,10 @@ export async function POST(
     console.error('Invalid request body:', { requestId, error: e })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
+  // Assessment turns replace the client's history with the stored one after
+  // the claim, so this binding is reassigned.
+  let { messages } = parsed
   const {
-    messages,
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
@@ -641,6 +643,22 @@ export async function POST(
     chatContext: rawChatContext,
   } = parsed
 
+  const assessment = isAssessmentMode()
+  // Exam rules, enforced here because the UI only hides the controls: one
+  // linear conversation, no edits or regenerated answers, no attachments. The
+  // parent of every turn is set by the server.
+  if (
+    assessment &&
+    (allowRegeneration || sourceMessageId || messages.at(-1)?.role !== 'user')
+  ) {
+    return NextResponse.json(
+      {
+        error: 'Editing and regenerating are disabled',
+        code: 'CHAT_TURN_NOT_ALLOWED',
+      },
+      { status: 409 }
+    )
+  }
   const sanitizedChatContext = sanitizeKlickerChatContextV2(rawChatContext)
   if (rawChatContext != null && !sanitizedChatContext) {
     return NextResponse.json(
@@ -1236,6 +1254,21 @@ export async function POST(
       assistantMessageId,
       parentId: userMessageId,
       ...(allowRegeneration ? { allowRegeneration: true } : {}),
+      ...(assessment && lastMessage?.role === 'user'
+        ? {
+            assessmentTurn: {
+              userMessage: {
+                id: lastMessage.id,
+                content: lastMessage.content,
+                chatMode: selectedMode,
+                modelId: selectedModelConfig.id,
+              },
+              // A turn cannot outlive the route's duration; the margin covers
+              // finalization.
+              inProgressBoundMs: (maxDuration + 30) * 1000,
+            },
+          }
+        : {}),
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {
@@ -1254,6 +1287,7 @@ export async function POST(
     return completedTurnResponse()
   }
   const lifecycleAttemptId = turnClaim.lifecycleAttemptId
+  if (turnClaim.history) messages = turnClaim.history
 
   const failAssistantClaim = async (phase: string) => {
     try {
@@ -1261,6 +1295,8 @@ export async function POST(
         assistantMessageId,
         threadId: owningThread.id,
         lifecycleAttemptId,
+        // The export marks a broken exam answer as incomplete.
+        ...(assessment ? { keepFailedMarker: true } : {}),
       })
     } catch (error) {
       console.error('Failed to mark assistant lifecycle attempt as failed:', {
@@ -2110,7 +2146,7 @@ export async function POST(
           phase: 'persist.userMessage',
           error,
         })
-        if (isElearningThread) {
+        if (isElearningThread || assessment) {
           // Contextual generation requires durable question persistence; a
           // failed save returns a recoverable error without an answer. The
           // client retry reuses the original question identity, so the claim
@@ -2122,7 +2158,9 @@ export async function POST(
           return NextResponse.json(
             {
               error: 'Unable to persist the question context',
-              code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
+              code: isElearningThread
+                ? 'ELEARNING_CONTEXT_PERSIST_FAILED'
+                : 'CHAT_QUESTION_PERSIST_FAILED',
             },
             { status: 503 }
           )
@@ -2188,6 +2226,7 @@ export async function POST(
           assistantMessageId,
           lifecycleAttemptId,
           parentId: userMessageId,
+          ...(assessment ? { keepFailedMarker: true } : {}),
           content: content as Prisma.InputJsonValue,
           chatMode: selectedMode,
           modelId: selectedModelConfig.id,

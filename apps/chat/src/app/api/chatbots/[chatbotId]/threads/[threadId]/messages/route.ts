@@ -2,6 +2,7 @@ import {
   buildHistoryAttachmentDto,
   IMAGE_ROW_FILTER,
 } from '@/src/lib/attachments/attachmentState'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { isParticipantReasoningVisible } from '@/src/lib/server/effectiveChatModes'
 import { withoutReasoningParts } from '@/src/lib/server/persistedAssistantContent'
@@ -48,6 +49,27 @@ export async function GET(
       orderBy: { createdAt: 'asc' },
     })
 
+    // An exam question retyped after a broken answer is stored under that
+    // hidden answer. The client sees the thread as one chain, so a parent that
+    // is not returned is replaced by its nearest returned ancestor.
+    const hiddenParents = new Map<string, string | null>()
+    if (isAssessmentMode()) {
+      const hidden = await prisma.chatMessage.findMany({
+        where: { threadId, lifecycleStatus: { not: 'COMPLETED' } },
+        select: { id: true, parentId: true },
+      })
+      for (const row of hidden) hiddenParents.set(row.id, row.parentId)
+    }
+    const visibleParentId = (parentId: string | null) => {
+      let current = parentId
+      const seen = new Set<string>()
+      while (current && hiddenParents.has(current) && !seen.has(current)) {
+        seen.add(current)
+        current = hiddenParents.get(current) ?? null
+      }
+      return current
+    }
+
     // A thread uses few modes, so decide each mode once instead of
     // re-normalizing the whole mode config for every message.
     const reasoningVisibleByMode = new Map<string | null, boolean>()
@@ -89,7 +111,9 @@ export async function GET(
           imageAttachments: msg.attachments.map((att) =>
             buildHistoryAttachmentDto(att)
           ),
-          parentId: (msg as { parentId?: string | null }).parentId || null,
+          parentId: visibleParentId(
+            (msg as { parentId?: string | null }).parentId || null
+          ),
           createdAt: msg.createdAt.toISOString(),
           updatedAt: msg.updatedAt.toISOString(),
         }
