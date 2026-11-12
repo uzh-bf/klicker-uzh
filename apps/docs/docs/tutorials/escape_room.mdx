@@ -11,11 +11,11 @@ import CatalystTitle from '../../src/components/CatalystTitle'
 
 Escape Room is a mode applied to an existing activity type, not a standalone activity. Its behavior differs by mode:
 
-- **Practice Quiz and Microlearning** reveal an ordered stack of stages. Each stage remains hidden until the preceding one is cleared.
-- **Live Quiz** reveals supported questions in an Escape Room block one at a time; each correct answer unlocks the next question within the block.
-- **Group Activity** reveals the questions of one shared challenge one at a time. The whole group works on the same current question, and a correct answer by any member unlocks the next one.
+- **Practice Quiz and Microlearning** reveal ordered stages. A stage can contain more than one question, and each stage remains hidden until the preceding one is cleared.
+- **Live Quiz** reveals the questions of an Escape Room block as stages, one at a time; each correct answer unlocks the next stage within the block.
+- **Group Activity** reveals the stages of one shared challenge one at a time. The whole group works on the same current stage, and a correct answer by any member unlocks the next one.
 
-In all modes, a wrong answer keeps the participant on the current challenge and triggers a short server-enforced lockout before a retry is allowed. Practice Quiz, Microlearning, and Group Activity can additionally reveal a question after too many wrong answers (see [Scoring rules](#scoring-rules)). Penalties never shorten the countdown: they are added to the participant's ranked time. All of this state is kept on the server, so participants cannot gain an advantage by refreshing.
+In all modes, a wrong answer keeps the participant on the current challenge and triggers a short server-enforced wait before a retry is allowed. Practice Quiz, Microlearning, and Group Activity can additionally reveal a stage after too many wrong answers (see [Scoring rules](#scoring-rules)). Penalties never shorten the countdown: they are added to the participant's ranked time. All of this state is kept on the server, so participants cannot gain an advantage by refreshing.
 
 ---
 
@@ -25,9 +25,9 @@ How you enable Escape Room depends on the activity type.
 
 | Activity type  | Where to enable                                             |
 | -------------- | ----------------------------------------------------------- |
-| Practice Quiz  | Activity settings – enable Escape Room Mode                 |
-| Microlearning  | Activity settings – enable Escape Room Mode                 |
-| Group Activity | Activity settings – enable Escape Room Mode                 |
+| Practice Quiz  | Activity settings – enable Escape Room                      |
+| Microlearning  | Activity settings – enable Escape Room                      |
+| Group Activity | Activity settings – enable Escape Room                      |
 | Live Quiz      | Per content block, in that block's countdown/settings modal |
 
 For Practice Quiz, Microlearning, and Group Activity, the setting applies to the entire activity. For Live Quiz, it applies at the individual block level – different blocks in the same session can have different configurations. One constraint applies to Live Quiz specifically: assessment mode and Escape Room cannot be active on the same block at the same time.
@@ -36,26 +36,26 @@ For Practice Quiz, Microlearning, and Group Activity, the setting applies to the
 
 ## Configure the Escape Room
 
-Three settings become available once Escape Room Mode is active:
+Once Escape Room is enabled, an **Escape Room rules** card appears next to the other settings. Its fields are grouped by topic (time, hints, wrong answers, skipping, bonus), show their unit, and have a help tooltip. The time, hint, and intro fields are:
 
-1. **Time Limit (minutes)** – an integer from 1 to 1440. The timer starts when a participant (or group) presses Start Attempt and continues even if the page is reloaded.
-2. **Hint Penalty (seconds)** – an integer from 0 to 3600. Each hint reveal adds this amount to the participant's penalty time. Setting it to 0 makes hints free. In Practice Quiz, Microlearning, and Group Activity, the penalty per hint position below takes precedence.
-3. **Intro Story (optional)** – a Markdown field (maximum 5000 characters). Use it to frame the scenario and establish context before the first stage appears. A well-written intro makes later stages feel more connected.
+1. **Time limit** (minutes) – an integer from 1 to 1440. The timer starts when a participant (or group) presses Start Attempt and continues even if the page is reloaded.
+2. **Hint penalty** (seconds) – an integer from 0 to 3600. Each hint reveal adds this amount to the participant's penalty time. Setting it to 0 makes hints free. In Practice Quiz, Microlearning, and Group Activity, the escalating penalties below take precedence.
+3. **Intro story** (optional) – a Markdown field (maximum 5000 characters). Participants see it on the start screen before the timer begins. Use it to frame the scenario and establish context before the first stage appears. A well-written intro makes later stages feel more connected.
 
 ### Scoring rules
 
-Practice Quiz, Microlearning, and Group Activity Escape Rooms offer additional scoring rules. **Apply classroom preset** fills in values tested in a 45-minute classroom session: hint penalties of 120 and 240 seconds, 30 seconds per wrong answer, the solution revealed after 5 wrong answers for 480 seconds, skipping for 600 seconds, and a bonus question worth 180 seconds. You can adjust every value afterwards.
+Practice Quiz, Microlearning, and Group Activity Escape Rooms offer additional scoring rules in the same card. **Apply classroom preset** fills in values tested in a 45-minute classroom session: hint penalties of 120 and 240 seconds, 30 seconds per wrong answer, the solution revealed after 5 wrong answers for 480 seconds, skipping for 600 seconds, and a bonus question worth 180 seconds. You can adjust every value afterwards.
 
-| Setting                                        | Effect                                                                                                                        |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Penalty per hint, in order                     | Comma-separated seconds for the first, second, … hint of a question. Later hints without an entry use the Hint Penalty above. |
-| Penalty per wrong answer                       | Seconds added for every wrong answer.                                                                                         |
-| Wrong answers before the solution is revealed  | After this many wrong answers, the question counts as cleared and the next one unlocks. Leave empty to never reveal.          |
-| Penalty when the solution is revealed          | Seconds added when a question is revealed.                                                                                    |
-| Penalty for skipping a question                | Lets participants skip the current question for this many seconds. Leave empty to disable skipping.                           |
-| Time credit for a correct final bonus question | Turns the last question into an optional bonus question. Leave empty for no bonus question.                                   |
+| Setting                              | Effect                                                                                                                        |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Escalating penalties (Hints)         | Comma-separated seconds for the first, second, … hint of a question. Later hints without an entry use the Hint penalty above. |
+| Wrong answer penalty (Wrong answers) | Seconds added for every wrong answer.                                                                                         |
+| Max wrong answers (Wrong answers)    | After this many wrong answers, the stage counts as cleared and the next one unlocks. Leave empty to never reveal.             |
+| Reveal penalty (Wrong answers)       | Seconds added when a stage is revealed.                                                                                       |
+| Skip penalty (Skipping)              | Lets participants skip the current stage for this many seconds. Leave empty to disable skipping.                              |
+| Bonus credit (Bonus)                 | Turns the last stage into an optional bonus stage. Leave empty for no bonus stage.                                            |
 
-The participants' **ranked time** is the time until they cleared the last regular question, plus all penalties, minus the bonus credit. The countdown itself is never shortened. The bonus question becomes available once every other question is cleared and can be answered once while time remains.
+The participants' **ranked time** is the time until they cleared the last regular question, plus all penalties, minus the bonus credit. The countdown itself is never shortened. The bonus stage becomes available once every other stage is cleared and can be answered once while time remains.
 
 ---
 
@@ -63,20 +63,20 @@ The participants' **ranked time** is the time until they cleared the last regula
 
 **To add and structure stages:**
 
-1. Open the activity editor and add a stack or block, depending on the activity type.
+1. Open the activity editor and add a stage or block, depending on the activity type.
 2. Add questions as you would in the underlying activity.
-3. For Practice Quiz and Microlearning, add the ordered stacks. For Live Quiz, arrange the questions inside the Escape Room block. For Group Activity, keep the complete answer set in the shared challenge.
+3. For Practice Quiz and Microlearning, add the ordered stages. For Live Quiz, arrange the questions inside the Escape Room block. For Group Activity, keep the complete answer set in the shared challenge.
 
 **To add hints to individual questions:**
 
 1. In the activity wizard, scroll below the element placement for the question you want to annotate.
-2. Enter hint text for that element. In Practice Quiz, Microlearning, and Group Activity, enter several hints one per line; participants reveal them in that order. Participants see a **Reveal hint** button only on elements that have a hint configured.
+2. Enter hint text for that element. In Practice Quiz, Microlearning, and Group Activity, enter several hints one per line; participants reveal them in that order. Participants see a **Show hint** button, labelled with its price (for example "+2 min"), only on elements that have a hint configured.
 3. A revealed hint remains visible after a page reload. Its penalty is added to the penalty time immediately on reveal.
 
 **Attempt rules by activity type:**
 
 - Practice Quiz and Microlearning: one server-owned attempt per participant. The timer starts when the participant presses Start Attempt.
-- Group Activity: one shared attempt per group. All members share progress, hints revealed, lockout state, completion, and reset – a hint revealed by one member is visible to all and costs the group the configured penalty. The timer starts when any group member presses Start Attempt.
+- Group Activity: one shared attempt per group. All members share progress, hints revealed, wait state, completion, and reset – a hint revealed by one member is visible to all and costs the group the configured penalty. The timer starts when any group member presses Start Attempt.
 - Live Quiz: one attempt per participant per Escape Room block; participants start the attempt explicitly when the block opens.
 
 **Eligibility:**
@@ -114,11 +114,11 @@ The printed sheets place the real QR code among the decoys in a shuffled arrange
 
 **Practice Quiz and Microlearning**
 
-Open the activity's **Evaluation** tab and select the **Escape Room** sub-tab. The view shows the enrolled roster with one of four statuses for each participant: Not started, In progress, Completed, or Expired. For each participant, the view also shows current stage progress, hints used, total penalty time, completion time for completed attempts, and any active lockout. It also ranks the attempts: first by the number of questions solved without reveal or skip, then by ranked time. Revealed and skipped questions and a solved bonus question are listed below the progress bar.
+Open the activity's **Evaluation** tab and select the **Escape Room** sub-tab. A summary line above the table counts participants, finished, in progress, and not started. The table lists ranked attempts first, then attempts in progress, then participants who have not started. Each participant has one of four statuses: Not started, In progress, Completed, or Expired. For each participant, the view also shows current stage progress, hints used, total penalty time, completion time for completed attempts, and any active wait after a wrong answer. Attempts are ranked first by the number of stages solved without reveal or skip, then by ranked time. Revealed and skipped stages and a solved bonus stage are listed below the progress bar. Use the **Hide not started** switch to remove participants who have not started.
 
 **Group Activity**
 
-The grading/monitoring page shows the shared group attempt. Progress, hints revealed, penalty, lockout, completion, and the rank all reflect the group's collective state rather than individual members.
+The grading/monitoring page shows the shared group attempt. The summary line counts groups, and the same ordering and **Hide not started** switch apply. Progress, hints revealed, penalty, wait, completion, and the rank all reflect the group's collective state rather than individual members.
 
 **Live Quiz**
 
@@ -130,11 +130,11 @@ The **Lecturer Cockpit** displays per-participant progress for the active Escape
 
 Reset is a lecturer-only action. It deletes the current attempt entirely and allows a fresh start with the full time limit restored.
 
-- Practice Quiz and Microlearning: reset an individual participant's attempt from the Evaluation view.
+- Practice Quiz and Microlearning: reset an individual participant's attempt from the Evaluation view. Select **Reset** in the row, then confirm with the red **Confirm reset** button.
 - Group Activity: reset the shared group attempt from the grading/monitoring page. The reset applies to the entire group.
 - Live Quiz: reset an individual participant's active block attempt from the Lecturer Cockpit.
 
-Reset is irreversible. After a reset, Practice Quiz and Microlearning restart at the first stack; Live Quiz restarts at the first question in the Escape Room block; and Group Activity restarts the single shared challenge.
+Reset is irreversible. After a reset, Practice Quiz and Microlearning restart at the first stage; Live Quiz restarts at the first stage in the Escape Room block; and Group Activity restarts the single shared challenge.
 
 ---
 
@@ -144,6 +144,6 @@ Before making the activity available to students, complete these checks:
 
 1. **Run the full route yourself.** Work through every stage, including any QR Scan stations, to confirm that the experience is unbroken from start to finish.
 2. **Verify QR placement.** Confirm the real station is at the intended location and all decoys are in position before the session begins.
-3. **Calibrate the time limit.** Adjust the Time Limit (minutes) based on your test run. A limit that is too generous reduces tension; one that is too tight increases the likelihood of requests to reset.
+3. **Calibrate the time limit.** Adjust the time limit based on your test run. A limit that is too generous reduces tension; one that is too tight increases the likelihood of requests to reset.
 4. **Review every hint.** Hints that are too vague frustrate participants; hints that are too explicit reduce the challenge. A second read after a day away often reveals which ones need adjustment.
 5. **Confirm access requirements.** All participants must be logged in and enrolled in the course. Group Activity participants additionally require group membership. Live Quiz requires a regular participant account; temporary participants cannot start an Escape Room block attempt.
