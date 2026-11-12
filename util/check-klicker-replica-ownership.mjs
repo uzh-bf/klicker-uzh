@@ -478,12 +478,7 @@ function assertAssessmentChatContract(resources, source) {
   const suffixes = envFrom.map((name) => name.slice(fullname.length + 1))
   assert.deepEqual(
     suffixes.slice(0, 4),
-    [
-      'config-global',
-      'config-chat',
-      'config-chat-assessment',
-      'secret-chat',
-    ],
+    ['config-global', 'config-chat', 'config-chat-assessment', 'secret-chat'],
     `${source}: chat-assessment must load the overlay after config-chat`
   )
 
