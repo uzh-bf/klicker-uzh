@@ -81,6 +81,10 @@ function validateAndProcessElementOptions(
         restrictions: {
           maxLength: options.restrictions?.maxLength ?? undefined,
         },
+        responseLimit:
+          options.responseLimit && options.responseLimit > 1
+            ? options.responseLimit
+            : undefined,
       }
     }
 

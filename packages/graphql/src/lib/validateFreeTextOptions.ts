@@ -1,4 +1,5 @@
 import { ElementOptionsInput } from '@klicker-uzh/types'
+import { MAX_RESPONSE_LIMIT } from '@klicker-uzh/util'
 
 function validateFreeTextOptions(options?: ElementOptionsInput | null) {
   // options and hasSampleSolution need to be defined
@@ -22,6 +23,19 @@ function validateFreeTextOptions(options?: ElementOptionsInput | null) {
   ) {
     console.error(
       'At least one solution is required for free text questions with sample solution'
+    )
+    return false
+  }
+
+  // the response limit is optional, but must be a whole number within bounds if set
+  if (
+    typeof options.responseLimit === 'number' &&
+    (!Number.isInteger(options.responseLimit) ||
+      options.responseLimit < 1 ||
+      options.responseLimit > MAX_RESPONSE_LIMIT)
+  ) {
+    console.error(
+      `The response limit for free text questions must be between 1 and ${MAX_RESPONSE_LIMIT}`
     )
     return false
   }
