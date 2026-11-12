@@ -1,4 +1,6 @@
-import EscapeRoomSettingsFields from '@components/activities/creation/EscapeRoomSettingsFields'
+import EscapeRoomSettingsFields, {
+  EscapeRoomRulesCard,
+} from '@components/activities/creation/EscapeRoomSettingsFields'
 import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
@@ -175,6 +177,7 @@ function PracticeQuizSettingsStep({
                   />
                 </div>
               </div>
+              <EscapeRoomRulesCard isEscapeRoom={!!values.isEscapeRoom} />
             </div>
             <WizardNavigation
               editMode={editMode}

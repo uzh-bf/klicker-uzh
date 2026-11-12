@@ -179,6 +179,10 @@ export function registerEscapeRoomRulesTests() {
       '1',
       { timeout: 60_000 }
     )
+    const summary = page.getByTestId('escape-room-progress-summary')
+    await expect
+      .poll(async () => Number(await summary.getAttribute('data-finished')))
+      .toBeGreaterThanOrEqual(1)
     const row = page.getByTestId(`escape-room-attempt-${username}`)
     await expect(row).toContainText(
       messages.manage.evaluation.escapeRoomOutcomeSummary

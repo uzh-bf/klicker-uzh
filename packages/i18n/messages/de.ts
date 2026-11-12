@@ -3123,8 +3123,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
       escapeRoomMode: 'Escape-Room-Modus',
-      escapeRoomTimeLimit: 'Zeitlimit (Minuten)',
-      escapeRoomHintPenalty: 'Hinweis-Strafe (Sekunden)',
+      escapeRoomTimeLimit: 'Zeitlimit',
+      escapeRoomTimeLimitTooltip:
+        'Minuten, die Studierende oder Gruppen nach dem Start des Versuchs für den gesamten Escape Room haben. Pflichtfeld.',
+      escapeRoomUnitMinutes: 'Minuten',
+      escapeRoomHintPenalty: 'Hinweis-Strafe',
+      escapeRoomHintPenaltyTooltip:
+        'Sekunden, die der Wertungszeit für jeden geöffneten Hinweis hinzugefügt werden. Pflichtfeld; 0 macht Hinweise kostenlos. Wird ignoriert, wenn steigende Strafen gesetzt sind.',
       escapeRoomAssessmentIncompatible:
         'Der Escape-Room-Modus kann nicht mit dem Bewertungsmodus kombiniert werden.',
       escapeRoomNoQrOutside:
@@ -3141,28 +3146,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomHintPenaltyMin: 'Muss eine nicht-negative Anzahl Sekunden sein',
       escapeRoomHintPenaltyMax:
         'Hinweis-Strafe darf 3600 Sekunden (1h) nicht überschreiten',
-      escapeRoomIntroText: 'Einleitungsgeschichte (optional)',
+      escapeRoomIntroText: 'Einleitungsgeschichte',
+      escapeRoomIntroTextTooltip:
+        'Optionale Geschichte, die Studierende auf dem Startbildschirm sehen, bevor der Timer beginnt. Leer bedeutet, dass keine Einleitung angezeigt wird.',
       escapeRoomIntroTextPlaceholder:
         'Stimmen Sie die Teilnehmenden ein — wird auf dem Startbildschirm vor dem Start des Timers angezeigt (Markdown wird unterstützt)',
       escapeRoomIntroTextMax:
         'Die Einleitungsgeschichte darf 5000 Zeichen nicht überschreiten',
-      escapeRoomRulesTitle: 'Bewertungsregeln',
+      escapeRoomRulesTitle: 'Escape-Room-Regeln',
       escapeRoomApplyPreset: 'Klassenzimmer-Vorlage anwenden',
-      escapeRoomHintPenalties:
-        'Strafe pro Hinweis, der Reihe nach (Sekunden, durch Kommas getrennt)',
+      escapeRoomGroupTime: 'Zeit',
+      escapeRoomGroupHints: 'Hinweise',
+      escapeRoomGroupWrongAnswers: 'Falsche Antworten',
+      escapeRoomGroupSkip: 'Überspringen',
+      escapeRoomGroupBonus: 'Bonus',
+      escapeRoomHintPenalties: 'Steigende Strafen',
+      escapeRoomHintPenaltiesTooltip:
+        'Optionale Sekunden für den ersten, zweiten, dritten Hinweis usw., durch Kommas getrennt. Überschreibt die Hinweis-Strafe; leer bedeutet, dass jeder Hinweis die Hinweis-Strafe kostet.',
+      escapeRoomHintPenaltiesPlaceholder: 'z. B. 60, 120, 240',
       escapeRoomHintPenaltiesInvalid:
         'Bis zu 10 ganze Zahlen zwischen 0 und 3600, durch Kommas getrennt',
-      escapeRoomWrongAnswerPenalty: 'Strafe pro falscher Antwort (Sekunden)',
-      escapeRoomMaxWrongAttempts:
-        'Falsche Antworten, bis die Lösung aufgedeckt wird (leer = nie)',
+      escapeRoomWrongAnswerPenalty: 'Strafe falsche Antwort',
+      escapeRoomWrongAnswerPenaltyTooltip:
+        'Sekunden, die der Wertungszeit für jede falsche Antwort hinzugefügt werden. Leer oder 0 bedeutet, dass falsche Antworten nichts kosten.',
+      escapeRoomMaxWrongAttempts: 'Max. falsche Antworten',
+      escapeRoomMaxWrongAttemptsTooltip:
+        'Falsche Antworten bei einer Frage, nach denen die Lösung aufgedeckt wird. Leer bedeutet, dass die Lösung nie aufgedeckt wird.',
       escapeRoomMaxWrongAttemptsRange:
         'Muss eine ganze Zahl zwischen 1 und 50 sein',
-      escapeRoomRevealPenalty:
-        'Strafe, wenn die Lösung aufgedeckt wird (Sekunden)',
-      escapeRoomSkipPenalty:
-        'Strafe für das Überspringen einer Frage (Sekunden, leer = Überspringen deaktiviert)',
-      escapeRoomBonusSeconds:
-        'Zeitgutschrift für eine richtige Bonus-Schlussfrage (Sekunden, leer = kein Bonus)',
+      escapeRoomRevealPenalty: 'Strafe Aufdecken',
+      escapeRoomRevealPenaltyTooltip:
+        'Sekunden, die der Wertungszeit hinzugefügt werden, wenn eine Lösung aufgedeckt wird. Leer oder 0 bedeutet, dass Aufdecken nichts kostet.',
+      escapeRoomSkipPenalty: 'Strafe Überspringen',
+      escapeRoomSkipPenaltyTooltip:
+        'Sekunden, die der Wertungszeit hinzugefügt werden, wenn Studierende eine Station überspringen. Leer bedeutet, dass Stationen nicht übersprungen werden können.',
+      escapeRoomBonusSeconds: 'Bonus-Gutschrift',
+      escapeRoomBonusSecondsTooltip:
+        'Sekunden, die von der Wertungszeit abgezogen werden, wenn die letzte Station, die zur Bonus-Station wird, richtig beantwortet wird. Leer bedeutet, dass es keine Bonus-Station gibt.',
       escapeRoomRuleSecondsRange:
         'Muss eine ganze Zahl zwischen 0 und 3600 Sekunden sein',
       selectGamifiedCourse:
@@ -3775,6 +3795,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStatusCompleted: 'Abgeschlossen',
       escapeRoomStatusExpired: 'Abgelaufen',
       escapeRoomLockedOut: 'Gesperrt',
+      escapeRoomSummaryParticipants:
+        '{total, plural, one {# Teilnehmende:r} other {# Teilnehmende}} · {finished} beendet · {inProgress} laufend · {notStarted} nicht gestartet',
+      escapeRoomSummaryGroups:
+        '{total, plural, one {# Gruppe} other {# Gruppen}} · {finished} beendet · {inProgress} laufend · {notStarted} nicht gestartet',
+      escapeRoomHideNotStarted: 'Nicht gestartete ausblenden',
       escapeRoomReset: 'Zurücksetzen',
       escapeRoomResetConfirm: 'Zurücksetzen bestätigen',
       escapeRoomResetError:

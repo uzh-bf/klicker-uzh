@@ -3083,8 +3083,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
       escapeRoomMode: 'Escape Room Mode',
-      escapeRoomTimeLimit: 'Time Limit (minutes)',
-      escapeRoomHintPenalty: 'Hint Penalty (seconds)',
+      escapeRoomTimeLimit: 'Time limit',
+      escapeRoomTimeLimitTooltip:
+        'Minutes a student or group has for the whole escape room after starting the attempt. Required.',
+      escapeRoomUnitMinutes: 'minutes',
+      escapeRoomHintPenalty: 'Hint penalty',
+      escapeRoomHintPenaltyTooltip:
+        'Seconds added to the ranked time for every hint a student opens. Required; 0 makes hints free. Ignored when escalating penalties are set.',
       escapeRoomAssessmentIncompatible:
         'Escape room mode cannot be combined with assessment (graded) mode.',
       escapeRoomNoQrOutside:
@@ -3099,27 +3104,42 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomHintPenaltyRequired: 'Hint penalty is required',
       escapeRoomHintPenaltyMin: 'Must be a non-negative number of seconds',
       escapeRoomHintPenaltyMax: 'Hint penalty may not exceed 3600 seconds (1h)',
-      escapeRoomIntroText: 'Intro Story (optional)',
+      escapeRoomIntroText: 'Intro story',
+      escapeRoomIntroTextTooltip:
+        'Optional story shown to students on the start screen before the timer begins. Empty means no intro is shown.',
       escapeRoomIntroTextPlaceholder:
         'Set the scene for your participants — shown on the start screen before the timer begins (Markdown supported)',
       escapeRoomIntroTextMax: 'Intro story may not exceed 5000 characters',
-      escapeRoomRulesTitle: 'Scoring rules',
+      escapeRoomRulesTitle: 'Escape Room rules',
       escapeRoomApplyPreset: 'Apply classroom preset',
-      escapeRoomHintPenalties:
-        'Penalty per hint, in order (seconds, comma-separated)',
+      escapeRoomGroupTime: 'Time',
+      escapeRoomGroupHints: 'Hints',
+      escapeRoomGroupWrongAnswers: 'Wrong answers',
+      escapeRoomGroupSkip: 'Skipping',
+      escapeRoomGroupBonus: 'Bonus',
+      escapeRoomHintPenalties: 'Escalating penalties',
+      escapeRoomHintPenaltiesTooltip:
+        'Optional seconds for the first, second, third hint and so on, separated by commas. Overrides the hint penalty; empty means every hint costs the hint penalty.',
+      escapeRoomHintPenaltiesPlaceholder: 'e.g. 60, 120, 240',
       escapeRoomHintPenaltiesInvalid:
         'Enter up to 10 whole numbers between 0 and 3600, separated by commas',
-      escapeRoomWrongAnswerPenalty: 'Penalty per wrong answer (seconds)',
-      escapeRoomMaxWrongAttempts:
-        'Wrong answers before the solution is revealed (empty = never)',
+      escapeRoomWrongAnswerPenalty: 'Wrong answer penalty',
+      escapeRoomWrongAnswerPenaltyTooltip:
+        'Seconds added to the ranked time for every wrong answer. Empty or 0 means wrong answers cost nothing.',
+      escapeRoomMaxWrongAttempts: 'Max wrong answers',
+      escapeRoomMaxWrongAttemptsTooltip:
+        'Wrong answers on one question after which its solution is revealed to the student. Empty means the solution is never revealed.',
       escapeRoomMaxWrongAttemptsRange:
         'Must be a whole number between 1 and 50',
-      escapeRoomRevealPenalty:
-        'Penalty when the solution is revealed (seconds)',
-      escapeRoomSkipPenalty:
-        'Penalty for skipping a question (seconds, empty = skipping disabled)',
-      escapeRoomBonusSeconds:
-        'Time credit for a correct final bonus question (seconds, empty = no bonus)',
+      escapeRoomRevealPenalty: 'Reveal penalty',
+      escapeRoomRevealPenaltyTooltip:
+        'Seconds added to the ranked time when a solution is revealed. Empty or 0 means revealing costs nothing.',
+      escapeRoomSkipPenalty: 'Skip penalty',
+      escapeRoomSkipPenaltyTooltip:
+        'Seconds added to the ranked time when a student skips a stage. Empty means students cannot skip stages.',
+      escapeRoomBonusSeconds: 'Bonus credit',
+      escapeRoomBonusSecondsTooltip:
+        'Seconds subtracted from the ranked time when students answer the last stage, which becomes the bonus stage, correctly. Empty means there is no bonus stage.',
       escapeRoomRuleSecondsRange:
         'Must be a whole number between 0 and 3600 seconds',
       selectGamifiedCourse:
@@ -3710,6 +3730,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStatusCompleted: 'Completed',
       escapeRoomStatusExpired: 'Expired',
       escapeRoomLockedOut: 'Locked out',
+      escapeRoomSummaryParticipants:
+        '{total, plural, one {# participant} other {# participants}} · {finished} finished · {inProgress} in progress · {notStarted} not started',
+      escapeRoomSummaryGroups:
+        '{total, plural, one {# group} other {# groups}} · {finished} finished · {inProgress} in progress · {notStarted} not started',
+      escapeRoomHideNotStarted: 'Hide not started',
       escapeRoomReset: 'Reset',
       escapeRoomResetConfirm: 'Confirm reset',
       escapeRoomResetError: 'Could not reset the attempt. Please try again.',
