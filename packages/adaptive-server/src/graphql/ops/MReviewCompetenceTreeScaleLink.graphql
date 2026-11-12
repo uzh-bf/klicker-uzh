@@ -1,0 +1,12 @@
+mutation ReviewCompetenceTreeScaleLink(
+  $scaleLinkId: String!
+  $decision: AdaptiveReviewDecision!
+) {
+  reviewCompetenceTreeScaleLink(
+    scaleLinkId: $scaleLinkId
+    decision: $decision
+  ) {
+    id
+    status
+  }
+}

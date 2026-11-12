@@ -8,6 +8,8 @@ mutation ManipulateFreeTextQuestion(
   $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
+  $initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput
+  $creationRequestId: String
 ) {
   manipulateFreeTextQuestion(
     id: $id
@@ -19,6 +21,8 @@ mutation ManipulateFreeTextQuestion(
     basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
+    initialCompetenceTreeAssignment: $initialCompetenceTreeAssignment
+    creationRequestId: $creationRequestId
   ) {
     __typename
     ... on FreeTextElement {

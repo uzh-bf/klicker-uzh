@@ -3,6 +3,7 @@ import {
   type ActivityInfo,
   ActivityType,
   ObjectType,
+  PracticeQuizMode,
   PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -88,6 +89,9 @@ function PracticeQuizActions({
     () => ({
       isManager: [
         'duplicatePracticeQuiz',
+        ...(practiceQuiz.mode === PracticeQuizMode.Adaptive
+          ? ['openEvaluation']
+          : []),
         ...(user?.privatePreview ? ['sharePracticeQuiz'] : []),
         'deletePracticeQuiz',
       ],
@@ -97,13 +101,15 @@ function PracticeQuizActions({
         'copyAccessLink',
         'copyLTIAccessLink',
         'openPreview',
-        'openEvaluation',
+        ...(practiceQuiz.mode === PracticeQuizMode.Adaptive
+          ? []
+          : ['openEvaluation']),
         'activityLog',
         'analyticsPracticeQuiz',
       ],
       isRemovable: ['removePracticeQuiz'],
     }),
-    [user?.privatePreview]
+    [practiceQuiz.mode, user?.privatePreview]
   )
 
   const actions = usePracticeQuizActions({
@@ -146,6 +152,7 @@ function PracticeQuizActions({
             onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
             courseStartDate={practiceQuiz.courseStartDate}
+            mode={practiceQuiz.mode ?? PracticeQuizMode.Standard}
             refetchActivities={refetchActivities}
           />
         )}

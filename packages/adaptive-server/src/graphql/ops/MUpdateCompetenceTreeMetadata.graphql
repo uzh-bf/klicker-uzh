@@ -1,0 +1,8 @@
+mutation UpdateCompetenceTreeMetadata(
+  $id: String!
+  $input: CompetenceTreeMetadataInput!
+) {
+  updateCompetenceTreeMetadata(id: $id, input: $input) {
+    ...CompetenceTreeData
+  }
+}
