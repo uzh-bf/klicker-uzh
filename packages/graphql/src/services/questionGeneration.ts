@@ -501,7 +501,7 @@ async function dispatchPreparingRevisionBuild(
     parent_build_id: build.parentBuildId,
     dispatch_attempt_id: build.providerDispatchAttemptId,
     element_type: 'question',
-    question_id: slot.sourceQuestionId,
+    question_id: specification?.question_id ?? slot.sourceQuestionId,
     design_slot_id: specification?.design_slot_id ?? slot.sourceQuestionId,
     language: configuration.language,
     ...(specification
