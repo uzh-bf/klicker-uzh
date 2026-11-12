@@ -1380,6 +1380,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
       allQuestionsAnswered:
         'You have already answered all active questions or the block has been closed.',
+      ownResponses: 'Your responses: {count} of {limit}',
+      responseAlreadySubmitted: 'You have already submitted this response.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
@@ -2651,6 +2653,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       addSolutionRange: 'Add new solution range',
       addExactSolution: 'Add new exact solution',
       maximumLength: 'Maximum length',
+      responseLimit: 'Responses per participant',
+      responseLimitTooltip:
+        'In standard live quizzes, participants can submit up to this many different responses (at most 10). Only the first response earns points. Assessment live quizzes and all other activities always accept one response.',
       answerLength: 'Answer length',
       possibleSolutionN: 'Possible solution {number}',
       possibleSolutions: 'Possible solutions',
@@ -3161,6 +3166,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enterSolution: 'Please enter a solution.',
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
+      FTResponseLimit:
+        'The number of responses per participant has to be a whole number between 1 and 10.',
       solutionRequired:
         'Please enter at least one solution or deactivate the sample solution.',
       NRMinLessThanMaxSol:

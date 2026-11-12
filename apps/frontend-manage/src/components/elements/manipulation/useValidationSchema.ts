@@ -3,6 +3,7 @@ import {
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { MAX_RESPONSE_LIMIT } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 import { ElementFormTypesCaseStudy, ElementFormTypesNumerical } from './types'
@@ -407,6 +408,12 @@ function useOptionsSchemaFreeText() {
         .min(1, t('manage.formErrors.FTMaxLength'))
         .nullable(),
     }),
+    responseLimit: yup
+      .number()
+      .integer(t('manage.formErrors.FTResponseLimit'))
+      .min(1, t('manage.formErrors.FTResponseLimit'))
+      .max(MAX_RESPONSE_LIMIT, t('manage.formErrors.FTResponseLimit'))
+      .nullable(),
     solutions: yup
       .array()
       .of(

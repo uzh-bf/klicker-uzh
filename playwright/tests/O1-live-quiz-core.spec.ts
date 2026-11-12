@@ -2,7 +2,7 @@
 /**
  * Core live-quiz management, execution, and content workflows.
  */
-import { expect, type Page } from '@playwright/test'
+import { expect, type Page, type Request } from '@playwright/test'
 import fs from 'node:fs'
 import { chooseActionByTestId } from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
@@ -4714,6 +4714,450 @@ test.describe.serial('Core live-quiz workflows', () => {
       .getByTestId(`delete-live-quiz-${data.liveQuiz.duplicateName}`)
       .click()
     await confirmResponseDeletionIfAvailable(page)
+    await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
+    await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
+    await page.getByTestId(`confirmation-modal-confirm`).click()
+  })
+  test('Create a free-text question with a response limit and a live quiz containing it', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const quiz = data.liveQuizResponseLimit
+    await loginLecturer(page)
+    await createQuestionFT(page, {
+      name: quiz.question.title,
+      content: quiz.question.content,
+      userId: env('LECTURER_ID'),
+    })
+
+    // set the response limit in the element editor and verify that it persists
+    await editElement(page, { element: quiz.question.title })
+    await page
+      .getByTestId('set-free-text-response-limit')
+      .fill(quiz.responseLimit)
+    await page.getByTestId('save-new-question').click()
+    await page.waitForTimeout(1000)
+    await editElement(page, { element: quiz.question.title })
+    await expect(page.getByTestId('set-free-text-response-limit')).toHaveValue(
+      quiz.responseLimit
+    )
+    await page.getByTestId('close-element-modal-button').click()
+
+    await createLiveQuiz(page, {
+      name: quiz.name,
+      displayName: quiz.displayName,
+      courseName: quiz.course,
+      blocks: [{ elements: [quiz.question.title] }],
+    })
+  })
+
+  test('Respond several times to a free-text question with a response limit', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const quiz = data.liveQuizResponseLimit
+    const [first, second, third] = quiz.answers
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`start-live-quiz-${quiz.name}`).click()
+    await page.waitForTimeout(1000)
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+
+    await loginStudentWithStoredPwaState(page)
+    await page.getByTestId(`live-quiz-${quiz.displayName}`).click()
+    const input = page.getByTestId('free-text-input-0')
+    const ownResponses = page.getByTestId('free-text-own-responses')
+
+    await typeInto(input, '   ')
+    await page.getByTestId('student-submit-answer').click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(0)
+    await expect(input).toBeEnabled()
+    await input.clear()
+
+    // the question stays open after the first response
+    await typeInto(input, first)
+    await page.getByTestId('student-submit-answer').click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await expect(input).toBeEnabled()
+    await expect(input).toHaveValue('')
+
+    // an identical response is not submitted again
+    await typeInto(input, first)
+    await page.getByTestId('student-submit-answer').click()
+    await page.waitForTimeout(500)
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await input.clear()
+
+    // the open state and the earlier responses survive a reload
+    await page.reload()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+    await expect(input).toBeEnabled()
+
+    let releaseResponse: () => void = () => {}
+    const responseGate = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    await page.route(
+      '**/AddResponse',
+      async (route) => {
+        await responseGate
+        await route.fallback()
+      },
+      { times: 1 }
+    )
+    const pendingRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse'
+    )
+    const pendingResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/AddResponse'
+    )
+    await typeInto(input, second)
+    await page.getByTestId('student-submit-answer').click()
+    await pendingRequest
+    await input.fill(third)
+    releaseResponse()
+    expect((await pendingResponse).status()).toBe(200)
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(2)
+    await expect(input).toHaveValue(third)
+    await page.getByTestId('student-submit-answer').click()
+    await expect(ownResponses.getByRole('listitem')).toHaveCount(3)
+
+    // the question closes once the limit is reached
+    await expect(input).toBeDisabled()
+  })
+
+  test('Complete a delayed first response after navigating back', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const suffix = Date.now()
+    const quizName = `Synthetic response navigation ${suffix}`
+    const before = `Before response ${suffix}`
+    const after = `After response ${suffix}`
+
+    await loginLecturer(page)
+    for (const name of [before, after]) {
+      await createContent(page, {
+        name,
+        content: `Synthetic navigation content ${name}`,
+        userId: env('LECTURER_ID'),
+      })
+    }
+    await createLiveQuiz(page, {
+      name: quizName,
+      displayName: quizName,
+      courseName: data.liveQuizResponseLimit.course,
+      blocks: [
+        {
+          elements: [before, data.liveQuizResponseLimit.question.title, after],
+        },
+      ],
+    })
+    await openActivitiesListForQuiz(page, quizName)
+    await page.getByTestId(`start-live-quiz-${quizName}`).click()
+    await openNextBlockFromCockpit(page)
+    await loginStudentWithStoredPwaState(page)
+    await page.getByTestId(`live-quiz-${quizName}`).click()
+    await expect(page.getByTestId('content-element-0')).toBeVisible()
+    await page.getByTestId('student-submit-answer').click()
+    const input = page.getByTestId('free-text-input-1')
+    await expect(input).toBeVisible()
+    await typeInto(input, `Delayed first response ${suffix}`)
+
+    let releaseResponse: () => void = () => {}
+    const responseGate = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    await page.route(
+      '**/AddResponse',
+      async (route) => {
+        await responseGate
+        await route.fallback()
+      },
+      { times: 1 }
+    )
+    const request = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse'
+    )
+    const response = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/AddResponse'
+    )
+    await page.getByTestId('student-submit-answer').click()
+    await request
+    await page.getByTestId('lq-nav-prev').click()
+    await expect(page.getByTestId('content-element-0')).toBeVisible()
+    releaseResponse()
+    expect((await response).status()).toBe(200)
+    await expect(page.getByTestId('content-element-0')).toBeVisible()
+    await page.getByTestId('lq-nav-next').click()
+    await expect(input).toBeVisible()
+    await expect(
+      page.getByTestId('free-text-own-responses').getByRole('listitem')
+    ).toHaveCount(1)
+    await expect(page.getByTestId('lq-nav-next')).toBeEnabled()
+    await page.getByTestId('lq-nav-next').click()
+    await expect(page.getByTestId('content-element-2')).toBeVisible()
+
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`live-quiz-cockpit-${quizName}`).click()
+    const nextBlock = page.getByTestId('next-block-timeline')
+    await expect(nextBlock).toBeEnabled({ timeout: 30000 })
+    await nextBlock.click()
+    await expect(nextBlock).toBeEnabled({ timeout: 30000 })
+    await nextBlock.click()
+    await expect(
+      page.getByTestId(`activity-LIVE_QUIZ-${quizName}`)
+    ).toBeVisible({ timeout: 30000 })
+  })
+
+  for (const mode of [
+    'automatic draft',
+    'send in flight',
+    'pending manual send then new draft',
+  ]) {
+    test(`Keep a timed response-limit question open at expiry (${mode})`, async ({
+      page: testPage,
+    }, testInfo) => {
+      page = testPage
+      aliases.clear()
+      testInfo.setTimeout(600_000)
+      page.setDefaultNavigationTimeout(300_000)
+
+      const suffix = Date.now()
+      const quizName = `Synthetic timed response limit ${suffix}`
+      const displayName = `Synthetic timed response limit ${suffix}`
+      const contentName = `Timed response limit follow-up ${suffix}`
+      const firstDraft = `First timed draft ${suffix}`
+      const pendingDraft = `Pending timed draft ${suffix}`
+      const nextDraft = `Next timed draft ${suffix}`
+      const timeLimitSeconds = 120
+      const submitAtExpiry = mode !== 'automatic draft'
+      const submitPendingDraft = mode === 'pending manual send then new draft'
+      let addResponseRequests = 0
+
+      await loginLecturer(page)
+      await createContent(page, {
+        name: contentName,
+        content: `Synthetic timed response-limit follow-up ${suffix}`,
+        userId: env('LECTURER_ID'),
+      })
+
+      await createLiveQuiz(page, {
+        name: quizName,
+        displayName,
+        courseName: data.liveQuizResponseLimit.course,
+        blocks: [
+          {
+            elements: [data.liveQuizResponseLimit.question.title, contentName],
+          },
+        ],
+      })
+
+      await openActivitiesListForQuiz(page, quizName)
+      await page.getByTestId(`actions-LIVE_QUIZ-${quizName}`).click()
+      await page.getByTestId(`edit-live-quiz-${quizName}`).click()
+      await page.getByTestId('next-or-submit').click()
+      await expect(page.getByTestId('insert-live-display-name')).toBeVisible()
+      await page.getByTestId('next-or-submit').click()
+      await expect(page.getByTestId('select-course')).toBeVisible()
+      await page.getByTestId('next-or-submit').click()
+      await expect(page.getByTestId('open-block-0-countdown')).toBeVisible()
+      await page.getByTestId('open-block-0-countdown').click()
+      await page.getByTestId('block-time-limit').clear()
+      await typeInto(
+        page.getByTestId('block-time-limit'),
+        String(timeLimitSeconds)
+      )
+      await page.getByTestId('close-block-countdown').click()
+      await page.getByTestId('next-or-submit').click()
+
+      await openActivitiesListForQuiz(page, quizName)
+      await page.getByTestId(`start-live-quiz-${quizName}`).click()
+      await openNextBlockFromCockpit(page)
+
+      await loginStudentWithStoredPwaState(page)
+      await page.getByTestId(`live-quiz-${displayName}`).click()
+
+      const input = page.getByTestId('free-text-input-0')
+      const ownResponses = page.getByTestId('free-text-own-responses')
+      const submit = page.getByTestId('student-submit-answer')
+      const countdown = (activityPage: Page) =>
+        activityPage
+          .getByTestId('lq-nav-prev')
+          .locator('xpath=preceding-sibling::div[1]')
+
+      await expect(input).toBeVisible()
+
+      page.on('request', (request) => {
+        if (
+          request.method() === 'POST' &&
+          new URL(request.url()).pathname === '/AddResponse'
+        ) {
+          addResponseRequests += 1
+        }
+      })
+
+      await expect(input).toBeEnabled()
+      await expect(countdown(page)).toHaveCount(1)
+      await typeInto(input, firstDraft)
+      await expect(submit).toBeEnabled()
+      await submit.click()
+      await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+      await expect.poll(() => addResponseRequests).toBe(1)
+
+      // A response below the cap keeps the question and its countdown open.
+      await expect(input).toBeEnabled()
+      await expect(countdown(page)).toHaveCount(1)
+
+      await page.getByTestId('lq-nav-next').click()
+      await expect(page.getByTestId('content-element-1')).toBeVisible()
+      const contentResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/AddResponse'
+      )
+      await page.getByTestId('student-submit-answer').click()
+      expect((await contentResponse).status()).toBe(200)
+      await expect.poll(() => addResponseRequests).toBe(2)
+      await expect(page.getByTestId('student-continue')).toBeVisible()
+
+      // Completing the follow-up leaves the capped question reopenable while
+      // the block is still active, including after navigating back to it.
+      await page.getByTestId('lq-nav-prev').click()
+      await expect(input).toBeEnabled()
+      await expect(ownResponses.getByRole('listitem')).toHaveCount(1)
+      await expect(countdown(page)).toHaveCount(1)
+      await typeInto(input, submitPendingDraft ? pendingDraft : nextDraft)
+      await expect(submit).toBeEnabled()
+      expect(addResponseRequests).toBe(2)
+
+      const expiryTimeout = (timeLimitSeconds + 30) * 1000
+      const isNextDraftRequest = (request: Request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/AddResponse' &&
+        request.postDataJSON().response?.value === nextDraft
+      const expectedRequest = page.waitForRequest(isNextDraftRequest, {
+        timeout: expiryTimeout,
+      })
+      const expectedResponse = page.waitForResponse(
+        (response) => isNextDraftRequest(response.request()),
+        { timeout: expiryTimeout }
+      )
+      let releaseResponse: (() => void) | undefined
+      let pendingResponse: ReturnType<Page['waitForResponse']> | undefined
+      if (submitAtExpiry) {
+        const responseGate = new Promise<void>((resolve) => {
+          releaseResponse = resolve
+        })
+        await page.route(
+          '**/AddResponse',
+          async (route) => {
+            await responseGate
+            await route.fallback()
+          },
+          { times: 1 }
+        )
+        if (submitPendingDraft) {
+          const pendingRequest = page.waitForRequest(
+            (request) =>
+              request.method() === 'POST' &&
+              new URL(request.url()).pathname === '/AddResponse',
+            { timeout: expiryTimeout }
+          )
+          pendingResponse = page.waitForResponse(
+            (response) =>
+              response.request().method() === 'POST' &&
+              new URL(response.url()).pathname === '/AddResponse',
+            { timeout: expiryTimeout }
+          )
+          await submit.click()
+          await pendingRequest
+          await input.clear()
+          await typeInto(input, nextDraft)
+        } else {
+          await submit.click()
+        }
+      }
+
+      // Observe the native deadline without changing authentication or router clocks.
+      await expect(countdown(page)).toHaveCount(0, { timeout: expiryTimeout })
+      if (!submitPendingDraft) await expectedRequest
+      expect(addResponseRequests).toBe(3)
+      releaseResponse?.()
+      if (pendingResponse) expect((await pendingResponse).status()).toBe(200)
+      const [request, response] = await Promise.all([
+        expectedRequest,
+        expectedResponse,
+      ])
+      expect(response.status()).toBe(200)
+      expect(await request.postDataJSON()).toMatchObject({
+        response: { value: nextDraft },
+        isFirstResponse: false,
+      })
+      await expect
+        .poll(() => addResponseRequests)
+        .toBe(submitPendingDraft ? 4 : 3)
+
+      await expect(page.getByTestId('content-element-1')).toBeVisible()
+      await expect(countdown(page)).toHaveCount(0)
+      await page.getByTestId('lq-nav-prev').click()
+      await expect(input).toBeDisabled()
+      if (submitPendingDraft) {
+        await expect(ownResponses.getByRole('listitem')).toHaveCount(3)
+      }
+    })
+  }
+
+  test('Show responses and respondents in the evaluation and end the live quiz', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    const quiz = data.liveQuizResponseLimit
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`live-quiz-cockpit-${quiz.name}`).click()
+    await visitEvaluationFromCockpit(page)
+
+    // three responses from a single respondent
+    await expect(page.getByTestId('live-quiz-total-participants')).toHaveText(
+      /\b3\b.*\b1\b/,
+      { timeout: 30000 }
+    )
+
+    await openActivitiesListForQuiz(page, quiz.name)
+    await page.getByTestId(`live-quiz-cockpit-${quiz.name}`).click()
+    await page.waitForTimeout(1000)
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+
+    await page.getByTestId('activities').click()
+    await page.getByTestId(`actions-LIVE_QUIZ-${quiz.name}`).click()
+    await page.getByTestId(`delete-live-quiz-${quiz.name}`).click()
+    await page.getByTestId('confirm-deletion-responses').click()
     await clickIfVisible(page, 'confirm-deletion-qa-feedbacks')
     await clickIfVisible(page, 'confirm-deletion-confusion-feedbacks')
     await page.getByTestId(`confirmation-modal-confirm`).click()

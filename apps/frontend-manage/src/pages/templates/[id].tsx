@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   ActivityType,
-  GetActivityTemplateDocument,
+  GetActivityTemplateWithResponseLimitDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -16,9 +16,12 @@ import PracticeQuizTemplate from '../../components/activities/templates/Practice
 function Template({ templateId }: { templateId: string }) {
   const t = useTranslations()
 
-  const { data, loading } = useQuery(GetActivityTemplateDocument, {
-    variables: { templateId },
-  })
+  const { data, loading } = useQuery(
+    GetActivityTemplateWithResponseLimitDocument,
+    {
+      variables: { templateId },
+    }
+  )
 
   if (loading) {
     return (

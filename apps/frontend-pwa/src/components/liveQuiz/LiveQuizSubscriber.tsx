@@ -3,7 +3,7 @@ import {
   LiveQuiz,
   LiveQuizSettingsChangedDocument,
   LiveQuizStudentSettings,
-  RunningLiveQuizUpdatedDocument,
+  RunningLiveQuizUpdatedWithResponseLimitDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useEffect } from 'react'
 
@@ -17,7 +17,7 @@ function LiveQuizSubscriber({
   useEffect(() => {
     // update the active block on the student view through a subscription on block start / end
     const activeBlockChanged = subscribeToMore({
-      document: RunningLiveQuizUpdatedDocument,
+      document: RunningLiveQuizUpdatedWithResponseLimitDocument,
       variables: { id },
       updateQuery: (
         prev: { studentLiveQuiz: LiveQuiz },
