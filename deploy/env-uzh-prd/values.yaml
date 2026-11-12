@@ -47,8 +47,10 @@ hatchet:
         pullPolicy: IfNotPresent
         tag: v3.4.0-alpha.88
       resources:
+        # Near the per-pod CPU of a busy lecture, so a crowded node does not
+        # throttle this tier first. Usage above the request is still allowed.
         requests:
-          cpu: 50m
+          cpu: 75m
           memory: 512Mi
         limits:
           memory: 2Gi
@@ -562,8 +564,10 @@ frontendPWA:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 50m
+      cpu: 150m
       memory: 320Mi
     limits:
       memory: 1Gi
@@ -775,8 +779,10 @@ backendGraphql:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 50m
+      cpu: 150m
       memory: 448Mi
     limits:
       memory: 1Gi
