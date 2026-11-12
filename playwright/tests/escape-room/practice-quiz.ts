@@ -531,7 +531,10 @@ export function registerPracticeEscapeRoomTests() {
     )
     await expect(
       page
-        .getByText(messages.manage.evaluation.escapeRoomStatusNotStarted)
+        .locator('[data-cy^="escape-room-attempt-"]')
+        .filter({
+          hasText: messages.manage.evaluation.escapeRoomStatusNotStarted,
+        })
         .first()
     ).toBeVisible()
 
