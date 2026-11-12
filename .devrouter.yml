@@ -234,6 +234,21 @@ apps:
     runtime: proxy
     upstream: ${WORKSPACE}-app:3004
 
+  # exam deployment of the chat (CHAT_ASSESSMENT_MODE) and the assessment build
+  # of the PWA. Neither is started by a profile: run them by hand beside the
+  # regular apps, as described in .devcontainer/README.md ("Assessment chat").
+  - name: assessment-chat
+    host: assessment-chat.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3014
+
+  - name: assessment
+    host: assessment.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3011
+
   # local Edu-ID replacement: the OIDC mock shares the app container's network
   # namespace, so devrouter reaches it on devnet as ${WORKSPACE}-app:8090. The
   # auth app uses this host as its OIDC issuer, which makes the SWITCH redirect

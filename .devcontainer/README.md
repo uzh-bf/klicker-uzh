@@ -362,6 +362,24 @@ devrouter routing) the issuer is `http://localhost:8090/default`. The primary
 checkout publishes that port on `127.0.0.1` and `devcontainer.json` forwards it.
 Linked worktrees keep the routed HTTPS issuer and publish no fixed host port.
 
+### Assessment chat
+
+`.devrouter.yml` declares `assessment-chat.klicker.<workspace>.localhost` (port 3014) and `assessment.klicker.<workspace>.localhost` (port 3011) for checking the
+exam deployment. No profile starts or routes them, because the managed process
+table and the Playwright runtime contract know only the regular apps. A
+retained runtime must be recreated to pick the routes up, and a selective
+profile must name them explicitly.
+
+The exam chat is the regular chat started with `CHAT_ASSESSMENT_MODE=true`,
+`CHAT_PUBLIC_PWA_URL` and `CHAT_PUBLIC_URL`. It reads the Edu-ID participant
+session (`next-auth.participant-session-token`), serves only courses with
+`isAssessmentEnabled`, and answers 404 on the LTI, eLearning, embed, manage and
+preview entry points. The assessment PWA is the regular PWA started with
+`NEXT_PUBLIC_IS_ASSESSMENT=true` and `ASSESSMENT_MODE=true`, which also needs a
+backend started with `ASSESSMENT_MODE=true` to read the same session cookie.
+The participant must be enrolled in the course and complete the account
+data-use step before the chatbot opens.
+
 ## Hatchet token
 
 `backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine
