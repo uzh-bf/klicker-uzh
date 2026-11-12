@@ -1631,10 +1631,17 @@ which passages it drew on, and the citation contract asks it to name them rather
 span.
 Source identity deliberately stays keyed on the start page, so two `doc_query` calls returning
 overlapping chunks for one resource cannot split it into duplicate cards.
-Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
-structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
-`labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
-and prefers the structured start for the card and citation preview. Legacy results remain
+Original URLs remain unchanged. For a grouped video result, the normalizer retains each retrieved
+passage's start, optional end and excerpt in `videoPassages`. A single-source marker such as
+`[1, t. 1:30]` still renders as chip 1. `useMessageSources` checks the clock against those passages
+and shares the supported positions (`citedStartSecs`) with the card and preview. Both show the
+distinct cited times in order. The earliest supported time selects the excerpt; an exact displayed
+start takes priority where two passages meet. Without a supported clock, the first chunk's
+structured start remains the fallback. The link opens the original course page; a displayed clock
+does not add a seek parameter. Answers with video clock markers cannot be captured as saved
+examples because that format supports bare citation indexes only.
+
+Legacy results remain
 supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
 or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
 

@@ -1,13 +1,19 @@
 import { useAuiState } from '@assistant-ui/react'
 import { useMemo } from 'react'
 
-import { extractCitedPages } from '@/src/lib/markdown/remarkCitationMarkers'
+import {
+  extractCitedPages,
+  extractCitedTimestamps,
+} from '@/src/lib/markdown/remarkCitationMarkers'
 import { courseImageSourceMap } from '@/src/lib/sources/courseImages'
 import {
   type ChatSourcePart,
   normalizeSourcesFromParts,
 } from '@/src/lib/sources/normalizeSources'
-import { formatCitedPageRanges } from '@/src/lib/sources/sourceDisplay'
+import {
+  applyVideoCitationTimes,
+  formatCitedPageRanges,
+} from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource } from '@/src/lib/sources/types'
 import { withVideoSourceFrames } from '@/src/lib/sources/videoSourceMedia'
 
@@ -32,6 +38,7 @@ export interface MessageSources {
   citedPageRanges: ReadonlyMap<number, string>
 }
 
+const EMPTY_CITED_VIDEO_TIMES: ReadonlyMap<number, number[]> = new Map()
 const EMPTY_CITED_PAGE_RANGES: ReadonlyMap<number, string> = new Map()
 
 /**
@@ -104,13 +111,24 @@ export function useMessageSources(): MessageSources {
     [fingerprint, sources]
   )
 
+  const citedVideoTimes = useMemo(() => {
+    if (!/t\./i.test(answerText)) return EMPTY_CITED_VIDEO_TIMES
+    const times = extractCitedTimestamps(answerText)
+    return times.size ? times : EMPTY_CITED_VIDEO_TIMES
+  }, [answerText])
+
+  const displayedSources = useMemo(
+    () => applyVideoCitationTimes(sources, citedVideoTimes),
+    [sources, citedVideoTimes]
+  )
+
   return useMemo(
     () => ({
       messageId: message.id,
-      sources,
+      sources: displayedSources,
       citedPageRanges,
       courseImageSourcesByAssetId,
     }),
-    [message.id, sources, citedPageRanges, courseImageSourcesByAssetId]
+    [message.id, displayedSources, citedPageRanges, courseImageSourcesByAssetId]
   )
 }

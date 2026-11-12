@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   citationHrefFor,
   extractCitedPages,
+  extractCitedTimestamps,
   type MarkdownAstNode,
   parseCitationHref,
   splitCitationMarkers,
@@ -133,6 +134,8 @@ describe('splitCitationMarkers', () => {
     ['[1, S. 02:34]', 1],
     ['[1, p. 1:02:03]', 1],
     ['[1, S. 02:34–03:10]', 1],
+    ['[1, t. 02:34]', 1],
+    ['[2,t. 1:02:03]', 2],
   ])('renders only the number for a labelled detail (%s)', (input, index) => {
     const nodes = splitCitationMarkers(input)
     expect(nodes[0]).toEqual(citationLinkNode(index))
@@ -169,6 +172,11 @@ describe('splitCitationMarkers', () => {
     '[1, 02:34]',
     '[1, S. 00:60]',
     '[1, S. 1:60:00]',
+    '[1, t. 02:60]',
+    '[1, t. 1:2]',
+    '[1, t. 1:60:00]',
+    '[1, t. 12:34–13:00]',
+    '[1, time. 02:34]',
   ])('leaves an unlabelled or non-numeric bracket list literal (%s)', (input) => {
     expect(splitCitationMarkers(input)).toEqual([textNode(input)])
   })
@@ -258,6 +266,42 @@ describe('extractCitedPages', () => {
     expect(extractCitedPages('[1, S. 02:34] [2, p. 6]')).toEqual(
       new Map([[2, [6]]])
     )
+    expect(extractCitedPages('[1, t. 02:34] [2, p. 6]')).toEqual(
+      new Map([[2, [6]]])
+    )
+  })
+})
+
+describe('extractCitedTimestamps', () => {
+  test('reads single-source minute and hour clocks case-insensitively', () => {
+    expect([
+      ...extractCitedTimestamps('See [1, T. 02:34] and [2,t. 1:02:03].'),
+    ]).toEqual([
+      [1, [154]],
+      [2, [3723]],
+    ])
+  })
+
+  test('keeps distinct clocks per source and ignores bare or ranged markers', () => {
+    expect([
+      ...extractCitedTimestamps(
+        'A [1, t. 2:00] B [1,t. 1:30] C [1, t. 2:00] D [1][2–4, t. 3:00].'
+      ),
+    ]).toEqual([[1, [120, 90]]])
+  })
+
+  test('does not treat page-labelled clocks as video positions', () => {
+    expect(
+      extractCitedTimestamps('[1, p. 6] [1, S. 02:34] [2, t. 1:02:03]')
+    ).toEqual(new Map([[2, [3723]]]))
+  })
+
+  test('ignores video clocks inside code and incomplete markers', () => {
+    expect(
+      extractCitedTimestamps(
+        '```\n[1, t. 2:00]\n``` Use `[1, t. 3:00]` and [1, t. 4:00'
+      )
+    ).toEqual(new Map())
   })
 })
 
@@ -439,6 +483,7 @@ describe('citation protocol across streaming boundaries', () => {
     ['[2-4]', [2, 3, 4]],
     ['[2—4]', [2, 3, 4]],
     ['[1, S. 02:34]', [1]],
+    ['[1, t. 12:34]', [1]],
   ] as const)('emits only completed markers while %s arrives character by character', (input, expected) => {
     for (let length = 0; length <= input.length; length += 1) {
       const prefix = input.slice(0, length)

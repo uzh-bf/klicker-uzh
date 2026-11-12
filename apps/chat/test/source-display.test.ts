@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { extractCitedPages } from '../src/lib/markdown/remarkCitationMarkers'
 import {
+  extractCitedPages,
+  extractCitedTimestamps,
+} from '../src/lib/markdown/remarkCitationMarkers'
+import { normalizeSourcesFromParts } from '../src/lib/sources/normalizeSources'
+import {
+  applyVideoCitationTimes,
   formatCitedPageRanges,
   formatTimestamp,
   getDisplayUrl,
@@ -125,6 +130,175 @@ describe('getSourceTimestamp', () => {
         source({ type: 'video', url: 'https://example.com/v/abc' })
       )
     ).toBeUndefined()
+  })
+
+  test('shows all cited video positions in ascending order', () => {
+    expect(
+      getSourceTimestamp(
+        source({
+          type: 'video',
+          startSec: 754,
+          citedStartSecs: [1205, 754, 754],
+        })
+      )
+    ).toBe('12:34, 20:05')
+  })
+})
+
+describe('applyVideoCitationTimes', () => {
+  const syntheticVideo = source({
+    type: 'video',
+    startSec: 42,
+    endSec: 59,
+    excerpt: 'First retrieved excerpt',
+    videoPassages: [
+      { startSec: 42, endSec: 59, excerpt: 'First retrieved excerpt' },
+      { startSec: 754, endSec: 800, excerpt: 'Later cited excerpt' },
+    ],
+  })
+
+  test.each([
+    30, 30.4,
+  ])('prefers the cited start at a shared boundary %s', (boundary) => {
+    const source: ChatSource = {
+      id: 'video',
+      index: 1,
+      type: 'video',
+      title: 'Lecture',
+      videoPassages: [
+        { startSec: 0, endSec: boundary, excerpt: 'Earlier' },
+        { startSec: boundary, endSec: 60, excerpt: 'Later' },
+      ],
+    }
+    const [selected] = applyVideoCitationTimes([source], new Map([[1, [30]]]))
+    expect(selected?.excerpt).toBe('Later')
+    expect(selected?.startSec).toBe(boundary)
+  })
+
+  test('selects a later cited passage and its excerpt', () => {
+    const [applied] = applyVideoCitationTimes(
+      [syntheticVideo],
+      new Map([[1, [754]]])
+    )
+
+    expect(applied).toMatchObject({
+      startSec: 754,
+      endSec: 800,
+      excerpt: 'Later cited excerpt',
+      citedStartSecs: [754],
+    })
+    expect(getSourceSecondaryLine(applied!, t)).toBe('12:34')
+  })
+
+  test('leaves the historical first-passage fallback for an unsupported clock', () => {
+    const [applied] = applyVideoCitationTimes(
+      [syntheticVideo],
+      new Map([[1, [600]]])
+    )
+
+    expect(applied).toBe(syntheticVideo)
+    expect(getSourceSecondaryLine(applied!, t)).toBe('0:42–0:59')
+  })
+
+  test('shows multiple cited clocks ascending and uses the earliest excerpt', () => {
+    const video = source({
+      type: 'video',
+      startSec: 30,
+      endSec: 40,
+      excerpt: 'Fallback',
+      videoPassages: [
+        { startSec: 100, endSec: 200, excerpt: 'Overlapping first' },
+        { startSec: 110, endSec: 180, excerpt: 'Overlapping second' },
+        { startSec: 300, endSec: 360, excerpt: 'Latest' },
+      ],
+    })
+    const [applied] = applyVideoCitationTimes(
+      [video],
+      new Map([[1, [360, 120, 120]]])
+    )
+
+    expect(applied).toMatchObject({
+      startSec: 100,
+      endSec: 200,
+      excerpt: 'Overlapping first',
+      citedStartSecs: [120, 360],
+    })
+    expect(getSourceSecondaryLine(applied!, t)).toBe('2:00, 6:00')
+  })
+
+  test('accepts the displayed whole second of a fractional start', () => {
+    const video = source({
+      type: 'video',
+      startSec: 62.8,
+      endSec: 70.2,
+      videoPassages: [{ startSec: 62.8, endSec: 70.2, excerpt: 'Fractional' }],
+    })
+
+    expect(
+      applyVideoCitationTimes([video], new Map([[1, [62]]]))[0]?.citedStartSecs
+    ).toEqual([62])
+    expect(applyVideoCitationTimes([video], new Map([[1, [59]]]))[0]).toBe(
+      video
+    )
+  })
+
+  test('with an unknown end supports only the displayed start', () => {
+    const video = source({
+      type: 'video',
+      startSec: 120,
+      videoPassages: [{ startSec: 120, excerpt: 'Unknown end' }],
+    })
+
+    expect(
+      applyVideoCitationTimes([video], new Map([[1, [120]]]))[0]?.citedStartSecs
+    ).toEqual([120])
+    expect(applyVideoCitationTimes([video], new Map([[1, [121]]]))[0]).toBe(
+      video
+    )
+  })
+
+  test('replays a persisted tool result without changing the source index or url', () => {
+    const url = 'https://example.com/lecture#t=754.0,800.0'
+    const sources = normalizeSourcesFromParts([
+      {
+        type: 'tool-call',
+        toolName: 'IW_doc_query',
+        result: {
+          mode: 'documents',
+          sources: [
+            {
+              reference: url,
+              source_type: 'video',
+              title: 'Synthetic lecture',
+              chunks: [
+                { content: 'Early', start_sec: 42, end_sec: 59 },
+                { content: 'Cited later', start_sec: 754, end_sec: 800 },
+              ],
+            },
+          ],
+        },
+      },
+    ])
+    const cited = extractCitedTimestamps('The later point [1, t. 12:34].')
+    const [replayed] = applyVideoCitationTimes(sources, cited)
+
+    expect(replayed).toMatchObject({
+      index: 1,
+      url,
+      startSec: 754,
+      endSec: 800,
+      excerpt: 'Cited later',
+      citedStartSecs: [754],
+    })
+  })
+
+  test('leaves old video messages on their first-passage fallback', () => {
+    const [applied] = applyVideoCitationTimes([syntheticVideo], new Map())
+    expect(applied).toMatchObject({
+      startSec: 42,
+      excerpt: 'First retrieved excerpt',
+    })
+    expect(applied?.citedStartSecs).toBeUndefined()
   })
 })
 

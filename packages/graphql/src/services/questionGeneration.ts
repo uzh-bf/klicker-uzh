@@ -450,6 +450,7 @@ async function dispatchPreparingRevisionBuild(
 
   let graphRefs: Pick<
     SlotRevisionWorkflowPayload,
+    | 'graph_version_id'
     | 'graph_manifest'
     | 'resolved_domain_policy'
     | 'generation_recipe'
@@ -480,6 +481,7 @@ async function dispatchPreparingRevisionBuild(
       }
     )
     graphRefs = {
+      graph_version_id: build.sourceGraphBuild.id,
       graph_manifest: elementGenerationArtifactPayload(manifest),
       resolved_domain_policy: elementGenerationArtifactPayload(
         evidence.domainPolicyArtifact

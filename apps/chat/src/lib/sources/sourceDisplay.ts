@@ -33,6 +33,81 @@ export function formatTimestamp(totalSeconds: number): string {
   return `${minutes}:${paddedSeconds}`
 }
 
+function normalizeCitedStartSecs(values: readonly number[]): number[] {
+  return [
+    ...new Set(
+      values.filter((value) => Number.isSafeInteger(value) && value >= 0)
+    ),
+  ].sort((left, right) => left - right)
+}
+
+function passageContainsTimestamp(
+  passage: NonNullable<ChatSource['videoPassages']>[number],
+  timestamp: number
+): boolean {
+  if (!Number.isFinite(passage.startSec) || passage.startSec < 0) return false
+
+  const displayedStart = Math.floor(passage.startSec)
+  if (timestamp < displayedStart) return false
+  if (passage.endSec === undefined) return timestamp === displayedStart
+  if (!Number.isFinite(passage.endSec) || passage.endSec < passage.startSec) {
+    return false
+  }
+  return timestamp <= Math.floor(passage.endSec)
+}
+
+export function findVideoPassage<
+  T extends NonNullable<ChatSource['videoPassages']>[number],
+>(passages: readonly T[], timestamp: number): T | undefined {
+  return (
+    passages.find(
+      (passage) =>
+        Math.floor(passage.startSec) === timestamp &&
+        passageContainsTimestamp(passage, timestamp)
+    ) ??
+    passages.find((passage) => passageContainsTimestamp(passage, timestamp))
+  )
+}
+
+/**
+ * Applies validated marker clocks to normalized video sources. Each marker is
+ * checked against the retrieved passage bounds; an unknown end supports only
+ * its displayed start. The earliest cited position chooses the excerpt, with
+ * ties resolved in retrieval order. Sources without a supported clock keep
+ * their historical first-chunk fallback unchanged.
+ */
+export function applyVideoCitationTimes(
+  sources: ChatSource[],
+  citedTimes: ReadonlyMap<number, readonly number[]>
+): ChatSource[] {
+  if (citedTimes.size === 0) return sources
+
+  return sources.map((source) => {
+    if (source.type !== 'video' || !source.videoPassages?.length) return source
+
+    const supported = normalizeCitedStartSecs(
+      citedTimes.get(source.index) ?? []
+    ).filter((timestamp) =>
+      source.videoPassages?.some((passage) =>
+        passageContainsTimestamp(passage, timestamp)
+      )
+    )
+    const earliest = supported[0]
+    if (earliest === undefined) return source
+
+    const passage = findVideoPassage(source.videoPassages, earliest)
+    if (!passage) return source
+
+    return {
+      ...source,
+      startSec: passage.startSec,
+      endSec: passage.endSec,
+      excerpt: passage.excerpt,
+      citedStartSecs: supported,
+    }
+  })
+}
+
 /**
  * Seconds from the time notations a course video link or a chunk label
  * realistically uses: plain seconds (`90`), clock form (`1:30`, `1:02:03`),
@@ -74,12 +149,19 @@ function parseLabeledTimestampSeconds(value: string): number | undefined {
 /**
  * A video position for the card and the hover preview.
  *
- * Structured video results provide `startSec` (and optionally `endSec`), while
- * legacy results may still carry a clock-valued `labeledPage` or a time
- * parameter in the video URL. The structured start wins so a compatibility
- * label cannot disagree with the canonical range metadata.
+ * Validated citation clocks win and render together in ascending order.
+ * Otherwise structured video results provide `startSec` (and optionally
+ * `endSec`), while legacy results may still carry a clock-valued
+ * `labeledPage` or a time parameter in the video URL. The structured start
+ * wins so a compatibility label cannot disagree with the canonical range
+ * metadata.
  */
 export function getSourceTimestamp(source: ChatSource): string | undefined {
+  const citedStartSecs = normalizeCitedStartSecs(source.citedStartSecs ?? [])
+  if (citedStartSecs.length > 0) {
+    return citedStartSecs.map(formatTimestamp).join(', ')
+  }
+
   if (source.startSec !== undefined) {
     return formatTimestamp(source.startSec)
   }
@@ -212,6 +294,7 @@ function getVideoSecondaryLine(
   const timestamp = getSourceTimestamp(source)
   if (timestamp) {
     if (
+      normalizeCitedStartSecs(source.citedStartSecs ?? []).length === 0 &&
       source.startSec !== undefined &&
       source.endSec !== undefined &&
       source.endSec > source.startSec
