@@ -29,7 +29,7 @@ Terminal for preparation: exact reviewed source SHA, generated alpha.93 metadata
 
 ## Progress and evidence
 
-Preparation only. Six-file patch applies cleanly to alpha.92 and all six files match the reviewed fix. git diff --check passes. The repository generator dry run selects alpha.93. No tag exists under that name at the recorded fetch. No candidate runtime or new release checks started. Local source changes and this plan are uncommitted; no new PR or remote branch published.
+Source backport complete; the six application, test and authentication-documentation files match PR 6864 exactly. The alpha.92 baseline retains its dependency lockfile and schema. Candidate LTI tests, typechecks, formatting, lint, dependency consistency, host contracts and focused source scan pass. Aggregate production build and integrated release review are pending. The deployment branch changes only the LTI image tag; chart lint and before/after rendering pass with exactly one changed image line. No tag or deployment has been performed.
 
 Independent plan critique: native GPT-6 Astra continuity after configured planner launch failed. Accepted findings: verify deployed baseline privately, keep proposed deployment pins unqualified until builds pass, and inspect generated metadata against alpha.92. These gates are incorporated above. No production-derived facts are included here.
 
