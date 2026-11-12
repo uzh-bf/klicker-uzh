@@ -101,6 +101,8 @@ function assemble(
 // Practice Quiz and Microlearning: the stage key is the stack id. A regular
 // stack that is already answered correctly counts as solved. Stacks can be
 // withheld before an attempt starts, so the stage count may exceed stacks.
+// Once an attempt has expired every stack is withheld; stages are cleared in
+// order, so the recorded outcomes then fill the stages from the first one.
 export function getIndividualEscapeRoomStages({
   stacks,
   totalStages,
@@ -117,11 +119,14 @@ export function getIndividualEscapeRoomStages({
 }): EscapeRoomStages {
   const total = totalStages ?? stacks?.length ?? 0
   const bonusIndex = hasBonus && total > 1 ? total - 1 : -1
+  const withheldOutcomes = stacks?.length
+    ? []
+    : (stageOutcomes ?? []).filter((outcome) => outcome.outcome)
   const resolved = Array.from({ length: total }, (_, index): ResolvedStage => {
     const stack = stacks?.[index]
     const entry = stack
       ? stageOutcomes?.find((outcome) => outcome.stageKey === String(stack.id))
-      : undefined
+      : withheldOutcomes[index]
     const fromOutcome = resolveFromOutcome(entry)
     return !fromOutcome.state && index !== bonusIndex && stack?.isCorrect
       ? { ...fromOutcome, state: 'solved' }
