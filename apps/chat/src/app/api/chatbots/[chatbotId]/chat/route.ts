@@ -182,6 +182,16 @@ type ChatRouteModelMessage = {
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
 }
 
+function inProgressTurnResponse() {
+  return NextResponse.json(
+    {
+      error: 'The previous answer is still running',
+      code: 'CHAT_TURN_IN_PROGRESS',
+    },
+    { status: 409 }
+  )
+}
+
 function completedTurnResponse() {
   return NextResponse.json(
     {
@@ -1275,8 +1285,8 @@ export async function POST(
                 chatMode: selectedMode,
                 modelId: selectedModelConfig.id,
               },
-              // A turn cannot outlive the route's duration; the margin covers
-              // finalization.
+              // The answer stream is aborted after maxDuration, so a turn
+              // cannot outlive it; the margin covers finalization.
               inProgressBoundMs: (maxDuration + 30) * 1000,
             },
           }
@@ -1296,7 +1306,7 @@ export async function POST(
   }
   if (turnClaim.outcome === 'in_progress') {
     await discardCreatedThread('claim.in_progress')
-    return completedTurnResponse()
+    return assessment ? inProgressTurnResponse() : completedTurnResponse()
   }
   const lifecycleAttemptId = turnClaim.lifecycleAttemptId
   if (turnClaim.history) messages = turnClaim.history
@@ -2439,7 +2449,15 @@ export async function POST(
         ),
         instructions: turnRequest.instructions,
 
-        abortSignal: req.signal,
+        // The self-hosted server does not enforce maxDuration. In assessment
+        // mode the claim treats an older in-progress answer as abandoned, so
+        // the stream must stop by then and finalize as a stopped answer.
+        abortSignal: assessment
+          ? AbortSignal.any([
+              req.signal,
+              AbortSignal.timeout(maxDuration * 1000),
+            ])
+          : req.signal,
 
         onChunk: ({ chunk }) => {
           if (!hasLoggedFirstChunk) {

@@ -1784,6 +1784,9 @@ describe('assessment chat route', () => {
     const response = await POST(assessmentRequest(), params)
 
     expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      code: 'CHAT_TURN_IN_PROGRESS',
+    })
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 

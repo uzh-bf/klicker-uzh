@@ -388,7 +388,10 @@ export function useChatResponse(
                 name: 'chat-error',
                 data: {
                   errorLabel: t('chat.response.errorLabel'),
-                  message: t('chat.response.genericError'),
+                  message:
+                    errorCode === 'CHAT_TURN_IN_PROGRESS'
+                      ? t('chat.response.turnInProgress')
+                      : t('chat.response.genericError'),
                 },
               },
             ],

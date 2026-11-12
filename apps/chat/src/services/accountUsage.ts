@@ -254,7 +254,10 @@ async function claimAssessmentTurn(
     // Abandoned attempts: clearing the token keeps a late callback from
     // completing them.
     await tx.chatMessage.updateMany({
-      where: { id: { in: inProgress.map((row) => row.id) } },
+      where: {
+        id: { in: inProgress.map((row) => row.id) },
+        lifecycleStatus: 'IN_PROGRESS',
+      },
       data: { lifecycleStatus: 'FAILED', lifecycleAttemptId: null },
     })
     for (const row of inProgress) row.lifecycleStatus = 'FAILED'
