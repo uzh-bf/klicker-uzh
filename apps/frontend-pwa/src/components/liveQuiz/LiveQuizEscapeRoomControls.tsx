@@ -1,7 +1,10 @@
-import EscapeRoomOverlay from '@components/practiceQuiz/EscapeRoomOverlay'
+import EscapeRoomOverlay, {
+  formatDuration,
+} from '@components/practiceQuiz/EscapeRoomOverlay'
+import { EscapeRoomHintButton } from '@components/practiceQuiz/EscapeRoomSkipButton'
 import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { getLiveEscapeRoomStages } from '@lib/escapeRoomStages'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import type { useLiveQuizEscapeRoom } from '../hooks/useLiveQuizEscapeRoom'
@@ -80,34 +83,41 @@ export function LiveQuizEscapeRoomQuestionControls({
   const t = useTranslations()
   return (
     <>
-      {controller.lockoutRemaining > 0 && (
-        <UserNotification
-          type="warning"
-          className={{ root: 'mt-3' }}
-          message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
-            seconds: controller.lockoutRemaining,
-          })}
-        />
-      )}
+      <div aria-live="polite">
+        {controller.lockoutRemaining > 0 && (
+          <>
+            <UserNotification
+              type="error"
+              className={{ root: 'mt-3' }}
+              message={t('pwa.practiceQuiz.escapeRoomIncorrectToast')}
+              data={{ cy: 'escape-room-incorrect-notice' }}
+            />
+            <UserNotification
+              type="warning"
+              className={{ root: 'mt-2' }}
+              message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
+                duration: formatDuration(controller.lockoutRemaining, t),
+              })}
+              data={{ cy: 'escape-room-lockout-countdown' }}
+            />
+          </>
+        )}
+      </div>
       {controller.attempt && currentInstance.options?.hasHint && (
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col">
           {controller.revealedHints[currentInstance.id] ? (
             <UserNotification
               type="info"
               message={controller.revealedHints[currentInstance.id]}
             />
           ) : (
-            <Button
-              basic
+            <EscapeRoomHintButton
+              penalty={config.hintPenalty}
               loading={controller.requestingHint}
               disabled={controller.lockoutRemaining > 0}
               onClick={controller.requestHint}
-              data={{ cy: 'live-quiz-escape-room-hint' }}
-            >
-              {t('pwa.practiceQuiz.escapeRoomRequestHint', {
-                penalty: config.hintPenalty,
-              })}
-            </Button>
+              dataCy="live-quiz-escape-room-hint"
+            />
           )}
         </div>
       )}

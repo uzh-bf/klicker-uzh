@@ -17,7 +17,6 @@ import {
   SC2,
   captureEvidence,
   createStudentPage,
-  deMessages,
   expect,
   messages,
   setLocale,
@@ -193,14 +192,14 @@ export function registerGroupEscapeRoomTests() {
       await member1.getByTestId('sc-1-answer-option-1').click()
       await member1.getByTestId('submit-group-activity').click()
       await expect(
-        member1.getByText(messages.pwa.practiceQuiz.escapeRoomLockoutToast)
+        member1.getByTestId('escape-room-incorrect-notice')
       ).toBeVisible()
 
       // The second member hits the same server-owned group lockout.
       await member2.getByTestId('sc-1-answer-option-1').click()
       await member2.getByTestId('submit-group-activity').click()
       await expect(
-        member2.getByText(deMessages.pwa.practiceQuiz.escapeRoomLockoutToast)
+        member2.getByTestId('escape-room-incorrect-notice')
       ).toBeVisible()
       await captureEvidence(member2, 'group-participant-de-mobile.png')
 

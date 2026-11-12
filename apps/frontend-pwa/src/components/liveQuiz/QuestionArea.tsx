@@ -298,6 +298,10 @@ function QuestionArea({
   }
 
   function showStatusCodeToast(statusCode: number, responseStatus?: string) {
+    // with a lockout the incorrect notice and countdown render inline
+    if (responseStatus === 'incorrect' && escapeRoomConfig?.lockoutSeconds) {
+      return
+    }
     if (responseStatus === 'incorrect') {
       toast({
         message: t('pwa.practiceQuiz.escapeRoomIncorrectToast'),
