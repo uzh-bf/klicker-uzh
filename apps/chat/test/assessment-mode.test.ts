@@ -206,11 +206,12 @@ describe('getChatbotOr404 assessment gating', () => {
     })
   })
 
-  test('does not filter on assessment in regular mode', async () => {
+  test('refuses assessment-enabled courses in regular mode', async () => {
     mocks.chatbotFindUnique.mockResolvedValue(null)
     await getChatbotOr404(CHATBOT_ID, { id: true })
     expect(mocks.chatbotFindUnique.mock.calls[0][0].where.course).toEqual({
       deletionRequestedAt: null,
+      isAssessmentEnabled: false,
     })
   })
 })
