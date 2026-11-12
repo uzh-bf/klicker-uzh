@@ -35,6 +35,7 @@ export const videoFrameSchema = z
     resource_version: z.number().int().positive(),
     title: z.string().min(1),
     source_id: z.string().min(1).optional(),
+    source_excerpt: z.string().optional(),
   })
   .refine((frame) => frame.end_sec >= frame.start_sec, {
     message: 'end_sec must not precede start_sec',
@@ -81,7 +82,22 @@ function sourceVideoFrames(rawSource: unknown, title: string): VideoFrame[] {
   )
     return []
   return boundedArray(source.chunks, MAX_VIDEO_CHUNKS_PER_SOURCE).flatMap(
-    (chunk) => chunkVideoFrames(chunk, title)
+    (chunk) => {
+      const [context] = normalizeSourcesFromParts([
+        {
+          type: 'tool-call',
+          toolName: 'KB_doc_query',
+          result: {
+            mode: 'documents',
+            sources: [{ ...source, chunks: [chunk] }],
+          },
+        },
+      ])
+      return chunkVideoFrames(chunk, title).map((frame) => ({
+        ...frame,
+        source_excerpt: context?.excerpt,
+      }))
+    }
   )
 }
 

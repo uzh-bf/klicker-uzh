@@ -109,6 +109,8 @@ describe('video source media', () => {
     const later = structuredClone(payload.sources[0].chunks[0])
     later.start_sec = 70
     later.end_sec = 90
+    later.content = 'The explanation in the later section.'
+    payload.sources[0].source_url = 'https://video.example.edu/lecture#t=42,59'
     Object.assign(later.video_frames.assets[0], {
       asset_id: 'd'.repeat(64),
       start_sec: 70,
@@ -127,6 +129,14 @@ describe('video source media', () => {
     ]
     const result = sources(parts)
     expect(result[0]?.videoFrame).toEqual(selected)
+    expect(result[0]).toMatchObject({
+      id: normalizeSourcesFromParts(parts)[0]!.id,
+      index: 1,
+      startSec: 70,
+      endSec: 90,
+      excerpt: 'The explanation in the later section.',
+      url: 'https://video.example.edu/lecture#t=42,59',
+    })
     expect(sourceForVideoFrame(selected, result)).toBe(result[0])
     expect(sourceForVideoFrame(videoFrameCandidates(payload)[0]!, result)).toBe(
       result[0]

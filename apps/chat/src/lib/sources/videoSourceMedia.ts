@@ -56,7 +56,15 @@ export function withVideoSourceFrames(
   }
   return sources.map((source) => {
     const videoFrame = frames.get(source.id)
-    return videoFrame ? { ...source, videoFrame } : source
+    return videoFrame
+      ? {
+          ...source,
+          videoFrame,
+          startSec: videoFrame.start_sec,
+          endSec: videoFrame.end_sec,
+          excerpt: videoFrame.source_excerpt,
+        }
+      : source
   })
 }
 
