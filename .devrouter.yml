@@ -34,6 +34,11 @@ worktrees:
 managedRuntime:
   devcontainer:
     prepareCommand: [node, util/generate-dependency-mounts.mjs]
+    freshBootstrap:
+      command:
+        [bash, .devcontainer/recover-bootstrap.sh, --initialize-new-disposable]
+      dataVolumes: [pgdata]
+      sharedCaches: [pnpm_store]
     # Managed base: the DevPod primary `app` is implicit; postgres serves
     # post-create reset/push/seed, Azurite is an app dependency, and Hatchet is
     # boot-critical for the backend.
