@@ -309,11 +309,12 @@ function GroupActivityStack({
   }, [localLockoutRemaining])
 
   // The server snapshot also covers a lockout set before a reload or by a
-  // teammate.
-  const lockoutRemaining = Math.max(
-    localLockoutRemaining,
-    escapeRoomRules?.lockoutRemaining ?? 0
-  )
+  // teammate. A lockout only applies while the attempt runs: the bonus answer
+  // after completion is accepted, also when a countdown from the last stage
+  // is still running.
+  const lockoutRemaining = escapeRoomRules?.attemptInProgress
+    ? Math.max(localLockoutRemaining, escapeRoomRules.lockoutRemaining ?? 0)
+    : 0
 
   const responseEntries = Object.entries(studentResponse)
   const submissionEntries = isStagedEscapeRoom
