@@ -459,8 +459,11 @@ adaptiveEngine:
                   values:
                     - adaptive-engine
             topologyKey: kubernetes.io/hostname
+  # Catalyst GitLab CI publishes the engine to the GitLab registry; the pull
+  # secret (ADAPTIVE_ENGINE_DOCKER_AUTH) must hold credentials for that host.
   image:
-    tag: 9f9afd457709fb089092cd7b31975c78b4130036-arm
+    repository: cr.gitlab.uzh.ch/uzh-bf/tc/klicker-uzh-catalyst/adaptive-engine
+    tag: e215c041556a654be6b47c3b60a7309ff1833909-arm
   resources:
     requests:
       cpu: 25m
