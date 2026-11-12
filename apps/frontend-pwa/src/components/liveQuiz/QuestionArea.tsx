@@ -212,7 +212,8 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    if (escapeRoom.lockoutRemaining > 0) return
+    // the time-up ending can be dismissed; the server rejects later answers
+    if (escapeRoom.lockoutRemaining > 0 || escapeRoom.isExpired) return
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -681,7 +682,8 @@ function QuestionArea({
           canSubmit={
             !!studentResponse.valid &&
             !submitting &&
-            escapeRoom.lockoutRemaining === 0
+            escapeRoom.lockoutRemaining === 0 &&
+            !escapeRoom.isExpired
           }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
