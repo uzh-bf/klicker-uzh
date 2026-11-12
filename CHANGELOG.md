@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.93](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.92...v3.4.0-alpha.93) (2026-11-12)
+
+
+### Bug Fixes
+
+* **lti:** backport exact-origin recovery validation ([d64eb7d](https://github.com/uzh-bf/klicker-uzh/commit/d64eb7d595ba93bd708ddf09777a74110db953a3))
+
+
+### Documentation
+
+* **project:** add isolated LTI hotfix release plan ([d198240](https://github.com/uzh-bf/klicker-uzh/commit/d198240bdb951bc26781d0f9a5b6fbb3c25f59c1))
+
 ## [3.4.0-alpha.92](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.91...v3.4.0-alpha.92) (2026-11-10)
 
 
