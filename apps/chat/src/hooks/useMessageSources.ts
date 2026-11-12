@@ -112,7 +112,7 @@ export function useMessageSources(): MessageSources {
   )
 
   const citedVideoTimes = useMemo(() => {
-    if (!/t\./i.test(answerText)) return EMPTY_CITED_VIDEO_TIMES
+    if (!answerText.includes(':')) return EMPTY_CITED_VIDEO_TIMES
     const times = extractCitedTimestamps(answerText)
     return times.size ? times : EMPTY_CITED_VIDEO_TIMES
   }, [answerText])

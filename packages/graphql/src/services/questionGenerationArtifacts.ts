@@ -681,7 +681,10 @@ const finalBankSchema = z
       .passthrough(),
     questions: z.array(finalQuestionSchema).min(1).max(20),
   })
-  .strict()
+  // Newer workers add top-level report sections such as review_flags. Only
+  // metadata and questions are read, so unknown sections are dropped rather
+  // than failing the build.
+  .strip()
 
 export type QuestionGenerationResultManifest = {
   schemaVersion: 1 | 2
