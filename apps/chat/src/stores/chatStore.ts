@@ -138,7 +138,7 @@ interface ChatState {
     chatbotId: string,
     message: ExtendedThreadMessageLike,
     targetThreadId?: string
-  ) => Promise<string | null>
+  ) => Promise<ExtendedThreadMessageLike[] | null>
   ensureFullImageAttachments: (
     chatbotId: string,
     threadId: string,
@@ -469,19 +469,10 @@ export const useChatStore = create<ChatState>((set, get) => {
         )
         const allMessages = apiMessages.map(convertApiMessageToMessage)
 
+        // An empty response may predate the first local message. There is
+        // nothing to hydrate, so keep any message appended during the fetch.
         if (allMessages.length === 0) {
-          set((state) => ({
-            threads: state.threads.map((thread) =>
-              thread.id === threadId
-                ? {
-                    ...thread,
-                    allMessages: [],
-                    messages: [],
-                  }
-                : thread
-            ),
-            isLoading: false,
-          }))
+          set({ isLoading: false })
           return true
         }
 
@@ -590,7 +581,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      *
      * @param chatbotId - The chatbot ID for thread operations
      * @param message - The message to add to the conversation
-     * @returns Promise<string | null> The ID of the thread the message was added to
+     * @returns The conversation path for this submission, including the new message
      */
     addMessage: async (chatbotId: string, message, targetThreadId?: string) => {
       const state = get()
@@ -620,12 +611,13 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
 
       // add message to both current path and all messages
+      const submittedPath = [...activeThread.messages, message]
       set((state) => ({
         threads: state.threads.map((thread) =>
           thread.id === currentThreadId
             ? {
                 ...thread,
-                messages: [...thread.messages, message],
+                messages: submittedPath,
                 allMessages: [...thread.allMessages, message],
                 updatedAt: new Date(),
                 // Keep the thread's mode in sync with the message just sent so
@@ -668,7 +660,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         }
       }
 
-      return currentThreadId
+      return submittedPath
     },
 
     ensureFullImageAttachments: async (

@@ -128,7 +128,7 @@ test('opt-in setup rejects missing injection before provider or preparation acce
   )
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
-  assert.match(result.stderr, /runtime-injected OpenRouter/)
+  assert.match(result.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
 })
 
 test('continuation requires an immutable executor and rejects missing AI injection before effects', () => {
@@ -147,7 +147,7 @@ test('continuation requires an immutable executor and rejects missing AI injecti
   ])
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
-  assert.match(result.stderr, /runtime-injected OpenRouter/)
+  assert.match(result.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
 })
 
 test('continue-setup accepts --resume-executor only after the seven explicit arguments', () => {
@@ -165,7 +165,7 @@ test('continue-setup accepts --resume-executor only after the seven explicit arg
   ])
   assert.equal(accepted.status, 1)
   assert.equal(accepted.stdout, '')
-  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
   for (const extra of [
     [...base, 'c'.repeat(40), 'extra'],
     [...base],
@@ -178,17 +178,61 @@ test('continue-setup accepts --resume-executor only after the seven explicit arg
   }
 })
 
+test('startup recovery accepts one explicit predecessor after the retained app identity', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+    '--retained-app',
+    'c'.repeat(64),
+  ]
+  const option = ['--resume-start-executor', 'd'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-start', [...base, ...option])
+  assert.equal(accepted.status, 1)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
+  for (const extra of [
+    [...base, ...option, ...option],
+    [...base, option[0]],
+    [...base, option[0], 'invalid'],
+  ]) {
+    assert.match(runConfigPlan(input, 'continue-start', extra).stderr, /Usage:/)
+  }
+})
+
 test('ingestion recovery option accepts one immutable predecessor only', () => {
   const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
   const base = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
   const option = ['--resume-ingestion-executor', 'c'.repeat(40)]
   const accepted = runConfigPlan(input, 'continue-setup', [...base, ...option])
   assert.equal(accepted.status, 1)
-  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
   for (const extra of [
     [...base, ...option, '--resume-executor', 'd'.repeat(40)],
     [...base, ...option, ...option],
     [...base, '--resume-ingestion-executor', 'invalid'],
+    [...base, '__proto__', 'c'.repeat(40)],
+    [...base, 'constructor', 'c'.repeat(40)],
+    [...option, ...base],
+  ]) {
+    const rejected = runConfigPlan(input, 'continue-setup', extra)
+    assert.equal(rejected.status, 1)
+    assert.match(rejected.stderr, /Usage:/)
+  }
+})
+
+test('processor recovery option accepts one immutable predecessor only', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
+  const option = ['--resume-processor-executor', 'c'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-setup', [...base, ...option])
+  assert.equal(accepted.status, 1)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
+  for (const extra of [
+    [...base, ...option, '--resume-executor', 'd'.repeat(40)],
+    [...base, ...option, ...option],
+    [...base, '--resume-processor-executor', 'invalid'],
     [...base, '__proto__', 'c'.repeat(40)],
     [...base, 'constructor', 'c'.repeat(40)],
     [...option, ...base],
@@ -388,5 +432,25 @@ test('source observation rejects dirty, mismatched and missing provider checkout
     )
   } finally {
     rmSync(path, { recursive: true, force: true })
+  }
+})
+
+test('initial startup continuation requires an immutable executor without setup-resume flags', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const args = [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+    '--retained-app',
+    'c'.repeat(64),
+  ]
+  const accepted = runConfigPlan(input, 'continue-start', args)
+  assert.match(accepted.stderr, /^LOCAL_AI_CONFIGURATION_REQUIRED:/)
+  for (const extra of [
+    [...args, '--resume-executor', 'c'.repeat(40)],
+    [...args.slice(0, -1), 'invalid'],
+  ]) {
+    assert.match(runConfigPlan(input, 'continue-start', extra).stderr, /Usage:/)
   }
 })

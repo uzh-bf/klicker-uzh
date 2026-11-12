@@ -22,6 +22,7 @@ import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
   continuePreparation,
+  continueInfrastructureStart,
   deliverHatchetToken,
   initializeManagedApplication,
   initializeProviderLaunchers,
@@ -255,6 +256,7 @@ test('missing AI injection rejects setup, start and resume before any state or p
 })
 
 function lifecycleRunner(config) {
+  const running = new Set()
   return async (command, environment) => {
     const name = Object.keys(config.providers).find(
       (key) => config.providers[key].sourcePath === command.cwd
@@ -271,6 +273,8 @@ function lifecycleRunner(config) {
     }
     if (!command.args.includes('status')) {
       assert.ok(command.args.includes('start') || command.args.includes('stop'))
+      if (command.args.includes('start')) running.add(name)
+      else running.delete(name)
       return '{}'
     }
     const common = {
@@ -294,8 +298,9 @@ function lifecycleRunner(config) {
         instance_id: common.instance,
         ownership: 'verified',
         setup: 'ready',
-        ready: false,
-        api: 'stopped',
+        ready: running.has(name),
+        api: running.has(name) ? 'running' : 'stopped',
+        worker_registration: running.has(name) ? 'ready' : 'unknown',
       })
     if (name === 'scraping')
       return JSON.stringify({
@@ -563,6 +568,7 @@ test('explicit startup orders provider activation without repeating setup and re
       phases.push('applications-and-model')
       return JSON.stringify({ ...identity, profile: LOCAL_KB_MANAGED_PROFILE })
     }
+    const providerRunner = lifecycleRunner(config)
     const provider = async (command, environment) => {
       assert.equal(environment.DOCKER_CONTEXT, 'synthetic-local')
       if (command.args.includes('start')) {
@@ -573,7 +579,7 @@ test('explicit startup orders provider activation without repeating setup and re
         if (name === 'retrieval')
           assert.ok(environment.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL)
       }
-      return lifecycleRunner(config)(command, environment)
+      return providerRunner(command, environment)
     }
     const run = () =>
       startInfrastructure(config, revision, managed, docker, provider)
@@ -592,9 +598,9 @@ test('explicit startup orders provider activation without repeating setup and re
       assert.equal(calls.length, 4)
       assert.deepEqual(phases, [
         'scraping',
-        'docProcessing',
         'applications-and-model',
         'ingestion',
+        'docProcessing',
         'retrieval',
       ])
       assert.deepEqual(calls[3], [
@@ -639,13 +645,13 @@ test('explicit startup orders provider activation without repeating setup and re
                 (key) => config.providers[key].sourcePath === command.cwd
               )
             )
-          return lifecycleRunner(config)(command, environment)
+          return providerRunner(command, environment)
         }
       )
       assert.deepEqual(shutdown, [
         'retrieval',
-        'ingestion',
         'docProcessing',
+        'ingestion',
         'scraping',
         'applications-and-model',
       ])
@@ -843,6 +849,7 @@ test('resume reconciles the inconsistent provider before starting it', async () 
         setup: 'ready',
         phase: docPhase,
         ready: docPhase === 'running',
+        worker_registration: docPhase === 'running' ? 'ready' : 'unknown',
         api:
           docPhase === 'running'
             ? 'running'
@@ -901,8 +908,8 @@ test('resume reconciles the inconsistent provider before starting it', async () 
   assert.deepEqual(lifecycle, [
     'docProcessing:stop',
     'scraping:start',
-    'docProcessing:start',
     'ingestion:start',
+    'docProcessing:start',
     'retrieval:start',
   ])
   await stopInfrastructure(config, revision, managed, docker, provider)
@@ -1024,7 +1031,7 @@ test('stop is idempotent for a prepared provider that was never started', async 
   const stoppedProviders = lifecycle.filter(
     (name, index) => lifecycle.indexOf(name) === index
   )
-  assert.deepEqual(stoppedProviders, ['ingestion', 'docProcessing', 'scraping'])
+  assert.deepEqual(stoppedProviders, ['docProcessing', 'ingestion', 'scraping'])
 })
 
 test('status is read-only and stop refuses foreign provider ownership', async () => {
@@ -1430,6 +1437,12 @@ test('candidate or configuration changes invalidate prepared state without chang
     requirePreparation({ ...config, aiUpstream: 'openrouter' }, revision),
     /identity/
   )
+  const rebound = structuredClone(config)
+  rebound.bindings.ports.ingestion.azurite += 100
+  await assert.rejects(
+    requirePreparation(rebound, revision),
+    /identity|configuration/
+  )
   assert.equal(await readFile(path, 'utf8'), before)
 })
 
@@ -1477,7 +1490,8 @@ test('provider setup invokes supported launchers once and retains partial failur
       assert.equal(env.DOCKER_CONTEXT, 'synthetic-local')
       const provider = command.cwd.split('/').at(-1)
       calls.push({ provider, args: command.args, env })
-      if (provider === failure) throw new Error('synthetic private diagnostic')
+      if (provider === failure)
+        throw new Error('synthetic selected Blob service unavailable')
       if (failure === 'malformed') return '{}'
       const instance = config.project.identity
       const source_revision = config.providers[provider].revision
@@ -1511,7 +1525,7 @@ test('provider setup invokes supported launchers once and retains partial failur
       assert.deepEqual(await execute(), { providersInitialized: true })
       assert.deepEqual(
         calls.map(({ provider }) => provider),
-        ['scraping', 'docProcessing', 'ingestion', 'retrieval']
+        ['scraping', 'ingestion', 'docProcessing', 'retrieval']
       )
       assert.equal(
         calls.at(-1).env.KLICKER_LOCAL_RETRIEVAL_MILVUS_URI,
@@ -1532,7 +1546,7 @@ test('provider setup invokes supported launchers once and retains partial failur
     if (failure === 'docProcessing') {
       assert.deepEqual(
         calls.map(({ provider }) => provider),
-        ['scraping', 'docProcessing']
+        ['scraping', 'ingestion', 'docProcessing']
       )
       const path = join(
         config.project.runtimeCheckoutPath,
@@ -1746,6 +1760,25 @@ test('configuration setup writes private local material once without completing 
     )
   )
   const verification = reader.token_scope.verification
+  const processor = JSON.parse(
+    await readFile(join(directory, 'doc-processing.json'), 'utf8')
+  )
+  assert.equal(
+    new URL(processor.blob.endpoint).port,
+    String(config.bindings.ports.ingestion.azurite)
+  )
+  assert.equal(processor.env.DOC_PROCESSING_DEFAULT_PIPELINE_MODE, 'staged')
+  assert.equal(
+    chat.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER,
+    processor.blob.container
+  )
+  assert.equal(chat.COURSE_IMAGE_PROJECTION_STORAGE_PREFIX, 'projection')
+  assert.equal(
+    chat.COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING.includes(
+      `BlobEndpoint=http://host.docker.internal:${config.bindings.ports.ingestion.azurite}/devstoreaccount1;`
+    ),
+    true
+  )
   assert.equal(verification.issuer, chat.DOC_QUERY_SCOPE_ISSUER)
   assert.equal(verification.audience, chat.DOC_QUERY_SCOPE_AUDIENCE)
   assert.equal(verification.keys[0].kid, chat.DOC_QUERY_SCOPE_KID)
@@ -1762,8 +1795,11 @@ const continuationContext = 'synthetic-local'
 const priorExecutor = 'e'.repeat(40)
 const nextExecutor = 'f'.repeat(40)
 
-async function pendingIngestionFixture() {
-  const retained = await retainedContinuationPrefix({ profileAttempt: true })
+async function pendingIngestionFixture(processorPrepared = true) {
+  const retained = await retainedContinuationPrefix({
+    profileAttempt: true,
+    processorPrepared,
+  })
   const { config, root } = retained
   const failed = continuationRunner(config, root, { setupFailure: true })
   await assert.rejects(
@@ -1857,21 +1893,30 @@ async function pendingIngestionFixture() {
 }
 
 test('pending ingestion recovery preserves predecessors and runs unfinished providers once', async () => {
-  const f = await pendingIngestionFixture()
-  const before = await readFile(join(f.child, 'claim.json'), 'utf8')
-  const result = await continuePreparation(
-    f.config,
-    revision,
-    '9'.repeat(40),
-    f.options
-  )
-  assert.equal(result.prepared, true)
-  assert.deepEqual(f.calls, ['ingestion', 'retrieval'])
-  assert.equal(await readFile(join(f.child, 'claim.json'), 'utf8'), before)
-  await assert.rejects(
-    continuePreparation(f.config, revision, '9'.repeat(40), f.options)
-  )
-  assert.deepEqual(f.calls, ['ingestion', 'retrieval'])
+  for (const processorPrepared of [true, false]) {
+    const f = await pendingIngestionFixture(processorPrepared)
+    if (!processorPrepared)
+      await assert.rejects(stat(join(f.root, 'state/docProcessing')), {
+        code: 'ENOENT',
+      })
+    const before = await readFile(join(f.child, 'claim.json'), 'utf8')
+    const result = await continuePreparation(
+      f.config,
+      revision,
+      '9'.repeat(40),
+      f.options
+    )
+    const expected = processorPrepared
+      ? ['ingestion', 'retrieval']
+      : ['ingestion', 'docProcessing', 'retrieval']
+    assert.equal(result.prepared, true)
+    assert.deepEqual(f.calls, expected)
+    assert.equal(await readFile(join(f.child, 'claim.json'), 'utf8'), before)
+    await assert.rejects(
+      continuePreparation(f.config, revision, '9'.repeat(40), f.options)
+    )
+    assert.deepEqual(f.calls, expected)
+  }
 })
 
 test('pending ingestion recovery rejects credential residue, occupied ports and foreign lineage', async () => {
@@ -1948,8 +1993,11 @@ test('continuation rejects combined recovery modes before runtime effects', asyn
 
 // Rebuild the retained prefix the profile-repair executor left behind: one
 // private attempt holding its claim and profile intent, with scraping complete,
-// document processing reconcilable and ingestion/retrieval untouched.
-async function retainedContinuationPrefix({ profileAttempt = false } = {}) {
+// document processing optionally reconcilable and ingestion/retrieval untouched.
+async function retainedContinuationPrefix({
+  profileAttempt = false,
+  processorPrepared = true,
+} = {}) {
   const config = await fixture()
   const claim = await claimPreparation(config, revision)
   await prepareLocalConfiguration(config, revision)
@@ -1972,7 +2020,9 @@ async function retainedContinuationPrefix({ profileAttempt = false } = {}) {
     JSON.stringify({ setupCompleted: true }),
     { mode: 0o600 }
   )
-  for (const name of ['scraping', 'docProcessing'])
+  for (const name of processorPrepared
+    ? ['scraping', 'docProcessing']
+    : ['scraping'])
     await mkdir(join(root, 'state', name), { recursive: true, mode: 0o700 })
   const parent = join(root, 'setup-continuation')
   const child = join(parent, 'resume-after-profile')
@@ -2014,7 +2064,7 @@ function continuationRunner(config, root, overrides = {}) {
           join(
             root,
             'setup-continuation',
-            'resume-after-profile',
+            overrides.attemptName ?? 'resume-after-profile',
             'bootstrap-intent.json'
           ),
           'utf8'
@@ -2056,7 +2106,7 @@ function continuationRunner(config, root, overrides = {}) {
       }
       return runner(command, env)
     },
-    unusedProvider: async () => {},
+    portOccupied: async () => false,
     initializeApplication: async () => {
       calls.push('application')
       await mkdir(join(root, 'application-setup'), { mode: 0o700 })
@@ -2073,6 +2123,88 @@ function continuationRunner(config, root, overrides = {}) {
   }
   return { calls, observed, options }
 }
+
+test('profile recovery initializes untouched document processing after checking its effects', async () => {
+  const { config, root, parent } = await retainedContinuationPrefix({
+    profileAttempt: true,
+    processorPrepared: false,
+  })
+  const { calls, options } = continuationRunner(config, root)
+  const before = await readFile(join(parent, 'claim.json'), 'utf8')
+  const result = await continuePreparation(config, revision, nextExecutor, {
+    ...options,
+    resumeExecutor: priorExecutor,
+  })
+  assert.equal(result.prepared, true)
+  assert.deepEqual(calls, [
+    'ingestion',
+    'docProcessing',
+    'retrieval',
+    'application',
+  ])
+  assert.equal(await readFile(join(parent, 'claim.json'), 'utf8'), before)
+})
+
+test('untouched processor recovery rejects retained Docker resources and occupied or unknown ports', async () => {
+  for (const recovery of ['profile', 'ingestion']) {
+    for (const effect of [
+      'container',
+      'network',
+      'volume',
+      'api',
+      'postgres',
+      'hatchetHttp',
+      'hatchetGrpc',
+      'unknown-port',
+      'unknown-docker',
+    ]) {
+      const f =
+        recovery === 'ingestion'
+          ? await pendingIngestionFixture(false)
+          : await retainedContinuationPrefix({
+              profileAttempt: true,
+              processorPrepared: false,
+            })
+      const base =
+        recovery === 'ingestion' ? f : continuationRunner(f.config, f.root)
+      const { config, root } = f
+      const state = join(root, 'state/docProcessing')
+      const digest = createHash('sha256')
+        .update(
+          `${config.providers.docProcessing.sourcePath}:${state}:${config.project.identity}`
+        )
+        .digest('hex')
+        .slice(0, 24)
+      const filter = `label=com.docker.compose.project=doc-processing-local-${digest}`
+      const docker = base.options.runDocker
+      const options = {
+        ...base.options,
+        ...(recovery === 'profile' ? { resumeExecutor: priorExecutor } : {}),
+        runDocker: async (args) => {
+          if (args.includes(filter)) {
+            if (effect === 'unknown-docker')
+              throw new Error('Docker inventory unavailable')
+            if (args.includes(effect)) return 'retained-resource'
+          }
+          return docker(args)
+        },
+        portOccupied: async (port) => {
+          const ports = config.bindings.ports.docProcessing
+          if (Object.values(ports).includes(port) && effect === 'unknown-port')
+            throw new Error('Local port occupancy is unknown.')
+          return port === ports[effect]
+        },
+      }
+      await assert.rejects(
+        continuePreparation(config, revision, '9'.repeat(40), options),
+        /Document processing|Docker inventory unavailable|Local port occupancy is unknown/,
+        `${recovery}: ${effect}`
+      )
+      assert.deepEqual(base.calls, [], `${recovery}: ${effect}`)
+      await assert.rejects(stat(state), { code: 'ENOENT' })
+    }
+  }
+})
 
 test('managed workspace allocation must be exactly absent with zero routes', async () => {
   const cases = [
@@ -2375,11 +2507,480 @@ test('profile resume requires the exact retained attempt and creates one exclusi
   assert.deepEqual((await readdir(failed.child)).sort(), [
     'bootstrap-intent.json',
     'claim.json',
-    'docProcessing-reconciliation.json',
     'ingestion-intent.json',
   ])
   await assert.rejects(
     continuePreparation(failed.config, revision, nextExecutor, failureOptions)
   )
   assert.deepEqual(failure.calls, ['ingestion'])
+})
+
+test('unavailable Azurite blocks initial and retained staged startup despite healthy MinIO', async () => {
+  for (const retained of [false, true]) {
+    const { config, checkout, read } = await installationFixture()
+    await prepareLocalConfiguration(config, revision)
+    await installManagedConfiguration(config, revision, read)
+    const identity = {
+      kind: 'linked',
+      repoPath: checkout,
+      workspace: 'synthetic-runtime',
+      profile: 'local-kb-setup',
+    }
+    await installProviderRouting(config, revision, identity)
+    await setupReceipts(config)
+    await completePreparation(config, revision)
+    const base = lifecycleRunner(config)
+    const starts = []
+    let unavailable = false
+    let ingestionRunning = false
+    const provider = async (command, environment) => {
+      const name = Object.keys(config.providers).find(
+        (key) => config.providers[key].sourcePath === command.cwd
+      )
+      if (command.args.includes('start')) starts.push(name)
+      if (name === 'ingestion' && !command.args.includes('status'))
+        ingestionRunning = command.args.includes('start')
+      const status = JSON.parse(await base(command, environment))
+      if (command.args.includes('status') && name === 'ingestion') {
+        status.process.infrastructure = [
+          {
+            service: 'minio',
+            state: ingestionRunning ? 'running' : 'exited',
+            health: ingestionRunning ? 'healthy' : '',
+          },
+        ]
+      }
+      if (
+        command.args.includes('status') &&
+        name === 'docProcessing' &&
+        unavailable
+      ) {
+        status.ready = false
+        status.worker_registration = 'unavailable'
+      }
+      return JSON.stringify(status)
+    }
+    const docker = async (args) =>
+      args[0] === 'context' ? 'unix:///synthetic/docker.sock' : ''
+    const managed = async (args) =>
+      JSON.stringify({
+        ...identity,
+        profile: LOCAL_KB_MANAGED_PROFILE,
+        stopped: args[0] === 'stop',
+      })
+    if (retained) {
+      await startInfrastructure(config, revision, managed, docker, provider)
+      await stopInfrastructure(config, revision, managed, docker, provider)
+    }
+    starts.length = 0
+    unavailable = true
+    await assert.rejects(
+      retained
+        ? resumeInfrastructure(config, revision, managed, docker, provider)
+        : startInfrastructure(config, revision, managed, docker, provider),
+      /storage or staged worker registration is unavailable/
+    )
+    assert.deepEqual(starts, ['scraping', 'ingestion', 'docProcessing'])
+  }
+})
+
+async function recoveredProcessorFixture(overrides = {}) {
+  const f = await retainedContinuationPrefix()
+  await mkdir(f.parent, { mode: 0o700 })
+  for (const [name, value] of Object.entries({
+    'claim.json': {
+      ...f.claim,
+      executor: priorExecutor,
+      context: continuationContext,
+    },
+    'bootstrap-intent.json': { candidate: revision, executor: priorExecutor },
+    'scraping-reconciliation.json': {
+      candidate: revision,
+      executor: priorExecutor,
+      prepared: true,
+    },
+    'ingestion-intent.json': { candidate: revision, executor: priorExecutor },
+    'docProcessing-intent.json': {
+      candidate: revision,
+      executor: priorExecutor,
+    },
+  }))
+    await writeFile(join(f.parent, name), JSON.stringify(value), {
+      mode: 0o600,
+    })
+  await mkdir(join(f.root, 'state/ingestion'), { mode: 0o700 })
+  await writeFile(
+    join(f.root, 'provider-setup/ingestion.json'),
+    JSON.stringify({ setupCompleted: true }),
+    { mode: 0o600 }
+  )
+  const run = continuationRunner(f.config, f.root, {
+    attemptName: 'resume-after-processor',
+    ...overrides,
+  })
+  return {
+    ...f,
+    ...run,
+    options: { ...run.options, resumeProcessorExecutor: priorExecutor },
+  }
+}
+
+test('processor recovery reconciles prepared storage without replaying previous providers', async () => {
+  const f = await recoveredProcessorFixture()
+  const before = await readFile(join(f.parent, 'claim.json'))
+  assert.equal(
+    (await continuePreparation(f.config, revision, nextExecutor, f.options))
+      .prepared,
+    true
+  )
+  assert.deepEqual(f.calls, ['retrieval', 'application'])
+  assert.deepEqual(await readFile(join(f.parent, 'claim.json')), before)
+  await assert.rejects(
+    continuePreparation(f.config, revision, nextExecutor, f.options)
+  )
+  assert.deepEqual(f.calls, ['retrieval', 'application'])
+})
+
+test('processor recovery rejects changed ancestry, progress and interrupted reentry', async () => {
+  for (const change of [
+    'lineage',
+    'receipt',
+    'retrieval',
+    'application',
+    'duplicate',
+    'failure',
+    'mixed',
+  ]) {
+    const f = await recoveredProcessorFixture({
+      setupFailure: change === 'failure',
+    })
+    if (change === 'lineage') f.options.resumeProcessorExecutor = '0'.repeat(40)
+    if (change === 'receipt')
+      await writeFile(join(f.parent, 'ingestion-intent.json'), '{}')
+    if (change === 'retrieval')
+      await mkdir(join(f.root, 'state/retrieval'), { mode: 0o700 })
+    if (change === 'application')
+      await mkdir(join(f.root, 'application-setup'), { mode: 0o700 })
+    if (change === 'duplicate')
+      await mkdir(join(f.parent, 'resume-after-processor'), { mode: 0o700 })
+    if (change === 'mixed') f.options.resumeExecutor = priorExecutor
+    await assert.rejects(
+      continuePreparation(f.config, revision, nextExecutor, f.options),
+      undefined,
+      change
+    )
+    assert.deepEqual(f.calls, change === 'failure' ? ['retrieval'] : [], change)
+    const calls = [...f.calls]
+    await assert.rejects(
+      continuePreparation(f.config, revision, nextExecutor, f.options)
+    )
+    assert.deepEqual(f.calls, calls)
+  }
+})
+
+async function stoppedInitialStartFixture(t) {
+  const upstream = {
+    kind: 'guarded',
+    port: 18020,
+    chatModels: [{ id: 'synthetic' }],
+  }
+  const keys = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
+  const prior = keys.map((key) => process.env[key])
+  t.after(() =>
+    keys.forEach((key, i) => {
+      if (prior[i] === undefined) delete process.env[key]
+      else process.env[key] = prior[i]
+    })
+  )
+  process.env.UPSTREAM_OPENAI_API_KEY = 'synthetic-local-guard'
+  process.env.UPSTREAM_OPENAI_BASE_URL = 'http://host.docker.internal:18020/v1'
+  const { config, checkout, read } = await installationFixture(upstream)
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const directory = join(checkout, '.local-kb')
+  await mkdir(join(directory, 'infrastructure-start'), { mode: 0o700 })
+  const appContainer = 'c'.repeat(64)
+  const managedState = {
+    mode: 'managed',
+    workspace: identity.workspace,
+    status: 'stopped',
+    activeProfile: 'local-kb-setup',
+    composeProject: 'synthetic-compose',
+    mountNesting: { status: 'effective', container: appContainer },
+  }
+  const calls = []
+  const managed = async (args) => {
+    if (args[0] === 'status')
+      return JSON.stringify({
+        dockerContext: 'synthetic-local',
+        repo: { path: checkout, valid: true, managedRuntime: managedState },
+      })
+    calls.push(args[0])
+    if (args[0] === 'stop')
+      return JSON.stringify({ ...identity, stopped: true })
+    return JSON.stringify({
+      ...identity,
+      profile: LOCAL_KB_MANAGED_PROFILE,
+      managedRuntime: managedState,
+    })
+  }
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('--format')) {
+      const service = ['postgres', 'redis', 'blob', 'hatchet'][
+        Number(args.at(-1)[0]) - 1
+      ]
+      return `${config.project.identity}|${directory}|${join(directory, 'providers.compose.json')}|${service}|exited|healthy`
+    }
+    if (args.includes('inspect'))
+      return JSON.stringify([
+        {
+          Id: appContainer,
+          State: { Running: false },
+          Config: {
+            Labels: {
+              'com.docker.compose.project': 'synthetic-compose',
+              'com.docker.compose.service': 'app',
+            },
+          },
+        },
+      ])
+    if (args.includes('ls'))
+      return [1, 2, 3, 4].map((n) => String(n).repeat(64)).join('\n')
+    calls.push(args.includes('stop') ? 'backing-stop' : 'backing-start')
+    return ''
+  }
+  const provider = lifecycleRunner(config)
+  const options = {
+    runManaged: managed,
+    runDocker: docker,
+    runProvider: provider,
+    verifySources: async () => {},
+  }
+  return {
+    config,
+    directory,
+    calls,
+    managedState,
+    options,
+    managed,
+    docker,
+    provider,
+  }
+}
+
+test('explicit initial-start recovery preserves its parent and supports later stop and resume', async (t) => {
+  const f = await stoppedInitialStartFixture(t)
+  const recover = () =>
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      nextExecutor,
+      'c'.repeat(64),
+      f.options
+    )
+  assert.equal((await recover()).infrastructureStarted, true)
+  assert.deepEqual(await readdir(join(f.directory, 'infrastructure-start')), [])
+  const before = [...f.calls]
+  await assert.rejects(recover())
+  assert.deepEqual(f.calls, before)
+  await stopInfrastructure(f.config, revision, f.managed, f.docker, f.provider)
+  assert.equal(
+    (
+      await resumeInfrastructure(
+        f.config,
+        revision,
+        f.managed,
+        f.docker,
+        f.provider
+      )
+    ).infrastructureStarted,
+    true
+  )
+})
+
+test('initial-start recovery refuses changed evidence and keeps an interrupted claim', async (t) => {
+  for (const failure of [
+    'parent',
+    'existing-child',
+    'running-app',
+    'foreign-owner',
+    'interruption',
+    'replacement',
+  ]) {
+    const f = await stoppedInitialStartFixture(t)
+    if (failure === 'parent')
+      await writeFile(
+        join(f.directory, 'infrastructure-start/complete.json'),
+        '{}',
+        { mode: 0o600 }
+      )
+    if (failure === 'existing-child')
+      await mkdir(join(f.directory, 'infrastructure-start-recovery'), {
+        mode: 0o700,
+      })
+    if (failure === 'running-app') f.managedState.status = 'ready'
+    if (failure === 'foreign-owner') f.managedState.workspace = 'foreign'
+    if (failure === 'interruption' || failure === 'replacement') {
+      const run = f.options.runManaged
+      f.options.runManaged = async (args) => {
+        if (args[0] !== 'ensure') return run(args)
+        if (failure === 'interruption')
+          throw new Error('synthetic interruption')
+        return JSON.stringify({
+          managedRuntime: { mountNesting: { container: 'd'.repeat(64) } },
+        })
+      }
+    }
+    await assert.rejects(
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        nextExecutor,
+        'c'.repeat(64),
+        f.options
+      ),
+      undefined,
+      failure
+    )
+    const before = [...f.calls]
+    await assert.rejects(
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        nextExecutor,
+        'c'.repeat(64),
+        f.options
+      )
+    )
+    assert.deepEqual(f.calls, before)
+    if (
+      ['parent', 'existing-child', 'running-app', 'foreign-owner'].includes(
+        failure
+      )
+    )
+      assert.deepEqual(f.calls, [])
+  }
+})
+
+async function failedStartupRecoveryFixture(t) {
+  const f = await stoppedInitialStartFixture(t)
+  const managed = f.options.runManaged
+  await assert.rejects(
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      nextExecutor,
+      'c'.repeat(64),
+      {
+        ...f.options,
+        runManaged: (args) => {
+          if (args[0] === 'ensure')
+            throw new Error('synthetic provider refusal')
+          return managed(args)
+        },
+      }
+    )
+  )
+  f.calls.length = 0
+  return f
+}
+
+test('explicit startup recovery child preserves its failed claim through stop and resume', async (t) => {
+  const f = await failedStartupRecoveryFixture(t)
+  const parent = join(f.directory, 'infrastructure-start-recovery')
+  const claim = await readFile(join(parent, 'claim.json'), 'utf8')
+  const recover = () =>
+    continueInfrastructureStart(
+      f.config,
+      revision,
+      'a'.repeat(40),
+      'c'.repeat(64),
+      { ...f.options, resumeExecutor: nextExecutor }
+    )
+  assert.equal((await recover()).infrastructureStarted, true)
+  assert.equal(await readFile(join(parent, 'claim.json'), 'utf8'), claim)
+  assert.deepEqual((await readdir(parent)).sort(), ['claim.json', 'resume'])
+  const before = [...f.calls]
+  await assert.rejects(recover())
+  assert.deepEqual(f.calls, before)
+  await stopInfrastructure(f.config, revision, f.managed, f.docker, f.provider)
+  assert.equal(
+    (
+      await resumeInfrastructure(
+        f.config,
+        revision,
+        f.managed,
+        f.docker,
+        f.provider
+      )
+    ).infrastructureStarted,
+    true
+  )
+})
+
+test('startup recovery child rejects changed or interrupted ancestry before another dispatch', async (t) => {
+  for (const failure of [
+    'executor',
+    'binding',
+    'parent-complete',
+    'child',
+    'interruption',
+    'replacement',
+  ]) {
+    const f = await failedStartupRecoveryFixture(t)
+    const parent = join(f.directory, 'infrastructure-start-recovery')
+    if (failure === 'binding') {
+      const p = join(parent, 'claim.json')
+      const claim = JSON.parse(await readFile(p, 'utf8'))
+      await writeFile(
+        p,
+        JSON.stringify({ ...claim, configurationDigest: 'foreign' }),
+        { mode: 0o600 }
+      )
+    }
+    if (failure === 'parent-complete')
+      await writeFile(join(parent, 'complete.json'), '{}', { mode: 0o600 })
+    if (failure === 'child')
+      await mkdir(join(parent, 'resume'), { mode: 0o700 })
+    if (failure === 'interruption' || failure === 'replacement') {
+      const run = f.options.runManaged
+      f.options.runManaged = (args) => {
+        if (args[0] !== 'ensure') return run(args)
+        if (failure === 'interruption')
+          throw new Error('synthetic interruption')
+        return JSON.stringify({
+          managedRuntime: { mountNesting: { container: 'd'.repeat(64) } },
+        })
+      }
+    }
+    const recover = () =>
+      continueInfrastructureStart(
+        f.config,
+        revision,
+        'a'.repeat(40),
+        'c'.repeat(64),
+        {
+          ...f.options,
+          resumeExecutor:
+            failure === 'executor' ? 'e'.repeat(40) : nextExecutor,
+        }
+      )
+    await assert.rejects(recover(), undefined, failure)
+    const before = [...f.calls]
+    await assert.rejects(recover())
+    assert.deepEqual(f.calls, before)
+    if (!['interruption', 'replacement'].includes(failure))
+      assert.deepEqual(f.calls, [])
+    else assert.deepEqual(await readdir(join(parent, 'resume')), ['claim.json'])
+  }
 })

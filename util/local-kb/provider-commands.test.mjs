@@ -74,6 +74,7 @@ function providerStatus(config, name) {
       ownership: 'verified',
       setup: 'ready',
       ready: true,
+      worker_registration: 'ready',
     }
   if (name === 'scraping')
     return {
@@ -596,14 +597,15 @@ test('orders setup from the dependency graph and reverses stop', () => {
   const order = commands.lifecycleOrder
   assert.deepEqual(order, [
     'scraping',
-    'docProcessing',
     'ingestion',
+    'docProcessing',
     'retrieval',
   ])
   assert.deepEqual([...order].reverse(), commands.stopOrder)
   const nodes = config.dependencyGraph.nodes
   for (const [name, node] of Object.entries(nodes)) {
-    if (!node.provider) continue
+    // Worker dependencies describe job consumption; setup orders backing owners.
+    if (!node.provider || node.kind === 'provider-workers') continue
     for (const dependency of node.dependsOn) {
       const source = nodes[dependency]?.provider
       if (!source || source === node.provider) continue
@@ -698,4 +700,61 @@ test('rejects identities beyond the launcher instance limit', () => {
   const input = makeInput('a')
   input.projectIdentity = 'a'.repeat(49)
   assert.throws(() => resolveIsolatedConfig(input), /at most 48 characters/)
+})
+
+test('staged processing requires provider registration and shared-store readiness', async () => {
+  const { config } = resolveFixture('a')
+  for (const [ready, registration, expected] of [
+    [true, 'ready', true],
+    [true, 'unknown', false],
+    [true, 'unavailable', false],
+    [false, 'ready', false],
+    [false, 'unavailable', false],
+    [true, undefined, false],
+  ]) {
+    const observed = await observeProviderLauncher(
+      config,
+      'docProcessing',
+      async () =>
+        JSON.stringify({
+          ...providerStatus(config, 'docProcessing'),
+          ready,
+          worker_registration: registration,
+        })
+    )
+    assert.equal(observed.endpointReady, expected)
+    assert.equal(observed.aiQualified, false)
+  }
+  await assert.rejects(
+    observeProviderLauncher(config, 'docProcessing', async () =>
+      JSON.stringify({
+        ...providerStatus(config, 'docProcessing'),
+        worker_registration: 'invalid',
+      })
+    ),
+    /observation is unavailable or mismatched/
+  )
+  const observations = await observeProviderLaunchers(
+    config,
+    async (command) => {
+      const name = Object.keys(config.providers).find(
+        (key) => config.providers[key].sourcePath === command.cwd
+      )
+      const status = providerStatus(config, name)
+      if (name === 'ingestion')
+        status.process.infrastructure = [
+          { service: 'minio', state: 'running', health: 'healthy' },
+        ]
+      if (name === 'docProcessing')
+        Object.assign(status, {
+          ready: false,
+          worker_registration: 'unavailable',
+        })
+      return JSON.stringify(status)
+    }
+  )
+  assert.equal(
+    observations.find((row) => row.provider === 'docProcessing').endpointReady,
+    false
+  )
 })
