@@ -59,7 +59,9 @@ export type SlotRevisionWorkflowPayload = {
   previous_element: unknown
   note?: string
   output: { container_name: string; blob_prefix: string }
-  // Present only while the source graph's artifacts are unpurged.
+  // Present only while the source graph's artifacts are unpurged; the graph
+  // version identifies them in the revised question's provenance.
+  graph_version_id?: string
   graph_manifest?: QuestionWorkflowStartPayload['graph_manifest']
   resolved_domain_policy?: QuestionWorkflowStartPayload['graph_manifest']
   generation_recipe?: QuestionWorkflowStartPayload['graph_manifest']

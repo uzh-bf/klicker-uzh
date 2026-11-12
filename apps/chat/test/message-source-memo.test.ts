@@ -57,3 +57,34 @@ it('keeps source and figure maps stable while streamed citation pages still upda
   })
   expect(MessageSourcesHarness('See [1, p. 2]').sources).not.toBe(first.sources)
 })
+
+it('keeps the figure citation while the cited video passage changes', () => {
+  const payload = JSON.parse(
+    readFileSync('scripts/fixtures/course-images/query-result.json', 'utf8')
+  )
+  const assetId = payload.sources[0].chunks[0].visual_assets.assets[0].asset_id
+  payload.sources.push({
+    reference: 'https://example.com/video',
+    source_type: 'video',
+    chunks: [
+      { content: 'Introduction', start_sec: 40, end_sec: 60 },
+      { content: 'Worked example', start_sec: 80, end_sec: 100 },
+    ],
+  })
+  state.memos = []
+  state.message.content = [
+    { type: 'tool-call', toolName: 'KB_doc_query', result: payload },
+  ]
+  const first = MessageSourcesHarness('See [1, p. 2] and [2, t. 0:45]')
+  const next = MessageSourcesHarness('See [1, p. 2] and [2, t. 1:25]')
+  expect(first.sources[1]?.citedStartSecs).toEqual([45])
+  expect(next.sources[1]).toMatchObject({
+    index: 2,
+    startSec: 80,
+    citedStartSecs: [85],
+  })
+  expect(next.courseImageSourcesByAssetId.get(assetId)).toBe(next.sources[0])
+  expect(next.courseImageSourcesByAssetId).toBe(
+    first.courseImageSourcesByAssetId
+  )
+})

@@ -589,6 +589,9 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    # Lecturers can request a revision of one generated question only when the
+    # deployed question worker supports slot specifications.
+    revisionWorkerEnabled: false
     cost:
       questionMinorUnits: ''
       flashcardMinorUnits: ''
