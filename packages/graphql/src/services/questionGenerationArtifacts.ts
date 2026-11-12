@@ -566,7 +566,7 @@ const slotSpecificationSchema = z
     bloom_level: z.string(),
     content_type: z.string(),
     difficulty_scale: z.number(),
-    difficulty_mechanism: z.string(),
+    difficulty_mechanism: z.string().nullable(),
     planned_true_count: z.number().nullable(),
     permitted_aids: z.unknown(),
     evidence_target: z.string().nullable(),
