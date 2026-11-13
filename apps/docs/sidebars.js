@@ -34,6 +34,7 @@ module.exports = {
     'Lecturer - Integrations': [
       'tutorials/ppt_integration',
       'tutorials/lti_integration',
+      'tutorials/chatbot_olat_integration',
     ],
     'Student - Application': [
       'student_tutorials/student_accounts',
