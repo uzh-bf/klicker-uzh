@@ -31,7 +31,13 @@ spec:
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: chat
+        {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+        azure.workload.identity/use: "true"
+        {{- end }}
     spec:
+      {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+      serviceAccountName: {{ required "chat.mediaWorkloadIdentity.serviceAccountName is required" .Values.chat.mediaWorkloadIdentity.serviceAccountName | quote }}
+      {{- end }}
       terminationGracePeriodSeconds: {{ .Values.chat.terminationGracePeriodSeconds }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.chat.priorityClassName }}
       {{- with .Values.chat.imagePullSecrets }}
@@ -50,8 +56,17 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          {{- if or .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret }}
+          {{- if or .Values.chat.mediaWorkloadIdentity.enabled .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret }}
           env:
+            {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+            {{- range $key := list "COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME" "COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER" "COURSE_IMAGE_PROJECTION_STORAGE_PREFIX" "BLOB_STORAGE_ACCOUNT_NAME" "CHAT_VIDEO_BLOB_CONTAINER" }}
+            - name: {{ $key }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ $.Values.chat.mediaWorkloadIdentity.serviceAccountName | quote }}
+                  key: {{ $key }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.chat.courseImages.existingSecret }}
             - name: COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING
               valueFrom:

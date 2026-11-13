@@ -5,6 +5,12 @@ import path from 'node:path'
 import { BlobServiceClient } from '@azure/storage-blob'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
+import {
+  chatMediaWorkloadIdentityEnabled,
+  chatMediaWorkloadIdentityStorageConfigured,
+  createChatMediaWorkloadIdentityBlobClient,
+  resolveChatMediaWorkloadIdentityStorage,
+} from './chatMediaWorkloadIdentity'
 
 const PROJECTION_GENERATIONS = ['e6/v3', 'e5/v3', 'e4/v3'] as const
 const DEFAULT_PROJECTION_CONTAINER = 'doc-processing'
@@ -18,24 +24,37 @@ function record(value: unknown): Record<string, unknown> | undefined {
     : undefined
 }
 
-export function courseImageStoreConfigured() {
+export function courseImageStoreConfigured(
+  env: Readonly<Record<string, string | undefined>> = process.env
+) {
+  if (chatMediaWorkloadIdentityEnabled(env)) {
+    return chatMediaWorkloadIdentityStorageConfigured(
+      env,
+      'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
+      env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
+    )
+  }
   return Boolean(
-    process.env.CHAT_COURSE_IMAGE_STORE_PATH ||
-      (projectionConnectionString() && projectionContainer())
+    env.CHAT_COURSE_IMAGE_STORE_PATH ||
+      (projectionConnectionString(env) && projectionContainer(env))
   )
 }
 
-function projectionConnectionString() {
+function projectionConnectionString(
+  env: Readonly<Record<string, string | undefined>> = process.env
+) {
   return (
-    process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING ??
-    process.env.DOC_PROCESSING_AZURE_STORAGE_CONNECTION_STRING
+    env.COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING ??
+    env.DOC_PROCESSING_AZURE_STORAGE_CONNECTION_STRING
   )
 }
 
-function projectionContainer() {
+function projectionContainer(
+  env: Readonly<Record<string, string | undefined>> = process.env
+) {
   return (
-    process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER ??
-    process.env.DOC_PROCESSING_AZURE_STORAGE_CONTAINER ??
+    env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER ??
+    env.DOC_PROCESSING_AZURE_STORAGE_CONTAINER ??
     DEFAULT_PROJECTION_CONTAINER
   )
 }
@@ -54,7 +73,12 @@ export async function readCourseImage(
   image: CourseImage,
   root = process.env.CHAT_COURSE_IMAGE_STORE_PATH
 ): Promise<Buffer> {
-  const base = root ? await realpath(root) : undefined
+  const workloadIdentity = resolveChatMediaWorkloadIdentityStorage(
+    process.env,
+    'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
+    process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
+  )
+  const base = !workloadIdentity && root ? await realpath(root) : undefined
   let generation: (typeof PROJECTION_GENERATIONS)[number] =
     PROJECTION_GENERATIONS[0]
   async function object(
@@ -83,11 +107,20 @@ export async function readCourseImage(
         await file.close()
       }
     } else {
-      const connectionString = projectionConnectionString()
-      const container = projectionContainer()
-      if (!connectionString || !container)
-        throw new Error('Course image storage unavailable')
-      const client = BlobServiceClient.fromConnectionString(connectionString)
+      const container = workloadIdentity?.container ?? projectionContainer()
+      let blobServiceClient: BlobServiceClient
+      if (workloadIdentity) {
+        blobServiceClient = createChatMediaWorkloadIdentityBlobClient(
+          workloadIdentity.accountName
+        )
+      } else {
+        const connectionString = projectionConnectionString()
+        if (!connectionString)
+          throw new Error('Course image storage unavailable')
+        blobServiceClient =
+          BlobServiceClient.fromConnectionString(connectionString)
+      }
+      const client = blobServiceClient
         .getContainerClient(container)
         .getBlobClient(
           [

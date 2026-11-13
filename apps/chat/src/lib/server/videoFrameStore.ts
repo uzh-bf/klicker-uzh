@@ -5,6 +5,12 @@ import path from 'node:path'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { z } from 'zod'
 import type { VideoFrame } from '@/src/lib/sources/videoFrames'
+import {
+  chatMediaWorkloadIdentityEnabled,
+  chatMediaWorkloadIdentityStorageConfigured,
+  createChatMediaWorkloadIdentityBlobClient,
+  resolveChatMediaWorkloadIdentityStorage,
+} from './chatMediaWorkloadIdentity'
 
 const DIGEST = /^[a-f0-9]{64}$/
 const MAX_MANIFEST_BYTES = 2_000_000
@@ -81,6 +87,7 @@ async function readVerifiedManifest(
     process.env.BLOB_STORAGE_ACCOUNT_NAME,
     process.env.BLOB_STORAGE_ACCOUNT_URL,
     process.env.CHAT_VIDEO_BLOB_CONTAINER,
+    process.env.CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED,
     frame.manifest_sha256,
   ])
   if (!root) {
@@ -117,6 +124,7 @@ type VideoFrameStoreEnvironment = Partial<
     NodeJS.ProcessEnv,
     | 'CHAT_VIDEO_FRAME_STORE_PATH'
     | 'CHAT_VIDEO_BLOB_CONTAINER'
+    | 'CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED'
     | 'BLOB_STORAGE_ACCOUNT_NAME'
     | 'BLOB_STORAGE_ACCESS_KEY'
   >
@@ -125,6 +133,13 @@ type VideoFrameStoreEnvironment = Partial<
 export function videoFrameStoreConfigured(
   env: VideoFrameStoreEnvironment = process.env as VideoFrameStoreEnvironment
 ) {
+  if (chatMediaWorkloadIdentityEnabled(env)) {
+    return chatMediaWorkloadIdentityStorageConfigured(
+      env,
+      'BLOB_STORAGE_ACCOUNT_NAME',
+      env.CHAT_VIDEO_BLOB_CONTAINER
+    )
+  }
   return Boolean(
     env.CHAT_VIDEO_FRAME_STORE_PATH ||
       (env.CHAT_VIDEO_BLOB_CONTAINER &&
@@ -166,19 +181,31 @@ async function readBlobObject(key: string, limit: number) {
   const account = process.env.BLOB_STORAGE_ACCOUNT_NAME
   const accessKey = process.env.BLOB_STORAGE_ACCESS_KEY
   const container = process.env.CHAT_VIDEO_BLOB_CONTAINER
-  if (!account || !accessKey || !container)
-    throw new Error('Video frame storage unavailable')
-
-  const { BlobServiceClient, StorageSharedKeyCredential } = await import(
-    '@azure/storage-blob'
+  const workloadIdentity = resolveChatMediaWorkloadIdentityStorage(
+    process.env,
+    'BLOB_STORAGE_ACCOUNT_NAME',
+    container
   )
-  const credential = new StorageSharedKeyCredential(account, accessKey)
-  const blob = new BlobServiceClient(
-    getBlobStorageAccountUrl(account, process.env.BLOB_STORAGE_ACCOUNT_URL),
-    credential
-  )
-    .getContainerClient(container)
-    .getBlobClient(key)
+  let blob: import('@azure/storage-blob').BlobClient
+  if (workloadIdentity) {
+    blob = createChatMediaWorkloadIdentityBlobClient(
+      workloadIdentity.accountName
+    )
+      .getContainerClient(workloadIdentity.container)
+      .getBlobClient(key)
+  } else {
+    if (!account || !accessKey || !container)
+      throw new Error('Video frame storage unavailable')
+    const { BlobServiceClient, StorageSharedKeyCredential } = await import(
+      '@azure/storage-blob'
+    )
+    blob = new BlobServiceClient(
+      getBlobStorageAccountUrl(account, process.env.BLOB_STORAGE_ACCOUNT_URL),
+      new StorageSharedKeyCredential(account, accessKey)
+    )
+      .getContainerClient(container)
+      .getBlobClient(key)
+  }
   const properties = await blob.getProperties()
   if (
     properties.contentLength === undefined ||
@@ -226,7 +253,10 @@ export async function readVideoFrame(
   root = process.env.CHAT_VIDEO_FRAME_STORE_PATH,
   blobReader = readBlobObject
 ): Promise<Buffer> {
-  const manifest = await readVerifiedManifest(frame, root, blobReader)
+  const effectiveRoot = chatMediaWorkloadIdentityEnabled(process.env)
+    ? undefined
+    : root
+  const manifest = await readVerifiedManifest(frame, effectiveRoot, blobReader)
   if (
     manifest.schema_version !== 'video_frame_assets.v1' ||
     manifest.source_video_sha256 !== frame.source_video_sha256
@@ -247,7 +277,7 @@ export async function readVideoFrame(
     throw new Error('Video frame occurrence mismatch')
 
   const bytes = await readObject(
-    root,
+    effectiveRoot,
     'frames',
     frame.frame_sha256,
     'jpg',
