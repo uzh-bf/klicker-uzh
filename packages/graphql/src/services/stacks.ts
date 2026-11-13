@@ -91,7 +91,6 @@ interface CombineCorrectnessParamsInput {
   correct: boolean
   partial: boolean
   incorrect: boolean
-  existingResponse?: DB.QuestionResponse | null
 }
 
 function combineNewCorrectnessParams({
@@ -105,7 +104,6 @@ function combineNewCorrectnessParams({
 
     // CORRECT
     correctCount: correct ? 1 : 0,
-    correctCountStreak: correct ? 1 : 0,
     lastCorrectAt: correct ? new Date() : undefined,
 
     // PARTIALLY CORRECT
@@ -122,7 +120,6 @@ function combineCorrectnessParams({
   correct,
   partial,
   incorrect,
-  existingResponse,
 }: CombineCorrectnessParamsInput) {
   return {
     // track last answer date
@@ -131,13 +128,6 @@ function combineCorrectnessParams({
     // CORRECT
     correctCount: {
       increment: correct ? 1 : 0,
-    },
-    correctCountStreak: {
-      increment: correct
-        ? 1
-        : existingResponse
-          ? -existingResponse.correctCountStreak
-          : 0,
     },
     lastCorrectAt: correct ? new Date() : undefined,
 
@@ -156,9 +146,24 @@ function combineCorrectnessParams({
 }
 
 type SpacedRepetitionResult = {
+  streak: number
   efactor: number
   interval: number
   nextDueAt: Date
+}
+
+export function isSpacedRepetitionPass(grade: number): boolean {
+  return grade * 5 >= 3
+}
+
+export function computeSpacedRepetitionStreak({
+  previousStreak,
+  grade,
+}: {
+  previousStreak: number
+  grade: number
+}): number {
+  return isSpacedRepetitionPass(grade) ? previousStreak + 1 : 0
 }
 
 export function updateSpacedRepetition({
@@ -187,10 +192,10 @@ export function updateSpacedRepetition({
   newEfactor = parseFloat(newEfactor.toFixed(2))
 
   let newInterval: number
-  if (scaledGrade < 3) {
+  if (!isSpacedRepetitionPass(grade)) {
     newInterval = 1
   } else {
-    if (streak === 1) {
+    if (streak <= 1) {
       newInterval = 2
     } else if (streak === 2) {
       newInterval = 6
@@ -206,6 +211,7 @@ export function updateSpacedRepetition({
   const nextDueAt = dayjs().add(newInterval, 'day').toDate()
 
   return {
+    streak,
     efactor: newEfactor,
     interval: newInterval,
     nextDueAt: nextDueAt,
@@ -451,7 +457,6 @@ function computeFlashcardResponseContent({
           total: 0,
         }
 
-  const streakIncrement = response === FlashcardCorrectness.CORRECT ? 1 : 0
   const correctness =
     response === FlashcardCorrectness.CORRECT
       ? 1
@@ -468,7 +473,10 @@ function computeFlashcardResponseContent({
   const resultSpacedRepetition = updateSpacedRepetition({
     eFactor: existingResponse?.eFactor ?? 2.5,
     interval: existingResponse?.interval ?? 1,
-    streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
+    streak: computeSpacedRepetitionStreak({
+      previousStreak: existingResponse?.correctCountStreak ?? 0,
+      grade: correctness,
+    }),
     grade: correctness,
   })
 
@@ -542,7 +550,6 @@ async function upsertFlashcardResponse({
   response,
   newAverageResponseTime,
   existingInstance,
-  existingResponse,
   responseCorrectness,
   aggregatedResponses,
   resultSpacedRepetition,
@@ -554,7 +561,6 @@ async function upsertFlashcardResponse({
   response: FlashcardCorrectness
   newAverageResponseTime: number
   existingInstance: ExistingInstanceType
-  existingResponse: DB.QuestionResponse | null
   responseCorrectness: DB.ResponseCorrectness
   aggregatedResponses: ElementResultsFlashcard
   resultSpacedRepetition: SpacedRepetitionResult
@@ -623,6 +629,8 @@ async function upsertFlashcardResponse({
         incorrect: response === FlashcardCorrectness.INCORRECT,
       }),
 
+      correctCountStreak: resultSpacedRepetition.streak,
+
       eFactor: resultSpacedRepetition.efactor,
       interval: resultSpacedRepetition.interval,
       nextDueAt: resultSpacedRepetition.nextDueAt,
@@ -648,8 +656,9 @@ async function upsertFlashcardResponse({
         correct: response === FlashcardCorrectness.CORRECT,
         partial: response === FlashcardCorrectness.PARTIAL,
         incorrect: response === FlashcardCorrectness.INCORRECT,
-        existingResponse,
       }),
+
+      correctCountStreak: resultSpacedRepetition.streak,
 
       eFactor: resultSpacedRepetition.efactor,
       interval: resultSpacedRepetition.interval,
@@ -795,7 +804,6 @@ async function respondToFlashcard(
       response,
       newAverageResponseTime,
       existingInstance,
-      existingResponse,
       responseCorrectness,
       aggregatedResponses,
       resultSpacedRepetition,
@@ -973,11 +981,11 @@ async function upsertContentResponse({
 
       // CORRECT
       correctCount: 1,
-      correctCountStreak: 1,
       lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
 
       // update spaced repetition parameters
+      correctCountStreak: resultSpacedRepetition.streak,
       eFactor: resultSpacedRepetition.efactor,
       interval: resultSpacedRepetition.interval,
       nextDueAt: resultSpacedRepetition.nextDueAt,
@@ -1002,13 +1010,11 @@ async function upsertContentResponse({
       correctCount: {
         increment: 1,
       },
-      correctCountStreak: {
-        increment: 1,
-      },
       lastAnsweredAt: new Date(),
       lastCorrectAt: new Date(),
 
       // update spaced repetition parameters
+      correctCountStreak: resultSpacedRepetition.streak,
       eFactor: resultSpacedRepetition.efactor,
       interval: resultSpacedRepetition.interval,
       nextDueAt: resultSpacedRepetition.nextDueAt,
@@ -1128,7 +1134,10 @@ async function respondToContent(
     const resultSpacedRepetition = updateSpacedRepetition({
       eFactor: existingResponse?.eFactor ?? 2.5,
       interval: existingResponse?.interval ?? 1,
-      streak: (existingResponse?.correctCountStreak ?? 0) + 1,
+      streak: computeSpacedRepetitionStreak({
+        previousStreak: existingResponse?.correctCountStreak ?? 0,
+        grade: 1,
+      }),
       grade: 1,
     })
 
@@ -2352,7 +2361,6 @@ async function upsertQuestionResponse({
   xpAwarded,
   lastXpAwardedAt,
   newAverageResponseTime,
-  existingResponse,
   newAggResponses,
   practiceQuizId,
   microLearningId,
@@ -2370,7 +2378,6 @@ async function upsertQuestionResponse({
   xpAwarded: number
   lastXpAwardedAt: Date
   newAverageResponseTime: number
-  existingResponse: DB.QuestionResponse | null
   newAggResponses: ElementInstanceResults
   practiceQuizId?: string
   microLearningId?: string
@@ -2436,6 +2443,8 @@ async function upsertQuestionResponse({
         incorrect: correctness === 0,
       }),
 
+      correctCountStreak: resultSpacedRepetition.streak,
+
       eFactor: resultSpacedRepetition.efactor,
       nextDueAt: resultSpacedRepetition.nextDueAt,
       interval: resultSpacedRepetition.interval,
@@ -2463,8 +2472,9 @@ async function upsertQuestionResponse({
         correct: correctness === 1,
         partial: correctness > 0 && correctness < 1,
         incorrect: correctness === 0,
-        existingResponse,
       }),
+
+      correctCountStreak: resultSpacedRepetition.streak,
 
       eFactor: resultSpacedRepetition.efactor,
       nextDueAt: resultSpacedRepetition.nextDueAt,
@@ -2771,11 +2781,13 @@ export async function respondToQuestion(
       }
 
       // update aggregated results for choices and open questions
-      const streakIncrement = percentile === 1 ? 1 : 0
       const resultSpacedRepetition = updateSpacedRepetition({
         eFactor: existingResponse?.eFactor ?? 2.5,
         interval: existingResponse?.interval ?? 1,
-        streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
+        streak: computeSpacedRepetitionStreak({
+          previousStreak: existingResponse?.correctCountStreak ?? 0,
+          grade: percentile,
+        }),
         grade: percentile,
       })
 
@@ -2809,7 +2821,6 @@ export async function respondToQuestion(
         xpAwarded,
         lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
         newAverageResponseTime,
-        existingResponse,
         newAggResponses,
         practiceQuizId:
           updatedInstance.elementStack?.practiceQuizId ?? undefined,
