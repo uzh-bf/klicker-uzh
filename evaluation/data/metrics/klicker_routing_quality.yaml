@@ -1,0 +1,60 @@
+# Routing benchmark answer quality for util/_run_klicker_eval.sh --mode eval.
+# Every metric judges one captured arm answer against the ground-truth
+# reference joined by question id; this path carries no retrieval context.
+# Scores are native DeepEval GEval values (0-1). Major errors are tracked as
+# a separate metric so they never hide inside the mean answer quality.
+- name: correctness
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: "Score the assistant's answer against the expected answer as factual agreement with the reference facts: reward stated reference facts, penalize contradictions and unsupported specific claims."
+  evaluation_steps:
+    - 'List the reference facts in the expected answer that a correct answer needs (numbers, names, conditions, formulas, steps).'
+    - "For each reference fact, decide whether the assistant's answer states it correctly. A paraphrase counts; a missing or wrong value does not."
+    - 'Count contradictions: statements that conflict with a reference fact, including wrong numbers or inverted conditions.'
+    - 'Count unsupported claims: specific factual statements that neither appear in nor follow from the expected answer. Generic framing, tutoring tone and formatting are not claims.'
+    - 'Score 1.0 for full factual agreement; penalize missing facts modestly and contradictions or unsupported specific claims heavily.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: completeness
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: "Score how much of the expected answer's required content the assistant's answer covers, without rewarding length or repetition."
+  evaluation_steps:
+    - 'Identify the distinct parts of the expected answer (facts, steps, conditions, caveats).'
+    - "Check which parts the assistant's answer covers, correctly or as a faithful paraphrase."
+    - 'Do not add credit for extra detail that the expected answer does not require; do not subtract for extra detail that is consistent.'
+    - 'Score the covered share of the expected parts; a missing core part caps the score below the threshold.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: clarity
+  modes: [ground-truth]
+  threshold: 0.6
+  criteria: "Score how clearly a student could read and use the assistant's answer as a tutoring response: structure, directness and correct use of formulas."
+  evaluation_steps:
+    - 'Check that the answer addresses the question directly and its structure follows the question, not the reference wording.'
+    - 'Check that formulas, symbols and values are readable and used correctly (LaTeX is acceptable).'
+    - 'Penalize confusing ordering, unexplained jargon or filler; do not reward length and do not penalize brevity that keeps the answer complete.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
+
+- name: major_error
+  modes: [ground-truth]
+  threshold: 0.5
+  criteria: "Decide whether the assistant's answer contains a major error: a materially wrong claim that contradicts the reference on the core of the question, an answer to a different question, or no usable answer."
+  evaluation_steps:
+    - 'Restate the core ask of the question and the expected answer in one sentence each.'
+    - "Decide whether the answer resolves the core ask with the reference's central facts."
+    - 'Score 1.0 when there is no major error; score 0.0 for a materially wrong central claim, a contradiction of the reference on the core ask, or a missing or off-topic answer.'
+    - 'Minor omissions, terseness and style issues are not major errors.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT

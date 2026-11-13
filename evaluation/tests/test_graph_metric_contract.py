@@ -31,12 +31,14 @@ os.environ.update(
         "EVAL_MODEL": "offline-contract-judge",
         "EVAL_REASONING_EFFORT": "low",
         "EVAL_METRICS_PATH": str(
-            ROOT / "evaluation/data/metrics/klicker_graph_retrieval.yaml"
+            ROOT / "evaluation/data/metrics/klicker_graph_answerable.yaml"
         ),
     }
 )
 
+from deepeval.metrics import GEval
 from deepeval.models import DeepEvalBaseLLM
+from deepeval.test_case import LLMTestCase, SingleTurnParams
 from customization import custom_metrics
 from evaluators import run_evaluation
 from utils import utils
@@ -222,12 +224,100 @@ for (const row of qa.results.filter(row => row.success)) {
         self.assertEqual(counts["skipped"], 1)
         self.assertEqual(counts["judge_errors"], 0)
         self.assertEqual(len(result["results"]), 3)
-        # This pin's primary gate requires tool correctness too; do not report it as passed.
-        self.assertEqual(counts["primary_evaluated"], 0)
+        # The current pin keeps DeepEval case success as its only aggregate verdict.
+        self.assertEqual(counts["success"], 3)
+        self.assertEqual(counts["failed"], 0)
         self.assertEqual(
             result["results"][0]["metrics"]["Semantic Similarity [GEval]"]["threshold"],
             0.5,
         )
+
+    def test_case_class_profiles_keep_correctness_and_abstention_gates(self):
+        class ScriptedJudge(OfflineJudge):
+            def __init__(self, score):
+                self.verdict_score = score
+                self.calls = 0
+                super().__init__()
+
+            def generate(self, prompt, schema=None, **kwargs):
+                self.calls += 1
+                payload = {"score": self.verdict_score, "reason": "Synthetic verdict"}
+                return schema(**payload) if schema else json.dumps(payload)
+
+            async def a_generate(self, prompt, schema=None, **kwargs):
+                return self.generate(prompt, schema=schema, **kwargs)
+
+        # Scripted verdicts prove real DeepEval threshold/selection behavior, not
+        # whether a live judge would recognize an abstention or an invention.
+        scenarios = [
+            ("klicker_graph_answerable.yaml", [], "I cannot answer.", 0, False),
+            ("klicker_graph_answerable.yaml", [], "The supported fact.", 10, True),
+            ("klicker_graph_abstention.yaml", [], "No supported answer.", 10, True),
+            ("klicker_graph_abstention.yaml", [], "An invented procedure.", 0, False),
+            (
+                "klicker_graph_abstention.yaml",
+                ["Unrelated fact."],
+                "An invented procedure.",
+                0,
+                False,
+            ),
+            ("klicker_routing_quality.yaml", [], "Supported answer.", 10, True),
+            ("klicker_routing_quality.yaml", [], "Incorrect answer.", 0, False),
+        ]
+        with patch.object(
+            socket.socket, "connect", side_effect=AssertionError("Network forbidden")
+        ):
+            for profile, context, answer, score, expected_success in scenarios:
+                with self.subTest(profile=profile, context=bool(context), score=score):
+                    judge = ScriptedJudge(score)
+                    configs = custom_metrics.load_metric_configs(
+                        ROOT / "evaluation/data/metrics" / profile
+                    )
+                    metrics = custom_metrics.create_metrics(
+                        configs,
+                        eval_mode="ground-truth",
+                        has_retrieval_context=bool(context),
+                        has_expected_output=True,
+                        has_expected_tools=False,
+                        model=judge,
+                    )
+                    self.assertEqual(
+                        len(metrics),
+                        4 if profile == "klicker_routing_quality.yaml" else 1,
+                    )
+                    case = LLMTestCase(
+                        input="Synthetic question",
+                        actual_output=answer,
+                        expected_output="Synthetic reference",
+                        retrieval_context=context,
+                    )
+                    for metric in metrics:
+                        self.assertIsInstance(metric, GEval)
+                        self.assertNotIn(
+                            SingleTurnParams.RETRIEVAL_CONTEXT, metric.evaluation_params
+                        )
+                        metric.async_mode = False
+                        metric.measure(case, _show_indicator=False)
+                        self.assertEqual(metric.is_successful(), expected_success)
+                    self.assertGreater(judge.calls, 0)
+
+    def test_grounded_diagnostics_do_not_replace_empty_context_correctness(self):
+        configs = custom_metrics.load_metric_configs(
+            ROOT / "evaluation/data/metrics/klicker_graph_retrieval.yaml"
+        )
+        for present, expected_count in [(False, 0), (True, 4)]:
+            metrics = custom_metrics.create_metrics(
+                configs,
+                eval_mode="ground-truth",
+                has_retrieval_context=present,
+                has_expected_output=True,
+                has_expected_tools=False,
+                model=OfflineJudge(),
+            )
+            self.assertEqual(len(metrics), expected_count)
+            if present:
+                self.assertFalse(metrics[0].flaky)
+                self.assertTrue(all(metric.flaky for metric in metrics[1:]))
 
 
 if __name__ == "__main__":
