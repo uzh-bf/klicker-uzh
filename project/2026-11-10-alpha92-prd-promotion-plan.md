@@ -1,0 +1,24 @@
+# Prepare the alpha.92 production promotion
+
+## Scope and authority
+
+Prepare a draft PR into v3 from 5b8efe36cd3f38da978e64b090e0bc157df34153. The user requested preparation of the next production release on November 10. This authorizes ordinary task-branch commits, pushes and draft PR delivery. It does not authorize marking ready, protected-branch changes, tag publication, deployment or cluster changes.
+
+The release source is frozen at v3-ai 48c037e5e963378ce4628380c478ea7eb34bd928, with generated alpha.92 metadata prepared separately. ADR-0051 requires production deploy/ and release-image source to agree except environment-owned image references. This branch copies the frozen source deploy/ changes, then proposes alpha.92 on all 17 existing application image pins. Production values outside those tag scalars remain byte-for-byte equal to this branch's base. Production burst and release-assets serving stay disabled. No product primitive, database schema or migration is changed by this package.
+
+This is an independent ordinary PR, not a stack with the v3-ai release PR. The release package's independently critiqued plan is project/2026-11-10-alpha92-release-preparation-plan.md on chore/release-alpha92; that plan owns the coordinated preparation sequence. The v3 parity workflow compares to v3-ai. The source metadata PR does not run that v3-only gate, so these drafts have no parity cycle.
+
+## Execution and acceptance
+
+Main session is the sole writer in trees/alpha92-prd-promotion. Allowed paths are the ten differing deploy/ paths plus this plan. Preserve primary and unrelated worktrees. No host dependency installation or application runtime is needed for static Helm verification. Reuse checkout-local pure JavaScript tooling for parsers and execute focused unit contracts in a disposable container.
+
+1. Copy the exact frozen source deploy/ paths, preserving the versioned v3 production values outside image pins. Set the existing application tags to v3.4.0-alpha.92.
+2. Verify normalized deploy parity with the prepared release tree, Helm lint/render for production and staging, image and migrator references, disabled production optional features, topology spread and replica ownership. Compare production renders with the baseline to isolate proposed image changes.
+3. Inspect every changed hunk and scan staged source/text for secrets and personal or environment-derived data. Run the mandatory hooks at this branch revision. Its existing hook explicitly defers aggregate checks/build to CI when no checkout-local dependency installation exists. Preserve that behavior; the newer release branch has a separate managed-runtime gate.
+4. Obtain the coordinated review of immutable staged trees. Commit after mandatory hooks, verify the committed tree matches review, push normally, open a draft and observe applicable exact-head CI to completion or a concrete blocker. No human review notifications.
+
+A proposed tag is not evidence that production images exist. Before any later promotion merge, require the approved release commit/tag, successful production image builds with immutable references, applicable deployment and migration preflight, and explicit merge/activation authority. Pending migration state is not inferred from the absence of new source migrations. Ordinary application rollback restores previous public image pins with compatible configuration; database repair is forward-only. Asset-service activation and its forward-revert limits require separate acceptance.
+
+## Progress
+
+The frozen source's deploy/ differences and all 17 proposed application image pins are prepared locally. The PRD overlay changes only image tags. The complete source candidate is ready for commit; no tag or PR exists yet. Focused verification passed: normalized parity, four strict Helm 3.21.4 lint cases across both branches/environments, production render equality with the baseline chart under proposed pins (including derived metadata), proposed migrator tag, absence of optional PRD services, 34 parity/topology unit contracts and rendered topology/replica ownership contracts. Staged secret/identity checks and this branch revision's mandatory pre-commit hook passed. Its existing no-install aggregate deferral was reported explicitly; exact-head hosted CI remains required. Opengrep scanned the two promoted JavaScript validation files with no findings or errors. Substantive package size is 489 additions and 66 deletions across ten deploy paths; this coordinated promotion is one cohesive ADR-0051 deployment package, separate from generated release metadata. The independent plan critique approved the coordinated preparation scope. Integrated independent review and hosted CI remain pending. This package introduces no UI implementation changes, so browser screenshots do not apply; release-time product acceptance remains separate.

@@ -45,12 +45,10 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.92
       resources:
-        # Near the per-pod CPU of a busy lecture, so a crowded node does not
-        # throttle this tier first. Usage above the request is still allowed.
         requests:
-          cpu: 75m
+          cpu: 50m
           memory: 512Mi
         limits:
           memory: 2Gi
@@ -88,7 +86,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.92
       resources:
         requests:
           cpu: 25m
@@ -129,7 +127,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.92
       resources:
         requests:
           cpu: 50m
@@ -196,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     annotations:
@@ -336,6 +334,7 @@ chat:
       supportedReasoningEfforts:
         - low
         - medium
+        - high
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
@@ -357,7 +356,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     annotations:
@@ -425,7 +424,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   strategy:
     type: RollingUpdate
@@ -475,7 +474,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   strategy:
     type: RollingUpdate
@@ -541,7 +540,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.91
+    tag: v3.4.0-alpha.92
 
   ingress:
     className: haproxy
@@ -564,10 +563,8 @@ frontendPWA:
       maxSurge: 1
 
   resources:
-    # Near the per-pod CPU of a busy lecture, so a crowded node does not
-    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 150m
+      cpu: 50m
       memory: 320Mi
     limits:
       memory: 1Gi
@@ -601,7 +598,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     className: haproxy
@@ -639,7 +636,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   affinity:
     podAntiAffinity:
@@ -686,7 +683,7 @@ backendGraphql:
   priorityClassName: production-workload
 
   knowledgeGraph:
-    host: 'prd-falkordb-aigeneric-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
+    host: 'prd-falkordb-aigeneric-ha-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
@@ -740,7 +737,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -779,10 +776,8 @@ backendGraphql:
       maxSurge: 1
 
   resources:
-    # Near the per-pod CPU of a busy lecture, so a crowded node does not
-    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 150m
+      cpu: 50m
       memory: 448Mi
     limits:
       memory: 1Gi
@@ -795,7 +790,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   affinity:
     podAntiAffinity:
@@ -865,7 +860,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.89
+    tag: v3.4.0-alpha.93
 
   ingress:
     className: haproxy
@@ -897,7 +892,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
     pullPolicy: IfNotPresent
 
   affinity:
@@ -987,7 +982,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.91
+      tag: v3.4.0-alpha.92
 
     ingress:
       className: haproxy
@@ -1082,7 +1077,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.92
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1158,7 +1153,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.92
 
     ingress:
       className: haproxy
