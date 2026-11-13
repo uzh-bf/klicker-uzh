@@ -50,6 +50,23 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+          {{- if or .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret }}
+          env:
+            {{- if .Values.chat.courseImages.existingSecret }}
+            - name: COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chat.courseImages.existingSecret | quote }}
+                  key: {{ .Values.chat.courseImages.connectionStringKey | quote }}
+            {{- end }}
+            {{- if .Values.chat.videoBlob.existingSecret }}
+            - name: BLOB_STORAGE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chat.videoBlob.existingSecret | quote }}
+                  key: {{ required "chat.videoBlob.accessKeyKey is required for video frame storage" .Values.chat.videoBlob.accessKeyKey | quote }}
+            {{- end }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global
