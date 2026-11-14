@@ -246,6 +246,7 @@ export interface ICourseListEntry {
   id: string
   name: string
   numOfParticipants?: number | null
+  isAssessmentEnabled?: boolean | null
 }
 export const CourseListEntryRef =
   builder.objectRef<ICourseListEntry>('CourseListEntry')
@@ -254,6 +255,9 @@ export const CourseListEntry = builder.objectType(CourseListEntryRef, {
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {
+      nullable: true,
+    }),
   }),
 })
 

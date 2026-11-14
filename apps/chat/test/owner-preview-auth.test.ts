@@ -86,6 +86,16 @@ describe('withOwnerPreviewAuth', () => {
     expect('response' in result && result.response.status).toBe(403)
   })
 
+  it('lets the owner read stored data of a paused chatbot when allowed', async () => {
+    await expect(
+      withOwnerPreviewAuth(
+        'chatbot-id',
+        dependencies({ chatbotStatus: ChatbotStatus.PAUSED }),
+        { allowPaused: true }
+      )
+    ).resolves.toEqual({ userId: owner.sub, scope: owner.scope })
+  })
+
   it('allows an owner to repair and preview a rejected chatbot', async () => {
     await expect(
       withOwnerPreviewAuth(

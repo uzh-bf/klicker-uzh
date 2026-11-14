@@ -1317,6 +1317,7 @@ type CourseLeaderboard {
 
 type CourseListEntry {
   id: ID!
+  isAssessmentEnabled: Boolean
   name: String!
   numOfParticipants: Int
 }
