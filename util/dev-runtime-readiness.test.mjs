@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -157,9 +158,33 @@ test('the manifest and shell share one request budget', async (t) => {
 })
 
 test('a hanging HTTP response cannot extend the readiness deadline', {
-  timeout: 100_000,
+  timeout: 10_000,
 }, async (t) => {
   const { root } = fixture(t)
+  const shellEnv = join(root, 'readiness-clock.sh')
+  const timeoutsFile = join(root, 'request-timeouts')
+  // Advance retry time without waiting; real hanging requests still return
+  // curl 28. Recording the requested budgets preserves the deadline contract.
+  writeFileSync(
+    shellEnv,
+    `
+unset SECONDS
+SECONDS=0
+sleep() {
+  SECONDS=$((SECONDS + 17))
+}
+curl() {
+  local previous='' argument
+  for argument in "$@"; do
+    if [ "$previous" = --max-time ]; then
+      printf '%s\\n' "$argument" >> "$KLICKER_TEST_CURL_TIMEOUTS"
+    fi
+    previous="$argument"
+  done
+  command curl "$@" --max-time 0.05
+}
+`
+  )
   let requests = 0
   const server = http.createServer(() => {
     requests += 1
@@ -168,15 +193,16 @@ test('a hanging HTTP response cannot extend the readiness deadline', {
     server.once('error', reject)
     server.listen(3002, '127.0.0.1', resolve)
   })
-  const started = performance.now()
   const child = spawn('bash', [script, 'wait-app', 'frontend-manage'], {
     env: {
       ...process.env,
+      BASH_ENV: shellEnv,
+      KLICKER_TEST_CURL_TIMEOUTS: timeoutsFile,
       KLICKER_DEV_RUNTIME_ROOT: root,
       DEV_TURBO_TASK: 'dev',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
-    timeout: 95_000,
+    timeout: 5_000,
   })
   let stdout = ''
   child.stdout.on('data', (chunk) => {
@@ -190,8 +216,11 @@ test('a hanging HTTP response cannot extend the readiness deadline', {
     })
     assert.equal(result.signal, null)
     assert.equal(result.code, 1)
-    const elapsed = performance.now() - started
-    assert.ok(elapsed >= 88_000 && elapsed < 94_000)
+    const timeouts = readFileSync(timeoutsFile, 'utf8')
+      .trim()
+      .split('\n')
+      .map(Number)
+    assert.deepEqual(timeouts, [15, 15, 15, 15, 15, 5])
     assert.ok(requests >= 2)
     // Curl's timeout code must remain visible during unchanged observations.
     assert.ok((stdout.match(/curl 28/g) ?? []).length >= 2)
