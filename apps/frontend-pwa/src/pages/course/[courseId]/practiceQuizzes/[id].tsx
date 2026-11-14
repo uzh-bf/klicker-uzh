@@ -11,6 +11,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, UserNotification } from '@uzh-bf/design-system'
@@ -53,6 +54,7 @@ function PracticeQuizPage({
   id,
   participantToken,
   cookiesAvailable,
+  tokenSource,
   embedded,
   focusedEmbedRequested,
 }: {
@@ -60,6 +62,7 @@ function PracticeQuizPage({
   id: string
   participantToken?: string
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
   embedded: boolean
   focusedEmbedRequested: boolean
 }) {
@@ -109,6 +112,7 @@ function PracticeQuizPage({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
@@ -440,17 +444,19 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const embedded = parseEmbedParam(ctx.query.embed)
     const focusedEmbedRequested = embedded && ctx.query.embedMode === 'focused'
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
 
     if (participantToken) {
       return {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           id: ctx.params.id,
           courseId: ctx.params.courseId,
           embedded,
