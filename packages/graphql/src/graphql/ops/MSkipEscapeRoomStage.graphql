@@ -3,12 +3,14 @@ mutation SkipEscapeRoomStage(
   $microLearningId: String
   $groupActivityId: String
   $groupId: String
+  $elementBlockId: Int
 ) {
   skipEscapeRoomStage(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
     groupActivityId: $groupActivityId
     groupId: $groupId
+    elementBlockId: $elementBlockId
   ) {
     id
     startedAt

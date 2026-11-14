@@ -1,19 +1,27 @@
 import {
+  areEscapeRoomRegularStagesCleared,
   type EscapeRoomRules,
   getEscapeRoomHintPenalty,
   getEscapeRoomSkipPenalty,
+  getEscapeRoomStageOutcomeRecord,
   isEscapeRoomBonusStage,
+  parseEscapeRoomStageOutcomeRecords,
+  resolveEscapeRoomAnswerableStage,
+  setEscapeRoomStageOutcomeRecord,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
-  getCurrentEscapeRoomInstance,
   getEscapeRoomHintKey,
   getEscapeRoomInstanceHints,
   getEscapeRoomLifecycleClaimKey,
   isEscapeRoomExpired,
 } from '@klicker-uzh/types'
+import {
+  acquireEscapeRoomResponseSlot,
+  releaseEscapeRoomResponseSlot,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { randomUUID } from 'node:crypto'
@@ -744,14 +752,20 @@ async function revealEscapeRoomHint(
       orderBy: { order: 'asc' },
       select: { id: true },
     })
-    const clearedInstanceIds = new Set(
-      await ctx.redisExec.smembers(`escape-attempt:${attempt.id}:cleared`)
-    )
-    const currentInstance = getCurrentEscapeRoomInstance(
-      blockInstances,
-      clearedInstanceIds
-    )
-    if (currentInstance?.id !== instanceId) {
+    // The same check as for answers: hints belong to the current regular
+    // stage, never to the bonus stage.
+    const decision = resolveEscapeRoomAnswerableStage({
+      stages: blockInstances.map((entry) => String(entry.id)),
+      stageKey: String(instanceId),
+      rules: getEscapeRoomRules(activity.config),
+      status: attempt.status,
+      expired: isEscapeRoomExpired(attempt),
+      outcomes: parseEscapeRoomStageOutcomeRecords(attempt.stageOutcomes),
+      clearedKeys: new Set(
+        await ctx.redisExec.smembers(`escape-attempt:${attempt.id}:cleared`)
+      ),
+    })
+    if (!decision.ok || decision.isBonus) {
       throw new GraphQLError(
         'You must answer all preceding questions correctly before requesting this hint',
         { extensions: { code: 'ESCAPE_ROOM_GATED' } }
@@ -974,6 +988,110 @@ async function skipIndividualStage(
   })
 }
 
+// Live Quiz skip. Prisma is written before the cleared set so that a failed
+// Redis write is repaired by the stage check, which reads both stores.
+async function skipLiveQuizStage(
+  activity: ResolvedParticipantEscapeRoom,
+  participantId: string,
+  rules: EscapeRoomRules,
+  skipPenalty: number,
+  ctx: ContextWithUser
+) {
+  const blockId = activity.reference.id as number
+  const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
+    where: getAttemptWhere(activity, participantId),
+  })
+  if (!attempt) {
+    throw new GraphQLError(
+      'No active escape room attempt found for this activity',
+      { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
+    )
+  }
+  const [block, instances] = await Promise.all([
+    ctx.prisma.elementBlock.findUniqueOrThrow({
+      where: { id: blockId },
+      select: { liveQuizId: true },
+    }),
+    ctx.prisma.elementInstance.findMany({
+      where: {
+        elementBlockId: blockId,
+        elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
+      },
+      orderBy: { order: 'asc' },
+      select: { id: true },
+    }),
+  ])
+  const stages = instances.map((entry) => String(entry.id))
+  const clearedKey = `escape-attempt:${attempt.id}:cleared`
+  const clearedKeys = new Set(await ctx.redisExec.smembers(clearedKey))
+  const outcomes = parseEscapeRoomStageOutcomeRecords(attempt.stageOutcomes)
+  const expired = isEscapeRoomExpired(attempt)
+  const decisions = stages.map((stageKey) =>
+    resolveEscapeRoomAnswerableStage({
+      stages,
+      stageKey,
+      rules,
+      status: attempt.status,
+      expired,
+      outcomes,
+      clearedKeys,
+    })
+  )
+  // The skippable stage is the current regular stage of a running attempt;
+  // the only answerable stage of a completed attempt is the bonus.
+  const current = decisions.find((decision) => decision.ok)
+  if (!current?.ok) {
+    const reason = decisions.find((decision) => !decision.ok)?.reason
+    if (reason === 'expired') {
+      throw new GraphQLError('Escape room time has expired', {
+        extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
+      })
+    }
+    if (attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+      throw new GraphQLError(
+        'No active escape room attempt found for this activity',
+        { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
+      )
+    }
+    throw skipGatedError()
+  }
+  if (current.isBonus) throw skipGatedError()
+
+  const now = new Date()
+  const stageKey = current.stageKey
+  const nextOutcomes = setEscapeRoomStageOutcomeRecord(outcomes, {
+    ...getEscapeRoomStageOutcomeRecord(outcomes, stageKey),
+    outcome: 'SKIPPED',
+    at: now.toISOString(),
+  })
+  const completed = areEscapeRoomRegularStagesCleared({
+    stages,
+    rules,
+    outcomes: nextOutcomes,
+    clearedKeys: new Set([...clearedKeys, stageKey]),
+  })
+  const updated = await ctx.prisma.escapeRoomAttempt.update({
+    where: { id: attempt.id },
+    data: {
+      stageOutcomes: nextOutcomes as unknown as DB.Prisma.InputJsonValue,
+      penaltySeconds: { increment: skipPenalty },
+      ...(completed
+        ? {
+            status: DB.EscapeRoomStatus.COMPLETED,
+            completedAt: now,
+            lockoutUntil: null,
+          }
+        : {}),
+    },
+  })
+  await ctx.redisExec.sadd(clearedKey, stageKey)
+  await ctx.redisExec.expire(clearedKey, 60 * 60 * 24 * 30)
+  await ctx.redisExec.del(
+    `lq:${block.liveQuizId}:i:${stageKey}:tries:${participantId}`
+  )
+  return updated
+}
+
 async function skipGroupStage(
   activity: ResolvedParticipantEscapeRoom,
   rules: EscapeRoomRules,
@@ -1056,8 +1174,8 @@ async function skipGroupStage(
   )
 }
 
-// Clears the current stage at the configured skip penalty. Live Quiz blocks
-// keep their own stage state and do not offer skipping yet.
+// Clears the current stage at the configured skip penalty. A Live Quiz skip
+// also takes the block's response slot, so a closing block rejects it.
 export async function skipEscapeRoomStage(
   args: EscapeRoomActivityArgs,
   ctx: ContextWithUser
@@ -1071,7 +1189,7 @@ export async function skipEscapeRoomStage(
   )
   const rules = getEscapeRoomRules(activity.config)
   const skipPenalty = getEscapeRoomSkipPenalty(rules)
-  if (activity.reference.kind === 'liveQuizBlock' || skipPenalty === null) {
+  if (skipPenalty === null) {
     throw new GraphQLError('Skipping is not enabled for this escape room', {
       extensions: { code: 'ESCAPE_ROOM_SKIP_DISABLED' },
     })
@@ -1114,7 +1232,28 @@ export async function skipEscapeRoomStage(
     )
   }
 
+  const responseSlotToken = randomUUID()
+  let responseSlotAcquired = false
   try {
+    if (activity.reference.kind === 'liveQuizBlock') {
+      responseSlotAcquired = await acquireEscapeRoomResponseSlot({
+        redis: ctx.redisExec,
+        blockId: activity.reference.id,
+        token: responseSlotToken,
+      })
+      if (!responseSlotAcquired) {
+        throw new GraphQLError('This block is closing', {
+          extensions: { code: 'ESCAPE_ROOM_BLOCK_CLOSED' },
+        })
+      }
+      return await skipLiveQuizStage(
+        activity,
+        participantId,
+        rules,
+        skipPenalty,
+        ctx
+      )
+    }
     return activity.reference.kind === 'groupActivity'
       ? await skipGroupStage(activity, rules, skipPenalty, ctx)
       : await skipIndividualStage(
@@ -1137,6 +1276,13 @@ export async function skipEscapeRoomStage(
     }
     throw error
   } finally {
+    if (responseSlotAcquired) {
+      await releaseEscapeRoomResponseSlot({
+        redis: ctx.redisExec,
+        blockId: activity.reference.id as number,
+        token: responseSlotToken,
+      })
+    }
     await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 }

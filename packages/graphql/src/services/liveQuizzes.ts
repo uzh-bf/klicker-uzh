@@ -1,3 +1,9 @@
+import {
+  getEscapeRoomRulesFromConfig,
+  isEscapeRoomBonusStage,
+  parseEscapeRoomStageOutcomeRecords,
+  resolveEscapeRoomAnswerableStage,
+} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
@@ -6,8 +12,8 @@ import {
   ElementResultsCaseStudy,
   ElementResultsOpen,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
-  getCurrentEscapeRoomInstance,
   HatchetHandlers,
+  isEscapeRoomExpired,
   type ElementBlockInput,
   type ElementResultsChoices,
   type ElementResultsSelection,
@@ -44,6 +50,7 @@ import {
 } from './activities.js'
 import {
   getEscapeRoomRulesData,
+  getRevealedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
 import { sendTeamsNotification } from './notifications.js'
@@ -3186,41 +3193,88 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
           ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(instance.elementType)
         )
       : []
+    const escapeRoomRules = getEscapeRoomRulesFromConfig(
+      quiz.activeBlock.escapeRoomConfig
+    )
+    const escapeStages = escapeRoomInstances.map((instance) =>
+      String(instance.id)
+    )
+    const escapeOutcomes = parseEscapeRoomStageOutcomeRecords(
+      escapeAttempt?.stageOutcomes
+    )
     const escapeRoomTotalInstances = isEscapeRoomBlock
       ? escapeRoomInstances.length
       : null
+    // A bonus stage still waiting for its answer does not count as cleared.
+    const escapeBonusPending =
+      escapeAttempt?.status === DB.EscapeRoomStatus.COMPLETED &&
+      escapeRoomInstances.some(
+        (_, index) =>
+          isEscapeRoomBonusStage(
+            escapeRoomRules,
+            index,
+            escapeRoomInstances.length
+          ) &&
+          !clearedInstanceIds.has(escapeStages[index]!) &&
+          !escapeOutcomes.some(
+            (record) =>
+              record.stageKey === escapeStages[index] &&
+              (record.outcome === 'BONUS_CORRECT' ||
+                record.outcome === 'BONUS_WRONG')
+          )
+      )
     const escapeRoomClearedInstances = isEscapeRoomBlock
       ? escapeAttempt?.status === DB.EscapeRoomStatus.COMPLETED
-        ? escapeRoomInstances.length
-        : escapeRoomInstances.filter((instance) =>
-            clearedInstanceIds.has(String(instance.id))
+        ? escapeRoomInstances.length - (escapeBonusPending ? 1 : 0)
+        : escapeRoomInstances.filter(
+            (instance) =>
+              clearedInstanceIds.has(String(instance.id)) ||
+              escapeOutcomes.some(
+                (record) =>
+                  record.stageKey === String(instance.id) &&
+                  record.outcome !== null &&
+                  record.outcome !== 'BONUS_WRONG'
+              )
           ).length
       : null
+    // The student sees the current regular stage while the attempt runs and,
+    // once it is completed, only an unanswered bonus stage within the time
+    // limit. The bonus is never revealed before the regular stages are cleared.
+    const escapeVisibleKey = escapeAttempt
+      ? escapeStages.find(
+          (stageKey) =>
+            resolveEscapeRoomAnswerableStage({
+              stages: escapeStages,
+              stageKey,
+              rules: escapeRoomRules,
+              status: escapeAttempt.status,
+              expired:
+                escapeAttempt.status === DB.EscapeRoomStatus.COMPLETED &&
+                isEscapeRoomExpired(escapeAttempt),
+              outcomes: escapeOutcomes,
+              clearedKeys: clearedInstanceIds,
+            }).ok
+        )
+      : undefined
     const participantVisibleInstances = isEscapeRoomBlock
-      ? escapeAttempt?.status === DB.EscapeRoomStatus.IN_PROGRESS
-        ? [
-            getCurrentEscapeRoomInstance(
-              escapeRoomInstances,
-              clearedInstanceIds
-            ),
-          ].filter((instance) => instance !== undefined)
-        : []
+      ? escapeRoomInstances.filter(
+          (instance) => String(instance.id) === escapeVisibleKey
+        )
       : quiz.activeBlock.elements
-    const revealedHintIds = new Set(
-      Array.isArray(escapeAttempt?.hintsUsed)
-        ? escapeAttempt.hintsUsed.map(String)
-        : []
-    )
     const activeBlockInstances = await Promise.all(
       removeSolutionFromInstances({
         instances: participantVisibleInstances,
       }).map(async (instance) => {
         if (!quiz.isAssessmentEnabled) {
+          const revealedHints = getRevealedEscapeRoomHints(
+            instance.id,
+            instance.options,
+            escapeAttempt?.hintsUsed
+          )
           return {
             ...instance,
-            revealedHint: revealedHintIds.has(String(instance.id))
-              ? (instance.options.escapeRoomHint ?? null)
-              : null,
+            revealedHint: revealedHints[0] ?? null,
+            revealedHints,
           }
         }
 
