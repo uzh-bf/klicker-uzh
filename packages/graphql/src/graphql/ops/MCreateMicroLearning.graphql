@@ -11,6 +11,7 @@ mutation CreateMicroLearning(
   $escapeRoomTimeLimit: Int
   $escapeRoomHintPenalty: Int
   $escapeRoomIntroText: String
+  $escapeRoomRules: EscapeRoomRulesInput
 ) {
   createMicroLearning(
     name: $name
@@ -25,6 +26,7 @@ mutation CreateMicroLearning(
     escapeRoomTimeLimit: $escapeRoomTimeLimit
     escapeRoomHintPenalty: $escapeRoomHintPenalty
     escapeRoomIntroText: $escapeRoomIntroText
+    escapeRoomRules: $escapeRoomRules
   ) {
     ...ActivityInfoData
   }

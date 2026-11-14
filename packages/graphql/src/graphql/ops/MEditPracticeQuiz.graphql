@@ -12,6 +12,7 @@ mutation EditPracticeQuiz(
   $escapeRoomTimeLimit: Int
   $escapeRoomHintPenalty: Int
   $escapeRoomIntroText: String
+  $escapeRoomRules: EscapeRoomRulesInput
 ) {
   editPracticeQuiz(
     id: $id
@@ -27,6 +28,7 @@ mutation EditPracticeQuiz(
     escapeRoomTimeLimit: $escapeRoomTimeLimit
     escapeRoomHintPenalty: $escapeRoomHintPenalty
     escapeRoomIntroText: $escapeRoomIntroText
+    escapeRoomRules: $escapeRoomRules
   ) {
     ...ActivityInfoData
   }

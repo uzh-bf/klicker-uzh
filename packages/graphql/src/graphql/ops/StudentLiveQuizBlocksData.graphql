@@ -21,6 +21,12 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       remainingSeconds
       expiresInSeconds
       hintsUsed
+      stageOutcomes {
+        stageKey
+        wrongAttempts
+        outcome
+        at
+      }
       lockoutUntil
       status
       completedAt
@@ -59,6 +65,12 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       remainingSeconds
       expiresInSeconds
       hintsUsed
+      stageOutcomes {
+        stageKey
+        wrongAttempts
+        outcome
+        at
+      }
       lockoutUntil
       status
       completedAt

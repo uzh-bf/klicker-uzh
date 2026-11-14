@@ -1380,7 +1380,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
-        'Congratulations! You answered all questions correctly and completed the escape room.',
+        'Congratulations! You cleared every question and completed the escape room.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Time remaining',
       escapeRoomContactLecturer:
@@ -1396,9 +1396,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer the preceding questions correctly before this step.',
       escapeRoomForbiddenToast:
         'This escape room can only be answered with an active attempt.',
-      escapeRoomRequestHint: 'Reveal hint (−{penalty}s)',
+      escapeRoomRequestHint: 'Reveal hint (+{penalty}s ranked time)',
       escapeRoomHintRevealedToast:
-        'Hint revealed — {penalty}s added to your time.',
+        'Hint revealed — {penalty}s added to your ranked time.',
+      escapeRoomNextHint: 'Show next hint (+{penalty}s ranked time)',
+      escapeRoomTriesLeft:
+        '{count, plural, one {One try left} other {Tries left: #}}',
+      escapeRoomWrongTriesToast:
+        'Incorrect answer! {count, plural, one {# try} other {# tries}} left.',
+      escapeRoomRevealedNotice:
+        'Out of tries. The question counts as cleared (+{penalty}s ranked time).',
+      escapeRoomRevealedToast:
+        'Out of tries — the question counts as cleared. Moving on.',
+      escapeRoomSkip: 'Skip question (+{penalty}s ranked time)',
+      escapeRoomSkipConfirm:
+        'Skip this question? It counts as cleared and adds {penalty}s to your ranked time.',
+      escapeRoomSkipConfirmButton: 'Yes, skip',
+      escapeRoomSkippedToast:
+        'Question skipped — {penalty}s added to your ranked time.',
+      escapeRoomSkipDisabledToast:
+        'Skipping is not allowed in this escape room.',
+      escapeRoomBonusOffer:
+        'Bonus: answer correctly for −{seconds}s ranked time',
+      escapeRoomBonusDesc:
+        'One bonus question is still open while time remains. You get a single try.',
+      escapeRoomBonusCorrect:
+        'Bonus answered correctly: −{seconds}s ranked time.',
+      escapeRoomBonusWrong: 'Bonus answered incorrectly: no time credit.',
+      escapeRoomBonusSubmitted: 'Bonus answer submitted.',
       escapeRoomStagesLabel: 'Stages',
       escapeRoomStagesCleared: 'Stages cleared',
       escapeRoomClearedProgress:
@@ -3019,6 +3044,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomNoQrOutside:
         'QR scan questions can only be used in escape room blocks.',
       escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
+      escapeRoomHintsPlaceholder:
+        'Optional hints, one per line (each adds a penalty when revealed; later hints can cost more)',
       escapeRoomTimeLimitRequired: 'Time limit is required',
       escapeRoomInteger: 'Must be an integer',
       escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',
@@ -3030,6 +3057,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomIntroTextPlaceholder:
         'Set the scene for your participants — shown on the start screen before the timer begins (Markdown supported)',
       escapeRoomIntroTextMax: 'Intro story may not exceed 5000 characters',
+      escapeRoomRulesTitle: 'Scoring rules',
+      escapeRoomApplyPreset: 'Apply classroom preset',
+      escapeRoomHintPenalties:
+        'Penalty per hint, in order (seconds, comma-separated)',
+      escapeRoomHintPenaltiesInvalid:
+        'Enter up to 10 whole numbers between 0 and 3600, separated by commas',
+      escapeRoomWrongAnswerPenalty: 'Penalty per wrong answer (seconds)',
+      escapeRoomMaxWrongAttempts:
+        'Wrong answers before the solution is revealed (empty = never)',
+      escapeRoomMaxWrongAttemptsRange:
+        'Must be a whole number between 1 and 50',
+      escapeRoomRevealPenalty:
+        'Penalty when the solution is revealed (seconds)',
+      escapeRoomSkipPenalty:
+        'Penalty for skipping a question (seconds, empty = skipping disabled)',
+      escapeRoomBonusSeconds:
+        'Time credit for a correct final bonus question (seconds, empty = no bonus)',
+      escapeRoomRuleSecondsRange:
+        'Must be a whole number between 0 and 3600 seconds',
       selectGamifiedCourse:
         'Please select a gamified course for the creation of this element.',
       groupActivityInformation:
@@ -3608,6 +3654,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomColHints: 'Hints',
       escapeRoomColPenalty: 'Penalty',
       escapeRoomColTime: 'Time',
+      escapeRoomColRank: 'Rank',
+      escapeRoomOutcomeSummary: '{revealed} revealed · {skipped} skipped',
+      escapeRoomBonusSolved: 'Bonus solved',
+      escapeRoomRankedTime: 'Ranked: {time}',
       escapeRoomColActions: 'Actions',
       escapeRoomStatusInProgress: 'In progress',
       escapeRoomStatusNotStarted: 'Not started',

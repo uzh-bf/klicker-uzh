@@ -29,7 +29,11 @@ import * as yup from 'yup'
 import type { ElementSelectCourse } from '../../ActivityCreation'
 import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
-import { useEscapeRoomYupFields } from '../escapeRoomValidation'
+import {
+  getEscapeRoomHintsFormValue,
+  getEscapeRoomRulesFormValues,
+  useEscapeRoomYupFields,
+} from '../escapeRoomValidation'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { type MicroLearningFormValues } from '../WizardLayout'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
@@ -70,7 +74,11 @@ interface MicroLearningWizardProps {
   onEscapeRoomChange?: (isEscapeRoom: boolean) => void
   editMode: boolean
   duplicationMode: boolean
-  escapeRoomHints: Array<{ instanceId: number; hint: string }>
+  escapeRoomHints: Array<{
+    instanceId: number
+    hint: string
+    hints?: { text: string }[] | null
+  }>
 }
 
 function MicroLearningWizard({
@@ -100,7 +108,10 @@ function MicroLearningWizard({
     })
   const escapeRoomYupFields = useEscapeRoomYupFields()
   const escapeRoomHintMap = new Map(
-    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+    escapeRoomHints.map((entry) => [
+      entry.instanceId,
+      getEscapeRoomHintsFormValue(entry),
+    ])
   )
 
   const nameValidationSchema = yup.object().shape({
@@ -220,6 +231,7 @@ function MicroLearningWizard({
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
     escapeRoomIntroText: '',
+    ...getEscapeRoomRulesFormValues(),
   }
 
   const workflowItems = [
@@ -298,6 +310,7 @@ function MicroLearningWizard({
     escapeRoomIntroText:
       initialValues?.escapeRoomConfig?.introText ??
       formDefaultValues.escapeRoomIntroText,
+    ...getEscapeRoomRulesFormValues(initialValues?.escapeRoomConfig),
   })
 
   const { recoveryProps, closeWizardAndClearSnapshot } =

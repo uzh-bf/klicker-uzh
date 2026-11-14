@@ -887,6 +887,7 @@ export interface IElementInstance
   feedbacks?: DB.ElementFeedback[] | null
   correlationKey?: string | null
   revealedHint?: string | null
+  revealedHints?: string[] | null
 }
 export const ElementInstanceRef =
   builder.objectRef<IElementInstance>('ElementInstance')
@@ -898,6 +899,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     elementType: t.expose('elementType', { type: ElementType }),
     correlationKey: t.exposeString('correlationKey', { nullable: true }), // correlation key for assessment response validation
     revealedHint: t.exposeString('revealedHint', { nullable: true }),
+    revealedHints: t.exposeStringList('revealedHints', { nullable: true }),
 
     elementData: t.field({
       type: ElementData,

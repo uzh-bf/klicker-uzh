@@ -12,6 +12,10 @@ import {
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
+import {
+  getEscapeRoomHintsInput,
+  getEscapeRoomRulesInput,
+} from '../escapeRoomValidation'
 import { GroupActivityFormValues } from '../WizardLayout'
 
 interface GroupActivityFormSubmissionProps {
@@ -71,7 +75,9 @@ async function submitGroupActivityForm({
               order: ix,
               existingInstanceId: element.existingInstanceId,
               duplicateInstance: element.duplicateInstance,
-              escapeRoomHint: element.escapeRoomHint,
+              escapeRoomHints: values.isEscapeRoom
+                ? getEscapeRoomHintsInput(element.escapeRoomHint)
+                : undefined,
             })),
             order: 0,
           },
@@ -84,6 +90,9 @@ async function submitGroupActivityForm({
             : undefined,
           escapeRoomIntroText: values.isEscapeRoom
             ? values.escapeRoomIntroText || undefined
+            : undefined,
+          escapeRoomRules: values.isEscapeRoom
+            ? getEscapeRoomRulesInput(values)
             : undefined,
         },
         update: (cache, { data: res }) => {
@@ -157,7 +166,9 @@ async function submitGroupActivityForm({
               order: ix,
               existingInstanceId: element.existingInstanceId,
               duplicateInstance: element.duplicateInstance,
-              escapeRoomHint: element.escapeRoomHint,
+              escapeRoomHints: values.isEscapeRoom
+                ? getEscapeRoomHintsInput(element.escapeRoomHint)
+                : undefined,
             })),
             order: 0,
           },
@@ -170,6 +181,9 @@ async function submitGroupActivityForm({
             : undefined,
           escapeRoomIntroText: values.isEscapeRoom
             ? values.escapeRoomIntroText || undefined
+            : undefined,
+          escapeRoomRules: values.isEscapeRoom
+            ? getEscapeRoomRulesInput(values)
             : undefined,
         },
         update: (cache, { data: res }) => {

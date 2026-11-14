@@ -12,7 +12,11 @@ import {
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, FormikTextField } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextareaField,
+  FormikTextField,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { swapIndices } from 'remeda'
@@ -262,19 +266,29 @@ function WizardElementList({
                 </Button>
               </div>
             </div>
-            {isEscapeRoom && (type === 'stack' || type === 'block') && (
+            {isEscapeRoom && type === 'block' && (
               <FormikTextField
-                name={
-                  type === 'block'
-                    ? `blocks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
-                    : singleStackMode
-                      ? `stack.elements.${elementIdx}.escapeRoomHint`
-                      : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
-                }
+                name={`blocks.${stackIx}.elements.${elementIdx}.escapeRoomHint`}
                 placeholder={t(
                   'manage.activityWizard.escapeRoomHintPlaceholder'
                 )}
                 className={{ root: 'mb-1 px-1', field: '!mt-0' }}
+                data={{
+                  cy: `escape-room-hint-${type}-${stackIx}-${elementIdx}`,
+                }}
+              />
+            )}
+            {isEscapeRoom && type === 'stack' && (
+              <FormikTextareaField
+                name={
+                  singleStackMode
+                    ? `stack.elements.${elementIdx}.escapeRoomHint`
+                    : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomHint`
+                }
+                placeholder={t(
+                  'manage.activityWizard.escapeRoomHintsPlaceholder'
+                )}
+                className={{ root: 'mb-1 px-1', input: 'h-16 w-full' }}
                 data={{
                   cy: `escape-room-hint-${type}-${stackIx}-${elementIdx}`,
                 }}

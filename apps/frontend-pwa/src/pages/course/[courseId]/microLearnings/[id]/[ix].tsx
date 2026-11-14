@@ -14,7 +14,13 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
-import { useEscapeRoom } from '../../../../../components/hooks/useEscapeRoom'
+import {
+  getEscapeRoomStageRules,
+  getStageOutcome,
+  hasBonusStage,
+  isStageCleared,
+  useEscapeRoom,
+} from '../../../../../components/hooks/useEscapeRoom'
 import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
@@ -43,6 +49,8 @@ function MicrolearningInstance() {
 
   const isEscapeRoom = !!hookActivity?.escapeRoomConfig
   const [escapeRetryNonce, setEscapeRetryNonce] = useState(0)
+  // The bonus stage can be answered once after completion, while time remains
+  const [bonusActive, setBonusActive] = useState(false)
   const {
     attempt,
     isStarted,
@@ -57,13 +65,18 @@ function MicrolearningInstance() {
     refetch,
   })
 
+  // Leave the bonus question once its time is up
+  useEffect(() => {
+    if (bonusActive && remainingSeconds === 0) setBonusActive(false)
+  }, [bonusActive, remainingSeconds])
+
   // Escape rooms always resume at the first uncleared stack. This prevents
   // skipping ahead and also advances a stale/reloaded URL that still points to
-  // an already-cleared stack.
+  // an already-cleared stack. Revealed and skipped stacks count as cleared.
   useEffect(() => {
     if (isEscapeRoom && !previewMode && hookActivity?.stacks) {
       const activeFirstUncleared = hookActivity.stacks.findIndex(
-        (stack) => !stack.isCorrect
+        (stack) => !stack.isCorrect && !isStageCleared(attempt, stack.id)
       )
       if (activeFirstUncleared !== -1 && ix !== activeFirstUncleared) {
         router.replace(
@@ -75,6 +88,7 @@ function MicrolearningInstance() {
     isEscapeRoom,
     previewMode,
     hookActivity?.stacks,
+    attempt,
     ix,
     courseId,
     id,
@@ -104,10 +118,33 @@ function MicrolearningInstance() {
   const escapeRoomHintPenalty =
     microLearning.escapeRoomConfig?.hintPenalty ?? 120
 
+  const escapeTotalStacks =
+    microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
+  // The bonus stage is the last stack; it is not required to complete the room
+  const escapeHasBonus = hasBonusStage(
+    microLearning.escapeRoomConfig,
+    escapeTotalStacks
+  )
+  const escapeRequiredStacks = escapeTotalStacks - (escapeHasBonus ? 1 : 0)
+  const bonusStack =
+    escapeHasBonus &&
+    isCompleted &&
+    microLearning.stacks?.length === escapeTotalStacks
+      ? microLearning.stacks[escapeTotalStacks - 1]
+      : undefined
+  const bonusOutcome = bonusStack
+    ? getStageOutcome(attempt, bonusStack.id)?.outcome
+    : undefined
+  const bonusAvailable =
+    !!bonusStack &&
+    !bonusOutcome &&
+    remainingSeconds !== null &&
+    remainingSeconds > 0
+
   const escapeRoomOverlay = isEscapeRoom && !previewMode && (
     <EscapeRoomOverlay
       isStarted={isStarted}
-      isCompleted={isCompleted}
+      isCompleted={isCompleted && !bonusActive}
       isExpired={isExpired}
       remainingSeconds={remainingSeconds}
       timeLimit={microLearning.escapeRoomConfig?.timeLimit ?? 3600}
@@ -119,12 +156,29 @@ function MicrolearningInstance() {
       loading={attemptLoading}
       attempt={attempt}
       clearedStacks={
-        microLearning.stacks?.filter((stack) => stack.isCorrect).length ?? 0
+        microLearning.stacks?.filter(
+          (stack, stackIx) =>
+            stackIx < escapeRequiredStacks &&
+            (stack.isCorrect || isStageCleared(attempt, stack.id))
+        ).length ?? 0
       }
-      totalStacks={
-        microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0
-      }
+      totalStacks={escapeRequiredStacks}
       introText={microLearning.escapeRoomConfig?.introText}
+      bonus={
+        bonusStack
+          ? {
+              seconds: microLearning.escapeRoomConfig?.bonusSeconds ?? 0,
+              available: bonusAvailable,
+              outcome: bonusOutcome,
+              onStart: async () => {
+                await router.push(
+                  `/course/${courseId}/microLearnings/${id}/${escapeTotalStacks - 1}`
+                )
+                setBonusActive(true)
+              },
+            }
+          : undefined
+      }
     />
   )
 
@@ -152,13 +206,20 @@ function MicrolearningInstance() {
     throw new Error('Stack not found')
   }
 
+  // A revealed or skipped stack counts as cleared and is never retried; the
+  // bonus stack is answered once and returns to the completion card.
   const handleEscapeAdvance = async (gradedStatus?: StackFeedbackStatus) => {
-    if (gradedStatus === StackFeedbackStatus.Correct) {
+    if (bonusActive && currentStack.id === bonusStack?.id) {
       await refetch()
-      if (
-        ix + 1 <
-        (microLearning.numOfStacks ?? microLearning.stacks?.length ?? 0)
-      ) {
+      setBonusActive(false)
+      return
+    }
+    if (
+      gradedStatus === StackFeedbackStatus.Correct ||
+      isStageCleared(attempt, currentStack.id)
+    ) {
+      await refetch()
+      if (ix + 1 < escapeRequiredStacks) {
         await router.push(`/course/${courseId}/microLearnings/${id}/${ix + 1}`)
       }
       return
@@ -237,6 +298,12 @@ function MicrolearningInstance() {
                     activityType: 'microLearning',
                     hintPenalty: escapeRoomHintPenalty,
                     onStateChanged: refetch,
+                    ...getEscapeRoomStageRules({
+                      config: microLearning.escapeRoomConfig!,
+                      attempt,
+                      stageKey: currentStack.id,
+                      isBonusStage: currentStack.id === bonusStack?.id,
+                    }),
                   }
                 : undefined
             }

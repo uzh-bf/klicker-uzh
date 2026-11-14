@@ -1363,6 +1363,7 @@ type ElementInstance {
   id: Int!
   options: ElementInstanceOptions
   revealedHint: String
+  revealedHints: [String!]
   type: ElementInstanceType!
 }
 
@@ -1372,6 +1373,7 @@ input ElementInstanceInput {
   duplicateInstance: Boolean!
   elementId: Int!
   escapeRoomHint: String
+  escapeRoomHints: [EscapeRoomHintEntryInput!]
   existingInstanceId: Int
   order: Int!
 }
@@ -1379,6 +1381,7 @@ input ElementInstanceInput {
 type ElementInstanceOptions {
   basePoints: Boolean
   hasHint: Boolean
+  hintCount: Int
   pointsMultiplier: Int
   resetTimeDays: Int
 }
@@ -1479,6 +1482,7 @@ type EscapeRoomAttempt {
   practiceQuizId: String
   remainingSeconds: Int!
   stageDecisions: [GroupActivityDecision!]
+  stageOutcomes: [EscapeRoomStageOutcome!]!
   startedAt: Date!
   status: EscapeRoomStatus!
   timeLimit: Int!
@@ -1486,6 +1490,7 @@ type EscapeRoomAttempt {
 
 type EscapeRoomAttemptProgress {
   avatar: String
+  bonusCorrect: Boolean
   clearedStacks: Int!
   completedAt: Date
   displayName: String!
@@ -1495,31 +1500,55 @@ type EscapeRoomAttemptProgress {
   lockoutUntil: Date
   participantId: String
   penaltySeconds: Int!
+  rank: Int
+  rankedSeconds: Int
+  revealedStages: Int!
+  skippedStages: Int!
+  solvedStages: Int!
   startedAt: Date
   status: EscapeRoomProgressStatus!
   timeSpentSeconds: Int
 }
 
 type EscapeRoomConfig {
+  bonusSeconds: Int
   elementBlockId: Int
   groupActivityId: String
+  hintPenalties: [Int!]!
   hintPenalty: Int!
   id: String!
   introText: String
   lockoutSeconds: Int!
+  maxWrongAttempts: Int
   microLearningId: String
   practiceQuizId: String
+  revealPenalty: Int!
+  skipPenalty: Int
   timeLimit: Int!
+  wrongAnswerPenalty: Int!
 }
 
 type EscapeRoomHint {
   hint: String!
+  hints: [EscapeRoomHintEntry!]!
   instanceId: Int!
+}
+
+type EscapeRoomHintEntry {
+  penalty: Int
+  text: String!
+}
+
+input EscapeRoomHintEntryInput {
+  penalty: Int
+  text: String!
 }
 
 type EscapeRoomHintResult {
   attempt: EscapeRoomAttempt!
+  hasMoreHints: Boolean!
   hint: String!
+  hints: [String!]!
 }
 
 type EscapeRoomProgress {
@@ -1534,6 +1563,22 @@ enum EscapeRoomProgressStatus {
   EXPIRED
   IN_PROGRESS
   NOT_STARTED
+}
+
+input EscapeRoomRulesInput {
+  bonusSeconds: Int
+  hintPenalties: [Int!]
+  maxWrongAttempts: Int
+  revealPenalty: Int
+  skipPenalty: Int
+  wrongAnswerPenalty: Int
+}
+
+type EscapeRoomStageOutcome {
+  at: String
+  outcome: String
+  stageKey: String!
+  wrongAttempts: Int!
 }
 
 enum EscapeRoomStatus {
@@ -2163,13 +2208,13 @@ type Mutation {
   createChatbot(avatar: String, courseId: String!, description: String, name: String!): Chatbot!
   createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
-  createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomTimeLimit: Int, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomRules: EscapeRoomRulesInput, escapeRoomTimeLimit: Int, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
-  createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomTimeLimit: Int, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
+  createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomRules: EscapeRoomRulesInput, escapeRoomTimeLimit: Int, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, dataUse: ParticipantInitialDataUseInput!, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPracticeQuiz(courseId: String!, description: String, displayName: String!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomTimeLimit: Int, isEscapeRoom: Boolean, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
+  createPracticeQuiz(courseId: String!, description: String, displayName: String!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomRules: EscapeRoomRulesInput, escapeRoomTimeLimit: Int, isEscapeRoom: Boolean, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
@@ -2195,10 +2240,10 @@ type Mutation {
   duplicateAnswerCollection(id: Int!): AnswerCollection
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
-  editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomTimeLimit: Int, id: String!, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomRules: EscapeRoomRulesInput, escapeRoomTimeLimit: Int, id: String!, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
-  editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomTimeLimit: Int, id: String!, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
-  editPracticeQuiz(courseId: String!, description: String, displayName: String!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomTimeLimit: Int, id: String!, isEscapeRoom: Boolean, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
+  editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomRules: EscapeRoomRulesInput, escapeRoomTimeLimit: Int, id: String!, isEscapeRoom: Boolean, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
+  editPracticeQuiz(courseId: String!, description: String, displayName: String!, escapeRoomHintPenalty: Int, escapeRoomIntroText: String, escapeRoomRules: EscapeRoomRulesInput, escapeRoomTimeLimit: Int, id: String!, isEscapeRoom: Boolean, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
   endGroupActivity(id: String!): GroupActivity
@@ -2279,6 +2324,7 @@ type Mutation {
   setResearchConsent(consent: Boolean!, disclosureVersion: String!, expectedRevision: Int!): ParticipantDataUse
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
+  skipEscapeRoomStage(groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startEscapeRoomAttempt(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

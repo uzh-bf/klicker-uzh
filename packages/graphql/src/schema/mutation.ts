@@ -50,6 +50,7 @@ import {
   TemplateBlockInput,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
+import { EscapeRoomRulesInputRef } from './escapeRoomConfig.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -3466,6 +3467,10 @@ export const Mutation = builder.mutationType({
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
             escapeRoomIntroText: t.arg.string({ required: false }),
+            escapeRoomRules: t.arg({
+              type: EscapeRoomRulesInputRef,
+              required: false,
+            }),
           },
           resolve: async (_, args, ctx) => {
             return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
@@ -3497,6 +3502,10 @@ export const Mutation = builder.mutationType({
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
             escapeRoomIntroText: t.arg.string({ required: false }),
+            escapeRoomRules: t.arg({
+              type: EscapeRoomRulesInputRef,
+              required: false,
+            }),
           },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
@@ -3525,6 +3534,10 @@ export const Mutation = builder.mutationType({
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
             escapeRoomIntroText: t.arg.string({ required: false }),
+            escapeRoomRules: t.arg({
+              type: EscapeRoomRulesInputRef,
+              required: false,
+            }),
           },
           resolve: async (_, args, ctx) => {
             return await MicroLearningService.manipulateMicroLearning(args, ctx)
@@ -3550,6 +3563,10 @@ export const Mutation = builder.mutationType({
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
             escapeRoomIntroText: t.arg.string({ required: false }),
+            escapeRoomRules: t.arg({
+              type: EscapeRoomRulesInputRef,
+              required: false,
+            }),
           },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
@@ -3615,6 +3632,10 @@ export const Mutation = builder.mutationType({
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
             escapeRoomIntroText: t.arg.string({ required: false }),
+            escapeRoomRules: t.arg({
+              type: EscapeRoomRulesInputRef,
+              required: false,
+            }),
           },
           resolve: async (_, args, ctx) => {
             return await GroupService.manipulateGroupActivity(args, ctx)
@@ -3641,6 +3662,10 @@ export const Mutation = builder.mutationType({
             escapeRoomTimeLimit: t.arg.int({ required: false }),
             escapeRoomHintPenalty: t.arg.int({ required: false }),
             escapeRoomIntroText: t.arg.string({ required: false }),
+            escapeRoomRules: t.arg({
+              type: EscapeRoomRulesInputRef,
+              required: false,
+            }),
           },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
@@ -3801,6 +3826,20 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await EscapeRoomService.requestEscapeRoomHint(args, ctx)
+        },
+      }),
+
+      skipEscapeRoomStage: t.withAuth({ authenticated: true }).field({
+        nullable: true,
+        type: EscapeRoomAttempt,
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          groupId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await EscapeRoomService.skipEscapeRoomStage(args, ctx)
         },
       }),
 

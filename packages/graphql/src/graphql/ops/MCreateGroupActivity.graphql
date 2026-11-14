@@ -12,6 +12,7 @@ mutation CreateGroupActivity(
   $escapeRoomTimeLimit: Int
   $escapeRoomHintPenalty: Int
   $escapeRoomIntroText: String
+  $escapeRoomRules: EscapeRoomRulesInput
 ) {
   createGroupActivity(
     name: $name
@@ -27,6 +28,7 @@ mutation CreateGroupActivity(
     escapeRoomTimeLimit: $escapeRoomTimeLimit
     escapeRoomHintPenalty: $escapeRoomHintPenalty
     escapeRoomIntroText: $escapeRoomIntroText
+    escapeRoomRules: $escapeRoomRules
   ) {
     ...ActivityInfoData
   }

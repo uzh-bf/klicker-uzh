@@ -404,3 +404,5 @@ export function computeAwardedXp({ pointsPercentage }: ComputeAwardedXpArgs) {
   }
   return 0
 }
+
+export * from './escapeRoomRules.js'
