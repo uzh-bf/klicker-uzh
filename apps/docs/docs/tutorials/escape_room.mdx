@@ -75,6 +75,11 @@ A Live Quiz block that was created before these rules existed keeps working: its
 2. Enter hint text for that element. Enter several hints one per line; participants reveal them in that order. Participants see a **Show hint** button, labelled with its price (for example "+2 min"), only on elements that have a hint configured.
 3. A revealed hint remains visible after a page reload. Its penalty is added to the penalty time immediately on reveal.
 
+**To add a debrief to individual questions:**
+
+1. Below the hints field of the question, enter a debrief text (Markdown) that explains the stage's solution or learning goal.
+2. Lecturers see the debrief next to each stage in the dashboard. In a Live Quiz, the projector shows it after the block closes. Students never see it during play.
+
 **Attempt rules by activity type:**
 
 - Practice Quiz and Microlearning: one server-owned attempt per participant. The timer starts when the participant presses Start Attempt.
@@ -128,7 +133,27 @@ The grading/monitoring page shows the shared group attempt. The summary line cou
 
 **Live Quiz**
 
-The **Lecturer Cockpit** displays per-participant progress for the active Escape Room block and updates automatically while open. The table has the same rank, outcome (revealed, skipped, bonus), penalty, and ranked-time columns as the other modes, and ranks participants by stages solved without help, then by ranked time.
+The **Lecturer Cockpit** displays per-participant progress for the active Escape Room block and updates automatically while open. The table has the same rank, outcome (revealed, skipped, bonus), penalty, and ranked-time columns as the other modes, and ranks participants by stages solved without help, then by ranked time. After you close the block, the cockpit keeps the table of the last executed Escape Room block. Closing the block finishes running attempts, and their results keep the stages cleared so far. The Live Quiz **Evaluation** page lists the table of every executed Escape Room block for logged-in lecturers.
+
+**Stage results and export**
+
+In all four modes, the table is followed by a section with one row per stage. It counts how many participants (or groups) solved, revealed, or skipped the stage, tried it without clearing it, or never reached it, plus wrong attempts, hints used, and the bonus result, and shows the stage's debrief text. The counts cover participants who started an attempt. Use **Export CSV** to download the attempt table.
+
+The tables list every participant. Only participants who joined the leaderboard receive a rank.
+
+Results stay available after the activity ends. Only a lecturer reset deletes an attempt.
+
+---
+
+## Show a Live Quiz Escape Room on a projector
+
+In the Lecturer Cockpit, select **Projector** to open the projector view in a new tab, and show it on the classroom screen. The view needs no login. Its link opens only this view and nothing else of the quiz, so share it only with the screen you project on.
+
+- Before the block opens, it shows a lobby with the join QR code.
+- While the block runs, it shows the ranking and the countdown.
+- After the block closes, it shows the final ranking and the results of each stage with their debrief texts.
+
+The projector lists participants like the Live Quiz leaderboard. In gamified courses it lists only participants who joined the leaderboard. In other courses it lists everyone. It shows names only for public profiles and otherwise "Anonymous".
 
 ---
 

@@ -179,7 +179,7 @@ Hints are authorized against the current unlocked stack. Each request reveals th
 
 Countdowns start from server-calculated `remainingSeconds` and `expiresInSeconds` snapshots and animate with the browser monotonic clock. Refetches after start, answers, hints, and lockout errors resynchronize those snapshots, while the server remains authoritative for expiry.
 
-The lecturer progress dashboard is roster-based: every enrolled participant appears, including a `NOT_STARTED` row when no attempt exists. Reset requires WRITE access and is rejected while a response lifecycle claim is active. The prune job marks finished attempts before applying retention; response and instance statistics remain owned by the normal submission path.
+The lecturer progress dashboard is roster-based: every enrolled participant appears, including a `NOT_STARTED` row when no attempt exists. Reset requires WRITE access and is rejected while a response lifecycle claim is active. The prune job only marks finished attempts with `retentionProcessedAt`; finalized attempts (`COMPLETED`, `EXPIRED`) are kept, and only a lecturer reset deletes one. Response and instance statistics remain owned by the normal submission path.
 
 ### Group Activity
 
@@ -198,6 +198,12 @@ A Live Quiz Escape Room is scoped to one non-assessment `ElementBlock` and one a
 The response API validates the participant token, active quiz/block binding, attempt, lockout, expiry, and current stage before grading. Correct stages are recorded in an attempt-scoped Redis set, deterministic event IDs make accepted retries stable, and the response processor deduplicates delivery before updating ordinary Live Quiz statistics. A block-wide close gate drains active grading and accepted worker events before result aggregation, so a response cannot complete after the closure snapshot. Start, answer, hint, and lecturer reset share the same participant/block lifecycle claim, preventing stale answer or reset races.
 
 The lecturer cockpit polls block-scoped progress, expands the owning course roster with `NOT_STARTED` participants, ranks attempts from `stageOutcomes` like the other modes (attempts completed before outcomes existed rank as solved at `completedAt` with their recorded penalties), and offers WRITE-authorized resets. Live Quiz templates preserve block settings and only the first per-instance hint, and no scoring rules; QR elements created from a template receive fresh private codes.
+
+Closing a block finalizes its running attempts as `EXPIRED`. `deactivateLiveQuizBlock` does this only after `updateLiveQuizBlockResultsFromCache` returned a result, so a failed close leaves attempts running. The progress service applies the same expiry lazily to `IN_PROGRESS` attempts of an `EXECUTED` block, which covers a start that races the close. A stage is cleared when `stageOutcomes` records `SOLVED`, `REVEALED` or `SKIPPED`, or, for an unfinished attempt, when the Redis set has it, so finished attempts keep their counts after Redis expires.
+
+`getEscapeRoomStageResults` normalizes every mode to per-stage outcomes, wrong attempts and hints for the lecturer table. A stage's debrief is stored in the element instance options as `escapeRoomDebrief`. It is kept out of the participant `ElementInstanceOptions` type, and the projector query returns it only once the block is `EXECUTED`.
+
+The projector (`escapeRoomProjector`, page `/quizzes/<id>/escape-projector/<blockId>`) is readable without login with a digest `HMAC-SHA256(APP_SECRET, 'escape-projector:liveQuizBlock:<quizId>:<blockId>')`, or by a lecturer with READ access. The digest unlocks only that query for that block, not the results page, PIN or leaderboard profiles. The payload carries no attempt, participant or group ids. Participants are listed following the Live Quiz leaderboard opt-in (`Participation.isActive` in gamified courses, everyone otherwise), while the lecturer table lists everyone and ranks only opted-in participants.
 
 ## Course deletion
 

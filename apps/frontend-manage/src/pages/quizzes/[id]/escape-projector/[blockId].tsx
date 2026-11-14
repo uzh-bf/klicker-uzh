@@ -102,6 +102,7 @@ function Ranking({
         {rows.map((row, ix) => (
           <tr
             key={`${row.displayName}-${ix}`}
+            data-cy="escape-projector-row"
             className={twMerge(
               'border-b border-slate-700',
               highlightTop && row.rank != null && row.rank <= 3
@@ -271,7 +272,10 @@ function EscapeProjectorContent({
             </div>
             <StageCounts stage={stage} />
             {stage.debrief && (
-              <div className="mt-3 rounded-lg bg-white p-4 text-2xl text-black">
+              <div
+                className="mt-3 rounded-lg bg-white p-4 text-2xl text-black"
+                data-cy="escape-projector-debrief"
+              >
                 <div className="mb-1 font-bold">
                   {t('manage.evaluation.escapeRoomStageDebrief')}
                 </div>
@@ -317,6 +321,7 @@ function EscapeProjector() {
     <div
       className="fixed inset-0 overflow-auto bg-slate-950 p-10 text-white"
       data-cy="escape-projector"
+      data-phase={projector?.phase}
     >
       {projector ? (
         <EscapeProjectorContent projector={projector} />
