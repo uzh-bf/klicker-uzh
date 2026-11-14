@@ -58,6 +58,45 @@ interface ActivityEvaluationProps {
   // dashboard (owner-scoped query returns null for non-escape-room activities)
   escapeRoomActivityType?: 'practiceQuiz' | 'microLearning'
   canResetEscapeRoom?: boolean
+  // executed escape blocks of a Live Quiz; only passed in the lecturer view
+  escapeRoomBlocks?: { id: number; order: number }[]
+}
+
+function LiveQuizEscapeRoomBlock({
+  quizId,
+  block,
+}: {
+  quizId: string
+  block: { id: number; order: number }
+}) {
+  const t = useTranslations()
+  const { data, error, refetch } = useQuery(GetEscapeRoomProgressDocument, {
+    variables: { liveQuizId: quizId, elementBlockId: block.id },
+    fetchPolicy: 'network-only',
+  })
+
+  return (
+    <div>
+      <div className="px-4 pt-4 font-bold">
+        {t('shared.generic.blockN', { number: block.order + 1 })}
+      </div>
+      {error ? (
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+          className={{ root: 'm-4' }}
+        />
+      ) : null}
+      {data?.escapeRoomProgress && (
+        <EscapeRoomProgress
+          activityType="liveQuiz"
+          activityId={String(block.id)}
+          progress={data.escapeRoomProgress}
+          onReset={refetch}
+        />
+      )}
+    </div>
+  )
 }
 
 function ActivityEvaluation({
@@ -75,6 +114,7 @@ function ActivityEvaluation({
   type = 'Asynchronous',
   escapeRoomActivityType,
   canResetEscapeRoom = false,
+  escapeRoomBlocks = [],
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -144,17 +184,18 @@ function ActivityEvaluation({
     skip: !escapeRoomActivityType,
   })
   const escapeRoomProgress = escapeRoomData?.escapeRoomProgress ?? null
-  const escapeRoomAvailable = escapeRoomProgress !== null
+  const escapeRoomAvailable =
+    escapeRoomProgress !== null || escapeRoomBlocks.length > 0
 
   // only poll while the lecturer is actively viewing the escape-room tab
   useEffect(() => {
-    if (escapeRoomAvailable && activeStack === 'escapeRoom') {
+    if (escapeRoomProgress !== null && activeStack === 'escapeRoom') {
       startEscapeRoomPolling(5000)
       return () => stopEscapeRoomPolling()
     }
     stopEscapeRoomPolling()
   }, [
-    escapeRoomAvailable,
+    escapeRoomProgress,
     activeStack,
     startEscapeRoomPolling,
     stopEscapeRoomPolling,
@@ -340,6 +381,18 @@ function ActivityEvaluation({
               </div>
             </div>
           )}
+
+        {escapeRoomBlocks.length > 0 && activeStack === 'escapeRoom' && (
+          <div className="h-full overflow-y-auto">
+            {escapeRoomBlocks.map((block) => (
+              <LiveQuizEscapeRoomBlock
+                key={block.id}
+                quizId={activityId}
+                block={block}
+              />
+            ))}
+          </div>
+        )}
 
         {escapeRoomActivityType &&
           escapeRoomProgress !== null &&
