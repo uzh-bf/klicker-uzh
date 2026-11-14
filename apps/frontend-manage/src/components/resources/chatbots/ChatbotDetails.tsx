@@ -1888,6 +1888,7 @@ function ChatbotDetails({
         ) : null}
 
         {(chatbot.status === ChatbotStatus.Published || paused) &&
+        chatbot.courses?.some((course) => course.isAssessmentEnabled) &&
         conversationExportLinks.length > 0 ? (
           <div
             className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"

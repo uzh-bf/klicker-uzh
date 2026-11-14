@@ -55,6 +55,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
       id
       name
       numOfParticipants
+      isAssessmentEnabled
     }
     usageSummary {
       threadCount

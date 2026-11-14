@@ -40,7 +40,7 @@ async function loadExport({
   exportedAt: Date
   windowFrom: Date | null
   windowTo: Date | null
-}): Promise<ConversationExport | null> {
+}): Promise<ConversationExport | 'not-found' | 'not-assessment'> {
   const cutoff = windowTo && windowTo < exportedAt ? windowTo : exportedAt
   const messageWhere = {
     createdAt: { lte: cutoff, ...(windowFrom ? { gte: windowFrom } : {}) },
@@ -55,10 +55,15 @@ async function loadExport({
         select: {
           id: true,
           name: true,
-          course: { select: { id: true, name: true } },
+          course: {
+            select: { id: true, name: true, isAssessmentEnabled: true },
+          },
         },
       })
-      if (!chatbot) return null
+      if (!chatbot) return 'not-found'
+      // The chatbot notice promises lecturers only anonymised conversations
+      // in regular courses, so identified transcripts exist for exams only.
+      if (!chatbot.course.isAssessmentEnabled) return 'not-assessment'
 
       const [participations, invitations, threads] = await Promise.all([
         tx.participation.findMany({
@@ -218,7 +223,7 @@ export async function GET(
   }
 
   const exportedAt = new Date()
-  let exported: ConversationExport | null
+  let exported: Awaited<ReturnType<typeof loadExport>>
   try {
     exported = await loadExport({ chatbotId, exportedAt, windowFrom, windowTo })
   } catch (error) {
@@ -228,8 +233,17 @@ export async function GET(
     })
     return NextResponse.json({ error: 'Export failed' }, { status: 500 })
   }
-  if (!exported) {
+  if (exported === 'not-found') {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+  if (exported === 'not-assessment') {
+    return NextResponse.json(
+      {
+        error: 'Conversation export is only available in assessment courses',
+        code: 'EXPORT_ASSESSMENT_ONLY',
+      },
+      { status: 403 }
+    )
   }
 
   const { type, extension } = FORMATS[format as ExportFormat]
