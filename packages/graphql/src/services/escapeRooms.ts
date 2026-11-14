@@ -13,6 +13,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  type EscapeRoomDebriefOptions,
   getEscapeRoomHintKey,
   getEscapeRoomInstanceHints,
   getEscapeRoomLifecycleClaimKey,
@@ -218,8 +219,17 @@ export async function getEscapeRoomHints(
 
   return elements.flatMap((element) => {
     const hints = getEscapeRoomInstanceHints(element.options)
-    return hints.length > 0
-      ? [{ instanceId: element.id, hint: hints[0]!.text, hints }]
+    const debrief =
+      (element.options as EscapeRoomDebriefOptions).escapeRoomDebrief || null
+    return hints.length > 0 || debrief
+      ? [
+          {
+            instanceId: element.id,
+            hint: hints[0]?.text ?? '',
+            ...(debrief ? { debrief } : {}),
+            hints,
+          },
+        ]
       : []
   })
 }
@@ -1464,4 +1474,5 @@ export { getEscapeRoomProgress } from './escapeRoomProgress.js'
 export type {
   EscapeRoomAttemptProgress,
   EscapeRoomProgress,
+  EscapeRoomStageProgress,
 } from './escapeRoomProgress.js'

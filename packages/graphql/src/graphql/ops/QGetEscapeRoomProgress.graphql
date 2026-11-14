@@ -36,5 +36,20 @@ query GetEscapeRoomProgress(
       bonusCorrect
       rankedSeconds
     }
+    stages {
+      stageKey
+      title
+      isBonus
+      solved
+      revealed
+      skipped
+      attemptedNotCleared
+      notReached
+      wrongAttempts
+      hintsUsed
+      bonusCorrect
+      bonusWrong
+      debrief
+    }
   }
 }

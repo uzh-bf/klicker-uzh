@@ -22,6 +22,7 @@ import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
   EscapeRoomHintResult as IEscapeRoomHintResult,
   EscapeRoomProgress as IEscapeRoomProgress,
+  EscapeRoomStageProgress as IEscapeRoomStageProgress,
 } from '../services/escapeRooms.js'
 import {
   getEscapeRoomExpiresInSeconds,
@@ -108,6 +109,7 @@ export const ElementInstanceInput = ElementInstanceInputRef.implement({
       type: [EscapeRoomHintEntryInputRef],
       required: false,
     }),
+    escapeRoomDebrief: t.string({ required: false }),
   }),
 })
 
@@ -421,6 +423,26 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
   }
 )
 
+export const EscapeRoomStageProgressRef =
+  builder.objectRef<IEscapeRoomStageProgress>('EscapeRoomStageProgress')
+export const EscapeRoomStageProgress = EscapeRoomStageProgressRef.implement({
+  fields: (t) => ({
+    stageKey: t.exposeString('stageKey'),
+    title: t.exposeString('title', { nullable: true }),
+    isBonus: t.exposeBoolean('isBonus'),
+    solved: t.exposeInt('solved'),
+    revealed: t.exposeInt('revealed'),
+    skipped: t.exposeInt('skipped'),
+    attemptedNotCleared: t.exposeInt('attemptedNotCleared'),
+    notReached: t.exposeInt('notReached'),
+    wrongAttempts: t.exposeInt('wrongAttempts'),
+    hintsUsed: t.exposeInt('hintsUsed'),
+    bonusCorrect: t.exposeInt('bonusCorrect'),
+    bonusWrong: t.exposeInt('bonusWrong'),
+    debrief: t.exposeString('debrief', { nullable: true }),
+  }),
+})
+
 export const EscapeRoomProgressRef =
   builder.objectRef<IEscapeRoomProgress>('EscapeRoomProgress')
 export const EscapeRoomProgress = EscapeRoomProgressRef.implement({
@@ -429,6 +451,7 @@ export const EscapeRoomProgress = EscapeRoomProgressRef.implement({
     totalStacks: t.exposeInt('totalStacks'),
     timeLimit: t.exposeInt('timeLimit'),
     attempts: t.expose('attempts', { type: [EscapeRoomAttemptProgressRef] }),
+    stages: t.expose('stages', { type: [EscapeRoomStageProgressRef] }),
   }),
 })
 

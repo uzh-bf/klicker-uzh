@@ -18,6 +18,7 @@ import {
   type ElementOptionsNumerical,
   type ElementOptionsSelection,
   type ElementResultsCaseStudy,
+  type EscapeRoomDebriefOptions,
   type EscapeRoomHintEntry,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
@@ -464,6 +465,12 @@ export function getActivityInstanceConnectOrCreate({
                 instance.escapeRoomHint,
                 instance.escapeRoomHints
               )),
+          ...getEscapeRoomDebriefUpdate(
+            typeof instance.escapeRoomDebrief === 'undefined'
+              ? (existingInstance.options as EscapeRoomDebriefOptions)
+                  .escapeRoomDebrief
+              : instance.escapeRoomDebrief
+          ),
           basePoints: existingInstance.elementData.basePoints,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
@@ -510,6 +517,7 @@ export function getActivityInstanceConnectOrCreate({
             instance.escapeRoomHint,
             instance.escapeRoomHints
           ),
+          ...getEscapeRoomDebriefUpdate(instance.escapeRoomDebrief),
           basePoints: element.basePoints,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },
@@ -527,6 +535,12 @@ export function getActivityInstanceConnectOrCreate({
       },
     }
   }
+}
+
+// undefined leaves the stored debrief untouched; null or blank clears it.
+export function getEscapeRoomDebriefUpdate(debrief: string | null | undefined) {
+  if (typeof debrief === 'undefined') return {}
+  return { escapeRoomDebrief: debrief?.trim() || null }
 }
 
 export function getEscapeRoomHintUpdate(

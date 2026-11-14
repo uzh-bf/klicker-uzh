@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomDebriefUpdate,
   getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -437,6 +438,9 @@ export async function manipulatePracticeQuiz(
             ...getEscapeRoomHintUpdate(
               persistentInputs.get(instance.id)?.escapeRoomHint,
               persistentInputs.get(instance.id)?.escapeRoomHints
+            ),
+            ...getEscapeRoomDebriefUpdate(
+              persistentInputs.get(instance.id)?.escapeRoomDebrief
             ),
             resetTimeDays,
             pointsMultiplier: multiplier * elementMultiplier,

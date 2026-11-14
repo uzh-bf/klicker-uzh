@@ -21,6 +21,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomDebriefUpdate,
   getEscapeRoomHintUpdate,
   getCachedBlockResults,
   getInitialInstanceResults,
@@ -530,6 +531,7 @@ export async function manipulateLiveQuiz(
                   submittedInstance.escapeRoomHint,
                   submittedInstance.escapeRoomHints
                 )),
+            ...getEscapeRoomDebriefUpdate(submittedInstance?.escapeRoomDebrief),
             pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
           },
         },
