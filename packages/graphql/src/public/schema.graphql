@@ -1373,6 +1373,7 @@ union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActiv
 input ElementInstanceInput {
   duplicateInstance: Boolean!
   elementId: Int!
+  escapeRoomDebrief: String
   escapeRoomHint: String
   escapeRoomHints: [EscapeRoomHintEntryInput!]
   existingInstanceId: Int
@@ -1530,6 +1531,7 @@ type EscapeRoomConfig {
 }
 
 type EscapeRoomHint {
+  debrief: String
   hint: String!
   hints: [EscapeRoomHintEntry!]!
   instanceId: Int!
@@ -1555,6 +1557,8 @@ type EscapeRoomHintResult {
 type EscapeRoomProgress {
   activityId: String!
   attempts: [EscapeRoomAttemptProgress!]!
+  projectorDigest: String
+  stages: [EscapeRoomStageProgress!]!
   timeLimit: Int!
   totalStacks: Int!
 }
@@ -1564,6 +1568,38 @@ enum EscapeRoomProgressStatus {
   EXPIRED
   IN_PROGRESS
   NOT_STARTED
+}
+
+type EscapeRoomProjector {
+  closesAt: Date
+  phase: EscapeRoomProjectorPhase!
+  rankedCount: Int!
+  rows: [EscapeRoomProjectorRow!]!
+  serverNow: Date!
+  stages: [EscapeRoomStageProgress!]!
+  startedCount: Int!
+  timeLimit: Int!
+  totalStages: Int!
+}
+
+enum EscapeRoomProjectorPhase {
+  CLOSED
+  LOBBY
+  RUNNING
+}
+
+type EscapeRoomProjectorRow {
+  avatar: String
+  bonusCorrect: Boolean
+  clearedStages: Int!
+  displayName: String!
+  endsAt: Date
+  rank: Int
+  rankedSeconds: Int
+  revealedStages: Int!
+  skippedStages: Int!
+  solvedStages: Int!
+  status: EscapeRoomProgressStatus!
 }
 
 input EscapeRoomRulesInput {
@@ -1579,6 +1615,22 @@ type EscapeRoomStageOutcome {
   at: String
   outcome: String
   stageKey: String!
+  wrongAttempts: Int!
+}
+
+type EscapeRoomStageProgress {
+  attemptedNotCleared: Int!
+  bonusCorrect: Int!
+  bonusWrong: Int!
+  debrief: String
+  hintsUsed: Int!
+  isBonus: Boolean!
+  notReached: Int!
+  revealed: Int!
+  skipped: Int!
+  solved: Int!
+  stageKey: String!
+  title: String
   wrongAttempts: Int!
 }
 
@@ -2889,6 +2941,7 @@ type Query {
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   escapeRoomHints(groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
   escapeRoomProgress(elementBlockId: Int, groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
+  escapeRoomProjector(digest: String, elementBlockId: Int, groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProjector!
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics

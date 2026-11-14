@@ -4,6 +4,7 @@ import {
   EscapeRoomProgress as EscapeRoomProgressType,
   ResetEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -22,6 +23,14 @@ function formatDuration(seconds: number) {
   const mins = Math.floor(safe / 60)
   const secs = safe % 60
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+// Spreadsheet applications evaluate cells starting with these characters as
+// formulas, so such cells are prefixed with a quote before CSV escaping.
+export function toCsvCell(value: string | number | boolean | null | undefined) {
+  const text = value == null ? '' : String(value)
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text
+  return `"${safe.replace(/"/g, '""')}"`
 }
 
 type EscapeRoomAttempt = EscapeRoomProgressType['attempts'][number]
@@ -165,6 +174,71 @@ function EscapeRoomProgress({
     }
   }
 
+  function handleExportCsv() {
+    const statusLabels: Record<EscapeRoomProgressStatus, string> = {
+      [EscapeRoomProgressStatus.NotStarted]: t(
+        'manage.evaluation.escapeRoomStatusNotStarted'
+      ),
+      [EscapeRoomProgressStatus.InProgress]: t(
+        'manage.evaluation.escapeRoomStatusInProgress'
+      ),
+      [EscapeRoomProgressStatus.Completed]: t(
+        'manage.evaluation.escapeRoomStatusCompleted'
+      ),
+      [EscapeRoomProgressStatus.Expired]: t(
+        'manage.evaluation.escapeRoomStatusExpired'
+      ),
+    }
+    const header = [
+      t('manage.evaluation.escapeRoomColRank'),
+      t('manage.evaluation.escapeRoomColParticipant'),
+      t('manage.evaluation.escapeRoomColStatus'),
+      t('manage.evaluation.escapeRoomColCleared'),
+      t('manage.evaluation.escapeRoomColSolved'),
+      t('manage.evaluation.escapeRoomColRevealed'),
+      t('manage.evaluation.escapeRoomColSkipped'),
+      t('manage.evaluation.escapeRoomColBonus'),
+      t('manage.evaluation.escapeRoomColHints'),
+      t('manage.evaluation.escapeRoomCsvPenaltySeconds'),
+      t('manage.evaluation.escapeRoomCsvTimeSeconds'),
+      t('manage.evaluation.escapeRoomCsvRankedSeconds'),
+    ].map(toCsvCell)
+    const rows = attempts.map((attempt) =>
+      [
+        attempt.rank,
+        attempt.displayName,
+        statusLabels[attempt.status],
+        attempt.clearedStacks,
+        attempt.solvedStages,
+        attempt.revealedStages,
+        attempt.skippedStages,
+        attempt.bonusCorrect == null
+          ? ''
+          : t(
+              attempt.bonusCorrect ? 'shared.generic.yes' : 'shared.generic.no'
+            ),
+        attempt.hintsUsedCount,
+        attempt.penaltySeconds,
+        attempt.timeSpentSeconds,
+        attempt.rankedSeconds,
+      ]
+        .map(toCsvCell)
+        .join(',')
+    )
+    const blob = new Blob(
+      ['\uFEFF' + [header.join(','), ...rows].join('\r\n')],
+      {
+        type: 'text/csv;charset=utf-8',
+      }
+    )
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `escape-room-${activityType}-${activityId}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="h-full overflow-y-auto p-4">
       <div className="mx-auto max-w-5xl">
@@ -197,13 +271,24 @@ function EscapeRoomProgress({
                 counts
               )}
             </div>
-            <Switch
-              checked={hideNotStarted}
-              onCheckedChange={setHideNotStarted}
-              label={t('manage.evaluation.escapeRoomHideNotStarted')}
-              labelLeft
-              data={{ cy: 'escape-room-hide-not-started' }}
-            />
+            <div className="flex flex-row items-center gap-4">
+              <Switch
+                checked={hideNotStarted}
+                onCheckedChange={setHideNotStarted}
+                label={t('manage.evaluation.escapeRoomHideNotStarted')}
+                labelLeft
+                data={{ cy: 'escape-room-hide-not-started' }}
+              />
+              <Button
+                className={{ root: 'px-2 py-1 text-sm' }}
+                onClick={handleExportCsv}
+                data={{ cy: 'escape-room-export-csv' }}
+              >
+                <Button.Label>
+                  {t('manage.evaluation.escapeRoomExportCsv')}
+                </Button.Label>
+              </Button>
+            </div>
           </div>
         )}
 
@@ -380,6 +465,97 @@ function EscapeRoomProgress({
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {progress.stages.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-2 text-sm font-bold">
+              {t('manage.evaluation.escapeRoomStagesHeading')}
+            </div>
+            <div className="overflow-x-auto rounded border">
+              <table
+                className="w-full text-sm"
+                data-cy="escape-room-stage-table"
+              >
+                <thead>
+                  <tr className="border-b bg-gray-50 text-left">
+                    <th className="p-2 font-bold">
+                      {t('manage.evaluation.escapeRoomColStage')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColSolved')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColRevealed')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColSkipped')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColAttemptedNotCleared')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColNotReached')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColWrongAttempts')}
+                    </th>
+                    <th className="p-2 text-right font-bold">
+                      {t('manage.evaluation.escapeRoomColHints')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {progress.stages.map((stage, index) => (
+                    <tr
+                      key={stage.stageKey}
+                      className="border-b align-top last:border-b-0"
+                      data-cy={`escape-room-stage-${index + 1}`}
+                    >
+                      <td className="p-2">
+                        <div className="font-bold">
+                          {stage.isBonus
+                            ? t('manage.evaluation.escapeRoomStageBonus')
+                            : t('manage.evaluation.escapeRoomStageNumber', {
+                                number: index + 1,
+                              })}
+                          {stage.title ? `: ${stage.title}` : ''}
+                        </div>
+                        {stage.debrief && (
+                          <details className="mt-1 text-xs text-gray-700">
+                            <summary className="cursor-pointer">
+                              {t('manage.evaluation.escapeRoomStageDebrief')}
+                            </summary>
+                            <Markdown content={stage.debrief} />
+                          </details>
+                        )}
+                      </td>
+                      {stage.isBonus ? (
+                        <td className="p-2 text-right" colSpan={3}>
+                          {t('manage.evaluation.escapeRoomStageBonusResult', {
+                            correct: stage.bonusCorrect,
+                            wrong: stage.bonusWrong,
+                          })}
+                        </td>
+                      ) : (
+                        <>
+                          <td className="p-2 text-right">{stage.solved}</td>
+                          <td className="p-2 text-right">{stage.revealed}</td>
+                          <td className="p-2 text-right">{stage.skipped}</td>
+                        </>
+                      )}
+                      <td className="p-2 text-right">
+                        {stage.attemptedNotCleared}
+                      </td>
+                      <td className="p-2 text-right">{stage.notReached}</td>
+                      <td className="p-2 text-right">{stage.wrongAttempts}</td>
+                      <td className="p-2 text-right">{stage.hintsUsed}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

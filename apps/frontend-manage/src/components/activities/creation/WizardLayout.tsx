@@ -50,6 +50,9 @@ export interface ElementInstanceFormInput {
   // for a time penalty. Only applied to newly created/duplicated instances on
   // submit; the raw text is never read back into the form (leak-proof).
   escapeRoomHint?: string | null
+  // Escape-room mode only: debrief shown to lecturers and on the projector
+  // after the block closes. Undefined keeps the stored text on the server.
+  escapeRoomDebrief?: string | null
 }
 
 export interface ElementBlockFormValues

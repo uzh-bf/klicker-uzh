@@ -109,6 +109,7 @@ interface LiveQuizWizardProps {
   escapeRoomHints?: Array<{
     instanceId: number
     hint: string
+    debrief?: string | null
     hints?: { text: string }[] | null
   }>
 }
@@ -134,6 +135,9 @@ function LiveQuizWizard({
       entry.instanceId,
       getEscapeRoomHintsFormValue(entry),
     ])
+  )
+  const escapeRoomDebriefMap = new Map(
+    escapeRoomHints.map((entry) => [entry.instanceId, entry.debrief ?? ''])
   )
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
@@ -334,6 +338,7 @@ function LiveQuizWizard({
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
               escapeRoomHint: escapeRoomHintMap.get(instance.id) ?? null,
+              escapeRoomDebrief: escapeRoomDebriefMap.get(instance.id) ?? null,
             }
           }),
         }))
