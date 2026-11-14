@@ -15,6 +15,7 @@ import {
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import { validate as uuidValidate } from 'uuid'
 import type {
   ContextWithUser,
@@ -1536,6 +1537,21 @@ export async function createLiveQuizFromTemplate(
   },
   ctx: ContextWithUser
 ): Promise<string | null> {
+  if (
+    blocks.some((block) =>
+      block.elements.some(
+        (element) =>
+          element.useNewElement &&
+          element.newElement?.type === DB.ElementType.QR_SCAN
+      )
+    )
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are not supported in activities yet',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+
   const { accessible, template } = await validateTemplateAccessible(
     { templateId },
     ctx
@@ -1650,6 +1666,13 @@ export async function createLiveQuizFromTemplate(
               )
               throw new Error(
                 'Existing element does not exist or user does not have access to it'
+              )
+            }
+
+            if (existingElement.type === DB.ElementType.QR_SCAN) {
+              throw new GraphQLError(
+                'QR scan questions are not supported in activities yet',
+                { extensions: { code: 'BAD_USER_INPUT' } }
               )
             }
 

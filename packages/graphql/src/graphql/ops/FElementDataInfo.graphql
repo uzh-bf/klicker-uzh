@@ -83,5 +83,17 @@ fragment ElementDataInfo on ElementInstance {
       basePoints
       pointsMultiplier
     }
+
+    ... on QrScanElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+    }
   }
 }

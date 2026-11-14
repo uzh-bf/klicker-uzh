@@ -209,6 +209,11 @@ function useElementFormInitialValues({
         ...sharedAttributes,
         type: ElementType.Content,
       }
+    } else if (question.__typename === 'QrScanElement') {
+      return {
+        ...sharedAttributes,
+        type: ElementType.QrScan,
+      }
     }
 
     return undefined

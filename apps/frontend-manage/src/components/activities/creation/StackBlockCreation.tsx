@@ -16,7 +16,6 @@ import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
-import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../elements/Element'
 import DropElementsStack from './DropElementsStack'
@@ -249,21 +248,29 @@ function StackBlockCreation({
         error={error}
         highlightFTNoSL={highlightFTNoSL}
         selectionActive={
-          (selection && Object.keys(selection).length > 0) ?? false
+          selection
+            ? Object.values(selection).some((question) =>
+                acceptedTypes.includes(question.type)
+              )
+            : false
         }
         outdatedInstances={outdatedInstances}
         refetchOutdatedInstances={refetchOutdatedInstances}
       />
 
-      {selection && !isEmpty(selection) && (
-        <PasteSelectionButton
-          index={stackIx}
-          selection={selection}
-          resetSelection={resetSelection}
-          stack={stack}
-          replace={replace}
-        />
-      )}
+      {selection &&
+        Object.values(selection).some((question) =>
+          acceptedTypes.includes(question.type)
+        ) && (
+          <PasteSelectionButton
+            index={stackIx}
+            selection={selection}
+            resetSelection={resetSelection}
+            stack={stack}
+            replace={replace}
+            acceptedTypes={acceptedTypes}
+          />
+        )}
 
       <DropElementsStack
         type="stack"
