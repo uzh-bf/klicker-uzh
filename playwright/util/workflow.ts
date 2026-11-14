@@ -395,12 +395,14 @@ export async function loginStudentPassword(
 
 export async function acceptGamifiedLiveQuizAccountPrompt(
   page: Page,
-  _activityDisplayName?: string
+  _activityDisplayName?: string,
+  // Escape Room blocks show their start screen instead of the answer form.
+  readyTestId = 'student-submit-answer'
 ) {
   const dialog = page.getByRole('dialog', {
     name: /this live quiz is gamified/i,
   })
-  const submitAnswer = page.getByTestId('student-submit-answer')
+  const submitAnswer = page.getByTestId(readyTestId)
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const promptAppeared = await dialog

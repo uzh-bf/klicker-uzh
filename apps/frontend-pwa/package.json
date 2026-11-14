@@ -94,7 +94,7 @@
     "start:test": "node ../../util/playwright-next-runtime.mjs start 3001",
     "test": "pnpm run test:run && pnpm run test:vitest",
     "test:run": "tsx --test \"src/**/*.test.ts\"",
-    "test:vitest": "vitest run singleStudentResponse.spec"
+    "test:vitest": "vitest run singleStudentResponse.spec liveQuizResponse.spec"
   },
   "engines": {
     "node": "=24"

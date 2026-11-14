@@ -31,6 +31,13 @@ query GetActivityTemplate($templateId: String!) {
         order
         status
         timeLimit
+        escapeRoomConfig {
+          id
+          timeLimit
+          hintPenalty
+          lockoutSeconds
+          introText
+        }
         elements {
           id
           type
@@ -118,6 +125,14 @@ query GetActivityTemplate($templateId: String!) {
       status
       scheduledStartAt
       scheduledEndAt
+
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
 
       clues {
         id

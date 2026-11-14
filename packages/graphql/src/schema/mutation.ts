@@ -3767,6 +3767,7 @@ export const Mutation = builder.mutationType({
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
           groupId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await EscapeRoomService.startEscapeRoomAttempt(args, ctx)
@@ -3778,6 +3779,7 @@ export const Mutation = builder.mutationType({
           practiceQuizId: t.arg.string({ required: false }),
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
           participantId: t.arg.string({ required: false }),
           groupId: t.arg.string({ required: false }),
         },
@@ -3794,6 +3796,7 @@ export const Mutation = builder.mutationType({
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
           groupId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
           instanceId: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {

@@ -95,7 +95,7 @@ Invitation creation normalizes emails and matriculation numbers, reports invalid
 
 The print contract (`packages/graphql/src/services/elements.ts:getQrScanPrintData`) creates up to 20 distinct decoys in memory for each request; decoys are never persisted or included in participant APIs. The manage print view randomizes real/decoy card order with the browser CSPRNG, gives every printed card a neutral station label, and keeps the answer legend screen-only.
 
-QR Scan questions can be placed only in Escape Room Practice Quizzes, Microlearnings, and Group Activities. Participants scan through the browser's native `BarcodeDetector`/camera APIs when available or enter the printed code manually; both paths require the canonical 12-character URL-safe format. Grading compares the submitted value with the private source-element code on the backend. Well-formed decoys are ordinary incorrect answers and trigger the normal lockout; malformed values fail before grading. Live Quiz and live-quiz template inputs continue to reject QR placement until their runtime layer lands.
+QR Scan questions can be placed only in Escape Room activities, including Live Quiz Escape Room blocks. Participants scan through the browser's native `BarcodeDetector`/camera APIs when available or enter the printed code manually; both paths require the canonical 12-character URL-safe format. Stack and Group Activity modes grade against the private source-element code in GraphQL services; Live Quiz performs the same comparison synchronously in the response API before publishing an accepted response event. Well-formed decoys are ordinary incorrect answers and trigger the normal lockout; malformed values fail before grading.
 
 ## Course chatbots
 
@@ -156,9 +156,7 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 ## Escape Room modes
 
-Practice Quizzes and Microlearnings can be configured as Escape Rooms. `EscapeRoomConfig` stores the time limit, hint penalty, incorrect-answer lockout, and optional introduction. `EscapeRoomAttempt` stores server-owned participant progress, start and completion times, accumulated penalties, used hint instance IDs, lockout expiry, and the `IN_PROGRESS | COMPLETED | EXPIRED` status.
-
-The Prisma model also contains a dormant Live Quiz block relation so its later stacked layer can reuse the same migration. Live Quiz Escape Rooms are not exposed by the GraphQL, authoring, or participant surfaces in this layer.
+Practice Quizzes, Microlearnings, Group Activities, and individual Live Quiz blocks can be configured as Escape Rooms. `EscapeRoomConfig` stores the time limit, hint penalty, incorrect-answer lockout, and optional introduction. `EscapeRoomAttempt` stores server-owned participant or group progress, start and completion times, accumulated penalties, used hint instance IDs, lockout expiry, and the `IN_PROGRESS | COMPLETED | EXPIRED` status.
 
 ### Individual Practice Quiz and Microlearning
 
@@ -179,6 +177,14 @@ Each answerable instance of the stack, in element order, is one stage. The team 
 Participant details mask stages after the current one; cleared stages are returned with the team's answer through `EscapeRoomAttempt.stageDecisions`, and the participant page polls while the attempt is in progress so teammates see newly unlocked stages. Progress counts stages rather than stacks.
 
 Hints and penalties are shared across every member and restored after reload. A hint can be revealed only for the current stage. Lecturer progress is group-roster based, including `NOT_STARTED` groups; resetting deletes both the shared attempt and its `GroupActivityInstance` so the group can restart cleanly.
+
+### Live Quiz
+
+A Live Quiz Escape Room is scoped to one non-assessment `ElementBlock` and one attempt per regular participant. It supports SC, MC, KPRIM, numerical, free-text, and QR Scan questions; temporary participants and assessment Live Quizzes are rejected. Participants explicitly start after the lecturer activates the block, and participant payloads reveal only the current uncleared question.
+
+The response API validates the participant token, active quiz/block binding, attempt, lockout, expiry, and current stage before grading. Correct stages are recorded in an attempt-scoped Redis set, deterministic event IDs make accepted retries stable, and the response processor deduplicates delivery before updating ordinary Live Quiz statistics. A block-wide close gate drains active grading and accepted worker events before result aggregation, so a response cannot complete after the closure snapshot. Start, answer, hint, and lecturer reset share the same participant/block lifecycle claim, preventing stale answer or reset races.
+
+The lecturer cockpit polls block-scoped progress, expands the owning course roster with `NOT_STARTED` participants, and offers WRITE-authorized resets. Live Quiz templates preserve block settings and per-instance hints server-side; QR elements created from a template receive fresh private codes.
 
 ## Course deletion
 
