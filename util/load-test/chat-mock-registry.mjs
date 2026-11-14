@@ -79,13 +79,13 @@ if (await portOpen()) throw new Error('Port 3004 is still in use after SIGTERM')
 
 const logPath = join(mkdtempSync(join(tmpdir(), 'chat-load-')), 'chat.log')
 const log = openSync(logPath, 'a')
+env.NODE_ENV = 'development'
+// Start Next.js through the running Node binary and the package's own entry
+// point, so no command is resolved through PATH.
 const child = spawn(
-  'pnpm',
+  process.execPath,
   [
-    'exec',
-    'cross-env',
-    'NODE_ENV=development',
-    'next',
+    join(chatDir, 'node_modules/next/dist/bin/next'),
     'dev',
     '--turbopack',
     '--port',
