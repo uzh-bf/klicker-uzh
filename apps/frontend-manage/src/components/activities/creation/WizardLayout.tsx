@@ -7,6 +7,7 @@ import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { createContext, useContext } from 'react'
 import RecoveryPrompt from '../../elements/manipulation/RecoveryPrompt'
+import type { EscapeRoomRulesFormValues } from './escapeRoomValidation'
 
 export type GroupActivityClueFormValues = {
   name: string
@@ -51,7 +52,8 @@ export interface ElementInstanceFormInput {
   escapeRoomHint?: string | null
 }
 
-export interface ElementBlockFormValues {
+export interface ElementBlockFormValues
+  extends Partial<EscapeRoomRulesFormValues> {
   timeLimit?: number
   randomSelection?: number | null
   isEscapeRoom?: boolean

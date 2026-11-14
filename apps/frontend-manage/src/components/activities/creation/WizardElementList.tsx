@@ -12,11 +12,7 @@ import {
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import {
-  Button,
-  FormikTextareaField,
-  FormikTextField,
-} from '@uzh-bf/design-system'
+import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { swapIndices } from 'remeda'
@@ -267,12 +263,12 @@ function WizardElementList({
               </div>
             </div>
             {isEscapeRoom && type === 'block' && (
-              <FormikTextField
+              <FormikTextareaField
                 name={`blocks.${stackIx}.elements.${elementIdx}.escapeRoomHint`}
                 placeholder={t(
-                  'manage.activityWizard.escapeRoomHintPlaceholder'
+                  'manage.activityWizard.escapeRoomHintsPlaceholder'
                 )}
-                className={{ root: 'mb-1 px-1', field: '!mt-0' }}
+                className={{ root: 'mb-1 px-1', input: 'h-16 w-full' }}
                 data={{
                   cy: `escape-room-hint-${type}-${stackIx}-${elementIdx}`,
                 }}

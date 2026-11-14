@@ -39,6 +39,11 @@ import * as yup from 'yup'
 import type { ElementSelectCourse } from '../../ActivityCreation'
 import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
+import {
+  getEscapeRoomHintsFormValue,
+  getEscapeRoomRulesFormValues,
+  useEscapeRoomRulesYupFields,
+} from '../escapeRoomValidation'
 import WizardLayout, { type LiveQuizFormValues } from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
@@ -101,7 +106,11 @@ interface LiveQuizWizardProps {
   closeWizard: () => void
   editMode: boolean
   duplicationMode: boolean
-  escapeRoomHints?: Array<{ instanceId: number; hint: string }>
+  escapeRoomHints?: Array<{
+    instanceId: number
+    hint: string
+    hints?: { text: string }[] | null
+  }>
 }
 
 function LiveQuizWizard({
@@ -118,6 +127,14 @@ function LiveQuizWizard({
 }: LiveQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
+
+  const escapeRoomRulesYupFields = useEscapeRoomRulesYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map((entry) => [
+      entry.instanceId,
+      getEscapeRoomHintsFormValue(entry),
+    ])
+  )
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
@@ -233,6 +250,7 @@ function LiveQuizWizard({
             then: (schema) => schema.required().min(0),
           }),
           isEscapeRoom: yup.boolean(),
+          ...escapeRoomRulesYupFields,
         })
         .test(
           'escape-room-assessment',
@@ -301,6 +319,7 @@ function LiveQuizWizard({
             : 5,
           escapeRoomHintPenalty: block.escapeRoomConfig?.hintPenalty ?? 0,
           escapeRoomIntroText: block.escapeRoomConfig?.introText ?? '',
+          ...getEscapeRoomRulesFormValues(block.escapeRoomConfig),
           elements: block.elements!.map((instance) => {
             const [elementId, _] = instance.elementData.id.split('-v')
 
@@ -314,9 +333,7 @@ function LiveQuizWizard({
                   : true,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
-              escapeRoomHint:
-                escapeRoomHints.find((hint) => hint.instanceId === instance.id)
-                  ?.hint ?? null,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id) ?? null,
             }
           }),
         }))

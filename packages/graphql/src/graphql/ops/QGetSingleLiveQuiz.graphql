@@ -2,6 +2,10 @@ query GetSingleLiveQuiz($quizId: String!) {
   escapeRoomHints(liveQuizId: $quizId) {
     instanceId
     hint
+    hints {
+      text
+      penalty
+    }
   }
   liveQuiz(id: $quizId) {
     id
@@ -18,6 +22,12 @@ query GetSingleLiveQuiz($quizId: String!) {
         timeLimit
         hintPenalty
         introText
+        hintPenalties
+        wrongAnswerPenalty
+        maxWrongAttempts
+        revealPenalty
+        skipPenalty
+        bonusSeconds
       }
       elements {
         id

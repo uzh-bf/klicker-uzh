@@ -199,13 +199,24 @@ describe('LiveQuiz block attempt start/reset contract', () => {
             escapeRoomTimeLimit: 420,
             escapeRoomHintPenalty: 45,
             escapeRoomIntroText: 'Find the key.',
+            escapeRoomRules: {
+              hintPenalties: [10, 20],
+              wrongAnswerPenalty: 5,
+              maxWrongAttempts: 3,
+              revealPenalty: 60,
+              skipPenalty: 90,
+              bonusSeconds: 120,
+            },
             elements: [
               {
                 elementId: scElement.id,
                 order: 0,
                 existingInstanceId: null,
                 duplicateInstance: false,
-                escapeRoomHint: 'Look closely.',
+                escapeRoomHints: [
+                  { text: 'Look closely.' },
+                  { text: 'Check the second shelf.' },
+                ],
               },
             ],
           },
@@ -223,10 +234,17 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       timeLimit: 420,
       hintPenalty: 45,
       introText: 'Find the key.',
+      hintPenalties: [10, 20],
+      wrongAnswerPenalty: 5,
+      maxWrongAttempts: 3,
+      revealPenalty: 60,
+      skipPenalty: 90,
+      bonusSeconds: 120,
     })
-    expect(createdBlock.elements[0]?.options.escapeRoomHint).toBe(
-      'Look closely.'
-    )
+    expect(createdBlock.elements[0]?.options.escapeRoomHints).toMatchObject([
+      { text: 'Look closely.' },
+      { text: 'Check the second shelf.' },
+    ])
 
     await manipulateLiveQuiz(
       {
@@ -240,13 +258,24 @@ describe('LiveQuiz block attempt start/reset contract', () => {
             escapeRoomTimeLimit: 600,
             escapeRoomHintPenalty: 30,
             escapeRoomIntroText: 'Open the vault.',
+            escapeRoomRules: {
+              hintPenalties: [15, 25],
+              wrongAnswerPenalty: 8,
+              maxWrongAttempts: 2,
+              revealPenalty: 70,
+              skipPenalty: 80,
+              bonusSeconds: 100,
+            },
             elements: [
               {
                 elementId: scElement.id,
                 order: 0,
                 existingInstanceId: createdBlock.elements[0]!.id,
                 duplicateInstance: false,
-                escapeRoomHint: 'Try the first digit.',
+                escapeRoomHints: [
+                  { text: 'Try the first digit.' },
+                  { text: 'Check the second shelf.' },
+                ],
               },
             ],
           },
@@ -263,7 +292,17 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       timeLimit: 600,
       hintPenalty: 30,
       introText: 'Open the vault.',
+      hintPenalties: [15, 25],
+      wrongAnswerPenalty: 8,
+      maxWrongAttempts: 2,
+      revealPenalty: 70,
+      skipPenalty: 80,
+      bonusSeconds: 100,
     })
+    expect(editedBlock.elements[0]?.options.escapeRoomHints).toMatchObject([
+      { text: 'Try the first digit.' },
+      { text: 'Check the second shelf.' },
+    ])
     expect(editedBlock.elements[0]?.options.escapeRoomHint).toBe(
       'Try the first digit.'
     )

@@ -33,6 +33,7 @@ import { ElementType } from './elementData.js'
 import {
   EscapeRoomConfigRef,
   EscapeRoomHintEntryInputRef,
+  EscapeRoomRulesInputRef,
 } from './escapeRoomConfig.js'
 import { GroupActivityDecisionRef } from './groupActivity.js'
 import { IStackFeedback } from './evaluation.js'
@@ -75,6 +76,10 @@ export const ElementBlockInput = ElementBlockInputRef.implement({
     escapeRoomTimeLimit: t.int({ required: false }),
     escapeRoomHintPenalty: t.int({ required: false }),
     escapeRoomIntroText: t.string({ required: false }),
+    escapeRoomRules: t.field({
+      type: EscapeRoomRulesInputRef,
+      required: false,
+    }),
     elements: t.field({ type: [ElementInstanceInput], required: true }),
   }),
 })
