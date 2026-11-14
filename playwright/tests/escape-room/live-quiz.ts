@@ -367,6 +367,20 @@ export function registerLiveQuizEscapeRoomTests() {
       ).not.toBeAttached()
       await captureEvidence(projector, 'live-projector-running-en-desktop.png')
 
+      // the projector link also opens on a classroom screen without a login
+      const classroom = await createStudentPage(browser)
+      try {
+        await classroom.goto(projector.url())
+        await expect(classroom.getByTestId('escape-projector')).toHaveAttribute(
+          'data-phase',
+          'RUNNING',
+          { timeout: 30_000 }
+        )
+        expect(classroom.url()).not.toContain('/login')
+      } finally {
+        await classroom.context().close()
+      }
+
       // closing the block switches the projector to the closed state, which
       // carries the debrief
       await page.getByTestId('next-block-timeline').click()

@@ -148,6 +148,16 @@ function Cockpit() {
               // high stakes mutation where cache updates are hard due to cached and db data
               refetchQueries: [
                 { query: GetCockpitQuizDocument, variables: { id } },
+                // the kept escape table stops polling once the block closes,
+                // so load its final state once
+                ...(escapeBlock?.id === blockId
+                  ? [
+                      {
+                        query: GetEscapeRoomProgressDocument,
+                        variables: { liveQuizId: id, elementBlockId: blockId },
+                      },
+                    ]
+                  : []),
               ],
             })
           }}
