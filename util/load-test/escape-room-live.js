@@ -77,6 +77,21 @@ function origin(name) {
 const apiUrl = origin('KLICKER_API_URL')
 const authUrl = origin('KLICKER_AUTH_URL')
 const responseApiUrl = origin('KLICKER_RESPONSE_API_URL')
+
+// This script logs in, starts attempts and submits responses; production
+// needs an explicit opt-in like the other load-test scripts.
+function isProductionUrl(url) {
+  const hostname = url.replace(/^https?:\/\//, '').split(/[/:]/)[0]
+  return hostname === 'klicker.uzh.ch' || hostname.endsWith('.klicker.uzh.ch')
+}
+if (
+  [apiUrl, authUrl, responseApiUrl].some(isProductionUrl) &&
+  __ENV.KLICKER_ALLOW_PRODUCTION !== 'true'
+) {
+  throw new Error(
+    'Set KLICKER_ALLOW_PRODUCTION=true to run this script against production'
+  )
+}
 const liveQuizId = required('KLICKER_LIVE_QUIZ_ID')
 const blockId = parseInt(required('KLICKER_BLOCK_ID'), 10)
 const instanceIds = required('KLICKER_INSTANCE_IDS')

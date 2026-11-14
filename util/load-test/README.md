@@ -73,6 +73,22 @@ KLICKER_SESSION_TOKEN=<session-token> \
   k6 run util/load-test/k6.js
 ```
 
+### 5. `escape-room-live.js` (Live Quiz Escape Room Smoke)
+
+Logs in seeded participants who start and answer an active Live Quiz escape-room block, while one lecturer polls the progress table and one anonymous viewer polls the projector. It writes attempts and responses, so run it against the local seeded stack; production needs `KLICKER_ALLOW_PRODUCTION=true`. The header comment lists the required variables and how to read the block ids and projector digest.
+
+```bash
+k6 run --insecure-skip-tls-verify \
+  -e KLICKER_API_URL=https://api.klicker.<workspace>.localhost \
+  -e KLICKER_AUTH_URL=https://auth.klicker.<workspace>.localhost \
+  -e KLICKER_RESPONSE_API_URL=https://response-api.klicker.<workspace>.localhost \
+  -e KLICKER_LIVE_QUIZ_ID=<quiz id> -e KLICKER_BLOCK_ID=<block id> \
+  -e KLICKER_INSTANCE_IDS=<id>,<id> -e KLICKER_PROJECTOR_DIGEST=<digest> \
+  -e KLICKER_TEST_PASSWORD=<seeded password> \
+  -e KLICKER_LECTURER_PASSWORD=<seeded password> \
+  util/load-test/escape-room-live.js
+```
+
 ---
 
 ## Pre-requisites for Chatbot Testing
