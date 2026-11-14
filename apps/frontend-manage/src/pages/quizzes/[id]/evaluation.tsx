@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementBlockStatus,
+  GetLiveQuizEscapeBlocksDocument,
+  GetLiveQuizEvaluationDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
@@ -19,6 +23,13 @@ function LiveQuizEvaluation() {
     onError: () => {
       router.push('/404')
     },
+  })
+
+  // the HMAC link carries no login, so escape tables are requested for the
+  // logged-in lecturer view only
+  const { data: escapeBlocksData } = useQuery(GetLiveQuizEscapeBlocksDocument, {
+    variables: { quizId: router.query.id as string },
+    skip: !router.query.id || !!router.query.hmac,
   })
 
   if (loading) {
@@ -51,6 +62,13 @@ function LiveQuizEvaluation() {
       isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
       pinCode={evaluation?.pinCode ?? null}
       leaderboard={leaderboard}
+      escapeRoomBlocks={escapeBlocksData?.liveQuiz?.blocks
+        ?.filter(
+          (block) =>
+            block.status === ElementBlockStatus.Executed &&
+            !!block.escapeRoomConfig
+        )
+        .map(({ id, order }) => ({ id, order }))}
     />
   )
 }
