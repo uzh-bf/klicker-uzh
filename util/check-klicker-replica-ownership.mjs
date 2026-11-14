@@ -478,9 +478,10 @@ function assertAssessmentChatContract(resources, source) {
       resource.kind === 'Deployment' &&
       resource.metadata?.labels?.[componentLabel] === 'chat'
   )
+  assert.ok(chatDeployment, `${source}: the chat Deployment is missing`)
   assert.equal(
     deployment.spec.template.spec.containers[0].image,
-    chatDeployment?.spec.template.spec.containers[0].image,
+    chatDeployment.spec.template.spec.containers[0].image,
     `${source}: chat-assessment must run the regular chat image and tag`
   )
 
