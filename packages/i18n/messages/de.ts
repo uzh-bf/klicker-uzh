@@ -1419,6 +1419,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
       escapeRoomRevealedNotice:
         'Keine Versuche mehr. Die Station gilt als abgeschlossen (+{duration} Wertungszeit).',
+      escapeRoomRevealedSolution: 'Lösung:',
       escapeRoomRevealedToast:
         'Keine Versuche mehr — die Station gilt als abgeschlossen. Weiter geht es.',
       escapeRoomSkip: 'Station überspringen (+{duration} Wertungszeit)',
