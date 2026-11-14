@@ -343,7 +343,7 @@ export function useLiveQuizEscapeRoom({
     )?.outcome ?? null
   const bonusOutcome = attemptBonusOutcome ?? bonusResult
   const bonusPending =
-    !!config?.bonusSeconds &&
+    config?.bonusSeconds != null &&
     (isCompleted || attempt?.status === EscapeRoomStatus.Completed) &&
     !bonusOutcome
   const currentOutcome = currentInstance
