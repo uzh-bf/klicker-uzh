@@ -31,7 +31,13 @@
 // Optional variables: KLICKER_PARTICIPANTS (default 50), DURATION (default
 // 2m), KLICKER_ANSWER_PAUSE (seconds between a participant's answers, default
 // 4), KLICKER_CHOICE_COUNT (answer options per question, default 4),
-// KLICKER_LECTURER_IDENTIFIER (default lecturer).
+// KLICKER_LECTURER_IDENTIFIER (default lecturer), KLICKER_PWA_ORIGIN and
+// KLICKER_MANAGE_ORIGIN (default: the API URL with pwa. or manage. in place of
+// api.), KLICKER_JOIN_SPREAD (seconds over which participants log in, default
+// 20).
+//
+// Password logins are deliberately slow and are not part of the escape room,
+// so the 500 ms p95 threshold applies to the escape-room requests only.
 //
 // Scaling to 400 students: the seeded accounts bound the number of virtual
 // participants, so raise the request rate instead. With 50 participants,
@@ -80,10 +86,19 @@ const projectorDigest = required('KLICKER_PROJECTOR_DIGEST')
 const participantPassword = required('KLICKER_TEST_PASSWORD')
 const lecturerPassword = required('KLICKER_LECTURER_PASSWORD')
 const lecturerIdentifier = __ENV.KLICKER_LECTURER_IDENTIFIER || 'lecturer'
+// The API picks the session cookie by the calling app's Origin, so each
+// scenario sends the origin of the app it stands in for.
+const pwaOrigin = (
+  __ENV.KLICKER_PWA_ORIGIN || apiUrl.replace('//api.', '//pwa.')
+).replace(/\/+$/, '')
+const manageOrigin = (
+  __ENV.KLICKER_MANAGE_ORIGIN || apiUrl.replace('//api.', '//manage.')
+).replace(/\/+$/, '')
 const participants = parseInt(__ENV.KLICKER_PARTICIPANTS || '50', 10)
 const duration = __ENV.DURATION || '2m'
 const answerPause = parseFloat(__ENV.KLICKER_ANSWER_PAUSE || '4')
 const choiceCount = parseInt(__ENV.KLICKER_CHOICE_COUNT || '4', 10)
+const joinSpread = parseFloat(__ENV.KLICKER_JOIN_SPREAD || '20')
 
 if (
   !Number.isInteger(blockId) ||
@@ -115,7 +130,10 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_duration: ['p(95)<500'],
+    'http_req_duration{name:StartEscapeRoomAttempt}': ['p(95)<500'],
+    'http_req_duration{name:AddResponse}': ['p(95)<500'],
+    'http_req_duration{name:GetEscapeRoomProgress}': ['p(95)<500'],
+    'http_req_duration{name:GetEscapeRoomProjector}': ['p(95)<500'],
     http_req_failed: ['rate<0.01'],
   },
 }
@@ -149,11 +167,15 @@ function hasData(response) {
 
 export function student() {
   const username = `testuser${exec.vu.idInInstance}`
+  // students join over a short window instead of all in the same instant
+  sleep(Math.random() * joinSpread)
 
-  const login = persisted('LoginParticipant', LOGIN_PARTICIPANT_HASH, {
-    usernameOrEmail: username,
-    password: participantPassword,
-  })
+  const login = persisted(
+    'LoginParticipant',
+    LOGIN_PARTICIPANT_HASH,
+    { usernameOrEmail: username, password: participantPassword },
+    { headers: { Origin: pwaOrigin } }
+  )
   const token = (login.cookies.participant_token || [])[0]?.value
   if (!check(login, { 'participant login': () => Boolean(token) })) return
   const cookie = { Cookie: `participant_token=${token}` }
@@ -162,7 +184,7 @@ export function student() {
     'StartEscapeRoomAttempt',
     START_ATTEMPT_HASH,
     { elementBlockId: blockId },
-    { headers: cookie }
+    { headers: { ...cookie, Origin: pwaOrigin } }
   )
   check(start, { 'attempt started': hasData })
 
@@ -194,6 +216,7 @@ export function student() {
 }
 
 let lecturerLoggedIn = false
+let lecturerToken
 
 function loginLecturer() {
   const csrf = http.get(`${authUrl}/api/auth/csrf`, {
@@ -209,8 +232,14 @@ function loginLecturer() {
     },
     { tags: { name: 'lecturer-login' } }
   )
-  // The session cookie lands in the virtual user's cookie jar.
-  return check(login, { 'lecturer login': (r) => r.status === 200 })
+  // Send the session cookie explicitly: it is scoped to the parent domain and
+  // the cookie jar does not attach it to every API request.
+  lecturerToken = (http.cookieJar().cookiesForURL(authUrl)[
+    'next-auth.session-token'
+  ] || [])[0]
+  return check(login, {
+    'lecturer login': (r) => r.status === 200 && Boolean(lecturerToken),
+  })
 }
 
 export function lecturer() {
@@ -221,10 +250,17 @@ export function lecturer() {
       return
     }
   }
-  const progress = persisted('GetEscapeRoomProgress', PROGRESS_HASH, {
-    liveQuizId,
-    elementBlockId: blockId,
-  })
+  const progress = persisted(
+    'GetEscapeRoomProgress',
+    PROGRESS_HASH,
+    { liveQuizId, elementBlockId: blockId },
+    {
+      headers: {
+        Origin: manageOrigin,
+        Cookie: `next-auth.session-token=${lecturerToken}`,
+      },
+    }
+  )
   check(progress, { 'progress loaded': hasData })
   sleep(2)
 }
