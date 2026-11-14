@@ -9,7 +9,15 @@
 // default registry.
 import { connect } from 'node:net'
 import { spawn } from 'node:child_process'
-import { openSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
+import {
+  mkdtempSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const chatDir = '/workspaces/klicker-uzh/apps/chat'
 const registryFile =
@@ -69,7 +77,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 for (let i = 0; i < 20 && (await portOpen()); i++) await sleep(500)
 if (await portOpen()) throw new Error('Port 3004 is still in use after SIGTERM')
 
-const log = openSync('/tmp/chat-load.log', 'a')
+const logPath = join(mkdtempSync(join(tmpdir(), 'chat-load-')), 'chat.log')
+const log = openSync(logPath, 'a')
 const child = spawn(
   'pnpm',
   [
@@ -91,9 +100,7 @@ child.once('error', (error) => {
 child.once('exit', () => (exited = true))
 for (let i = 0; i < 120 && !exited && !(await portOpen()); i++) await sleep(500)
 if (exited || !(await portOpen())) {
-  throw new Error('Chat did not start on port 3004; see /tmp/chat-load.log')
+  throw new Error(`Chat did not start on port 3004; see ${logPath}`)
 }
 child.unref()
-console.log(
-  'chat restarted with the load-test registry; log: /tmp/chat-load.log'
-)
+console.log(`chat restarted with the load-test registry; log: ${logPath}`)
