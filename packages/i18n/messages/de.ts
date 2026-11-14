@@ -3139,6 +3139,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
       escapeRoomHintsPlaceholder:
         'Optionale Hinweise, einer pro Zeile (jeder kostet eine Strafe bei Anzeige; spätere Hinweise können mehr kosten)',
+      escapeRoomDebrief: 'Nachbesprechung',
+      escapeRoomDebriefPlaceholder:
+        'Optionale Nachbesprechung (Markdown). Wird Dozierenden und auf dem Projektor nach Blockende angezeigt, nie Studierenden während des Spiels.',
       escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
       escapeRoomInteger: 'Muss eine ganze Zahl sein',
       escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',
@@ -3576,6 +3579,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyContainedElements: 'Elemente in der Gruppenaktivität verwalten',
       modifyCourseAssignment: 'Kurszuweisung ändern',
       duplicateGroupActivity: 'Gruppenaktivität duplizieren',
+    },
+    escapeProjector: {
+      colName: 'Name',
+      timeRemaining: 'Verbleibende Zeit',
+      lobbyHeading: 'Scannen und dem Escape Room beitreten',
+      lobbyStarted:
+        '{count, plural, one {# Teilnehmer:in ist beigetreten} other {# Teilnehmende sind beigetreten}}',
+      participationNote:
+        '{started, plural, one {# Team spielt} other {# Teams spielen}}, {ranked} in der Rangliste',
+      finalRanking: 'Schlussrangliste',
+      error:
+        'Die Projektoransicht ist nicht verfügbar. Bitte den Link prüfen oder im Cockpit erneut öffnen.',
     },
     cockpit: {
       escapeRoomProjector: 'Projektoransicht öffnen',
