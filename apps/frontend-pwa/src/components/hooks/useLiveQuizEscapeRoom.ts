@@ -236,6 +236,7 @@ export function useLiveQuizEscapeRoom({
     }
   }, [blockId, currentInstance, hintMutation, t])
 
+  const skipPenalty = config?.skipPenalty ?? 0
   const skipStage = useCallback(async () => {
     if (!blockId) return
     try {
@@ -249,7 +250,7 @@ export function useLiveQuizEscapeRoom({
       if (skipped.status === EscapeRoomStatus.Completed) setIsCompleted(true)
       toast({
         message: t('pwa.practiceQuiz.escapeRoomSkippedToast', {
-          duration: formatDuration(config?.skipPenalty ?? 0, t),
+          duration: formatDuration(skipPenalty, t),
         }),
         type: 'warning',
       })
@@ -270,7 +271,7 @@ export function useLiveQuizEscapeRoom({
         type: 'error',
       })
     }
-  }, [blockId, config?.skipPenalty, refetch, skipMutation, t])
+  }, [blockId, skipPenalty, refetch, skipMutation, t])
 
   // Leaves a revealed stage once the student has read the solution
   const continueAfterReveal = useCallback(async () => {
