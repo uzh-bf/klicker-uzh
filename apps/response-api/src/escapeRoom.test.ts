@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
   updateAttempts: vi.fn(),
 }))
 
-vi.mock('@klicker-uzh/grading', () => ({
+vi.mock('@klicker-uzh/grading', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@klicker-uzh/grading')>()),
   gradeQuestionSC: mocks.grade,
   gradeQuestionMC: mocks.grade,
   gradeQuestionKPRIM: mocks.grade,
@@ -156,13 +157,36 @@ const payload = {
   instanceId: 11,
 }
 
-function activeInstanceState() {
+interface TestRules {
+  hintPenalty: number
+  hintPenalties: number[]
+  wrongAnswerPenalty: number
+  maxWrongAttempts: number | null
+  revealPenalty: number
+  skipPenalty: number | null
+  bonusSeconds: number | null
+  lockoutSeconds: number
+}
+
+const rulesOff: TestRules = {
+  hintPenalty: 0,
+  hintPenalties: [],
+  wrongAnswerPenalty: 0,
+  maxWrongAttempts: null,
+  revealPenalty: 0,
+  skipPenalty: null,
+  bonusSeconds: null,
+  lockoutSeconds: 5,
+}
+
+function activeInstanceState(rules: Partial<TestRules> | null = null) {
   return {
     elementBlockId: 7,
     elementBlock: {
       liveQuizId: 'quiz-1',
       status: 'ACTIVE',
       liveQuiz: { activeBlockId: 7 },
+      escapeRoomConfig: rules ? { ...rulesOff, ...rules } : null,
     },
     element: { qrScanCode: null },
   }
@@ -443,8 +467,8 @@ describe('response-api escape-room validation', () => {
     expect(JSON.parse(beyond.result.body)).toEqual({
       error: 'escape_room_expired',
     })
-    expect(mocks.updateAttempt).toHaveBeenCalledWith({
-      where: { id: 'attempt-1' },
+    expect(mocks.updateAttempts).toHaveBeenCalledWith({
+      where: { id: 'attempt-1', status: 'IN_PROGRESS' },
       data: { status: 'EXPIRED' },
     })
   })
@@ -806,5 +830,344 @@ describe('response-api escape-room validation', () => {
       'escape:attempt-1:11',
       'escape:attempt-1:11',
     ])
+  })
+
+  describe('shared scoring rules', () => {
+    const rules = {
+      wrongAnswerPenalty: 10,
+      maxWrongAttempts: 2,
+      revealPenalty: 30,
+    }
+    const triesKey = 'lq:quiz-1:i:11:tries:participant-1'
+
+    async function submit(
+      redis: any,
+      overrides: { instanceId?: number; info?: Record<string, string> } = {}
+    ) {
+      const { response, result } = responseRecorder()
+      await handleEscapeRoomValidation(
+        response,
+        { ...payload, instanceId: overrides.instanceId ?? 11 },
+        'participant_token=token',
+        overrides.info ?? info,
+        redis
+      )
+      return { status: result.statusCode, body: JSON.parse(result.body) }
+    }
+
+    function outcomesWritten() {
+      const call = mocks.updateAttempt.mock.calls.at(-1)![0]
+      return call.data.stageOutcomes as Array<Record<string, unknown>>
+    }
+
+    it('charges the wrong-answer penalty and reports the attempts left', async () => {
+      mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+      mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+      mocks.findAttempt.mockResolvedValue(attempt({ penaltySeconds: 5 }))
+
+      const { status, body } = await submit(redisMock())
+
+      expect(status).toBe(200)
+      expect(body).toEqual(
+        expect.objectContaining({
+          status: 'incorrect',
+          attemptsLeft: 1,
+          revealed: false,
+          revealedSolution: null,
+          penaltySeconds: 15,
+          lockoutUntil: expect.any(String),
+        })
+      )
+      expect(mocks.updateAttempt.mock.calls[0]![0].data.penaltySeconds).toEqual(
+        { increment: 10 }
+      )
+      expect(outcomesWritten()).toEqual([
+        expect.objectContaining({
+          stageKey: '11',
+          wrongAttempts: 1,
+          outcome: null,
+        }),
+      ])
+    })
+
+    it('reveals the solution after the last wrong attempt without event or lockout', async () => {
+      mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+      mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+      mocks.findAttempt.mockResolvedValue(
+        attempt({
+          stageOutcomes: [
+            { stageKey: '11', wrongAttempts: 1, outcome: null, at: null },
+          ],
+        })
+      )
+      const redis = redisMock()
+      const calls: string[] = []
+      mocks.updateAttempt.mockImplementation(async () => {
+        calls.push('prisma')
+        return attempt()
+      })
+      redis.sadd.mockImplementation(async () => {
+        calls.push('sadd')
+        return 1
+      })
+
+      const { body } = await submit(redis, {
+        info: { ...info, solutions: '[1]' },
+      })
+
+      expect(body).toEqual(
+        expect.objectContaining({
+          status: 'incorrect',
+          revealed: true,
+          revealedSolution: [1],
+          attemptsLeft: 0,
+          penaltySeconds: 40,
+          lockoutUntil: null,
+          completed: false,
+        })
+      )
+      expect(calls).toEqual(['prisma', 'sadd'])
+      expect(redis.sadd).toHaveBeenCalledWith(
+        'escape-attempt:attempt-1:cleared',
+        '11'
+      )
+      expect(redis.del).toHaveBeenCalledWith(triesKey)
+      expect(mocks.push).not.toHaveBeenCalled()
+      expect(
+        redis.eval.mock.calls.some((c: any[]) =>
+          String(c[0]).includes('escape-room-response-track')
+        )
+      ).toBe(false)
+      expect(mocks.updateAttempt.mock.calls[0]![0].data).not.toHaveProperty(
+        'lockoutUntil'
+      )
+      expect(outcomesWritten()).toEqual([
+        expect.objectContaining({ stageKey: '11', outcome: 'REVEALED' }),
+      ])
+    })
+
+    it('completes the attempt when the revealed stage was the last one', async () => {
+      mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+      mocks.findAttempt.mockResolvedValue(
+        attempt({
+          stageOutcomes: [
+            { stageKey: '11', wrongAttempts: 1, outcome: null, at: null },
+          ],
+        })
+      )
+
+      const { body } = await submit(redisMock())
+
+      expect(body.completed).toBe(true)
+      expect(mocks.updateAttempts).toHaveBeenCalledWith({
+        where: { id: 'attempt-1', status: 'IN_PROGRESS' },
+        data: expect.objectContaining({ status: 'COMPLETED' }),
+      })
+    })
+
+    it('does not answer a resubmitted revealed stage as correct', async () => {
+      mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+      mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+      mocks.findAttempt.mockResolvedValue(
+        attempt({
+          stageOutcomes: [
+            {
+              stageKey: '11',
+              wrongAttempts: 2,
+              outcome: 'REVEALED',
+              at: new Date().toISOString(),
+            },
+          ],
+        })
+      )
+      mocks.grade.mockReturnValue(1)
+      const redis = redisMock()
+
+      const { status, body } = await submit(redis)
+
+      expect(status).toBe(409)
+      expect(body.status).toBeUndefined()
+      expect(body.error).toBe('escape_room_stage_cleared')
+      expect(mocks.push).not.toHaveBeenCalled()
+      // The cleared set is repaired from the stored outcome.
+      expect(redis.sadd).toHaveBeenCalledWith(
+        'escape-attempt:attempt-1:cleared',
+        '11'
+      )
+    })
+
+    describe('with a bonus stage', () => {
+      const bonusRules = { bonusSeconds: 60 }
+      const bonusInfo = { ...info }
+
+      it('completes on the regular stages and reports the pending bonus', async () => {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(bonusRules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        mocks.grade.mockReturnValue(1)
+
+        const { body } = await submit(redisMock())
+
+        expect(body).toEqual(
+          expect.objectContaining({
+            status: 'correct',
+            completed: true,
+            bonusPending: true,
+            bonus: null,
+          })
+        )
+        expect(mocks.updateAttempts).toHaveBeenCalledWith({
+          where: { id: 'attempt-1', status: 'IN_PROGRESS' },
+          data: expect.objectContaining({ status: 'COMPLETED' }),
+        })
+        expect(outcomesWritten()).toEqual([
+          expect.objectContaining({ stageKey: '11', outcome: 'SOLVED' }),
+        ])
+      })
+
+      it('does not offer the bonus stage while the attempt is running', async () => {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(bonusRules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        const { status, body } = await submit(redisMock(), { instanceId: 12 })
+        expect(status).toBe(409)
+        expect(body.error).toBe('escape_room_stage_locked')
+      })
+
+      function completedAttempt(overrides: Record<string, unknown> = {}) {
+        return attempt({
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          stageOutcomes: [
+            { stageKey: '11', wrongAttempts: 0, outcome: 'SOLVED', at: 'x' },
+          ],
+          ...overrides,
+        })
+      }
+
+      function bonusSetup(attemptRow = completedAttempt()) {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(bonusRules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        mocks.findAttempt.mockResolvedValue(attemptRow)
+        const redis = redisMock()
+        redis.sadd('escape-attempt:attempt-1:cleared', '11')
+        return redis
+      }
+
+      it('credits a correct bonus answer and emits the solved response', async () => {
+        const redis = bonusSetup()
+        mocks.grade.mockReturnValue(1)
+
+        const { status, body } = await submit(redis, {
+          instanceId: 12,
+          info: bonusInfo,
+        })
+
+        expect(status).toBe(200)
+        expect(body).toEqual(
+          expect.objectContaining({
+            status: 'correct',
+            completed: true,
+            bonus: 'correct',
+            bonusPending: false,
+          })
+        )
+        expect(mocks.push).toHaveBeenCalledWith(
+          'response-received:authenticated',
+          expect.objectContaining({ instanceId: '12' })
+        )
+        expect(outcomesWritten()).toContainEqual(
+          expect.objectContaining({
+            stageKey: '12',
+            outcome: 'BONUS_CORRECT',
+            creditSeconds: 60,
+          })
+        )
+        expect(redis.sadd).toHaveBeenCalledWith(
+          'escape-attempt:attempt-1:cleared',
+          '12'
+        )
+        expect(mocks.updateAttempts).not.toHaveBeenCalled()
+      })
+
+      it('records a wrong bonus answer without penalty, lockout or event', async () => {
+        const redis = bonusSetup()
+        mocks.grade.mockReturnValue(0)
+
+        const { body } = await submit(redis, { instanceId: 12 })
+
+        expect(body).toEqual(
+          expect.objectContaining({
+            status: 'incorrect',
+            bonus: 'wrong',
+            lockoutUntil: null,
+            completed: true,
+          })
+        )
+        const data = mocks.updateAttempt.mock.calls[0]![0].data
+        expect(data).not.toHaveProperty('penaltySeconds')
+        expect(data).not.toHaveProperty('lockoutUntil')
+        expect(outcomesWritten()).toContainEqual(
+          expect.objectContaining({ stageKey: '12', outcome: 'BONUS_WRONG' })
+        )
+        expect(mocks.push).not.toHaveBeenCalled()
+        expect(redis.sadd).toHaveBeenCalledWith(
+          'escape-attempt:attempt-1:cleared',
+          '12'
+        )
+      })
+
+      it('rejects a second bonus answer', async () => {
+        const redis = bonusSetup(
+          completedAttempt({
+            stageOutcomes: [
+              {
+                stageKey: '12',
+                wrongAttempts: 0,
+                outcome: 'BONUS_WRONG',
+                at: 'x',
+                creditSeconds: 0,
+              },
+            ],
+          })
+        )
+        mocks.grade.mockReturnValue(1)
+
+        const { status, body } = await submit(redis, { instanceId: 12 })
+
+        expect(status).toBe(400)
+        expect(body.error).toBe('escape_room_bonus_answered')
+        expect(mocks.push).not.toHaveBeenCalled()
+      })
+
+      it('rejects a late bonus answer and keeps the attempt completed', async () => {
+        const redis = bonusSetup(
+          completedAttempt({ startedAt: new Date(Date.now() - 400_000) })
+        )
+
+        const { status, body } = await submit(redis, { instanceId: 12 })
+
+        expect(status).toBe(400)
+        expect(body.error).toBe('escape_room_expired')
+        expect(mocks.updateAttempt).not.toHaveBeenCalled()
+        expect(mocks.updateAttempts).not.toHaveBeenCalled()
+        expect(mocks.push).not.toHaveBeenCalled()
+      })
+    })
+
+    it('behaves as before when every rule is off', async () => {
+      mocks.findInstance.mockResolvedValue(activeInstanceState(rulesOff))
+      const first = await submit(redisMock())
+      expect(first.body).toEqual(
+        expect.objectContaining({
+          status: 'incorrect',
+          revealed: false,
+          attemptsLeft: null,
+          penaltySeconds: 0,
+          bonusPending: false,
+        })
+      )
+      expect(mocks.updateAttempt.mock.calls[0]![0].data).not.toHaveProperty(
+        'penaltySeconds'
+      )
+    })
   })
 })

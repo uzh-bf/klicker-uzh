@@ -190,21 +190,37 @@ export function getGroupEscapeRoomStages({
   return assemble(resolved, hasBonus)
 }
 
-// Live Quiz only reports a cleared prefix of the instances; there is no
-// reveal, skip or bonus.
+// Live Quiz: only the current stage is sent to the student, so stage keys
+// cannot be placed by instance. Stages are cleared in order, so the recorded
+// outcomes fill the regular stages from the first one; the bonus outcome
+// belongs to the last stage. Attempts from before outcomes were recorded only
+// know how many stages are cleared; those count as solved.
 export function getLiveEscapeRoomStages({
   clearedCount,
   totalCount,
+  hasBonus = false,
+  stageOutcomes,
 }: {
   clearedCount: number
   totalCount: number
+  hasBonus?: boolean
+  stageOutcomes?: ReadonlyArray<EscapeRoomStageOutcomeEntry> | null
 }): EscapeRoomStages {
-  const resolved = Array.from(
-    { length: Math.max(totalCount, 0) },
-    (_, index): ResolvedStage =>
-      index < clearedCount ? { state: 'solved' } : {}
+  const total = Math.max(totalCount, 0)
+  const bonusIndex = hasBonus && total > 1 ? total - 1 : -1
+  const recorded = (stageOutcomes ?? []).filter((entry) => entry.outcome)
+  const regular = recorded.filter(
+    (entry) => !entry.outcome?.startsWith('BONUS')
   )
-  return assemble(resolved, false)
+  const bonus = recorded.find((entry) => entry.outcome?.startsWith('BONUS'))
+  const resolved = Array.from({ length: total }, (_, index): ResolvedStage => {
+    if (index === bonusIndex) return resolveFromOutcome(bonus)
+    const fromOutcome = resolveFromOutcome(regular[index])
+    return !fromOutcome.state && index < clearedCount
+      ? { ...fromOutcome, state: 'solved' }
+      : fromOutcome
+  })
+  return assemble(resolved, hasBonus)
 }
 
 // Ranked time shown on the student ending. Matches rankedSeconds of the

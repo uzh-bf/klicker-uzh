@@ -1,9 +1,11 @@
-import { useMutation } from '@apollo/client'
+import { ApolloError, useMutation } from '@apollo/client'
+import { formatDuration } from '@components/practiceQuiz/EscapeRoomOverlay'
 import {
   ElementInstance,
   EscapeRoomAttempt,
   EscapeRoomStatus,
   RequestEscapeRoomHintDocument,
+  SkipEscapeRoomStageDocument,
   StartEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { getEscapeRoomLockoutRemainingSeconds } from '@lib/escapeRoomLockout'
@@ -23,11 +25,46 @@ export type LiveQuizEscapeRoomAttempt = Pick<
   | 'status'
   | 'lockoutUntil'
   | 'completedAt'
+  | 'stageOutcomes'
 >
 
+// The escape room fields of the Response API answer
 export type LiveQuizEscapeRoomResponse = {
   completed?: boolean
   lockoutUntil?: string
+  // null when the tries are unlimited or the stage is cleared
+  attemptsLeft?: number | null
+  revealed?: boolean
+  revealedSolution?: unknown
+  penaltySeconds?: number
+  bonus?: 'correct' | 'wrong' | null
+}
+
+// Rules of the block's escape room as selected for the student
+export type LiveQuizEscapeRoomConfig = {
+  timeLimit: number
+  hintPenalty: number
+  hintPenalties: number[]
+  lockoutSeconds: number
+  wrongAnswerPenalty?: number | null
+  maxWrongAttempts?: number | null
+  revealPenalty?: number | null
+  skipPenalty?: number | null
+  bonusSeconds?: number | null
+  introText?: string | null
+}
+
+const BONUS_OUTCOMES = ['BONUS_CORRECT', 'BONUS_WRONG']
+
+function getRevealedHintMap(instances: ElementInstance[]) {
+  return Object.fromEntries(
+    instances.flatMap((instance) => {
+      const hints =
+        instance.revealedHints ??
+        (instance.revealedHint ? [instance.revealedHint] : [])
+      return hints.length > 0 ? [[instance.id, hints] as const] : []
+    })
+  )
 }
 
 export function useLiveQuizEscapeRoom({
@@ -39,11 +76,7 @@ export function useLiveQuizEscapeRoom({
   refetch,
 }: {
   blockId?: number
-  config?: {
-    timeLimit: number
-    hintPenalty: number
-    lockoutSeconds?: number
-  } | null
+  config?: LiveQuizEscapeRoomConfig | null
   initialAttempt?: LiveQuizEscapeRoomAttempt | null
   instances: ElementInstance[]
   currentInstance?: ElementInstance
@@ -56,6 +89,9 @@ export function useLiveQuizEscapeRoom({
   const [hintMutation, { loading: requestingHint }] = useMutation(
     RequestEscapeRoomHintDocument
   )
+  const [skipMutation, { loading: skipping }] = useMutation(
+    SkipEscapeRoomStageDocument
+  )
   const [attempt, setAttempt] = useState(initialAttempt ?? null)
   const [isCompleted, setIsCompleted] = useState(
     initialAttempt?.status === EscapeRoomStatus.Completed
@@ -63,15 +99,21 @@ export function useLiveQuizEscapeRoom({
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
   const [expiresInSeconds, setExpiresInSeconds] = useState<number | null>(null)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
-  const [revealedHints, setRevealedHints] = useState<Record<number, string>>(
-    Object.fromEntries(
-      instances.flatMap((instance) =>
-        instance.revealedHint
-          ? [[instance.id, instance.revealedHint] as const]
-          : []
-      )
-    )
+  const [revealedHints, setRevealedHints] = useState<Record<number, string[]>>(
+    getRevealedHintMap(instances)
   )
+  // Tries left after the latest wrong answer, kept for the stage it applies to
+  const [triesLeft, setTriesLeft] = useState<{
+    instanceId: number
+    count: number
+  } | null>(null)
+  // A reveal holds the stage on screen until the student moves on, so the
+  // solution can be read before the next stage or the ending replaces it.
+  const [reveal, setReveal] = useState<{
+    instanceId: number
+    solution: unknown
+  } | null>(null)
+  const [bonusResult, setBonusResult] = useState<string | null>(null)
   const serverAttemptProjection = initialAttempt
     ? [
         initialAttempt.id,
@@ -82,12 +124,21 @@ export function useLiveQuizEscapeRoom({
         initialAttempt.lockoutUntil,
         initialAttempt.completedAt,
         initialAttempt.hintsUsed.join(','),
+        initialAttempt.stageOutcomes
+          .map(
+            (entry) =>
+              `${entry.stageKey}:${entry.outcome}:${entry.wrongAttempts}`
+          )
+          .join(','),
       ].join('|')
     : ''
   const serverAttemptProjectionRef = useRef(serverAttemptProjection)
   const expiryHandledAttemptIdRef = useRef<string | null>(null)
   const revealedHintProjection = instances
-    .map((instance) => `${instance.id}:${instance.revealedHint ?? ''}`)
+    .map(
+      (instance) =>
+        `${instance.id}:${(instance.revealedHints ?? []).join(',')}:${instance.revealedHint ?? ''}`
+    )
     .join('|')
 
   useEffect(() => {
@@ -100,15 +151,7 @@ export function useLiveQuizEscapeRoom({
   }, [initialAttempt, serverAttemptProjection])
 
   useEffect(() => {
-    setRevealedHints(
-      Object.fromEntries(
-        instances.flatMap((instance) =>
-          instance.revealedHint
-            ? [[instance.id, instance.revealedHint] as const]
-            : []
-        )
-      )
-    )
+    setRevealedHints(getRevealedHintMap(instances))
   }, [instances, revealedHintProjection])
 
   useEffect(() => {
@@ -182,7 +225,7 @@ export function useLiveQuizEscapeRoom({
       if (!payload) return
       setRevealedHints((current) => ({
         ...current,
-        [currentInstance.id]: payload.hint,
+        [currentInstance.id]: payload.hints,
       }))
       setAttempt(payload.attempt)
     } catch {
@@ -193,10 +236,74 @@ export function useLiveQuizEscapeRoom({
     }
   }, [blockId, currentInstance, hintMutation, t])
 
+  const skipPenalty = config?.skipPenalty ?? 0
+  const skipStage = useCallback(async () => {
+    if (!blockId) return
+    try {
+      const result = await skipMutation({
+        variables: { elementBlockId: blockId },
+      })
+      const skipped = result.data?.skipEscapeRoomStage
+      if (!skipped) return
+      setAttempt(skipped)
+      setTriesLeft(null)
+      if (skipped.status === EscapeRoomStatus.Completed) setIsCompleted(true)
+      toast({
+        message: t('pwa.practiceQuiz.escapeRoomSkippedToast', {
+          duration: formatDuration(skipPenalty, t),
+        }),
+        type: 'warning',
+      })
+      await refetch?.()
+    } catch (error) {
+      const code = (error instanceof ApolloError ? error.graphQLErrors : [])
+        .map((err) => err.extensions?.code)
+        .find((value) => typeof value === 'string')
+      toast({
+        message:
+          code === 'ESCAPE_ROOM_SKIP_DISABLED'
+            ? t('pwa.practiceQuiz.escapeRoomSkipDisabledToast')
+            : code === 'ESCAPE_ROOM_EXPIRED'
+              ? t('pwa.practiceQuiz.escapeRoomExpiredToast')
+              : code === 'ESCAPE_ROOM_GATED'
+                ? t('pwa.practiceQuiz.escapeRoomGatedToast')
+                : t('shared.generic.systemError'),
+        type: 'error',
+      })
+    }
+  }, [blockId, skipPenalty, refetch, skipMutation, t])
+
+  // Leaves a revealed stage once the student has read the solution
+  const continueAfterReveal = useCallback(async () => {
+    await refetch?.()
+    setReveal(null)
+    setTriesLeft(null)
+  }, [refetch])
+
   const lockoutSeconds = config?.lockoutSeconds ?? 0
   const onResponse = useCallback(
-    (result: LiveQuizEscapeRoomResponse) => {
+    (result: LiveQuizEscapeRoomResponse, instanceId?: number) => {
       if (result.completed) setIsCompleted(true)
+      if (instanceId !== undefined) {
+        if (result.revealed) {
+          setReveal({ instanceId, solution: result.revealedSolution ?? null })
+        } else if (typeof result.attemptsLeft === 'number') {
+          setTriesLeft({ instanceId, count: result.attemptsLeft })
+        }
+      }
+      if (result.bonus) {
+        setBonusResult(
+          result.bonus === 'correct' ? 'BONUS_CORRECT' : 'BONUS_WRONG'
+        )
+      }
+      const penaltySeconds = result.penaltySeconds
+      if (typeof penaltySeconds === 'number') {
+        setAttempt((current) =>
+          current && current.penaltySeconds !== penaltySeconds
+            ? { ...current, penaltySeconds }
+            : current
+        )
+      }
       if (!result.lockoutUntil) return
 
       // The lockout starts when the server grades the answer, so the server
@@ -231,9 +338,38 @@ export function useLiveQuizEscapeRoom({
     [lockoutSeconds]
   )
 
+  const attemptBonusOutcome =
+    attempt?.stageOutcomes.find((entry) =>
+      BONUS_OUTCOMES.includes(entry.outcome ?? '')
+    )?.outcome ?? null
+  const bonusOutcome = attemptBonusOutcome ?? bonusResult
+  const bonusPending =
+    config?.bonusSeconds != null &&
+    (isCompleted || attempt?.status === EscapeRoomStatus.Completed) &&
+    !bonusOutcome
+  const currentOutcome = currentInstance
+    ? attempt?.stageOutcomes.find(
+        (entry) => entry.stageKey === String(currentInstance.id)
+      )
+    : undefined
+  // the answer feedback of the stage on screen, if any
+  const currentTriesLeft =
+    triesLeft && triesLeft.instanceId === currentInstance?.id
+      ? triesLeft.count
+      : null
+
   return {
     attempt,
-    isCompleted,
+    // the ending waits for a held reveal
+    isCompleted: isCompleted && !reveal,
+    reveal: reveal && reveal.instanceId === currentInstance?.id ? reveal : null,
+    bonusOutcome,
+    bonusPending,
+    wrongAttempts: currentOutcome?.wrongAttempts ?? 0,
+    triesLeft: currentTriesLeft,
+    skipping,
+    skipStage,
+    continueAfterReveal,
     isExpired:
       attempt?.status === EscapeRoomStatus.Expired ||
       (attempt?.status === EscapeRoomStatus.InProgress &&

@@ -132,9 +132,8 @@ export function useEscapeRoomYupFields() {
   }
 }
 
-// Scoring rules exist for Practice Quiz, Microlearning and Group Activity
-// escape rooms; Live Quiz blocks keep their own settings.
-function useEscapeRoomRulesYupFields() {
+// Validation of the shared scoring rule fields (activity-level and per block).
+export function useEscapeRoomRulesYupFields() {
   const t = useTranslations()
   const ruleSeconds = () =>
     yup

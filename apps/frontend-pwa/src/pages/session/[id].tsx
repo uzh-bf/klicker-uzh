@@ -34,6 +34,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import { buildLiveQuizResponsePayload } from '~/lib/liveQuizResponse'
+import type { LiveQuizEscapeRoomResponse } from '../../components/hooks/useLiveQuizEscapeRoom'
 import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
@@ -57,13 +58,14 @@ async function handleNewResponse({
   answer: any
   correlationKey?: string | null
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
-Promise<{
-  statusCode: number
-  responseTimestamp?: number
-  responseStatus?: string
-  completed?: boolean
-  lockoutUntil?: string
-}> {
+Promise<
+  {
+    statusCode: number
+    responseTimestamp?: number
+    responseStatus?: string
+    errorCode?: string
+  } & LiveQuizEscapeRoomResponse
+> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -91,6 +93,8 @@ Promise<{
     let responseStatus: string | undefined
     let completed: boolean | undefined
     let lockoutUntil: string | undefined
+    let escapeRoom: LiveQuizEscapeRoomResponse = {}
+    let errorCode: string | undefined
     try {
       const json = await response.json()
       if (json && typeof json.responseTimestamp === 'number') {
@@ -102,6 +106,24 @@ Promise<{
       if (json && typeof json.lockoutUntil === 'string') {
         lockoutUntil = json.lockoutUntil
       }
+      if (json && typeof json.error === 'string') errorCode = json.error
+      // rule state of an escape room block; absent for other blocks
+      if (json && typeof json.revealed === 'boolean') {
+        escapeRoom = {
+          attemptsLeft:
+            typeof json.attemptsLeft === 'number' ? json.attemptsLeft : null,
+          revealed: json.revealed,
+          revealedSolution: json.revealedSolution,
+          penaltySeconds:
+            typeof json.penaltySeconds === 'number'
+              ? json.penaltySeconds
+              : undefined,
+          bonus:
+            json.bonus === 'correct' || json.bonus === 'wrong'
+              ? json.bonus
+              : null,
+        }
+      }
     } catch (_) {
       // ignore JSON parse errors; not all responses may have a body
     }
@@ -111,6 +133,8 @@ Promise<{
       responseStatus,
       completed,
       lockoutUntil,
+      errorCode,
+      ...escapeRoom,
     }
   } catch (e) {
     console.log('error', e)

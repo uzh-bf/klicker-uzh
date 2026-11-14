@@ -134,6 +134,14 @@ export type ElementBlockInput = {
   escapeRoomTimeLimit?: number | null
   escapeRoomHintPenalty?: number | null
   escapeRoomIntroText?: string | null
+  escapeRoomRules?: {
+    hintPenalties?: number[] | null
+    wrongAnswerPenalty?: number | null
+    maxWrongAttempts?: number | null
+    revealPenalty?: number | null
+    skipPenalty?: number | null
+    bonusSeconds?: number | null
+  } | null
   elements: ElementInstanceInput[]
 }
 

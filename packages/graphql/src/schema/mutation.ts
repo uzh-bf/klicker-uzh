@@ -3837,6 +3837,7 @@ export const Mutation = builder.mutationType({
           microLearningId: t.arg.string({ required: false }),
           groupActivityId: t.arg.string({ required: false }),
           groupId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await EscapeRoomService.skipEscapeRoomStage(args, ctx)
