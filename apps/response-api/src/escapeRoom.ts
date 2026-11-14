@@ -1,15 +1,24 @@
 import {
+  applyEscapeRoomWrongAnswer,
+  areEscapeRoomRegularStagesCleared,
+  getEscapeRoomBonusCredit,
+  getEscapeRoomRulesFromConfig,
+  getEscapeRoomStageOutcomeRecord,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
+  parseEscapeRoomStageOutcomeRecords,
+  resolveEscapeRoomAnswerableStage,
+  setEscapeRoomStageOutcomeRecord,
+  type EscapeRoomAnswerableStageDecision,
+  type EscapeRoomStageOutcomeRecord,
 } from '@klicker-uzh/grading'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
-  getCurrentEscapeRoomInstance,
   getEscapeRoomLifecycleClaimKey,
   gradeQrScanResponse,
   isEscapeRoomExpired,
@@ -24,6 +33,7 @@ import {
   verifyJWT,
   type JWTPayload,
 } from '@klicker-uzh/util'
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import type { ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { randomUUID } from 'node:crypto'
@@ -131,6 +141,18 @@ function loadEscapeRoomInstanceState(instanceId: number) {
           liveQuizId: true,
           status: true,
           liveQuiz: { select: { activeBlockId: true } },
+          escapeRoomConfig: {
+            select: {
+              hintPenalty: true,
+              hintPenalties: true,
+              wrongAnswerPenalty: true,
+              maxWrongAttempts: true,
+              revealPenalty: true,
+              skipPenalty: true,
+              bonusSeconds: true,
+              lockoutSeconds: true,
+            },
+          },
         },
       },
       element: { select: { qrScanCode: true } },
@@ -150,6 +172,62 @@ function isActiveEscapeRoomInstance(
     instance.elementBlock.status === 'ACTIVE' &&
     instance.elementBlock.liveQuiz.activeBlockId === blockId
   )
+}
+
+// Maps a failed stage decision to its error response. An expired attempt that
+// is still running is marked EXPIRED; a completed attempt never changes.
+async function rejectStage(
+  res: ServerResponse,
+  decision: Extract<EscapeRoomAnswerableStageDecision, { ok: false }>,
+  attempt: { id: string; status: string }
+) {
+  if (decision.reason === 'expired') {
+    if (attempt.status === 'IN_PROGRESS') {
+      await prisma.escapeRoomAttempt.updateMany({
+        where: { id: attempt.id, status: 'IN_PROGRESS' },
+        data: { status: 'EXPIRED' },
+      })
+    }
+    sendJson(res, 400, { error: 'escape_room_expired' })
+  } else if (decision.reason === 'not_in_progress') {
+    sendJson(res, 400, { error: 'escape_room_not_in_progress' })
+  } else if (decision.reason === 'bonus_answered') {
+    sendJson(res, 400, { error: 'escape_room_bonus_answered' })
+  } else if (decision.reason === 'cleared') {
+    sendJson(res, 409, { error: 'escape_room_stage_cleared' })
+  } else {
+    sendJson(res, 409, { error: 'escape_room_stage_locked' })
+  }
+}
+
+function getInstanceRules(instance: EscapeRoomInstanceState) {
+  const config = instance?.elementBlock?.escapeRoomConfig
+  return {
+    rules: getEscapeRoomRulesFromConfig(config),
+    lockoutSeconds: config?.lockoutSeconds,
+  }
+}
+
+// The solution shown with a reveal; QR scan stages have none to show.
+function getRevealedSolution(type: string | undefined, solutions: unknown) {
+  if (type === 'QR_SCAN' || solutions === undefined) return null
+  return solutions
+}
+
+function parseSolutions(raw: string | undefined) {
+  if (!raw) return { ok: true as const, value: undefined }
+  try {
+    return { ok: true as const, value: JSON.parse(raw) }
+  } catch {
+    return { ok: false as const, value: undefined }
+  }
+}
+
+async function completeAttempt(attemptId: string) {
+  await prisma.escapeRoomAttempt.updateMany({
+    where: { id: attemptId, status: 'IN_PROGRESS' },
+    data: { status: 'COMPLETED', completedAt: new Date(), lockoutUntil: null },
+  })
 }
 
 export async function handleEscapeRoomValidation(
@@ -201,12 +279,8 @@ export async function handleEscapeRoomValidation(
     return true
   }
 
-  if (attempt.status !== 'IN_PROGRESS') {
-    sendJson(res, 400, { error: 'escape_room_not_in_progress' })
-    return true
-  }
-
   if (
+    attempt.status === 'IN_PROGRESS' &&
     attempt.lockoutUntil &&
     Date.now() < new Date(attempt.lockoutUntil).getTime()
   ) {
@@ -214,15 +288,6 @@ export async function handleEscapeRoomValidation(
       status: 'lockout',
       lockoutUntil: attempt.lockoutUntil,
     })
-    return true
-  }
-
-  if (isEscapeRoomExpired(attempt)) {
-    await prisma.escapeRoomAttempt.update({
-      where: { id: attempt.id },
-      data: { status: 'EXPIRED' },
-    })
-    sendJson(res, 400, { error: 'escape_room_expired' })
     return true
   }
 
@@ -234,15 +299,22 @@ export async function handleEscapeRoomValidation(
     select: { id: true },
     orderBy: { order: 'asc' },
   })
+  const stages = requiredInstances.map((entry) => String(entry.id))
+  const stageKey = String(instanceId)
   const clearedKey = `escape-attempt:${attempt.id}:cleared`
   let clearedInstances = new Set(await redis.smembers(clearedKey))
-  let instanceAlreadyCleared = clearedInstances.has(String(instanceId))
-  const currentInstance = getCurrentEscapeRoomInstance(
-    requiredInstances,
-    clearedInstances
-  )
-  if (!instanceAlreadyCleared && currentInstance?.id !== instanceId) {
-    sendJson(res, 409, { error: 'escape_room_stage_locked' })
+  // Cheap early rejection; every outcome is decided again under the claim.
+  const earlyDecision = resolveEscapeRoomAnswerableStage({
+    stages,
+    stageKey,
+    rules: getInstanceRules(instance).rules,
+    status: attempt.status,
+    expired: isEscapeRoomExpired(attempt),
+    outcomes: parseEscapeRoomStageOutcomeRecords(attempt.stageOutcomes),
+    clearedKeys: clearedInstances,
+  })
+  if (!earlyDecision.ok && earlyDecision.reason !== 'cleared') {
+    await rejectStage(res, earlyDecision, attempt)
     return true
   }
 
@@ -289,15 +361,18 @@ export async function handleEscapeRoomValidation(
       sendJson(res, 409, { error: 'escape_room_block_closed' })
       return true
     }
+    const { rules, lockoutSeconds: configLockoutSeconds } =
+      getInstanceRules(currentInstanceState)
 
     const currentAttempt = await prisma.escapeRoomAttempt.findUnique({
       where: { id: attempt.id },
     })
-    if (!currentAttempt || currentAttempt.status !== 'IN_PROGRESS') {
+    if (!currentAttempt) {
       sendJson(res, 400, { error: 'escape_room_not_in_progress' })
       return true
     }
     if (
+      currentAttempt.status === 'IN_PROGRESS' &&
       currentAttempt.lockoutUntil &&
       Date.now() < new Date(currentAttempt.lockoutUntil).getTime()
     ) {
@@ -307,59 +382,96 @@ export async function handleEscapeRoomValidation(
       })
       return true
     }
-    if (isEscapeRoomExpired(currentAttempt)) {
-      await prisma.escapeRoomAttempt.updateMany({
-        where: { id: currentAttempt.id, status: 'IN_PROGRESS' },
-        data: { status: 'EXPIRED' },
+    const outcomes = parseEscapeRoomStageOutcomeRecords(
+      currentAttempt.stageOutcomes
+    )
+    clearedInstances = new Set(await redis.smembers(clearedKey))
+    const decision = resolveEscapeRoomAnswerableStage({
+      stages,
+      stageKey,
+      rules,
+      status: currentAttempt.status,
+      expired: isEscapeRoomExpired(currentAttempt),
+      outcomes,
+      clearedKeys: clearedInstances,
+    })
+
+    const hasBonus = rules.bonusSeconds !== null && stages.length > 1
+    const priorPenaltySeconds = currentAttempt.penaltySeconds ?? 0
+    const markCleared = async () => {
+      await redis.sadd(clearedKey, stageKey)
+      clearedInstances.add(stageKey)
+      await redis.expire(clearedKey, 60 * 60 * 24 * 30)
+    }
+    const writeOutcome = (
+      record: EscapeRoomStageOutcomeRecord,
+      extra: { penaltySeconds?: number; lockoutUntil?: Date | null } = {}
+    ) =>
+      prisma.escapeRoomAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          stageOutcomes: setEscapeRoomStageOutcomeRecord(
+            outcomes,
+            record
+          ) as unknown as Prisma.InputJsonValue,
+          ...(extra.penaltySeconds
+            ? { penaltySeconds: { increment: extra.penaltySeconds } }
+            : {}),
+          ...(extra.lockoutUntil !== undefined
+            ? { lockoutUntil: extra.lockoutUntil }
+            : {}),
+        },
       })
-      sendJson(res, 400, { error: 'escape_room_expired' })
+    const regularStagesCleared = () =>
+      areEscapeRoomRegularStagesCleared({
+        stages,
+        rules,
+        outcomes,
+        // The stage answered in this request is added to the set before the
+        // check, so the stored outcomes need not be re-read.
+        clearedKeys: clearedInstances,
+      })
+
+    if (!decision.ok && decision.reason !== 'cleared') {
+      await rejectStage(res, decision, currentAttempt)
       return true
     }
-    clearedInstances = new Set(await redis.smembers(clearedKey))
-    instanceAlreadyCleared = clearedInstances.has(String(instanceId))
-    if (instanceAlreadyCleared) {
-      const blockCompleted =
-        requiredInstances.length > 0 &&
-        requiredInstances.every((entry) =>
-          clearedInstances.has(String(entry.id))
-        )
-      if (blockCompleted) {
-        await prisma.escapeRoomAttempt.updateMany({
-          where: { id: currentAttempt.id, status: 'IN_PROGRESS' },
-          data: {
-            status: 'COMPLETED',
-            completedAt: new Date(),
-            lockoutUntil: null,
-          },
-        })
+    if (!decision.ok) {
+      // Cleared earlier. A retry repairs a Redis write that failed after the
+      // outcome was stored, then finishes a completion that did not persist.
+      const record = getEscapeRoomStageOutcomeRecord(outcomes, stageKey)
+      if (!clearedInstances.has(stageKey) && record.outcome !== null) {
+        await markCleared()
+      }
+      const blockCompleted = regularStagesCleared()
+      if (blockCompleted) await completeAttempt(currentAttempt.id)
+      if (record.outcome === 'REVEALED' || record.outcome === 'SKIPPED') {
+        sendJson(res, 409, { error: 'escape_room_stage_cleared' })
+        return true
       }
       sendJson(res, 200, {
         status: 'correct',
         completed: blockCompleted,
+        lockoutUntil: null,
         responseTimestamp: Date.now(),
+        attemptsLeft: null,
+        revealed: false,
+        revealedSolution: null,
+        penaltySeconds: priorPenaltySeconds,
+        bonusPending: blockCompleted && hasBonus,
+        bonus: null,
       })
-      return true
-    }
-    const claimedCurrentInstance = getCurrentEscapeRoomInstance(
-      requiredInstances,
-      clearedInstances
-    )
-    if (claimedCurrentInstance?.id !== instanceId) {
-      sendJson(res, 409, { error: 'escape_room_stage_locked' })
       return true
     }
 
     // Grade response
     let pointsPercentage = 0
-    let parsedSolutions: any = undefined
-    if (instanceInfo.solutions) {
-      try {
-        parsedSolutions = JSON.parse(instanceInfo.solutions)
-      } catch (e) {
-        sendJson(res, 400, { error: 'invalid_solutions_json' })
-        return true
-      }
+    const parsed = parseSolutions(instanceInfo.solutions)
+    if (!parsed.ok) {
+      sendJson(res, 400, { error: 'invalid_solutions_json' })
+      return true
     }
+    const parsedSolutions: any = parsed.value
 
     if (type === 'SC') {
       pointsPercentage =
@@ -421,6 +533,8 @@ export async function handleEscapeRoomValidation(
 
     const isCorrect = pointsPercentage === 1
     const triesKey = `lq:${liveQuizId}:i:${instanceId}:tries:${participantData.sub}`
+    const previous = getEscapeRoomStageOutcomeRecord(outcomes, stageKey)
+    const answeredAt = new Date().toISOString()
 
     if (isCorrect) {
       // Correct! Fetch tries and send event to Hatchet to save
@@ -458,58 +572,144 @@ export async function handleEscapeRoomValidation(
         })
         throw error
       }
-      await redis.sadd(clearedKey, String(instanceId))
-      clearedInstances.add(String(instanceId))
-      await redis.expire(clearedKey, 60 * 60 * 24 * 30)
+      // The outcome is stored before the cleared set so that a failed Redis
+      // write is repaired by the next submission.
+      await writeOutcome(
+        decision.isBonus
+          ? {
+              stageKey,
+              wrongAttempts: previous.wrongAttempts,
+              outcome: 'BONUS_CORRECT',
+              at: answeredAt,
+              creditSeconds: getEscapeRoomBonusCredit(rules, true),
+            }
+          : {
+              stageKey,
+              wrongAttempts: previous.wrongAttempts,
+              outcome: 'SOLVED',
+              at: answeredAt,
+            }
+      )
+      await markCleared()
       await redis.del(triesKey)
 
-      const blockCompleted =
-        requiredInstances.length > 0 &&
-        requiredInstances.every((entry) =>
-          clearedInstances.has(String(entry.id))
-        )
-
-      if (blockCompleted) {
-        await prisma.escapeRoomAttempt.updateMany({
-          where: { id: attempt.id, status: 'IN_PROGRESS' },
-          data: {
-            status: 'COMPLETED',
-            completedAt: new Date(),
-            lockoutUntil: null,
-          },
-        })
+      const blockCompleted = decision.isBonus || regularStagesCleared()
+      if (blockCompleted && !decision.isBonus) {
+        await completeAttempt(attempt.id)
       }
       sendJson(res, 200, {
         status: 'correct',
         completed: blockCompleted,
+        lockoutUntil: null,
         responseTimestamp,
-      })
-      return true
-    } else {
-      // Incorrect! Apply lockout and increment tries
-      await redis
-        .multi()
-        .incr(triesKey)
-        .expire(triesKey, 60 * 60 * 24 * 30)
-        .exec()
-      const lockoutSeconds = Number(instanceInfo.escapeRoomLockoutSeconds || 0)
-      let lockoutUntil: Date | null = null
-
-      if (lockoutSeconds > 0) {
-        lockoutUntil = new Date(Date.now() + lockoutSeconds * 1000)
-        await prisma.escapeRoomAttempt.update({
-          where: { id: attempt.id },
-          data: { lockoutUntil },
-        })
-      }
-
-      sendJson(res, 200, {
-        status: 'incorrect',
-        lockoutUntil,
-        responseTimestamp: Date.now(),
+        attemptsLeft: null,
+        revealed: false,
+        revealedSolution: null,
+        penaltySeconds: priorPenaltySeconds,
+        bonusPending: !decision.isBonus && blockCompleted && hasBonus,
+        bonus: decision.isBonus ? 'correct' : null,
       })
       return true
     }
+
+    if (decision.isBonus) {
+      // One answer only: a wrong bonus answer costs nothing and locks nothing.
+      await writeOutcome({
+        stageKey,
+        wrongAttempts: previous.wrongAttempts,
+        outcome: 'BONUS_WRONG',
+        at: answeredAt,
+        creditSeconds: 0,
+      })
+      await markCleared()
+      await redis.del(triesKey)
+      sendJson(res, 200, {
+        status: 'incorrect',
+        completed: true,
+        lockoutUntil: null,
+        responseTimestamp: Date.now(),
+        attemptsLeft: null,
+        revealed: false,
+        revealedSolution: null,
+        penaltySeconds: priorPenaltySeconds,
+        bonusPending: false,
+        bonus: 'wrong',
+      })
+      return true
+    }
+
+    const wrong = applyEscapeRoomWrongAnswer(rules, previous.wrongAttempts)
+    const penaltySeconds = priorPenaltySeconds + wrong.penaltySeconds
+
+    if (wrong.revealed) {
+      // Reveal clears the stage without a solved response: Prisma first, then
+      // the cleared set, and neither an event nor a lockout.
+      await writeOutcome(
+        {
+          stageKey,
+          wrongAttempts: wrong.wrongAttempts,
+          outcome: 'REVEALED',
+          at: answeredAt,
+        },
+        { penaltySeconds: wrong.penaltySeconds }
+      )
+      await markCleared()
+      await redis.del(triesKey)
+
+      const blockCompleted = regularStagesCleared()
+      if (blockCompleted) await completeAttempt(attempt.id)
+      sendJson(res, 200, {
+        status: 'incorrect',
+        completed: blockCompleted,
+        lockoutUntil: null,
+        responseTimestamp: Date.now(),
+        attemptsLeft: 0,
+        revealed: true,
+        revealedSolution: getRevealedSolution(type, parsedSolutions),
+        penaltySeconds,
+        bonusPending: blockCompleted && hasBonus,
+        bonus: null,
+      })
+      return true
+    }
+
+    // Incorrect! Apply lockout and increment tries
+    await redis
+      .multi()
+      .incr(triesKey)
+      .expire(triesKey, 60 * 60 * 24 * 30)
+      .exec()
+    const lockoutSeconds =
+      configLockoutSeconds ?? Number(instanceInfo.escapeRoomLockoutSeconds || 0)
+    const lockoutUntil =
+      lockoutSeconds > 0 ? new Date(Date.now() + lockoutSeconds * 1000) : null
+
+    await writeOutcome(
+      {
+        stageKey,
+        wrongAttempts: wrong.wrongAttempts,
+        outcome: null,
+        at: null,
+      },
+      {
+        penaltySeconds: wrong.penaltySeconds,
+        ...(lockoutUntil ? { lockoutUntil } : {}),
+      }
+    )
+
+    sendJson(res, 200, {
+      status: 'incorrect',
+      completed: false,
+      lockoutUntil,
+      responseTimestamp: Date.now(),
+      attemptsLeft: wrong.attemptsLeft,
+      revealed: false,
+      revealedSolution: null,
+      penaltySeconds,
+      bonusPending: false,
+      bonus: null,
+    })
+    return true
   } finally {
     if (responseSlotAcquired) {
       await releaseEscapeRoomResponseSlot({
