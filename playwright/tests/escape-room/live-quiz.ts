@@ -17,6 +17,7 @@ import {
   createStudentPage,
   deMessages,
   expect,
+  joinCourseLeaderboard,
   messages,
   setLocale,
 } from './shared.js'
@@ -276,6 +277,7 @@ export function registerLiveQuizEscapeRoomTests() {
       await loginStudentPassword(student, {
         username: env('STUDENT_USERNAME'),
       })
+      await joinCourseLeaderboard(student)
       await openStudentLiveQuiz(student, LIVE_RULES.displayName)
       await acceptGamifiedLiveQuizAccountPrompt(
         student,
