@@ -137,8 +137,6 @@ function EscapeRoomProgress({
         (attempt) => attempt.status !== EscapeRoomProgressStatus.NotStarted
       )
     : attempts
-  // Live Quiz escape rooms keep their own leaderboard and have no scoring rules.
-  const showRank = activityType !== 'liveQuiz'
 
   async function handleReset(attempt: (typeof attempts)[number]) {
     if (!attempt.id) return
@@ -222,11 +220,9 @@ function EscapeRoomProgress({
             >
               <thead>
                 <tr className="border-b bg-gray-50 text-left">
-                  {showRank && (
-                    <th className="p-2 text-right font-bold">
-                      {t('manage.evaluation.escapeRoomColRank')}
-                    </th>
-                  )}
+                  <th className="p-2 text-right font-bold">
+                    {t('manage.evaluation.escapeRoomColRank')}
+                  </th>
                   <th className="p-2 font-bold">
                     {t('manage.evaluation.escapeRoomColParticipant')}
                   </th>
@@ -269,14 +265,12 @@ function EscapeRoomProgress({
                       className="border-b last:border-b-0"
                       data-cy={`escape-room-attempt-${attempt.displayName}`}
                     >
-                      {showRank && (
-                        <td
-                          className="p-2 text-right font-bold"
-                          data-cy={`escape-room-rank-${attempt.displayName}`}
-                        >
-                          {attempt.rank ?? '–'}
-                        </td>
-                      )}
+                      <td
+                        className="p-2 text-right font-bold"
+                        data-cy={`escape-room-rank-${attempt.displayName}`}
+                      >
+                        {attempt.rank ?? '–'}
+                      </td>
                       <td className="p-2">
                         <div className="font-bold">{attempt.displayName}</div>
                         {lockedOut && (
@@ -327,7 +321,7 @@ function EscapeRoomProgress({
                         {attempt.timeSpentSeconds != null
                           ? formatDuration(attempt.timeSpentSeconds)
                           : '–'}
-                        {showRank && attempt.rankedSeconds != null && (
+                        {attempt.rankedSeconds != null && (
                           <div className="text-xs text-gray-600">
                             {t('manage.evaluation.escapeRoomRankedTime', {
                               time: formatDuration(attempt.rankedSeconds),

@@ -601,6 +601,119 @@ describe('LiveQuiz block attempt start/reset contract', () => {
   })
 })
 
+describe('LiveQuiz block ranking in the cockpit progress', () => {
+  it('ranks Live attempts by solved stages, penalties and bonus credit, with legacy attempts by completion time', async () => {
+    const { liveQuiz, block } = await seedEscapeRoomLiveQuiz({
+      includeSecondInstance: true,
+    })
+    const [first, second] = block.elements.map((element) => String(element.id))
+    const startedAt = new Date('2026-01-01T10:00:00.000Z')
+    const at = (seconds: number) =>
+      new Date(startedAt.getTime() + seconds * 1000).toISOString()
+    const outcome = (
+      stageKey: string,
+      value: string,
+      seconds: number,
+      creditSeconds?: number
+    ) => ({
+      stageKey,
+      wrongAttempts: 0,
+      outcome: value,
+      at: at(seconds),
+      ...(creditSeconds ? { creditSeconds } : {}),
+    })
+    const seedAttempt = async (
+      name: string,
+      penaltySeconds: number,
+      stageOutcomes: unknown[] | undefined,
+      completedSeconds: number
+    ) => {
+      const participant = await seedParticipant(name)
+      await prisma.escapeRoomAttempt.create({
+        data: {
+          participantId: participant.id,
+          elementBlockId: block.id,
+          status: DB.EscapeRoomStatus.COMPLETED,
+          timeLimit: 300,
+          startedAt,
+          completedAt: new Date(at(completedSeconds)),
+          penaltySeconds,
+          ...(stageOutcomes ? { stageOutcomes: stageOutcomes as any } : {}),
+        },
+      })
+      return participant.id
+    }
+
+    const fastest = await seedAttempt(
+      'rank-live-fastest',
+      0,
+      [outcome(first!, 'SOLVED', 60), outcome(second!, 'SOLVED', 120)],
+      120
+    )
+    const bonus = await seedAttempt(
+      'rank-live-bonus',
+      20,
+      [
+        outcome(first!, 'SOLVED', 100),
+        outcome(second!, 'BONUS_CORRECT', 150, 50),
+      ],
+      100
+    )
+    const bonusWrong = await seedAttempt(
+      'rank-live-bonus-wrong',
+      0,
+      [outcome(first!, 'SOLVED', 80), outcome(second!, 'BONUS_WRONG', 140)],
+      80
+    )
+    const assisted = await seedAttempt(
+      'rank-live-assisted',
+      15,
+      [outcome(first!, 'REVEALED', 20), outcome(second!, 'SKIPPED', 30)],
+      30
+    )
+    const legacy = await seedAttempt('rank-live-legacy', 10, undefined, 200)
+
+    const progress = await getEscapeRoomProgress(
+      { liveQuizId: liveQuiz.id, elementBlockId: block.id },
+      lecturerCtx
+    )
+    const byParticipant = (id: string) =>
+      progress?.attempts.find((entry) => entry.participantId === id)
+
+    expect(byParticipant(fastest)).toMatchObject({
+      rank: 1,
+      solvedStages: 2,
+      rankedSeconds: 120,
+    })
+    expect(byParticipant(legacy)).toMatchObject({
+      rank: 2,
+      solvedStages: 2,
+      rankedSeconds: 210,
+    })
+    // The bonus credit puts the slower attempt ahead of the one with a wrong
+    // bonus answer.
+    expect(byParticipant(bonus)).toMatchObject({
+      rank: 3,
+      solvedStages: 1,
+      bonusCorrect: true,
+      rankedSeconds: 70,
+    })
+    expect(byParticipant(bonusWrong)).toMatchObject({
+      rank: 4,
+      solvedStages: 1,
+      bonusCorrect: false,
+      rankedSeconds: 80,
+    })
+    expect(byParticipant(assisted)).toMatchObject({
+      rank: 5,
+      solvedStages: 0,
+      revealedStages: 1,
+      skippedStages: 1,
+      rankedSeconds: 45,
+    })
+  })
+})
+
 // ! SEC#1: status gate on escape attempt start/hint
 // #region
 describe('escape attempt status gate (SEC#1)', () => {
