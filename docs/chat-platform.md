@@ -1678,7 +1678,7 @@ fixture reads are not cached. Ownership, current scope, recording/occurrence bin
 integrity checks still run on each request. The source-video digest identifies the frame's recording; it does not
 require a stored recording object. A representative frame may lie outside the cited transcript
 chunk's time range. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for development fixtures.
-A deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
+With shared-key authentication, a deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
 `BLOB_STORAGE_ACCESS_KEY` for the producer's frame container. In the active v3 Helm
 chart, set `chat.videoBlob.accountName`, `chat.videoBlob.container`, and
 `chat.videoBlob.existingSecret`; the existing Secret must contain the access key
@@ -1686,6 +1686,7 @@ under `chat.videoBlob.accessKeyKey` (default `BLOB_STORAGE_ACCESS_KEY`). The cha
 references that Secret without storing credentials in values. Empty defaults leave
 frame storage disabled; partial configuration fails template validation. This
 configuration stores and serves only frame JPEGs and manifests, not recordings.
+For keyless access, use the dedicated [Chat media workload identity](course-image-retrieval.md).
 Inline frames, zoomed frames, and source hover previews use the same authenticated
 image loader as document images, including Bearer-token fallback in embedded chats.
 

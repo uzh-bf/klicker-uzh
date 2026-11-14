@@ -159,3 +159,15 @@ it('isolates metadata by reader and storage namespace', async () => {
   await readVideoFrame(item.frame, undefined, first.read)
   expect(first.manifestReads()).toBe(2)
 })
+
+it('does not fall back to a local root or shared key in workload identity mode', async () => {
+  const item = artifact('workload-identity-fallback')
+  vi.stubEnv('CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED', 'true')
+  vi.stubEnv('CHAT_VIDEO_BLOB_CONTAINER', 'course-media')
+  vi.stubEnv('BLOB_STORAGE_ACCOUNT_NAME', undefined)
+  vi.stubEnv('BLOB_STORAGE_ACCESS_KEY', 'synthetic-key')
+
+  await expect(
+    readVideoFrame(item.frame, '/synthetic/local-root')
+  ).rejects.toThrow('workload identity storage unavailable')
+})
