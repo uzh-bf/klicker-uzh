@@ -11,6 +11,7 @@ import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as ElementWorkbookService from '../services/elementWorkbook.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -69,6 +70,7 @@ import {
   UserElementList,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
+import { ElementWorkbookFile } from './elementWorkbook.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -857,6 +859,13 @@ export const Query = builder.queryType({
             return await LiveQuizService.getLiveQuizData(args, ctx)
           }
         ),
+      }),
+
+      elementWorkbookTemplate: t.withAuth(asUser).field({
+        type: ElementWorkbookFile,
+        resolve: async (_, __, ctx) => {
+          return await ElementWorkbookService.getElementWorkbookTemplate(ctx)
+        },
       }),
 
       element: t.withAuth(asUser).field({

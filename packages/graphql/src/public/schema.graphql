@@ -1450,6 +1450,73 @@ enum ElementType {
   SELECTION
 }
 
+type ElementWorkbookExport {
+  downloadUrl: String
+  exportedIds: [Int!]!
+  filename: String!
+  unsupported: [ElementWorkbookUnsupported!]!
+}
+
+type ElementWorkbookFile {
+  contentBase64: String!
+  filename: String!
+}
+
+enum ElementWorkbookImportAction {
+  CREATE
+  SKIP_EXISTING
+  SKIP_WORKBOOK
+}
+
+type ElementWorkbookImportResult {
+  createdElementIds: [Int!]!
+  error: ElementWorkbookIssue
+  skippedCount: Int!
+}
+
+type ElementWorkbookIssue {
+  code: String!
+  column: String
+  row: Int
+  sheet: String
+}
+
+type ElementWorkbookPreview {
+  error: ElementWorkbookIssue
+  imagesToCopy: Int!
+  previewToken: String
+  rows: [ElementWorkbookPreviewRow!]!
+}
+
+type ElementWorkbookPreviewRow {
+  action: ElementWorkbookImportAction!
+  existingElementId: Int
+  existingElementName: String
+  firstRow: Int
+  name: String!
+  row: Int!
+  sheet: String!
+  type: String!
+}
+
+type ElementWorkbookUnsupported {
+  id: Int!
+  name: String!
+  reason: ElementWorkbookUnsupportedReason!
+  type: String!
+}
+
+enum ElementWorkbookUnsupportedReason {
+  NOT_REPRESENTABLE
+  TOO_MANY_ANSWERS
+  TYPE_NOT_SUPPORTED
+}
+
+type ElementWorkbookUpload {
+  uploadId: String!
+  uploadUrl: String!
+}
+
 type Feedback {
   content: String!
   createdAt: Date!
@@ -2106,6 +2173,7 @@ type Mutation {
   endLiveQuiz(id: String!): LiveQuiz
   endMicroLearning(id: String!): MicroLearning
   ensureParticipation(courseId: String!): Boolean!
+  exportElementWorkbook(elementIds: [Int!]!, includeTags: Boolean!): ElementWorkbookExport!
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
   finalizeGroupActivityGrading(id: String!): GroupActivity
@@ -2115,6 +2183,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  importElementWorkbook(previewToken: String!, uploadId: String!): ElementWorkbookImportResult!
   issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
@@ -2143,6 +2212,8 @@ type Mutation {
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
+  prepareElementWorkbookUpload: ElementWorkbookUpload!
+  previewElementWorkbookImport(uploadId: String!): ElementWorkbookPreview!
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -2687,6 +2758,7 @@ type Query {
   courseDuplicationStatuses(ids: [String!]!): [CourseDuplicationStatus!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
+  elementWorkbookTemplate: ElementWorkbookFile!
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]

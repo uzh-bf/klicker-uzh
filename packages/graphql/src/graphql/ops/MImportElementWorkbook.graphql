@@ -1,0 +1,12 @@
+mutation ImportElementWorkbook($uploadId: String!, $previewToken: String!) {
+  importElementWorkbook(uploadId: $uploadId, previewToken: $previewToken) {
+    createdElementIds
+    skippedCount
+    error {
+      code
+      sheet
+      row
+      column
+    }
+  }
+}
