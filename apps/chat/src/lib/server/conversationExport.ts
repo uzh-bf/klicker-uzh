@@ -171,7 +171,11 @@ export function orderThreadMessages(messages: ExportMessage[]): {
     ids.has(message.parentId)
       ? message.parentId
       : null
-  const legacyChain = byCreation.every((m) => usableParent(m) === null)
+  // Only rows without any recorded parent are legacy. A parent left out by
+  // the export window still makes its answers alternatives of one turn.
+  const legacyChain = byCreation.every(
+    (m) => !m.parentId || m.parentId === m.id
+  )
   const children = new Map<string | null, ExportMessage[]>()
   let previousRoot: string | null = null
   for (const message of byCreation) {

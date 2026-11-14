@@ -97,6 +97,15 @@ describe('orderThreadMessages', () => {
     ])
   })
 
+  it('keeps alternatives apart when the window excludes their question', () => {
+    const { hasBranches } = orderThreadMessages([
+      message('a1', 1, { parentId: 'q1', role: 'assistant' }),
+      message('a1-retry', 2, { parentId: 'q1', role: 'assistant' }),
+    ])
+
+    expect(hasBranches).toBe(true)
+  })
+
   it('keeps an edited first question as a sibling branch', () => {
     const { ordered, hasBranches } = orderThreadMessages([
       message('q1', 0),
