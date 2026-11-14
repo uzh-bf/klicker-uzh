@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { convertToModelMessages, isStepCount, streamText } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
 import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
@@ -69,6 +70,11 @@ function createManageAssistantModel(deploymentId: string) {
 }
 
 export async function POST(req: NextRequest) {
+  // The proxy matcher skips this path, so the exam deployment refuses it here.
+  if (isAssessmentMode()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

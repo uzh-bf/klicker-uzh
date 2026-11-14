@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { isAssessmentMode } from '../../lib/assessmentMode'
 import Link from 'next/link'
 import { ManageAssistant } from '../../components/manage-assistant'
 import { getManageAssistantCapability } from '../../lib/server/featureFlags'
@@ -11,6 +12,8 @@ interface ManageAssistantPageProps {
 export default async function ManageAssistantPage({
   searchParams,
 }: ManageAssistantPageProps) {
+  if (isAssessmentMode()) notFound()
+
   const manageUser = await getAuthenticatedManageUser()
   const resolvedSearchParams = (await searchParams) ?? {}
   const embedded = isEmbeddedParam(resolvedSearchParams.embed)

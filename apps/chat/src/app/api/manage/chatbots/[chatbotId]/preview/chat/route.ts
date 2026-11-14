@@ -1,3 +1,4 @@
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import { isChatUsageClassEntitled } from '@klicker-uzh/util'
@@ -103,6 +104,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
+  if (isAssessmentMode()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const { chatbotId } = await params
   const auth = await withOwnerPreviewAuth(chatbotId)
   if ('response' in auth) return auth.response

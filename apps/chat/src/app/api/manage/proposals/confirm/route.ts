@@ -1,3 +1,4 @@
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
@@ -36,6 +37,10 @@ function getGraphqlEndpoint() {
 }
 
 export async function POST(req: NextRequest) {
+  if (isAssessmentMode()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

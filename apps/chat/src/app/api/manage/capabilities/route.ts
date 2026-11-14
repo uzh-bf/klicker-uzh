@@ -1,3 +1,4 @@
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { type NextRequest, NextResponse } from 'next/server'
 import { getManageAssistantCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
@@ -30,6 +31,10 @@ function capabilityResponse(
 }
 
 export async function GET(req: NextRequest) {
+  if (isAssessmentMode()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) return capabilityResponse('unavailable', 401)
 

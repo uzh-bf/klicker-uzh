@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { ChatRecoveryCard } from '../components/chat-recovery-card'
+import { usePwaUrl } from './RootIntlProvider'
 
 interface ChatErrorProps {
   readonly unstable_retry: () => void
@@ -10,9 +11,7 @@ interface ChatErrorProps {
 
 export default function ChatError({ unstable_retry }: ChatErrorProps) {
   const t = useTranslations()
-  const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
-    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
-    : 'https://pwa.klicker.uzh.ch'
+  const pwaBaseUrl = usePwaUrl()
 
   return (
     <ChatRecoveryCard

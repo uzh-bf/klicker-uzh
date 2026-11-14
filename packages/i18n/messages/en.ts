@@ -613,6 +613,9 @@ export default {
         'You need to create a KlickerUZH account or log in before you can access this chatbot.',
       redirectNotice: 'After logging in, you will return to this chatbot.',
       loginButton: 'Go to KlickerUZH Login',
+      assessmentMessage:
+        'Sign in to the exam app with your Edu-ID, then open the chatbot link again.',
+      assessmentLoginButton: 'Go to exam login',
     },
     response: {
       errorLabel: 'Error',
