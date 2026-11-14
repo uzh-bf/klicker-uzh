@@ -253,6 +253,11 @@ export function registerLiveQuizEscapeRoomTests() {
     await page.getByTestId('escape-room-max-wrong-attempts').fill('2')
     await page.getByTestId('escape-room-time-limit').fill('45')
     await page.getByTestId('close-block-countdown').click()
+    // the debrief shows on the projector once the block is closed
+    await page
+      .locator('[data-cy^="escape-room-debrief-block-"]')
+      .first()
+      .fill('Debrief for the first stage')
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
 
@@ -334,6 +339,56 @@ export function registerLiveQuizEscapeRoomTests() {
       await expect(
         page.locator(`[data-cy="escape-room-rank-${env('STUDENT_USERNAME')}"]`)
       ).toHaveText('1', { timeout: 30_000 })
+
+      // the projector opens in a new tab and ranks the running block
+      const [projector] = await Promise.all([
+        page.waitForEvent('popup'),
+        page.getByTestId('escape-room-open-projector').click(),
+      ])
+      await expect(projector.getByTestId('escape-projector')).toHaveAttribute(
+        'data-phase',
+        'RUNNING',
+        { timeout: 30_000 }
+      )
+      await expect(
+        projector.getByTestId('escape-projector-ranking')
+      ).toBeVisible()
+      await expect(
+        projector.getByTestId('escape-projector-row').first()
+      ).toBeVisible()
+      await expect(
+        projector.getByTestId('escape-projector-debrief')
+      ).not.toBeAttached()
+
+      // closing the block switches the projector to the closed state, which
+      // carries the debrief
+      await page.getByTestId('next-block-timeline').click()
+      await expect(projector.getByTestId('escape-projector')).toHaveAttribute(
+        'data-phase',
+        'CLOSED',
+        { timeout: 30_000 }
+      )
+      await expect(
+        projector.getByTestId('escape-projector-debrief').first()
+      ).toBeVisible()
+      await projector.close()
+
+      // the evaluation page keeps the table of the executed block
+      const evaluationLink = page
+        .getByTestId('evaluation-results-cockpit')
+        .locator('xpath=ancestor::a[1]')
+      const href = await evaluationLink.getAttribute('href')
+      if (!href || !href.includes('/evaluation')) {
+        throw new Error(`Unexpected evaluation link: ${href}`)
+      }
+      await page.goto(
+        href.startsWith('http') ? href : `${env('URL_MANAGE')}${href}`
+      )
+      await page.getByTestId('evaluation-escape-room').click()
+      await expect(page.getByTestId('escape-room-progress-table')).toBeVisible({
+        timeout: 30_000,
+      })
+      await expect(page.getByTestId('escape-room-stage-table')).toBeVisible()
     } finally {
       await student.context().close()
     }
