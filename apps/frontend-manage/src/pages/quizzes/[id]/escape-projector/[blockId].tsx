@@ -159,6 +159,17 @@ function StageCounts({
 }) {
   const t = useTranslations()
 
+  if (stage.isBonus) {
+    return (
+      <div className="text-2xl tabular-nums">
+        {t('manage.evaluation.escapeRoomStageBonusResult', {
+          correct: stage.bonusCorrect,
+          wrong: stage.bonusWrong,
+        })}
+      </div>
+    )
+  }
+
   return (
     <div className="flex gap-6 text-2xl tabular-nums">
       <span className="text-green-400">

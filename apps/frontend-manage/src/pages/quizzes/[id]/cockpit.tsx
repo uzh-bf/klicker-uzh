@@ -167,7 +167,9 @@ function Cockpit() {
         liveQuizName={name}
       />
       {escapeBlock && escapeRoomData?.escapeRoomProgress && (
-        <>
+        // the layout is a flex column; without shrink-0 the table collapses
+        // into a thin scrolling strip below the audience panels
+        <div className="mt-6 shrink-0">
           {escapeRoomData.escapeRoomProgress.projectorDigest && (
             <div className="mx-auto flex max-w-5xl justify-end px-4">
               <Button
@@ -193,7 +195,7 @@ function Cockpit() {
             onReset={refetchEscapeRoom}
             canReset={canResetEscapeRoom ?? false}
           />
-        </>
+        </div>
       )}
       {escapeBlock && escapeRoomError ? (
         <UserNotification
