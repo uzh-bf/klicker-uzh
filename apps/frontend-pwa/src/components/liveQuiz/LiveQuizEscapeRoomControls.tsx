@@ -85,7 +85,7 @@ export function LiveQuizEscapeRoomOverlay({
   const stages = getLiveEscapeRoomStages({
     clearedCount: clearedInstances,
     totalCount: totalInstances,
-    hasBonus: (config.bonusSeconds ?? 0) > 0,
+    hasBonus: config.bonusSeconds != null && totalInstances > 1,
     stageOutcomes: controller.attempt?.stageOutcomes,
   })
 
@@ -111,7 +111,7 @@ export function LiveQuizEscapeRoomOverlay({
       attempt={controller.attempt}
       stages={stages}
       bonus={
-        config.bonusSeconds && stages.bonusCount > 0
+        config.bonusSeconds != null && stages.bonusCount > 0
           ? {
               seconds: config.bonusSeconds,
               available: controller.bonusPending && hasVisibleStage,

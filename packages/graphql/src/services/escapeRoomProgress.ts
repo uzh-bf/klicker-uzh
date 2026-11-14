@@ -293,10 +293,23 @@ export async function getEscapeRoomProgress(
     const stageIds = new Set(liveQuizStageIds)
     runningLiveQuizAttempts.forEach((attempt, ix) => {
       const [error, members] = results[ix] ?? [null, []]
-      const cleared = !error && Array.isArray(members) ? members : []
+      const cleared = new Set(
+        (!error && Array.isArray(members) ? members : []).map(String)
+      )
+      // A reveal or skip is stored before the Redis write, so a stage counts
+      // as cleared when either store says so.
+      for (const entry of parseEscapeRoomStageOutcomes(attempt.stageOutcomes)) {
+        if (
+          entry.outcome === 'SOLVED' ||
+          entry.outcome === 'REVEALED' ||
+          entry.outcome === 'SKIPPED'
+        ) {
+          cleared.add(entry.stageKey)
+        }
+      }
       liveQuizClearedByAttempt.set(
         attempt.id,
-        cleared.filter((id) => stageIds.has(String(id))).length
+        [...cleared].filter((id) => stageIds.has(id)).length
       )
     })
   }
