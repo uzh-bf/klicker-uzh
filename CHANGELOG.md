@@ -2,6 +2,106 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.94](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.93...v3.4.0-alpha.94) (2026-11-12)
+
+
+### Features
+
+* **chat:** cite the source card a course figure came from ([fa9e6aa](https://github.com/uzh-bf/klicker-uzh/commit/fa9e6aa600181d1dc24cef896f6723a5b124f66c))
+* **chat:** consume generated picture descriptions ([6445621](https://github.com/uzh-bf/klicker-uzh/commit/644562161915e5c2f7b0f7dd72022bbad7cbd7f8))
+* **chat:** display retrieved course figures with verified page labels ([114c7dd](https://github.com/uzh-bf/klicker-uzh/commit/114c7dd68cbb943d71e306d77ca36905a2ae4fcc))
+* **chat:** expand course images in a zoomable viewer ([88ca8fc](https://github.com/uzh-bf/klicker-uzh/commit/88ca8fc3258c014fed74de4d1f6923340bd75e99))
+* **chat:** gate retrieved figure vision behind an opt-in toggle ([894d21d](https://github.com/uzh-bf/klicker-uzh/commit/894d21d9f812006e7875ac16d446e81799fe3ed4))
+* **chat:** place selected course figures inline with original captions ([e44c9c5](https://github.com/uzh-bf/klicker-uzh/commit/e44c9c5c06632a16bd2c89998ebb32c8d6f3f1a2))
+* **chat:** show recording frames with shared image viewer and citations ([#6315](https://github.com/uzh-bf/klicker-uzh/issues/6315)) ([20c6959](https://github.com/uzh-bf/klicker-uzh/commit/20c6959d2e39183faa49a17de8318f1d3fa9ebc1))
+* **chat:** validate and serve resource-bound course images ([18a02b2](https://github.com/uzh-bf/klicker-uzh/commit/18a02b26aeb8a50076920599b1ac7961671a3e65))
+* **generation:** let lecturers request a revision of one generated question ([#6837](https://github.com/uzh-bf/klicker-uzh/issues/6837)) ([01bb4fa](https://github.com/uzh-bf/klicker-uzh/commit/01bb4fa1ded2e0c99b23a47f108c60f8e72a5d1e))
+
+
+### Bug Fixes
+
+* **chat:** address course image review findings ([a0901eb](https://github.com/uzh-bf/klicker-uzh/commit/a0901eb581220b730a84e1d4a2a275695d5ecf2d))
+* **chat:** address course image review findings ([a7cb9e8](https://github.com/uzh-bf/klicker-uzh/commit/a7cb9e8be5b9221a1a9aad3c68a36c88482ee0b5))
+* **chat:** address final course image review findings ([695421f](https://github.com/uzh-bf/klicker-uzh/commit/695421f7f642398680d20debf1f74d7014a50c0b))
+* **chat:** align video citations with retrieved passages ([#6865](https://github.com/uzh-bf/klicker-uzh/issues/6865)) ([3212d15](https://github.com/uzh-bf/klicker-uzh/commit/3212d15a121567427ab63e5e4237d2267de7f8c7))
+* **chat:** cache course image source matches ([a56c9f7](https://github.com/uzh-bf/klicker-uzh/commit/a56c9f789f1a87c5be7743a8bb9373c15ccbabc5))
+* **chat:** close course image edge cases ([8bcc32c](https://github.com/uzh-bf/klicker-uzh/commit/8bcc32c0bbd7e841a7b52d23d59c303a58730b5b))
+* **chat:** harden course image evidence registry ([174ce1b](https://github.com/uzh-bf/klicker-uzh/commit/174ce1b589c3da0325e326d5149b0c4053f20401))
+* **chat:** harden course image retrieval ([5a943a6](https://github.com/uzh-bf/klicker-uzh/commit/5a943a6e8b534b7de97e56763c508082494f9954))
+* **chat:** harden inline course image placement ([8645074](https://github.com/uzh-bf/klicker-uzh/commit/8645074ae5b7dc39b629f56911fc6623cd78c155))
+* **chat:** improve course image viewer accessibility ([fdee9b0](https://github.com/uzh-bf/klicker-uzh/commit/fdee9b03eb012146f7d2776253709d205394c830))
+* **chat:** integrate v3-ai figure and video source citations ([0546f54](https://github.com/uzh-bf/klicker-uzh/commit/0546f543d6c33616255ba6c5735d9b1c2d3843d6))
+* **chat:** preserve figures with malformed captions ([6aef1e9](https://github.com/uzh-bf/klicker-uzh/commit/6aef1e9554474a48ca99bd4831fe57a11b700326))
+* **chat:** preserve fixture content identities ([f8971a9](https://github.com/uzh-bf/klicker-uzh/commit/f8971a95f4fcc8b56026f20cada2c5a0d8bbd35f))
+* **chat:** preserve multiline generated image descriptions ([6dc9e77](https://github.com/uzh-bf/klicker-uzh/commit/6dc9e777e84daed379f4cbff8dc84cceb83f56ad))
+* **chat:** propagate image validation fixes to descriptions ([cd867ce](https://github.com/uzh-bf/klicker-uzh/commit/cd867ce4af00e9fb53df6e3f5078949381d03ead))
+* **chat:** propagate image validation fixes to display ([8fd621b](https://github.com/uzh-bf/klicker-uzh/commit/8fd621bf96c83696f5e3638cd96cfa5885e89be7))
+* **chat:** propagate image validation fixes to inline captions ([212f8bc](https://github.com/uzh-bf/klicker-uzh/commit/212f8bca9dd0111174f1914f95e390c70a8af3dc))
+* **chat:** propagate image validation fixes to viewer ([9abe98c](https://github.com/uzh-bf/klicker-uzh/commit/9abe98c0e55d367dadba56b37e327d92b05f2b0e))
+* **chat:** reconcile course image selection and browser coverage ([4ae5135](https://github.com/uzh-bf/klicker-uzh/commit/4ae5135f689cdc10ef0dcf95a3420fb80ca711d7))
+* **chat:** recover passage times from plain video citations ([#6877](https://github.com/uzh-bf/klicker-uzh/issues/6877)) ([a379883](https://github.com/uzh-bf/klicker-uzh/commit/a379883e673693df62f14af70488874188be993b))
+* **chat:** reject course image tool collisions ([adc5e93](https://github.com/uzh-bf/klicker-uzh/commit/adc5e9373d4e3b1f7bf35e4b2b7b9d6355f904e0))
+* **chat:** reject invisible description controls ([4756e9d](https://github.com/uzh-bf/klicker-uzh/commit/4756e9dfb28f50d8b0ab7d022a09ed80f96dfdb5))
+* **chat:** resolve course images under the processor Blob prefix ([79bdbc8](https://github.com/uzh-bf/klicker-uzh/commit/79bdbc82b9a047a52d4f260211e86544d28e7204))
+* **chat:** retain the first question during thread hydration ([c0b4b57](https://github.com/uzh-bf/klicker-uzh/commit/c0b4b57820d561403b0890377a83db81849f3515))
+* **chat:** scope course image display tooling ([7b2aec9](https://github.com/uzh-bf/klicker-uzh/commit/7b2aec9985e0e03c1133402790b064af338dc115))
+* **chat:** size the course image viewer before its first paint ([81b21e7](https://github.com/uzh-bf/klicker-uzh/commit/81b21e7a4847e19501a6825314e63f7b754160c9))
+* **chat:** skip conflicting course image tools ([9259f83](https://github.com/uzh-bf/klicker-uzh/commit/9259f83bc50ef01322b43d9eb874f7954f875ba9))
+* **chat:** validate Azure image reads and concurrent selections ([5d76c73](https://github.com/uzh-bf/klicker-uzh/commit/5d76c739146bd3fcb57664c100e5780a27130051))
+* **ci:** retain saved KB settings after base synchronization ([92a0cc1](https://github.com/uzh-bf/klicker-uzh/commit/92a0cc1cafb6b19649708acfa07bb5367b61a01d))
+* **generation:** send the graph version with a slot revision request ([#6859](https://github.com/uzh-bf/klicker-uzh/issues/6859)) ([c16d908](https://github.com/uzh-bf/klicker-uzh/commit/c16d9088bc7f707503007fd241655194219f4644))
+* **kb-graph:** read the failure result of a failed graph build ([#6875](https://github.com/uzh-bf/klicker-uzh/issues/6875)) ([1b7d77d](https://github.com/uzh-bf/klicker-uzh/commit/1b7d77d7a58d0633273cbfff6b30888ec33f3d1d))
+* **local-kb:** accept immutable local candidate image IDs ([18edb76](https://github.com/uzh-bf/klicker-uzh/commit/18edb762132ae2d770e48b72a0896767ce528769))
+* **local-kb:** bind startup recovery to retained app ([58c70b7](https://github.com/uzh-bf/klicker-uzh/commit/58c70b7cebb7e15e6755c7a7c21de6a41c3c462d))
+* **local-kb:** compare processor resume filenames explicitly ([c23d857](https://github.com/uzh-bf/klicker-uzh/commit/c23d857f641d2e8df539b1fcf7e21b69cfcfa2c5))
+* **local-kb:** complete bounded inference configuration ([f60bfec](https://github.com/uzh-bf/klicker-uzh/commit/f60bfec84961353efb078c43c76188d204095b57))
+* **local-kb:** continue a stopped initial startup ([17ada09](https://github.com/uzh-bf/klicker-uzh/commit/17ada099a5f6f794fbe4c0a43c1d9a79daa4a245))
+* **local-kb:** continue after retained processor recovery ([d2aea8b](https://github.com/uzh-bf/klicker-uzh/commit/d2aea8b3aef0b11f59ccac7e7162ed913173c7f6))
+* **local-kb:** preserve failed startup recovery ancestry ([0275cee](https://github.com/uzh-bf/klicker-uzh/commit/0275cee7c3c7c385f1d5fc4bbe38c6a7eaea2b3e))
+* **local-kb:** recover setup before processor preparation ([f465fa6](https://github.com/uzh-bf/klicker-uzh/commit/f465fa62dd1d8f106f7facfc339d87b7878fe296))
+* **lti:** validate exact origin for recovered iframe launches ([#6864](https://github.com/uzh-bf/klicker-uzh/issues/6864)) ([e17fcbb](https://github.com/uzh-bf/klicker-uzh/commit/e17fcbbb4a6757cbfb4ed153e9e4f6276cf635c4))
+* **question-generation:** ignore unknown top-level sections in the final bank ([#6872](https://github.com/uzh-bf/klicker-uzh/issues/6872)) ([002cde3](https://github.com/uzh-bf/klicker-uzh/commit/002cde3ad62d1ad45a91056f65e10426414cd712))
+* **question-generation:** pair revision slots by design slot id ([#6879](https://github.com/uzh-bf/klicker-uzh/issues/6879)) ([9a1c998](https://github.com/uzh-bf/klicker-uzh/commit/9a1c998f10b9b4ae4d01b8050f444e5bc8cfce38))
+
+
+### Refactors
+
+* **chat:** make course image card props readonly ([915d350](https://github.com/uzh-bf/klicker-uzh/commit/915d3503f893cdab0a0ab70cbb14285ea572e4c8))
+* **chat:** remove unused image viewer helpers ([c853f40](https://github.com/uzh-bf/klicker-uzh/commit/c853f40e5fc66f3ea6101bcd788a2821cab4be37))
+* **chat:** share course image digest validation ([cdf7d39](https://github.com/uzh-bf/klicker-uzh/commit/cdf7d39900d80bea4e02a9285c81cbf676cb31f3))
+
+
+### Other
+
+* **chat:** format course image fixtures ([59e4d49](https://github.com/uzh-bf/klicker-uzh/commit/59e4d4909ab51286a6667b2c3ff32cb12f1e8922))
+* **chat:** scope image fixture to its seeded course ([6052ddf](https://github.com/uzh-bf/klicker-uzh/commit/6052ddf7bfa79018ba1d4abe403fdaaac7bd2523))
+* **local-kb:** remove duplicate setup failure scenario ([54e715a](https://github.com/uzh-bf/klicker-uzh/commit/54e715a561ba2d6413a10497b866f495de44a09c))
+
+
+### Enhancements
+
+* **chat:** label course image model input evidence ([d49bca1](https://github.com/uzh-bf/klicker-uzh/commit/d49bca1e88e8e1bb4c8b8577cf11a6028eb82a9a))
+* **chat:** retrieve, explain and display course images ([#6312](https://github.com/uzh-bf/klicker-uzh/issues/6312)) ([64bba04](https://github.com/uzh-bf/klicker-uzh/commit/64bba0422ca0fe792a6d391b342e4c0482e2e68e))
+* **deploy:** run the production PWA baseline at three replicas ([#6860](https://github.com/uzh-bf/klicker-uzh/issues/6860)) ([6e39de5](https://github.com/uzh-bf/klicker-uzh/commit/6e39de5abf62bbe751fc834c0e4b553e14eb499e))
+* **deploy:** serve release assets and the PWA burst tier in production ([#6856](https://github.com/uzh-bf/klicker-uzh/issues/6856)) ([a71ce5a](https://github.com/uzh-bf/klicker-uzh/commit/a71ce5ae59e58d5df66c05ccad8b43481a48dde6))
+* **deploy:** turn on question revision requests on staging ([#6869](https://github.com/uzh-bf/klicker-uzh/issues/6869)) ([8d116a1](https://github.com/uzh-bf/klicker-uzh/commit/8d116a1a25f8c4da72b80f755b5e191dcd07a857))
+* **generation:** accept a revision request on a generated question ([#6835](https://github.com/uzh-bf/klicker-uzh/issues/6835)) ([127ea0c](https://github.com/uzh-bf/klicker-uzh/commit/127ea0c8683c6d4f4e4c4dd5784dd57cef2cd7f2))
+* **generation:** fulfil a revision request with a one-slot child build ([#6836](https://github.com/uzh-bf/klicker-uzh/issues/6836)) ([d4f0cfd](https://github.com/uzh-bf/klicker-uzh/commit/d4f0cfd40709f3b650ca1fbcfee804f483c838f2))
+* **local-kb:** support guarded candidate qualification ([6ac5bd7](https://github.com/uzh-bf/klicker-uzh/commit/6ac5bd7af4ed11ba09e5f5c14ec1ab5495b3684c))
+* **local-kb:** wire staged CPU image publication ([af54a66](https://github.com/uzh-bf/klicker-uzh/commit/af54a661f056a8ffab0e5eade3bc3711c2db960a))
+
+## [3.4.0-alpha.93](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.92...v3.4.0-alpha.93) (2026-11-12)
+
+
+### Bug Fixes
+
+* **lti:** backport exact-origin recovery validation ([d64eb7d](https://github.com/uzh-bf/klicker-uzh/commit/d64eb7d595ba93bd708ddf09777a74110db953a3))
+
+
+### Documentation
+
+* **project:** add isolated LTI hotfix release plan ([d198240](https://github.com/uzh-bf/klicker-uzh/commit/d198240bdb951bc26781d0f9a5b6fbb3c25f59c1))
+
 ## [3.4.0-alpha.92](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.91...v3.4.0-alpha.92) (2026-11-10)
 
 

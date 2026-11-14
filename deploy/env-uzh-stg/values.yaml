@@ -346,6 +346,7 @@ chat:
       supportedReasoningEfforts:
         - low
         - medium
+        - high
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
