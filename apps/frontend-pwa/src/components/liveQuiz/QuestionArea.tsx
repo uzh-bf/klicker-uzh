@@ -17,6 +17,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import {
   type LiveQuizEscapeRoomAttempt,
+  type LiveQuizEscapeRoomConfig,
+  type LiveQuizEscapeRoomResponse,
   useLiveQuizEscapeRoom,
 } from '../hooks/useLiveQuizEscapeRoom'
 import {
@@ -46,25 +48,21 @@ interface QuestionAreaProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{
-    statusCode: number
-    responseTimestamp?: number
-    responseStatus?: string
-    lockoutUntil?: string
-    completed?: boolean
-  }>
+  }) => Promise<
+    {
+      statusCode: number
+      responseTimestamp?: number
+      responseStatus?: string
+      // error code of a rejected escape room answer
+      errorCode?: string
+    } & LiveQuizEscapeRoomResponse
+  >
   quizId: string
   execution: number
   timeLimit?: number
   isStaticPreview?: boolean
   blockId?: number
-  escapeRoomConfig?: {
-    timeLimit: number
-    hintPenalty: number
-    hintPenalties: number[]
-    lockoutSeconds: number
-    introText?: string | null
-  } | null
+  escapeRoomConfig?: LiveQuizEscapeRoomConfig | null
   title?: string
   initialEscapeRoomAttempt?: LiveQuizEscapeRoomAttempt | null
   escapeRoomTotalInstances?: number | null
@@ -213,7 +211,13 @@ function QuestionArea({
 
   const onSubmit = async (): Promise<void> => {
     // the time-up ending can be dismissed; the server rejects later answers
-    if (escapeRoom.lockoutRemaining > 0 || escapeRoom.isExpired) return
+    if (
+      escapeRoom.lockoutRemaining > 0 ||
+      escapeRoom.isExpired ||
+      escapeRoom.reveal
+    ) {
+      return
+    }
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -366,8 +370,23 @@ function QuestionArea({
     input: Parameters<QuestionAreaProps['handleNewResponse']>[0]
   ) {
     const result = await handleNewResponse(input)
-    showStatusCodeToast(result.statusCode, result.responseStatus)
-    escapeRoom.onResponse(result)
+    // a reveal and a bonus answer show their outcome inline
+    if (!result.revealed && !result.bonus) {
+      showStatusCodeToast(result.statusCode, result.responseStatus)
+    }
+    escapeRoom.onResponse(result, input.instanceId)
+    // the bonus answer ends the room; a cleared or locked stage means the
+    // student's view is out of date
+    if (
+      escapeRoomConfig &&
+      refetchLiveQuiz &&
+      (result.bonus ||
+        result.errorCode === 'escape_room_stage_cleared' ||
+        result.errorCode === 'escape_room_stage_locked' ||
+        result.errorCode === 'escape_room_bonus_answered')
+    ) {
+      await refetchLiveQuiz()
+    }
     return result
   }
 
@@ -616,6 +635,7 @@ function QuestionArea({
         instances.length - (remainingQuestions?.length ?? 0)
       }
       totalInstances={escapeRoomTotalInstances ?? instances.length}
+      hasVisibleStage={instances.length > 0}
     />
   ) : null
 
@@ -683,7 +703,8 @@ function QuestionArea({
             !!studentResponse.valid &&
             !submitting &&
             escapeRoom.lockoutRemaining === 0 &&
-            !escapeRoom.isExpired
+            !escapeRoom.isExpired &&
+            !escapeRoom.reveal
           }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>

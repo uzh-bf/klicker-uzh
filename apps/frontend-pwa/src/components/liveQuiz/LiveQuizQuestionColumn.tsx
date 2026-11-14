@@ -10,6 +10,7 @@ import { H2, StepProgress, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import type { LiveQuizEscapeRoomResponse } from '../hooks/useLiveQuizEscapeRoom'
 import QuestionArea from './QuestionArea'
 
 type LiveQuizData = NonNullable<GetRunningLiveQuizQuery['studentLiveQuiz']>
@@ -30,12 +31,15 @@ interface LiveQuizQuestionColumnProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{
-    statusCode: number
-    responseTimestamp?: number
-    responseStatus?: string
-    completed?: boolean
-  }>
+  }) => Promise<
+    {
+      statusCode: number
+      responseTimestamp?: number
+      responseStatus?: string
+      // error code of a rejected escape room answer
+      errorCode?: string
+    } & LiveQuizEscapeRoomResponse
+  >
   refetchLiveQuiz: () => Promise<unknown>
   className?: string
 }

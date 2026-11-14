@@ -1404,6 +1404,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Incorrect answer! {count, plural, one {# try} other {# tries}} left.',
       escapeRoomRevealedNotice:
         'Out of tries. The stage counts as cleared (+{duration} ranked time).',
+      escapeRoomRevealedSolution: 'Solution:',
       escapeRoomRevealedToast:
         'Out of tries — the stage counts as cleared. Moving on.',
       escapeRoomSkip: 'Skip stage (+{duration} ranked time)',
