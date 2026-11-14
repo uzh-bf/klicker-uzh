@@ -390,6 +390,16 @@ export default {
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
       welcomeMode: 'Selected mode: {mode}',
+      explanation: {
+        preparing: 'Preparing an interactive explanation...',
+        rejected: 'Interactive explanation draft rejected',
+        unavailable: 'Interactive explanation unavailable',
+        fallbackTitle: 'Interactive explanation',
+        header: 'Interactive explanation · AI-generated draft, not reviewed',
+        openLarge: 'Open large',
+        close: 'Close',
+        loading: 'Loading...',
+      },
       learningContext: {
         refreshUnavailable:
           'Page context could not be refreshed for this question. Answers can use retrieved course materials.',

@@ -397,6 +397,16 @@ export default {
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
+      explanation: {
+        preparing: 'Interaktive Erklärung wird vorbereitet...',
+        rejected: 'Entwurf der interaktiven Erklärung abgelehnt',
+        unavailable: 'Interaktive Erklärung nicht verfügbar',
+        fallbackTitle: 'Interaktive Erklärung',
+        header: 'Interaktive Erklärung · KI-generierter Entwurf, nicht geprüft',
+        openLarge: 'Gross öffnen',
+        close: 'Schliessen',
+        loading: 'Wird geladen...',
+      },
       learningContext: {
         refreshUnavailable:
           'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',

@@ -7,6 +7,7 @@ import {
   XCircleIcon,
   XIcon,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import type { ExplanationToolResult } from '@/src/lib/explanations'
@@ -88,6 +89,7 @@ export function ExplanationCard({
   status: { type: string }
   isError?: boolean
 }) {
+  const t = useTranslations('chat.thread.explanation')
   const params = useParams<{ chatbotId?: string }>()
   const parsed = asResult(result)
   const content = parsed?.kind === 'explanation' ? parsed.content : null
@@ -129,7 +131,7 @@ export function ExplanationCard({
       <Chip
         tone="muted"
         icon={<LoaderCircleIcon className="size-4 animate-spin" />}
-        text="Preparing an interactive explanation..."
+        text={t('preparing')}
       />
     )
   // A rejected draft or a call whose input did not parse: the tutor usually
@@ -139,7 +141,7 @@ export function ExplanationCard({
       <Chip
         tone="muted"
         icon={<WrenchIcon className="size-4" />}
-        text="Interactive explanation draft rejected"
+        text={t('rejected')}
       />
     )
   if (!content || (page && 'failed' in page))
@@ -147,18 +149,16 @@ export function ExplanationCard({
       <Chip
         tone="error"
         icon={<XCircleIcon className="size-4" />}
-        text="Interactive explanation unavailable"
+        text={t('unavailable')}
       />
     )
 
   const title =
-    typeof content.title === 'string'
-      ? content.title
-      : 'Interactive explanation'
+    typeof content.title === 'string' ? content.title : t('fallbackTitle')
   return (
     <div className="my-3 w-full overflow-hidden rounded-md border border-slate-200 bg-white">
       <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-1.5 text-xs text-slate-600">
-        <span>Interactive explanation · AI-generated draft, not reviewed</span>
+        <span>{t('header')}</span>
         <button
           type="button"
           className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-50"
@@ -169,7 +169,7 @@ export function ExplanationCard({
           }}
         >
           <Maximize2Icon className="size-3.5" />
-          Open large
+          {t('openLarge')}
         </button>
       </div>
       {page && 'html' in page ? (
@@ -185,7 +185,7 @@ export function ExplanationCard({
           style={{ height: FRAME_HEIGHT }}
         >
           <LoaderCircleIcon className="mr-2 size-4 animate-spin" />
-          Loading...
+          {t('loading')}
         </div>
       )}
       <dialog
@@ -202,7 +202,7 @@ export function ExplanationCard({
               onClick={() => dialogRef.current?.close()}
             >
               <XIcon className="size-4" />
-              Close
+              {t('close')}
             </button>
           </div>
           {dialogOpen && page && 'html' in page ? (
