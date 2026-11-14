@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faDownload,
+  faFileExcel,
+  faListCheck,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
@@ -25,6 +29,8 @@ import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
 import ElementListSorting from '../components/elements/ElementListSorting'
 import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
+import ElementWorkbookExportModal from '../components/elements/manipulation/ElementWorkbookExportModal'
+import ElementWorkbookImportModal from '../components/elements/manipulation/ElementWorkbookImportModal'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/elements/manipulation/ElementEditModal'
@@ -69,6 +75,8 @@ function Index() {
 
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+  const [workbookImportOpen, setWorkbookImportOpen] = useState(false)
+  const [workbookExportOpen, setWorkbookExportOpen] = useState(false)
 
   // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
@@ -370,6 +378,19 @@ function Index() {
               {t('manage.questionPool.createElement')}
             </Button.Label>
           </Button>
+          {!creationMode && (
+            <Button
+              fluid
+              onClick={() => setWorkbookImportOpen(true)}
+              data={{ cy: 'import-elements-excel' }}
+              className={{ root: 'h-9' }}
+            >
+              <Button.Icon icon={faFileExcel} />
+              <Button.Label>
+                {t('manage.elementWorkbook.importFromExcel')}
+              </Button.Label>
+            </Button>
+          )}
           <FilterList
             key={creationMode}
             defaultValue={
@@ -394,8 +415,8 @@ function Index() {
 
         <div className="flex min-w-0 w-full flex-1 flex-col">
           <>
-            <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
-              <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center gap-1.5">
+            <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between gap-2 pb-2.5">
+              <div className="flex min-w-80 flex-1 flex-row flex-wrap items-center gap-1.5">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}
@@ -414,7 +435,21 @@ function Index() {
                 />
               </div>
 
-              <div className="flex flex-row items-center gap-2">
+              <div className="flex flex-row flex-wrap items-center justify-end gap-2">
+                {!creationMode && Object.keys(selectedElements).length > 0 ? (
+                  <Button
+                    className={{ root: 'h-9' }}
+                    onClick={() => setWorkbookExportOpen(true)}
+                    data={{ cy: 'export-elements-excel' }}
+                  >
+                    <Button.Icon icon={faDownload} />
+                    <Button.Label>
+                      {t('manage.elementWorkbook.exportToExcel', {
+                        count: Object.keys(selectedElements).length,
+                      })}
+                    </Button.Label>
+                  </Button>
+                ) : null}
                 {!creationMode && Object.keys(selectedElements).length > 0 ? (
                   <Button
                     className={{
@@ -566,6 +601,18 @@ function Index() {
           onClose={() => setBatchOperationsOpen(false)}
           resetSelectedElements={() => setSelectedElements({})}
           refetchElements={refetchElementsForChildren}
+        />
+      )}
+      {workbookImportOpen && (
+        <ElementWorkbookImportModal
+          onClose={() => setWorkbookImportOpen(false)}
+          refetchElements={refetchElementsForChildren}
+        />
+      )}
+      {workbookExportOpen && (
+        <ElementWorkbookExportModal
+          selectedElements={Object.values(selectedElements)}
+          onClose={() => setWorkbookExportOpen(false)}
         />
       )}
       {showRecoveryPrompt && (
