@@ -486,11 +486,14 @@ function assertAssessmentChatContract(resources, source) {
   )
 
   const envFrom = deployment.spec.template.spec.containers[0].envFrom
-  const suffixes = envFrom.map((entry) =>
-    (entry.configMapRef?.name ?? entry.secretRef?.name).slice(
-      fullname.length + 1
+  const suffixes = envFrom.map((entry) => {
+    const name = entry.configMapRef?.name ?? entry.secretRef?.name
+    assert.ok(
+      name,
+      `${source}: every envFrom entry must name a ConfigMap or Secret`
     )
-  )
+    return name.slice(fullname.length + 1)
+  })
   assert.deepEqual(
     suffixes.slice(0, 4),
     ['config-global', 'config-chat', 'config-chat-assessment', 'secret-chat'],
