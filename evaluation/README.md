@@ -539,6 +539,14 @@ local API and Chat origins, seeded participant credentials, and the approved
 target environment. Do not start an application stack as part of the portable
 integration check.
 
+Prepare each synthetic participant or eLearning guest through the normal chat
+onboarding before evaluation, including renewed policy acknowledgement and both
+purpose choices when required. The adapter checks completion before reading the
+bot disclaimer and reports `participant_data_use_required` for an incomplete
+account. It does not acknowledge account policies or change research/LA choices.
+Complete the form in that persona, then retry the target; a failed setup does not
+cache the incomplete session. Both purpose refusals remain usable for evaluation.
+
 The launcher preflights `KLICKER_EVAL_BUDGET_FILE`,
 `KLICKER_EVAL_QUALIFICATION_FILE`, `KLICKER_EVAL_GUARD_ORIGIN`, and
 `KLICKER_EVAL_GUARD_KEY`. Prepare these with the guarded workflow above and

@@ -312,6 +312,9 @@ function syntheticChatFetch({ turnConfig = () => ({}) } = {}) {
         }
       )
     }
+    if (requestUrl.endsWith('/data-use') && method === 'GET') {
+      return Response.json({ state: { complete: true } })
+    }
     if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
       return Response.json({ status: { required: false, accepted: true } })
     }
