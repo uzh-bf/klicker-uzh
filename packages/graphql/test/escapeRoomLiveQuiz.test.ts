@@ -450,9 +450,32 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       status: DB.EscapeRoomStatus.IN_PROGRESS,
     })
 
+    const stage = await prisma.elementInstance.findFirstOrThrow({
+      where: { elementBlockId: block.id },
+      select: { id: true },
+    })
+    const clearedSets = new Map<string, string[]>([
+      [`escape-attempt:${started.id}:cleared`, [String(stage.id)]],
+    ])
+    const progressPipeline = {
+      keys: [] as string[],
+      smembers(key: string) {
+        this.keys.push(key)
+        return this
+      },
+      exec: vi.fn(async () =>
+        progressPipeline.keys.map((key) => [null, clearedSets.get(key) ?? []])
+      ),
+    }
     const progress = await getEscapeRoomProgress(
       { liveQuizId: liveQuiz.id, elementBlockId: block.id },
-      lecturerCtx
+      {
+        ...lecturerCtx,
+        redisExec: {
+          ...lecturerCtx.redisExec,
+          pipeline: () => progressPipeline,
+        } as any,
+      }
     )
     expect(progress).toMatchObject({
       activityId: String(block.id),
@@ -463,7 +486,8 @@ describe('LiveQuiz block attempt start/reset contract', () => {
         expect.objectContaining({
           id: started.id,
           participantId: participant.id,
-          clearedStacks: 0,
+          status: DB.EscapeRoomStatus.IN_PROGRESS,
+          clearedStacks: 1,
         }),
         expect.objectContaining({
           id: null,

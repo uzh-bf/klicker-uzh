@@ -188,14 +188,21 @@ export async function getEscapeRoomProgress(
     : []
   // Group Activity stages are its answerable elements; Live Quiz blocks count
   // their supported elements; individual modes count stacks.
+  const liveQuizStageIds =
+    elementBlockId != null
+      ? (
+          await ctx.prisma.elementInstance.findMany({
+            where: {
+              elementBlockId,
+              elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
+            },
+            select: { id: true },
+          })
+        ).map((instance) => String(instance.id))
+      : []
   const totalStacks =
     elementBlockId != null
-      ? await ctx.prisma.elementInstance.count({
-          where: {
-            elementBlockId,
-            elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
-          },
-        })
+      ? liveQuizStageIds.length
       : groupActivityId
         ? getGroupEscapeRoomStages(stacks).length
         : stacks.length
@@ -245,6 +252,32 @@ export async function getEscapeRoomProgress(
         attempt.status = persistedStatus
       }
     }
+  }
+
+  // Live Quiz attempts record their cleared stages in Redis, the same set the
+  // student view counts, because their responses are graded asynchronously.
+  const liveQuizClearedByAttempt = new Map<string, number>()
+  const runningLiveQuizAttempts =
+    elementBlockId != null
+      ? attempts.filter(
+          (attempt) => attempt.status === DB.EscapeRoomStatus.IN_PROGRESS
+        )
+      : []
+  if (runningLiveQuizAttempts.length > 0) {
+    const pipeline = ctx.redisExec.pipeline()
+    for (const attempt of runningLiveQuizAttempts) {
+      pipeline.smembers(`escape-attempt:${attempt.id}:cleared`)
+    }
+    const results = (await pipeline.exec()) ?? []
+    const stageIds = new Set(liveQuizStageIds)
+    runningLiveQuizAttempts.forEach((attempt, ix) => {
+      const [error, members] = results[ix] ?? [null, []]
+      const cleared = !error && Array.isArray(members) ? members : []
+      liveQuizClearedByAttempt.set(
+        attempt.id,
+        cleared.filter((id) => stageIds.has(String(id))).length
+      )
+    })
   }
 
   // 4. Compute cleared stacks from correct responses in one query.
@@ -316,7 +349,7 @@ export async function getEscapeRoomProgress(
       elementBlockId != null
         ? attempt.status === DB.EscapeRoomStatus.COMPLETED
           ? totalStacks
-          : 0
+          : (liveQuizClearedByAttempt.get(attempt.id) ?? 0)
         : attempt.status === DB.EscapeRoomStatus.COMPLETED
           ? totalStacks
           : attempt.participantId != null
