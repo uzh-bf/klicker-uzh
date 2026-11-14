@@ -1,0 +1,30 @@
+[
+  {
+    "id": "auto",
+    "deploymentId": "auto-router-v2",
+    "name": "Auto Mode",
+    "description": "Automatic model selection through the LiteLLM auto router",
+    "fallback": false,
+    "supportsReasoning": false,
+    "usesResponsesApi": false,
+    "supportsImageAttachments": false,
+    "supportedReasoningEfforts": [],
+    "maxOutputTokens": 4096,
+    "usageClass": "ADVANCED",
+    "cost": { "input": 1.0, "output": 5.0 }
+  },
+  {
+    "id": "gpt-6-luna",
+    "deploymentId": "gpt-6-luna",
+    "name": "GPT-6 Luna (load-test mock)",
+    "description": "Mock model on the chat-completions API",
+    "fallback": true,
+    "supportsReasoning": false,
+    "usesResponsesApi": false,
+    "supportsImageAttachments": false,
+    "supportedReasoningEfforts": [],
+    "maxOutputTokens": 4096,
+    "usageClass": "BASE",
+    "cost": { "input": 0.1, "output": 0.5 }
+  }
+]
