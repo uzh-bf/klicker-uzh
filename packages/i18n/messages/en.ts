@@ -623,6 +623,8 @@ export default {
         "I'm sorry, I couldn't reach the server. Please check your connection and try again.",
       genericError:
         "I'm sorry, something went wrong while processing your request. Please try again.",
+      turnInProgress:
+        'The previous answer is still being finished. Wait a moment, then send your message again.',
       connectionInterrupted:
         'Connection interrupted — response may be incomplete.',
       truncated:

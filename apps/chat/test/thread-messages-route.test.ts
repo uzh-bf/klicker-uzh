@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
@@ -59,10 +59,15 @@ async function loadHistory() {
     content: Array<{ type: string }>
     reasoningContent: string | null
     reasoningEffort: string | null
+    parentId: string | null
   }>
 }
 
 describe('thread history route', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.withChatbotAuth.mockResolvedValue({
@@ -114,5 +119,29 @@ describe('thread history route', () => {
       expect(byId.get(id)?.content.map((part) => part.type)).toEqual(['text'])
       expect(byId.get(id)?.reasoningEffort).toBe('high')
     }
+  })
+
+  test('links an exam question retyped after a broken answer to the last visible message', async () => {
+    vi.stubEnv('CHAT_ASSESSMENT_MODE', 'true')
+    const withParent = (id: string, parentId: string | null) => ({
+      ...assistantMessage(id, 'tutor'),
+      parentId,
+    })
+    mocks.messageFindMany.mockImplementation(
+      async ({ where }: { where: { lifecycleStatus: unknown } }) =>
+        typeof where.lifecycleStatus === 'object'
+          ? [{ id: 'failed-answer', parentId: 'question-1' }]
+          : [
+              withParent('question-1', null),
+              withParent('question-2', 'failed-answer'),
+            ]
+    )
+
+    const history = await loadHistory()
+
+    expect(history.map(({ id, parentId }) => [id, parentId])).toEqual([
+      ['question-1', null],
+      ['question-2', 'question-1'],
+    ])
   })
 })

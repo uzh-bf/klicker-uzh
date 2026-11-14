@@ -23,6 +23,7 @@ import {
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import {
   appendTextToModelContent,
   buildDocumentPageSummaryRow,
@@ -179,6 +180,16 @@ type ChatRouteModelMessage = {
   content:
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
+}
+
+function inProgressTurnResponse() {
+  return NextResponse.json(
+    {
+      error: 'The previous answer is still running',
+      code: 'CHAT_TURN_IN_PROGRESS',
+    },
+    { status: 409 }
+  )
 }
 
 function completedTurnResponse() {
@@ -628,8 +639,10 @@ export async function POST(
     console.error('Invalid request body:', { requestId, error: e })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
+  // Assessment turns replace the client's history with the stored one after
+  // the claim, so this binding is reassigned.
+  let { messages } = parsed
   const {
-    messages,
     threadId,
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
@@ -644,6 +657,29 @@ export async function POST(
     documentPages,
     chatContext: rawChatContext,
   } = parsed
+
+  const assessment = isAssessmentMode()
+  // Exam rules, enforced here because the UI only hides the controls: one
+  // linear conversation, no edits or regenerated answers, no attachments. The
+  // parent of every turn is set by the server.
+  if (
+    assessment &&
+    (allowRegeneration || sourceMessageId || messages.at(-1)?.role !== 'user')
+  ) {
+    return NextResponse.json(
+      {
+        error: 'Editing and regenerating are disabled',
+        code: 'CHAT_TURN_NOT_ALLOWED',
+      },
+      { status: 409 }
+    )
+  }
+  if (assessment && (images.length > 0 || documentPages.length > 0)) {
+    return NextResponse.json(
+      { error: 'Attachments are disabled', code: 'ATTACHMENTS_DISABLED' },
+      { status: 400 }
+    )
+  }
 
   const sanitizedChatContext = sanitizeKlickerChatContextV2(rawChatContext)
   if (rawChatContext != null && !sanitizedChatContext) {
@@ -1036,7 +1072,7 @@ export async function POST(
         assistantMessageId
       )
       if (!currentThreadId) {
-        const newThread = await ThreadService.createThread(
+        const { thread: newThread, created } = await ThreadService.createThread(
           participantId,
           chatbotId,
           null,
@@ -1047,7 +1083,9 @@ export async function POST(
           })
         )
         currentThreadId = newThread.id
-        createdThreadId = newThread.id
+        // The exam conversation is the student's only thread and a record of
+        // the exam, so no error path discards it.
+        if (created && !isAssessmentMode()) createdThreadId = newThread.id
       }
     } catch (error) {
       console.error('Failed to resolve or create thread:', {
@@ -1238,6 +1276,21 @@ export async function POST(
       assistantMessageId,
       parentId: userMessageId,
       ...(allowRegeneration ? { allowRegeneration: true } : {}),
+      ...(assessment && lastMessage?.role === 'user'
+        ? {
+            assessmentTurn: {
+              userMessage: {
+                id: lastMessage.id,
+                content: lastMessage.content,
+                chatMode: selectedMode,
+                modelId: selectedModelConfig.id,
+              },
+              // The answer stream is aborted after maxDuration, so a turn
+              // cannot outlive it; the margin covers finalization.
+              inProgressBoundMs: (maxDuration + 30) * 1000,
+            },
+          }
+        : {}),
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {
@@ -1253,9 +1306,10 @@ export async function POST(
   }
   if (turnClaim.outcome === 'in_progress') {
     await discardCreatedThread('claim.in_progress')
-    return completedTurnResponse()
+    return assessment ? inProgressTurnResponse() : completedTurnResponse()
   }
   const lifecycleAttemptId = turnClaim.lifecycleAttemptId
+  if (turnClaim.history) messages = turnClaim.history
 
   const failAssistantClaim = async (phase: string) => {
     try {
@@ -1263,6 +1317,8 @@ export async function POST(
         assistantMessageId,
         threadId: owningThread.id,
         lifecycleAttemptId,
+        // The export marks a broken exam answer as incomplete.
+        ...(assessment ? { keepFailedMarker: true } : {}),
       })
     } catch (error) {
       console.error('Failed to mark assistant lifecycle attempt as failed:', {
@@ -2116,7 +2172,7 @@ export async function POST(
           phase: 'persist.userMessage',
           error,
         })
-        if (isElearningThread) {
+        if (isElearningThread || assessment) {
           // Contextual generation requires durable question persistence; a
           // failed save returns a recoverable error without an answer. The
           // client retry reuses the original question identity, so the claim
@@ -2128,7 +2184,9 @@ export async function POST(
           return NextResponse.json(
             {
               error: 'Unable to persist the question context',
-              code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
+              code: isElearningThread
+                ? 'ELEARNING_CONTEXT_PERSIST_FAILED'
+                : 'CHAT_QUESTION_PERSIST_FAILED',
             },
             { status: 503 }
           )
@@ -2194,6 +2252,7 @@ export async function POST(
           assistantMessageId,
           lifecycleAttemptId,
           parentId: userMessageId,
+          ...(assessment ? { keepFailedMarker: true } : {}),
           content: content as Prisma.InputJsonValue,
           chatMode: selectedMode,
           modelId: selectedModelConfig.id,
@@ -2390,7 +2449,15 @@ export async function POST(
         ),
         instructions: turnRequest.instructions,
 
-        abortSignal: req.signal,
+        // The self-hosted server does not enforce maxDuration. In assessment
+        // mode the claim treats an older in-progress answer as abandoned, so
+        // the stream must stop by then and finalize as a stopped answer.
+        abortSignal: assessment
+          ? AbortSignal.any([
+              req.signal,
+              AbortSignal.timeout(maxDuration * 1000),
+            ])
+          : req.signal,
 
         onChunk: ({ chunk }) => {
           if (!hasLoggedFirstChunk) {

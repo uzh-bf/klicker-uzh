@@ -634,6 +634,8 @@ export default {
         'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
       genericError:
         'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
+      turnInProgress:
+        'Die vorherige Antwort wird noch abgeschlossen. Warte einen Moment und sende Deine Nachricht dann erneut.',
       connectionInterrupted:
         'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
       truncated:

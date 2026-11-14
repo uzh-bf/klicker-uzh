@@ -99,3 +99,81 @@ describe('chatStore loadThreads error handling', () => {
     expect(useChatStore.getState().participationRequired).toBe(true)
   })
 })
+
+describe('chatStore exam conversation', () => {
+  beforeEach(() => {
+    resetStore()
+    vi.restoreAllMocks()
+  })
+
+  function jsonResponse(body: unknown, status = 200) {
+    return {
+      ok: status < 400,
+      status,
+      statusText: '',
+      json: async () => body,
+      text: async () => JSON.stringify(body),
+    }
+  }
+
+  test('switches to the existing thread when a create returns it', async () => {
+    const timestamp = '2026-11-12T08:00:00.000Z'
+    const fetchSpy = vi.fn(async (url: string) =>
+      url.endsWith('/messages')
+        ? jsonResponse([])
+        : jsonResponse({
+            id: 'thread-existing',
+            title: 'Exam',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            created: false,
+          })
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const threadId = await useChatStore.getState().createThread('chatbot-1')
+
+    const state = useChatStore.getState()
+    expect(threadId).toBe('thread-existing')
+    expect(state.activeThreadId).toBe('thread-existing')
+    expect(state.threads.map((thread) => thread.id)).toEqual([
+      'thread-existing',
+    ])
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/threads/thread-existing/messages'),
+      expect.anything()
+    )
+  })
+
+  test('a 409 refusal does not raise the participation notice', async () => {
+    const timestamp = new Date('2026-11-12T08:00:00.000Z')
+    useChatStore.setState({
+      threads: [
+        {
+          id: 'thread-1',
+          messages: [],
+          allMessages: [],
+          isRunning: false,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+      ],
+      activeThreadId: 'thread-1',
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ error: 'Not allowed' }, 409))
+    )
+
+    const deleted = await useChatStore
+      .getState()
+      .deleteThread('chatbot-1', 'thread-1')
+    await useChatStore
+      .getState()
+      .updateThreadTitle('chatbot-1', 'thread-1', 'T')
+
+    expect(deleted).toBe(false)
+    expect(useChatStore.getState().participationRequired).toBe(false)
+    expect(useChatStore.getState().threads).toHaveLength(1)
+  })
+})

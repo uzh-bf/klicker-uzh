@@ -57,6 +57,8 @@ export type FinalizeChatTurnInput = {
   assistantMessageId: string
   lifecycleAttemptId: string | null
   parentId: string | null
+  /** Assessment mode: an empty answer stays as a FAILED marker, not deleted. */
+  keepFailedMarker?: boolean
   content: Prisma.InputJsonValue
   chatMode: string | null
   modelId: string | null
@@ -78,10 +80,39 @@ export type ClaimChatTurnInput = {
   assistantMessageId: string
   parentId: string | null
   allowRegeneration?: boolean
+  /**
+   * Assessment mode: the conversation is one linear thread. The claim stores
+   * the question itself under the thread's current tip, so the client's
+   * `parentId` is never used, and serializes concurrent turns of the thread.
+   */
+  assessmentTurn?: AssessmentTurnInput
+}
+
+export type AssessmentTurnInput = {
+  userMessage: {
+    id: string
+    content: string
+    chatMode: string | null
+    modelId: string | null
+  }
+  /** An in-progress answer older than this is abandoned and stops blocking. */
+  inProgressBoundMs: number
+  now?: Date
+}
+
+export type StoredConversationMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
 }
 
 export type ClaimChatTurnResult =
-  | { outcome: 'claimed'; lifecycleAttemptId: string | null }
+  | {
+      outcome: 'claimed'
+      lifecycleAttemptId: string | null
+      /** Set for an assessment turn: the model history built from storage. */
+      history?: StoredConversationMessage[]
+    }
   | { outcome: 'in_progress'; lifecycleAttemptId: null }
   | { outcome: 'completed'; lifecycleAttemptId: null }
 
@@ -156,6 +187,141 @@ export async function isChatAccountUsageAvailable({
   )
 }
 
+function storedMessageText(content: unknown): string {
+  if (typeof content === 'string') return content
+  if (!Array.isArray(content)) return ''
+  return content
+    .filter(
+      (part): part is { type: 'text'; text: string } =>
+        Boolean(part) &&
+        typeof part === 'object' &&
+        part.type === 'text' &&
+        typeof part.text === 'string'
+    )
+    .map((part) => part.text)
+    .join('')
+}
+
+/**
+ * Assessment-mode claim. Under a thread-scoped lock it refuses reused ids and
+ * parallel turns, derives the parent of the new question from the stored
+ * tree, stores the question and the in-progress answer marker, and returns
+ * the model history from storage. Rows whose parent is missing (never
+ * produced by this flow) cannot become the tip.
+ */
+async function claimAssessmentTurn(
+  tx: Prisma.TransactionClient,
+  input: ClaimChatTurnInput & { assessmentTurn: AssessmentTurnInput },
+  lifecycleAttemptId: string | null
+): Promise<ClaimChatTurnResult> {
+  const {
+    userMessage,
+    inProgressBoundMs,
+    now = new Date(),
+  } = input.assessmentTurn
+
+  await tx.$executeRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`chat-thread:${input.threadId}`}))`
+  )
+
+  const reused = await tx.chatMessage.findFirst({
+    where: { id: { in: [userMessage.id, input.assistantMessageId] } },
+    select: { id: true },
+  })
+  if (reused) throw new ChatTurnConflictError()
+
+  const rows = await tx.chatMessage.findMany({
+    where: { threadId: input.threadId },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    select: {
+      id: true,
+      parentId: true,
+      role: true,
+      lifecycleStatus: true,
+      createdAt: true,
+      content: true,
+    },
+  })
+
+  const cutoff = now.getTime() - inProgressBoundMs
+  const inProgress = rows.filter(
+    (row) => row.role === 'assistant' && row.lifecycleStatus === 'IN_PROGRESS'
+  )
+  if (inProgress.some((row) => row.createdAt.getTime() > cutoff)) {
+    return { outcome: 'in_progress', lifecycleAttemptId: null }
+  }
+  if (inProgress.length > 0) {
+    // Abandoned attempts: clearing the token keeps a late callback from
+    // completing them.
+    await tx.chatMessage.updateMany({
+      where: {
+        id: { in: inProgress.map((row) => row.id) },
+        lifecycleStatus: 'IN_PROGRESS',
+      },
+      data: { lifecycleStatus: 'FAILED', lifecycleAttemptId: null },
+    })
+    for (const row of inProgress) row.lifecycleStatus = 'FAILED'
+  }
+
+  const byId = new Map(rows.map((row) => [row.id, row]))
+  const parents = new Set(rows.map((row) => row.parentId))
+  const tip =
+    rows
+      .filter(
+        (row) =>
+          !parents.has(row.id) &&
+          (row.parentId === null || byId.has(row.parentId))
+      )
+      .at(-1) ?? null
+
+  const path: typeof rows = []
+  for (
+    let node = tip;
+    node && !path.includes(node);
+    node = node.parentId ? (byId.get(node.parentId) ?? null) : null
+  ) {
+    path.unshift(node)
+  }
+  const history: StoredConversationMessage[] = path
+    .filter((row) => row.role === 'user' || row.lifecycleStatus === 'COMPLETED')
+    .map((row) => ({
+      id: row.id,
+      role: row.role as 'user' | 'assistant',
+      content: storedMessageText(row.content),
+    }))
+    .filter((message) => message.role === 'user' || message.content !== '')
+  history.push({
+    id: userMessage.id,
+    role: 'user',
+    content: userMessage.content,
+  })
+
+  await tx.chatMessage.create({
+    data: {
+      id: userMessage.id,
+      threadId: input.threadId,
+      parentId: tip?.id ?? null,
+      role: 'user',
+      content: [{ type: 'text', text: userMessage.content }],
+      chatMode: userMessage.chatMode,
+      modelId: userMessage.modelId,
+    },
+  })
+  await tx.chatMessage.create({
+    data: {
+      id: input.assistantMessageId,
+      threadId: input.threadId,
+      parentId: userMessage.id,
+      role: 'assistant',
+      content: [],
+      lifecycleStatus: 'IN_PROGRESS',
+      lifecycleAttemptId,
+    },
+  })
+
+  return { outcome: 'claimed', lifecycleAttemptId, history }
+}
+
 export async function claimChatTurn(
   input: ClaimChatTurnInput
 ): Promise<ClaimChatTurnResult> {
@@ -174,6 +340,14 @@ export async function claimChatTurn(
     })
     if (!thread) {
       throw new ChatTurnConflictError()
+    }
+
+    if (input.assessmentTurn) {
+      return claimAssessmentTurn(
+        tx,
+        { ...input, assessmentTurn: input.assessmentTurn },
+        lifecycleAttemptId
+      )
     }
 
     if (!input.allowRegeneration) {
@@ -328,12 +502,15 @@ export async function failChatTurn({
   assistantMessageId,
   threadId,
   lifecycleAttemptId,
+  keepFailedMarker = false,
 }: {
   assistantMessageId: string
   threadId: string
   lifecycleAttemptId: string | null
+  /** Assessment mode: keep a FAILED row even without lifecycle writes. */
+  keepFailedMarker?: boolean
 }): Promise<void> {
-  if (lifecycleAttemptId === null) {
+  if (lifecycleAttemptId === null && !keepFailedMarker) {
     await prisma.chatMessage.deleteMany({
       where: {
         id: assistantMessageId,
@@ -389,15 +566,21 @@ export async function finalizeChatTurn(
       Array.isArray(input.content) &&
       input.content.length === 0
     ) {
-      await tx.chatMessage.deleteMany({
-        where: {
-          id: input.assistantMessageId,
-          threadId: input.threadId,
-          role: 'assistant',
-          lifecycleStatus: 'IN_PROGRESS',
-          lifecycleAttemptId: null,
-        },
-      })
+      const unfinished = {
+        id: input.assistantMessageId,
+        threadId: input.threadId,
+        role: 'assistant',
+        lifecycleStatus: 'IN_PROGRESS' as const,
+        lifecycleAttemptId: null,
+      }
+      if (input.keepFailedMarker) {
+        await tx.chatMessage.updateMany({
+          where: unfinished,
+          data: { lifecycleStatus: 'FAILED' },
+        })
+      } else {
+        await tx.chatMessage.deleteMany({ where: unfinished })
+      }
       return { outcome: 'empty', creditsUsed: null }
     }
 

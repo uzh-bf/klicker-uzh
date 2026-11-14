@@ -61,6 +61,7 @@ interface AssistantProps {
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
   readonly pwaUrl: string
+  readonly assessment?: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -85,6 +86,7 @@ export function Assistant({
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
   pwaUrl,
+  assessment = false,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -145,7 +147,7 @@ export function Assistant({
 
   return (
     <>
-      <ChatUiProvider>
+      <ChatUiProvider assessment={assessment}>
         <RuntimeProvider
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
@@ -516,6 +518,7 @@ function SidebarMain({
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
+  const { assessment } = useChatUi()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const createThread = useChatStore((state) => state.createThread)
@@ -569,23 +572,27 @@ function SidebarMain({
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
         <ModeSwitcher />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={handleNewThread}
-              disabled={participationRequired}
-              className={twMerge(
-                'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
-                open && 'md:hidden'
-              )}
-            >
-              <Plus aria-hidden="true" className="size-4" />
-              <span className="sr-only">{t('chat.sidebar.newChat')}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
-        </Tooltip>
+        {assessment ? (
+          <span aria-hidden="true" />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleNewThread}
+                disabled={participationRequired}
+                className={twMerge(
+                  'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
+                  open && 'md:hidden'
+                )}
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                <span className="sr-only">{t('chat.sidebar.newChat')}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
+          </Tooltip>
+        )}
         {knowledgeGraphVisible ? (
           <ChatGraphModeSwitch
             open={graphPanel.open}
@@ -617,6 +624,9 @@ function SidebarMain({
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              {...(assessment
+                ? { maxImageAttachments: 0, allowDocumentAttachments: false }
+                : {})}
             />
           </ChatKnowledgeGraphPanel>
         </div>
@@ -637,7 +647,7 @@ function AssistantLayout({
   knowledgeGraphVisible: boolean
 }) {
   const t = useTranslations('chat.thread.learningContext')
-  const { showSidebar } = useChatUi()
+  const { showSidebar, assessment } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
   const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
   useEmbeddedChatContext()
@@ -704,6 +714,9 @@ function AssistantLayout({
               contextualSuggestions={hasQuestionContext}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              {...(assessment
+                ? { maxImageAttachments: 0, allowDocumentAttachments: false }
+                : {})}
             />
           </ChatKnowledgeGraphPanel>
         </div>
