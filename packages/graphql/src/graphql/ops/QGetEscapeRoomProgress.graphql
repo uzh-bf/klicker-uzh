@@ -15,6 +15,7 @@ query GetEscapeRoomProgress(
     activityId
     totalStacks
     timeLimit
+    projectorDigest
     attempts {
       id
       participantId

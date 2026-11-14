@@ -1470,9 +1470,15 @@ export async function resetEscapeRoomAttempt(
   return true
 }
 
-export { getEscapeRoomProgress } from './escapeRoomProgress.js'
+export {
+  getEscapeRoomProgress,
+  getEscapeRoomProjector,
+  getEscapeRoomProjectorDigest,
+} from './escapeRoomProgress.js'
 export type {
   EscapeRoomAttemptProgress,
   EscapeRoomProgress,
+  EscapeRoomProjector,
+  EscapeRoomProjectorRow,
   EscapeRoomStageProgress,
 } from './escapeRoomProgress.js'
