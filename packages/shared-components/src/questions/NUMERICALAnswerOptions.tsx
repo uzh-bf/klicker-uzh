@@ -33,6 +33,8 @@ export function NUMERICALAnswerOptions({
   elementIx,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const t = useTranslations()
+  // An empty field is not an error yet; submitting stays blocked through valid.
+  const showInvalid = !valid && !disabled && (value ?? '') !== ''
 
   return (
     <div className="flex flex-col gap-1 text-base">
@@ -64,14 +66,14 @@ export function NUMERICALAnswerOptions({
           className={{
             input: twMerge(
               'focus:border-primary-80',
-              !valid && !disabled ? 'border-red-600' : ''
+              showInvalid ? 'border-red-600' : ''
             ),
             unit: 'rounded-r-lg',
           }}
           data={{ cy: `input-numerical-${elementIx}` }}
         />
       </div>
-      {!valid && !disabled ? (
+      {showInvalid ? (
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}
