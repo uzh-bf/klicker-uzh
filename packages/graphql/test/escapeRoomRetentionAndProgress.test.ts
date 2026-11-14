@@ -11,7 +11,9 @@ import {
   participantCtx,
   prisma,
   respondToElementStack,
+  scElement,
   scResponse,
+  seedEscapeRoomGroupActivity,
   seedEscapeRoomQuiz,
   seedParticipant,
   startEscapeRoomAttempt,
@@ -360,6 +362,49 @@ describe('getEscapeRoomProgress - lecturer progress aggregation', () => {
     )!
     expect(inactiveEntry).toMatchObject({
       id: null,
+      status: 'NOT_STARTED',
+    })
+  })
+
+  it('keeps group progress scoped to the shared group attempt', async () => {
+    const participantA = await seedParticipant('progress-group-a')
+    const participantB = await seedParticipant('progress-group-b')
+    const fixture = await seedEscapeRoomGroupActivity(
+      {
+        elements: [scElement],
+        courseId,
+        participantIds: [participantA.id, participantB.id],
+      },
+      lecturerCtx
+    )
+    const waitingGroup = await prisma.participantGroup.create({
+      data: {
+        name: `${TEST_PREFIX}-progress-group-waiting`,
+        code: fixture.group.code + 100_000,
+        courseId,
+      },
+    })
+
+    const progress = await getEscapeRoomProgress(
+      { groupActivityId: fixture.groupActivity.id },
+      lecturerCtx
+    )
+
+    expect(progress).not.toBeNull()
+    expect(
+      progress!.attempts.find((attempt) => attempt.groupId === fixture.group.id)
+    ).toMatchObject({
+      id: fixture.attempt.id,
+      groupId: fixture.group.id,
+      participantId: null,
+      status: DB.EscapeRoomStatus.IN_PROGRESS,
+    })
+    expect(
+      progress!.attempts.find((attempt) => attempt.groupId === waitingGroup.id)
+    ).toMatchObject({
+      id: null,
+      groupId: waitingGroup.id,
+      participantId: null,
       status: 'NOT_STARTED',
     })
   })

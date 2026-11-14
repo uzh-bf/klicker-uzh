@@ -152,26 +152,28 @@ describe('QR scan activity placement guards', () => {
     )
   })
 
-  it('rejects QR scans in group activities before edit side effects', async () => {
+  it('rejects QR scans in non-escape-room group activities before edit side effects', async () => {
     const { ctx, groupActivityUpdate } = createPlacementContext({
       existingGroupActivity: { status: DB.PublicationStatus.DRAFT },
     })
 
-    await expectQrPlacementRejection(() =>
-      manipulateGroupActivity(
-        {
-          id: 'group-activity-id',
-          name: 'Group activity',
-          displayName: 'Group activity',
-          stack: qrStack,
-          clues: [],
-          courseId: 'course-id',
-          multiplier: 1,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 60_000),
-        },
-        ctx
-      )
+    await expectQrPlacementRejection(
+      () =>
+        manipulateGroupActivity(
+          {
+            id: 'group-activity-id',
+            name: 'Group activity',
+            displayName: 'Group activity',
+            stack: qrStack,
+            clues: [],
+            courseId: 'course-id',
+            multiplier: 1,
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 60_000),
+          },
+          ctx
+        ),
+      'QR scan questions are only supported in escape room activities'
     )
     expect(groupActivityUpdate).not.toHaveBeenCalled()
   })

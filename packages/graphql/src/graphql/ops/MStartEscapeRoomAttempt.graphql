@@ -1,10 +1,14 @@
 mutation StartEscapeRoomAttempt(
   $practiceQuizId: String
   $microLearningId: String
+  $groupActivityId: String
+  $groupId: String
 ) {
   startEscapeRoomAttempt(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
+    groupId: $groupId
   ) {
     id
     startedAt

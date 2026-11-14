@@ -7,6 +7,21 @@ type EscapeRoomResponseInstance = Pick<
   'id' | 'elementType' | 'elementData'
 >
 
+const GROUP_ESCAPE_ROOM_RESPONSE_TYPES = new Set<DB.ElementType>([
+  DB.ElementType.SC,
+  DB.ElementType.MC,
+  DB.ElementType.KPRIM,
+  DB.ElementType.NUMERICAL,
+  DB.ElementType.FREE_TEXT,
+  DB.ElementType.SELECTION,
+  DB.ElementType.CASE_STUDY,
+  DB.ElementType.QR_SCAN,
+])
+
+export function isGroupEscapeRoomResponseType(type: DB.ElementType) {
+  return GROUP_ESCAPE_ROOM_RESPONSE_TYPES.has(type)
+}
+
 export function hasEscapeRoomSampleSolution(
   instance: EscapeRoomResponseInstance
 ) {
