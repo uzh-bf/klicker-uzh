@@ -3,16 +3,16 @@ import {
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
-import {
-  type CaseStudyCaseSolution,
-  type ElementResultsCaseStudy,
-  type ElementResultsChoices,
-  type ElementResultsContent,
-  type ElementResultsFlashcard,
-  type ElementResultsOpen,
-  type ElementResultsSelection,
+import type {
+  CaseStudyCaseSolution,
+  ElementResultsCaseStudy,
+  ElementResultsChoices,
+  ElementResultsContent,
+  ElementResultsFlashcard,
+  ElementResultsOpen,
+  ElementResultsSelection,
 } from '@klicker-uzh/types'
-import { Redis } from 'ioredis'
+import type { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
 import { getInitialInstanceResults } from './elements.js'
 
@@ -35,6 +35,9 @@ export async function getCachedBlockResults({
   if (!cacheData) {
     return null
   }
+
+  const leaderboardError = cacheData.find(([error]) => error)?.[0]
+  if (leaderboardError) throw leaderboardError
 
   const mappedResults: any[] = cacheData.map(([_, result]) => result)
 
@@ -70,6 +73,8 @@ export async function getCachedBlockResults({
     const cacheData = await redisMulti.exec()
 
     if (!cacheData) return
+    const instanceError = cacheData.find(([error]) => error)?.[0]
+    if (instanceError) throw instanceError
     const mappedResults: any[] = cacheData.map(([_, result]) => result)
     const [info, responseHashes, _, results] = mappedResults
 
@@ -331,33 +336,50 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec,
   updateResults,
   updateLeaderboards,
+  closedBlock,
 }: {
   quizId: string
   blockId: number
-  prisma: DB.PrismaClient
+  prisma: DB.PrismaClient | DB.Prisma.TransactionClient
   redisExec: Redis
   redisAssessmentExec: Redis
   updateResults: boolean
   updateLeaderboards: boolean
+  closedBlock?: { execution: number; startedAt: Date }
 }) {
   const quiz = await prisma.liveQuiz.findUnique({
     where: { id: quizId },
     include: {
       course: true,
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: { orderBy: { id: 'asc' } },
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { id: 'asc' },
+      },
     },
   })
 
-  if (!quiz || !quiz.activeBlock) return null
+  if (!quiz) return null
+
+  const block = closedBlock
+    ? quiz.blocks.find((candidate) => candidate.id === blockId)
+    : quiz.activeBlock
+  if (!block) return null
 
   // if the block is not the active one, return early
-  if (quiz.activeBlockId !== blockId) return null
+  if (!closedBlock && quiz.activeBlockId !== blockId) return null
+  if (
+    closedBlock &&
+    (block.status !== DB.ElementBlockStatus.EXECUTED ||
+      block.execution !== closedBlock.execution ||
+      block.startedAt?.getTime() !== closedBlock.startedAt.getTime())
+  )
+    return null
 
   try {
     const cachedResults = await getCachedBlockResults({
       redisExec: quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec,
-      activeBlock: quiz.activeBlock,
+      activeBlock: block,
     })
 
     if (!cachedResults) return null
@@ -502,13 +524,13 @@ export async function updateLiveQuizBlockResultsFromCache({
     const updatedQuiz = await prisma.liveQuiz.update({
       where: { id: quizId },
       data: {
-        activeBlock: { disconnect: true },
+        activeBlock: closedBlock ? undefined : { disconnect: true },
         blocks: {
           update: {
             where: { id: blockId },
             data: {
-              status: DB.ElementBlockStatus.EXECUTED,
-              closedAt: new Date(),
+              status: closedBlock ? undefined : DB.ElementBlockStatus.EXECUTED,
+              closedAt: closedBlock ? undefined : new Date(),
               ...(updateResults
                 ? {
                     elements: {

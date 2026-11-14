@@ -1,8 +1,8 @@
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
-import type { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { EvaluationStack } from '../../../lib/hooks/useEvaluationInitialization'
 import type {
   ActiveStackType,
   ActivityEvaluationType,
@@ -15,7 +15,7 @@ import StackNavigation from './StackNavigation'
 interface EvaluationNavigationProps {
   courseId: string
   activityId: string
-  stacks: StackEvaluation[]
+  stacks: EvaluationStack[]
   stackInstanceMap: Record<number, { label: string; value: number }[]>
   activeStack: ActiveStackType
   setActiveStack: (stack: ActiveStackType) => void
@@ -73,8 +73,10 @@ function EvaluationNavigation({
   )
 
   return (
-    <div className="flex w-full flex-row justify-between border-b-2 border-solid bg-white px-3 print:hidden">
-      {typeof activeStack === 'number' ? (
+    <div className="flex w-full min-w-0 flex-col justify-between border-b-2 border-solid bg-white px-3 lg:flex-row print:hidden">
+      {typeof activeStack === 'number' &&
+      activeInstance >= 0 &&
+      (stackInstanceMap[activeStack]?.length ?? 0) > 0 ? (
         <InstanceNavigation
           stack={stacks[activeStack]}
           activeInstance={activeInstance ?? 0}
@@ -85,7 +87,7 @@ function EvaluationNavigation({
       ) : (
         <div />
       )}
-      <div className="flex flex-row items-center gap-4">
+      <div className="flex min-w-0 flex-wrap items-center gap-4">
         {type === 'Asynchronous' ? (
           learningAnalyticsEnabled ? (
             analyticsButton
