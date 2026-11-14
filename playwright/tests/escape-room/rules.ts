@@ -16,7 +16,7 @@ import {
   messages,
 } from './shared.js'
 
-const SC3 = {
+export const SC3 = {
   title: 'ER SC Question 3',
   content: 'ER SC Content 3',
   choices: [{ value: 'vault', correct: true }, { value: 'door' }],

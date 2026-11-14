@@ -160,7 +160,7 @@ Practice Quizzes, Microlearnings, Group Activities, and individual Live Quiz blo
 
 ### Scoring rules
 
-`packages/grading/src/escapeRoomRules.ts` owns the rules for Practice Quiz, Microlearning, and Group Activity Escape Rooms, so the same answer sequence costs the same time in each mode. Live Quiz blocks do not use them.
+`packages/grading/src/escapeRoomRules.ts` owns the rules for every Escape Room mode, so the same answer sequence costs the same time in each. A Live Quiz block reads them from its own `EscapeRoomConfig`.
 
 - **Hints** are ordered per question. Revealing hint _i_ costs the hint's own penalty, else `hintPenalties[i]`, else `hintPenalty`. Used hints are recorded as `"<instanceId>"` for the first hint and `"<instanceId>:<i>"` after it.
 - **Wrong answers** add `wrongAnswerPenalty` and count one attempt on the stage. When the count reaches `maxWrongAttempts`, the stage is revealed: `revealPenalty` is added, the stage counts as cleared, and no lockout applies. Below that limit the configured lockout applies.
@@ -169,7 +169,7 @@ Practice Quizzes, Microlearnings, Group Activities, and individual Live Quiz blo
 - **Penalties count only toward the ranked time.** The countdown ignores them, so an attempt expires at `startedAt + timeLimit` plus the grace period.
 - **Ranking** orders attempts by solved stages (reveal, skip, and bonus excluded), then by ranked time: the last non-bonus stage outcome minus the start, plus penalties, minus the bonus credit. The lecturer dashboard shows the rank, the outcome counts, and the ranked time.
 
-Individual attempts store outcomes in `EscapeRoomAttempt.stageOutcomes`, keyed by stack ID. Group attempts append revealed, skipped, and bonus stages to `stageResponses` (with a `null` response for reveal and skip); their `stageOutcomes` hold the wrong-attempt counts and mirror the reveal, skip, and bonus outcomes that the participant view reads.
+Individual attempts store outcomes in `EscapeRoomAttempt.stageOutcomes`, keyed by stack ID (by element instance ID in Live Quiz blocks). Group attempts append revealed, skipped, and bonus stages to `stageResponses` (with a `null` response for reveal and skip); their `stageOutcomes` hold the wrong-attempt counts and mirror the reveal, skip, and bonus outcomes that the participant view reads.
 
 ### Individual Practice Quiz and Microlearning
 
@@ -197,7 +197,7 @@ A Live Quiz Escape Room is scoped to one non-assessment `ElementBlock` and one a
 
 The response API validates the participant token, active quiz/block binding, attempt, lockout, expiry, and current stage before grading. Correct stages are recorded in an attempt-scoped Redis set, deterministic event IDs make accepted retries stable, and the response processor deduplicates delivery before updating ordinary Live Quiz statistics. A block-wide close gate drains active grading and accepted worker events before result aggregation, so a response cannot complete after the closure snapshot. Start, answer, hint, and lecturer reset share the same participant/block lifecycle claim, preventing stale answer or reset races.
 
-The lecturer cockpit polls block-scoped progress, expands the owning course roster with `NOT_STARTED` participants, and offers WRITE-authorized resets. Live Quiz templates preserve block settings and per-instance hints server-side; QR elements created from a template receive fresh private codes.
+The lecturer cockpit polls block-scoped progress, expands the owning course roster with `NOT_STARTED` participants, ranks attempts from `stageOutcomes` like the other modes (attempts completed before outcomes existed rank as solved at `completedAt` with their recorded penalties), and offers WRITE-authorized resets. Live Quiz templates preserve block settings and only the first per-instance hint, and no scoring rules; QR elements created from a template receive fresh private codes.
 
 ## Course deletion
 

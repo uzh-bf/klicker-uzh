@@ -12,10 +12,10 @@ import CatalystTitle from '../../src/components/CatalystTitle'
 Escape Room is a mode applied to an existing activity type, not a standalone activity. Its behavior differs by mode:
 
 - **Practice Quiz and Microlearning** reveal ordered stages. A stage can contain more than one question, and each stage remains hidden until the preceding one is cleared.
-- **Live Quiz** reveals the questions of an Escape Room block as stages, one at a time; each correct answer unlocks the next stage within the block.
+- **Live Quiz** reveals the questions of an Escape Room block as stages, one at a time; each correct answer unlocks the next stage within the block. Every block has its own rules.
 - **Group Activity** reveals the stages of one shared challenge one at a time. The whole group works on the same current stage, and a correct answer by any member unlocks the next one.
 
-In all modes, a wrong answer keeps the participant on the current challenge and triggers a short server-enforced wait before a retry is allowed. Practice Quiz, Microlearning, and Group Activity can additionally reveal a stage after too many wrong answers (see [Scoring rules](#scoring-rules)). Penalties never shorten the countdown: they are added to the participant's ranked time. All of this state is kept on the server, so participants cannot gain an advantage by refreshing.
+In all modes, a wrong answer keeps the participant on the current challenge and triggers a short server-enforced wait before a retry is allowed. All modes can additionally reveal a stage after too many wrong answers (see [Scoring rules](#scoring-rules)). Penalties never shorten the countdown: they are added to the participant's ranked time. All of this state is kept on the server, so participants cannot gain an advantage by refreshing.
 
 ---
 
@@ -39,12 +39,12 @@ For Practice Quiz, Microlearning, and Group Activity, the setting applies to the
 Once Escape Room is enabled, an **Escape Room rules** card appears next to the other settings. Its fields are grouped by topic (time, hints, wrong answers, skipping, bonus), show their unit, and have a help tooltip. The time, hint, and intro fields are:
 
 1. **Time limit** (minutes) – an integer from 1 to 1440. The timer starts when a participant (or group) presses Start Attempt and continues even if the page is reloaded.
-2. **Hint penalty** (seconds) – an integer from 0 to 3600. Each hint reveal adds this amount to the participant's penalty time. Setting it to 0 makes hints free. In Practice Quiz, Microlearning, and Group Activity, the escalating penalties below take precedence.
+2. **Hint penalty** (seconds) – an integer from 0 to 3600. Each hint reveal adds this amount to the participant's penalty time. Setting it to 0 makes hints free. The escalating penalties below take precedence.
 3. **Intro story** (optional) – a Markdown field (maximum 5000 characters). Participants see it on the start screen before the timer begins. Use it to frame the scenario and establish context before the first stage appears. A well-written intro makes later stages feel more connected.
 
 ### Scoring rules
 
-Practice Quiz, Microlearning, and Group Activity Escape Rooms offer additional scoring rules in the same card. **Apply classroom preset** fills in values tested in a 45-minute classroom session: hint penalties of 120 and 240 seconds, 30 seconds per wrong answer, the solution revealed after 5 wrong answers for 480 seconds, skipping for 600 seconds, and a bonus question worth 180 seconds. You can adjust every value afterwards.
+All Escape Rooms offer additional scoring rules in the same card. In a Live Quiz, the card sits in the block's settings modal and applies to that block only. **Apply classroom preset** fills in values tested in a 45-minute classroom session: hint penalties of 120 and 240 seconds, 30 seconds per wrong answer, the solution revealed after 5 wrong answers for 480 seconds, skipping for 600 seconds, and a bonus question worth 180 seconds. You can adjust every value afterwards.
 
 | Setting                              | Effect                                                                                                                        |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -55,7 +55,9 @@ Practice Quiz, Microlearning, and Group Activity Escape Rooms offer additional s
 | Skip penalty (Skipping)              | Lets participants skip the current stage for this many seconds. Leave empty to disable skipping.                              |
 | Bonus credit (Bonus)                 | Turns the last stage into an optional bonus stage. Leave empty for no bonus stage.                                            |
 
-The participants' **ranked time** is the time until they cleared the last regular question, plus all penalties, minus the bonus credit. The countdown itself is never shortened. The bonus stage becomes available once every other stage is cleared and can be answered once while time remains.
+The participants' **ranked time** is the time until they cleared the last regular question, plus all penalties, minus the bonus credit. The countdown itself is never shortened. The bonus stage becomes available once every other stage is cleared and can be answered once while time remains. In a Live Quiz block with a bonus, the last question of the block is the bonus stage, and the block needs at least two questions. A student who reveals or skips a stage sees the solution (for a reveal) and continues with the next question. A wrong bonus answer costs nothing and ends the bonus.
+
+A Live Quiz block that was created before these rules existed keeps working: its single hint stays the first hint, and attempts finished earlier are ranked by completion time with their recorded hint penalties.
 
 ---
 
@@ -70,7 +72,7 @@ The participants' **ranked time** is the time until they cleared the last regula
 **To add hints to individual questions:**
 
 1. In the activity wizard, scroll below the element placement for the question you want to annotate.
-2. Enter hint text for that element. In Practice Quiz, Microlearning, and Group Activity, enter several hints one per line; participants reveal them in that order. Participants see a **Show hint** button, labelled with its price (for example "+2 min"), only on elements that have a hint configured.
+2. Enter hint text for that element. Enter several hints one per line; participants reveal them in that order. Participants see a **Show hint** button, labelled with its price (for example "+2 min"), only on elements that have a hint configured.
 3. A revealed hint remains visible after a page reload. Its penalty is added to the penalty time immediately on reveal.
 
 **Attempt rules by activity type:**
@@ -78,6 +80,10 @@ The participants' **ranked time** is the time until they cleared the last regula
 - Practice Quiz and Microlearning: one server-owned attempt per participant. The timer starts when the participant presses Start Attempt.
 - Group Activity: one shared attempt per group. All members share progress, hints revealed, wait state, completion, and reset – a hint revealed by one member is visible to all and costs the group the configured penalty. The timer starts when any group member presses Start Attempt.
 - Live Quiz: one attempt per participant per Escape Room block; participants start the attempt explicitly when the block opens.
+
+:::note
+Saving a Live Quiz as a template keeps only the first hint of each question and none of the scoring rules. Set the rules again on the blocks of a quiz created from the template.
+:::
 
 **Eligibility:**
 
@@ -122,7 +128,7 @@ The grading/monitoring page shows the shared group attempt. The summary line cou
 
 **Live Quiz**
 
-The **Lecturer Cockpit** displays per-participant progress for the active Escape Room block and updates automatically while open, giving a clear picture of where the group is during the session.
+The **Lecturer Cockpit** displays per-participant progress for the active Escape Room block and updates automatically while open. The table has the same rank, outcome (revealed, skipped, bonus), penalty, and ranked-time columns as the other modes, and ranks participants by stages solved without help, then by ranked time.
 
 ---
 
