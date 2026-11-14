@@ -65,7 +65,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
-    const embedded = parseEmbedParam(ctx.query.embed)
+    // The assessment chat refuses embed sessions, so its entry is always full-page.
+    const embedded =
+      process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+      parseEmbedParam(ctx.query.embed)
     const handoffParameters = buildChatbotRedirectParams(ctx.query, embedded)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({

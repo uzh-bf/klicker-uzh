@@ -462,6 +462,121 @@ function assertWorkerDisruptionBudgets(resources, source, expectedBudgets) {
   }
 }
 
+// The exam chat reuses the regular chat's secret and ConfigMap, then applies
+// its own overlay last, so the overlay's mode flag and public URLs win.
+function assertAssessmentChatContract(resources, source) {
+  const deployment = resources.find(
+    (resource) =>
+      resource.kind === 'Deployment' &&
+      resource.metadata?.labels?.[componentLabel] === 'chat-assessment'
+  )
+  assert.ok(deployment, `${source}: expected a chat-assessment Deployment`)
+
+  // An older image would serve a regular chat on the exam host.
+  const chatDeployment = resources.find(
+    (resource) =>
+      resource.kind === 'Deployment' &&
+      resource.metadata?.labels?.[componentLabel] === 'chat'
+  )
+  assert.ok(chatDeployment, `${source}: the chat Deployment is missing`)
+  assert.equal(
+    deployment.spec.template.spec.containers[0].image,
+    chatDeployment.spec.template.spec.containers[0].image,
+    `${source}: chat-assessment must run the regular chat image and tag`
+  )
+
+  const envFrom = deployment.spec.template.spec.containers[0].envFrom
+  const suffixes = envFrom.map((entry) => {
+    const name = entry.configMapRef?.name ?? entry.secretRef?.name
+    assert.ok(
+      name,
+      `${source}: every envFrom entry must name a ConfigMap or Secret`
+    )
+    return name.slice(fullname.length + 1)
+  })
+  assert.deepEqual(
+    suffixes.slice(0, 4),
+    ['config-global', 'config-chat', 'config-chat-assessment', 'secret-chat'],
+    `${source}: chat-assessment must load the overlay after config-chat`
+  )
+  assert.ok(
+    envFrom.slice(4).every((entry) => !entry.configMapRef),
+    `${source}: no ConfigMap may follow the chat-assessment overlay`
+  )
+
+  const overlay = resources.find(
+    (resource) =>
+      resource.kind === 'ConfigMap' &&
+      resource.metadata?.name === `${fullname}-config-chat-assessment`
+  )
+  assert.equal(
+    overlay?.data?.CHAT_ASSESSMENT_MODE,
+    'true',
+    `${source}: chat-assessment overlay must enable assessment mode`
+  )
+  assert.equal(
+    overlay?.data?.ALLOWED_FRAME_ANCESTORS,
+    "'self'",
+    `${source}: the exam chat must not be frameable`
+  )
+  assert.ok(overlay?.data?.CHAT_PUBLIC_PWA_URL, `${source}: missing PWA URL`)
+  assert.ok(overlay?.data?.CHAT_PUBLIC_URL, `${source}: missing chat URL`)
+  assert.ok(
+    deployment.spec.template.metadata.annotations['checksum/config-assessment'],
+    `${source}: chat-assessment must checksum its overlay`
+  )
+
+  // The exam host is only reachable when its Ingress backend names a Service
+  // that selects these pods on the port the Ingress targets.
+  const service = resources.find(
+    (resource) =>
+      resource.kind === 'Service' &&
+      resource.metadata?.name === `${fullname}-chat-assessment`
+  )
+  assert.equal(
+    service?.spec?.selector?.[componentLabel],
+    'chat-assessment',
+    `${source}: expected a Service selecting the chat-assessment pods`
+  )
+  const ingress = resources.find(
+    (resource) =>
+      resource.kind === 'Ingress' &&
+      resource.metadata?.name === `${fullname}-chat-assessment`
+  )
+  // The no-login page sends exam students to this origin, so it must be the
+  // host the assessment PWA Ingress serves.
+  const pwaIngress = resources.find(
+    (resource) =>
+      resource.kind === 'Ingress' &&
+      resource.metadata?.name === `${fullname}-frontend-assessment`
+  )
+  const pwaHost = new URL(overlay.data.CHAT_PUBLIC_PWA_URL).host
+  assert.ok(
+    (pwaIngress?.spec?.rules ?? []).some((rule) => rule.host === pwaHost),
+    `${source}: CHAT_PUBLIC_PWA_URL must be an assessment PWA host`
+  )
+
+  const publicHost = new URL(overlay.data.CHAT_PUBLIC_URL).host
+  assert.ok(
+    (ingress?.spec?.rules ?? []).some((rule) => rule.host === publicHost),
+    `${source}: chat-assessment Ingress must serve ${publicHost}`
+  )
+  const backends = (ingress?.spec?.rules ?? []).flatMap((rule) =>
+    rule.http.paths.map((path) => path.backend.service)
+  )
+  assert.ok(
+    backends.length > 0,
+    `${source}: expected a chat-assessment Ingress`
+  )
+  for (const backend of backends) {
+    assert.equal(backend.name, service.metadata.name)
+    assert.ok(
+      service.spec.ports.some(({ port }) => port === backend.port.number),
+      `${source}: Ingress port ${backend.port.number} is not on the Service`
+    )
+  }
+}
+
 function assertWorkerRuntimeContracts(resources, source) {
   const workerContracts = [
     {
@@ -713,7 +828,7 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    { base: 17, stg: 20, prd: 20 }[environment.name]
+    { base: 17, stg: 21, prd: 20 }[environment.name]
   )
   if (['stg', 'prd'].includes(environment.name)) {
     assertPwaBurstTier(resources, environment.name)
@@ -748,6 +863,9 @@ for (const environment of environments) {
     }[environment.name]
   )
   assertWorkerRuntimeContracts(resources, environment.name)
+  if (environment.name === 'stg') {
+    assertAssessmentChatContract(resources, environment.name)
+  }
   assertArgoReplicaExceptions(resources, environment.name)
 }
 
