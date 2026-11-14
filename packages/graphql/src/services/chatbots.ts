@@ -2005,6 +2005,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         select: {
           id: true,
           name: true,
+          isAssessmentEnabled: true,
           // Prefills the expected student count of a publication request.
           _count: { select: { participations: true } },
         },
@@ -2150,6 +2151,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
               id: chatbot.course.id,
               name: chatbot.course.name,
               numOfParticipants: chatbot.course._count.participations,
+              isAssessmentEnabled: chatbot.course.isAssessmentEnabled,
             },
           ]
         : [],
