@@ -55,7 +55,7 @@ The primary checkout keeps fixed localhost application ports, publishes the data
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.5.1 and set it up:
+1. **Host prerequisite**: install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.6.3 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -144,7 +144,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.5.1. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.6.3. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` selects `standard`, which
@@ -611,12 +611,13 @@ The provisioning helper defaults to bootstrap login `klicker`
 for CI; the retained local environment explicitly selects the allow-listed
 `klicker-prod` login. Neither is the restricted `klicker_test` application login.
 
-Redis data uses project-scoped named volumes. When recreating containers whose
-Redis storage was anonymous, set `KLICKER_REDIS_EXEC_VOLUME`,
-`KLICKER_REDIS_CACHE_VOLUME`, and `KLICKER_REDIS_ASSESSMENT_VOLUME` to the exact
-previous volume names. Verify those volumes exist and the resolved Compose
-mounts match before startup; retain those overrides for subsequent lifecycle
-commands. Removing containers does not authorize discarding their data.
+Redis data uses project-scoped named volumes (`<project>_redis_exec_data`,
+`<project>_redis_cache_data`, `<project>_redis_assessment_data`). Fresh
+initialization refuses fixed volume names, so the former
+`KLICKER_REDIS_*_VOLUME` overrides are no longer read. Redis data in an older
+anonymous or differently named volume stays in that volume; copy it into the
+project-scoped volume before startup if it is still needed. Removing containers
+does not authorize discarding their data.
 
 The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
 When one of those files changes, review the semantic change and refresh its pin
@@ -637,6 +638,19 @@ can lose writable-layer data. If the installed tool lacks the required command,
 stop at that capability boundary instead of substituting raw Docker mutations.
 
 ### Fresh disposable database initialization
+
+A new disposable worktree runs the repository's `freshBootstrap` declaration
+once through Devrouter:
+
+```sh
+devrouter ensure /absolute/path/to/new-worktree --profile chat,manage --initialize-new --json
+```
+
+Devrouter runs the declared initializer once before the ordinary preserving
+hooks. It refuses data volumes with fixed names, so every non-cache volume in
+`docker-compose.yml` keeps its project-scoped default name. A failed, canceled
+or uncertain attempt remains consumed; retain its data and use preserving
+recovery or a new disposable checkout.
 
 Initialization is a separate, explicit operation for newly provisioned empty
 `klicker_test` and `klicker_test_shadow` databases with the restricted
