@@ -118,3 +118,72 @@ export const CaptureResponseExampleResult =
       created: t.exposeBoolean('created'),
     }),
   })
+
+export const BaselineCaseStatus = builder.enumType('BaselineCaseStatus', {
+  values: Object.values(DB.BaselineCaseStatus),
+})
+export const BaselineReportStatus = builder.enumType('BaselineReportStatus', {
+  values: Object.values(DB.BaselineReportStatus),
+})
+export const ResponseExampleBaselineCase = builder
+  .objectRef<DB.ResponseExampleBaselineCase>('ResponseExampleBaselineCase')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      exampleId: t.exposeID('exampleId'),
+      chatMode: t.exposeString('chatMode'),
+      question: t.exposeString('question'),
+      idealAnswer: t.exposeString('idealAnswer'),
+      expectedEvidence: t.expose('expectedEvidence', { type: 'Json' }),
+      status: t.expose('status', { type: BaselineCaseStatus }),
+      actualAnswer: t.exposeString('actualAnswer', { nullable: true }),
+      actualEvidence: t.expose('actualEvidence', {
+        type: 'Json',
+        nullable: true,
+      }),
+      assessment: t.expose('assessment', { type: 'Json', nullable: true }),
+      errorCode: t.exposeString('errorCode', { nullable: true }),
+    }),
+  })
+export type ResponseExampleBaselineReportData =
+  DB.ResponseExampleBaselineReport & {
+    stale: boolean
+    cases: DB.ResponseExampleBaselineCase[]
+  }
+export const ResponseExampleBaselineReport = builder
+  .objectRef<ResponseExampleBaselineReportData>('ResponseExampleBaselineReport')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      status: t.expose('status', { type: BaselineReportStatus }),
+      stale: t.exposeBoolean('stale'),
+      excludedCount: t.exposeInt('excludedCount'),
+      errorCode: t.exposeString('errorCode', { nullable: true }),
+      modelId: t.exposeString('modelId', { nullable: true }),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      updatedAt: t.expose('updatedAt', { type: 'Date' }),
+      cases: t.field({
+        type: [ResponseExampleBaselineCase],
+        resolve: (report) => report.cases,
+      }),
+    }),
+  })
+export const ResponseExampleBaselineOverview = builder
+  .objectRef<{
+    eligibleCount: number
+    excludedCount: number
+    available: boolean
+    report: ResponseExampleBaselineReportData | null
+  }>('ResponseExampleBaselineOverview')
+  .implement({
+    fields: (t) => ({
+      eligibleCount: t.exposeInt('eligibleCount'),
+      excludedCount: t.exposeInt('excludedCount'),
+      available: t.exposeBoolean('available'),
+      report: t.field({
+        type: ResponseExampleBaselineReport,
+        nullable: true,
+        resolve: (overview) => overview.report,
+      }),
+    }),
+  })
