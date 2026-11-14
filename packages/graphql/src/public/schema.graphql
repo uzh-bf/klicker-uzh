@@ -1373,6 +1373,7 @@ union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActiv
 input ElementInstanceInput {
   duplicateInstance: Boolean!
   elementId: Int!
+  escapeRoomDebrief: String
   escapeRoomHint: String
   escapeRoomHints: [EscapeRoomHintEntryInput!]
   existingInstanceId: Int
@@ -1530,6 +1531,7 @@ type EscapeRoomConfig {
 }
 
 type EscapeRoomHint {
+  debrief: String
   hint: String!
   hints: [EscapeRoomHintEntry!]!
   instanceId: Int!
@@ -1555,6 +1557,7 @@ type EscapeRoomHintResult {
 type EscapeRoomProgress {
   activityId: String!
   attempts: [EscapeRoomAttemptProgress!]!
+  stages: [EscapeRoomStageProgress!]!
   timeLimit: Int!
   totalStacks: Int!
 }
@@ -1579,6 +1582,22 @@ type EscapeRoomStageOutcome {
   at: String
   outcome: String
   stageKey: String!
+  wrongAttempts: Int!
+}
+
+type EscapeRoomStageProgress {
+  attemptedNotCleared: Int!
+  bonusCorrect: Int!
+  bonusWrong: Int!
+  debrief: String
+  hintsUsed: Int!
+  isBonus: Boolean!
+  notReached: Int!
+  revealed: Int!
+  skipped: Int!
+  solved: Int!
+  stageKey: String!
+  title: String
   wrongAttempts: Int!
 }
 

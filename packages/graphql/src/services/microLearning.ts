@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomDebriefUpdate,
   getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -476,6 +477,9 @@ export async function manipulateMicroLearning(
             ...getEscapeRoomHintUpdate(
               persistentInputs.get(instance.id)?.escapeRoomHint,
               persistentInputs.get(instance.id)?.escapeRoomHints
+            ),
+            ...getEscapeRoomDebriefUpdate(
+              persistentInputs.get(instance.id)?.escapeRoomDebrief
             ),
             pointsMultiplier: multiplier * elementMultiplier,
           },

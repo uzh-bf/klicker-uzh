@@ -77,6 +77,7 @@ export const EscapeRoomRulesInput = EscapeRoomRulesInputRef.implement({
 export interface IEscapeRoomHint {
   instanceId: number
   hint: string
+  debrief?: string | null
   hints: IEscapeRoomHintEntry[]
 }
 
@@ -86,6 +87,7 @@ export const EscapeRoomHint = EscapeRoomHintRef.implement({
   fields: (t) => ({
     instanceId: t.exposeInt('instanceId'),
     hint: t.exposeString('hint'),
+    debrief: t.exposeString('debrief', { nullable: true }),
     hints: t.field({
       type: [EscapeRoomHintEntryRef],
       resolve: (parent) => parent.hints,
