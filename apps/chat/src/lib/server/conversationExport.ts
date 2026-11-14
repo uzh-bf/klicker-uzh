@@ -318,7 +318,9 @@ export function buildConversationExport({
       })
 
     const messages = exportedThreads.flatMap((thread) => thread.messages)
-    const times = messages.map((message) => message.createdAt).sort()
+    const times = messages
+      .map((message) => message.createdAt)
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     return {
       participantId: entry.participantId,
       identity: identityFor(entry),
