@@ -16,7 +16,7 @@ import hashes from '@klicker-uzh/graphql/dist/client.json'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
-import { createClient } from 'graphql-ws'
+import { Client, createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
 import { useMemo } from 'react'
@@ -35,6 +35,12 @@ interface PageProps {
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
+let subscriptionClient: Client | undefined
+let subscriptionConnected = false
+
+export function getSubscriptionConnection() {
+  return { client: subscriptionClient, connected: subscriptionConnected }
+}
 
 function createIsomorphLink(ctx?: GetServerSidePropsContext) {
   const isBrowser = typeof window !== 'undefined'
@@ -134,7 +140,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
     if (networkError) console.log(`[Network error]`, networkError)
   })
 
-  let link: ApolloLink = new HttpLink({
+  const link: ApolloLink = new HttpLink({
     uri: isBrowser
       ? process.env.NEXT_PUBLIC_API_URL
       : process.env.API_URL_SSR ||
@@ -158,25 +164,47 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
       },
     })
 
-    const wsLink = new GraphQLWsLink(
-      createClient({
-        url: (process.env.NEXT_PUBLIC_API_URL as string)
-          .replace('http://', 'ws://')
-          .replace('https://', 'wss://'),
-        // connectionParams: () => {
-        //   // Note: getSession() is a placeholder function created by you
-        //   const session = getSession();
-        //   if (!session) {
-        //     return {};
-        //   }
-        //   return {
-        //     Authorization: `Bearer ${session.token}`,
-        //   };
-        // },
-      })
-    )
+    subscriptionClient = createClient({
+      url: (process.env.NEXT_PUBLIC_API_URL as string)
+        .replace('http://', 'ws://')
+        .replace('https://', 'wss://'),
+      // connectionParams: () => {
+      //   // Note: getSession() is a placeholder function created by you
+      //   const session = getSession();
+      //   if (!session) {
+      //     return {};
+      //   }
+      //   return {
+      //     Authorization: `Bearer ${session.token}`,
+      //   };
+      // },
+      retryAttempts: 5,
+      shouldRetry: () => true,
+      connectionAckWaitTimeout: 10000,
+      retryWait: async (retries) => {
+        // The retry count only resets on acknowledgement, so a reconnect
+        // after the automatic attempts are exhausted must not wait again.
+        if (retries >= 5) return
+        const delay = Math.min(1000 * 2 ** retries, 10000)
+        await new Promise((resolve) =>
+          setTimeout(resolve, delay + Math.random() * 1000)
+        )
+      },
+      on: {
+        connected: () => {
+          subscriptionConnected = true
+        },
+        closed: () => {
+          subscriptionConnected = false
+        },
+        error: () => {
+          subscriptionConnected = false
+        },
+      },
+    })
+    const wsLink = new GraphQLWsLink(subscriptionClient)
 
-    link = split(
+    return split(
       ({ query, operationName }) => {
         const definition = getOperationAST(query, operationName)
         return (
@@ -184,11 +212,9 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
           definition.operation === 'subscription'
         )
       },
-      wsLink,
-      link
+      from([errorLink, authLink, ...persistedLink, wsLink]),
+      from([retryLink, errorLink, authLink, ...persistedLink, link])
     )
-
-    return from([retryLink, errorLink, authLink, ...persistedLink, link])
   }
 
   return from([errorLink, authLink, ...persistedLink, link])

@@ -55,6 +55,10 @@
       ]
     },
     {
+      "profile": "live-quiz",
+      "specs": ["O3-live-quiz-recovery.spec.ts"]
+    },
+    {
       "profile": "manage,pwa",
       "runtime": "production-webpack",
       "specs": ["A-account-production.spec.ts"]
