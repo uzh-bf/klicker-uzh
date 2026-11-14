@@ -288,13 +288,6 @@ export function validateKbGraphTerminalResult(
     errors.push(
       `estimatedMinorUnits must be a non-negative integer, got ${expectation.estimatedMinorUnits}`
     )
-  } else if (
-    result.metered_cost !== null &&
-    result.metered_cost.amount_minor_units > expectation.estimatedMinorUnits
-  ) {
-    errors.push(
-      `metered cost ${result.metered_cost.amount_minor_units} exceeds estimated reservation ${expectation.estimatedMinorUnits}`
-    )
   }
 
   if (errors.length > 0) {

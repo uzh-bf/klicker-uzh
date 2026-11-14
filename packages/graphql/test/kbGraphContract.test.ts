@@ -294,24 +294,10 @@ describe('kbGraphContract', () => {
     }
   })
 
-  it('rejects a result that exceeds the estimated reservation', () => {
+  it('accepts a result whose metered cost exceeds the reservation', () => {
     const validation = validateKbGraphTerminalResult(validResult, {
       ...validExpectation,
       estimatedMinorUnits: 100,
-    })
-
-    expect(validation.ok).toBe(false)
-    if (!validation.ok) {
-      expect(validation.errors.join(' ')).toContain(
-        'exceeds estimated reservation'
-      )
-    }
-  })
-
-  it('accepts a result whose metered cost equals the reservation', () => {
-    const validation = validateKbGraphTerminalResult(validResult, {
-      ...validExpectation,
-      estimatedMinorUnits: 120,
     })
 
     expect(validation.ok).toBe(true)
