@@ -12,9 +12,19 @@ import {
   StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import type {
+  EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
+  EscapeRoomHintResult as IEscapeRoomHintResult,
+  EscapeRoomProgress as IEscapeRoomProgress,
+} from '../services/escapeRooms.js'
+import {
+  getEscapeRoomExpiresInSeconds,
+  getEscapeRoomRemainingSeconds,
+} from '../services/escapeRooms.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
+import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
 import { IStackFeedback } from './evaluation.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
@@ -74,6 +84,7 @@ export const ElementInstanceInput = ElementInstanceInputRef.implement({
     order: t.int({ required: true }),
     existingInstanceId: t.int({ required: false }),
     duplicateInstance: t.boolean({ required: true }),
+    escapeRoomHint: t.string({ required: false }),
   }),
 })
 
@@ -139,6 +150,7 @@ export const StackResponseInput = StackResponseInputRef.implement({
       type: [CaseStudyCaseResponse],
       required: false,
     }),
+    qrScanResponse: t.string({ required: false }),
   }),
 })
 
@@ -157,7 +169,13 @@ export const StackFeedback = builder
   })
 
 export interface IElementStack extends DB.ElementStack {
-  elements?: DB.ElementInstance[] | null
+  elements?: Array<
+    DB.ElementInstance & {
+      responses?: Array<
+        Pick<DB.QuestionResponse, 'lastResponseCorrectness'>
+      > | null
+    }
+  > | null
 }
 export const ElementStackRef = builder.objectRef<IElementStack>('ElementStack')
 export const ElementStack = ElementStackRef.implement({
@@ -170,6 +188,22 @@ export const ElementStack = ElementStackRef.implement({
     elements: t.expose('elements', {
       type: [ElementInstanceRef],
       nullable: true,
+    }),
+    isCorrect: t.boolean({
+      nullable: true,
+      resolve: (parent, _args, ctx) => {
+        if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+          return false
+        }
+        if (!parent.elements?.length) return false
+        return parent.elements.every((element) =>
+          element.responses?.some(
+            (response) =>
+              response.lastResponseCorrectness ===
+              DB.ResponseCorrectness.CORRECT
+          )
+        )
+      },
     }),
   }),
 })
@@ -199,6 +233,8 @@ export interface IPracticeQuiz
   completedCount?: number
   repeatedCount?: number
   isOwner?: boolean
+  escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomAttempts?: DB.EscapeRoomAttempt[] | null
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -219,6 +255,24 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
     availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
 
+    escapeRoomConfig: t.expose('escapeRoomConfig', {
+      type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    escapeRoomAttempts: t.field({
+      type: [EscapeRoomAttemptRef],
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return null
+        return await ctx.prisma.escapeRoomAttempt.findMany({
+          where: {
+            practiceQuizId: parent.id,
+            participantId: ctx.user.sub,
+          },
+        })
+      },
+    }),
+
     // startedCount: t.exposeInt('startedCount', { nullable: true }),
     // completedCount: t.exposeInt('completedCount', { nullable: true }),
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
@@ -226,6 +280,89 @@ export const PracticeQuiz = PracticeQuizRef.implement({
 
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
+  }),
+})
+
+export const EscapeRoomStatus = builder.enumType('EscapeRoomStatus', {
+  values: Object.values(DB.EscapeRoomStatus),
+})
+export const EscapeRoomProgressStatus = builder.enumType(
+  'EscapeRoomProgressStatus',
+  {
+    values: ['NOT_STARTED', ...Object.values(DB.EscapeRoomStatus)] as const,
+  }
+)
+
+export const EscapeRoomAttemptRef =
+  builder.objectRef<DB.EscapeRoomAttempt>('EscapeRoomAttempt')
+export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    startedAt: t.expose('startedAt', { type: 'Date' }),
+    timeLimit: t.exposeInt('timeLimit'),
+    penaltySeconds: t.exposeInt('penaltySeconds'),
+    remainingSeconds: t.int({
+      resolve: (attempt) => getEscapeRoomRemainingSeconds(attempt),
+    }),
+    expiresInSeconds: t.int({
+      resolve: (attempt) => getEscapeRoomExpiresInSeconds(attempt),
+    }),
+    hintsUsed: t.field({
+      type: ['String'],
+      resolve: (parent) => {
+        return (parent.hintsUsed as string[]) ?? []
+      },
+    }),
+    status: t.expose('status', { type: EscapeRoomStatus }),
+    completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
+    lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
+    participantId: t.exposeString('participantId', { nullable: true }),
+    practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
+    microLearningId: t.exposeString('microLearningId', { nullable: true }),
+  }),
+})
+
+// SECURITY: `hint` is only ever populated by the requestEscapeRoomHint
+// mutation, after attempt-ownership validation. Hint text has no query field.
+export const EscapeRoomHintResultRef = builder.objectRef<IEscapeRoomHintResult>(
+  'EscapeRoomHintResult'
+)
+export const EscapeRoomHintResult = EscapeRoomHintResultRef.implement({
+  fields: (t) => ({
+    hint: t.exposeString('hint'),
+    attempt: t.expose('attempt', { type: EscapeRoomAttemptRef }),
+  }),
+})
+
+export const EscapeRoomAttemptProgressRef =
+  builder.objectRef<IEscapeRoomAttemptProgress>('EscapeRoomAttemptProgress')
+export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
+  {
+    fields: (t) => ({
+      id: t.exposeString('id', { nullable: true }),
+      participantId: t.exposeString('participantId', { nullable: true }),
+      displayName: t.exposeString('displayName'),
+      avatar: t.exposeString('avatar', { nullable: true }),
+      status: t.expose('status', { type: EscapeRoomProgressStatus }),
+      startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
+      completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
+      lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
+      penaltySeconds: t.exposeInt('penaltySeconds'),
+      hintsUsedCount: t.exposeInt('hintsUsedCount'),
+      clearedStacks: t.exposeInt('clearedStacks'),
+      timeSpentSeconds: t.exposeInt('timeSpentSeconds', { nullable: true }),
+    }),
+  }
+)
+
+export const EscapeRoomProgressRef =
+  builder.objectRef<IEscapeRoomProgress>('EscapeRoomProgress')
+export const EscapeRoomProgress = EscapeRoomProgressRef.implement({
+  fields: (t) => ({
+    activityId: t.exposeString('activityId'),
+    totalStacks: t.exposeInt('totalStacks'),
+    timeLimit: t.exposeInt('timeLimit'),
+    attempts: t.expose('attempts', { type: [EscapeRoomAttemptProgressRef] }),
   }),
 })
 

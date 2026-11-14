@@ -100,6 +100,7 @@ model Participant {
   participantCourseAnalytics      ParticipantCourseAnalytics[]
   participantActivityPerformances ParticipantActivityPerformance[]
   coursePerformances              ParticipantPerformance[]
+  escapeRoomAttempts              EscapeRoomAttempt[]
   groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
   messages                        GroupMessage[]
   chatThreads                     ChatThread[]
@@ -155,6 +156,7 @@ model ParticipantGroup {
 
   participants    Participant[]
   groupActivities GroupActivityInstance[]
+  escapeRoomAttempts EscapeRoomAttempt[]
   awards          AwardEntry[]
   achievements    GroupAchievementInstance[]
   messages        GroupMessage[]

@@ -1,0 +1,23 @@
+mutation RequestEscapeRoomHint(
+  $practiceQuizId: String
+  $microLearningId: String
+  $instanceId: Int!
+) {
+  requestEscapeRoomHint(
+    practiceQuizId: $practiceQuizId
+    microLearningId: $microLearningId
+    instanceId: $instanceId
+  ) {
+    hint
+    attempt {
+      id
+      startedAt
+      timeLimit
+      penaltySeconds
+      lockoutUntil
+      hintsUsed
+      status
+      completedAt
+    }
+  }
+}

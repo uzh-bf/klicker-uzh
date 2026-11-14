@@ -7,6 +7,9 @@ import { describe, expect, it } from 'vitest'
 import { processElementData } from '../src/elements.js'
 import {
   generateQrScanCode,
+  gradeQrScanResponse,
+  isValidQrScanCode,
+  normalizeQrScanCode,
   QR_SCAN_CODE_LENGTH,
   QR_SCAN_CODE_PATTERN,
 } from '../src/qrScan.js'
@@ -42,5 +45,14 @@ describe('QR scan contracts', () => {
     expect(data.type).toBe(ElementType.QR_SCAN)
     expect(data).not.toHaveProperty('qrScanCode')
     expect(JSON.stringify(data)).not.toContain(element.qrScanCode!)
+  })
+
+  it('normalizes, validates, and grades codes through one shared contract', () => {
+    expect(normalizeQrScanCode('  AbCdEf12_-34  ')).toBe('AbCdEf12_-34')
+    expect(isValidQrScanCode('AbCdEf12_-34')).toBe(true)
+    expect(isValidQrScanCode('not-a-code')).toBe(false)
+    expect(gradeQrScanResponse('AbCdEf12_-34', ' AbCdEf12_-34 ')).toBe(true)
+    expect(gradeQrScanResponse('AbCdEf12_-34', 'ZbCdEf12_-34')).toBe(false)
+    expect(gradeQrScanResponse('AbCdEf12_-34', 'not-a-code')).toBe(false)
   })
 })

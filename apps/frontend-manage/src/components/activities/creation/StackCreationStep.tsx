@@ -123,6 +123,7 @@ function StackCreationStep({
                           error={errors.stacks as any}
                           outdatedInstances={outdatedInstances}
                           refetchOutdatedInstances={refetch}
+                          isEscapeRoom={(values as any).isEscapeRoom}
                         />
                       )
                     )}

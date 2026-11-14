@@ -36,3 +36,24 @@ export function getActivityAcceptedElementTypes(
 ): ElementType[] {
   return activityAcceptedElementTypes[activityType]
 }
+
+// Activity types that can run as an Escape Room additionally accept QR scans
+// while that mode is enabled.
+const escapeRoomAcceptedElementTypes: Record<ActivityType, ElementType[]> = {
+  [ActivityType.PracticeQuiz]: [
+    ...PRACTICE_AND_MICROLEARNING_TYPES,
+    ElementType.QrScan,
+  ],
+  [ActivityType.MicroLearning]: [
+    ...PRACTICE_AND_MICROLEARNING_TYPES,
+    ElementType.QrScan,
+  ],
+  [ActivityType.GroupActivity]: [...GROUP_AND_LIVE_TYPES, ElementType.QrScan],
+  [ActivityType.LiveQuiz]: GROUP_AND_LIVE_TYPES,
+}
+
+export function getEscapeRoomAcceptedElementTypes(
+  activityType: ActivityType
+): ElementType[] {
+  return escapeRoomAcceptedElementTypes[activityType]
+}

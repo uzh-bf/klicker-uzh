@@ -1,0 +1,18 @@
+mutation StartEscapeRoomAttempt(
+  $practiceQuizId: String
+  $microLearningId: String
+) {
+  startEscapeRoomAttempt(
+    practiceQuizId: $practiceQuizId
+    microLearningId: $microLearningId
+  ) {
+    id
+    startedAt
+    timeLimit
+    penaltySeconds
+    lockoutUntil
+    hintsUsed
+    status
+    completedAt
+  }
+}
