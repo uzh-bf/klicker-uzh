@@ -11,7 +11,8 @@ import {
   isEscapeRoomExpired,
 } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
-import type { ContextWithUser } from '../lib/context.js'
+import { createHmac, timingSafeEqual } from 'node:crypto'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import {
   getStageOutcome,
   isBonusAnswered,
@@ -22,6 +23,7 @@ import {
   getGroupEscapeRoomStages,
   parseGroupEscapeRoomStageResponses,
 } from './groupEscapeRoomSubmissions.js'
+import { checkAccess } from './sharing.js'
 
 interface EscapeRoomProgressArgs {
   practiceQuizId?: string | null
@@ -211,6 +213,8 @@ export interface EscapeRoomProgress {
   activityId: string
   totalStacks: number
   timeLimit: number
+  // Digest that opens the classroom projector of a Live Quiz block.
+  projectorDigest: string | null
   attempts: EscapeRoomAttemptProgress[]
   stages: EscapeRoomStageProgress[]
 }
@@ -756,10 +760,221 @@ export async function getEscapeRoomProgress(
     activityId,
     totalStacks,
     timeLimit: config.timeLimit,
+    projectorDigest:
+      // Without a secret the cockpit omits the projector link.
+      elementBlockId != null && liveQuizId && process.env.APP_SECRET
+        ? getEscapeRoomProjectorDigest(liveQuizId, elementBlockId)
+        : null,
     attempts: progress.map((entry, index) => ({
       ...entry,
       rank: ranks.get(index) ?? null,
     })),
     stages,
+  }
+}
+
+// Purpose-scoped digest that opens the projector of one Live Quiz block. Its
+// message differs from the results-page and leaderboard digests, so neither
+// unlocks the other.
+export function getEscapeRoomProjectorDigest(
+  liveQuizId: string,
+  elementBlockId: number
+): string {
+  const secret = process.env.APP_SECRET
+  if (!secret) throw new GraphQLError('Projector access is not configured')
+  return createHmac('sha256', secret)
+    .update(`escape-projector:liveQuizBlock:${liveQuizId}:${elementBlockId}`)
+    .digest('hex')
+}
+
+export function isValidEscapeRoomProjectorDigest(
+  liveQuizId: string,
+  elementBlockId: number,
+  digest: string | null | undefined
+): boolean {
+  if (!digest) return false
+  const expected = Buffer.from(
+    getEscapeRoomProjectorDigest(liveQuizId, elementBlockId)
+  )
+  const received = Buffer.from(digest)
+  return (
+    received.length === expected.length && timingSafeEqual(received, expected)
+  )
+}
+
+export type EscapeRoomProjectorPhase = 'LOBBY' | 'RUNNING' | 'CLOSED'
+
+// One listed participant on the projector. It carries no attempt, participant
+// or group identifier.
+export interface EscapeRoomProjectorRow {
+  rank: number | null
+  displayName: string
+  avatar: string | null
+  clearedStages: number
+  solvedStages: number
+  revealedStages: number
+  skippedStages: number
+  bonusCorrect: boolean | null
+  rankedSeconds: number | null
+  status: EscapeRoomAttemptProgress['status']
+  endsAt: Date | null
+}
+
+export interface EscapeRoomProjector {
+  phase: EscapeRoomProjectorPhase
+  serverNow: Date
+  closesAt: Date | null
+  timeLimit: number
+  totalStages: number
+  startedCount: number
+  rankedCount: number
+  rows: EscapeRoomProjectorRow[]
+  stages: EscapeRoomStageProgress[]
+}
+
+const PROJECTOR_PHASES: Record<
+  DB.ElementBlockStatus,
+  EscapeRoomProjectorPhase
+> = {
+  SCHEDULED: 'LOBBY',
+  ACTIVE: 'RUNNING',
+  EXECUTED: 'CLOSED',
+}
+
+/**
+ * Classroom projector view of a Live Quiz escape block. Access is either READ
+ * permission on the quiz or the block's projector digest. Participants are
+ * listed under the Live Quiz leaderboard rules; all started attempts count in
+ * the totals and per-stage numbers.
+ */
+export async function getEscapeRoomProjector(
+  args: EscapeRoomProgressArgs & { digest?: string | null },
+  ctx: Context
+): Promise<EscapeRoomProjector> {
+  const { liveQuizId, elementBlockId, digest } = args
+  if (
+    !liveQuizId ||
+    elementBlockId == null ||
+    args.practiceQuizId ||
+    args.microLearningId ||
+    args.groupActivityId
+  ) {
+    throw new GraphQLError('The projector supports Live Quiz blocks only')
+  }
+
+  const hasAccess =
+    isValidEscapeRoomProjectorDigest(liveQuizId, elementBlockId, digest) ||
+    (ctx.user != null &&
+      (await checkAccess(
+        [
+          {
+            liveQuizId,
+            minimumPermissionLevel: DB.PermissionLevel.READ,
+          },
+        ],
+        ctx as ContextWithUser
+      )))
+  if (!hasAccess) throw new GraphQLError('Not authorized')
+
+  const block = await ctx.prisma.elementBlock.findFirst({
+    where: { id: elementBlockId, liveQuizId },
+    select: {
+      status: true,
+      expiresAt: true,
+      liveQuiz: {
+        select: {
+          courseId: true,
+          course: { select: { isGamificationEnabled: true } },
+        },
+      },
+    },
+  })
+  // The progress service reads and expires attempts on behalf of the lecturer;
+  // access was decided above.
+  const progress = block
+    ? await getEscapeRoomProgress(
+        { liveQuizId, elementBlockId },
+        ctx as ContextWithUser
+      )
+    : null
+  if (!block || !progress) throw new GraphQLError('Escape room not found')
+
+  const phase = PROJECTOR_PHASES[block.status]
+  const started = progress.attempts.filter(
+    (attempt) => attempt.status !== 'NOT_STARTED'
+  )
+
+  // Live Quiz leaderboard rules: in a gamified course only participants who
+  // opted in are listed, and only public profiles show their name.
+  const gamified = block.liveQuiz.course?.isGamificationEnabled ?? false
+  const participantIds = started.flatMap((attempt) =>
+    attempt.participantId ? [attempt.participantId] : []
+  )
+  const [participants, participations] = await Promise.all([
+    ctx.prisma.participant.findMany({
+      where: { id: { in: participantIds } },
+      select: { id: true, isProfilePublic: true },
+    }),
+    gamified && block.liveQuiz.courseId
+      ? ctx.prisma.participation.findMany({
+          where: {
+            courseId: block.liveQuiz.courseId,
+            participantId: { in: participantIds },
+          },
+          select: { participantId: true, isActive: true },
+        })
+      : [],
+  ])
+  const publicProfiles = new Map(
+    participants.map((participant) => [
+      participant.id,
+      participant.isProfilePublic,
+    ])
+  )
+  const optedIn = new Map<string, boolean>(
+    participations.map(
+      (entry) => [entry.participantId, entry.isActive] as const
+    )
+  )
+  const listed = started.filter(
+    (attempt) =>
+      attempt.participantId != null &&
+      (!gamified || optedIn.get(attempt.participantId) === true)
+  )
+
+  // Rank only among the listed participants, with the shared comparator.
+  const rows = rankEscapeRoomScores(listed).map((attempt) => {
+    const isPublic = publicProfiles.get(attempt.participantId!) ?? false
+    return {
+      rank: attempt.rank,
+      displayName: isPublic ? attempt.displayName : 'Anonymous',
+      avatar: isPublic ? attempt.avatar : null,
+      clearedStages: attempt.clearedStacks,
+      solvedStages: attempt.solvedStages,
+      revealedStages: attempt.revealedStages,
+      skippedStages: attempt.skippedStages,
+      bonusCorrect: attempt.bonusCorrect,
+      rankedSeconds: attempt.rankedSeconds,
+      status: attempt.status,
+      endsAt:
+        attempt.status === DB.EscapeRoomStatus.IN_PROGRESS && attempt.startedAt
+          ? new Date(attempt.startedAt.getTime() + progress.timeLimit * 1000)
+          : null,
+    }
+  })
+
+  return {
+    phase,
+    serverNow: new Date(),
+    closesAt: block.expiresAt,
+    timeLimit: progress.timeLimit,
+    totalStages: progress.totalStacks,
+    startedCount: started.length,
+    rankedCount: rows.filter((row) => row.rank !== null).length,
+    rows,
+    stages: progress.stages.map((stage) => ({
+      ...stage,
+      debrief: phase === 'CLOSED' ? stage.debrief : null,
+    })),
   }
 }

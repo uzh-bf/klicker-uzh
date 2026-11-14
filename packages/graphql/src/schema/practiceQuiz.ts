@@ -22,6 +22,8 @@ import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
   EscapeRoomHintResult as IEscapeRoomHintResult,
   EscapeRoomProgress as IEscapeRoomProgress,
+  EscapeRoomProjector as IEscapeRoomProjector,
+  EscapeRoomProjectorRow as IEscapeRoomProjectorRow,
   EscapeRoomStageProgress as IEscapeRoomStageProgress,
 } from '../services/escapeRooms.js'
 import {
@@ -450,7 +452,48 @@ export const EscapeRoomProgress = EscapeRoomProgressRef.implement({
     activityId: t.exposeString('activityId'),
     totalStacks: t.exposeInt('totalStacks'),
     timeLimit: t.exposeInt('timeLimit'),
+    projectorDigest: t.exposeString('projectorDigest', { nullable: true }),
     attempts: t.expose('attempts', { type: [EscapeRoomAttemptProgressRef] }),
+    stages: t.expose('stages', { type: [EscapeRoomStageProgressRef] }),
+  }),
+})
+
+export const EscapeRoomProjectorPhase = builder.enumType(
+  'EscapeRoomProjectorPhase',
+  { values: ['LOBBY', 'RUNNING', 'CLOSED'] as const }
+)
+
+export const EscapeRoomProjectorRowRef =
+  builder.objectRef<IEscapeRoomProjectorRow>('EscapeRoomProjectorRow')
+export const EscapeRoomProjectorRow = EscapeRoomProjectorRowRef.implement({
+  fields: (t) => ({
+    rank: t.exposeInt('rank', { nullable: true }),
+    displayName: t.exposeString('displayName'),
+    avatar: t.exposeString('avatar', { nullable: true }),
+    clearedStages: t.exposeInt('clearedStages'),
+    solvedStages: t.exposeInt('solvedStages'),
+    revealedStages: t.exposeInt('revealedStages'),
+    skippedStages: t.exposeInt('skippedStages'),
+    bonusCorrect: t.exposeBoolean('bonusCorrect', { nullable: true }),
+    rankedSeconds: t.exposeInt('rankedSeconds', { nullable: true }),
+    status: t.expose('status', { type: EscapeRoomProgressStatus }),
+    endsAt: t.expose('endsAt', { type: 'Date', nullable: true }),
+  }),
+})
+
+export const EscapeRoomProjectorRef = builder.objectRef<IEscapeRoomProjector>(
+  'EscapeRoomProjector'
+)
+export const EscapeRoomProjector = EscapeRoomProjectorRef.implement({
+  fields: (t) => ({
+    phase: t.expose('phase', { type: EscapeRoomProjectorPhase }),
+    serverNow: t.expose('serverNow', { type: 'Date' }),
+    closesAt: t.expose('closesAt', { type: 'Date', nullable: true }),
+    timeLimit: t.exposeInt('timeLimit'),
+    totalStages: t.exposeInt('totalStages'),
+    startedCount: t.exposeInt('startedCount'),
+    rankedCount: t.exposeInt('rankedCount'),
+    rows: t.expose('rows', { type: [EscapeRoomProjectorRowRef] }),
     stages: t.expose('stages', { type: [EscapeRoomStageProgressRef] }),
   }),
 })
