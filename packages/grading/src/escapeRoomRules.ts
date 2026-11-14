@@ -187,3 +187,221 @@ export function rankEscapeRoomScores<
       .map((entry) => ({ ...entry, rank: null })),
   ]
 }
+
+// Rules of a block or activity without a configured EscapeRoomConfig: every
+// rule is off.
+export const ESCAPE_ROOM_RULES_OFF: EscapeRoomRules = {
+  hintPenalty: 0,
+  hintPenalties: [],
+  wrongAnswerPenalty: 0,
+  maxWrongAttempts: null,
+  revealPenalty: 0,
+  skipPenalty: null,
+  bonusSeconds: null,
+}
+
+export function getEscapeRoomRulesFromConfig(
+  config:
+    | (Omit<EscapeRoomRules, 'hintPenalties'> & {
+        hintPenalties?: readonly number[] | null
+      })
+    | null
+    | undefined
+): EscapeRoomRules {
+  if (!config) return ESCAPE_ROOM_RULES_OFF
+  return {
+    hintPenalty: config.hintPenalty,
+    hintPenalties: config.hintPenalties ?? [],
+    wrongAnswerPenalty: config.wrongAnswerPenalty,
+    maxWrongAttempts: config.maxWrongAttempts,
+    revealPenalty: config.revealPenalty,
+    skipPenalty: config.skipPenalty,
+    bonusSeconds: config.bonusSeconds,
+  }
+}
+
+// One entry per stage with rule state, stored in
+// EscapeRoomAttempt.stageOutcomes. The stage key is the stack id in Practice
+// Quiz and Microlearning and the element instance id in Group Activity and
+// Live Quiz.
+export interface EscapeRoomStageOutcomeRecord {
+  stageKey: string
+  wrongAttempts: number
+  outcome: EscapeRoomStageOutcome | null
+  at: string | null
+  creditSeconds?: number
+}
+
+const STAGE_OUTCOMES = new Set<string>([
+  'SOLVED',
+  'REVEALED',
+  'SKIPPED',
+  'BONUS_CORRECT',
+  'BONUS_WRONG',
+])
+
+export function parseEscapeRoomStageOutcomeRecords(
+  value: unknown
+): EscapeRoomStageOutcomeRecord[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    if (typeof entry !== 'object' || entry === null) return []
+    const candidate = entry as Partial<EscapeRoomStageOutcomeRecord>
+    if (typeof candidate.stageKey !== 'string') return []
+    return [
+      {
+        stageKey: candidate.stageKey,
+        wrongAttempts:
+          typeof candidate.wrongAttempts === 'number'
+            ? candidate.wrongAttempts
+            : 0,
+        outcome:
+          typeof candidate.outcome === 'string' &&
+          STAGE_OUTCOMES.has(candidate.outcome)
+            ? (candidate.outcome as EscapeRoomStageOutcome)
+            : null,
+        at: typeof candidate.at === 'string' ? candidate.at : null,
+        ...(typeof candidate.creditSeconds === 'number'
+          ? { creditSeconds: candidate.creditSeconds }
+          : {}),
+      },
+    ]
+  })
+}
+
+export function getEscapeRoomStageOutcomeRecord(
+  records: readonly EscapeRoomStageOutcomeRecord[],
+  stageKey: string | number
+): EscapeRoomStageOutcomeRecord {
+  return (
+    records.find((record) => record.stageKey === String(stageKey)) ?? {
+      stageKey: String(stageKey),
+      wrongAttempts: 0,
+      outcome: null,
+      at: null,
+    }
+  )
+}
+
+export function setEscapeRoomStageOutcomeRecord(
+  records: readonly EscapeRoomStageOutcomeRecord[],
+  record: EscapeRoomStageOutcomeRecord
+): EscapeRoomStageOutcomeRecord[] {
+  return [
+    ...records.filter((existing) => existing.stageKey !== record.stageKey),
+    record,
+  ]
+}
+
+// A stage is cleared once it was solved, revealed or skipped.
+export function isEscapeRoomStageClearedOutcome(
+  record: Pick<EscapeRoomStageOutcomeRecord, 'outcome'> | undefined
+) {
+  return (
+    record?.outcome === 'SOLVED' ||
+    record?.outcome === 'REVEALED' ||
+    record?.outcome === 'SKIPPED'
+  )
+}
+
+export function isEscapeRoomBonusAnswered(
+  record: Pick<EscapeRoomStageOutcomeRecord, 'outcome'> | undefined
+) {
+  return (
+    record?.outcome === 'BONUS_CORRECT' || record?.outcome === 'BONUS_WRONG'
+  )
+}
+
+export type EscapeRoomAnswerableStageDecision =
+  | { ok: true; stageKey: string; isBonus: boolean }
+  | {
+      ok: false
+      reason:
+        | 'not_in_progress'
+        | 'expired'
+        | 'bonus_answered'
+        | 'locked'
+        // The stage was cleared earlier (solved, revealed or skipped).
+        | 'cleared'
+    }
+
+// Decides whether a stage can be answered now: the first uncleared regular
+// stage of an in-progress attempt, or the unanswered bonus stage of a
+// completed attempt whose time has not run out. A stage counts as cleared when
+// the cleared set or its recorded outcome says so. Stages are listed in play
+// order; the bonus stage, if the rules define one, is the last.
+export function resolveEscapeRoomAnswerableStage({
+  stages,
+  stageKey,
+  rules,
+  status,
+  expired,
+  outcomes,
+  clearedKeys,
+}: {
+  stages: readonly string[]
+  stageKey: string
+  rules: Pick<EscapeRoomRules, 'bonusSeconds'>
+  status: string
+  expired: boolean
+  outcomes: readonly EscapeRoomStageOutcomeRecord[]
+  clearedKeys: ReadonlySet<string>
+}): EscapeRoomAnswerableStageDecision {
+  const stageIndex = stages.indexOf(stageKey)
+  const isBonus = isEscapeRoomBonusStage(rules, stageIndex, stages.length)
+  const record = getEscapeRoomStageOutcomeRecord(outcomes, stageKey)
+
+  if (isBonus && status === 'COMPLETED') {
+    if (expired) return { ok: false, reason: 'expired' }
+    if (isEscapeRoomBonusAnswered(record) || clearedKeys.has(stageKey)) {
+      return { ok: false, reason: 'bonus_answered' }
+    }
+    return { ok: true, stageKey, isBonus: true }
+  }
+  if (status !== 'IN_PROGRESS') return { ok: false, reason: 'not_in_progress' }
+  if (expired) return { ok: false, reason: 'expired' }
+  if (stageIndex < 0 || isBonus) return { ok: false, reason: 'locked' }
+
+  const bonusKey = isEscapeRoomBonusStage(
+    rules,
+    stages.length - 1,
+    stages.length
+  )
+    ? stages[stages.length - 1]
+    : undefined
+  const isCleared = (key: string) =>
+    clearedKeys.has(key) ||
+    isEscapeRoomStageClearedOutcome(
+      getEscapeRoomStageOutcomeRecord(outcomes, key)
+    )
+  const current = stages.find((key) => key !== bonusKey && !isCleared(key))
+  if (current === stageKey) return { ok: true, stageKey, isBonus: false }
+  return { ok: false, reason: isCleared(stageKey) ? 'cleared' : 'locked' }
+}
+
+// True when every regular stage (all stages but the bonus) is cleared.
+export function areEscapeRoomRegularStagesCleared({
+  stages,
+  rules,
+  outcomes,
+  clearedKeys,
+}: {
+  stages: readonly string[]
+  rules: Pick<EscapeRoomRules, 'bonusSeconds'>
+  outcomes: readonly EscapeRoomStageOutcomeRecord[]
+  clearedKeys: ReadonlySet<string>
+}) {
+  const regular = stages.filter(
+    (_, index) => !isEscapeRoomBonusStage(rules, index, stages.length)
+  )
+  return (
+    regular.length > 0 &&
+    regular.every(
+      (key) =>
+        clearedKeys.has(key) ||
+        isEscapeRoomStageClearedOutcome(
+          getEscapeRoomStageOutcomeRecord(outcomes, key)
+        )
+    )
+  )
+}
