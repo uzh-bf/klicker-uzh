@@ -341,6 +341,10 @@ export function registerLiveQuizEscapeRoomTests() {
       await expect(
         page.locator(`[data-cy="escape-room-rank-${env('STUDENT_USERNAME')}"]`)
       ).toHaveText('1', { timeout: 30_000 })
+      await page
+        .getByTestId('escape-room-open-projector')
+        .evaluate((element) => element.scrollIntoView({ block: 'start' }))
+      await captureEvidence(page, 'live-insights-cockpit-en-desktop.png')
 
       // the projector opens in a new tab and ranks the running block
       const [projector] = await Promise.all([
@@ -361,6 +365,7 @@ export function registerLiveQuizEscapeRoomTests() {
       await expect(
         projector.getByTestId('escape-projector-debrief')
       ).not.toBeAttached()
+      await captureEvidence(projector, 'live-projector-running-en-desktop.png')
 
       // closing the block switches the projector to the closed state, which
       // carries the debrief
@@ -373,6 +378,7 @@ export function registerLiveQuizEscapeRoomTests() {
       await expect(
         projector.getByTestId('escape-projector-debrief').first()
       ).toBeVisible()
+      await captureEvidence(projector, 'live-projector-closed-en-desktop.png')
       await projector.close()
 
       // the evaluation page keeps the table of the executed block
@@ -391,6 +397,8 @@ export function registerLiveQuizEscapeRoomTests() {
         timeout: 30_000,
       })
       await expect(page.getByTestId('escape-room-stage-table')).toBeVisible()
+      await page.getByTestId('escape-room-stage-table').scrollIntoViewIfNeeded()
+      await captureEvidence(page, 'live-evaluation-en-desktop.png')
     } finally {
       await student.context().close()
     }
