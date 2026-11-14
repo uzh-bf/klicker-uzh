@@ -31,15 +31,22 @@ function withRedis<T extends { redisExec: any }>(ctx: T): T {
   return { ...ctx, redisExec: { ...ctx.redisExec, pipeline: () => pipeline } }
 }
 
+const PROGRESS_QUERY = `query ($liveQuizId: String, $elementBlockId: Int) {
+  escapeRoomProgress(liveQuizId: $liveQuizId, elementBlockId: $elementBlockId) {
+    attempts { participantId rank }
+  }
+}`
+
 async function run(
   ctx: any,
-  variables: { liveQuizId: string; elementBlockId: number; digest?: string }
+  variables: { liveQuizId: string; elementBlockId: number; digest?: string },
+  query = QUERY
 ) {
   const yoga = createYoga({ schema, context: () => withRedis(ctx) })
   const response = await yoga.fetch('http://localhost/graphql', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query: QUERY, variables }),
+    body: JSON.stringify({ query, variables }),
   })
   return (await response.json()) as {
     data?: Record<string, any> | null
@@ -179,6 +186,21 @@ describe('Live Quiz escape-room projector', () => {
       expect(data.startedCount).toBe(2)
       expect(data.rankedCount).toBe(1)
       expect(data.stages[0]).toMatchObject({ solved: 2 })
+
+      // the lecturer dashboard keeps both rows but ranks only the opted-in one
+      const progress = await run(
+        lecturerCtx,
+        { liveQuizId: liveQuiz.id, elementBlockId: block.id },
+        PROGRESS_QUERY
+      )
+      const ranks = new Map(
+        (progress.data?.escapeRoomProgress as any).attempts.map(
+          (attempt: any) => [attempt.participantId, attempt.rank]
+        )
+      )
+      expect(ranks.get(optedIn.participant.id)).toBe(1)
+      expect(ranks.has(optedOut.participant.id)).toBe(true)
+      expect(ranks.get(optedOut.participant.id)).toBeNull()
     } finally {
       await prisma.course.update({
         where: { id: courseId },

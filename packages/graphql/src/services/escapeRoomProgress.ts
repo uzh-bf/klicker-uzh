@@ -566,6 +566,9 @@ export async function getEscapeRoomProgress(
   }
 
   let progress = attempts.map(progressForAttempt)
+  // In a gamified course only leaderboard members (opted in via isActive) get
+  // a rank; everyone else stays listed without one.
+  const unrankedParticipantIds = new Set<string>()
   const participantCourseId =
     config.practiceQuiz?.courseId ??
     config.microLearning?.courseId ??
@@ -623,6 +626,21 @@ export async function getEscapeRoomProgress(
       )
       .map(progressForAttempt)
     progress = [...rosterProgress, ...orphanProgress]
+
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: participantCourseId },
+      select: { isGamificationEnabled: true },
+    })
+    if (course?.isGamificationEnabled) {
+      const optedIn = new Set(
+        roster.flatMap((entry) => (entry.isActive ? [entry.participantId] : []))
+      )
+      for (const entry of progress) {
+        if (entry.participantId && !optedIn.has(entry.participantId)) {
+          unrankedParticipantIds.add(entry.participantId)
+        }
+      }
+    }
   }
 
   const groupCourseId = config.groupActivity?.courseId
@@ -669,7 +687,13 @@ export async function getEscapeRoomProgress(
 
   const ranks = new Map(
     rankEscapeRoomScores(
-      progress.map((entry, index) => ({ ...entry, index }))
+      progress
+        .map((entry, index) => ({ ...entry, index }))
+        .filter(
+          (entry) =>
+            !entry.participantId ||
+            !unrankedParticipantIds.has(entry.participantId)
+        )
     ).map((entry) => [entry.index, entry.rank])
   )
 
