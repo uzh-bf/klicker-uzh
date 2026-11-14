@@ -1,0 +1,138 @@
+schemaVersion: 1
+qualifiedProfiles:
+  - revision: 4f5ea565a7fcf5c97013cd2591a9fd15e5857bf9
+    files:
+      .devrouter.yml: b5a2629dd03d6f97492a13544fe71e5450b7ba1c67f24c1248498c01b30c7996
+      util/profile-resolver.sh: 7ece692fb82732d030c089fcf8c8b6e7ef6857a59e2e776a359fa7411ede1f05
+sourceSelection:
+  branchAllowlist: [v3-ai]
+  pullRequest:
+    label: preview
+    manualOptIn: true
+apps:
+  api: { inventoryId: api, nativePort: 3000 }
+  auth: { inventoryId: auth, nativePort: 3000 }
+  chat: { inventoryId: chat, nativePort: 3000 }
+  control: { inventoryId: control, nativePort: 3000 }
+  manage: { inventoryId: manage, nativePort: 3000 }
+  pwa: { inventoryId: pwa, nativePort: 3000 }
+  lti: { inventoryId: lti, nativePort: 4000 }
+  olat-api: { inventoryId: olat-api, nativePort: 3030 }
+  response-api: { inventoryId: response-api, nativePort: 7078 }
+  db: { inventoryId: private-postgres, nativePort: 5432, publicListener: false }
+  blob: { inventoryId: azurite, nativePort: 10000 }
+managedServices:
+  postgres: { inventoryId: private-postgres, publicListener: false, data: true }
+  azurite: { inventoryId: azurite, nativePort: 10000, publicListener: false }
+  mcp_postgres:
+    { inventoryId: private-mcp-postgres, publicListener: false, data: true }
+  redis_exec:
+    { inventoryId: private-redis-exec, publicListener: false, data: true }
+  redis_assessment:
+    { inventoryId: private-redis-assessment, publicListener: false, data: true }
+  redis_cache:
+    { inventoryId: private-redis-cache, publicListener: false, data: true }
+  hatchet: { inventoryId: hatchet, publicListener: false }
+  litellm: { inventoryId: litellm, publicListener: false }
+  mailhog: { inventoryId: mailhog, publicListener: false }
+  oidc:
+    {
+      inventoryId: oidc-mock,
+      publicListener: false,
+      source: existing-mock-image,
+    }
+managedProcesses:
+  klicker-dev: { inventoryId: dev-runner, deployable: false }
+  klicker-local-mcp: { inventoryId: local-mcp-harness, deployable: true }
+images:
+  api: backend-docker-arm
+  auth: auth-arm
+  chat: chat-arm
+  control: frontend-control-arm
+  manage: frontend-manage-arm
+  pwa: frontend-pwa-arm
+  lti: lti-arm
+  olat-api: olat-api-arm
+  response-api: response-api-arm
+  migrator: backend-docker-migrator-arm
+  worker-general: hatchet-worker-general-arm
+  worker-response: hatchet-worker-response-processor-arm
+  analytics: analytics-arm
+  mcp-lecturer: mcp-lecturer-arm
+  mcp-student: mcp-student-arm
+  assessment: { targetId: frontend-assessment-arm, excluded: true }
+processImages:
+  mcp-lecturer: { packageName: '@klicker-uzh/mcp-lecturer', nativePort: 7081 }
+  mcp-student: { packageName: '@klicker-uzh/mcp-student', nativePort: 7080 }
+workerImages: [worker-general, worker-response]
+intentTargets:
+  - intent: chat
+    reason: chat-surface
+    profile: chat,ai,mcp
+    match: [apps/chat/**]
+  - intent: ai
+    reason: litellm-surface
+    profile: chat,ai
+    match: [util/litellm/**, .devcontainer/litellm/**]
+  - intent: mcp-harness
+    reason: mcp-harness-surface
+    profile: chat,ai,mcp
+    match: [util/local-mcp*, .devcontainer/local-mcp*]
+  - intent: manage
+    reason: manage-surface
+    profile: manage
+    match: [apps/frontend-manage/**]
+  - intent: pwa
+    reason: pwa-surface
+    profile: pwa
+    match: [apps/frontend-pwa/**]
+  - intent: live-quiz
+    reason: live-quiz-surface
+    profile: live-quiz
+    match:
+      [
+        apps/frontend-control/**,
+        apps/response-api/**,
+        apps/hatchet-worker-general/**,
+        apps/hatchet-worker-response-processor/**,
+      ]
+  - intent: full
+    reason: full-closure-surface
+    profile: full
+    extraImages: [migrator]
+    match:
+      [
+        apps/auth/**,
+        apps/backend-docker/**,
+        apps/lti/**,
+        apps/olat-api/**,
+        apps/mcp-lecturer/**,
+        apps/mcp-student/**,
+        packages/prisma/**,
+        packages/prisma-data/**,
+        packages/graphql/**,
+        packages/shared-components/**,
+        packages/transactional/**,
+      ]
+auxJob:
+  intent: aux-job
+  reason: analytics-only
+  profile: full
+  match: [apps/analytics/**]
+  extraImages: [analytics]
+  services: [postgres]
+  fixtureJob: { inventoryId: postgres-fixtures }
+artifactChecks:
+  intent: artifact-checks
+  reason: artifact-only
+  match: [apps/office-addin/**, apps/docs/**]
+recreationTargets:
+  [
+    packages/prisma-data/**,
+    packages/prisma/**/seed*,
+    '**/seed/**',
+    '**/seed.*',
+    .devcontainer/bootstrap*,
+    .devcontainer/post-start.sh,
+  ]
+unsupportedResources: {}

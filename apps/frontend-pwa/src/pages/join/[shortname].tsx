@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Layout from '../../components/Layout'
 import LinkButton from '../../components/common/LinkButton'
+import { previewCookieName } from '@klicker-uzh/util'
 
 function Join({
   isInactive,
@@ -225,7 +226,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // remove the lti-token, if it is defined
     try {
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, previewCookieName('lti-token'), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

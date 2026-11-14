@@ -1,3 +1,4 @@
+import { previewCookieName } from '@klicker-uzh/util'
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
 // TODO: add additional processor with assessment logic
@@ -11,7 +12,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -96,9 +97,13 @@ export async function processResponseMessage(
             return acc
           }, {})
 
-        if (parsedCookies['participant_token'] !== undefined) {
+        const participantToken =
+          parsedCookies[previewCookieName('participant_token')]
+        const temporaryToken =
+          parsedCookies[previewCookieName('temporary_participant_token')]
+        if (participantToken !== undefined) {
           participantData = await verifyJWT(
-            parsedCookies['participant_token'],
+            participantToken,
             process.env.APP_SECRET as string
           )
 
@@ -107,9 +112,9 @@ export async function processResponseMessage(
           } else {
             ctx.logger.info("Participant's JWT verified")
           }
-        } else if (parsedCookies['temporary_participant_token'] !== undefined) {
+        } else if (temporaryToken !== undefined) {
           participantData = await verifyJWT(
-            parsedCookies['temporary_participant_token'],
+            temporaryToken,
             process.env.APP_SECRET as string
           )
 
@@ -175,7 +180,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
