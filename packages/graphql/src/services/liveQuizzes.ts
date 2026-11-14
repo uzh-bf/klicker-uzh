@@ -1511,6 +1511,16 @@ export async function deactivateLiveQuizBlock(
     // if the update was not successful, return false
     if (!res) return false
 
+    // Escape-room attempts still running on the closed block are finished
+    // here so that the lecturer views treat their results as final.
+    await ctx.prisma.escapeRoomAttempt.updateMany({
+      where: {
+        elementBlockId: blockId,
+        status: DB.EscapeRoomStatus.IN_PROGRESS,
+      },
+      data: { status: DB.EscapeRoomStatus.EXPIRED },
+    })
+
     const updatedQuiz = res.updatedQuiz
     const activeInstanceIds = res.activeInstanceIds
     isAssessmentEnabled = updatedQuiz.isAssessmentEnabled

@@ -19,10 +19,10 @@ import {
   startEscapeRoomAttempt,
 } from './escapeRoomTestHarness.js'
 
-// ! B4: prune retention window
+// ! B4: finished attempts are kept
 // #region
-describe('handlePruneEscapeRooms - retention window (B4)', () => {
-  it('marks finished attempts and only deletes ones older than the retention window', async () => {
+describe('handlePruneEscapeRooms - retention (B4)', () => {
+  it('marks finished attempts and keeps old ones', async () => {
     const now = new Date()
     const oldDate = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000)
 
@@ -73,7 +73,8 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
     const oldAfter = await prisma.escapeRoomAttempt.findUnique({
       where: { id: oldAttempt.id },
     })
-    expect(oldAfter).toBeNull()
+    expect(oldAfter).not.toBeNull()
+    expect(oldAfter!.retentionProcessedAt).not.toBeNull()
     await expect(
       prisma.escapeRoomAttempt.findUnique({
         where: { id: recentlyCompletedLongRunningAttempt.id },

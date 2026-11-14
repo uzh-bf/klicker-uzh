@@ -243,12 +243,23 @@ export async function getEscapeRoomProgress(
     orderBy: { startedAt: 'asc' },
   })
 
+  // A closed Live Quiz block ends every attempt on it, including one that
+  // started while the block was closing.
+  const blockClosed =
+    elementBlockId != null &&
+    (
+      await ctx.prisma.elementBlock.findUnique({
+        where: { id: elementBlockId },
+        select: { status: true },
+      })
+    )?.status === DB.ElementBlockStatus.EXECUTED
+
   const now = Date.now()
   const elapsedAttemptIds = attempts
     .filter(
       (attempt) =>
         attempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
-        isEscapeRoomExpired(attempt, now)
+        (blockClosed || isEscapeRoomExpired(attempt, now))
     )
     .map((attempt) => attempt.id)
   if (elapsedAttemptIds.length > 0) {
@@ -277,21 +288,22 @@ export async function getEscapeRoomProgress(
 
   // Live Quiz attempts record their cleared stages in Redis, the same set the
   // student view counts, because their responses are graded asynchronously.
+  // The stored stage outcomes keep the count after the Redis keys expire.
   const liveQuizClearedByAttempt = new Map<string, number>()
-  const runningLiveQuizAttempts =
+  const unfinishedLiveQuizAttempts =
     elementBlockId != null
       ? attempts.filter(
-          (attempt) => attempt.status === DB.EscapeRoomStatus.IN_PROGRESS
+          (attempt) => attempt.status !== DB.EscapeRoomStatus.COMPLETED
         )
       : []
-  if (runningLiveQuizAttempts.length > 0) {
+  if (unfinishedLiveQuizAttempts.length > 0) {
     const pipeline = ctx.redisExec.pipeline()
-    for (const attempt of runningLiveQuizAttempts) {
+    for (const attempt of unfinishedLiveQuizAttempts) {
       pipeline.smembers(`escape-attempt:${attempt.id}:cleared`)
     }
     const results = (await pipeline.exec()) ?? []
     const stageIds = new Set(liveQuizStageIds)
-    runningLiveQuizAttempts.forEach((attempt, ix) => {
+    unfinishedLiveQuizAttempts.forEach((attempt, ix) => {
       const [error, members] = results[ix] ?? [null, []]
       const cleared = new Set(
         (!error && Array.isArray(members) ? members : []).map(String)
