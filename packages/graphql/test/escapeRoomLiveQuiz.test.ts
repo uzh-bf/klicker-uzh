@@ -1,6 +1,8 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
+import { getEscapeRoomLifecycleClaimKey } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
+import { skipEscapeRoomStage } from '../src/services/escapeRooms.js'
 import {
   activateLiveQuizBlock,
   courseId,
@@ -839,5 +841,226 @@ describe('escape-room configuration validation', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'BAD_USER_INPUT' },
     })
+  })
+})
+
+// A Redis stand-in with the commands the escape-room skip uses: the lifecycle
+// claim, the block's response slot (rejected while the block is closing) and
+// the participant's cleared set.
+function createLiveRedis() {
+  const values = new Map<string, string>()
+  const cleared = new Set<string>()
+  const state = { closing: false }
+  const redisExec = {
+    set: vi.fn(async (key: string, token: string) => {
+      if (values.has(key)) return null
+      values.set(key, token)
+      return 'OK'
+    }),
+    get: vi.fn(async (key: string) => values.get(key) ?? null),
+    del: vi.fn(async (key: string) => (values.delete(key) ? 1 : 0)),
+    eval: vi.fn(async (script: string, _keys: number, ...args: string[]) => {
+      if (script.includes('escape-room-response-acquire')) {
+        return state.closing ? 0 : 1
+      }
+      if (script.includes('escape-room-response-')) return 0
+      if (values.get(args[0]!) !== args[1]) return 0
+      values.delete(args[0]!)
+      return 1
+    }),
+    zrem: vi.fn(async () => 1),
+    smembers: vi.fn(async () => [...cleared]),
+    sadd: vi.fn(async (_key: string, member: string) => {
+      cleared.add(member)
+      return 1
+    }),
+    expire: vi.fn(async () => 1),
+  }
+  return { redisExec, cleared, values, state }
+}
+
+let liveSkipSeeds = 0
+
+async function seedSkippableLiveQuiz({
+  skipPenalty = 40,
+  bonusSeconds = null,
+}: {
+  skipPenalty?: number | null
+  bonusSeconds?: number | null
+} = {}) {
+  const seeded = await seedEscapeRoomLiveQuiz({ includeSecondInstance: true })
+  await prisma.escapeRoomConfig.update({
+    where: { elementBlockId: seeded.block.id },
+    data: { skipPenalty, bonusSeconds },
+  })
+  const participant = await seedParticipant(`live-skip-${++liveSkipSeeds}`)
+  const redis = createLiveRedis()
+  const ctx = { ...participantCtx(participant.id), redisExec: redis.redisExec }
+  const attempt = await startEscapeRoomAttempt(
+    { elementBlockId: seeded.block.id },
+    ctx as any
+  )
+  return { ...seeded, participant, redis, ctx: ctx as any, attempt }
+}
+
+describe('LiveQuiz escape-room skip', () => {
+  it('charges the skip penalty, records the outcome and completes with the last regular stage', async () => {
+    const { block, attempt, redis, ctx } = await seedSkippableLiveQuiz()
+    const [first, second] = block.elements
+
+    const afterFirst = await skipEscapeRoomStage(
+      { elementBlockId: block.id },
+      ctx
+    )
+    expect(afterFirst).toMatchObject({
+      status: DB.EscapeRoomStatus.IN_PROGRESS,
+      penaltySeconds: 40,
+    })
+    expect(afterFirst.stageOutcomes).toMatchObject([
+      { stageKey: String(first!.id), outcome: 'SKIPPED' },
+    ])
+    expect(redis.cleared).toEqual(new Set([String(first!.id)]))
+
+    const afterSecond = await skipEscapeRoomStage(
+      { elementBlockId: block.id },
+      ctx
+    )
+    expect(afterSecond).toMatchObject({
+      status: DB.EscapeRoomStatus.COMPLETED,
+      penaltySeconds: 80,
+    })
+    expect(afterSecond.completedAt).not.toBeNull()
+    expect(redis.cleared).toEqual(
+      new Set([String(first!.id), String(second!.id)])
+    )
+    expect(
+      (
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).penaltySeconds
+    ).toBe(80)
+  })
+
+  it('refuses to skip when skipping is off', async () => {
+    const { block, ctx, attempt } = await seedSkippableLiveQuiz({
+      skipPenalty: null,
+    })
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_SKIP_DISABLED' },
+    })
+    expect(
+      (
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).penaltySeconds
+    ).toBe(0)
+  })
+
+  it('rejects a skip while another response holds the lifecycle claim', async () => {
+    const { block, participant, redis, ctx, attempt } =
+      await seedSkippableLiveQuiz()
+    const claimKey = getEscapeRoomLifecycleClaimKey(
+      'liveQuizBlock',
+      block.id,
+      participant.id
+    )
+    await redis.redisExec.set(claimKey, 'in-flight-response')
+
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_RESPONSE_PROCESSING' },
+    })
+    const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+      where: { id: attempt.id },
+    })
+    expect(persisted.penaltySeconds).toBe(0)
+    expect(redis.cleared.size).toBe(0)
+    // The holder's claim survives the rejected skip.
+    expect(redis.values.get(claimKey)).toBe('in-flight-response')
+  })
+
+  it('rejects a skip once the block is closing and releases the claim', async () => {
+    const { block, participant, redis, ctx, attempt } =
+      await seedSkippableLiveQuiz()
+    redis.state.closing = true
+
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_BLOCK_CLOSED' },
+    })
+    expect(
+      (
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).penaltySeconds
+    ).toBe(0)
+    expect(
+      redis.values.has(
+        getEscapeRoomLifecycleClaimKey(
+          'liveQuizBlock',
+          block.id,
+          participant.id
+        )
+      )
+    ).toBe(false)
+  })
+
+  it('does not skip the bonus stage and shows it only after completion', async () => {
+    const { liveQuiz, block, ctx, redis } = await seedSkippableLiveQuiz({
+      bonusSeconds: 60,
+    })
+    const [regular, bonus] = block.elements
+
+    const running = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+    expect(running?.activeBlock?.elements?.map(({ id }) => id)).toEqual([
+      regular!.id,
+    ])
+
+    const completed = await skipEscapeRoomStage(
+      { elementBlockId: block.id },
+      ctx
+    )
+    // Skipping the only regular stage completes the attempt; the bonus is
+    // still unanswered and is not skippable.
+    expect(completed.status).toBe(DB.EscapeRoomStatus.COMPLETED)
+    expect(redis.cleared).toEqual(new Set([String(regular!.id)]))
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({ extensions: { code: 'ESCAPE_ROOM_GATED' } })
+
+    const bonusOffer = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+    expect(bonusOffer?.activeBlock?.elements?.map(({ id }) => id)).toEqual([
+      bonus!.id,
+    ])
+    expect(bonusOffer?.activeBlock).toMatchObject({
+      escapeRoomTotalInstances: 2,
+      escapeRoomClearedInstances: 1,
+    })
+
+    // Once the bonus is answered it is no longer offered.
+    await prisma.escapeRoomAttempt.update({
+      where: { id: completed.id },
+      data: {
+        stageOutcomes: [
+          ...(completed.stageOutcomes as any[]),
+          {
+            stageKey: String(bonus!.id),
+            wrongAttempts: 0,
+            outcome: 'BONUS_WRONG',
+            at: new Date().toISOString(),
+            creditSeconds: 0,
+          },
+        ],
+      },
+    })
+    const answered = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+    expect(answered?.activeBlock?.elements).toEqual([])
   })
 })

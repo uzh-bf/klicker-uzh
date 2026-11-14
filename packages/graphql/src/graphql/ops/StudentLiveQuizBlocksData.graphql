@@ -12,6 +12,11 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       timeLimit
       hintPenalty
       hintPenalties
+      wrongAnswerPenalty
+      maxWrongAttempts
+      revealPenalty
+      skipPenalty
+      bonusSeconds
       lockoutSeconds
       introText
     }
@@ -38,8 +43,10 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       type
       elementType
       revealedHint
+      revealedHints
       options {
         hasHint
+        hintCount
       }
       ...ElementDataWithoutSolutions
     }
@@ -58,6 +65,11 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       timeLimit
       hintPenalty
       hintPenalties
+      wrongAnswerPenalty
+      maxWrongAttempts
+      revealPenalty
+      skipPenalty
+      bonusSeconds
       lockoutSeconds
       introText
     }
@@ -84,8 +96,10 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       type
       elementType
       revealedHint
+      revealedHints
       options {
         hasHint
+        hintCount
       }
       correlationKey
       ...ElementDataWithoutSolutions
