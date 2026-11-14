@@ -3,6 +3,7 @@ import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import {
+  invalidateAnalyticsEligibility,
   LEARNING_ANALYTICS_ADVISORY_LOCK,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   participantDataUseSelect,
@@ -24,6 +25,26 @@ const accountDataUseSelect = {
 export type ParticipantAccountDataUseFields = DB.Prisma.ParticipantGetPayload<{
   select: typeof accountDataUseSelect
 }>
+
+/**
+ * Whether the recorded fields currently place a participant in the
+ * learning-analytics cohort. Stored analytics are only stale when this
+ * changes, so a recorded choice that leaves a participant outside the cohort
+ * (for example a first-time decline or a renewal of an old decline) must not
+ * invalidate them.
+ */
+function recordsEligibleAnalyticsChoice(participant: {
+  learningAnalyticsConsent: boolean
+  learningAnalyticsChoiceAt: Date | null
+  learningAnalyticsDisclosureVersion: string | null
+}) {
+  return (
+    participant.learningAnalyticsConsent &&
+    participant.learningAnalyticsChoiceAt !== null &&
+    participant.learningAnalyticsDisclosureVersion ===
+      PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+  )
+}
 
 export async function getParticipantAccountDataUse(
   ctx: ParticipantDataUseContext
@@ -95,8 +116,19 @@ export async function initialParticipantDataUseData(
   prisma: DB.Prisma.TransactionClient
 ) {
   // Account creation records the initial choice for a participant that no
-  // analytics writer can observe until this transaction commits, so it must
-  // not queue every signup behind the global learning-analytics lock.
+  // analytics writer can observe until this transaction commits, so a signup
+  // that does not grant analytics consent must not queue behind the global
+  // learning-analytics lock. A signup that does grant it changes the eligible
+  // cohort and therefore advances the generation under that lock.
+  if (input.learningAnalyticsConsent) {
+    await prisma.$executeRaw`
+      SELECT pg_advisory_xact_lock(
+        ${LEARNING_ANALYTICS_ADVISORY_LOCK.classId},
+        ${LEARNING_ANALYTICS_ADVISORY_LOCK.objectId}
+      )
+    `
+    await invalidateAnalyticsEligibility(prisma)
+  }
   const clock = await prisma.$queryRaw<Array<{ now: Date }>>`
     SELECT clock_timestamp() AS "now"
   `
@@ -283,6 +315,11 @@ async function saveParticipantDataUse(
             },
           })
         }
+        if (
+          recordsEligibleAnalyticsChoice(participant) !==
+          recordsEligibleAnalyticsChoice(updated)
+        )
+          await invalidateAnalyticsEligibility(prisma)
         return updated
       },
       { maxWait: 10_000, timeout: 60_000 }
