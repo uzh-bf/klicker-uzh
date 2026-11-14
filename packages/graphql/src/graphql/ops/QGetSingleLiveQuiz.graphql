@@ -2,6 +2,7 @@ query GetSingleLiveQuiz($quizId: String!) {
   escapeRoomHints(liveQuizId: $quizId) {
     instanceId
     hint
+    debrief
     hints {
       text
       penalty

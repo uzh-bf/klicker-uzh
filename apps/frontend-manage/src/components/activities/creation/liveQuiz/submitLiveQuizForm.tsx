@@ -84,6 +84,9 @@ async function submitLiveQuizForm({
             escapeRoomHints: block.isEscapeRoom
               ? getEscapeRoomHintsInput(element.escapeRoomHint)
               : undefined,
+            escapeRoomDebrief: block.isEscapeRoom
+              ? (element.escapeRoomDebrief ?? undefined)
+              : undefined,
           }
         }),
       }

@@ -86,6 +86,7 @@ interface PracticeQuizWizardProps {
   escapeRoomHints: Array<{
     instanceId: number
     hint: string
+    debrief?: string | null
     hints?: { text: string }[] | null
   }>
 }
@@ -124,6 +125,9 @@ function PracticeQuizWizard({
       entry.instanceId,
       getEscapeRoomHintsFormValue(entry),
     ])
+  )
+  const escapeRoomDebriefMap = new Map(
+    escapeRoomHints.map((entry) => [entry.instanceId, entry.debrief ?? ''])
   )
 
   const nameValidationSchema = yup.object().shape({
@@ -265,6 +269,7 @@ function PracticeQuizWizard({
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode || conversion,
               escapeRoomHint: escapeRoomHintMap.get(instance.id),
+              escapeRoomDebrief: escapeRoomDebriefMap.get(instance.id),
             }
           }),
         }))

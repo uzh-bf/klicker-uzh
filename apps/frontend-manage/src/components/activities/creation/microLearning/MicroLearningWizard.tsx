@@ -77,6 +77,7 @@ interface MicroLearningWizardProps {
   escapeRoomHints: Array<{
     instanceId: number
     hint: string
+    debrief?: string | null
     hints?: { text: string }[] | null
   }>
 }
@@ -112,6 +113,9 @@ function MicroLearningWizard({
       entry.instanceId,
       getEscapeRoomHintsFormValue(entry),
     ])
+  )
+  const escapeRoomDebriefMap = new Map(
+    escapeRoomHints.map((entry) => [entry.instanceId, entry.debrief ?? ''])
   )
 
   const nameValidationSchema = yup.object().shape({
@@ -282,6 +286,7 @@ function MicroLearningWizard({
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
               escapeRoomHint: escapeRoomHintMap.get(instance.id),
+              escapeRoomDebrief: escapeRoomDebriefMap.get(instance.id),
             }
           }),
         }))

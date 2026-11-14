@@ -3098,6 +3098,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
       escapeRoomHintsPlaceholder:
         'Optional hints, one per line (each adds a penalty when revealed; later hints can cost more)',
+      escapeRoomDebrief: 'Debrief',
+      escapeRoomDebriefPlaceholder:
+        'Optional debrief (Markdown). Shown to lecturers and on the projector after the block closes, never to students during play.',
       escapeRoomTimeLimitRequired: 'Time limit is required',
       escapeRoomInteger: 'Must be an integer',
       escapeRoomTimeLimitPositive: 'Must be a positive number of minutes',
@@ -3512,6 +3515,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyContainedElements: 'Manage Elements in Group Activity',
       modifyCourseAssignment: 'Modify Course Assignment',
       duplicateGroupActivity: 'Duplicate Group Activity',
+    },
+    escapeProjector: {
+      colName: 'Name',
+      timeRemaining: 'Time remaining',
+      lobbyHeading: 'Scan to join the Escape Room',
+      lobbyStarted:
+        '{count, plural, one {# participant has joined} other {# participants have joined}}',
+      participationNote:
+        '{started, plural, one {# team playing} other {# teams playing}}, {ranked} on the leaderboard',
+      finalRanking: 'Final ranking',
+      error:
+        'The projector view is unavailable. Please check the link or open it again from the cockpit.',
     },
     cockpit: {
       escapeRoomProjector: 'Open projector view',

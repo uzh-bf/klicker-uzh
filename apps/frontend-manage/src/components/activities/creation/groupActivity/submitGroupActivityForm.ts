@@ -78,6 +78,9 @@ async function submitGroupActivityForm({
               escapeRoomHints: values.isEscapeRoom
                 ? getEscapeRoomHintsInput(element.escapeRoomHint)
                 : undefined,
+              escapeRoomDebrief: values.isEscapeRoom
+                ? (element.escapeRoomDebrief ?? undefined)
+                : undefined,
             })),
             order: 0,
           },
@@ -168,6 +171,9 @@ async function submitGroupActivityForm({
               duplicateInstance: element.duplicateInstance,
               escapeRoomHints: values.isEscapeRoom
                 ? getEscapeRoomHintsInput(element.escapeRoomHint)
+                : undefined,
+              escapeRoomDebrief: values.isEscapeRoom
+                ? (element.escapeRoomDebrief ?? undefined)
                 : undefined,
             })),
             order: 0,
