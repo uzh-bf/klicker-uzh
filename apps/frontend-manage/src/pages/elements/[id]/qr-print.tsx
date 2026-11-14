@@ -3,7 +3,12 @@ import { faPrint } from '@fortawesome/free-solid-svg-icons'
 import { GetQrScanPrintDataDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H1,
+  NumberField,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -52,21 +57,18 @@ function QrPrintPage() {
     <Layout>
       <div className="mx-auto w-full max-w-5xl p-6 print:max-w-none print:p-0">
         <div className="mb-6 flex items-end justify-between gap-4 print:hidden">
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            {t('manage.elements.qrPrintDecoyCount')}
-            <input
-              className="w-24 rounded border border-slate-300 px-3 py-2"
-              type="number"
-              min={0}
-              max={20}
-              value={decoyCount}
-              data-cy="qr-print-decoy-count"
-              onChange={(event) => {
-                const value = Number(event.target.value)
-                setDecoyCount(Math.max(0, Math.min(20, Math.trunc(value || 0))))
-              }}
-            />
-          </label>
+          <NumberField
+            label={t('manage.elements.qrPrintDecoyCount')}
+            min={0}
+            max={20}
+            value={decoyCount}
+            className={{ field: 'w-32' }}
+            data={{ cy: 'qr-print-decoy-count' }}
+            onChange={(newValue: string) => {
+              const value = Number(newValue)
+              setDecoyCount(Math.max(0, Math.min(20, Math.trunc(value || 0))))
+            }}
+          />
           <Button
             onClick={() => window.print()}
             data={{ cy: 'print-qr-sheets' }}

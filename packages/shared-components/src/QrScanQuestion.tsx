@@ -1,7 +1,8 @@
 import { Markdown } from '@klicker-uzh/markdown'
 import { isValidQrScanCode, normalizeQrScanCode } from '@klicker-uzh/types'
+import { Button, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 type BarcodeDetectorInstance = {
   detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]>
@@ -19,6 +20,8 @@ export default function QrScanQuestion({
   disabled?: boolean
 }) {
   const t = useTranslations()
+  // links the manual code label to its input
+  const manualCodeId = useId()
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const frameRef = useRef<number | null>(null)
@@ -120,36 +123,35 @@ export default function QrScanQuestion({
         muted
         data-cy="qr-scanner-video"
       />
-      <button
-        type="button"
-        className="rounded bg-slate-800 px-4 py-2 font-semibold text-white disabled:opacity-50"
+      <Button
         disabled={disabled || cameraStarting}
-        data-cy="start-qr-scanner"
+        data={{ cy: 'start-qr-scanner' }}
         onClick={cameraActive ? stopCamera : startCamera}
       >
-        {cameraActive
-          ? t('shared.QR_SCAN.stopCamera')
-          : t('shared.QR_SCAN.startCamera')}
-      </button>
+        <Button.Label>
+          {cameraActive
+            ? t('shared.QR_SCAN.stopCamera')
+            : t('shared.QR_SCAN.startCamera')}
+        </Button.Label>
+      </Button>
       {cameraError ? (
         <p role="status" className="text-sm text-amber-700">
           {t('shared.QR_SCAN.cameraFallback')}
         </p>
       ) : null}
-      <label className="block text-sm font-semibold">
-        {t('shared.QR_SCAN.manualLabel')}
-        <input
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 font-mono"
-          value={response ?? ''}
-          disabled={disabled}
-          autoComplete="off"
-          data-cy="qr-manual-code"
-          onChange={(event) => {
-            const value = normalizeQrScanCode(event.target.value)
-            setResponse(value, isValidQrScanCode(value))
-          }}
-        />
-      </label>
+      <TextField
+        id={manualCodeId}
+        label={t('shared.QR_SCAN.manualLabel')}
+        value={response ?? ''}
+        disabled={disabled}
+        autoComplete="off"
+        className={{ input: 'font-mono' }}
+        data={{ cy: 'qr-manual-code' }}
+        onChange={(newValue: string) => {
+          const value = normalizeQrScanCode(newValue)
+          setResponse(value, isValidQrScanCode(value))
+        }}
+      />
     </div>
   )
 }

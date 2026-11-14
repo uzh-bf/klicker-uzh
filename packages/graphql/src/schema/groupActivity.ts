@@ -246,6 +246,7 @@ export interface IGroupActivityDetails {
   clues: DB.GroupActivityClue[]
   stacks: IElementStack[]
   escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomStageCount?: number | null
 }
 export const GroupActivityDetailsRef = builder.objectRef<IGroupActivityDetails>(
   'GroupActivityDetails'
@@ -291,6 +292,10 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
 
     escapeRoomConfig: t.expose('escapeRoomConfig', {
       type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    // Number of stages of an escape room, including the ones still locked
+    escapeRoomStageCount: t.exposeInt('escapeRoomStageCount', {
       nullable: true,
     }),
     escapeRoomAttempts: t.field({

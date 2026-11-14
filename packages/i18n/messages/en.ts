@@ -1370,17 +1370,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       correctAnswerOptions: 'Correct answer options',
       topNAnswers: 'Top {number} answers',
-      escapeRoomStartTitle: 'Escape Room Mode',
+      escapeRoomStartTitle: 'Escape Room',
       escapeRoomStartDesc:
-        'Unlock questions sequentially by answering correctly before the timer runs out!',
+        'Unlock the stages one after another by answering correctly before the timer runs out!',
       escapeRoomTimeLimitLabel: 'Time Limit',
-      escapeRoomPenaltyLabel: 'Hint Penalty',
       escapeRoomStartButton: 'Start Attempt',
       escapeRoomExpiredTitle: "Time's Up!",
-      escapeRoomExpiredDesc: 'You ran out of time! This attempt has expired.',
+      escapeRoomExpiredDesc: 'This attempt is over and cannot be restarted.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
-        'Congratulations! You cleared every question and completed the escape room.',
+        'Congratulations! You cleared every stage and completed the Escape Room.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Time remaining',
       escapeRoomContactLecturer:
@@ -1388,51 +1387,98 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomLockoutToast:
         'Incorrect — you are locked out for a short time before retrying.',
       escapeRoomLockoutCountdown:
-        'Locked out. You can try again in {seconds}s.',
+        'Locked out. You can try again in {duration}.',
       escapeRoomIncorrectToast: 'Incorrect answer! Please try again.',
       escapeRoomExpiredToast:
-        'Time is up — this escape room attempt has expired.',
-      escapeRoomGatedToast:
-        'Answer the preceding questions correctly before this step.',
+        'Time is up — this Escape Room attempt has expired.',
+      escapeRoomGatedToast: 'Clear the preceding stages before this stage.',
       escapeRoomForbiddenToast:
-        'This escape room can only be answered with an active attempt.',
-      escapeRoomRequestHint: 'Reveal hint (+{penalty}s ranked time)',
+        'This Escape Room can only be answered with an active attempt.',
+      escapeRoomRequestHint: 'Show hint (+{duration} ranked time)',
       escapeRoomHintRevealedToast:
-        'Hint revealed — {penalty}s added to your ranked time.',
-      escapeRoomNextHint: 'Show next hint (+{penalty}s ranked time)',
+        'Hint revealed. {duration} added to your ranked time.',
+      escapeRoomNextHint: 'Show next hint (+{duration} ranked time)',
       escapeRoomTriesLeft:
         '{count, plural, one {One try left} other {Tries left: #}}',
       escapeRoomWrongTriesToast:
         'Incorrect answer! {count, plural, one {# try} other {# tries}} left.',
       escapeRoomRevealedNotice:
-        'Out of tries. The question counts as cleared (+{penalty}s ranked time).',
+        'Out of tries. The stage counts as cleared (+{duration} ranked time).',
       escapeRoomRevealedToast:
-        'Out of tries — the question counts as cleared. Moving on.',
-      escapeRoomSkip: 'Skip question (+{penalty}s ranked time)',
+        'Out of tries — the stage counts as cleared. Moving on.',
+      escapeRoomSkip: 'Skip stage (+{duration} ranked time)',
       escapeRoomSkipConfirm:
-        'Skip this question? It counts as cleared and adds {penalty}s to your ranked time.',
+        'Skip this stage? It counts as cleared and adds {duration} to your ranked time.',
       escapeRoomSkipConfirmButton: 'Yes, skip',
       escapeRoomSkippedToast:
-        'Question skipped — {penalty}s added to your ranked time.',
+        'Stage skipped. {duration} added to your ranked time.',
       escapeRoomSkipDisabledToast:
-        'Skipping is not allowed in this escape room.',
+        'Skipping is not allowed in this Escape Room.',
       escapeRoomBonusOffer:
-        'Bonus: answer correctly for −{seconds}s ranked time',
+        'Bonus: answer correctly for −{duration} ranked time',
       escapeRoomBonusDesc:
-        'One bonus question is still open while time remains. You get a single try.',
+        'The bonus stage is still open while time remains. You get a single try.',
       escapeRoomBonusCorrect:
-        'Bonus answered correctly: −{seconds}s ranked time.',
+        'Bonus answered correctly: −{duration} ranked time.',
       escapeRoomBonusWrong: 'Bonus answered incorrectly: no time credit.',
       escapeRoomBonusSubmitted: 'Bonus answer submitted.',
+      escapeRoomStageCount:
+        '{required, plural, one {# stage} other {# stages}}{bonus, plural, =0 {} other { + # bonus}}',
       escapeRoomStagesLabel: 'Stages',
       escapeRoomStagesCleared: 'Stages cleared',
+      escapeRoomStageOpen: 'Stage {number}: open',
+      escapeRoomStageCurrent: 'Stage {number}: current',
+      escapeRoomStageUnsolved: 'Stage {number}: not solved',
+      escapeRoomStageSolved: 'Stage {number}: solved',
+      escapeRoomStageRevealed: 'Stage {number}: revealed',
+      escapeRoomStageSkipped: 'Stage {number}: skipped',
+      escapeRoomStageBonusOpen: 'Bonus: open',
+      escapeRoomStageBonusCurrent: 'Bonus: current',
+      escapeRoomStageBonusCorrect: 'Bonus: correct',
+      escapeRoomStageBonusWrong: 'Bonus: missed',
+      escapeRoomTimeWarning:
+        'Less than {minutes, plural, one {# minute} other {# minutes}} left',
+      escapeRoomTimeCritical: 'Less than {seconds} seconds left',
       escapeRoomClearedProgress:
-        'You cleared {cleared} of {total} stages before time ran out.',
+        'You cleared {cleared} of {total, plural, one {# stage} other {# stages}} before time ran out.',
       escapeRoomStatsTime: 'Escape time',
       escapeRoomStatsHints: 'Hints used',
       escapeRoomStatsPenalty: 'Time penalty',
+      escapeRoomStatsBonus: 'Bonus credit',
+      escapeRoomStartDescGroup:
+        'Work together to clear the stages in order before the timer runs out.',
+      escapeRoomRulesLabel: 'Rules',
+      escapeRoomRuleHintEach: 'Each hint',
+      escapeRoomRuleHintNumber: 'Hint {number}',
+      escapeRoomRuleWrongAnswer: 'Wrong answer',
+      escapeRoomRuleWait: '{duration} wait',
+      escapeRoomRuleReveal:
+        'Solution revealed after {count, plural, one {# wrong answer} other {# wrong answers}}',
+      escapeRoomRuleSkip: 'Skip a stage',
+      escapeRoomRuleNoPenalty: 'no penalty',
+      escapeRoomRuleBonus: 'Bonus stage',
+      escapeRoomDurationSeconds: '{seconds} s',
+      escapeRoomDurationMinutes: '{minutes} min',
+      escapeRoomDurationMinutesSeconds: '{minutes} min {seconds} s',
+      escapeRoomRankingNote:
+        'Ranked time is your escape time plus all penalties, minus any bonus credit. The ranking puts the most stages solved without a revealed solution or skip first, then the shortest ranked time.',
+      escapeRoomStartWarning:
+        'You get one attempt. The clock starts when you start the attempt and never pauses, not even if you close this page.',
+      escapeRoomStartWarningGroup:
+        'Your group gets one shared attempt. The clock starts for the whole group when one member starts the attempt and never pauses, not even if the page is closed.',
+      escapeRoomNotNow: 'Not now',
+      escapeRoomBackToCourse: 'Back to course',
+      escapeRoomContinue: 'Continue',
+      escapeRoomAssistedTitle: 'Escape Room finished',
+      escapeRoomAssistedSummary:
+        '{solved} of {required, plural, one {# stage} other {# stages}} solved without help',
+      escapeRoomRevealedCount: '{count} revealed',
+      escapeRoomSkippedCount: '{count} skipped',
+      escapeRoomRankedTimeLabel: 'Ranked time',
+      escapeRoomWrongAttempts:
+        '{count, plural, one {# wrong answer} other {# wrong answers}}',
       escapeRoomOverviewInfo:
-        'Escape room: one timed attempt, solve all stages in order',
+        'Escape Room: one timed attempt, solve all stages in order',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',
@@ -3036,13 +3082,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Practice quizzes can contain all available element types.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
-      escapeRoomMode: 'Escape Room Mode',
-      escapeRoomTimeLimit: 'Time Limit (minutes)',
-      escapeRoomHintPenalty: 'Hint Penalty (seconds)',
+      escapeRoomMode: 'Escape Room',
+      escapeRoomTimeLimit: 'Time limit',
+      escapeRoomTimeLimitTooltip:
+        'Minutes a student or group has for the whole Escape Room after starting the attempt. Required.',
+      escapeRoomUnitMinutes: 'minutes',
+      escapeRoomHintPenalty: 'Hint penalty',
+      escapeRoomHintPenaltyTooltip:
+        'Seconds added to the ranked time for every hint a student opens. Required; 0 makes hints free. With escalating penalties it applies to hints beyond that list.',
       escapeRoomAssessmentIncompatible:
-        'Escape room mode cannot be combined with assessment (graded) mode.',
+        'An Escape Room cannot be combined with assessment (graded) mode.',
       escapeRoomNoQrOutside:
-        'QR scan questions can only be used in escape room blocks.',
+        'QR scan questions can only be used in Escape Room blocks.',
       escapeRoomHintPlaceholder: 'Optional hint (costs time when revealed)',
       escapeRoomHintsPlaceholder:
         'Optional hints, one per line (each adds a penalty when revealed; later hints can cost more)',
@@ -3053,27 +3104,42 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomHintPenaltyRequired: 'Hint penalty is required',
       escapeRoomHintPenaltyMin: 'Must be a non-negative number of seconds',
       escapeRoomHintPenaltyMax: 'Hint penalty may not exceed 3600 seconds (1h)',
-      escapeRoomIntroText: 'Intro Story (optional)',
+      escapeRoomIntroText: 'Intro story',
+      escapeRoomIntroTextTooltip:
+        'Optional story shown to students on the start screen before the timer begins. Empty means no intro is shown.',
       escapeRoomIntroTextPlaceholder:
         'Set the scene for your participants — shown on the start screen before the timer begins (Markdown supported)',
       escapeRoomIntroTextMax: 'Intro story may not exceed 5000 characters',
-      escapeRoomRulesTitle: 'Scoring rules',
+      escapeRoomRulesTitle: 'Escape Room rules',
       escapeRoomApplyPreset: 'Apply classroom preset',
-      escapeRoomHintPenalties:
-        'Penalty per hint, in order (seconds, comma-separated)',
+      escapeRoomGroupTime: 'Time',
+      escapeRoomGroupHints: 'Hints',
+      escapeRoomGroupWrongAnswers: 'Wrong answers',
+      escapeRoomGroupSkip: 'Skipping',
+      escapeRoomGroupBonus: 'Bonus',
+      escapeRoomHintPenalties: 'Escalating penalties',
+      escapeRoomHintPenaltiesTooltip:
+        'Optional seconds for the first, second, third hint and so on, separated by commas. Hints beyond the list cost the hint penalty; empty means every hint costs the hint penalty.',
+      escapeRoomHintPenaltiesPlaceholder: 'e.g. 60, 120, 240',
       escapeRoomHintPenaltiesInvalid:
         'Enter up to 10 whole numbers between 0 and 3600, separated by commas',
-      escapeRoomWrongAnswerPenalty: 'Penalty per wrong answer (seconds)',
-      escapeRoomMaxWrongAttempts:
-        'Wrong answers before the solution is revealed (empty = never)',
+      escapeRoomWrongAnswerPenalty: 'Wrong answer penalty',
+      escapeRoomWrongAnswerPenaltyTooltip:
+        'Seconds added to the ranked time for every wrong answer. Empty or 0 means wrong answers cost nothing.',
+      escapeRoomMaxWrongAttempts: 'Max wrong answers',
+      escapeRoomMaxWrongAttemptsTooltip:
+        'Wrong answers on one stage after which its solution is revealed to the student. Empty means the solution is never revealed.',
       escapeRoomMaxWrongAttemptsRange:
         'Must be a whole number between 1 and 50',
-      escapeRoomRevealPenalty:
-        'Penalty when the solution is revealed (seconds)',
-      escapeRoomSkipPenalty:
-        'Penalty for skipping a question (seconds, empty = skipping disabled)',
-      escapeRoomBonusSeconds:
-        'Time credit for a correct final bonus question (seconds, empty = no bonus)',
+      escapeRoomRevealPenalty: 'Reveal penalty',
+      escapeRoomRevealPenaltyTooltip:
+        'Seconds added to the ranked time when a solution is revealed. Empty or 0 means revealing costs nothing.',
+      escapeRoomSkipPenalty: 'Skip penalty',
+      escapeRoomSkipPenaltyTooltip:
+        'Seconds added to the ranked time when a student skips a stage. Empty means students cannot skip stages.',
+      escapeRoomBonusSeconds: 'Bonus credit',
+      escapeRoomBonusSecondsTooltip:
+        'Seconds subtracted from the ranked time when students answer the last stage, which becomes the bonus stage, correctly. Empty means there is no bonus stage.',
       escapeRoomRuleSecondsRange:
         'Must be a whole number between 0 and 3600 seconds',
       selectGamifiedCourse:
@@ -3645,9 +3711,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       microLearningEvaluation: 'Microlearning Evaluation',
       escapeRoomTab: 'Escape Room',
       escapeRoomProgressDescription:
-        'Live progress of every participant attempting this escape room. Updates automatically while this tab is open.',
+        'Live progress of every participant attempting this Escape Room. Updates automatically while this tab is open.',
       escapeRoomNoAttempts:
-        'No participants have started this escape room yet.',
+        'No participants have started this Escape Room yet.',
       escapeRoomColParticipant: 'Participant',
       escapeRoomColStatus: 'Status',
       escapeRoomColProgress: 'Progress',
@@ -3664,6 +3730,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStatusCompleted: 'Completed',
       escapeRoomStatusExpired: 'Expired',
       escapeRoomLockedOut: 'Locked out',
+      escapeRoomSummaryParticipants:
+        '{total, plural, one {# participant} other {# participants}} · {finished} finished · {inProgress} in progress · {notStarted} not started',
+      escapeRoomSummaryGroups:
+        '{total, plural, one {# group} other {# groups}} · {finished} finished · {inProgress} in progress · {notStarted} not started',
+      escapeRoomHideNotStarted: 'Hide not started',
       escapeRoomReset: 'Reset',
       escapeRoomResetConfirm: 'Confirm reset',
       escapeRoomResetError: 'Could not reset the attempt. Please try again.',

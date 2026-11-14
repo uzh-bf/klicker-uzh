@@ -738,6 +738,9 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
       { id: microLearning.id },
       participantCtx(participant.id)
     )
+    // locked stages stay masked while the total stage count is reported
+    expect(ownerView!.stacks).toHaveLength(1)
+    expect(ownerView).toMatchObject({ numOfStacks: 2 })
     const ownerElement = ownerView!.stacks[0]!.elements[0]!
     expect(
       'revealedHint' in ownerElement ? ownerElement.revealedHint : undefined

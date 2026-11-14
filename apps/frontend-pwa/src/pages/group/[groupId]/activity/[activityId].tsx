@@ -11,6 +11,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { getGroupEscapeRoomStages } from '@lib/escapeRoomStages'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -84,6 +85,7 @@ function GroupActivityDetails() {
     isCompleted,
     isExpired,
     remainingSeconds,
+    lockoutRemaining,
     startAttempt,
     loading: attemptLoading,
     refetch: refetchEscapeRoom,
@@ -128,12 +130,29 @@ function GroupActivityDetails() {
   const escapeStages = (groupActivity.stacks[0]?.elements ?? []).filter(
     (element) => isGroupEscapeRoomResponseType(element.elementType)
   )
-  // The bonus stage is the last response element; only the team's answer is
-  // recorded for it, so its result is not known here.
+  // Locked stages are withheld, so the total comes from the server.
+  const escapeStageTotal =
+    groupActivity.escapeRoomStageCount ?? escapeStages.length
+  const hasEscapeBonus =
+    isEscapeRoom && hasBonusStage(escapeRoomConfig, escapeStageTotal)
+  // The bonus stage is the last response element, known once every stage is
+  // exposed; a decision records the team's answer and the stage outcome
+  // records whether it was correct.
   const bonusInstanceId =
-    isEscapeRoom && hasBonusStage(escapeRoomConfig, escapeStages.length)
+    hasEscapeBonus && escapeStages.length === escapeStageTotal
       ? escapeStages[escapeStages.length - 1]?.id
       : undefined
+  const lastEscapeAttempt = groupActivity.escapeRoomAttempts?.at(-1)
+  const escapeRoomStages = getGroupEscapeRoomStages({
+    stageInstanceIds: escapeStages.map((element) => element.id),
+    totalStages: escapeStageTotal,
+    hasBonus: hasEscapeBonus,
+    stageDecisions: lastEscapeAttempt?.stageDecisions,
+    stageOutcomes: lastEscapeAttempt?.stageOutcomes,
+  })
+  const bonusOutcome = lastEscapeAttempt?.stageOutcomes?.find(
+    (entry) => entry.stageKey === String(bonusInstanceId)
+  )?.outcome
   const bonusAnswered =
     bonusInstanceId !== undefined &&
     !!attempt &&
@@ -175,21 +194,34 @@ function GroupActivityDetails() {
           isCompleted={isCompleted && !(bonusActive && bonusAvailable)}
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
-          timeLimit={groupActivity.escapeRoomConfig?.timeLimit ?? 3600}
-          hintPenalty={escapeRoomHintPenalty}
+          mode="groupActivity"
+          title={groupActivity.displayName}
+          rules={
+            groupActivity.escapeRoomConfig ?? {
+              timeLimit: 3600,
+              hintPenalty: escapeRoomHintPenalty,
+            }
+          }
+          flush
+          exit={{
+            label: t('pwa.practiceQuiz.escapeRoomBackToCourse'),
+            onClick: () => router.push(`/course/${groupActivity.course.id}`),
+          }}
           onStart={async () => {
             await startAttempt()
             await refetch()
           }}
           loading={attemptLoading}
           attempt={attempt}
+          stages={escapeRoomStages}
           introText={groupActivity.escapeRoomConfig?.introText}
           bonus={
             bonusInstanceId !== undefined
               ? {
                   seconds: escapeRoomConfig?.bonusSeconds ?? 0,
                   available: bonusAvailable,
-                  outcome: bonusAnswered ? 'SUBMITTED' : undefined,
+                  outcome:
+                    bonusOutcome ?? (bonusAnswered ? 'SUBMITTED' : undefined),
                   onStart: () => setBonusActive(true),
                 }
               : undefined
@@ -374,6 +406,9 @@ function GroupActivityDetails() {
                           attempt?.status === EscapeRoomStatus.InProgress,
                         bonusInstanceId,
                         bonusOpen: bonusActive && bonusAvailable,
+                        // the bonus answer is accepted during a lockout
+                        lockoutRemaining:
+                          bonusActive && bonusAvailable ? 0 : lockoutRemaining,
                       }
                     : undefined
                 }

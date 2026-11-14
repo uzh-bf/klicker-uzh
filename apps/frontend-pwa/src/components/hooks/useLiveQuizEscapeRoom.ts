@@ -6,6 +6,7 @@ import {
   RequestEscapeRoomHintDocument,
   StartEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { getEscapeRoomLockoutRemainingSeconds } from '@lib/escapeRoomLockout'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -38,7 +39,11 @@ export function useLiveQuizEscapeRoom({
   refetch,
 }: {
   blockId?: number
-  config?: { timeLimit: number; hintPenalty: number } | null
+  config?: {
+    timeLimit: number
+    hintPenalty: number
+    lockoutSeconds?: number
+  } | null
   initialAttempt?: LiveQuizEscapeRoomAttempt | null
   instances: ElementInstance[]
   currentInstance?: ElementInstance
@@ -114,10 +119,6 @@ export function useLiveQuizEscapeRoom({
     }
 
     const receivedAt = performance.now()
-    const lockoutDeadline = attempt.lockoutUntil
-      ? receivedAt +
-        Math.max(0, new Date(attempt.lockoutUntil).getTime() - Date.now())
-      : null
     const tick = () => {
       const elapsed = (performance.now() - receivedAt) / 1000
       const remaining = Math.max(
@@ -130,10 +131,17 @@ export function useLiveQuizEscapeRoom({
       )
       setRemainingSeconds(remaining)
       setExpiresInSeconds(expiresIn)
+      // derived from the server snapshot, never the device clock
       setLockoutRemaining(
-        lockoutDeadline !== null
-          ? Math.max(0, Math.ceil((lockoutDeadline - performance.now()) / 1000))
-          : 0
+        getEscapeRoomLockoutRemainingSeconds({
+          lockoutUntil: attempt.lockoutUntil,
+          startedAt: attempt.startedAt,
+          timeLimit: attempt.timeLimit,
+          remainingSeconds: attempt.remainingSeconds,
+          lockoutSeconds: config.lockoutSeconds ?? 0,
+          receivedAtMs: receivedAt,
+          nowMs: performance.now(),
+        })
       )
       if (expiresIn <= 0 && expiryHandledAttemptIdRef.current !== attempt.id) {
         expiryHandledAttemptIdRef.current = attempt.id
@@ -185,14 +193,43 @@ export function useLiveQuizEscapeRoom({
     }
   }, [blockId, currentInstance, hintMutation, t])
 
-  const onResponse = useCallback((result: LiveQuizEscapeRoomResponse) => {
-    if (result.completed) setIsCompleted(true)
-    if (!result.lockoutUntil) return
+  const lockoutSeconds = config?.lockoutSeconds ?? 0
+  const onResponse = useCallback(
+    (result: LiveQuizEscapeRoomResponse) => {
+      if (result.completed) setIsCompleted(true)
+      if (!result.lockoutUntil) return
 
-    setAttempt((current) =>
-      current ? { ...current, lockoutUntil: result.lockoutUntil } : current
-    )
-  }, [])
+      // The lockout starts when the server grades the answer, so the server
+      // clock stood at lockoutUntil minus the lockout length. Moving the
+      // snapshot there keeps the countdown exact without a refetch.
+      const serverNowMs =
+        new Date(result.lockoutUntil).getTime() - lockoutSeconds * 1000
+      setAttempt((current) => {
+        // a rejected resubmit returns the running lockout, which says nothing
+        // about the current server time
+        if (!current || current.lockoutUntil === result.lockoutUntil) {
+          return current
+        }
+        const remainingSeconds = Math.max(
+          0,
+          Math.ceil(
+            current.timeLimit -
+              (serverNowMs - new Date(current.startedAt).getTime()) / 1000
+          )
+        )
+        return {
+          ...current,
+          lockoutUntil: result.lockoutUntil,
+          remainingSeconds,
+          // the expiry clock restarts with the snapshot, so it moves along
+          expiresInSeconds:
+            remainingSeconds +
+            (current.expiresInSeconds - current.remainingSeconds),
+        }
+      })
+    },
+    [lockoutSeconds]
+  )
 
   return {
     attempt,

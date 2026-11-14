@@ -1509,6 +1509,10 @@ export async function getGroupActivityDetails(
   return {
     ...groupActivity,
     stacks: restoreUsedEscapeRoomHints(visibleStacks, attempt?.hintsUsed ?? []),
+    // Locked stages are withheld above, so the participant cannot count them.
+    escapeRoomStageCount: groupActivity.escapeRoomConfig
+      ? getGroupEscapeRoomStages(groupActivity.stacks).length
+      : null,
     group,
     activityInstance: activityInstance
       ? {

@@ -226,19 +226,20 @@ export function registerPracticeEscapeRoomTests() {
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
 
-    // start overlay with the authored intro story and the stats row
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomStartTitle).first()
-    ).toBeVisible()
+    // start overlay with the authored intro story and the rules list
+    await expect(page.getByTestId('escape-room-rules')).toBeVisible()
     await expect(
       page.getByTestId('escape-room-intro-text-display')
     ).toContainText(QUIZ.introText)
     await expect(
-      page.getByText(`${QUIZ.timeLimitMinutes} min`).first()
-    ).toBeVisible()
+      page.getByTestId('escape-room-rule-time-limit')
+    ).toHaveAttribute(
+      'data-seconds',
+      String(Number(QUIZ.timeLimitMinutes) * 60)
+    )
     await expect(
-      page.getByText(`+${QUIZ.hintPenaltySeconds}s`).first()
-    ).toBeVisible()
+      page.getByTestId('escape-room-rule-hint').first()
+    ).toHaveAttribute('data-seconds', QUIZ.hintPenaltySeconds)
 
     await page.getByTestId('escape-room-start').click()
 
@@ -285,11 +286,9 @@ export function registerPracticeEscapeRoomTests() {
     const hintButton = page
       .locator('[data-cy^="request-escape-room-hint-"]')
       .first()
-    await expect(hintButton).toContainText(
-      messages.pwa.practiceQuiz.escapeRoomRequestHint.replace(
-        '{penalty}',
-        QUIZ.hintPenaltySeconds
-      )
+    await expect(hintButton).toHaveAttribute(
+      'data-seconds',
+      QUIZ.hintPenaltySeconds
     )
     await hintButton.click()
     await expect(
@@ -418,7 +417,7 @@ export function registerPracticeEscapeRoomTests() {
     )
   })
 
-  test('Wrong answer stays on the stage and a rapid resubmit hits the lockout', async ({
+  test('Wrong answer stays on the stage and the lockout survives a reload', async ({
     page: testPage,
   }, testInfo) => {
     const page = testPage
@@ -438,26 +437,28 @@ export function registerPracticeEscapeRoomTests() {
     // wrong answer: grading sets a server-side lockout window
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
+    await expect(page.getByTestId('escape-room-incorrect-notice')).toBeVisible()
+
+    // a reload under the skewed device clock restores the countdown and the
+    // incorrect notice from server data (the assertions must land within the
+    // ~5s lockout, so nothing else runs before the reload)
+    await page.reload()
+    await page.getByTestId('start-practice-quiz').click()
+    await page.getByTestId('practice-quiz-progress-1').click()
+    await expect(
+      page.getByTestId('escape-room-lockout-countdown')
+    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-incorrect-notice')).toBeVisible()
     await page.getByTestId('student-stack-continue').click()
 
     // the stage remounts for a retry instead of advancing or leaving
     await expect(page.getByText(SC2.content).first()).toBeVisible()
-    await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
-
-    // resubmitting within the lockout window surfaces the countdown and
-    // keeps the submit disabled (clicks must land within ~5s of grading)
-    await page.getByTestId('sc-0-answer-option-1').click()
-    await page.getByTestId('student-stack-submit').click()
-    await expect(
-      page.getByTestId('escape-room-lockout-countdown')
-    ).toBeVisible()
-    await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
 
     // once the lockout elapses the stage can be solved
+    await page.getByTestId('sc-0-answer-option-0').click()
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled({
       timeout: 15_000,
     })
-    await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
     await expect(page.getByText(CT1.content).first()).toBeVisible()
@@ -484,9 +485,7 @@ export function registerPracticeEscapeRoomTests() {
 
     // clearing the last stage completes the server-side attempt and the
     // completion overlay with escape stats takes over
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-completed')).toBeVisible()
     const stats = page.getByTestId('escape-room-completed-stats')
     await expect(stats).toBeVisible()
     await expect(stats).toContainText(
@@ -528,7 +527,10 @@ export function registerPracticeEscapeRoomTests() {
     )
     await expect(
       page
-        .getByText(messages.manage.evaluation.escapeRoomStatusNotStarted)
+        .locator('[data-cy^="escape-room-attempt-"]')
+        .filter({
+          hasText: messages.manage.evaluation.escapeRoomStatusNotStarted,
+        })
         .first()
     ).toBeVisible()
 
@@ -658,10 +660,6 @@ export function registerQrFallbackTest() {
     await manualCode.fill(QR.code)
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled()
     await page.getByTestId('student-stack-submit').click()
-    await expect(
-      page
-        .getByText(deMessages.pwa.practiceQuiz.escapeRoomCompletedTitle)
-        .first()
-    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-completed')).toBeVisible()
   })
 }

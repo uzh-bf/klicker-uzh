@@ -4,13 +4,17 @@ import {
   EscapeRoomStatus,
   StartEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { getEscapeRoomLockoutRemainingSeconds } from '@lib/escapeRoomLockout'
 import { useEffect, useRef, useState } from 'react'
 
 // Minimal shape the hook actually reads off an escape-room-capable activity.
 // Pick ties the attempt fields to the generated schema so a rename breaks here.
 type EscapeRoomActivityInput = {
   id: string
-  escapeRoomConfig?: { bonusSeconds?: number | null } | null
+  escapeRoomConfig?: {
+    bonusSeconds?: number | null
+    lockoutSeconds?: number | null
+  } | null
   escapeRoomAttempts?: Array<
     Pick<
       EscapeRoomAttempt,
@@ -21,6 +25,8 @@ type EscapeRoomActivityInput = {
       | 'expiresInSeconds'
       // ... plus the stats the returned attempt feeds into EscapeRoomOverlay
       | 'startedAt'
+      | 'timeLimit'
+      | 'lockoutUntil'
       | 'completedAt'
       | 'penaltySeconds'
       | 'hintsUsed'
@@ -112,6 +118,7 @@ export function useEscapeRoom({
   const isEscapeRoom = !!activity?.escapeRoomConfig
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
   const [expiresInSeconds, setExpiresInSeconds] = useState<number | null>(null)
+  const [lockoutRemaining, setLockoutRemaining] = useState(0)
   // Guard so the expiry refetch fires exactly once per attempt, not every tick.
   const expiryHandledAttemptIdRef = useRef<string | null>(null)
 
@@ -144,6 +151,7 @@ export function useEscapeRoom({
     if (!isEscapeRoom || !attempt || !clockRuns) {
       setRemainingSeconds(null)
       setExpiresInSeconds(null)
+      setLockoutRemaining(0)
       return
     }
 
@@ -163,6 +171,18 @@ export function useEscapeRoom({
       )
       setRemainingSeconds(remaining)
       setExpiresInSeconds(expiresIn)
+      // the lockout comes from the same server snapshot, never the device clock
+      setLockoutRemaining(
+        getEscapeRoomLockoutRemainingSeconds({
+          lockoutUntil: attempt.lockoutUntil,
+          startedAt: attempt.startedAt,
+          timeLimit: attempt.timeLimit,
+          remainingSeconds: attempt.remainingSeconds,
+          lockoutSeconds: activity?.escapeRoomConfig?.lockoutSeconds ?? 0,
+          receivedAtMs: receivedAt,
+          nowMs: performance.now(),
+        })
+      )
 
       // On local expiry, refetch ONCE to sync the server-side status; without
       // the guard this fired every second while status stayed InProgress.
@@ -176,7 +196,13 @@ export function useEscapeRoom({
     const interval = setInterval(calculateRemaining, 1000)
 
     return () => clearInterval(interval)
-  }, [isEscapeRoom, attempt, activity?.escapeRoomConfig?.bonusSeconds, refetch])
+  }, [
+    isEscapeRoom,
+    attempt,
+    activity?.escapeRoomConfig?.bonusSeconds,
+    activity?.escapeRoomConfig?.lockoutSeconds,
+    refetch,
+  ])
 
   const isStarted = !!attempt
   const isCompleted = attempt?.status === EscapeRoomStatus.Completed
@@ -193,6 +219,7 @@ export function useEscapeRoom({
     isCompleted,
     isExpired,
     remainingSeconds,
+    lockoutRemaining,
     startAttempt,
     loading: starting,
     refetch,

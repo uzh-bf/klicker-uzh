@@ -33,7 +33,10 @@ import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
 import type { EmbedQuizNavigationState } from './embed'
-import EscapeRoomSkipButton from './EscapeRoomSkipButton'
+import { formatDuration } from './EscapeRoomOverlay'
+import EscapeRoomSkipButton, {
+  EscapeRoomHintButton,
+} from './EscapeRoomSkipButton'
 import InstanceHeader from './InstanceHeader'
 
 // Choices render their explanation inline. Other element types render their
@@ -90,6 +93,8 @@ interface ElementStackProps {
     // null when skipping is not offered for this stage
     skipPenalty?: number | null
     stageOutcome?: { wrongAttempts: number; outcome?: string | null }
+    // seconds of lockout left according to the server snapshot (survives reloads)
+    lockoutRemaining?: number
     onStateChanged: () => void | Promise<unknown>
   }
 }
@@ -190,6 +195,13 @@ function ElementStack({
     return () => clearInterval(interval)
   }, [lockoutDeadline])
 
+  // The server snapshot also covers a lockout the component never saw, such as
+  // one set before a reload or a remount.
+  const effectiveLockoutRemaining = Math.max(
+    lockoutRemaining,
+    escapeRoom?.lockoutRemaining ?? 0
+  )
+
   // Map the structured escape-room error codes thrown by respondToElementStack
   // to localized participant feedback. Non-escape errors surface a generic
   // system-error toast (previously the rejected promise failed silently).
@@ -278,9 +290,9 @@ function ElementStack({
         setRevealedHints((prev) => ({ ...prev, [instanceId]: hints }))
         toast({
           message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
-            penalty,
+            duration: formatDuration(penalty, t),
           }),
-          type: 'success',
+          type: 'warning',
         })
         // Refetch so the attempt's penalty and hint state stay in sync.
         await escapeRoom.onStateChanged()
@@ -305,9 +317,9 @@ function ElementStack({
       })
       toast({
         message: t('pwa.practiceQuiz.escapeRoomSkippedToast', {
-          penalty: escapeRoom.skipPenalty ?? 0,
+          duration: formatDuration(escapeRoom.skipPenalty ?? 0, t),
         }),
-        type: 'success',
+        type: 'warning',
       })
       await escapeRoom.onStateChanged()
       handleNextElement(StackFeedbackStatus.Correct)
@@ -337,7 +349,7 @@ function ElementStack({
   const responsesValid = responsesInitialized && !responsesInvalid
   const responseSubmissionDisabled =
     (!previewOnly && activityExpired) ||
-    lockoutRemaining > 0 ||
+    effectiveLockoutRemaining > 0 ||
     responsesInvalid
   const hostNavigationState = useMemo<EmbedQuizNavigationState>(
     () =>
@@ -822,7 +834,7 @@ function ElementStack({
 
         {!focusedPresentation && (
           <>
-            {!previewOnly && !hideBookmark && !embedded ? (
+            {!previewOnly && !hideBookmark && !embedded && !escapeRoom ? (
               <div className="flex flex-row items-center justify-between">
                 <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
                 <Bookmark
@@ -865,7 +877,7 @@ function ElementStack({
                     instanceId={element.id}
                     elementId={parseInt(element.elementData.id)}
                     name={element.elementData.name}
-                    withParticipant={withParticipant}
+                    withParticipant={withParticipant && !escapeRoom}
                     previousElementFeedback={
                       withParticipant ? elementFeedbacks[element.id] : undefined
                     }
@@ -912,7 +924,7 @@ function ElementStack({
                         {elementHints.map((hint, hintIx) => (
                           <UserNotification
                             key={hintIx}
-                            type="success"
+                            type="info"
                             message={hint}
                             data={{
                               cy:
@@ -924,30 +936,21 @@ function ElementStack({
                         ))}
                         {elementHints.length <
                           (element.options?.hintCount ?? 1) && (
-                          <Button
+                          <EscapeRoomHintButton
+                            penalty={getNextHintPenalty(elementHints.length)}
+                            next={elementHints.length > 0}
                             loading={requestingHintFor === element.id}
-                            disabled={requestingHintFor !== null}
+                            disabled={
+                              requestingHintFor !== null ||
+                              effectiveLockoutRemaining > 0
+                            }
                             onClick={() => handleRequestHint(element.id)}
-                            data={{
-                              cy:
-                                elementHints.length === 0
-                                  ? `request-escape-room-hint-${element.id}`
-                                  : 'escape-room-next-hint',
-                            }}
-                          >
-                            <Button.Label>
-                              {t(
-                                elementHints.length === 0
-                                  ? 'pwa.practiceQuiz.escapeRoomRequestHint'
-                                  : 'pwa.practiceQuiz.escapeRoomNextHint',
-                                {
-                                  penalty: getNextHintPenalty(
-                                    elementHints.length
-                                  ),
-                                }
-                              )}
-                            </Button.Label>
-                          </Button>
+                            dataCy={
+                              elementHints.length === 0
+                                ? `request-escape-room-hint-${element.id}`
+                                : 'escape-room-next-hint'
+                            }
+                          />
                         )}
                       </div>
                     )}
@@ -957,51 +960,69 @@ function ElementStack({
         </div>
       </div>
 
-      {escapeRoom &&
-        !previewOnly &&
-        escapeRoom.stageOutcome?.outcome === 'REVEALED' && (
-          <UserNotification
-            type="warning"
-            className={{ root: 'mt-4' }}
-            message={t('pwa.practiceQuiz.escapeRoomRevealedNotice', {
-              penalty: escapeRoom.revealPenalty ?? 0,
-            })}
-            data={{ cy: 'escape-room-revealed-notice' }}
-          />
-        )}
+      {/* polite live region for penalty, retry and lockout feedback */}
+      {escapeRoom && (
+        <div aria-live="polite">
+          {!previewOnly && escapeRoom.stageOutcome?.outcome === 'REVEALED' && (
+            <UserNotification
+              type="warning"
+              className={{ root: 'mt-4' }}
+              message={t('pwa.practiceQuiz.escapeRoomRevealedNotice', {
+                duration: formatDuration(escapeRoom.revealPenalty ?? 0, t),
+              })}
+              data={{ cy: 'escape-room-revealed-notice' }}
+            />
+          )}
 
-      {escapeRoom &&
-        !previewOnly &&
-        typeof escapeRoom.maxWrongAttempts === 'number' &&
-        !escapeRoom.stageOutcome?.outcome && (
-          <UserNotification
-            type="info"
-            className={{ root: 'mt-4' }}
-            message={t('pwa.practiceQuiz.escapeRoomTriesLeft', {
-              count: Math.max(
-                escapeRoom.maxWrongAttempts -
-                  (escapeRoom.stageOutcome?.wrongAttempts ?? 0),
-                0
-              ),
-            })}
-            data={{ cy: 'escape-room-tries-left' }}
-          />
-        )}
+          {!previewOnly &&
+            typeof escapeRoom.maxWrongAttempts === 'number' &&
+            !escapeRoom.stageOutcome?.outcome && (
+              <UserNotification
+                type="info"
+                className={{ root: 'mt-4' }}
+                message={t('pwa.practiceQuiz.escapeRoomTriesLeft', {
+                  count: Math.max(
+                    escapeRoom.maxWrongAttempts -
+                      (escapeRoom.stageOutcome?.wrongAttempts ?? 0),
+                    0
+                  ),
+                })}
+                data={{ cy: 'escape-room-tries-left' }}
+              />
+            )}
 
-      {/* an open escape room stage returns no evaluation, only the status */}
-      {escapeRoom &&
-        !previewOnly &&
-        typeof stackStorage !== 'undefined' &&
-        (lastGradedStatus === StackFeedbackStatus.Incorrect ||
-          lastGradedStatus === StackFeedbackStatus.Partial) &&
-        !Object.values(stackStorage).some((entry) => entry.evaluation) && (
-          <UserNotification
-            type="error"
-            className={{ root: 'mt-4' }}
-            message={t('pwa.practiceQuiz.escapeRoomIncorrectToast')}
-            data={{ cy: 'escape-room-incorrect-notice' }}
-          />
-        )}
+          {/* an open escape room stage returns no evaluation, only the status;
+              after a reload the stored answer and the server lockout stand in
+              for the graded status */}
+          {!previewOnly &&
+            !escapeRoom.stageOutcome?.outcome &&
+            typeof stackStorage !== 'undefined' &&
+            (lastGradedStatus === StackFeedbackStatus.Incorrect ||
+              lastGradedStatus === StackFeedbackStatus.Partial ||
+              effectiveLockoutRemaining > 0) &&
+            !Object.values(stackStorage).some((entry) => entry.evaluation) && (
+              <UserNotification
+                type="error"
+                className={{ root: 'mt-4' }}
+                message={t('pwa.practiceQuiz.escapeRoomIncorrectToast')}
+                data={{ cy: 'escape-room-incorrect-notice' }}
+              />
+            )}
+
+          {effectiveLockoutRemaining > 0 && (
+            <div aria-live="off">
+              <UserNotification
+                type="warning"
+                className={{ root: 'mt-2' }}
+                message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
+                  duration: formatDuration(effectiveLockoutRemaining, t),
+                })}
+                data={{ cy: 'escape-room-lockout-countdown' }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* display continue button if question was already answered */}
       {typeof stackStorage !== 'undefined' && !showMarkAsRead
@@ -1036,17 +1057,6 @@ function ElementStack({
             <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
           </Button>
         )}
-
-      {lockoutRemaining > 0 && (
-        <UserNotification
-          type="error"
-          className={{ root: 'mt-2' }}
-          message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
-            seconds: lockoutRemaining,
-          })}
-          data={{ cy: 'escape-room-lockout-countdown' }}
-        />
-      )}
 
       {escapeRoom &&
         !previewOnly &&
