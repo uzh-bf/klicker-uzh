@@ -1327,6 +1327,7 @@ input ElementBlockInput {
   elements: [ElementInstanceInput!]!
   escapeRoomHintPenalty: Int
   escapeRoomIntroText: String
+  escapeRoomRules: EscapeRoomRulesInput
   escapeRoomTimeLimit: Int
   isEscapeRoom: Boolean
   order: Int!

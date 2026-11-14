@@ -11,6 +11,10 @@ import {
   EditLiveQuizMutationVariables,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  getEscapeRoomHintsInput,
+  getEscapeRoomRulesInput,
+} from '../escapeRoomValidation'
 import { ElementBlockFormValues, LiveQuizFormValues } from '../WizardLayout'
 
 interface LiveQuizFormSubmissionProps {
@@ -68,14 +72,17 @@ async function submitLiveQuizForm({
         escapeRoomIntroText: block.isEscapeRoom
           ? block.escapeRoomIntroText
           : undefined,
+        escapeRoomRules: block.isEscapeRoom
+          ? getEscapeRoomRulesInput(block)
+          : undefined,
         elements: block.elements.map((element, ix) => {
           return {
             elementId: element.id,
             order: ix,
             existingInstanceId: element.existingInstanceId,
             duplicateInstance: element.duplicateInstance,
-            escapeRoomHint: block.isEscapeRoom
-              ? (element.escapeRoomHint ?? undefined)
+            escapeRoomHints: block.isEscapeRoom
+              ? getEscapeRoomHintsInput(element.escapeRoomHint)
               : undefined,
           }
         }),

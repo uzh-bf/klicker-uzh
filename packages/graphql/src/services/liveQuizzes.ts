@@ -15,6 +15,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomHintUpdate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
@@ -41,7 +42,10 @@ import {
   liveQuizCourseVisibilityFilter,
   persistActivityWithPermissions,
 } from './activities.js'
-import { validateEscapeRoomConfig } from './escapeRooms.js'
+import {
+  getEscapeRoomRulesData,
+  validateEscapeRoomConfig,
+} from './escapeRooms.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { checkAccess } from './sharing.js'
@@ -230,6 +234,7 @@ export async function manipulateLiveQuiz(
       timeLimit: block.escapeRoomTimeLimit ?? 300,
       hintPenalty: block.escapeRoomHintPenalty ?? 0,
     })
+    getEscapeRoomRulesData(block.escapeRoomRules)
   }
 
   // in EDIT mode - validate that the live quiz exists and is not published
@@ -467,6 +472,7 @@ export async function manipulateLiveQuiz(
                 timeLimit: block.escapeRoomTimeLimit ?? 300,
                 hintPenalty: block.escapeRoomHintPenalty ?? 0,
                 introText: block.escapeRoomIntroText?.trim() || null,
+                ...getEscapeRoomRulesData(block.escapeRoomRules),
               },
             }
           : undefined,
@@ -510,12 +516,13 @@ export async function manipulateLiveQuiz(
           order: persistentInstanceOrderMap[instance.id],
           options: {
             ...instance.options,
-            ...(typeof submittedInstance?.escapeRoomHint === 'undefined'
+            ...(typeof submittedInstance?.escapeRoomHint === 'undefined' &&
+            typeof submittedInstance?.escapeRoomHints === 'undefined'
               ? {}
-              : {
-                  escapeRoomHint:
-                    submittedInstance.escapeRoomHint?.trim() || null,
-                }),
+              : getEscapeRoomHintUpdate(
+                  submittedInstance.escapeRoomHint,
+                  submittedInstance.escapeRoomHints
+                )),
             pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
           },
         },

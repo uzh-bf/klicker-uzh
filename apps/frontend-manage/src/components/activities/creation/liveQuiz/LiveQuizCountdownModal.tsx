@@ -5,6 +5,8 @@ import {
   TextareaField,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { EscapeRoomRulesCard } from '../EscapeRoomSettingsFields'
+import { getEscapeRoomRulesFormValues } from '../escapeRoomValidation'
 import { ElementBlockFormValues } from '../WizardLayout'
 
 function LiveQuizCountdownModal({
@@ -55,6 +57,7 @@ function LiveQuizCountdownModal({
           checked={!!block.isEscapeRoom}
           onCheck={() =>
             replace(index, {
+              ...getEscapeRoomRulesFormValues(),
               ...block,
               isEscapeRoom: !block.isEscapeRoom,
               escapeRoomTimeLimit: block.escapeRoomTimeLimit ?? 5,
@@ -97,6 +100,7 @@ function LiveQuizCountdownModal({
               }
               data={{ cy: 'escape-room-intro-text' }}
             />
+            <EscapeRoomRulesCard isEscapeRoom blockPath={`blocks.${index}`} />
           </div>
         )}
       </div>

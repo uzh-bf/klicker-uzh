@@ -7,9 +7,10 @@ import {
   FormikTextareaField,
   FormikTextField,
 } from '@uzh-bf/design-system'
-import { useFormikContext } from 'formik'
+import { getIn, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { getEscapeRoomPresetFormValues } from './escapeRoomValidation'
 
 interface EscapeRoomSettingsFieldsProps {
@@ -54,14 +55,22 @@ function RuleGroup({
   )
 }
 
-// Rules card shown next to the settings cards while the Escape Room toggle is on
+// Rules card shown next to the settings cards while the Escape Room toggle is on.
+// With `blockPath` (e.g. `blocks.0`) the card edits the rule fields of that
+// Live Quiz block only; the block's time limit, hint penalty and intro text
+// stay with the block modal, and the preset is applied to that block.
 export function EscapeRoomRulesCard({
   isEscapeRoom,
+  blockPath,
 }: {
   isEscapeRoom: boolean
+  blockPath?: string
 }) {
   const t = useTranslations()
-  const { setValues } = useFormikContext<Record<string, unknown>>()
+  const { setValues, setFieldValue, values } =
+    useFormikContext<Record<string, unknown>>()
+  const fieldName = (field: string) =>
+    blockPath ? `${blockPath}.${field}` : field
 
   if (!isEscapeRoom) return null
 
@@ -74,7 +83,10 @@ export function EscapeRoomRulesCard({
 
   return (
     <div
-      className="border-border w-full rounded-md border border-solid p-2 shadow-md md:w-72"
+      className={twMerge(
+        'border-border w-full rounded-md border border-solid p-2 shadow-md',
+        !blockPath && 'md:w-72'
+      )}
       data-cy="escape-room-rules-card"
     >
       <div className="flex flex-row items-center justify-center gap-2">
@@ -86,41 +98,56 @@ export function EscapeRoomRulesCard({
       <div className="flex flex-col gap-2">
         <Button
           className={{ root: 'justify-center px-2 py-1 text-xs' }}
-          onClick={() =>
-            setValues((values) => ({
-              ...values,
-              ...getEscapeRoomPresetFormValues(),
-            }))
-          }
+          onClick={() => {
+            if (!blockPath) {
+              setValues((current) => ({
+                ...current,
+                ...getEscapeRoomPresetFormValues(),
+              }))
+              return
+            }
+            const { escapeRoomTimeLimit, escapeRoomHintPenalty, ...rules } =
+              getEscapeRoomPresetFormValues()
+            setFieldValue(blockPath, {
+              ...(getIn(values, blockPath) as object),
+              escapeRoomTimeLimit: Number(escapeRoomTimeLimit),
+              escapeRoomHintPenalty: Number(escapeRoomHintPenalty),
+              ...rules,
+            })
+          }}
           data={{ cy: 'escape-room-apply-preset' }}
         >
           <Button.Label>
             {t('manage.activityWizard.escapeRoomApplyPreset')}
           </Button.Label>
         </Button>
-        <RuleGroup title={t('manage.activityWizard.escapeRoomGroupTime')}>
-          <FormikNumberField
-            name="escapeRoomTimeLimit"
-            label={t('manage.activityWizard.escapeRoomTimeLimit')}
-            tooltip={t('manage.activityWizard.escapeRoomTimeLimitTooltip')}
-            unit={t('manage.activityWizard.escapeRoomUnitMinutes')}
-            required
-            className={fieldClassName}
-            data={{ cy: 'escape-room-time-limit' }}
-          />
-        </RuleGroup>
+        {!blockPath && (
+          <RuleGroup title={t('manage.activityWizard.escapeRoomGroupTime')}>
+            <FormikNumberField
+              name="escapeRoomTimeLimit"
+              label={t('manage.activityWizard.escapeRoomTimeLimit')}
+              tooltip={t('manage.activityWizard.escapeRoomTimeLimitTooltip')}
+              unit={t('manage.activityWizard.escapeRoomUnitMinutes')}
+              required
+              className={fieldClassName}
+              data={{ cy: 'escape-room-time-limit' }}
+            />
+          </RuleGroup>
+        )}
         <RuleGroup title={t('manage.activityWizard.escapeRoomGroupHints')}>
-          <FormikNumberField
-            name="escapeRoomHintPenalty"
-            label={t('manage.activityWizard.escapeRoomHintPenalty')}
-            tooltip={t('manage.activityWizard.escapeRoomHintPenaltyTooltip')}
-            unit={seconds}
-            required
-            className={fieldClassName}
-            data={{ cy: 'escape-room-hint-penalty' }}
-          />
+          {!blockPath && (
+            <FormikNumberField
+              name="escapeRoomHintPenalty"
+              label={t('manage.activityWizard.escapeRoomHintPenalty')}
+              tooltip={t('manage.activityWizard.escapeRoomHintPenaltyTooltip')}
+              unit={seconds}
+              required
+              className={fieldClassName}
+              data={{ cy: 'escape-room-hint-penalty' }}
+            />
+          )}
           <FormikTextField
-            name="escapeRoomHintPenalties"
+            name={fieldName('escapeRoomHintPenalties')}
             label={t('manage.activityWizard.escapeRoomHintPenalties')}
             tooltip={t('manage.activityWizard.escapeRoomHintPenaltiesTooltip')}
             placeholder={t(
@@ -134,7 +161,7 @@ export function EscapeRoomRulesCard({
           title={t('manage.activityWizard.escapeRoomGroupWrongAnswers')}
         >
           <FormikNumberField
-            name="escapeRoomWrongAnswerPenalty"
+            name={fieldName('escapeRoomWrongAnswerPenalty')}
             label={t('manage.activityWizard.escapeRoomWrongAnswerPenalty')}
             tooltip={t(
               'manage.activityWizard.escapeRoomWrongAnswerPenaltyTooltip'
@@ -144,7 +171,7 @@ export function EscapeRoomRulesCard({
             data={{ cy: 'escape-room-wrong-answer-penalty' }}
           />
           <FormikNumberField
-            name="escapeRoomMaxWrongAttempts"
+            name={fieldName('escapeRoomMaxWrongAttempts')}
             label={t('manage.activityWizard.escapeRoomMaxWrongAttempts')}
             tooltip={t(
               'manage.activityWizard.escapeRoomMaxWrongAttemptsTooltip'
@@ -153,7 +180,7 @@ export function EscapeRoomRulesCard({
             data={{ cy: 'escape-room-max-wrong-attempts' }}
           />
           <FormikNumberField
-            name="escapeRoomRevealPenalty"
+            name={fieldName('escapeRoomRevealPenalty')}
             label={t('manage.activityWizard.escapeRoomRevealPenalty')}
             tooltip={t('manage.activityWizard.escapeRoomRevealPenaltyTooltip')}
             unit={seconds}
@@ -163,7 +190,7 @@ export function EscapeRoomRulesCard({
         </RuleGroup>
         <RuleGroup title={t('manage.activityWizard.escapeRoomGroupSkip')}>
           <FormikNumberField
-            name="escapeRoomSkipPenalty"
+            name={fieldName('escapeRoomSkipPenalty')}
             label={t('manage.activityWizard.escapeRoomSkipPenalty')}
             tooltip={t('manage.activityWizard.escapeRoomSkipPenaltyTooltip')}
             unit={seconds}
@@ -173,7 +200,7 @@ export function EscapeRoomRulesCard({
         </RuleGroup>
         <RuleGroup title={t('manage.activityWizard.escapeRoomGroupBonus')}>
           <FormikNumberField
-            name="escapeRoomBonusSeconds"
+            name={fieldName('escapeRoomBonusSeconds')}
             label={t('manage.activityWizard.escapeRoomBonusSeconds')}
             tooltip={t('manage.activityWizard.escapeRoomBonusSecondsTooltip')}
             unit={seconds}
@@ -181,22 +208,24 @@ export function EscapeRoomRulesCard({
             data={{ cy: 'escape-room-bonus-seconds' }}
           />
         </RuleGroup>
-        <RuleGroup>
-          <FormikTextareaField
-            name="escapeRoomIntroText"
-            label={t('manage.activityWizard.escapeRoomIntroText')}
-            tooltip={t('manage.activityWizard.escapeRoomIntroTextTooltip')}
-            placeholder={t(
-              'manage.activityWizard.escapeRoomIntroTextPlaceholder'
-            )}
-            className={{
-              root: 'w-full',
-              input: 'h-20 w-full',
-              tooltip: 'z-20',
-            }}
-            data={{ cy: 'escape-room-intro-text' }}
-          />
-        </RuleGroup>
+        {!blockPath && (
+          <RuleGroup>
+            <FormikTextareaField
+              name="escapeRoomIntroText"
+              label={t('manage.activityWizard.escapeRoomIntroText')}
+              tooltip={t('manage.activityWizard.escapeRoomIntroTextTooltip')}
+              placeholder={t(
+                'manage.activityWizard.escapeRoomIntroTextPlaceholder'
+              )}
+              className={{
+                root: 'w-full',
+                input: 'h-20 w-full',
+                tooltip: 'z-20',
+              }}
+              data={{ cy: 'escape-room-intro-text' }}
+            />
+          </RuleGroup>
+        )}
       </div>
     </div>
   )
