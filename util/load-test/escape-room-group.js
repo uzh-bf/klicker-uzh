@@ -37,8 +37,8 @@
 // KLICKER_ANSWER_PAUSE (seconds between a student's answers, default 30),
 // KLICKER_LECTURER_IDENTIFIER (default lecturer), KLICKER_PWA_ORIGIN and
 // KLICKER_MANAGE_ORIGIN (default: the API URL with pwa. or manage. in place of
-// api.), KLICKER_JOIN_SPREAD (seconds over which students log in, default 60;
-// password logins are slow, so raise it with the student count).
+// api.), KLICKER_JOIN_SPREAD (seconds over which students open the activity,
+// default 60).
 //
 // Run (replace <workspace> with the routed workspace name):
 //   k6 run --insecure-skip-tls-verify \
@@ -50,8 +50,8 @@
 //     util/load-test/escape-room-group.js
 //
 // Students beyond the number of seeded accounts share accounts, so several
-// virtual students act as one group member. Password logins are deliberately
-// excluded from the 500 ms p95 threshold. Wrong answers, lockouts and gated
+// virtual students act as one group member. Each member logs in once in
+// setup(), so password logins stay out of the measured window. Wrong answers, lockouts and gated
 // stages are expected GraphQL errors, not failures.
 //
 // GraphQL operations are sent as persisted operations. The hashes below match
@@ -70,6 +70,8 @@ const START_ATTEMPT_HASH =
   '665424056f466aa32ccbab942357390806c8beed347670e1e78ca9237865a306'
 const SESSION_PHASE_HASH =
   '87b34bd87947ad764d86ae608d39da5a981b61880f12bb4f163cfdf6b81ca658'
+const GROUP_ACTIVITY_DETAILS_HASH =
+  '6ba01b078df262ea71b6d9944eaade002caa304766c2486f3d29ffda9d415905'
 const SUBMIT_DECISIONS_HASH =
   '6cb29556353c724b7db036d976a182d26c8b381f7cc1f23c1af6f5fdaca29a35'
 const PROGRESS_HASH =
@@ -181,6 +183,7 @@ export const options = {
     'http_req_duration{name:GetEscapeRoomProgress}': ['p(95)<500'],
     'http_req_duration{name:GetEscapeRoomProjector}': ['p(95)<500'],
     'http_req_duration{name:SubmitGroupActivityDecisions}': ['p(95)<500'],
+    'http_req_duration{name:GroupActivityDetails}': ['p(95)<500'],
     http_req_failed: ['rate<0.01'],
     checks: ['rate>0.99'],
   },
@@ -222,29 +225,66 @@ function isServerOk(response) {
 // Per-VU state; k6 keeps module variables separate for each VU.
 let session = null
 
-function loginStudent(member) {
-  // students join over a window instead of all in the same instant
+// Each seeded member logs in once before the test, and every virtual student
+// of that member reuses the token. In class students are already signed in
+// when the lecturer starts; hundreds of password hashes in one dev process
+// would otherwise measure the login, not the session polling.
+export function setup() {
+  const tokens = []
+  const instanceIds = []
+  for (const member of members) {
+    const login = persisted(
+      'LoginParticipant',
+      LOGIN_PARTICIPANT_HASH,
+      { usernameOrEmail: member.username, password: participantPassword },
+      { headers: { Origin: pwaOrigin } }
+    )
+    const token = (login.cookies.participant_token || [])[0]?.value ?? null
+    check(login, { 'participant login': () => Boolean(token) })
+    tokens.push(token)
+    if (!token) {
+      instanceIds.push(null)
+      continue
+    }
+    // The group activity instance is created once per group when a member
+    // starts the activity; answers address that instance. On a repeated run
+    // the instance exists already and the start returns null.
+    const headers = { Cookie: `participant_token=${token}`, Origin: pwaOrigin }
+    persisted(
+      'StartGroupActivity',
+      START_GROUP_ACTIVITY_HASH,
+      { activityId: groupActivityId, groupId: member.groupId },
+      { headers }
+    )
+    const details = persisted(
+      'GroupActivityDetails',
+      GROUP_ACTIVITY_DETAILS_HASH,
+      { activityId: groupActivityId, groupId: member.groupId },
+      { headers }
+    )
+    instanceIds.push(
+      hasData(details)
+        ? details.json('data.groupActivityDetails.activityInstance.id')
+        : null
+    )
+  }
+  return { tokens, instanceIds }
+}
+
+function joinStudent(member, token, instanceId) {
+  // students open the activity over a window instead of all in one instant
   sleep(Math.random() * joinSpread)
-  const login = persisted(
-    'LoginParticipant',
-    LOGIN_PARTICIPANT_HASH,
-    { usernameOrEmail: member.username, password: participantPassword },
-    { headers: { Origin: pwaOrigin } }
-  )
-  const token = (login.cookies.participant_token || [])[0]?.value
-  if (!check(login, { 'participant login': () => Boolean(token) })) return null
+  if (!token) return null
 
   const cookie = { Cookie: `participant_token=${token}` }
+  // opening the page loads the full group activity details once
   const open = persisted(
-    'StartGroupActivity',
-    START_GROUP_ACTIVITY_HASH,
+    'GroupActivityDetails',
+    GROUP_ACTIVITY_DETAILS_HASH,
     { activityId: groupActivityId, groupId: member.groupId },
     { headers: { ...cookie, Origin: pwaOrigin } }
   )
   check(open, { 'group activity opened': hasData })
-  const instanceId = hasData(open)
-    ? open.json('data.startGroupActivity.id')
-    : null
   return {
     member,
     headers: { ...cookie, Origin: pwaOrigin },
@@ -254,9 +294,14 @@ function loginStudent(member) {
   }
 }
 
-export function student() {
+export function student(data) {
   if (!session) {
-    session = loginStudent(members[(exec.vu.idInInstance - 1) % members.length])
+    const index = (exec.vu.idInInstance - 1) % members.length
+    session = joinStudent(
+      members[index],
+      data.tokens[index],
+      data.instanceIds[index]
+    )
     if (!session) {
       sleep(3)
       return
