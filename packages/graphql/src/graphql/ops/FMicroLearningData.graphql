@@ -19,6 +19,8 @@ fragment MicroLearningData on MicroLearning {
     skipPenalty
     bonusSeconds
     introText
+    sessionClock
+    sessionPhase
   }
   escapeRoomAttempts {
     id

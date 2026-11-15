@@ -26,7 +26,8 @@ function ManageFeatureFlagProvider({
     (router.pathname === '/quizzes/[id]/evaluation' &&
       (!router.isReady || router.query.hmac !== undefined)) ||
     // the escape-room projector opens on classroom screens without a login
-    router.pathname === '/quizzes/[id]/escape-projector/[blockId]'
+    router.pathname === '/quizzes/[id]/escape-projector/[blockId]' ||
+    router.pathname === '/courses/grading/groupActivity/[id]/escape-projector'
   const { data } = useQuery(ManageFeaturePreferencesDocument, {
     fetchPolicy: 'cache-and-network',
     // HMAC evaluation links are public. An identity query on those links would

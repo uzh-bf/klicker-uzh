@@ -11,6 +11,8 @@ query GetGradingGroupActivity($id: String!) {
     canResetEscapeRoom
     escapeRoomConfig {
       id
+      sessionClock
+      sessionPhase
     }
 
     clues {

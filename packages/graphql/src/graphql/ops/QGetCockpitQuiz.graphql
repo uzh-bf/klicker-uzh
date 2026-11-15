@@ -40,6 +40,8 @@ query GetCockpitQuiz($id: String!) {
         skipPenalty
         bonusSeconds
         introText
+        sessionClock
+        sessionPhase
       }
       elements {
         id
@@ -62,6 +64,8 @@ query GetCockpitQuiz($id: String!) {
         skipPenalty
         bonusSeconds
         introText
+        sessionClock
+        sessionPhase
       }
     }
     confusionSummary {

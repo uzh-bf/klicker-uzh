@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import Layout from '../../../../components/Layout'
+import EscapeRoomSessionControls from '../../../../components/courses/groupActivity/EscapeRoomSessionControls'
 import FinalizeGradingModal from '../../../../components/courses/groupActivity/FinalizeGradingModal'
 import GroupActivityGradingStack from '../../../../components/courses/groupActivity/GroupActivityGradingStack'
 import GroupActivitySubmission from '../../../../components/courses/groupActivity/GroupActivitySubmission'
@@ -110,6 +111,35 @@ function GroupActivityGrading() {
           <H2 className={{ root: 'border-b p-4' }}>
             {t('manage.evaluation.escapeRoomTab')}
           </H2>
+          {groupActivity.escapeRoomConfig?.sessionClock && (
+            <EscapeRoomSessionControls
+              groupActivityId={groupActivity.id}
+              sessionPhase={groupActivity.escapeRoomConfig.sessionPhase}
+              status={groupActivity.status}
+              scheduledEndAt={groupActivity.scheduledEndAt}
+              onChanged={() =>
+                Promise.all([refetchEscapeRoom(), refetchGroupActivity()])
+              }
+            />
+          )}
+          {escapeRoomData.escapeRoomProgress.projectorDigest && (
+            <div className="flex justify-end px-4 pt-4">
+              <Button
+                onClick={() =>
+                  window.open(
+                    `/courses/grading/groupActivity/${groupActivity.id}/escape-projector?digest=${encodeURIComponent(escapeRoomData.escapeRoomProgress!.projectorDigest!)}`,
+                    '_blank',
+                    'noopener'
+                  )
+                }
+                data={{ cy: 'escape-room-open-projector' }}
+              >
+                <Button.Label>
+                  {t('manage.groupActivity.escapeSessionProjector')}
+                </Button.Label>
+              </Button>
+            </div>
+          )}
           <EscapeRoomProgress
             activityType="groupActivity"
             activityId={groupActivity.id}

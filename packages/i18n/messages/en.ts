@@ -3084,6 +3084,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
       escapeRoomMode: 'Escape Room',
+      escapeRoomSessionClock: 'Lecturer-controlled session',
       escapeRoomTimeLimit: 'Time limit',
       escapeRoomTimeLimitTooltip:
         'Minutes a student or group has for the whole Escape Room after starting the attempt. Required.',
@@ -3525,6 +3526,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       participationNote:
         '{started, plural, one {# team playing} other {# teams playing}}, {ranked} on the leaderboard',
       finalRanking: 'Final ranking',
+      groupLobbyHeading: 'The Escape Room starts soon',
+      paused: 'Paused',
       error:
         'The projector view is unavailable. Please check the link or open it again from the cockpit.',
     },
@@ -5107,6 +5110,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       finalizeGradingSuccess: 'Grading was finalized successfully.',
       finalizeGradingError:
         'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
+      escapeSessionTitle: 'Escape Room session',
+      escapeSessionPhase: 'Phase',
+      escapeSessionPhaseLobby: 'Lobby',
+      escapeSessionPhaseRunning: 'Running',
+      escapeSessionPhasePaused: 'Paused',
+      escapeSessionPhaseEnded: 'Ended',
+      escapeSessionWindowEnd: 'Window ends: {datetime}',
+      escapeSessionStart: 'Start',
+      escapeSessionPause: 'Pause',
+      escapeSessionResume: 'Resume',
+      escapeSessionEnd: 'End',
+      escapeSessionEndConfirm:
+        'Ending the session is final. Running attempts are finished and all stages become visible again. Groups cannot play or be reset afterwards.',
+      escapeSessionError:
+        'The session phase could not be changed. Please reload and try again.',
+      escapeSessionProjector: 'Open projector view',
       alreadyGraded:
         'The grading for this group activity has already been finalized and can no longer be changed.',
       nOfTotalPoints: '{number}/{total} Points',

@@ -3125,6 +3125,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
       escapeRoomMode: 'Escape Room',
+      escapeRoomSessionClock: 'Von Dozierenden gesteuerte Sitzung',
       escapeRoomTimeLimit: 'Zeitlimit',
       escapeRoomTimeLimitTooltip:
         'Minuten, die Studierende oder Gruppen nach dem Start des Versuchs für den gesamten Escape Room haben. Pflichtfeld.',
@@ -3589,6 +3590,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       participationNote:
         '{started, plural, one {# Team spielt} other {# Teams spielen}}, {ranked} in der Rangliste',
       finalRanking: 'Schlussrangliste',
+      groupLobbyHeading: 'Der Escape Room beginnt gleich',
+      paused: 'Pausiert',
       error:
         'Die Projektoransicht ist nicht verfügbar. Bitte den Link prüfen oder im Cockpit erneut öffnen.',
     },
@@ -5209,6 +5212,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       finalizeGradingSuccess: 'Die Bewertung wurde erfolgreich abgeschlossen.',
       finalizeGradingError:
         'Beim Abschliessen der Bewertung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass alle Abgaben bewertet wurden und versuchen Sie es erneut.',
+      escapeSessionTitle: 'Escape-Room-Sitzung',
+      escapeSessionPhase: 'Phase',
+      escapeSessionPhaseLobby: 'Lobby',
+      escapeSessionPhaseRunning: 'Läuft',
+      escapeSessionPhasePaused: 'Pausiert',
+      escapeSessionPhaseEnded: 'Beendet',
+      escapeSessionWindowEnd: 'Zeitfenster endet: {datetime}',
+      escapeSessionStart: 'Starten',
+      escapeSessionPause: 'Pausieren',
+      escapeSessionResume: 'Fortsetzen',
+      escapeSessionEnd: 'Beenden',
+      escapeSessionEndConfirm:
+        'Das Beenden der Sitzung ist endgültig. Laufende Versuche werden abgeschlossen und alle Stufen werden wieder sichtbar. Danach können Gruppen weder spielen noch zurückgesetzt werden.',
+      escapeSessionError:
+        'Die Sitzungsphase konnte nicht geändert werden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.',
+      escapeSessionProjector: 'Projektoransicht öffnen',
       alreadyGraded:
         'Die Bewertungen für diese Gruppenaktivität wurden bereits finalisiert und können nicht mehr geändert werden.',
       nOfTotalPoints: '{number}/{total} Punkte',
