@@ -1009,7 +1009,19 @@ async function getGroupActivityProjector(
     phase,
     paused,
     serverNow: new Date(now),
-    closesAt: config.groupActivity.scheduledEndAt,
+    // Groups are timed from their own start, so the headline countdown follows
+    // the group that plays longest; the activity window can be days away.
+    // While paused the countdown is hidden behind the pause notice.
+    closesAt:
+      phase === 'RUNNING' && !paused
+        ? rows.reduce<Date | null>(
+            (latest, row) =>
+              row.endsAt && (!latest || row.endsAt > latest)
+                ? row.endsAt
+                : latest,
+            null
+          )
+        : null,
     timeLimit: progress.timeLimit,
     totalStages: progress.totalStacks,
     startedCount: started.length,

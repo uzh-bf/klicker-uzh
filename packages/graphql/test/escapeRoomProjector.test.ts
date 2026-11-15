@@ -357,6 +357,9 @@ describe('Group Activity escape-room projector', () => {
     expect(data).toMatchObject({ phase: 'RUNNING', paused: false })
     expect(data.rows).toHaveLength(1)
     expect(data.rows[0].displayName).toBe(fixture.group.name)
+    // the headline countdown follows the group deadline, not the window end
+    expect(data.closesAt).not.toBeNull()
+    expect(data.closesAt).toBe(data.rows[0].endsAt)
     expect(JSON.stringify(data)).not.toContain(fixture.group.id)
     expect(JSON.stringify(data)).not.toContain(fixture.attempt.id)
   })
@@ -397,6 +400,7 @@ describe('Group Activity escape-room projector', () => {
     expect(paused).toMatchObject({ phase: 'RUNNING', paused: true })
     expect(paused.stages[0].debrief).toBeNull()
     expect(paused.rows[0].endsAt).not.toBeNull()
+    expect(paused.closesAt).toBeNull()
 
     await prisma.escapeRoomConfig.update({
       where: { groupActivityId: fixture.groupActivity.id },
