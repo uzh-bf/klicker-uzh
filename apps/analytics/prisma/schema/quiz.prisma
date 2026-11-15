@@ -479,6 +479,14 @@ enum EscapeRoomStatus {
   EXPIRED
 }
 
+// Lecturer-driven session of a Group Activity escape room (sessionClock on).
+enum EscapeRoomSessionPhase {
+  LOBBY
+  RUNNING
+  PAUSED
+  ENDED
+}
+
 model EscapeRoomConfig {
   id             String  @id @default(uuid()) @db.Uuid
   timeLimit      Int
@@ -494,6 +502,17 @@ model EscapeRoomConfig {
   revealPenalty      Int   @default(0)
   skipPenalty        Int?
   bonusSeconds       Int?
+
+  // Group Activity session clock. With sessionClock off the other fields stay
+  // at their defaults and play is only bounded by the activity window.
+  // sessionPauses lists closed pauses as [{ startedAt, endedAt }] (ISO
+  // strings); sessionPausedAt marks the pause that is still open.
+  sessionClock     Boolean                @default(false)
+  sessionPhase     EscapeRoomSessionPhase @default(LOBBY)
+  sessionStartedAt DateTime?
+  sessionEndedAt   DateTime?
+  sessionPausedAt  DateTime?
+  sessionPauses    Json                   @default("[]")
 
   practiceQuiz   PracticeQuiz?  @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade)
   practiceQuizId String?        @unique @db.Uuid
