@@ -8,6 +8,7 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getEscapeRoomActiveSeconds,
   isEscapeRoomExpired,
 } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
@@ -19,6 +20,10 @@ import {
   isClearedWithoutAnswer,
   parseEscapeRoomStageOutcomes,
 } from './escapeRoomStageOutcomes.js'
+import {
+  getEscapeRoomEffectivePhase,
+  getGroupEscapeRoomSession,
+} from './escapeRooms.js'
 import {
   getGroupEscapeRoomStages,
   parseGroupEscapeRoomStageResponses,
@@ -298,7 +303,9 @@ export async function getEscapeRoomProgress(
     include: {
       practiceQuiz: { select: { courseId: true } },
       microLearning: { select: { courseId: true } },
-      groupActivity: { select: { courseId: true } },
+      groupActivity: {
+        select: { courseId: true, status: true, scheduledEndAt: true },
+      },
       elementBlock: {
         select: { liveQuiz: { select: { courseId: true } } },
       },
@@ -379,12 +386,23 @@ export async function getEscapeRoomProgress(
       })
     )?.status === DB.ElementBlockStatus.EXECUTED
 
+  // Pauses of a Group Activity session clock do not count as play time, and a
+  // session that ended (or whose activity closed) ends every running attempt.
+  const groupSession = getGroupEscapeRoomSession(config)
+  const sessionEnded =
+    groupSession != null &&
+    config.groupActivity != null &&
+    getEscapeRoomEffectivePhase(config, config.groupActivity) ===
+      DB.EscapeRoomSessionPhase.ENDED
+
   const now = Date.now()
   const elapsedAttemptIds = attempts
     .filter(
       (attempt) =>
         attempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
-        (blockClosed || isEscapeRoomExpired(attempt, now))
+        (blockClosed ||
+          sessionEnded ||
+          isEscapeRoomExpired(attempt, now, groupSession))
     )
     .map((attempt) => attempt.id)
   if (elapsedAttemptIds.length > 0) {
@@ -533,7 +551,11 @@ export async function getEscapeRoomProgress(
 
     const timeSpentSeconds = attempt.completedAt
       ? Math.round(
-          (attempt.completedAt.getTime() - attempt.startedAt.getTime()) / 1000
+          getEscapeRoomActiveSeconds(
+            attempt.startedAt,
+            attempt.completedAt,
+            groupSession
+          )
         )
       : null
     const activeLockoutUntil =
@@ -561,6 +583,7 @@ export async function getEscapeRoomProgress(
         startedAt: attempt.startedAt,
         penaltySeconds: attempt.penaltySeconds,
         stages: getScoredStages(attempt, liveQuizStageIds.length),
+        session: groupSession,
       }),
     }
   }

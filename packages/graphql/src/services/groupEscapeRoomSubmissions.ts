@@ -25,6 +25,8 @@ import {
   isGroupEscapeRoomResponseType,
 } from './escapeRoomResponseValidation.js'
 import {
+  assertEscapeRoomSessionRunning,
+  getGroupEscapeRoomSession,
   getRemainingSecondsUntil,
   releaseEscapeRoomLifecycleClaim,
 } from './escapeRooms.js'
@@ -338,6 +340,11 @@ export async function submitEscapeRoomGroupActivityDecisions(
         }
 
         const config = transactionInstance.groupActivity.escapeRoomConfig
+        // First rule after the window: nothing is accepted outside a running
+        // session, so a paused or ended session never reports lockouts or
+        // missing attempts instead.
+        assertEscapeRoomSessionRunning(config)
+        const session = getGroupEscapeRoomSession(config)
         const rules = getEscapeRoomRules(config)
         const attempt = await prisma.escapeRoomAttempt.findUnique({
           where: { groupId_groupActivityId: { groupId, groupActivityId } },
@@ -400,7 +407,7 @@ export async function submitEscapeRoomGroupActivityDecisions(
             }
           )
         }
-        if (isEscapeRoomExpired(attempt)) {
+        if (isEscapeRoomExpired(attempt, undefined, session)) {
           if (bonusAfterCompletion) {
             throw new GraphQLError('Escape room time has expired', {
               extensions: { code: 'ESCAPE_ROOM_EXPIRED' },

@@ -50,22 +50,75 @@ export function getEscapeRoomLifecycleClaimKey(
   return `escape-room:${targetKind}:${targetId}:${actorId}:lifecycle`
 }
 
+// Pause state of a Group Activity session clock. sessionPauses lists the
+// closed pauses as [{ startedAt, endedAt }]; sessionPausedAt marks a pause that
+// is still open and lasts until it is resumed.
+export interface EscapeRoomSessionTiming {
+  sessionClock: boolean
+  sessionPauses: unknown
+  sessionPausedAt?: Date | string | null
+}
+
+function getEscapeRoomPauseIntervals(
+  session: EscapeRoomSessionTiming
+): Array<[number, number]> {
+  const intervals: Array<[number, number]> = []
+  if (Array.isArray(session.sessionPauses)) {
+    for (const entry of session.sessionPauses) {
+      const start = new Date(entry?.startedAt).getTime()
+      const end = new Date(entry?.endedAt).getTime()
+      if (!Number.isNaN(start) && !Number.isNaN(end) && end > start) {
+        intervals.push([start, end])
+      }
+    }
+  }
+  if (session.sessionPausedAt) {
+    const start = new Date(session.sessionPausedAt).getTime()
+    if (!Number.isNaN(start)) intervals.push([start, Number.POSITIVE_INFINITY])
+  }
+  return intervals
+}
+
+/**
+ * Seconds of play between two instants: the wall-clock span minus every pause
+ * that overlaps it. Without a session, or with the session clock off, nothing
+ * is subtracted. An open pause covers everything after its start.
+ */
+export function getEscapeRoomActiveSeconds(
+  from: Date | string | number,
+  to: Date | string | number,
+  session?: EscapeRoomSessionTiming | null
+) {
+  const start = new Date(from).getTime()
+  const end = new Date(to).getTime()
+  let pausedMs = 0
+  if (session?.sessionClock) {
+    for (const [pauseStart, pauseEnd] of getEscapeRoomPauseIntervals(session)) {
+      pausedMs += Math.max(
+        0,
+        Math.min(end, pauseEnd) - Math.max(start, pauseStart)
+      )
+    }
+  }
+  return (end - start - pausedMs) / 1000
+}
+
 export function isEscapeRoomExpired(
   attempt: {
     startedAt: Date | string
     timeLimit: number
     penaltySeconds?: number
   },
-  now = Date.now()
+  now = Date.now(),
+  session?: EscapeRoomSessionTiming | null
 ) {
   // Penalties count toward the ranked time only; they never shorten play.
-  const deadline =
-    new Date(attempt.startedAt).getTime() +
-    (attempt.timeLimit + ESCAPE_ROOM_GRACE_SECONDS) * 1000
-
   // Preserve the established action-grace contract: the exact deadline is
   // still valid; the attempt expires immediately after it.
-  return now > deadline
+  return (
+    getEscapeRoomActiveSeconds(attempt.startedAt, now, session) >
+    attempt.timeLimit + ESCAPE_ROOM_GRACE_SECONDS
+  )
 }
 
 export function getCurrentEscapeRoomInstance<T extends { id: number }>(

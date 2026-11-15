@@ -1,6 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 
+export const EscapeRoomSessionPhase = builder.enumType(
+  'EscapeRoomSessionPhase',
+  { values: Object.values(DB.EscapeRoomSessionPhase) }
+)
+
 export const EscapeRoomConfigRef =
   builder.objectRef<DB.EscapeRoomConfig>('EscapeRoomConfig')
 
@@ -17,6 +22,21 @@ export const EscapeRoomConfig = EscapeRoomConfigRef.implement({
     revealPenalty: t.exposeInt('revealPenalty'),
     skipPenalty: t.exposeInt('skipPenalty', { nullable: true }),
     bonusSeconds: t.exposeInt('bonusSeconds', { nullable: true }),
+    sessionClock: t.exposeBoolean('sessionClock'),
+    // Stored phase; the effective phase also reflects the activity window.
+    sessionPhase: t.expose('sessionPhase', { type: EscapeRoomSessionPhase }),
+    sessionStartedAt: t.expose('sessionStartedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    sessionEndedAt: t.expose('sessionEndedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    sessionPausedAt: t.expose('sessionPausedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
 
     practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     microLearningId: t.exposeString('microLearningId', { nullable: true }),

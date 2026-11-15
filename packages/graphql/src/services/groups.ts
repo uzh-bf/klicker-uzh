@@ -41,6 +41,8 @@ import {
 } from './activities.js'
 import { isGroupEscapeRoomResponseType } from './escapeRoomResponseValidation.js'
 import {
+  endEscapeRoomSession,
+  getEscapeRoomEffectivePhase,
   getEscapeRoomRulesData,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
@@ -863,6 +865,7 @@ interface CreateGroupActivityArgs {
   escapeRoomHintPenalty?: number | null
   escapeRoomIntroText?: string | null
   escapeRoomRules?: IEscapeRoomRulesInput | null
+  escapeRoomSessionClock?: boolean | null
 }
 
 function validateGroupEscapeRoomComposition({
@@ -936,6 +939,7 @@ export async function manipulateGroupActivity(
     escapeRoomHintPenalty,
     escapeRoomIntroText,
     escapeRoomRules,
+    escapeRoomSessionClock,
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
@@ -1101,6 +1105,7 @@ export async function manipulateGroupActivity(
         hintPenalty: escapeRoomHintPenalty ?? 30,
         lockoutSeconds: 5,
         introText: escapeRoomIntroText?.trim() || null,
+        sessionClock: escapeRoomSessionClock ?? false,
         ...getEscapeRoomRulesData(escapeRoomRules),
       }
     : null
@@ -1124,6 +1129,10 @@ export async function manipulateGroupActivity(
                 timeLimit: escapeRoomConfigData.timeLimit,
                 hintPenalty: escapeRoomConfigData.hintPenalty,
                 introText: escapeRoomConfigData.introText,
+                // An edit without the switch keeps the stored setting.
+                ...(escapeRoomSessionClock != null
+                  ? { sessionClock: escapeRoomSessionClock }
+                  : {}),
                 ...getEscapeRoomRulesData(escapeRoomRules),
               },
             },
@@ -1390,8 +1399,17 @@ function maskLockedGroupEscapeRoomStages<
   },
 >(
   stacks: S[],
-  attempt: { status: DB.EscapeRoomStatus; stageResponses: unknown } | null
+  attempt: { status: DB.EscapeRoomStatus; stageResponses: unknown } | null,
+  // With the session clock on, stages stay hidden in the lobby and while the
+  // session is paused.
+  sessionPhase?: DB.EscapeRoomSessionPhase
 ): S[] {
+  if (
+    sessionPhase === DB.EscapeRoomSessionPhase.LOBBY ||
+    sessionPhase === DB.EscapeRoomSessionPhase.PAUSED
+  ) {
+    return stacks.map((stack) => ({ ...stack, elements: [] }))
+  }
   if (attempt?.status === DB.EscapeRoomStatus.COMPLETED) return stacks
   if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
     return stacks.map((stack) => ({ ...stack, elements: [] }))
@@ -1493,6 +1511,22 @@ export async function getGroupActivityDetails(
     },
   })
 
+  // With the session clock on, the phase decides what the team may see and do;
+  // an effectively ended session finalizes the attempt that was still running.
+  const sessionPhase = groupActivity.escapeRoomConfig?.sessionClock
+    ? getEscapeRoomEffectivePhase(groupActivity.escapeRoomConfig, groupActivity)
+    : undefined
+  if (sessionPhase === DB.EscapeRoomSessionPhase.ENDED) {
+    await ctx.prisma.escapeRoomAttempt.updateMany({
+      where: {
+        groupId,
+        groupActivityId: activityId,
+        status: DB.EscapeRoomStatus.IN_PROGRESS,
+      },
+      data: { status: DB.EscapeRoomStatus.EXPIRED },
+    })
+  }
+
   const attempt = groupActivity.escapeRoomConfig
     ? await ctx.prisma.escapeRoomAttempt.findUnique({
         where: {
@@ -1503,11 +1537,17 @@ export async function getGroupActivityDetails(
     : null
 
   // Locked escape-room stages must not reach the participant before the team
-  // clears the stage in front of them.
+  // clears the stage in front of them. After the session ended all stages are
+  // shown again.
   const visibleStacks =
     groupActivity.escapeRoomConfig &&
-    groupActivity.status === DB.PublicationStatus.PUBLISHED
-      ? maskLockedGroupEscapeRoomStages(groupActivity.stacks, attempt)
+    groupActivity.status === DB.PublicationStatus.PUBLISHED &&
+    sessionPhase !== DB.EscapeRoomSessionPhase.ENDED
+      ? maskLockedGroupEscapeRoomStages(
+          groupActivity.stacks,
+          attempt,
+          sessionPhase
+        )
       : groupActivity.stacks
 
   return {
@@ -2055,13 +2095,18 @@ export async function endGroupActivity(
   }
 
   // end the group activity and unset the completion task it
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id },
-    data: {
-      status: DB.PublicationStatus.ENDED,
-      scheduledEndAt: new Date(),
-      scheduledCompletionTaskId: null,
-    },
+  const updatedGroupActivity = await ctx.prisma.$transaction(async (prisma) => {
+    const now = new Date()
+    const ended = await prisma.groupActivity.update({
+      where: { id },
+      data: {
+        status: DB.PublicationStatus.ENDED,
+        scheduledEndAt: now,
+        scheduledCompletionTaskId: null,
+      },
+    })
+    await endEscapeRoomSession(prisma, id, now)
+    return ended
   })
 
   // trigger subscription to immediately update student frontend
@@ -2860,10 +2905,16 @@ export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGro
       }
 
       // end the group activity
-      const updatedGroupActivity = await globalCtx.prisma.groupActivity.update({
-        where: { id: groupActivityId },
-        data: { status: DB.PublicationStatus.ENDED },
-      })
+      const updatedGroupActivity = await globalCtx.prisma.$transaction(
+        async (prisma) => {
+          const ended = await prisma.groupActivity.update({
+            where: { id: groupActivityId },
+            data: { status: DB.PublicationStatus.ENDED },
+          })
+          await endEscapeRoomSession(prisma, groupActivityId)
+          return ended
+        }
+      )
 
       await sendTeamsNotification({
         scope: 'hatchet/group-activity-end',

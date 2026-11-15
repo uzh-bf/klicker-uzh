@@ -19,6 +19,8 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       skipPenalty
       bonusSeconds
       introText
+      sessionClock
+      sessionPhase
     }
     escapeRoomAttempts {
       id
@@ -37,6 +39,8 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       status
       completedAt
       lockoutUntil
+      lockoutRemainingSeconds
+      sessionPhase
       stageDecisions {
         instanceId
         type

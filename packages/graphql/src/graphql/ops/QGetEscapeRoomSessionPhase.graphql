@@ -1,0 +1,3 @@
+query GetEscapeRoomSessionPhase($groupActivityId: String!, $groupId: String!) {
+  escapeRoomSessionPhase(groupActivityId: $groupActivityId, groupId: $groupId)
+}

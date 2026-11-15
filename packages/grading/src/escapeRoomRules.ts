@@ -2,6 +2,11 @@
 // adapters, the progress service and the Response API call these functions so
 // that the same answer sequence costs the same time in every mode.
 
+import {
+  type EscapeRoomSessionTiming,
+  getEscapeRoomActiveSeconds,
+} from '@klicker-uzh/types'
+
 export type EscapeRoomStageOutcome =
   | 'SOLVED'
   | 'REVEALED'
@@ -115,10 +120,13 @@ export function scoreEscapeRoomAttempt({
   startedAt,
   penaltySeconds,
   stages,
+  session,
 }: {
   startedAt: Date | string
   penaltySeconds: number
   stages: readonly EscapeRoomScoredStage[]
+  // Group Activity session clock: pauses do not count toward ranked time.
+  session?: EscapeRoomSessionTiming | null
 }): EscapeRoomAttemptScore {
   let solvedStages = 0
   let revealedStages = 0
@@ -149,7 +157,7 @@ export function scoreEscapeRoomAttempt({
       lastAt === null
         ? null
         : Math.max(
-            Math.round((lastAt - new Date(startedAt).getTime()) / 1000),
+            Math.round(getEscapeRoomActiveSeconds(startedAt, lastAt, session)),
             0
           ) +
           penaltySeconds -
