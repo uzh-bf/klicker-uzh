@@ -182,6 +182,7 @@ export const options = {
     'http_req_duration{name:GetEscapeRoomProjector}': ['p(95)<500'],
     'http_req_duration{name:SubmitGroupActivityDecisions}': ['p(95)<500'],
     http_req_failed: ['rate<0.01'],
+    checks: ['rate>0.99'],
   },
 }
 
@@ -282,8 +283,13 @@ export function student() {
       { groupActivityId, groupId: session.member.groupId },
       { headers: session.headers }
     )
-    check(start, { 'attempt request served': isServerOk })
-    session.attemptStarted = true
+    // a served request can still carry a GraphQL error (e.g. a start conflict),
+    // so the smoke only counts a start that returned an attempt
+    const started = check(start, {
+      'attempt started': (res) =>
+        isServerOk(res) && !!res.json('data.startEscapeRoomAttempt.id'),
+    })
+    if (started) session.attemptStarted = true
   }
 
   const now = Date.now() / 1000

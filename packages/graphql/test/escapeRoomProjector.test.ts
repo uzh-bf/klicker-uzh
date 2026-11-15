@@ -383,6 +383,26 @@ describe('Group Activity escape-room projector', () => {
     }
   })
 
+  it('shows the lobby without debriefs before a session-clock activity is published', async () => {
+    const fixture = await seedGroup({ phase: DB.EscapeRoomSessionPhase.LOBBY })
+    await prisma.elementInstance.update({
+      where: { id: fixture.groupActivity.stacks[0]!.elements[0]!.id },
+      data: { options: { escapeRoomDebrief: 'Debrief text' } as any },
+    })
+    await prisma.groupActivity.update({
+      where: { id: fixture.groupActivity.id },
+      data: { status: DB.PublicationStatus.SCHEDULED },
+    })
+    const result = await run(
+      lecturerCtx,
+      { groupActivityId: fixture.groupActivity.id },
+      GROUP_QUERY
+    )
+    const data = result.data?.escapeRoomProjector as any
+    expect(data.phase).toBe('LOBBY')
+    expect(data.stages[0].debrief).toBeNull()
+  })
+
   it('shows a paused session as running with the paused flag, and withholds the debrief until it is closed', async () => {
     const fixture = await seedGroup({ phase: DB.EscapeRoomSessionPhase.PAUSED })
     await prisma.escapeRoomConfig.update({

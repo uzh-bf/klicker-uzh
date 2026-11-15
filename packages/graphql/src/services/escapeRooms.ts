@@ -199,14 +199,17 @@ export function getEscapeRoomLockoutRemainingSeconds(
 }
 
 // The phase players and lecturers see: the stored phase, unless the session
-// ended or the activity left its published window, which ends it for good.
+// ended or the activity has ended or passed its window, which ends it for
+// good. A draft or scheduled activity keeps its stored lobby phase, so a
+// projector opened before publication shows the lobby, not the results.
 export function getEscapeRoomEffectivePhase(
   config: Pick<DB.EscapeRoomConfig, 'sessionPhase'>,
   activity: Pick<DB.GroupActivity, 'status' | 'scheduledEndAt'>,
   now = Date.now()
 ): DB.EscapeRoomSessionPhase {
   return config.sessionPhase === DB.EscapeRoomSessionPhase.ENDED ||
-    activity.status !== DB.PublicationStatus.PUBLISHED ||
+    activity.status === DB.PublicationStatus.ENDED ||
+    activity.status === DB.PublicationStatus.GRADED ||
     now > activity.scheduledEndAt.getTime()
     ? DB.EscapeRoomSessionPhase.ENDED
     : config.sessionPhase
@@ -744,11 +747,26 @@ export async function startEscapeRoomAttempt(
     }
 
     try {
-      return activity.reference.kind === 'groupActivity'
-        ? await ctx.prisma.$transaction(run, {
+      if (activity.reference.kind !== 'groupActivity') {
+        return await run(ctx.prisma)
+      }
+      // With a session clock every group starts in the same second, so a
+      // serialization conflict is expected under load; retry it a few times
+      // before reporting it.
+      for (let retry = 0; ; retry++) {
+        try {
+          return await ctx.prisma.$transaction(run, {
             isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
           })
-        : await run(ctx.prisma)
+        } catch (error) {
+          const isConflict =
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'P2034'
+          if (!isConflict || retry >= 2) throw error
+        }
+      }
     } catch (error) {
       const code =
         typeof error === 'object' && error !== null && 'code' in error
