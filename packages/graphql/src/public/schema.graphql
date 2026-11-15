@@ -1579,6 +1579,7 @@ enum EscapeRoomProgressStatus {
 
 type EscapeRoomProjector {
   closesAt: Date
+  paused: Boolean!
   phase: EscapeRoomProjectorPhase!
   rankedCount: Int!
   rows: [EscapeRoomProjectorRow!]!

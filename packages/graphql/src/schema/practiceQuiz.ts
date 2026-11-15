@@ -519,6 +519,7 @@ export const EscapeRoomProjectorRef = builder.objectRef<IEscapeRoomProjector>(
 export const EscapeRoomProjector = EscapeRoomProjectorRef.implement({
   fields: (t) => ({
     phase: t.expose('phase', { type: EscapeRoomProjectorPhase }),
+    paused: t.exposeBoolean('paused'),
     serverNow: t.expose('serverNow', { type: 'Date' }),
     closesAt: t.expose('closesAt', { type: 'Date', nullable: true }),
     timeLimit: t.exposeInt('timeLimit'),
