@@ -391,7 +391,10 @@ export function registerGroupSessionClockTests() {
         timeout: 30_000,
       })
       await captureEvidence(member, 'group-session-paused-en-desktop.png')
-      await captureEvidence(page, 'group-session-controls-paused-en-desktop.png')
+      await captureEvidence(
+        page,
+        'group-session-controls-paused-en-desktop.png'
+      )
       await member.setViewportSize({ width: 390, height: 844 })
       await captureEvidence(member, 'group-session-paused-en-mobile.png')
       await member.setViewportSize({ width: 1440, height: 900 })

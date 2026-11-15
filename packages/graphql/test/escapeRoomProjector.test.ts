@@ -105,6 +105,9 @@ async function seedAttempt(
   return { participant, attempt }
 }
 
+// The projector digests are HMACs over APP_SECRET; CI does not set it.
+process.env.APP_SECRET = process.env.APP_SECRET ?? 'test-app-secret'
+
 describe('Live Quiz escape-room projector', () => {
   it('rejects wrong digests and the results-page digest', async () => {
     const { liveQuiz, block } = await seedBlock()
