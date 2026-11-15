@@ -101,6 +101,13 @@ export const GROUP = {
     { name: 'Vault Clue Beta', displayName: 'Clue Beta', content: 'south' },
   ],
 }
+// A second Group Activity with the lecturer-controlled session clock switched
+// on, so the first one keeps covering the plain group flow.
+export const GROUP_SESSION = {
+  ...GROUP,
+  name: 'Escape Room Session Group Activity',
+  displayName: 'Escape Room Session Group Activity Display',
+}
 export const LIVE = {
   name: 'Escape Room Live Quiz',
   displayName: 'Escape Room Live Quiz Display',

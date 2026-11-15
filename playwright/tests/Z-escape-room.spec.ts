@@ -13,7 +13,10 @@ import {
   loginLecturer,
   runTask,
 } from '../util/workflow.js'
-import { registerGroupEscapeRoomTests } from './escape-room/group.js'
+import {
+  registerGroupEscapeRoomTests,
+  registerGroupSessionClockTests,
+} from './escape-room/group.js'
 import { registerLiveQuizEscapeRoomTests } from './escape-room/live-quiz.js'
 import {
   registerMicrolearningCreationTest,
@@ -73,5 +76,6 @@ test.describe.serial('Escape room workflows', () => {
   registerQrFallbackTest()
   registerMicrolearningFlowTest()
   registerGroupEscapeRoomTests()
+  registerGroupSessionClockTests()
   registerLiveQuizEscapeRoomTests()
 })

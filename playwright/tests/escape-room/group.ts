@@ -13,6 +13,7 @@ import {
   COURSE,
   CT1,
   GROUP,
+  GROUP_SESSION,
   SC1,
   SC2,
   captureEvidence,
@@ -25,21 +26,24 @@ import {
 // Group-activity wizard flow with the shared escape-room settings enabled on
 // the settings step. Each answerable element of the single stack is one
 // ordered stage that the team unlocks and clears in turn.
-async function createEscapeRoomGroupActivity(page: Page) {
+async function createEscapeRoomGroupActivity(
+  page: Page,
+  { activity = GROUP, sessionClock = false } = {}
+) {
   await page.getByTestId('create-group-activity').click()
 
-  await page.getByTestId('insert-groupactivity-name').fill(GROUP.name)
+  await page.getByTestId('insert-groupactivity-name').fill(activity.name)
   await page.getByTestId('next-or-submit').click()
 
   await page.getByTestId('back-activity-creation').click()
   await page.getByTestId('next-or-submit').click()
   await page
     .getByTestId('insert-groupactivity-display-name')
-    .fill(GROUP.displayName)
+    .fill(activity.displayName)
   await page.getByTestId('insert-groupactivity-description').click()
   await page
     .getByTestId('insert-groupactivity-description')
-    .pressSequentially(GROUP.task)
+    .pressSequentially(activity.task)
   await page.getByTestId('next-or-submit').click()
 
   await selectOption(page, '[data-cy="select-course"]', COURSE)
@@ -73,11 +77,14 @@ async function createEscapeRoomGroupActivity(page: Page) {
   await expect(page.getByTestId('escape-room-time-limit')).toBeVisible()
   await page.getByTestId('escape-room-time-limit').fill('30')
   await page.getByTestId('escape-room-hint-penalty').fill('30')
-  await page.getByTestId('escape-room-intro-text').fill(GROUP.introText)
+  await page.getByTestId('escape-room-intro-text').fill(activity.introText)
+  if (sessionClock) {
+    await page.getByTestId('toggle-escape-room-session-clock').click()
+  }
   await page.getByTestId('next-or-submit').click()
 
   // group activities require at least two clues
-  for (const clue of GROUP.clues) {
+  for (const clue of activity.clues) {
     await page.getByTestId('add-group-activity-clue').click()
     await page.getByTestId('group-activity-clue-type').click()
     await page.getByTestId('group-activity-clue-type-string').click()
@@ -255,6 +262,172 @@ export function registerGroupEscapeRoomTests() {
     } finally {
       await member1.context().close()
       await member2.context().close()
+    }
+  })
+}
+
+// Lecturer-controlled session clock: the lecturer opens the lobby, starts,
+// pauses, resumes and ends the session while one group plays, and the
+// classroom projector follows along without a login.
+export function registerGroupSessionClockTests() {
+  test('Create and publish a session clock escape room group activity', async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await page.getByTestId('library').click()
+    await createEscapeRoomGroupActivity(page, {
+      activity: GROUP_SESSION,
+      sessionClock: true,
+    })
+    await page.getByTestId('open-activity-overview').click()
+    await page.getByTestId('tab-groupActivities').click()
+    await expect(
+      page.getByTestId(`activity-GROUP_ACTIVITY-${GROUP_SESSION.name}`)
+    ).toBeAttached({ timeout: 60_000 })
+    await page
+      .getByTestId(`publish-group-activity-${GROUP_SESSION.name}`)
+      .click()
+    await page.getByTestId('confirm-publish-action').click()
+    await expect(
+      page.getByTestId(`status-${GROUP_SESSION.name}-PUBLISHED`)
+    ).toBeAttached()
+  })
+
+  test('A lecturer starts, pauses, resumes and ends a session clock escape room while a group plays', async ({
+    browser,
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await page.getByTestId('courses').click()
+    await page.getByTestId(`course-list-button-${COURSE}`).click()
+    await page.getByTestId('tab-groupActivities').click()
+    await page
+      .getByTestId(`actions-GROUP_ACTIVITY-${GROUP_SESSION.name}`)
+      .click()
+    await page
+      .getByTestId(`monitor-group-activity-${GROUP_SESSION.name}`)
+      .click()
+
+    const controls = page.getByTestId('escape-session-controls')
+    await expect(controls).toHaveAttribute('data-phase', 'LOBBY', {
+      timeout: 30_000,
+    })
+
+    const member = await createStudentPage(browser)
+    let classroom: Page | undefined
+    try {
+      // the group opens the activity and waits in the lobby
+      await loginStudentPassword(member, { username: env('STUDENT_USERNAME') })
+      await member.getByTestId(`course-button-${COURSE}`).click()
+      await member.waitForURL(/\/course\//)
+      await member.reload()
+      await member.getByTestId('student-course-existing-group-0').click()
+      await member
+        .getByTestId(`open-group-activity-${GROUP_SESSION.displayName}`)
+        .click()
+      await member.getByTestId('start-group-activity').click()
+      await expect(member.getByTestId('escape-room-start')).toBeDisabled()
+      await expect(
+        member.getByTestId('escape-room-session-waiting')
+      ).toBeVisible()
+      await captureEvidence(member, 'group-session-lobby-en-desktop.png')
+      await captureEvidence(page, 'group-session-controls-lobby-en-desktop.png')
+
+      // starting the session enables the group's start button without a reload
+      await page.getByTestId('escape-session-start').click()
+      await expect(controls).toHaveAttribute('data-phase', 'RUNNING')
+      await expect(member.getByTestId('escape-room-start')).toBeEnabled({
+        timeout: 20_000,
+      })
+      await member.getByTestId('escape-room-start').click()
+      await expect(member.getByText(SC1.content).first()).toBeVisible()
+      await member.getByTestId('sc-1-answer-option-0').click()
+      await member.getByTestId('submit-group-activity').click()
+      await expect(member.getByText(SC2.content).first()).toBeVisible()
+      await captureEvidence(member, 'group-session-running-en-desktop.png')
+
+      // the projector opens in a new tab; a fresh context without cookies
+      // shows the same running session with the group's row
+      const [popup] = await Promise.all([
+        page.waitForEvent('popup'),
+        page.getByTestId('escape-room-open-projector').click(),
+      ])
+      const projectorUrl = popup.url()
+      await popup.close()
+      classroom = await createStudentPage(browser)
+      await classroom.goto(projectorUrl)
+      const projector = classroom.getByTestId('escape-projector')
+      await expect(projector).toHaveAttribute('data-phase', 'RUNNING', {
+        timeout: 30_000,
+      })
+      await expect(projector).toHaveAttribute('data-paused', 'false')
+      await expect(
+        classroom.getByTestId('escape-projector-row').first()
+      ).toBeVisible({ timeout: 30_000 })
+      await captureEvidence(
+        classroom,
+        'group-session-projector-running-en-desktop.png'
+      )
+
+      // pausing freezes the group's timer and hides the stage
+      await page.getByTestId('escape-session-pause').click()
+      await expect(controls).toHaveAttribute('data-phase', 'PAUSED')
+      await expect(member.getByTestId('escape-room-paused')).toBeVisible({
+        timeout: 20_000,
+      })
+      await expect(member.getByText(SC2.content)).not.toBeAttached()
+      const frozen = await member
+        .getByTestId('escape-room-paused-timer')
+        .innerText()
+      await member.waitForTimeout(3_000)
+      await expect(member.getByTestId('escape-room-paused-timer')).toHaveText(
+        frozen
+      )
+      await expect(projector).toHaveAttribute('data-paused', 'true', {
+        timeout: 30_000,
+      })
+      await captureEvidence(member, 'group-session-paused-en-desktop.png')
+      await captureEvidence(page, 'group-session-controls-paused-en-desktop.png')
+      await member.setViewportSize({ width: 390, height: 844 })
+      await captureEvidence(member, 'group-session-paused-en-mobile.png')
+      await member.setViewportSize({ width: 1440, height: 900 })
+
+      // resuming brings the stage back and the timer runs again
+      await page.getByTestId('escape-session-resume').click()
+      await expect(controls).toHaveAttribute('data-phase', 'RUNNING')
+      await expect(member.getByTestId('escape-room-paused')).not.toBeAttached({
+        timeout: 20_000,
+      })
+      await expect(member.getByText(SC2.content).first()).toBeVisible()
+      await expect(projector).toHaveAttribute('data-paused', 'false', {
+        timeout: 30_000,
+      })
+
+      // ending is final: the group sees the ended dialog and the projector closes
+      await page.getByTestId('escape-session-end').click()
+      await page.getByTestId('confirm-escape-session-end').click()
+      await expect(controls).toHaveAttribute('data-phase', 'ENDED')
+      await expect(member.getByTestId('escape-room-expired')).toHaveAttribute(
+        'data-session-ended',
+        'true',
+        { timeout: 20_000 }
+      )
+      await captureEvidence(member, 'group-session-ended-en-desktop.png')
+      await expect(projector).toHaveAttribute('data-phase', 'CLOSED', {
+        timeout: 30_000,
+      })
+      await captureEvidence(
+        classroom,
+        'group-session-projector-closed-en-desktop.png'
+      )
+      await captureEvidence(page, 'group-session-controls-ended-en-desktop.png')
+    } finally {
+      await member.context().close()
+      await classroom?.context().close()
     }
   })
 }
