@@ -258,12 +258,15 @@ async function seedEscapeRoomGroupActivity(
     participantIds,
     timeLimit,
     lockoutSeconds,
+    session,
   }: {
     elements: DB.Element[]
     courseId: string
     participantIds: string[]
     timeLimit?: number
     lockoutSeconds?: number
+    // Turns the session clock on at the given stored phase.
+    session?: { phase: DB.EscapeRoomSessionPhase }
   },
   ctx: ContextWithUser
 ) {
@@ -318,11 +321,15 @@ async function seedEscapeRoomGroupActivity(
         create: {
           timeLimit: timeLimit ?? 3600,
           lockoutSeconds: lockoutSeconds ?? 5,
+          ...(session
+            ? { sessionClock: true, sessionPhase: session.phase }
+            : {}),
         },
       },
     },
     include: {
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
+      escapeRoomConfig: true,
     },
   })
 
