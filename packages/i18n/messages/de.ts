@@ -1390,6 +1390,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
       escapeRoomExpiredDesc:
         'Dieser Versuch ist beendet und kann nicht neu gestartet werden.',
+      escapeRoomSessionWaiting:
+        'Warten, bis die Dozentin oder der Dozent den Escape Room startet. Diese Seite aktualisiert sich automatisch.',
+      escapeRoomSessionWaitingButton: 'Warten auf den Start',
+      escapeRoomSessionPausedNoStart:
+        'Der Escape Room ist pausiert. Sie können starten, sobald er fortgesetzt wird.',
+      escapeRoomPausedTitle: 'Von den Dozierenden pausiert',
+      escapeRoomPausedDesc:
+        'Ihr Countdown steht still und die Stufen sind ausgeblendet. Das Spiel geht weiter, sobald der Escape Room fortgesetzt wird.',
+      escapeRoomSessionEndedTitle: 'Der Escape Room ist beendet',
+      escapeRoomSessionEndedDesc:
+        'Die Sitzung wurde beendet, daher werden keine weiteren Antworten mehr angenommen. Alle Stufen sind wieder sichtbar.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
         'Herzlichen Glückwunsch! Du hast alle Stationen hinter dir und den Escape Room abgeschlossen.',

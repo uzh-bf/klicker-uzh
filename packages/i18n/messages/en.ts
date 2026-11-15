@@ -1377,6 +1377,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStartButton: 'Start Attempt',
       escapeRoomExpiredTitle: "Time's Up!",
       escapeRoomExpiredDesc: 'This attempt is over and cannot be restarted.',
+      escapeRoomSessionWaiting:
+        'Waiting for the lecturer to start the Escape Room. This page updates automatically.',
+      escapeRoomSessionWaitingButton: 'Waiting for the lecturer',
+      escapeRoomSessionPausedNoStart:
+        'The Escape Room is paused. You can start once the lecturer resumes it.',
+      escapeRoomPausedTitle: 'Paused by the lecturer',
+      escapeRoomPausedDesc:
+        'Your countdown is frozen and the stages are hidden. Play continues when the lecturer resumes the Escape Room.',
+      escapeRoomSessionEndedTitle: 'The Escape Room has ended',
+      escapeRoomSessionEndedDesc:
+        'The lecturer ended this session, so no further answers are accepted. All stages are visible again.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
         'Congratulations! You cleared every stage and completed the Escape Room.',

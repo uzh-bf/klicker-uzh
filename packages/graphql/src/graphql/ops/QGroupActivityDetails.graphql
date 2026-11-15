@@ -21,6 +21,8 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
       introText
       sessionClock
       sessionPhase
+      sessionPausedAt
+      sessionPauses
     }
     escapeRoomAttempts {
       id

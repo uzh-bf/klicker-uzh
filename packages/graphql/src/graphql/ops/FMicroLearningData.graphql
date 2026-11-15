@@ -39,6 +39,7 @@ fragment MicroLearningData on MicroLearning {
     status
     completedAt
     lockoutUntil
+    lockoutRemainingSeconds
   }
   course {
     id

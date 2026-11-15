@@ -37,6 +37,9 @@ export const EscapeRoomConfig = EscapeRoomConfigRef.implement({
       type: 'Date',
       nullable: true,
     }),
+    // Closed pauses as [{ startedAt, endedAt }]; clients subtract them from
+    // elapsed time like the server does.
+    sessionPauses: t.expose('sessionPauses', { type: 'Json', nullable: true }),
 
     practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     microLearningId: t.exposeString('microLearningId', { nullable: true }),

@@ -1530,6 +1530,7 @@ type EscapeRoomConfig {
   sessionClock: Boolean!
   sessionEndedAt: Date
   sessionPausedAt: Date
+  sessionPauses: Json
   sessionPhase: EscapeRoomSessionPhase!
   sessionStartedAt: Date
   skipPenalty: Int
