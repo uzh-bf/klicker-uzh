@@ -1,8 +1,8 @@
 # Escape Room — Group Activity projector and session clock (W3b)
 
-- **Status:** draft, critiqued 2026-11-15; rulings S1–S4 open
+- **Status:** rulings S1–S4 settled 2026-11-15; executable
 - **Roadmap:** second half of W3 of [the classroom escape rooms roadmap](2026-11-07-classroom-escape-rooms-plan.md). [W3a](2026-11-14-escape-room-insights-plan.md) delivered the shared dashboard insights and the Live Quiz projector (#6906).
-- **Approval mode:** executable batch under the roadmap approval of 2026-11-08 (cards A–F, primitive "Escape Room session"), the reorder of 2026-11-14 and the user's "Plan W3b" of 2026-11-15. Rulings S1–S4 are needed before implementation.
+- **Approval mode:** executable batch under the roadmap approval of 2026-11-08 (cards A–F, primitive "Escape Room session"), the reorder of 2026-11-14 and the user's "Plan W3b" of 2026-11-15. Rulings S1–S4 of 2026-11-15.
 - **Goal:** a lecturer runs a Group Activity escape room live in class: opens a lobby, starts play for all groups at once, pauses and ends it, and shows ranking and progress on a projector.
 - **Branch:** `codex/escape-room-group-session` on top of `codex/escape-room-insights` (#6906), added to native stack 5228 as its top layer.
 - **Ceremony tier:** full path (one migration, new phase checks on every group escape write path, link-protected query).
@@ -16,12 +16,14 @@
 - The W3a projector query accepts Live Quiz blocks only; its reference type already knows a `groupActivity` kind.
 - The only lecturer page with the group escape table is `courses/grading/groupActivity/[id]`.
 
-## Rulings needed
+## Rulings (user, 2026-11-15)
+
+The user chose the recommendation for S1–S3 and "No extension" for S4.
 
 - **S1 — What "end" does.** Recommended: ending the session stops escape play, finalizes running attempts as `EXPIRED`, closes open bonus windows, and shows all stages to the groups again, as after the window; the Group Activity stays published until its window or the existing manual end. Alternative: ending the session also ends the Group Activity (`ENDED`), as the existing end action does.
 - **S2 — After the end.** Recommended: the end is final, and resetting a group is blocked once the session ended, because a reset would delete a ranked result the group can no longer replay. Alternative: the lecturer may reopen to running, which needs rules for attempts already finalized.
 - **S3 — Before the start.** Recommended: with the clock on, groups can open the activity in the lobby but cannot start their attempt or see stages until the lecturer starts the session; the PWA says so. Alternative: groups may start early and the clock only adds pause and end.
-- **S4 — Pauses near the window end.** A pause does not move `scheduledEndAt`, so a long pause shortens the remaining window. Recommended: resume extends the window by the pause length through the existing extend path, which reschedules the Hatchet end task. Alternative: no extension; the control bar shows the window end.
+- **S4 — Pauses near the window end.** A pause does not move `scheduledEndAt`. Ruled: no automatic extension; the control bar shows the window end, and the lecturer extends it with the existing action when needed.
 
 ## Scope
 
@@ -43,7 +45,7 @@ Out: activity teams, anonymous play and PIN (W5); mistake counts (W4); practice 
 - **Lockouts across a pause.** Resume shifts `lockoutUntil` of every attempt whose lockout was still running at the pause start by the pause length, in the same transaction as the phase change. The attempt payload returns `lockoutRemainingSeconds` from the server, so the PWA stops deriving server time from the remaining seconds.
 - **One phase check** `assertEscapeRoomSessionRunning` in `escapeRooms.ts`, read inside the transaction of every participant write path: start (moved into a transaction), answer, bonus answer, hint and skip. The hint `UPDATE` gains a status condition and a phase subquery. With the clock off the check returns immediately; it never replaces the existing status and window checks. Reset is a lecturer action and is blocked only in ENDED (S2).
 - **Effective phase.** `ENDED` whenever the session ended, the activity is no longer `PUBLISHED`, or its window has passed; otherwise the stored phase. Reads finalize `IN_PROGRESS` attempts of an effectively ended session, as W3a does for a closed Live Quiz block, which covers a start or answer racing the end.
-- **Transitions** are one mutation `setEscapeRoomSessionPhase(groupActivityId, phase)` for lecturers with write access, only when `sessionClock` is on: LOBBY→RUNNING, RUNNING→PAUSED, PAUSED→RUNNING, RUNNING|PAUSED→ENDED. Each is a Serializable compare-and-set on the current phase, so double clicks and two lecturers cannot apply a transition twice. RUNNING requires the activity to be `PUBLISHED` and inside its window. Ending expires `IN_PROGRESS` attempts and closes bonus windows in the same transaction (S1). Resume extends the window by the pause length (S4).
+- **Transitions** are one mutation `setEscapeRoomSessionPhase(groupActivityId, phase)` for lecturers with write access, only when `sessionClock` is on: LOBBY→RUNNING, RUNNING→PAUSED, PAUSED→RUNNING, RUNNING|PAUSED→ENDED. Each is a Serializable compare-and-set on the current phase, so double clicks and two lecturers cannot apply a transition twice. RUNNING requires the activity to be `PUBLISHED` and inside its window. Ending expires `IN_PROGRESS` attempts and closes bonus windows in the same transaction (S1).
 - **Masking.** While the clock is on and the phase is LOBBY or PAUSED, all stages are masked for players; after the end they are shown (S1).
 - **Activity end.** Both `handleEndExpiredGroupActivity` and the manual `endGroupActivity` end a running or paused session in their transaction, so the published window stays the outer bound; the effective phase covers anything they miss.
 - **PWA countdown** keeps the server's `remainingSeconds`, now pause-aware; the attempt payload adds `sessionPhase`, and the hook stops animating while it is not `RUNNING`. While the clock is on, the PWA polls a small session-phase query and refetches the full activity only when the phase changes, so 400 students in the lobby do not each poll the full activity details.
@@ -90,4 +92,5 @@ A slice that fails verification is fixed or reverted before the next one. A need
 ## Progress
 
 - 2026-11-15: drafted after mapping the Group Activity lifecycle, escape write paths and the W3a projector.
+- 2026-11-15: rulings S1–S3 as recommended; S4 "No extension".
 - 2026-11-15: independent critique (REVISE, 10 findings) accepted in full: pause model moved from a per-attempt counter to session pause intervals with one active-time helper (deadline, ranking, bonus, projector); lazy-expiry sites, hint and start races, manual end, PWA lockout, lobby polling cost and the create/edit inputs added; S1 and S2 sharpened, S4 added.
