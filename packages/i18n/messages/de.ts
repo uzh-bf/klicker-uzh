@@ -1397,10 +1397,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Escape Room ist pausiert. Sie können starten, sobald er fortgesetzt wird.',
       escapeRoomPausedTitle: 'Von den Dozierenden pausiert',
       escapeRoomPausedDesc:
-        'Ihr Countdown steht still und die Stufen sind ausgeblendet. Das Spiel geht weiter, sobald der Escape Room fortgesetzt wird.',
+        'Euer Countdown steht still und die Stationen sind ausgeblendet. Das Spiel geht weiter, sobald der Escape Room fortgesetzt wird.',
       escapeRoomSessionEndedTitle: 'Der Escape Room ist beendet',
       escapeRoomSessionEndedDesc:
-        'Die Sitzung wurde beendet, daher werden keine weiteren Antworten mehr angenommen. Alle Stufen sind wieder sichtbar.',
+        'Die Sitzung wurde beendet, daher werden keine weiteren Antworten mehr angenommen. Alle Stationen sind wieder sichtbar.',
+      escapeRoomSessionClearedProgress:
+        'Eure Gruppe hat {cleared} von {total, plural, one {# Station} other {# Stationen}} abgeschlossen.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
         'Herzlichen Glückwunsch! Du hast alle Stationen hinter dir und den Escape Room abgeschlossen.',
@@ -1494,6 +1496,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast einen einzigen Versuch. Die Zeit läuft ab dem Start des Versuchs und wird nie angehalten, auch nicht, wenn du diese Seite schliesst.',
       escapeRoomStartWarningGroup:
         'Eure Gruppe hat einen gemeinsamen Versuch. Die Zeit läuft für die ganze Gruppe, sobald ein Mitglied den Versuch startet, und wird nie angehalten, auch nicht, wenn die Seite geschlossen wird.',
+      escapeRoomStartWarningGroupSession:
+        'Eure Gruppe hat einen gemeinsamen Versuch. Die Zeit läuft für die ganze Gruppe, sobald ein Mitglied den Versuch startet, und hält nur an, wenn die Dozierenden den Escape Room pausieren.',
       escapeRoomNotNow: 'Jetzt nicht',
       escapeRoomBackToCourse: 'Zurück zum Kurs',
       escapeRoomContinue: 'Weiter',
@@ -5235,7 +5239,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeSessionResume: 'Fortsetzen',
       escapeSessionEnd: 'Beenden',
       escapeSessionEndConfirm:
-        'Das Beenden der Sitzung ist endgültig. Laufende Versuche werden abgeschlossen und alle Stufen werden wieder sichtbar. Danach können Gruppen weder spielen noch zurückgesetzt werden.',
+        'Das Beenden der Sitzung ist endgültig. Laufende Versuche werden abgeschlossen und alle Stationen werden wieder sichtbar. Danach können Gruppen weder spielen noch zurückgesetzt werden.',
       escapeSessionError:
         'Die Sitzungsphase konnte nicht geändert werden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.',
       escapeSessionProjector: 'Projektoransicht öffnen',

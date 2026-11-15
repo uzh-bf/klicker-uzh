@@ -1388,6 +1388,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomSessionEndedTitle: 'The Escape Room has ended',
       escapeRoomSessionEndedDesc:
         'The lecturer ended this session, so no further answers are accepted. All stages are visible again.',
+      escapeRoomSessionClearedProgress:
+        'Your group cleared {cleared} of {total, plural, one {# stage} other {# stages}}.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
         'Congratulations! You cleared every stage and completed the Escape Room.',
@@ -1478,6 +1480,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You get one attempt. The clock starts when you start the attempt and never pauses, not even if you close this page.',
       escapeRoomStartWarningGroup:
         'Your group gets one shared attempt. The clock starts for the whole group when one member starts the attempt and never pauses, not even if the page is closed.',
+      escapeRoomStartWarningGroupSession:
+        'Your group gets one shared attempt. The clock starts for the whole group when one member starts the attempt and stops only while the lecturer pauses the Escape Room.',
       escapeRoomNotNow: 'Not now',
       escapeRoomBackToCourse: 'Back to course',
       escapeRoomContinue: 'Continue',

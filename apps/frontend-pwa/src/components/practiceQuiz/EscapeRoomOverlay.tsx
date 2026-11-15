@@ -558,7 +558,9 @@ export default function EscapeRoomOverlay({
           />
           <p>
             {isGroup
-              ? t('pwa.practiceQuiz.escapeRoomStartWarningGroup')
+              ? session
+                ? t('pwa.practiceQuiz.escapeRoomStartWarningGroupSession')
+                : t('pwa.practiceQuiz.escapeRoomStartWarningGroup')
               : t('pwa.practiceQuiz.escapeRoomStartWarning')}
           </p>
         </div>
@@ -638,10 +640,12 @@ export default function EscapeRoomOverlay({
               className="text-sm font-semibold text-amber-400"
               data-cy="escape-room-expired-progress"
             >
-              {t('pwa.practiceQuiz.escapeRoomClearedProgress', {
-                cleared: clearedStacks,
-                total: totalStacks,
-              })}
+              {t(
+                sessionEnded
+                  ? 'pwa.practiceQuiz.escapeRoomSessionClearedProgress'
+                  : 'pwa.practiceQuiz.escapeRoomClearedProgress',
+                { cleared: clearedStacks, total: totalStacks }
+              )}
             </p>
           )}
         {stages && <StageRecap stages={stages} ended />}
@@ -655,9 +659,12 @@ export default function EscapeRoomOverlay({
             <Button.Label>{exit.label}</Button.Label>
           </Button>
         )}
-        <p className="text-xs leading-relaxed text-slate-400">
-          {t('pwa.practiceQuiz.escapeRoomContactLecturer')}
-        </p>
+        {/* a reset is no longer possible once the lecturer ended the session */}
+        {!sessionEnded && (
+          <p className="text-xs leading-relaxed text-slate-400">
+            {t('pwa.practiceQuiz.escapeRoomContactLecturer')}
+          </p>
+        )}
       </DialogShell>
     )
   }
