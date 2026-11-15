@@ -89,6 +89,20 @@ k6 run --insecure-skip-tls-verify \
   util/load-test/escape-room-live.js
 ```
 
+### 6. `escape-room-group.js` (Group Activity Escape Room Session Smoke)
+
+Spreads about 400 virtual students (`KLICKER_STUDENTS`) over the seeded course groups. They log in with a password, poll the session-phase query every 3 s like the PWA lobby, start their group's attempt once the session runs and answer the first stage at a low rate through the group decisions mutation. One lecturer polls the group activity's progress table every 5 s and one anonymous viewer polls the projector with its digest. It writes attempts and answers, so run it against the local seeded stack; production needs `KLICKER_ALLOW_PRODUCTION=true`. The seeded development passwords are used only when every target is a local `*.localhost` host; otherwise set `KLICKER_TEST_PASSWORD` and `KLICKER_LECTURER_PASSWORD`. The header comment lists the required ids (activity, `username:groupId` members, first stage instance, projector digest). Thresholds: p95 under 500 ms per endpoint and under 1 % failed requests.
+
+```bash
+k6 run --insecure-skip-tls-verify \
+  -e KLICKER_API_URL=https://api.klicker.<workspace>.localhost \
+  -e KLICKER_AUTH_URL=https://auth.klicker.<workspace>.localhost \
+  -e KLICKER_GROUP_ACTIVITY_ID=<activity id> \
+  -e KLICKER_MEMBERS=<username>:<group id>,<username>:<group id> \
+  -e KLICKER_STAGE_INSTANCE_ID=<id> -e KLICKER_PROJECTOR_DIGEST=<digest> \
+  util/load-test/escape-room-group.js
+```
+
 ---
 
 ## Pre-requisites for Chatbot Testing
