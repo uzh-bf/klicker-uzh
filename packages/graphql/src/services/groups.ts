@@ -1704,7 +1704,20 @@ export async function startGroupActivity(
       return updatedActivityInstance
     })
 
-    return { ...groupActivity, group, activityInstance }
+    // Escape-room stages are revealed one at a time through the activity
+    // details query; starting the activity must not return them unmasked.
+    const escapeRoomConfig = await ctx.prisma.escapeRoomConfig.findUnique({
+      where: { groupActivityId: groupActivity.id },
+      select: { id: true },
+    })
+    return {
+      ...groupActivity,
+      stacks: escapeRoomConfig
+        ? groupActivity.stacks.map((stack) => ({ ...stack, elements: [] }))
+        : groupActivity.stacks,
+      group,
+      activityInstance,
+    }
   } catch (e) {
     console.error(e)
     return null
