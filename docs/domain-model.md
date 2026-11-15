@@ -191,6 +191,20 @@ Participant details mask stages after the current one; cleared stages are return
 
 Hints and penalties are shared across every member and restored after reload. A hint can be revealed only for the current stage. Lecturer progress is group-roster based, including `NOT_STARTED` groups; resetting deletes both the shared attempt and its `GroupActivityInstance` so the group can restart cleanly.
 
+#### Group Activity session clock
+
+`EscapeRoomConfig.sessionClock` (off by default, locked after publication) gives a Group Activity escape room a lecturer-driven session. Other modes and groups without the clock never read the session fields.
+
+- **Phases and transitions.** `sessionPhase` is `LOBBY`, `RUNNING`, `PAUSED` or `ENDED`. `setEscapeRoomSessionPhase` (WRITE access) applies LOBBY→RUNNING, RUNNING→PAUSED, PAUSED→RUNNING and RUNNING|PAUSED→ENDED as a Serializable compare-and-set on the current phase, so repeated or concurrent transitions apply once. RUNNING needs a `PUBLISHED` activity inside its window.
+- **Phase check on every write path.** `assertEscapeRoomSessionRunning` runs inside the transaction of start, answer, bonus answer, hint and skip (the hint `UPDATE` carries the check as a condition). It never replaces the status and window checks. Lecturer reset is blocked only after the end.
+- **Pause intervals and active time.** Closed pauses are stored in `sessionPauses`, an open one in `sessionPausedAt`. `getEscapeRoomActiveSeconds(from, to, session)` in `packages/types` subtracts the overlap with every pause and ends an open pause at `now`. The deadline (`isEscapeRoomExpired`), remaining time, ranked time, dashboard time spent, bonus window and the projector's `endsAt` use it. Only Group Activity call sites pass the session. Resume shifts the `lockoutUntil` of attempts whose lockout was running at the pause start; the payload returns `lockoutRemainingSeconds` so the PWA does not derive server time.
+- **Effective phase.** `getEscapeRoomEffectivePhase` reports `ENDED` when the session ended, the activity is no longer `PUBLISHED`, or the window passed. Reads finalize `IN_PROGRESS` attempts of an effectively ended session as `EXPIRED`, which covers a start or answer racing the end.
+- **Masking.** While the phase is `LOBBY` or `PAUSED`, all stages are masked for players. After the end they are shown.
+- **End hooks.** `endGroupActivity` and `handleEndExpiredGroupActivity` call `endEscapeRoomSession` in their transaction. Ending expires running attempts and closes bonus windows.
+- **Polling.** The PWA polls `escapeRoomSessionPhase` (group-checked, cheap) and refetches the full activity only when the phase changes.
+- **Projector for group activities.** `escapeRoomProjector` accepts `groupActivityId`. Digest: `HMAC-SHA256(APP_SECRET, 'escape-projector:groupActivity:<id>')`, or READ access without a digest. With the clock on, the phase is the effective session phase, and `PAUSED` is returned as running with `paused`. Without it, `SCHEDULED` is lobby, `PUBLISHED` running, and `ENDED`/`GRADED` closed. Rows use course group names, no ids, and the debrief is withheld until closed. Page: `/courses/grading/groupActivity/<id>/escape-projector`.
+- **Load smoke.** `util/load-test/escape-room-group.js` polls the phase query for about 400 students plus the dashboard and the projector.
+
 ### Live Quiz
 
 A Live Quiz Escape Room is scoped to one non-assessment `ElementBlock` and one attempt per regular participant. It supports SC, MC, KPRIM, numerical, free-text, and QR Scan questions; temporary participants and assessment Live Quizzes are rejected. Participants explicitly start after the lecturer activates the block, and participant payloads reveal only the current uncleared question.
