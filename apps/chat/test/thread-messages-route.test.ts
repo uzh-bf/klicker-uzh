@@ -144,4 +144,19 @@ describe('thread history route', () => {
       ['question-2', 'question-1'],
     ])
   })
+
+  test('projects legacy reasoning-only assistant rows as retryable errors without changing user rows', async () => {
+    const empty = {
+      ...assistantMessage('legacy-empty', 'cm_hidden'),
+      content: [{ type: 'reasoning', text: '' }],
+    }
+    const user = { ...empty, id: 'user-empty', role: 'user', content: [] }
+    mocks.messageFindMany.mockResolvedValue([empty, user])
+    const history = await loadHistory()
+    expect(history[0]?.content).toEqual([
+      { type: 'data', name: 'chat-error', data: { code: 'EMPTY_RESPONSE' } },
+    ])
+    expect(history[1]?.content).toEqual([])
+    expect(empty.content).toEqual([{ type: 'reasoning', text: '' }])
+  })
 })
