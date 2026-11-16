@@ -303,7 +303,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
         )}
       >
-        <div className="min-h-0 overflow-hidden">
+        <div className="relative min-h-0 overflow-hidden">
           <div className="bg-muted mt-1 rounded p-2 text-xs">
             {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
                 `--muted`, under the 4.5:1 AA floor for 12px text. */}
