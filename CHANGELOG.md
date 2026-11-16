@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.95](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.94...v3.4.0-alpha.95) (2026-11-16)
+
+
+### Bug Fixes
+
+* **chat:** include retry handling and terminal tool classification in alpha.95 ([a7515ab](https://github.com/uzh-bf/klicker-uzh/commit/a7515ab6bc18810ad5ce506217c263d4240926fa))
+* **chat:** preserve retry state for reasoning-only responses ([#6914](https://github.com/uzh-bf/klicker-uzh/issues/6914)) ([c5564fc](https://github.com/uzh-bf/klicker-uzh/commit/c5564fc8a17f6b1832fedcc970c06af42400c8bd))
+* **deploy:** restore production CPU requests dropped by a sync merge ([#6904](https://github.com/uzh-bf/klicker-uzh/issues/6904)) ([07d16cc](https://github.com/uzh-bf/klicker-uzh/commit/07d16cc0da6eb07219068aa986baaea4d34bbc06))
+
+
+### Enhancements
+
+* **deploy:** enable question revisions in production ([#6899](https://github.com/uzh-bf/klicker-uzh/issues/6899)) ([52af0e1](https://github.com/uzh-bf/klicker-uzh/commit/52af0e17352b35226d6e9e6b2beaf97ca25257f2))
+* **graphql:** settle the full metered cost of a KB graph build ([#6898](https://github.com/uzh-bf/klicker-uzh/issues/6898)) ([d6fde95](https://github.com/uzh-bf/klicker-uzh/commit/d6fde95e4edb303646157f1e1bfc40f5f28bc30c))
+
 ## [3.4.0-alpha.94](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.93...v3.4.0-alpha.94) (2026-11-12)
 
 
