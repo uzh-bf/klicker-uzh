@@ -15,8 +15,10 @@ model EmailTemplate {
 
 enum DataExportStatus {
   PENDING
+  READY
   RELEASED
   FAILED
+  EXPIRED
 }
 
 model ResearchExportReceipt {
@@ -50,6 +52,7 @@ model AssessmentExportReceipt {
   requesterId       String   @db.Uuid
   courseId          String   @db.Uuid
   liveQuizId        String?  @db.Uuid
+  chatbotId         String?  @db.Uuid
   locale            String
   disclosureVersion String
   attestedAt        DateTime @default(now())
@@ -61,6 +64,18 @@ model AssessmentExportReceipt {
   failureCode String?
   releasedAt  DateTime?
 
+  // Asynchronous transcript exports keep their archive until the single
+  // download or until this time, whichever comes first.
+  artifactExpiresAt DateTime?
+  artifact          AssessmentExportArtifact?
+
   @@index([requesterId, attestedAt])
   @@index([courseId, attestedAt])
+}
+
+model AssessmentExportArtifact {
+  receiptId String                  @id @db.Uuid
+  receipt   AssessmentExportReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  content   Bytes
+  createdAt DateTime                @default(now())
 }
