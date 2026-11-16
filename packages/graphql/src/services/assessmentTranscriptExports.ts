@@ -101,6 +101,17 @@ export async function requestAssessmentTranscriptExport(
   return { exportId: request.requestId }
 }
 
+export async function getAssessmentExportChatbots(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.chatbot.findMany({
+    where: { courseId, course: { isAssessmentEnabled: true } },
+    orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, name: true, description: true, avatar: true },
+  })
+}
+
 export type AssessmentTranscriptDownload =
   | { status: Exclude<DB.DataExportStatus, 'READY'> }
   | { status: 'READY'; exportId: string; body: Buffer }
