@@ -49,13 +49,13 @@ describe('chat transcript viewer page', () => {
     }
 
     async function openFile(content: string) {
-      const nodes: Record<string, FakeNode> = {
+      const nodes = {
         out: new FakeNode('div'),
         status: new FakeNode('p'),
         file: new FakeNode('input'),
       }
       const document = {
-        getElementById: (id: string) => nodes[id],
+        getElementById: (id: string) => nodes[id as keyof typeof nodes],
         createElement: (tag: string) => new FakeNode(tag),
         createTextNode: (text: string) => {
           const node = new FakeNode('#text', true)
@@ -65,7 +65,7 @@ describe('chat transcript viewer page', () => {
       }
       const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1] as string
       new Function('document', script)(document)
-      nodes.file.listeners.change({
+      nodes.file.listeners.change!({
         target: { files: [{ text: async () => content }] },
       })
       await new Promise((resolve) => setTimeout(resolve, 0))

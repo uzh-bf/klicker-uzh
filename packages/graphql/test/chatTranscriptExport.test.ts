@@ -168,9 +168,9 @@ describe('buildConversationExport status', () => {
       ],
     })
 
-    const [student] = result.students
+    const student = result.students[0]!
     expect(student.incompleteAnswers).toBe(1)
-    expect(student.threads[0].messages[1].status).toBe('incomplete')
+    expect(student.threads[0]!.messages[1]!.status).toBe('incomplete')
   })
 })
 
@@ -279,8 +279,8 @@ describe('serialization', () => {
     expect(lines).toHaveLength(3)
     expect(lines[0]).toContain('failedAnswers')
     expect(lines[1]).toContain("'=Ada")
-    expect(lines[1]).toContain(exported.students[0].file)
-    expect(lines[2]).toContain(exported.students[1].file)
+    expect(lines[1]).toContain(exported.students[0]!.file)
+    expect(lines[2]).toContain(exported.students[1]!.file)
   })
 
   it('names archive entries from id and position without path characters', () => {
@@ -316,11 +316,11 @@ describe('serialization', () => {
         },
       ],
     })
-    const file = toStudentTranscript(exported, exported.students[0])
+    const file = toStudentTranscript(exported, exported.students[0]!)
     const json = JSON.stringify(file)
 
     expect(file.formatVersion).toBe(STUDENT_TRANSCRIPT_FORMAT_VERSION)
-    expect(file.threads[0].messages.map((m) => [m.id, m.status])).toEqual([
+    expect(file.threads[0]!.messages.map((m) => [m.id, m.status])).toEqual([
       ['q1', 'complete'],
       ['a1', 'failed'],
     ])

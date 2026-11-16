@@ -1101,7 +1101,7 @@ export const Query = builder.queryType({
       // Chatbots whose conversations may be requested through the attested
       // assessment export; the course ADMIN permission gates the list.
       assessmentExportChatbots: t.withAuth(asUser).field({
-        nullable: false,
+        nullable: true,
         type: [ChatbotPublic],
         args: { courseId: t.arg.string({ required: true }) },
         resolve: withPermission(
