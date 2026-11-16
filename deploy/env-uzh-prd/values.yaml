@@ -700,7 +700,7 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      semesterQuotaMinorUnits: '10000'
       pricingVersion: 'prd-graph-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
