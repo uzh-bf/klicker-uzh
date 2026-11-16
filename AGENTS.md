@@ -29,6 +29,12 @@ version-target list. During PR preparation, pass `--skip.tag` and create the tag
 only at the approved merged release commit. Tag publication and production
 activation remain separately authorized actions.
 
+Merge a production release PR, push a release tag or activate a release in
+production only when the user explicitly says so for that step. Approving a
+release plan authorizes preparing its PRs, not merging them. Production
+releases happen outside business hours: before 07:00 or after 18:00 Europe/Zurich
+time. During business hours, prepare the PRs and wait.
+
 ## Commands
 
 ### Root-level (from repo root)
