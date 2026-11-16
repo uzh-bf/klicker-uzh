@@ -157,8 +157,8 @@ const ToolGroup: FC<
 }
 
 type ChatErrorPartData = {
-  errorLabel: string
-  message: string
+  errorLabel?: string
+  message?: string
 }
 
 /**
@@ -183,8 +183,10 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
           aria-hidden
         />
         <p>
-          <span className="font-medium">{data.errorLabel}</span>
-          {`: ${data.message}`}
+          <span className="font-medium">
+            {data.errorLabel ?? t('chat.response.errorLabel')}
+          </span>
+          {`: ${data.message ?? t('chat.response.genericError')}`}
         </p>
       </div>
       {hasAvailableMode && (

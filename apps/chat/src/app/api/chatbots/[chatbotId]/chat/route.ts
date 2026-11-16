@@ -96,7 +96,9 @@ import { getOpenAIProviderOptions } from '@/src/lib/server/openaiProviderOptions
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
+  hasMeaningfulAssistantContent,
   mapAssistantStepContent,
+  withEmptyResponseError,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
@@ -2493,15 +2495,17 @@ export async function POST(
             hadAbort: sawAbort,
           })
 
+          const completedContent = mapAssistantStepContent(result.steps)
+          const emptyResponse = !hasMeaningfulAssistantContent(completedContent)
           await finalizeAssistantLifecycle({
-            content: mapAssistantStepContent(result.steps),
+            content: withEmptyResponseError(completedContent),
             reasoningContent: finishedReasoningContent,
             rawCreditsUsed,
             phase: 'complete',
           })
 
           if (!firstError) {
-            emitFinalOnce('success', {
+            emitFinalOnce(emptyResponse ? 'error' : 'success', {
               elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
               usage: result.usage
                 ? {
@@ -2512,7 +2516,7 @@ export async function POST(
                 : null,
               stepsCount: result.steps?.length ?? 0,
             })
-            finishLangfuseTrace('success', {
+            finishLangfuseTrace(emptyResponse ? 'error' : 'success', {
               responseLength: partialContent.length,
               reasoningLength: partialReasoningContent.length,
               stepsCount: result.steps?.length ?? 0,
