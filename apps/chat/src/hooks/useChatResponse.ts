@@ -13,6 +13,10 @@ import {
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
+import {
+  hasMeaningfulAssistantContent,
+  withEmptyResponseError,
+} from '../lib/server/persistedAssistantContent'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import { useChatContextStore } from '../stores/chatContextStore'
@@ -757,7 +761,16 @@ export function useChatResponse(
             })
           }
 
-          if (finishReason === 'length') {
+          if (
+            hasFinishEvent &&
+            !hasStreamError &&
+            !hasMeaningfulAssistantContent(orderedContentParts)
+          ) {
+            hasStreamError = true
+            orderedContentParts.push(...withEmptyResponseError([]))
+          }
+
+          if (finishReason === 'length' && !hasStreamError) {
             orderedContentParts.push({
               type: 'text',
               text: `\n\n_(${t('chat.response.truncated')})_`,
