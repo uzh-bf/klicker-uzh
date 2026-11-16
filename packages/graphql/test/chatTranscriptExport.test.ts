@@ -6,8 +6,10 @@ import {
   escapeCsvValue,
   extractVisibleText,
   orderThreadMessages,
-  toIndexCsv,
-  toTranscriptHtml,
+  STUDENT_TRANSCRIPT_FORMAT_VERSION,
+  studentFileName,
+  toOverviewCsv,
+  toStudentTranscript,
 } from '../src/lib/chatTranscriptExport.js'
 
 const metadata = {
@@ -231,7 +233,8 @@ describe('buildConversationExport', () => {
     )
     expect(byId.get('p1')).toMatchObject({
       conversationStatus: 'several',
-      incompleteAnswers: 1,
+      incompleteAnswers: 0,
+      failedAnswers: 1,
       attachmentCount: 1,
       identity: { source: 'assessment', matriculationNumber: '00-000-001' },
     })
@@ -256,13 +259,38 @@ describe('serialization', () => {
     expect(escapeCsvValue('\t=cmd')).toBe("'\t=cmd")
     expect(escapeCsvValue('a,"b"')).toBe('"a,""b"""')
     expect(
-      toIndexCsv(
+      toOverviewCsv(
         buildConversationExport({ metadata, roster: [], threads: [] })
       ).startsWith('﻿')
     ).toBe(true)
   })
 
-  it('escapes student text in the transcript page', () => {
+  it('lists every roster entry in the overview with its JSON file', () => {
+    const exported = buildConversationExport({
+      metadata,
+      roster: [
+        rosterEntry({ assessmentGivenName: '=Ada' }),
+        rosterEntry({ participantId: null, joined: false }),
+      ],
+      threads: [],
+    })
+    const lines = toOverviewCsv(exported).trim().split('\n')
+
+    expect(lines).toHaveLength(3)
+    expect(lines[0]).toContain('failedAnswers')
+    expect(lines[1]).toContain("'=Ada")
+    expect(lines[1]).toContain(exported.students[0].file)
+    expect(lines[2]).toContain(exported.students[1].file)
+  })
+
+  it('names archive entries from id and position without path characters', () => {
+    expect(studentFileName('p1', 0)).toBe('students/0001-p1.json')
+    expect(studentFileName(null, 11)).toBe('students/0012-no-account.json')
+    const hostile = studentFileName('../../etc/passwd', 2)
+    expect(hostile.slice('students/'.length)).not.toMatch(/[/\\]|\.\./)
+  })
+
+  it('writes one JSON per student with ordered threads and no internals', () => {
     const exported = buildConversationExport({
       metadata,
       roster: [rosterEntry()],
@@ -270,19 +298,34 @@ describe('serialization', () => {
         {
           id: 't1',
           participantId: 'p1',
-          title: '<b>title</b>',
+          title: null,
           createdAt: new Date('2026-12-16T09:00:00Z'),
           messages: [
-            message('q1', 0, {
-              content: [{ type: 'text', text: '<script>alert(1)</script>' }],
+            message('q1', 0),
+            message('a1', 1, {
+              parentId: 'q1',
+              role: 'assistant',
+              lifecycleStatus: 'FAILED',
+              content: [
+                { type: 'reasoning', text: 'hidden chain' },
+                { type: 'tool-x', input: { secret: 1 } },
+                { type: 'text', text: 'visible' },
+              ],
             }),
           ],
         },
       ],
     })
+    const file = toStudentTranscript(exported, exported.students[0])
+    const json = JSON.stringify(file)
 
-    const html = toTranscriptHtml(exported)
-    expect(html).not.toContain('<script>')
-    expect(html).not.toContain('<b>title</b>')
+    expect(file.formatVersion).toBe(STUDENT_TRANSCRIPT_FORMAT_VERSION)
+    expect(file.threads[0].messages.map((m) => [m.id, m.status])).toEqual([
+      ['q1', 'complete'],
+      ['a1', 'failed'],
+    ])
+    expect(json).not.toContain('hidden chain')
+    expect(json).not.toContain('tool-x')
+    expect(file.student).not.toHaveProperty('file')
   })
 })

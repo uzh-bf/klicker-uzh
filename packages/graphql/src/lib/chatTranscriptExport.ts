@@ -99,6 +99,10 @@ export type ExportedStudent = {
   rosterStatus: 'participant' | 'invited, not joined' | 'not in roster'
   conversationStatus: 'no conversation' | 'one' | 'several'
   incompleteAnswers: number
+  failedAnswers: number
+  // Name of this student's JSON file inside the archive; built from the
+  // participant id and the position, never from identity data.
+  file: string
   messageCount: number
   firstMessageAt: string | null
   lastMessageAt: string | null
@@ -261,6 +265,20 @@ function identityFor(entry: ExportRosterEntry): ExportedStudent['identity'] {
   }
 }
 
+// Archive entry name for one student: position plus participant id only.
+// The id is reduced to a conservative alphabet so no path characters or
+// traversal sequences can come from stored data.
+export function studentFileName(
+  participantId: string | null,
+  index: number
+): string {
+  const position = String(index + 1).padStart(4, '0')
+  const id = participantId
+    ? participantId.replace(/[^A-Za-z0-9-]/g, '_').slice(0, 64)
+    : 'no-account'
+  return `students/${position}-${id}.json`
+}
+
 export function buildConversationExport({
   metadata,
   roster,
@@ -305,63 +323,70 @@ export function buildConversationExport({
     })
   }
 
-  const students = entries.map(({ entry, rosterStatus }): ExportedStudent => {
-    const ownThreads = entry.participantId
-      ? (threadsByParticipant.get(entry.participantId) ?? [])
-      : []
-    const exportedThreads = ownThreads
-      .filter((thread) => thread.messages.length > 0)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-      .map((thread): ExportedThread => {
-        const { ordered, hasBranches } = orderThreadMessages(thread.messages)
-        return {
-          id: thread.id,
-          title: thread.title,
-          createdAt: thread.createdAt.toISOString(),
-          hasBranches,
-          messages: ordered.map(({ message, branch }) => ({
-            id: message.id,
-            parentId: message.parentId,
-            branch,
-            role: message.role,
-            text: extractVisibleText(message.content),
-            chatMode: message.chatMode,
-            modelId: message.modelId,
-            status: messageStatus(message),
-            attachments: message.attachmentTypes,
-            createdAt: message.createdAt.toISOString(),
-          })),
-        }
-      })
+  const students = entries.map(
+    ({ entry, rosterStatus }, index): ExportedStudent => {
+      const ownThreads = entry.participantId
+        ? (threadsByParticipant.get(entry.participantId) ?? [])
+        : []
+      const exportedThreads = ownThreads
+        .filter((thread) => thread.messages.length > 0)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map((thread): ExportedThread => {
+          const { ordered, hasBranches } = orderThreadMessages(thread.messages)
+          return {
+            id: thread.id,
+            title: thread.title,
+            createdAt: thread.createdAt.toISOString(),
+            hasBranches,
+            messages: ordered.map(({ message, branch }) => ({
+              id: message.id,
+              parentId: message.parentId,
+              branch,
+              role: message.role,
+              text: extractVisibleText(message.content),
+              chatMode: message.chatMode,
+              modelId: message.modelId,
+              status: messageStatus(message),
+              attachments: message.attachmentTypes,
+              createdAt: message.createdAt.toISOString(),
+            })),
+          }
+        })
 
-    const messages = exportedThreads.flatMap((thread) => thread.messages)
-    const times = messages
-      .map((message) => message.createdAt)
-      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    return {
-      participantId: entry.participantId,
-      identity: identityFor(entry),
-      rosterStatus,
-      conversationStatus:
-        exportedThreads.length === 0
-          ? 'no conversation'
-          : exportedThreads.length === 1
-            ? 'one'
-            : 'several',
-      incompleteAnswers: messages.filter(
-        (message) =>
-          message.role === 'assistant' && message.status !== 'complete'
-      ).length,
-      messageCount: messages.length,
-      firstMessageAt: times[0] ?? null,
-      lastMessageAt: times.at(-1) ?? null,
-      attachmentCount: messages.reduce(
-        (sum, message) => sum + message.attachments.length,
-        0
-      ),
-      threads: exportedThreads,
+      const messages = exportedThreads.flatMap((thread) => thread.messages)
+      const times = messages
+        .map((message) => message.createdAt)
+        .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+      return {
+        participantId: entry.participantId,
+        identity: identityFor(entry),
+        rosterStatus,
+        conversationStatus:
+          exportedThreads.length === 0
+            ? 'no conversation'
+            : exportedThreads.length === 1
+              ? 'one'
+              : 'several',
+        incompleteAnswers: messages.filter(
+          (message) =>
+            message.role === 'assistant' && message.status === 'incomplete'
+        ).length,
+        failedAnswers: messages.filter(
+          (message) =>
+            message.role === 'assistant' && message.status === 'failed'
+        ).length,
+        file: studentFileName(entry.participantId, index),
+        messageCount: messages.length,
+        firstMessageAt: times[0] ?? null,
+        lastMessageAt: times.at(-1) ?? null,
+        attachmentCount: messages.reduce(
+          (sum, message) => sum + message.attachments.length,
+          0
+        ),
+        threads: exportedThreads,
+      }
     }
-  })
+  )
 
   return {
     metadata: {
@@ -403,12 +428,14 @@ const INDEX_HEADERS = [
   'threadCount',
   'messageCount',
   'incompleteAnswers',
+  'failedAnswers',
   'attachmentCount',
   'firstMessageAt',
   'lastMessageAt',
+  'jsonFile',
 ]
 
-export function toIndexCsv(exported: ConversationExport): string {
+export function toOverviewCsv(exported: ConversationExport): string {
   const rows = exported.students.map((student) => [
     student.participantId,
     student.identity.givenName,
@@ -422,9 +449,11 @@ export function toIndexCsv(exported: ConversationExport): string {
     student.threads.length,
     student.messageCount,
     student.incompleteAnswers,
+    student.failedAnswers,
     student.attachmentCount,
     student.firstMessageAt,
     student.lastMessageAt,
+    student.file,
   ])
   const lines = [INDEX_HEADERS, ...rows].map((row) =>
     row.map(escapeCsvValue).join(',')
@@ -433,64 +462,33 @@ export function toIndexCsv(exported: ConversationExport): string {
   return `﻿${lines.join('\n')}\n`
 }
 
-export function escapeHtml(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+// Version of the per-student JSON layout. The bundled viewer refuses files
+// with a different version.
+export const STUDENT_TRANSCRIPT_FORMAT_VERSION = 1
+
+export type StudentTranscriptFile = {
+  formatVersion: typeof STUDENT_TRANSCRIPT_FORMAT_VERSION
+  chatbot: { id: string; name: string }
+  course: { id: string; name: string }
+  exportedAt: string
+  notes: string[]
+  student: Omit<ExportedStudent, 'threads' | 'file'>
+  threads: ExportedThread[]
 }
 
-function studentLabel(student: ExportedStudent): string {
-  const { identity } = student
-  const name = [identity.givenName, identity.surname].filter(Boolean).join(' ')
-  return (
-    [name, identity.matriculationNumber, identity.email ?? identity.username]
-      .filter(Boolean)
-      .join(' · ') ||
-    student.participantId ||
-    'Unknown student'
-  )
-}
-
-export function toTranscriptHtml(exported: ConversationExport): string {
+export function toStudentTranscript(
+  exported: ConversationExport,
+  student: ExportedStudent
+): StudentTranscriptFile {
   const { metadata } = exported
-  const index = exported.students
-    .map(
-      (student, i) =>
-        `<tr><td><a href="#s${i}">${escapeHtml(studentLabel(student))}</a></td><td>${escapeHtml(student.rosterStatus)}</td><td>${escapeHtml(student.conversationStatus)}</td><td>${student.messageCount}</td><td>${student.incompleteAnswers}</td></tr>`
-    )
-    .join('\n')
-
-  const sections = exported.students
-    .map((student, i) => {
-      const threads = student.threads
-        .map((thread, t) => {
-          const messages = thread.messages
-            .map(
-              (message) =>
-                `<div class="msg ${message.role === 'user' ? 'user' : 'assistant'}"><div class="meta">${escapeHtml(message.role === 'user' ? 'Student' : 'Assistant')} · ${escapeHtml(message.createdAt)}${thread.hasBranches ? ` · branch ${escapeHtml(message.branch)}` : ''}${message.status === 'complete' ? '' : ` · <strong>${escapeHtml(message.status)}</strong>`}${message.attachments.length ? ` · attachments: ${escapeHtml(message.attachments.join(', '))}` : ''}</div><div class="text">${escapeHtml(message.text)}</div></div>`
-            )
-            .join('\n')
-          return `<h3>Conversation ${t + 1}${thread.title ? `: ${escapeHtml(thread.title)}` : ''}</h3><p class="meta">Started ${escapeHtml(thread.createdAt)}${thread.hasBranches ? ' · contains edited or regenerated branches' : ''}</p>\n${messages}`
-        })
-        .join('\n')
-      return `<section id="s${i}"><h2>${escapeHtml(studentLabel(student))}</h2><p class="meta">${escapeHtml(student.rosterStatus)} · ${escapeHtml(student.conversationStatus)}</p>${threads || '<p>No conversation.</p>'}</section>`
-    })
-    .join('\n')
-
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(metadata.chatbotName)} – conversations</title>
-<style>body{font-family:system-ui,sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem;line-height:1.5}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.25rem .5rem;text-align:left}.meta{color:#555;font-size:.85rem}.msg{border-left:3px solid #ccc;margin:.75rem 0;padding:.25rem .75rem}.msg.user{border-color:#0b5394}.text{white-space:pre-wrap}section{border-top:2px solid #333;margin-top:2rem}</style>
-</head><body>
-<h1>${escapeHtml(metadata.chatbotName)}</h1>
-<p class="meta">Course: ${escapeHtml(metadata.courseName)} · Exported ${escapeHtml(metadata.exportedAt)}${metadata.windowFrom ? ` · from ${escapeHtml(metadata.windowFrom)}` : ''}${metadata.windowTo ? ` · to ${escapeHtml(metadata.windowTo)}` : ''}</p>
-<ul class="meta">${metadata.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>
-<table><thead><tr><th>Student</th><th>Roster</th><th>Conversations</th><th>Messages</th><th>Incomplete answers</th></tr></thead><tbody>
-${index}
-</tbody></table>
-${sections}
-</body></html>
-`
+  const { threads, file: _file, ...rest } = student
+  return {
+    formatVersion: STUDENT_TRANSCRIPT_FORMAT_VERSION,
+    chatbot: { id: metadata.chatbotId, name: metadata.chatbotName },
+    course: { id: metadata.courseId, name: metadata.courseName },
+    exportedAt: metadata.exportedAt,
+    notes: metadata.notes,
+    student: rest,
+    threads,
+  }
 }
