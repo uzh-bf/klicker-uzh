@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "DataExportStatus" AS ENUM ('PENDING', 'RELEASED', 'FAILED');
+CREATE TYPE "DataExportStatus" AS ENUM ('PENDING', 'READY', 'RELEASED', 'FAILED', 'EXPIRED');
 
 -- CreateTable
 CREATE TABLE "ResearchExportReceipt" (
@@ -31,6 +31,7 @@ CREATE TABLE "AssessmentExportReceipt" (
     "requesterId" UUID NOT NULL,
     "courseId" UUID NOT NULL,
     "liveQuizId" UUID,
+    "chatbotId" UUID,
     "locale" TEXT NOT NULL,
     "disclosureVersion" TEXT NOT NULL,
     "attestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,8 +41,18 @@ CREATE TABLE "AssessmentExportReceipt" (
     "recordCount" INTEGER,
     "failureCode" TEXT,
     "releasedAt" TIMESTAMP(3),
+    "artifactExpiresAt" TIMESTAMP(3),
 
     CONSTRAINT "AssessmentExportReceipt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AssessmentExportArtifact" (
+    "receiptId" UUID NOT NULL,
+    "content" BYTEA NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AssessmentExportArtifact_pkey" PRIMARY KEY ("receiptId")
 );
 
 -- CreateIndex
@@ -55,3 +66,6 @@ CREATE INDEX "AssessmentExportReceipt_requesterId_attestedAt_idx" ON "Assessment
 
 -- CreateIndex
 CREATE INDEX "AssessmentExportReceipt_courseId_attestedAt_idx" ON "AssessmentExportReceipt"("courseId", "attestedAt");
+
+-- AddForeignKey
+ALTER TABLE "AssessmentExportArtifact" ADD CONSTRAINT "AssessmentExportArtifact_receiptId_fkey" FOREIGN KEY ("receiptId") REFERENCES "AssessmentExportReceipt"("id") ON DELETE CASCADE ON UPDATE CASCADE;
