@@ -956,4 +956,44 @@ describe('useChatResponse attachment hydration', () => {
       'message-2',
     ])
   })
+
+  describe('empty completed responses', () => {
+    test.each([
+      'stop',
+      'length',
+    ])('retains retry state for reasoning-only %s finish', async (finishReason) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            createStreamingResponse([
+              'data: {"type":"reasoning-delta","delta":""}',
+              `data: {"type":"finish","messageMetadata":{"finishReason":"${finishReason}"}}`,
+              'data: [DONE]',
+            ])
+          )
+      )
+      const { generateChatResponse } = useChatResponse(
+        'auto',
+        'explainer',
+        'none'
+      )
+      await generateChatResponse(
+        [
+          {
+            id: 'question',
+            role: 'user',
+            content: [{ type: 'text', text: 'Synthetic request' }],
+          },
+        ] as any,
+        'thread-1'
+      )
+      const content = storeState.threads[0]?.messages.at(-1)?.content
+      expect(content).toEqual([
+        { type: 'data', name: 'chat-error', data: { code: 'EMPTY_RESPONSE' } },
+      ])
+      expect((storeState.threads[0] as any).lastRunOutcome).toBe('error')
+    })
+  })
 })
