@@ -59,6 +59,8 @@ export type FinalizeChatTurnInput = {
   parentId: string | null
   /** Assessment mode: an empty answer stays as a FAILED marker, not deleted. */
   keepFailedMarker?: boolean
+  /** Store the answer as FAILED, keeping its content and charging its cost. */
+  failed?: boolean
   content: Prisma.InputJsonValue
   chatMode: string | null
   modelId: string | null
@@ -253,14 +255,23 @@ async function claimAssessmentTurn(
   if (inProgress.length > 0) {
     // Abandoned attempts: clearing the token keeps a late callback from
     // completing them.
+    const abandonedIds = inProgress.map((row) => row.id)
     await tx.chatMessage.updateMany({
-      where: {
-        id: { in: inProgress.map((row) => row.id) },
-        lifecycleStatus: 'IN_PROGRESS',
-      },
+      where: { id: { in: abandonedIds }, lifecycleStatus: 'IN_PROGRESS' },
       data: { lifecycleStatus: 'FAILED', lifecycleAttemptId: null },
     })
-    for (const row of inProgress) row.lifecycleStatus = 'FAILED'
+    // A finalizer may have completed a row after it was read; keep what was
+    // persisted so its answer stays in the history.
+    const persisted = await tx.chatMessage.findMany({
+      where: { id: { in: abandonedIds } },
+      select: { id: true, lifecycleStatus: true, content: true },
+    })
+    const persistedById = new Map(persisted.map((row) => [row.id, row]))
+    for (const row of inProgress) {
+      const current = persistedById.get(row.id)
+      row.lifecycleStatus = current?.lifecycleStatus ?? 'FAILED'
+      if (current) row.content = current.content
+    }
   }
 
   const byId = new Map(rows.map((row) => [row.id, row]))
@@ -592,7 +603,9 @@ export async function finalizeChatTurn(
       reasoningEffort: input.reasoningEffort,
       reasoningContent: input.reasoningContent,
       creditsUsed: credits,
-      lifecycleStatus: 'COMPLETED' as const,
+      lifecycleStatus: input.failed
+        ? ('FAILED' as const)
+        : ('COMPLETED' as const),
       lifecycleAttemptId: null,
     }
     const completed =
@@ -636,7 +649,7 @@ export async function finalizeChatTurn(
       if (
         existing?.role === 'assistant' &&
         existing.threadId === input.threadId &&
-        existing.lifecycleStatus === 'COMPLETED' &&
+        existing.lifecycleStatus === (input.failed ? 'FAILED' : 'COMPLETED') &&
         existing.thread.chatbotId === input.chatbotId &&
         existing.thread.chatbot.ownerId === input.ownerId
       ) {

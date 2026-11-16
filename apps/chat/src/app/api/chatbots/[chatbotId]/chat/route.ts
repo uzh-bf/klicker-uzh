@@ -1269,6 +1269,8 @@ export async function POST(
     }
   }
 
+  // Taken before the claim, so preparation and streaming share one bound.
+  const turnDeadlineMs = Date.now() + maxDuration * 1000
   let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
@@ -2255,6 +2257,12 @@ export async function POST(
           lifecycleAttemptId,
           parentId: userMessageId,
           ...(assessment ? { keepFailedMarker: true } : {}),
+          // Exam answers that hit a stream error or the turn deadline are kept
+          // as failed, with what was generated, so the record shows them.
+          ...(assessment &&
+          (firstError || (phase === 'abort' && Date.now() >= turnDeadlineMs))
+            ? { failed: true }
+            : {}),
           content: content as Prisma.InputJsonValue,
           chatMode: selectedMode,
           modelId: selectedModelConfig.id,
@@ -2457,7 +2465,7 @@ export async function POST(
         abortSignal: assessment
           ? AbortSignal.any([
               req.signal,
-              AbortSignal.timeout(maxDuration * 1000),
+              AbortSignal.timeout(Math.max(0, turnDeadlineMs - Date.now())),
             ])
           : req.signal,
 

@@ -328,7 +328,9 @@ export const useChatStore = create<ChatState>((set, get) => {
               : [newThread, ...state.threads],
             isLoading: false,
           }))
-          await get().switchToThread(chatbotId, newThread.id)
+          if (!(await get().switchToThread(chatbotId, newThread.id))) {
+            throw new Error('Failed to open the existing thread')
+          }
           clearParticipationNotice()
           return newThread.id
         }

@@ -1184,6 +1184,40 @@ describePostgres('account usage PostgreSQL integration', () => {
       expect(row.lifecycleStatus).toBe('FAILED')
     })
 
+    test('an answer that errored mid-stream is stored as failed with its content', async () => {
+      const threadId = await examThread()
+      const [u1, a1, u2, a2] = Array.from({ length: 4 }, randomUUID)
+      const first = await examClaim(threadId, u1, a1)
+      const partial = [{ type: 'text', text: 'partial answer' }]
+
+      const input = {
+        ...turnInput(a1, { threadId, parentId: u1, content: partial }),
+        participantId: EXAM_PARTICIPANT_ID,
+        lifecycleAttemptId: first.lifecycleAttemptId,
+        keepFailedMarker: true,
+        failed: true,
+      }
+      await accountUsage.finalizeChatTurn(input)
+      expect(await accountUsage.finalizeChatTurn(input)).toMatchObject({
+        outcome: 'duplicate',
+      })
+
+      const row = await prisma.chatMessage.findUniqueOrThrow({
+        where: { id: a1 },
+      })
+      expect(row.lifecycleStatus).toBe('FAILED')
+      expect(row.content).toEqual(partial)
+
+      const next = await examClaim(threadId, u2, a2)
+      expect(next).toMatchObject({
+        outcome: 'claimed',
+        history: [
+          { id: u1, role: 'user' },
+          { id: u2, role: 'user' },
+        ],
+      })
+    })
+
     test('a second tab cannot fork or run in parallel with a turn in progress', async () => {
       const threadId = await examThread()
       const [u1, a1, u2, a2] = Array.from({ length: 4 }, randomUUID)
