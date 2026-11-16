@@ -7,7 +7,7 @@ The course lead answered the exam conversation questions (2026-11-12). The asses
 - Each student has one conversation per chatbot. It reopens after a reload or a new login.
 - Students cannot edit a sent message, ask for a new answer, branch, start a second conversation, delete the conversation or attach files.
 - After a broken or stopped answer, the student types the question again. The conversation stays one linear thread, and the broken answer is marked incomplete in the export.
-- Invigilators announce the end; the lecturer export (#6878) runs right after. No automatic close.
+- Invigilators announce the end; the lecturer transcript export runs right after. It ships through the attested assessment export (#6253, transcript builder in #6913); #6878 is the fallback until then. No automatic close.
 
 All rules apply only in assessment mode (`CHAT_ASSESSMENT_MODE=true`). Like the assessment PWA, the regular chat refuses chatbots of assessment-enabled courses, and the assessment chat already refuses all others.
 
@@ -92,3 +92,4 @@ Approval mode: executable batch. Terminal condition: a third stack layer (draft 
 - 2026-11-12: Slice 5 (proof) done on a local merge with #6878, using the mock model and lifecycle writes off.
   - All seven checks pass: one thread after a reload and a new session; second tab refused with `CHAT_TURN_IN_PROGRESS`; stop, then a new question; mock killed mid-answer, then the question retyped. After reload the conversation is linear with a `FAILED` marker, and the export shows one thread, one answer incomplete and one failed. The regular chat returns 404 for the exam chatbot.
   - Gaps: a minted session cookie replaced the Edu-ID round trip (covered in layer 2), and the failure was a transport error, not a provider error.
+- 2026-11-16: the lecturer export moved to the assessment export stack (#6253, #6913). The Slice 5 export proof against #6878 stays as historical evidence of the linear thread and the failure markers; the same builder now lives in #6913.
