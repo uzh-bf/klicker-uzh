@@ -13,12 +13,19 @@ import type {
   QuestionGenerationDesignSummary,
   QuestionGenerationPlanSummary,
 } from '@klicker-uzh/types'
+import { z } from 'zod'
 import builder from '../builder.js'
+import type { ContextWithUser } from '../lib/context.js'
 import type {
   GeneratedElementEditableInput as GeneratedElementEditableInputValue,
   StartElementGenerationInput,
 } from '../services/elementGeneration.js'
-import { KBResourceType } from './knowledge.js'
+import type {
+  KBGraphPreparationPendingReason,
+  KBQuestionPreparationState,
+} from '../services/knowledge.js'
+import { getKBQuestionGenerationSource } from '../services/questionGenerationGraph.js'
+import { KBRef, KBResourceType } from './knowledge.js'
 
 export type GeneratableElementType = 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
 type ElementGenerationLanguageValue = 'de' | 'en'
@@ -97,6 +104,7 @@ type ElementGenerationTypeCapability = {
   supportsFocusTopic: boolean
   supportsRetry: boolean
   supportsIncompletePublication: boolean
+  supportsIndividualRegeneration: boolean
 }
 const ElementGenerationTypeCapabilityRef =
   builder.objectRef<ElementGenerationTypeCapability>(
@@ -118,6 +126,9 @@ ElementGenerationTypeCapabilityRef.implement({
     supportsRetry: t.exposeBoolean('supportsRetry'),
     supportsIncompletePublication: t.exposeBoolean(
       'supportsIncompletePublication'
+    ),
+    supportsIndividualRegeneration: t.exposeBoolean(
+      'supportsIndividualRegeneration'
     ),
   }),
 })
@@ -172,30 +183,130 @@ ElementGenerationSourceScopeRef.implement({
   }),
 })
 
-export type ElementGenerationSourceView = {
-  language: ElementGenerationLanguageValue
+export const ElementGenerationPreparationState = builder.enumType(
+  'ElementGenerationPreparationState',
+  {
+    values: [
+      'WAITING_FOR_MATERIALS',
+      'QUEUED',
+      'PROCESSING',
+      'READY',
+      'DELAYED',
+      'NEEDS_ATTENTION',
+      'UNAVAILABLE',
+      'NO_ELIGIBLE_MATERIALS',
+    ] as const,
+  }
+)
+export const ElementGenerationPreparationPendingReason = builder.enumType(
+  'ElementGenerationPreparationPendingReason',
+  {
+    values: [
+      'NO_PUBLISHED_GRAPH',
+      'SETTINGS_CHANGED',
+      'SOURCES_CHANGED',
+    ] as const,
+  }
+)
+
+type ElementGenerationSourceBasisView = {
   graphBuildId: string
-  kbId: string
-  kbName: string
+  fingerprint: string
+  language: ElementGenerationLanguageValue
   indexedAt: Date
-  isStale: boolean
+  recentChangesExcluded: boolean
   sourceCount: number
   sources: ElementGenerationSourceScopeView[]
+}
+const ElementGenerationSourceBasisRef =
+  builder.objectRef<ElementGenerationSourceBasisView>(
+    'ElementGenerationSourceBasis'
+  )
+ElementGenerationSourceBasisRef.implement({
+  fields: (t) => ({
+    graphBuildId: t.exposeID('graphBuildId'),
+    fingerprint: t.exposeString('fingerprint'),
+    language: t.expose('language', { type: ElementGenerationLanguage }),
+    indexedAt: t.expose('indexedAt', { type: 'Date' }),
+    recentChangesExcluded: t.exposeBoolean('recentChangesExcluded'),
+    sourceCount: t.exposeInt('sourceCount'),
+    sources: t.expose('sources', { type: [ElementGenerationSourceScopeRef] }),
+  }),
+})
+
+export type ElementGenerationSourceView = {
+  kbId: string
+  kbName: string
+  preparationState: KBQuestionPreparationState
+  preparationPendingReason: KBGraphPreparationPendingReason | null
+  basis: ElementGenerationSourceBasisView | null
 }
 export const ElementGenerationSourceRef =
   builder.objectRef<ElementGenerationSourceView>('ElementGenerationSource')
 ElementGenerationSourceRef.implement({
   fields: (t) => ({
-    language: t.expose('language', { type: ElementGenerationLanguage }),
-    graphBuildId: t.exposeID('graphBuildId'),
     kbId: t.exposeID('kbId'),
     kbName: t.exposeString('kbName'),
-    indexedAt: t.expose('indexedAt', { type: 'Date' }),
-    isStale: t.exposeBoolean('isStale'),
-    sourceCount: t.exposeInt('sourceCount'),
-    sources: t.expose('sources', { type: [ElementGenerationSourceScopeRef] }),
+    preparationState: t.expose('preparationState', {
+      type: ElementGenerationPreparationState,
+    }),
+    preparationPendingReason: t.expose('preparationPendingReason', {
+      type: ElementGenerationPreparationPendingReason,
+      nullable: true,
+    }),
+    basis: t.expose('basis', {
+      type: ElementGenerationSourceBasisRef,
+      nullable: true,
+    }),
   }),
 })
+
+type KBQuestionPreparationView = {
+  state: KBQuestionPreparationState
+  pendingReason: KBGraphPreparationPendingReason | null
+  hasBasis: boolean
+  basisIndexedAt: Date | null
+}
+const KBQuestionPreparationRef = builder.objectRef<KBQuestionPreparationView>(
+  'KBQuestionPreparation'
+)
+KBQuestionPreparationRef.implement({
+  fields: (t) => ({
+    state: t.expose('state', { type: ElementGenerationPreparationState }),
+    pendingReason: t.expose('pendingReason', {
+      type: ElementGenerationPreparationPendingReason,
+      nullable: true,
+    }),
+    hasBasis: t.exposeBoolean('hasBasis'),
+    basisIndexedAt: t.expose('basisIndexedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+  }),
+})
+// Null without question-generation preview access or when its load fails,
+// so a KB listing never fails because of it.
+builder.objectField(KBRef, 'questionPreparation', (t) =>
+  t.field({
+    type: KBQuestionPreparationRef,
+    nullable: true,
+    resolve: async (kb, _args, ctx) => {
+      if (!ctx.user) return null
+      const source = await getKBQuestionGenerationSource(
+        ctx as ContextWithUser,
+        kb.id
+      )
+      return source
+        ? {
+            state: source.preparationState,
+            pendingReason: source.preparationPendingReason,
+            hasBasis: source.basis !== null,
+            basisIndexedAt: source.basis?.indexedAt ?? null,
+          }
+        : null
+    },
+  })
+)
 
 type ElementGenerationConfigurationSourceScopeView = {
   resourceId: string
@@ -668,6 +779,21 @@ ElementGenerationReviewRef.implement({
   }),
 })
 
+// A child build that fulfils one revision request for a draft.
+export const ElementRevisionBuildRef =
+  builder.objectRef<DB.ElementGenerationBuild>('ElementRevisionBuild')
+ElementRevisionBuildRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    status: t.expose('status', { type: ElementGenerationBuildStatus }),
+    note: t.exposeString('revisionNote', { nullable: true }),
+    errorCode: t.exposeString('errorCode', { nullable: true }),
+    errorMessage: t.exposeString('errorMessage', { nullable: true }),
+    errorRetryable: t.exposeBoolean('errorRetryable', { nullable: true }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+  }),
+})
+
 export const GeneratedElementDraftRef =
   builder.objectRef<DB.GeneratedElementDraft>('GeneratedElementDraft')
 GeneratedElementDraftRef.implement({
@@ -677,6 +803,36 @@ GeneratedElementDraftRef.implement({
     order: t.exposeInt('order'),
     duplicationIndex: t.exposeInt('duplicationIndex'),
     parentDraftId: t.exposeID('parentDraftId', { nullable: true }),
+    revisionOfDraftId: t.exposeID('revisionOfDraftId', { nullable: true }),
+    // The note of the request that produced this draft.
+    revisionNote: t.string({
+      nullable: true,
+      resolve: async (draft, _args, ctx) => {
+        if (!draft.revisionBuildId) return null
+        const child = await ctx.prisma.elementGenerationBuild.findUnique({
+          where: { id: draft.revisionBuildId },
+          select: { revisionNote: true },
+        })
+        return child?.revisionNote ?? null
+      },
+    }),
+    revisionBuilds: t.field({
+      type: [ElementRevisionBuildRef],
+      resolve: (draft, _args, ctx) =>
+        ctx.prisma.elementGenerationBuild.findMany({
+          where: { revisionOfDraftId: draft.id },
+          orderBy: { createdAt: 'desc' },
+        }),
+    }),
+    evidencePurged: t.boolean({
+      resolve: async (draft, _args, ctx) => {
+        const build = await ctx.prisma.elementGenerationBuild.findUnique({
+          where: { id: draft.buildId },
+          select: { evidencePurgedAt: true },
+        })
+        return build?.evidencePurgedAt != null
+      },
+    }),
     elementType: t.field({
       type: GeneratableElementType,
       resolve: (draft) => draft.elementType as GeneratableElementType,
@@ -858,7 +1014,10 @@ const ElementGenerationSourceScopeInputRef = builder
   .inputRef<SourceScopeInput>('ElementGenerationSourceScopeInput')
   .implement({
     fields: (t) => ({
-      resourceId: t.id({ required: true, validate: { uuid: true } }),
+      resourceId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       pageFrom: t.int({ required: false, validate: { min: 1 } }),
       pageTo: t.int({ required: false, validate: { min: 1 } }),
     }),
@@ -886,7 +1045,18 @@ export const StartElementGenerationInputRef = builder
   .inputRef<StartElementGenerationInput>('StartElementGenerationInput')
   .implement({
     fields: (t) => ({
-      graphBuildId: t.id({ required: true, validate: { uuid: true } }),
+      kbId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
+      graphBuildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
+      basisFingerprint: t.string({
+        required: true,
+        validate: { minLength: 1, maxLength: 128 },
+      }),
       elementType: t.field({ type: GeneratableElementType, required: true }),
       language: t.field({ type: ElementGenerationLanguage, required: true }),
       elementCount: t.int({
@@ -932,7 +1102,10 @@ export const ReviewElementGenerationInputRef = builder
   .inputRef<ReviewElementGenerationInput>('ReviewElementGenerationInput')
   .implement({
     fields: (t) => ({
-      buildId: t.id({ required: true, validate: { uuid: true } }),
+      buildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       gate: t.field({ type: ElementGenerationReviewGate, required: true }),
       decision: t.field({
         type: ElementGenerationReviewDecision,
@@ -1034,7 +1207,10 @@ export const UpdateGeneratedElementDraftInputRef = builder
   )
   .implement({
     fields: (t) => ({
-      draftId: t.id({ required: true, validate: { uuid: true } }),
+      draftId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       expectedRevision: t.int({ required: true, validate: { min: 0 } }),
       current: t.field({
         type: GeneratedElementEditableInputRef,
@@ -1048,13 +1224,17 @@ export const GeneratedElementDraftInputRef = builder
   .inputRef<GeneratedElementDraftInput>('GeneratedElementDraftInput')
   .implement({
     fields: (t) => ({
-      draftId: t.id({ required: true, validate: { uuid: true } }),
+      draftId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
     }),
   })
 
 export type SetGeneratedElementDecisionInput = {
   draftId: string
   decision: DB.GeneratedElementDecision
+  note?: string | null
 }
 export const SetGeneratedElementDecisionInputRef = builder
   .inputRef<SetGeneratedElementDecisionInput>(
@@ -1062,8 +1242,15 @@ export const SetGeneratedElementDecisionInputRef = builder
   )
   .implement({
     fields: (t) => ({
-      draftId: t.id({ required: true, validate: { uuid: true } }),
+      draftId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       decision: t.field({ type: GeneratedElementDecision, required: true }),
+      note: t.string({
+        required: false,
+        validate: { schema: z.string().max(1000) },
+      }),
     }),
   })
 
@@ -1072,7 +1259,10 @@ export const ElementGenerationBuildInputRef = builder
   .inputRef<ElementGenerationBuildInput>('ElementGenerationBuildInput')
   .implement({
     fields: (t) => ({
-      buildId: t.id({ required: true, validate: { uuid: true } }),
+      buildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
     }),
   })
 
@@ -1086,7 +1276,10 @@ export const PublishIncompleteElementGenerationInputRef = builder
   )
   .implement({
     fields: (t) => ({
-      buildId: t.id({ required: true, validate: { uuid: true } }),
+      buildId: t.id({
+        required: true,
+        validate: { schema: z.string().guid() },
+      }),
       warningsAcknowledged: t.boolean({ required: true }),
     }),
   })

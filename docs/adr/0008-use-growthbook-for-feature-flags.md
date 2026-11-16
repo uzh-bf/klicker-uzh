@@ -65,8 +65,9 @@ available without Catalyst.
 The database-owned `User.aiFeaturesEnabled`, default `false`, remains the sole
 account approval gate for Knowledge Base access, question/graph generation,
 chatbot publication, and model usage, even when budget enforcement is
-disabled. Chatbot authoring is preapproval: the beta preference and `ai-beta`
-rollout may allow authoring without that approval, but neither grants it.
+disabled. Chatbot creation now also requires that approval
+([ADR 0056](./0056-lecturer-ai-access-by-feature.md)); the beta preference and
+`ai-beta` rollout never grant it.
 Per-chatbot publication review and published participant access remain separate
 and unchanged. Token provisioning and validation belong to v3-ai, not this flag
 contract. See the

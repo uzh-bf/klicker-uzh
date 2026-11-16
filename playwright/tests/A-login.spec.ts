@@ -2,6 +2,7 @@ import type { Page, Request } from '@playwright/test'
 import bcrypt from 'bcryptjs'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
+import { waitForClientHydration } from '../util/authSession.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_EMAIL,
@@ -38,6 +39,54 @@ function getGraphQLOperationName(request: Request) {
       : undefined
   }
   return new URL(request.url()).searchParams.get('operationName') ?? undefined
+}
+
+interface MailhogMessage {
+  Created: string
+  Content: { Headers: Record<string, string[]>; Body: string }
+  MIME: {
+    Parts: { Headers: Record<string, string[]>; Body: string }[]
+  } | null
+}
+
+function decodeMimeBody(headers: Record<string, string[]>, body: string) {
+  const encoding = headers['Content-Transfer-Encoding']?.[0]?.toLowerCase()
+  if (encoding === 'base64') return Buffer.from(body, 'base64').toString()
+  if (encoding !== 'quoted-printable') return body
+  return Buffer.from(
+    body
+      .replace(/=\r?\n/g, '')
+      .replace(/=([0-9A-F]{2})/gi, (_, hex) =>
+        String.fromCharCode(Number.parseInt(hex, 16))
+      ),
+    'latin1'
+  ).toString()
+}
+
+// Returns the one-time login link from the newest message to the seeded
+// student that arrived after the request, or undefined while none has.
+async function findMagicLink(mailhogUrl: string, since: number) {
+  const response = await fetch(
+    `${mailhogUrl}/api/v2/search?kind=to&query=${encodeURIComponent(STUDENT_EMAIL)}`
+  )
+  if (!response.ok) return undefined
+  const { items } = (await response.json()) as { items: MailhogMessage[] }
+  const message = items.find(
+    (item) =>
+      Date.parse(item.Created) >= since - 1_000 &&
+      item.Content.Headers.Subject?.[0]?.includes('One-Time Login Link')
+  )
+  if (!message) return undefined
+
+  const parts = message.MIME?.Parts ?? [
+    { Headers: message.Content.Headers, Body: message.Content.Body },
+  ]
+  for (const part of parts) {
+    const text = decodeMimeBody(part.Headers, part.Body)
+    const link = text.match(/https?:\/\/\S+\/magicLogin\?token=[\w.-]+/)?.[0]
+    if (link) return link
+  }
+  return undefined
 }
 
 async function signInStudentFromReturnTarget(page: Page, target: string) {
@@ -649,6 +698,42 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   // -------------------------------------------------------------------------
+  // Student: one-time login link delivered over SMTP. The backend sends the
+  // message through the real mail transport to a MailHog sink, and the test
+  // follows the link from the delivered plain-text part.
+  // -------------------------------------------------------------------------
+  test('Sign in with a one-time login link from the delivered email', async ({
+    page,
+  }) => {
+    const mailhogUrl = process.env.MAILHOG_URL
+    test.skip(!mailhogUrl, 'MAILHOG_URL is not set; no SMTP sink to read')
+
+    const requestedAt = Date.now()
+    await page.context().clearCookies()
+    await page.goto(getStudentLoginUrl())
+    await expect(page.getByTestId('login-logo')).toBeVisible()
+    await waitForClientHydration(page)
+    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    await page.getByTestId('username-field').fill(STUDENT_EMAIL)
+    await page.getByTestId('magic-link-login').click()
+
+    let magicLink: string | undefined
+    await expect
+      .poll(
+        async () => {
+          magicLink = await findMagicLink(mailhogUrl!, requestedAt)
+          return magicLink
+        },
+        { timeout: 30_000 }
+      )
+      .toBeDefined()
+
+    await page.context().clearCookies()
+    await page.goto(magicLink!)
+    await expect(page.getByTestId('homepage')).toBeVisible()
+  })
+
+  // -------------------------------------------------------------------------
   // Lecturer: delegated login via the Auth app
   // -------------------------------------------------------------------------
   test('Sign in into lecturer account', async ({
@@ -692,6 +777,47 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       await page.waitForTimeout(500)
       expect(mutationFired).toBe(false)
       await expect(saveButton).toBeDisabled()
+    })
+  })
+
+  test('The intro player cannot navigate the first-login page', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await page.route('https://switchcast-auth.invalid/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: 'Synthetic sign-in' })
+    )
+    await page.route(
+      (url) =>
+        url.hostname === 'api.cast.switch.ch' &&
+        url.pathname.startsWith('/p/106/sp/10600/embedIframeJs/'),
+      (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: `<button data-cy="navigate-parent" onclick="
+            try {
+              window.top.location.href = 'https://switchcast-auth.invalid/sign-in';
+              this.dataset.navigationResult = 'allowed';
+            } catch (error) {
+              this.dataset.navigationResult = error.name;
+            }
+          ">Continue</button>`,
+        })
+    )
+
+    await withSyntheticFirstLogin(async () => {
+      await loginLecturer()
+      const firstLoginUrl = page.url()
+      const player = page.frameLocator('iframe.kmsembed')
+
+      await player.getByTestId('navigate-parent').click()
+      await expect(player.getByTestId('navigate-parent')).toHaveAttribute(
+        'data-navigation-result',
+        'SecurityError'
+      )
+      await expect(page).toHaveURL(firstLoginUrl)
+      await page.getByTestId('first-login-seed-demo-elements-no').click()
+      await expect(page.getByTestId('first-login-save-settings')).toBeEnabled()
     })
   })
 

@@ -32,7 +32,7 @@ describe('graph retrieval rollout', () => {
 
   it('evaluates current owner attributes and rechecks changes', async () => {
     expect(await isChatbotGraphRetrievalEnabled('owner')).toBe(true)
-    expect(mocks.enabled).toHaveBeenLastCalledWith('chatbot-graphrag', {
+    expect(mocks.enabled).toHaveBeenLastCalledWith('ai-beta', {
       id: 'owner',
       actorType: 'user',
       role: 'USER',
@@ -45,15 +45,9 @@ describe('graph retrieval rollout', () => {
       catalystIndividual: false,
       betaEnabled: false,
     })
-    mocks.enabled.mockReturnValue(false)
+    mocks.enabled.mockReturnValue(true)
     expect(await isChatbotGraphRetrievalEnabled('owner')).toBe(false)
-    expect(mocks.enabled).toHaveBeenLastCalledWith('chatbot-graphrag', {
-      id: 'owner',
-      actorType: 'user',
-      role: 'ADMIN',
-      catalyst: false,
-      betaEnabled: false,
-    })
+    expect(mocks.enabled).toHaveBeenCalledOnce()
   })
 
   it('denies a missing owner without evaluating the flag', async () => {

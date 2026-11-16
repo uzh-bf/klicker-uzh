@@ -11,6 +11,7 @@
 
 import {
   AchievementType,
+  AiSubscriptionTier,
   ObjectAccess,
   PermissionLevel,
   UserLoginScope,
@@ -151,7 +152,11 @@ export async function seedDatabase() {
           catalystInstitutional: true,
           publicPreview: true,
           privatePreview: true,
+          // The built-in model registry classifies Auto as advanced, so the
+          // authoring specs need the advanced tier and a cost center to add it.
           aiFeaturesEnabled: true,
+          aiSubscriptionTier: AiSubscriptionTier.ADVANCED,
+          aiChatbotCostCenter: 'LOCAL-SEED',
           role: UserRole.ADMIN,
           firstLogin: false,
           logins: {
@@ -232,7 +237,11 @@ export async function seedDatabase() {
         prisma.user.upsert({
           where: { id: userData.id },
           create: userData,
-          update: {},
+          update: {
+            aiFeaturesEnabled: userData.aiFeaturesEnabled,
+            aiSubscriptionTier: userData.aiSubscriptionTier,
+            aiChatbotCostCenter: userData.aiChatbotCostCenter,
+          },
         })
       )
     )
@@ -360,7 +369,11 @@ export async function seedDatabase() {
     // Participant groups (multi-member)
     await Promise.all(
       PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
-        const code = 100000 + Math.floor(Math.random() * 900000)
+        // A group code is unique per course, so it is derived from the group's
+        // position instead of being drawn at random: two draws could collide
+        // and fail the seed on the [courseId, code] constraint. The ranges
+        // match packages/prisma-data/src/data/seedTEST.ts.
+        const code = 900200 + ix
         return prisma.participantGroup.upsert({
           where: { id },
           create: {
@@ -387,7 +400,8 @@ export async function seedDatabase() {
     // Participant groups (single-member)
     await Promise.all(
       PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
-        const code = 100000 + Math.floor(Math.random() * 900000)
+        // Same derivation as the multi-member groups, in its own range.
+        const code = 900100 + ix
         return prisma.participantGroup.upsert({
           where: { id },
           create: {

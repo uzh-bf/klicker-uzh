@@ -12,7 +12,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
 import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
@@ -20,20 +20,41 @@ import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
 interface OwnedCourse {
   id: string
   name: string
+  language?: string | null
+}
+
+// Participants read the disclaimer in the course language, which can differ
+// from the lecturer's interface language, so the suggested text is loaded from
+// that locale's catalog instead of the active translations.
+async function getSuggestedDisclaimer(locale: string) {
+  const messages =
+    locale === 'de'
+      ? (await import('@klicker-uzh/i18n/messages/de')).default
+      : (await import('@klicker-uzh/i18n/messages/en')).default
+  return {
+    disclaimerTitle: messages.manage.resources.chatbotDisclaimerSuggestedTitle,
+    disclaimerIntroText:
+      messages.manage.resources.chatbotDisclaimerSuggestedIntro,
+  }
 }
 
 interface ChatbotCreateModalProps {
   courses: OwnedCourse[]
+  // Set when the flow carries no course of its own, so a lecturer with several
+  // courses picks one deliberately instead of accepting the first in the list.
+  requireCourseChoice?: boolean
   onClose: () => void
   onCreated: (chatbotId: string) => void
 }
 
 function ChatbotCreateModal({
   courses,
+  requireCourseChoice = false,
   onClose,
   onCreated,
 }: ChatbotCreateModalProps) {
   const t = useTranslations()
+  const locale = useLocale()
   const [createChatbot, { loading: isCreating }] = useMutation(
     CreateChatbotDocument
   )
@@ -52,7 +73,10 @@ function ChatbotCreateModal({
         initialValues={{
           name: '',
           description: '',
-          courseId: courses[0]?.id ?? '',
+          courseId:
+            requireCourseChoice && courses.length > 1
+              ? ''
+              : (courses[0]?.id ?? ''),
         }}
         validationSchema={Yup.object({
           name: Yup.string()
@@ -65,11 +89,16 @@ function ChatbotCreateModal({
         onSubmit={async (values) => {
           setSubmitError(null)
           try {
+            const course = courses.find(({ id }) => id === values.courseId)
+            const suggestedDisclaimer = await getSuggestedDisclaimer(
+              course?.language ?? locale
+            )
             const result = await createChatbot({
               variables: {
                 name: values.name.trim(),
                 description: values.description.trim() || null,
                 courseId: values.courseId,
+                ...suggestedDisclaimer,
               },
               refetchQueries: [
                 { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
@@ -155,4 +184,5 @@ function ChatbotCreateModal({
   )
 }
 
+export { getSuggestedDisclaimer }
 export default ChatbotCreateModal

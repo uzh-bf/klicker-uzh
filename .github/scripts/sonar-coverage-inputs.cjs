@@ -286,7 +286,7 @@ async function findPublishedAnalysis(deps) {
       continue
     }
     for (const run of runs || []) {
-      if (run && run.id && run.status === 'completed') candidates.push(run)
+      if (run && run.id) candidates.push(run)
     }
   }
   candidates.sort(
@@ -300,6 +300,22 @@ async function findPublishedAnalysis(deps) {
       continue
     }
     if ((artifacts || []).some((artifact) => artifact.name === name)) {
+      if (run.status !== 'completed') {
+        let receipt
+        try {
+          receipt = await transport.readJsonArtifact(artifacts, name)
+        } catch (error) {
+          continue
+        }
+        if (
+          !receipt ||
+          receipt.runId !== run.id ||
+          receipt.runAttempt !== (run.run_attempt || 1) ||
+          receipt.headSha !== headSha ||
+          receipt.baseSha !== baseSha
+        )
+          continue
+      }
       return { runId: run.id, name }
     }
   }
@@ -355,7 +371,60 @@ async function resolveProducers(transport, producers, headSha) {
   const resolved = []
   for (const producer of producers) {
     const runs = await transport.listRuns(workflowFileName(producer), headSha)
-    const run = selectNewestRun(runs)
+    const candidates = [...runs]
+    const terminalName = {
+      'test-unit.yml': 'test-unit-status',
+      'test-graphql.yml': 'test-graphql-status',
+    }[workflowFileName(producer)]
+    let run = selectNewestRun(candidates)
+    let jobs
+    while (run?.status === 'completed') {
+      jobs = await transport.listJobs(run.id, run.run_attempt || 1)
+      const ignoredLabel =
+        jobs.length > 0 &&
+        (jobs.every((job) => job.conclusion === 'skipped') ||
+          (jobs.some(
+            (job) =>
+              job.name === `${terminalName} (priority not admitted)` &&
+              ['success', 'skipped'].includes(job.conclusion)
+          ) &&
+            !jobs.some(
+              (job) =>
+                job.name === terminalName ||
+                job.name === `priority-execution / ${terminalName}`
+            )))
+      if (!ignoredLabel) break
+      candidates.splice(
+        candidates.findIndex((candidate) => candidate.id === run.id),
+        1
+      )
+      run = selectNewestRun(candidates)
+      jobs = undefined
+    }
+    if (run && run.status === 'in_progress') {
+      jobs ??= await transport.listJobs(run.id, run.run_attempt || 1)
+      const nested = jobs.filter(
+        (job) => job.name === `priority-execution / ${terminalName}`
+      )
+      const terminal = nested.length
+        ? nested
+        : jobs.filter((job) => job.name === terminalName)
+      // The analysis belongs to the producer workflow, so waiting for that
+      // workflow to finish would wait on this job itself. Its required-status
+      // job proves the test outcome without admitting unfinished test work.
+      if (
+        terminalName &&
+        terminal.length === 1 &&
+        terminal[0].status === 'completed' &&
+        terminal[0].conclusion
+      ) {
+        run = {
+          ...run,
+          status: 'completed',
+          conclusion: terminal[0].conclusion,
+        }
+      }
+    }
     resolved.push({
       producer,
       run,

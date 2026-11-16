@@ -119,6 +119,28 @@ export function reduceCatalyst(acc: boolean, affiliation: string): boolean {
   }
 }
 
+function isUzhDomain(address: string | null | undefined): boolean {
+  const domain = address?.split('@')[1]?.trim().toLowerCase()
+  return domain === 'uzh.ch' || domain?.endsWith('.uzh.ch') === true
+}
+
+/**
+ * Whether an account belongs to UZH proper: its email, or one of its eduID
+ * affiliations, is on `uzh.ch` or a subdomain of it. Unlike `reduceCatalyst`,
+ * this excludes USZ and look-alike domains such as `notuzh.ch`. The data
+ * migration `20261103200000_ai_features_for_uzh_lecturers` applies the same
+ * rule in SQL.
+ */
+export function isUzhAffiliated({
+  email,
+  affiliations,
+}: {
+  email?: string | null
+  affiliations?: string[] | null
+}): boolean {
+  return isUzhDomain(email) || (affiliations ?? []).some(isUzhDomain)
+}
+
 /**
  * Generate a random alphanumeric string of the given length.
  * Only characters A-Z, a-z, 0-9 are used.

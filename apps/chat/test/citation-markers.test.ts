@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   citationHrefFor,
   extractCitedPages,
+  extractCitedTimestamps,
   type MarkdownAstNode,
   parseCitationHref,
   splitCitationMarkers,
@@ -30,6 +31,7 @@ describe('citationHrefFor / parseCitationHref', () => {
   test('round-trips an index through the #cite-n href format', () => {
     expect(citationHrefFor(3)).toBe('#cite-3')
     expect(parseCitationHref(citationHrefFor(12))).toBe(12)
+    expect(parseCitationHref(citationHrefFor(99))).toBe(99)
   })
 
   test('rejects hrefs that are not the #cite-n shape', () => {
@@ -40,6 +42,8 @@ describe('citationHrefFor / parseCitationHref', () => {
     expect(parseCitationHref('#cite-abc')).toBeNull()
     expect(parseCitationHref('https://example.com')).toBeNull()
     expect(parseCitationHref('#section-1')).toBeNull()
+    // Three digits overrun the two-digit bound the registry cap matches.
+    expect(parseCitationHref('#cite-100')).toBeNull()
   })
 })
 
@@ -73,6 +77,7 @@ describe('splitCitationMarkers', () => {
 
   test('two-digit marker', () => {
     expect(splitCitationMarkers('[12]')).toEqual([citationLinkNode(12)])
+    expect(splitCitationMarkers('[99]')).toEqual([citationLinkNode(99)])
   })
 
   test('expands an en-dash citation range into adjacent linked source numbers', () => {
@@ -99,12 +104,12 @@ describe('splitCitationMarkers', () => {
     expect(splitCitationMarkers('[2 -\n4]')).toEqual([textNode('[2 -\n4]')])
   })
 
-  test('keeps over-wide ranges literal to bound citation chip expansion', () => {
-    expect(splitCitationMarkers('[1-12]')).toEqual(
-      Array.from({ length: 12 }, (_, index) => citationLinkNode(index + 1))
+  test('expands a range up to the 99-index cap and keeps wider bounds literal', () => {
+    expect(splitCitationMarkers('[1-99]')).toEqual(
+      Array.from({ length: 99 }, (_, index) => citationLinkNode(index + 1))
     )
-    expect(splitCitationMarkers('Wide [1-13], valid [2].')).toEqual([
-      textNode('Wide [1-13], valid'),
+    expect(splitCitationMarkers('Wide [1-100], valid [2].')).toEqual([
+      textNode('Wide [1-100], valid'),
       citationLinkNode(2),
       textNode('.'),
     ])
@@ -126,7 +131,12 @@ describe('splitCitationMarkers', () => {
     ['[1, Kapitel 7]', 1],
     ['[3 , p. 2]', 3],
     ['[2–4, S. 10–12]', 2],
-  ])('renders a marker with a labelled page detail (%s)', (input, index) => {
+    ['[1, S. 02:34]', 1],
+    ['[1, p. 1:02:03]', 1],
+    ['[1, S. 02:34–03:10]', 1],
+    ['[1, t. 02:34]', 1],
+    ['[2,t. 1:02:03]', 2],
+  ])('renders only the number for a labelled detail (%s)', (input, index) => {
     const nodes = splitCitationMarkers(input)
     expect(nodes[0]).toEqual(citationLinkNode(index))
     expect(nodes.every((node) => node.type === 'link')).toBe(true)
@@ -159,6 +169,14 @@ describe('splitCitationMarkers', () => {
     '[1,]',
     '[1, ]',
     '[2, ]',
+    '[1, 02:34]',
+    '[1, S. 00:60]',
+    '[1, S. 1:60:00]',
+    '[1, t. 02:60]',
+    '[1, t. 1:2]',
+    '[1, t. 1:60:00]',
+    '[1, t. 12:34–13:00]',
+    '[1, time. 02:34]',
   ])('leaves an unlabelled or non-numeric bracket list literal (%s)', (input) => {
     expect(splitCitationMarkers(input)).toEqual([textNode(input)])
   })
@@ -188,9 +206,12 @@ describe('splitCitationMarkers', () => {
     ])
   })
 
-  test('three-digit bracket is not treated as a marker', () => {
+  test('a three-digit bracket is not treated as a marker', () => {
     expect(splitCitationMarkers('See [123] here')).toEqual([
       textNode('See [123] here'),
+    ])
+    expect(splitCitationMarkers('See [100] here')).toEqual([
+      textNode('See [100] here'),
     ])
   })
 })
@@ -236,6 +257,75 @@ describe('extractCitedPages', () => {
     expect(extractCitedPages('[1, p. 6] and [1, p. 6–7].')).toEqual(
       new Map([[1, [6, 7]]])
     )
+  })
+
+  test('keeps video times out of cited page metadata', () => {
+    expect(extractCitedPages('[1, S. 02:34] [1, p. 1:02:03]')).toEqual(
+      new Map()
+    )
+    expect(extractCitedPages('[1, S. 02:34] [2, p. 6]')).toEqual(
+      new Map([[2, [6]]])
+    )
+    expect(extractCitedPages('[1, t. 02:34] [2, p. 6]')).toEqual(
+      new Map([[2, [6]]])
+    )
+  })
+})
+
+describe('extractCitedTimestamps', () => {
+  test('attributes distinct prose-labelled passage starts to a bare source', () => {
+    const text = [
+      '**Passage start: 0:12** in the example. It illustrates the rule [3].',
+      'The next video segment **starts at 1:14** [3].',
+      'The clip starts at 1:14 [3].',
+    ].join('\n\n')
+    expect(extractCitedTimestamps(text)).toEqual(new Map([[3, [12, 74]]]))
+    expect(extractCitedTimestamps(text + '\n\nSee [3, t. 0:20].')).toEqual(
+      new Map([[3, [20]]])
+    )
+  })
+
+  test.each([
+    'The meeting starts at 0:12 [1].',
+    'The video starts at 0:12 and ends at 0:22 [1].',
+    'The video starts at 0:12 [1] [2].',
+    'The video starts at 0:12 [1](https://example.org).',
+    'The video starts at 0:72 [1].',
+    'The video starts at 0:12.\n\nAnother claim [1].',
+    '`The video starts at 0:12 [1]`.',
+  ])('leaves ambiguous or unrelated prose clocks alone: %s', (text) => {
+    expect(extractCitedTimestamps(text).size).toBe(0)
+  })
+
+  test('reads single-source minute and hour clocks case-insensitively', () => {
+    expect([
+      ...extractCitedTimestamps('See [1, T. 02:34] and [2,t. 1:02:03].'),
+    ]).toEqual([
+      [1, [154]],
+      [2, [3723]],
+    ])
+  })
+
+  test('keeps distinct clocks per source and ignores bare or ranged markers', () => {
+    expect([
+      ...extractCitedTimestamps(
+        'A [1, t. 2:00] B [1,t. 1:30] C [1, t. 2:00] D [1][2–4, t. 3:00].'
+      ),
+    ]).toEqual([[1, [120, 90]]])
+  })
+
+  test('does not treat page-labelled clocks as video positions', () => {
+    expect(
+      extractCitedTimestamps('[1, p. 6] [1, S. 02:34] [2, t. 1:02:03]')
+    ).toEqual(new Map([[2, [3723]]]))
+  })
+
+  test('ignores video clocks inside code and incomplete markers', () => {
+    expect(
+      extractCitedTimestamps(
+        '```\n[1, t. 2:00]\n``` Use `[1, t. 3:00]` and [1, t. 4:00'
+      )
+    ).toEqual(new Map())
   })
 })
 
@@ -392,17 +482,32 @@ describe('resolveCitationSource', () => {
   test('a message with no sources resolves any marker to undefined', () => {
     expect(resolveCitationSource(1, [])).toBeUndefined()
   })
+
+  test('resolves the highest two-digit index 99 and rejects 100', () => {
+    const sources: ChatSource[] = Array.from({ length: 99 }, (_, i) => ({
+      id: `id-${i}`,
+      index: i + 1,
+      type: 'document',
+      title: `Source ${i + 1}`,
+    }))
+
+    expect(resolveCitationSource(99, sources)?.index).toBe(99)
+    expect(resolveCitationSource(100, sources)).toBeUndefined()
+  })
 })
 
 describe('citation protocol across streaming boundaries', () => {
   test.each([
     ['[1]', [1]],
     ['[12]', [12]],
+    ['[99]', [99]],
     ['[1][2]', [1, 2]],
     ['[1] [2]', [1, 2]],
     ['[2–4]', [2, 3, 4]],
     ['[2-4]', [2, 3, 4]],
     ['[2—4]', [2, 3, 4]],
+    ['[1, S. 02:34]', [1]],
+    ['[1, t. 12:34]', [1]],
   ] as const)('emits only completed markers while %s arrives character by character', (input, expected) => {
     for (let length = 0; length <= input.length; length += 1) {
       const prefix = input.slice(0, length)

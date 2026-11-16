@@ -127,3 +127,21 @@ export function buildAbortedAssistantContent(
 
   return content
 }
+
+/**
+ * Drops persisted reasoning parts from a stored message body before it is
+ * returned to a participant. The stored row keeps them; non-array bodies such
+ * as plain user text pass through unchanged.
+ */
+export function withoutReasoningParts(content: unknown): unknown {
+  if (!Array.isArray(content)) return content
+
+  return content.filter(
+    (part) =>
+      !(
+        part &&
+        typeof part === 'object' &&
+        (part as { type?: unknown }).type === 'reasoning'
+      )
+  )
+}

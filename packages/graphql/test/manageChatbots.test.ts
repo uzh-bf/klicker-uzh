@@ -54,9 +54,15 @@ describe('Integration tests for lecturer chatbot management', () => {
       isEnabled: (key) => key === 'ai-beta',
     } as NonNullable<ContextWithUser['featureFlags']>
     userTwoCtx = ctx2
+    userTwoCtx.featureFlags = userOneCtx.featureFlags
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
-      data: { aiFeaturesEnabled: true },
+      // The built-in model registry classifies Auto as advanced.
+      data: {
+        aiFeaturesEnabled: true,
+        aiSubscriptionTier: 'ADVANCED',
+        aiChatbotCostCenter: 'KST-1',
+      },
     })
   })
 
@@ -76,7 +82,7 @@ describe('Integration tests for lecturer chatbot management', () => {
         description: null,
         status: 'DRAFT',
         modelSelection: false,
-        allowedModelIds: ['auto'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: [],
         courses: [{ id: course.id }],
       })
@@ -93,6 +99,10 @@ describe('Integration tests for lecturer chatbot management', () => {
           allowedReasoningEffortsByModel: true,
           knowledgeGraphVisible: true,
           knowledgeGraphRetrievalEnabled: true,
+          creditInitialCredits: true,
+          creditResetPeriod: true,
+          creditResetAmount: true,
+          creditMaxCredits: true,
         },
       })
       expect(row).toEqual({
@@ -101,11 +111,69 @@ describe('Integration tests for lecturer chatbot management', () => {
         status: 'DRAFT',
         systemPrompts: null,
         modelSelection: false,
-        allowedModelIds: ['auto'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: null,
         knowledgeGraphVisible: false,
         knowledgeGraphRetrievalEnabled: false,
+        creditInitialCredits: 3,
+        creditResetPeriod: CreditResetPeriod.DAILY,
+        creditResetAmount: 3,
+        creditMaxCredits: 3,
       })
+    })
+
+    it('creates the provided disclaimer with the chatbot', async () => {
+      const course = await seedCourse({}, userOneCtx)
+
+      const chatbot = await createChatbot(
+        {
+          name: 'Disclaimed Tutor',
+          courseId: course.id,
+          disclaimerTitle: ' About this chatbot ',
+          disclaimerIntroText: 'Check answers against your course materials.',
+        },
+        userOneCtx
+      )
+
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: chatbot.id },
+        select: {
+          disclaimer: {
+            select: { title: true, introText: true, ownerId: true },
+          },
+        },
+      })
+      expect(row.disclaimer).toEqual({
+        title: 'About this chatbot',
+        introText: 'Check answers against your course materials.',
+        ownerId: userOneCtx.user.sub,
+      })
+
+      await expect(
+        createChatbot(
+          {
+            name: 'Half Disclaimer',
+            courseId: course.id,
+            disclaimerTitle: 'T',
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow()
+    })
+
+    it('rejects creation without the AI approval', async () => {
+      const course = await seedCourse({}, userOneCtx)
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        data: { aiFeaturesEnabled: false },
+      })
+
+      await expect(
+        createChatbot({ name: 'Unapproved', courseId: course.id }, userOneCtx)
+      ).rejects.toThrow()
+      await expect(
+        prisma.chatbot.count({ where: { courseId: course.id } })
+      ).resolves.toBe(0)
     })
 
     it('rejects creation against a course the caller does not own', async () => {
@@ -460,13 +528,67 @@ describe('Integration tests for lecturer chatbot management', () => {
           courseId: course.id,
           ownerId: userOneCtx.user.sub,
           status,
-          allowedModelIds: ['gpt-5.6-luna', 'gpt-4.1'],
+          allowedModelIds: ['gpt-6-luna', 'gpt-4.1'],
           allowedReasoningEffortsByModel: {
-            'gpt-5.6-luna': ['low', 'medium'],
+            'gpt-6-luna': ['low', 'medium'],
           },
         },
       })
     }
+
+    it('rejects adding an advanced model the owner cannot use but keeps a saved one', async () => {
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        // Drafts need only the subscription, not AI access.
+        data: {
+          aiFeaturesEnabled: false,
+          aiSubscriptionTier: 'BASE',
+          aiChatbotCostCenter: null,
+        },
+      })
+      const chatbot = await seedOwnedChatbot()
+      const save = (
+        allowedModelIds: string[],
+        expectedRevisionVersion: number
+      ) =>
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion,
+            input: {
+              modelPolicy: {
+                modelSelection: true,
+                allowedModelIds,
+                allowedReasoningEffortsByModel: [
+                  { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
+                ],
+              },
+            },
+          },
+          userOneCtx
+        )
+
+      // The seeded policy already allows the advanced model, so keeping it
+      // stays saveable for a base-tier owner.
+      const kept = await save(
+        ['gpt-6-luna', 'gpt-4.1'],
+        chatbot.revisionVersion
+      )
+      expect(kept).toMatchObject({ allowedModelIds: ['gpt-6-luna', 'gpt-4.1'] })
+
+      const removed = await save(['gpt-6-luna'], kept!.revisionVersion)
+      await expect(
+        save(['gpt-6-luna', 'gpt-4.1'], removed!.revisionVersion)
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        data: { aiSubscriptionTier: 'ADVANCED', aiChatbotCostCenter: 'KST-1' },
+      })
+      await expect(
+        save(['gpt-6-luna', 'gpt-4.1'], removed!.revisionVersion)
+      ).resolves.toMatchObject({ allowedModelIds: ['gpt-6-luna', 'gpt-4.1'] })
+    })
 
     it('saves a fixed non-reasoning Auto policy without reasoning entries', async () => {
       const chatbot = await seedOwnedChatbot()
@@ -500,9 +622,9 @@ describe('Integration tests for lecturer chatbot management', () => {
             input: {
               modelPolicy: {
                 modelSelection: false,
-                allowedModelIds: ['gpt-5.6-luna'],
+                allowedModelIds: ['gpt-6-luna'],
                 allowedReasoningEffortsByModel: [
-                  { modelId: 'gpt-5.6-luna', efforts: ['low', 'medium'] },
+                  { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
                 ],
               },
             },
@@ -519,9 +641,9 @@ describe('Integration tests for lecturer chatbot management', () => {
             input: {
               modelPolicy: {
                 modelSelection: false,
-                allowedModelIds: ['gpt-5.6-luna'],
+                allowedModelIds: ['gpt-6-luna'],
                 allowedReasoningEffortsByModel: [
-                  { modelId: 'gpt-5.6-luna', efforts: ['high'] },
+                  { modelId: 'gpt-6-luna', efforts: ['high'] },
                 ],
               },
             },
@@ -529,9 +651,9 @@ describe('Integration tests for lecturer chatbot management', () => {
           userOneCtx
         )
       ).resolves.toMatchObject({
-        allowedModelIds: ['gpt-5.6-luna'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: [
-          { modelId: 'gpt-5.6-luna', efforts: ['high'] },
+          { modelId: 'gpt-6-luna', efforts: ['high'] },
         ],
       })
     })
@@ -541,9 +663,9 @@ describe('Integration tests for lecturer chatbot management', () => {
       const input = {
         modelPolicy: {
           modelSelection: true,
-          allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+          allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
           allowedReasoningEffortsByModel: [
-            { modelId: 'gpt-5.6-luna', efforts: ['medium', 'low'] },
+            { modelId: 'gpt-6-luna', efforts: ['medium', 'low'] },
           ],
         },
       }
@@ -559,9 +681,9 @@ describe('Integration tests for lecturer chatbot management', () => {
         )
       ).resolves.toMatchObject({
         modelSelection: true,
-        allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+        allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
         allowedReasoningEffortsByModel: [
-          { modelId: 'gpt-5.6-luna', efforts: ['low', 'medium'] },
+          { modelId: 'gpt-6-luna', efforts: ['low', 'medium'] },
         ],
       })
 
@@ -575,7 +697,7 @@ describe('Integration tests for lecturer chatbot management', () => {
                 modelSelection: true,
                 allowedModelIds: ['gpt-4.1'],
                 allowedReasoningEffortsByModel: [
-                  { modelId: 'gpt-5.6-luna', efforts: ['medium'] },
+                  { modelId: 'gpt-6-luna', efforts: ['medium'] },
                 ],
               },
             },
@@ -685,7 +807,10 @@ describe('Integration tests for lecturer chatbot management', () => {
             chatbotId: chatbot.id,
             expectedRevisionVersion: chatbot.revisionVersion,
             input: {
-              modelPolicy: { modelSelection: false, allowedModelIds: ['auto'] },
+              modelPolicy: {
+                modelSelection: false,
+                allowedModelIds: ['auto'],
+              },
             },
           },
           userOneCtx
@@ -836,6 +961,94 @@ describe('Integration tests for lecturer chatbot management', () => {
           explainerEnabled: true,
           scopeNote,
         },
+      })
+    })
+
+    it('preserves an enabled Writing Coach for old-client saves and accepts an explicit disable', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      await saveChatbotRevision(
+        {
+          chatbotId: chatbot.id,
+          expectedRevisionVersion: chatbot.revisionVersion,
+          input: {
+            standardModeConfig: { ...config, writingCoachEnabled: true },
+          },
+        },
+        userOneCtx
+      )
+      const scopeNote = 'x'.repeat(1000)
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: 1,
+            input: { standardModeConfig: { ...config, scopeNote } },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: true, scopeNote },
+      })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: true, scopeNote },
+      })
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: 2,
+            input: {
+              standardModeConfig: {
+                ...config,
+                writingCoachEnabled: false,
+                scopeNote,
+              },
+            },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({
+        standardModeConfig: { writingCoachEnabled: false, scopeNote },
+      })
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: 3,
+            input: {
+              standardModeConfig: { ...config, scopeNote: `${scopeNote}x` },
+            },
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    })
+
+    it('saves Writing Coach alone without creating a stored custom persona', async () => {
+      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
+      const standalone = {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+      }
+      await expect(
+        saveChatbotRevision(
+          {
+            chatbotId: chatbot.id,
+            expectedRevisionVersion: chatbot.revisionVersion,
+            input: { standardModeConfig: standalone },
+          },
+          userOneCtx
+        )
+      ).resolves.toMatchObject({ standardModeConfig: standalone })
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
+      ).resolves.toMatchObject({
+        standardModeConfig: standalone,
+        systemPrompts: null,
       })
     })
 
@@ -1382,7 +1595,7 @@ describe('Integration tests for lecturer chatbot management', () => {
 
       expect(info).toMatchObject({
         id: chatbot.id,
-        allowedModelIds: ['gpt-5.6-luna'],
+        allowedModelIds: ['gpt-6-luna'],
         allowedReasoningEffortsByModel: [],
       })
       await expect(
@@ -1409,7 +1622,7 @@ describe('Integration tests for lecturer chatbot management', () => {
           courseId: course.id,
           ownerId: userOneCtx.user.sub,
           modelSelection: false,
-          allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
+          allowedModelIds: ['gpt-4.1', 'gpt-6-luna'],
         },
       })
       const previousPrimary = process.env.CHAT_PRIMARY_MODEL_ID

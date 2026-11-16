@@ -4,6 +4,7 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   deriveCookieDomainFromURL,
   generateRandomString,
+  isUzhAffiliated,
   reduceCatalyst,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
@@ -410,6 +411,16 @@ function getLecturerConfig({
                   reduceCatalyst,
                   false
                 ),
+              // Set once at account creation: UZH lecturers start with AI
+              // features, and an administrator can still switch them off.
+              // Existing accounts are not updated at sign-in.
+              aiFeaturesEnabled: isUzhAffiliated({
+                email: profile.email,
+                affiliations: [
+                  ...(profile.swissEduIDLinkedAffiliation ?? []),
+                  ...(profile.swissEduIDLinkedAffiliationUniqueID ?? []),
+                ],
+              }),
             }
           },
         }

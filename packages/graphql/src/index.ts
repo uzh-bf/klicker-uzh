@@ -6,6 +6,10 @@ export { getChatModelRegistry } from './services/chatbots.js'
 export { downloadResearchExport } from './services/dataExports.js'
 export { settleKbKnowledgeGraphResult } from './services/knowledge.js'
 export {
+  type KBGraphPreparationSweepSummary,
+  sweepKbGraphPreparation,
+} from './services/knowledgeGraphPreparation.js'
+export {
   handleKBSourceGateway,
   type KBSourceGatewayResult,
 } from './services/knowledgeSourceGateway.js'

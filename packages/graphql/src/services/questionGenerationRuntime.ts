@@ -37,6 +37,36 @@ export type QuestionWorkflowStartPayload = {
   // omitted entirely while the rollout gate is closed, so the start-manifest
   // hash of every legacy build stays byte-identical.
   allow_partial_results?: boolean
+  // Asks the worker for slot-specifications.json next to the final bank. The
+  // key is omitted while ELEMENT_REVISION_WORKER_ENABLED is off, which keeps
+  // the start input and its manifest hash byte-identical for every build.
+  emit_slot_specifications?: boolean
+}
+
+export type SlotRevisionWorkflowPayload = {
+  schema_version: 1
+  build_id: string
+  parent_build_id: string
+  dispatch_attempt_id: string
+  element_type: 'question'
+  question_id: string
+  design_slot_id: string
+  language: 'de' | 'en'
+  // The parent's slot specification v1, or the reduced slot summary for a
+  // build that predates it.
+  slot_specification?: unknown
+  slot_summary?: unknown
+  previous_element: unknown
+  note?: string
+  output: { container_name: string; blob_prefix: string }
+  // Present only while the source graph's artifacts are unpurged; the graph
+  // version identifies them in the revised question's provenance.
+  graph_version_id?: string
+  graph_manifest?: QuestionWorkflowStartPayload['graph_manifest']
+  resolved_domain_policy?: QuestionWorkflowStartPayload['graph_manifest']
+  generation_recipe?: QuestionWorkflowStartPayload['graph_manifest']
+  domain_policy_digest?: string
+  generation_recipe_digest?: string
 }
 
 export type QuestionWorkflowReviewEvent = {
@@ -101,6 +131,13 @@ export interface QuestionGenerationRuntime {
     dispatchAttemptId: string,
     beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }>
+  // The slot-revision entry points are optional on the interface so that the
+  // runtime stays usable without the revision worker; callers check them.
+  startSlotRevision?(
+    payload: SlotRevisionWorkflowPayload,
+    scope: string,
+    beforeProviderDispatch: () => Promise<void>
+  ): Promise<{ eventId: string }>
   review(
     event: QuestionWorkflowReviewEvent,
     scope: string,
@@ -123,6 +160,14 @@ export interface QuestionGenerationRuntime {
     status: QuestionGenerationRunStatus
   } | null>
   findRunByQuestionReview(
+    buildId: string,
+    dispatchAttemptId: string,
+    recoveryAnchor: Date
+  ): Promise<{
+    runId: string
+    status: QuestionGenerationRunStatus
+  } | null>
+  findRunBySlotRevision?(
     buildId: string,
     dispatchAttemptId: string,
     recoveryAnchor: Date
@@ -665,6 +710,61 @@ class ProductionQuestionGenerationRuntime
     }
   }
 
+  async startSlotRevision(
+    payload: SlotRevisionWorkflowPayload,
+    scope: string,
+    beforeProviderDispatch: () => Promise<void>
+  ): Promise<{ eventId: string }> {
+    if (
+      payload.schema_version !== 1 ||
+      !payload.dispatch_attempt_id.trim() ||
+      scope !== `question-build:${payload.build_id}` ||
+      payload.output.container_name !==
+        this.configuration.questionOutputContainer ||
+      !payload.output.blob_prefix.startsWith(
+        `${this.configuration.questionOutputPrefix}/${payload.build_id}`
+      )
+    ) {
+      throw questionGenerationServiceError(
+        'CONFIGURATION_INVALID',
+        'Slot-revision workflow coordinates are invalid'
+      )
+    }
+    if (payload.graph_manifest) {
+      assertArtifactReference(
+        {
+          containerName: payload.graph_manifest.container_name,
+          blobName: payload.graph_manifest.blob_name,
+          sha256: payload.graph_manifest.sha256,
+        },
+        new Set([this.configuration.graphArtifactContainer])
+      )
+    }
+
+    await beforeProviderDispatch()
+    try {
+      const event = await this.hatchet.events.push(
+        'element-generation:slot-revision-requested',
+        payload,
+        {
+          scope,
+          additionalMetadata: {
+            question_build_id: payload.build_id,
+            dispatch_attempt_id: payload.dispatch_attempt_id,
+            operation_kind: 'element-slot-revision',
+          },
+        }
+      )
+      return { eventId: event.eventId }
+    } catch {
+      throw questionGenerationServiceError(
+        'WORKFLOW_DISPATCH_UNCERTAIN',
+        'Slot-revision workflow dispatch could not be confirmed',
+        true
+      )
+    }
+  }
+
   async review(
     event: QuestionWorkflowReviewEvent,
     scope: string,
@@ -899,6 +999,26 @@ class ProductionQuestionGenerationRuntime
       duplicateMessage:
         'Multiple workflow runs exist for the question review attempt',
       unavailableMessage: 'Question-generation review recovery is unavailable',
+    })
+  }
+
+  async findRunBySlotRevision(
+    buildId: string,
+    dispatchAttemptId: string,
+    recoveryAnchor: Date
+  ): Promise<{
+    runId: string
+    status: QuestionGenerationRunStatus
+  } | null> {
+    return this.findRunByDispatchMetadata({
+      buildMetadataKey: 'question_build_id',
+      buildId,
+      dispatchAttemptId,
+      operationKind: 'element-slot-revision',
+      recoveryAnchor,
+      duplicateMessage:
+        'Multiple workflow runs exist for the slot-revision build',
+      unavailableMessage: 'Slot-revision workflow recovery is unavailable',
     })
   }
 

@@ -11,19 +11,35 @@ query QGetChatbotsInfoWithKnowledgeBases {
     expectedStudentCount
     reviewComment
     publishedAt
+    writingCoachUnavailableReason
     standardModeConfig {
       tutorEnabled
       explainerEnabled
       quizzerEnabled
+      writingCoachEnabled
       courseName
       subjectDomain
       languageOfInstruction
       scopeNote
     }
+    customModeConfig {
+      modes {
+        key
+        name
+        description
+        personaText
+        welcomeMessage
+        starterPrompts
+        showReasoning
+        replyLanguage
+        meetingClock
+      }
+    }
     authoringRevision {
       ...ChatbotAuthoringRevisionData
     }
     modelSelection
+    answerPreferencesEnabled
     knowledgeGraphVisible
     knowledgeGraphRetrievalEnabled
     allowedModelIds
@@ -38,6 +54,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     courses {
       id
       name
+      numOfParticipants
     }
     usageSummary {
       threadCount
@@ -58,19 +75,16 @@ query QGetChatbotsInfoWithKnowledgeBases {
       declinedCount
       pendingCount
     }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
-    }
     enabledKnowledgeBases {
       id
       name
+      materialsReadiness {
+        visibleResourceCount
+        servingResourceCount
+        processingResourceCount
+        failedResourceCount
+        lastChangedAt
+      }
     }
     createdAt
     updatedAt

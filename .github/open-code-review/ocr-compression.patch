@@ -1,0 +1,484 @@
+--- a/internal/llmloop/compression.go
++++ b/internal/llmloop/compression.go
+@@ -5,6 +5,7 @@
+ 
+ import (
+ 	"context"
++	"encoding/json"
+ 	"fmt"
+ 	"strings"
+ 	"sync"
+@@ -102,25 +103,19 @@
+ }
+ 
+ // computeActiveZoneSize returns how many trailing rounds fit within the
+-// remaining token budget after accounting for the frozen zone and the
+-// compressed summary.
++// half of the remaining warning budget after accounting for the frozen
++// zone and the compressed summary.
+ func computeActiveZoneSize(rounds []round, messages []llm.Message, maxTokens int, reservedTokens int) int {
+-	budget := PromptTokenLimit(maxTokens) - reservedTokens
++	budget := (PromptTokenLimit(maxTokens) - reservedTokens) / 2
+ 	if budget <= 0 {
+ 		return 0
+ 	}
+ 
+ 	count := 0
+-	tokensUsed := 0
+ 	for i := len(rounds) - 1; i >= 0; i-- {
+-		roundTokens := messageTokens(messages[rounds[i].assistantIdx])
+-		for _, ti := range rounds[i].toolIdxs {
+-			roundTokens += messageTokens(messages[ti])
+-		}
+-		if tokensUsed+roundTokens > budget {
++		if CountMessagesTokens(messages[rounds[i].assistantIdx:]) > budget {
+ 			break
+ 		}
+-		tokensUsed += roundTokens
+ 		count++
+ 	}
+ 	return count
+@@ -142,21 +137,20 @@
+ 		return result
+ 	}
+ 
+-	result.activeCount = computeActiveZoneSize(result.rounds, messages, maxTokens, prevSummaryTokenEstimate)
++	reserved := CountMessagesTokens(messages[:result.frozenEnd]) + prevSummaryTokenEstimate
++	result.activeCount = computeActiveZoneSize(result.rounds, messages, maxTokens, reserved)
+ 	if result.activeCount >= len(result.rounds) {
+ 		// Everything fits — no compression needed.
+-		result.compressEnd = len(messages)
+-		result.activeCount = 0
++		result.compressEnd = result.frozenEnd
+ 		return result
+ 	}
+ 
+ 	// compressEnd = index after the last round NOT in active zone.
+ 	activeStartIdx := len(result.rounds) - result.activeCount
+-	lastCompressRound := result.rounds[activeStartIdx-1]
+-	if len(lastCompressRound.toolIdxs) > 0 {
+-		result.compressEnd = lastCompressRound.toolIdxs[len(lastCompressRound.toolIdxs)-1] + 1
++	if activeStartIdx == len(result.rounds) {
++		result.compressEnd = len(messages)
+ 	} else {
+-		result.compressEnd = lastCompressRound.assistantIdx + 1
++		result.compressEnd = result.rounds[activeStartIdx].assistantIdx
+ 	}
+ 
+ 	return result
+@@ -196,6 +190,14 @@
+ 		sb.WriteString("    <content>\n")
+ 		sb.WriteString(fmt.Sprintf("      %s\n", m.ExtractText()))
+ 		sb.WriteString("    </content>\n")
++		if len(m.ToolCalls) > 0 {
++			data, _ := json.Marshal(m.ToolCalls)
++			sb.WriteString(fmt.Sprintf("    <tool_calls>%s</tool_calls>\n", data))
++		}
++		if m.ToolCallID != "" {
++			id, _ := json.Marshal(m.ToolCallID)
++			sb.WriteString(fmt.Sprintf("    <tool_call_id>%s</tool_call_id>\n", id))
++		}
+ 		if m.ReasoningContent != "" {
+ 			sb.WriteString("    <reasoning>\n")
+ 			sb.WriteString(fmt.Sprintf("      %s\n", m.ReasoningContent))
+@@ -218,17 +220,31 @@
+ 
+ // runCompression performs three-zone memory compression on the given
+ // messages, summarizing the compress zone while preserving the active zone
+-// intact. Returns rebuilt as [frozen] + [compressed_summary appended to
+-// the user prompt] + [active].
++// intact. Returns rebuilt as [frozen] + [one compressible summary] + [active].
+ func (r *Runner) runCompression(ctx context.Context, msgs []llm.Message, taskKey string) ([]llm.Message, error) {
+ 	if len(r.deps.Template.MemoryCompressionTask.Messages) == 0 || len(msgs) <= 2 {
+ 		return msgs[:min(len(msgs), 2)], nil
+ 	}
+ 
+-	part := partitionMessages(msgs, r.deps.Template.MaxTokens, 0)
++	summaryTokens := 0
++	if len(msgs) > 2 && msgs[2].Role == "user" {
++		summaryTokens = messageTokens(msgs[2])
++	}
++	part := partitionMessages(msgs, r.deps.Template.MaxTokens, summaryTokens)
+ 	if part.compressEnd <= part.frozenEnd {
+ 		return msgs, nil
+ 	}
++
++	before := CountMessagesTokens(msgs)
++	after := before
++	outcome := "failed"
++	fmt.Fprintf(stdout.Writer(), "[ocr] compression_started before_estimated_tokens=%d\n", before)
++	defer func() {
++		if outcome == "failed" && ctx.Err() != nil {
++			outcome = "cancelled"
++		}
++		fmt.Fprintf(stdout.Writer(), "[ocr] compression_finished outcome=%s before_estimated_tokens=%d after_estimated_tokens=%d\n", outcome, before, after)
++	}()
+ 
+ 	contextXML := buildMessageXML(msgs[part.frozenEnd:part.compressEnd])
+ 
+@@ -274,24 +290,31 @@
+ 		atomic.AddInt64(&r.totalCacheWriteTokens, resp.Usage.CacheWriteTokens)
+ 	}
+ 
+-	rawSummary := stripMarkdownFences(resp.Content())
++	rawSummary := stripMarkdownFences(resp.VisibleContent())
+ 	if rawSummary == "" {
+ 		// Empty summary: keep the original conversation rather than dropping
+ 		// everything below the frozen zone.
++		outcome = "unchanged"
+ 		return msgs, nil
+ 	}
+ 
+ 	rebuilt := make([]llm.Message, 2)
+ 	copy(rebuilt, msgs[:2])
+ 
+-	userMsg := rebuilt[1]
+-	currentText := userMsg.ExtractText()
+-	rebuilt[1] = llm.NewTextMessage(userMsg.Role, currentText+"\n\n<previous_review_summary>\n"+rawSummary+"\n</previous_review_summary>")
++	// Keep the review instructions immutable. The next compression must be
++	// able to summarize this rolling memory together with evicted evidence.
++	rebuilt = append(rebuilt, llm.NewTextMessage("user", "<previous_review_summary>\n"+rawSummary+"\n</previous_review_summary>"))
+ 
+ 	for i := part.compressEnd; i < len(msgs); i++ {
+ 		rebuilt = append(rebuilt, msgs[i])
+ 	}
+ 
++	rebuiltTokens := CountMessagesTokens(rebuilt)
++	if rebuiltTokens >= PromptTokenLimit(r.deps.Template.MaxTokens) {
++		return msgs, fmt.Errorf("compressed summary exceeds the available context")
++	}
++	after = rebuiltTokens
++	outcome = "rebuilt"
+ 	return rebuilt, nil
+ }
+ 
+--- a/internal/llmloop/compression_test.go
++++ b/internal/llmloop/compression_test.go
+@@ -4,6 +4,12 @@
+ package llmloop
+ 
+ import (
++	"bytes"
++	"context"
++	"fmt"
++	"github.com/alibaba/open-code-review/internal/config/template"
++	"github.com/alibaba/open-code-review/internal/stdout"
++	"reflect"
+ 	"strings"
+ 	"testing"
+ 
+@@ -191,11 +197,11 @@
+ 		msg("tool", "ok"),
+ 	}
+ 	result := partitionMessages(messages, 100000, 0)
+-	if result.activeCount != 0 {
+-		t.Errorf("activeCount = %d, want 0 (everything fits)", result.activeCount)
+-	}
+-	if result.compressEnd != len(messages) {
+-		t.Errorf("compressEnd = %d, want %d", result.compressEnd, len(messages))
++	if result.activeCount != 1 {
++		t.Errorf("activeCount = %d, want 1 (everything fits)", result.activeCount)
++	}
++	if result.compressEnd != 2 {
++		t.Errorf("compressEnd = %d, want 2 (no compression)", result.compressEnd)
+ 	}
+ }
+ 
+@@ -316,3 +322,159 @@
+ 		}
+ 	}
+ }
++
++type compressionRecordingClient struct {
++	requests []llm.ChatRequest
++	response *llm.ChatResponse
++	err      error
++}
++
++func (c *compressionRecordingClient) CompletionsWithCtx(_ context.Context, req llm.ChatRequest) (*llm.ChatResponse, error) {
++	c.requests = append(c.requests, req)
++	if c.response != nil || c.err != nil {
++		return c.response, c.err
++	}
++	text := "bounded current summary"
++	return &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &text}}}}, nil
++}
++
++func TestCompressionFrozenPromptAndRollingSummary(t *testing.T) {
++	var progress bytes.Buffer
++	defer stdout.Swap(&progress)()
++	t_tempDir = t.TempDir()
++	client := &compressionRecordingClient{}
++	r := newTestRunner(client, template.Template{MaxTokens: 1000, MemoryCompressionTask: template.LlmConversation{Messages: []template.ChatMessage{{Role: "user", Content: "{{context}}"}}}})
++	original := []llm.Message{msg("system", strings.Repeat("system ", 150)), msg("user", strings.Repeat("review ", 150))}
++	messages := append([]llm.Message(nil), original...)
++	for i := 0; i < 8; i++ {
++		messages = append(messages, msg("assistant", strings.Repeat("evidence ", 150)), msg("tool", strings.Repeat("result ", 150)))
++	}
++	got, err := r.runCompression(context.Background(), messages, "synthetic.go")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !reflect.DeepEqual(got[:2], original) {
++		t.Fatal("compression changed the immutable review instructions")
++	}
++	if len(got) < 3 || got[2].Role != "user" {
++		t.Fatal("summary must occupy a compressible message after the immutable prefix")
++	}
++	if CountMessagesTokens(got) >= PromptTokenLimit(1000) {
++		t.Fatal("compression did not reserve the fixed prompt and summary")
++	}
++	expectedFirst := fmt.Sprintf("[ocr] compression_finished outcome=rebuilt before_estimated_tokens=%d after_estimated_tokens=%d\n", CountMessagesTokens(messages), CountMessagesTokens(got))
++	if !strings.Contains(progress.String(), expectedFirst) {
++		t.Fatal("compression estimates do not describe the returned snapshot")
++	}
++	previous := got[2].ExtractText()
++	for i := 0; i < 8; i++ {
++		got = append(got, msg("assistant", strings.Repeat("new evidence ", 150)), msg("tool", strings.Repeat("new result ", 150)))
++	}
++	again, err := r.runCompression(context.Background(), got, "synthetic.go")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !reflect.DeepEqual(again[:2], original) {
++		t.Fatal("repeated compression accumulated summaries in the immutable prefix")
++	}
++	if len(client.requests) != 2 {
++		t.Fatalf("expected two useful compressions, got %d", len(client.requests))
++	}
++	if !strings.Contains(client.requests[1].Messages[0].ExtractText(), previous) {
++		t.Fatal("recompression lost the previous summary's evidence")
++	}
++	if CountMessagesTokens(again) >= PromptTokenLimit(1000) {
++		t.Fatal("recompression retained too much active history")
++	}
++	if strings.Count(progress.String(), "compression_started ") != len(client.requests) || strings.Count(progress.String(), "compression_finished outcome=rebuilt ") != len(client.requests) {
++		t.Fatal("telemetry lifecycle does not match actual summarization requests")
++	}
++	if strings.Contains(progress.String(), "synthetic.go") || strings.Contains(progress.String(), "bounded current summary") {
++		t.Fatal("telemetry contains task or summary content")
++	}
++}
++
++func TestCompressionSerializesToolEvidenceAndIgnoresReasoningOnlySummary(t *testing.T) {
++	toolCall := llm.ToolCall{ID: "synthetic-call", Function: llm.FunctionCall{Name: "file_read", Arguments: `{"file_path":"synthetic.go","start_line":4}`}}
++	messages := []llm.Message{llm.NewToolCallMessage("", []llm.ToolCall{toolCall}, llm.NativeTurn{}, "private synthetic reasoning"), llm.NewToolResultMessage(toolCall.ID, "synthetic observable result")}
++	encoded := buildMessageXML(messages)
++	for _, evidence := range []string{toolCall.ID, toolCall.Function.Name, `file_path`, "synthetic.go", "synthetic observable result"} {
++		if !strings.Contains(encoded, evidence) {
++			t.Fatalf("compression omitted structured tool evidence %q", evidence)
++		}
++	}
++	t_tempDir = t.TempDir()
++	empty := ""
++	client := &fakeLLMClient{response: &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &empty, ReasoningContent: "not a completed summary"}}}}}
++	r := newTestRunner(client, template.Template{MaxTokens: 100, MemoryCompressionTask: template.LlmConversation{Messages: []template.ChatMessage{{Role: "user", Content: "{{context}}"}}}})
++	initial := []llm.Message{msg("system", "system"), msg("user", "review"), msg("assistant", strings.Repeat("evidence ", 200))}
++	got, err := r.runCompression(context.Background(), initial, "synthetic.go")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !reflect.DeepEqual(got, initial) {
++		t.Fatal("reasoning-only output must not replace unsummarized evidence")
++	}
++}
++
++func TestCompressionTelemetryPreservesFailureAndNoWorkResults(t *testing.T) {
++	for _, outcome := range []string{"unchanged", "failed", "cancelled", "oversized", "disabled", "no_work"} {
++		t.Run(outcome, func(t *testing.T) {
++			var progress bytes.Buffer
++			defer stdout.Swap(&progress)()
++			t_tempDir = t.TempDir()
++			client := &compressionRecordingClient{}
++			tmpl := template.Template{MaxTokens: 1000, MemoryCompressionTask: template.LlmConversation{Messages: []template.ChatMessage{{Role: "user", Content: "{{context}}"}}}}
++			msgs := []llm.Message{msg("system", "immutable"), msg("user", "instructions")}
++			for i := 0; i < 8; i++ {
++				msgs = append(msgs, msg("assistant", strings.Repeat("context ", 150)), msg("tool", strings.Repeat("evidence ", 150)))
++			}
++			ctx, cancel := context.WithCancel(context.Background())
++			defer cancel()
++			empty := ""
++			switch outcome {
++			case "unchanged":
++				client.response = &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &empty}}}}
++			case "failed":
++				client.err = fmt.Errorf("private synthetic provider detail")
++			case "cancelled":
++				cancel()
++				client.err = context.Canceled
++			case "oversized":
++				huge := strings.Repeat("summary ", 5000)
++				client.response = &llm.ChatResponse{Choices: []llm.Choice{{Message: llm.ResponseMessage{Content: &huge}}}}
++			case "disabled":
++				tmpl.MemoryCompressionTask.Messages = nil
++				msgs = msgs[:2]
++			case "no_work":
++				msgs = msgs[:2]
++			}
++			r := newTestRunner(client, tmpl)
++			got, err := r.runCompression(ctx, msgs, "private-task-key")
++			if !reflect.DeepEqual(got, msgs) {
++				t.Fatal("instrumentation changed unchanged-history result")
++			}
++			wantError := outcome == "failed" || outcome == "cancelled" || outcome == "oversized"
++			if (err != nil) != wantError {
++				t.Fatal("unexpected compression error behavior")
++			}
++			if outcome == "disabled" || outcome == "no_work" {
++				if len(client.requests) != 0 || strings.Contains(progress.String(), "compression_started ") {
++					t.Fatal("no-work path counted as request")
++				}
++			} else {
++				status := outcome
++				if status == "oversized" {
++					status = "failed"
++				}
++				expected := fmt.Sprintf("[ocr] compression_finished outcome=%s before_estimated_tokens=%d after_estimated_tokens=%d\n", status, CountMessagesTokens(msgs), CountMessagesTokens(msgs))
++				if len(client.requests) != 1 || !strings.Contains(progress.String(), expected) {
++					t.Fatal("wrong telemetry result or request count")
++				}
++			}
++			if strings.Contains(progress.String(), "private-") || strings.Contains(progress.String(), "provider detail") {
++				t.Fatal("telemetry leaked private details")
++			}
++		})
++	}
++}
+--- a/internal/llmloop/runner_test.go
++++ b/internal/llmloop/runner_test.go
+@@ -325,7 +325,7 @@
+ 		messages = append(messages, msg("tool", strings.Repeat("data ", 100)))
+ 	}
+ 
+-	result := partitionMessages(messages, 500, 0)
++	result := partitionMessages(messages, 1000, 0)
+ 
+ 	if result.frozenEnd != 2 {
+ 		t.Errorf("frozenEnd = %d, want 2", result.frozenEnd)
+@@ -416,8 +416,8 @@
+ 	if len(got) < 2 {
+ 		t.Fatalf("expected at least 2 messages, got %d", len(got))
+ 	}
+-	if !strings.Contains(got[1].ExtractText(), "previous_review_summary") {
+-		t.Errorf("expected summary in rebuilt messages, got: %s", got[1].ExtractText())
++	if !strings.Contains(got[2].ExtractText(), "previous_review_summary") {
++		t.Errorf("expected summary in rebuilt messages, got: %s", got[2].ExtractText())
+ 	}
+ 	if r.TotalInputTokens() != 100 {
+ 		t.Errorf("TotalInputTokens = %d, want 100", r.TotalInputTokens())
+@@ -616,8 +616,8 @@
+ 		if !r.tryApplyPendingCompression(stA, &msgsA) {
+ 			t.Fatal("file A should apply its own completed compression")
+ 		}
+-		if !strings.Contains(msgsA[1].ExtractText(), "<previous_review_summary>") {
+-			t.Errorf("file A's rebuilt prompt should embed the summary, got: %s", msgsA[1].ExtractText())
++		if !strings.Contains(msgsA[2].ExtractText(), "<previous_review_summary>") {
++			t.Errorf("file A's rebuilt prompt should embed the summary, got: %s", msgsA[2].ExtractText())
+ 		}
+ 		if last := msgsA[len(msgsA)-1].ExtractText(); last != "post-snapshot" {
+ 			t.Errorf("post-snapshot suffix lost, last message = %q", last)
+@@ -685,8 +685,8 @@
+ 	if len(gated.started) != 1 {
+ 		t.Errorf("compression LLM calls = %d, want exactly 1 (the sync one)", len(gated.started))
+ 	}
+-	if !strings.Contains(msgs[1].ExtractText(), "<previous_review_summary>") {
+-		t.Errorf("sync compression should have rebuilt the prompt, got: %s", msgs[1].ExtractText())
++	if !strings.Contains(msgs[2].ExtractText(), "<previous_review_summary>") {
++		t.Errorf("sync compression should have rebuilt the prompt, got: %s", msgs[2].ExtractText())
+ 	}
+ }
+ 
+--- a/internal/agent/agent.go
++++ b/internal/agent/agent.go
+@@ -660,7 +660,7 @@
+ 	groupResult := groupDiffs(ctx, nonDeleted, a.args.LLMClient, a.args.Model,
+ 		a.args.Template, llmloop.PromptTokenLimit(a.args.Template.MaxTokens),
+ 		&groupingSessionOpts{session: a.session, provider: a.args.Provider, model: a.args.Model})
+-	groups := groupResult.groups
++	groups := a.fitRenderedGroups(groupResult.groups)
+ 	a.fileGroups = groups
+ 	if groupResult.usage != nil {
+ 		a.runner.RecordUsage(groupResult.usage)
+@@ -1322,6 +1322,38 @@
+ 	return messages
+ }
+ 
++// fitRenderedGroups reserves all rendered rules and the existing maximum plan
++// output before dispatch. Splitting changes execution units, never selection.
++func (a *Agent) fitRenderedGroups(groups []FileGroup) []FileGroup {
++	var fitted []FileGroup
++	var visit func(FileGroup)
++	visit = func(g FileGroup) {
++		plan, reservation := "", 0
++		total, largest := diffsChurn(g.Diffs)
++		if pt := a.args.Template.PlanTask; pt != nil && len(pt.Messages) > 0 &&
++			a.args.Template.PlanRequired(len(g.Diffs), total, largest) {
++			plan = "reserved plan"
++			for _, m := range a.args.Template.MainTask.Messages {
++				reservation += strings.Count(m.Content, "{{plan_guidance}}") * a.args.Template.CompletionTokenLimit()
++			}
++		}
++		messages := a.buildMainTaskMessages(a.resolveGroupSystemRule(g.Diffs),
++			a.buildChangeFilesExceptGroup(g.Diffs), buildConcatenatedDiffs(g.Diffs), plan, "")
++		tokens := llmloop.CountMessagesTokens(messages) + reservation
++		if len(g.Diffs) > 1 && tokens > llmloop.PromptTokenLimit(a.args.Template.MaxTokens) {
++			mid := len(g.Diffs) / 2
++			visit(FileGroup{Label: g.Label, Diffs: g.Diffs[:mid]})
++			visit(FileGroup{Label: g.Label, Diffs: g.Diffs[mid:]})
++			return
++		}
++		fitted = append(fitted, g)
++	}
++	for _, g := range groups {
++		visit(g)
++	}
++	return fitted
++}
++
+ // checkPromptBudget validates that the rendered messages fit within the token
+ // limit. Returns a *subtaskStop when they do not, nil otherwise.
+ func (a *Agent) checkPromptBudget(ctx context.Context, messages []llm.Message, groupKey string, round int) *subtaskStop {
+--- a/internal/agent/agent_test.go
++++ b/internal/agent/agent_test.go
+@@ -1298,3 +1298,31 @@
+ 		t.Errorf("TotalOutputTokens = %d, want 5", a.TotalOutputTokens())
+ 	}
+ }
++
++func TestFitRenderedGroupsReservesRulesAndPlanWithoutLosingFiles(t *testing.T) {
++	diffs := []model.Diff{{NewPath: "a.go", Diff: strings.Repeat("+a ", 100)}, {NewPath: "b.go", Diff: strings.Repeat("+b ", 100)}}
++	tpl := template.Template{MaxTokens: 1000, MaxCompletionTokens: 700, MainTask: template.LlmConversation{Messages: []template.ChatMessage{{Role: "system", Content: "{{system_rule}}"}, {Role: "user", Content: "{{diffs}} {{plan_guidance}}"}}}, PlanTask: &template.LlmConversation{Messages: []template.ChatMessage{{Role: "user", Content: "plan"}}}}
++	a := New(Args{Template: tpl, Session: session.New(t.TempDir(), "main", "test", session.SessionOptions{ReviewMode: "diff"})})
++	a.diffs = diffs
++	groups := a.fitRenderedGroups([]FileGroup{{Label: "related", Diffs: diffs}})
++	if len(groups) != 2 || len(groups[0].Diffs) != 1 || len(groups[1].Diffs) != 1 {
++		t.Fatalf("oversized rendered group was not split: %+v", groups)
++	}
++	if groups[0].Diffs[0].NewPath != "a.go" || groups[1].Diffs[0].NewPath != "b.go" {
++		t.Fatal("splitting changed coverage ownership")
++	}
++	a.args.Template.PlanTask = nil
++	small := a.fitRenderedGroups([]FileGroup{{Label: "related", Diffs: diffs}})
++	if len(small) != 1 {
++		t.Fatal("fitting group changed without plan overhead")
++	}
++	a.args.Template.MainTask.Messages[0].Content = strings.Repeat("rule ", 2000)
++	singleton := a.fitRenderedGroups([]FileGroup{{Label: "a", Diffs: diffs[:1]}})
++	if len(singleton) != 1 || len(singleton[0].Diffs) != 1 {
++		t.Fatal("oversized singleton must remain selected")
++	}
++	messages := a.buildMainTaskMessages(a.resolveGroupSystemRule(diffs[:1]), "", buildConcatenatedDiffs(diffs[:1]), "", "")
++	if a.checkPromptBudget(context.Background(), messages, "a.go", 1) == nil {
++		t.Fatal("oversized singleton must fail the unchanged hard guard")
++	}
++}
+--- a/internal/llmloop/loop.go
++++ b/internal/llmloop/loop.go
+@@ -372,6 +372,7 @@
+ // Review calls this once per review round, so one review subtask can drive
+ // several of these conversations in sequence.
+ func (r *Runner) RunMainTask(ctx context.Context, messages []llm.Message, taskKey string) (bool, MainLoopStop, error) {
++	fmt.Fprintln(stdout.Writer(), "[ocr] compression_telemetry version=1")
+ 	// Every round of this loop re-sends the growing conversation, so each
+ 	// request is a prefix extension of the previous one — exactly what
+ 	// provider prompt caches reuse. Scope the affinity key to this subtask's

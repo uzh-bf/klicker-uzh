@@ -1668,7 +1668,7 @@ test.describe
       .getByTestId(`share-object-${data.AC1.name}`)
       .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
-    await page.getByTestId('close-share-object').click({ force: true })
+    await page.getByTestId('close-share-object').click()
     await expect(page.getByTestId('close-share-object')).toBeHidden()
     await verifyObjectCannotBeShared(data.AC2.name)
     await openCatalogCollection(data.CCRestricted)
@@ -1677,7 +1677,7 @@ test.describe
       .getByTestId(`share-object-${data.AC1.name}`)
       .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'exist')
-    await page.getByTestId('close-share-object').click({ force: true })
+    await page.getByTestId('close-share-object').click()
     await expect(page.getByTestId('close-share-object')).toBeHidden()
     await verifyObjectCannotBeShared(data.AC2.name)
     await logoutUser(page)
@@ -1689,7 +1689,7 @@ test.describe
       .getByTestId(`share-object-${data.AC1.name}`)
       .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'not.exist')
-    await page.getByTestId('close-share-object').click({ force: true })
+    await page.getByTestId('close-share-object').click()
     await expect(page.getByTestId('close-share-object')).toBeHidden()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.AC2.name}`),
@@ -1704,7 +1704,7 @@ test.describe
       .getByTestId(`share-object-${data.AC1.name}`)
       .click({ force: true })
     await expectByAssertion(page.getByTestId('transfer-ownership'), 'not.exist')
-    await page.getByTestId('close-share-object').click({ force: true })
+    await page.getByTestId('close-share-object').click()
     await expect(page.getByTestId('close-share-object')).toBeHidden()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.AC2.name}`),

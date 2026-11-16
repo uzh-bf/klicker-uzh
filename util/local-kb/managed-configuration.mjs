@@ -48,7 +48,7 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
   services.litellm.environment = {
     LITELLM_LOG: 'INFO',
     LITELLM_REASONING_AUTO_SUMMARY: 'true',
-    ...(config.aiUpstream === 'openrouter'
+    ...(config.aiUpstream !== undefined
       ? {
           UPSTREAM_OPENAI_API_KEY: null,
           UPSTREAM_OPENAI_BASE_URL: null,
@@ -73,6 +73,21 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
     WORKSPACE: `\${WORKSPACE:?Devrouter must supply the workspace}`,
     DEVROUTER_WORKSPACE: `\${DEVROUTER_WORKSPACE:?Devrouter must supply the workspace}`,
     KLICKER_LOCAL_KB_RUNTIME_ONLY: '1',
+    ...(config.aiUpstream?.kind === 'guarded'
+      ? {
+          OPENAI_API_KEY: null,
+          OPENAI_BASE_URL: `http://api.klicker.${workspace}.localhost:${config.aiUpstream.port}/v1`,
+          KLICKER_EVAL_GUARD_ORIGIN: `http://api.klicker.${workspace}.localhost:${config.aiUpstream.port}`,
+          KLICKER_EVAL_GUARD_GENERATION: `guarded-${config.aiUpstream.port}`,
+          ...(config.aiUpstream.chatModels
+            ? {
+                CHAT_MODEL_REGISTRY_JSON: JSON.stringify(
+                  config.aiUpstream.chatModels
+                ),
+              }
+            : {}),
+        }
+      : {}),
     BLOB_STORAGE_ACCOUNT_URL: `https://blob.klicker.${workspace}.localhost/klickerdev`,
     BLOB_STORAGE_INTERNAL_ACCOUNT_URL: `http://${workspace}-azurite:10000/klickerdev`,
   }

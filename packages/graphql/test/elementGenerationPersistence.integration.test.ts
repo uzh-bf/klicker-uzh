@@ -287,7 +287,18 @@ describe('real generated Element persistence', () => {
     await prisma.$disconnect()
   })
 
-  it('keeps simultaneous identical requests as one Element and one set of related rows', async () => {
+  it.each([
+    DB.ElementGenerationBuildStatus.COMPLETED,
+    DB.ElementGenerationBuildStatus.INCOMPLETE,
+  ])('keeps simultaneous identical requests for a %s build as one Element and one set of related rows', async (status) => {
+    const draft = await prisma.generatedElementDraft.findUniqueOrThrow({
+      where: { id: draftId },
+      select: { buildId: true },
+    })
+    await prisma.elementGenerationBuild.update({
+      where: { id: draft.buildId },
+      data: { status },
+    })
     const ctx = concurrentContext()
     const [first, second] = await Promise.all([
       keepGeneratedElementDraft(keepInput(), ctx),
@@ -394,6 +405,26 @@ describe('real generated Element persistence', () => {
     expect(await prisma.element.count({ where: { ownerId: foreignId } })).toBe(
       0
     )
+    await expectUnchangedDraft()
+  })
+
+  it('denies generated keep for an approved account outside the question-generation rollout', async () => {
+    const ctx = context()
+    ctx.featureFlags = {
+      isEnabled: (key: string) => key !== 'question-generation',
+      getAiBetaDecision: () => 'enabled',
+      refresh: async () => {},
+    } as unknown as ContextWithUser['featureFlags']
+
+    await expect(keepGeneratedElementDraft(keepInput(), ctx)).rejects.toThrow(
+      'Forbidden'
+    )
+    expect(await persistedCounts()).toEqual({
+      elements: 0,
+      tags: 0,
+      logs: 0,
+      permissions: 0,
+    })
     await expectUnchangedDraft()
   })
 

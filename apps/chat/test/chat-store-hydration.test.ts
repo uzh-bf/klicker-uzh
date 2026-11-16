@@ -36,6 +36,48 @@ describe('chatStore hydration', () => {
     vi.restoreAllMocks()
   })
 
+  test('a late empty history cannot discard the first submitted message', async () => {
+    const thread = {
+      id: 'thread-1',
+      title: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isRunning: false,
+      messages: [],
+      allMessages: [],
+    }
+    useChatStore.setState({ threads: [thread], activeThreadId: thread.id })
+    let resolveHistory!: (response: Response) => void
+    let resolveTitle!: (response: Response) => void
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((r) => {
+              resolveHistory = r
+            })
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((r) => {
+              resolveTitle = r
+            })
+        )
+    )
+    const store = useChatStore.getState()
+    const hydration = store.switchToThread('bot', thread.id)
+    const message = buildMessage({ id: 'first' })
+    const submission = store.addMessage('bot', message, thread.id)
+    await vi.waitFor(() => expect(resolveTitle).toBeTypeOf('function'))
+    resolveHistory(Response.json([]))
+    expect(await hydration).toBe(true)
+    resolveTitle(Response.json({}))
+    expect(await submission).toEqual([message])
+    expect(useChatStore.getState().threads[0]?.messages).toEqual([message])
+  })
+
   test('hydrated cache hit backfills the other collection without fetch', async () => {
     const fetchSpy = vi.fn()
     vi.stubGlobal('fetch', fetchSpy)

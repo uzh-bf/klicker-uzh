@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getAuthenticatedManageUser: vi.fn(),
-  getManageAiCapability: vi.fn(),
+  getManageAssistantCapability: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error('NOT_FOUND')
   }),
@@ -14,7 +14,7 @@ vi.mock('@/src/components/manage-assistant', () => ({
   ManageAssistant: () => null,
 }))
 vi.mock('@/src/lib/server/featureFlags', () => ({
-  getManageAiCapability: mocks.getManageAiCapability,
+  getManageAssistantCapability: mocks.getManageAssistantCapability,
 }))
 vi.mock('@/src/lib/server/manageAuth', () => ({
   getAuthenticatedManageUser: mocks.getAuthenticatedManageUser,
@@ -31,19 +31,21 @@ describe('Manage assistant page AI boundary', () => {
       scope: 'FULL_ACCESS',
       sub: 'lecturer-1',
     })
-    mocks.getManageAiCapability.mockReset()
+    mocks.getManageAssistantCapability.mockReset()
     mocks.notFound.mockClear()
   })
 
   test('keeps explicit denial as the existing not-found response', async () => {
-    mocks.getManageAiCapability.mockResolvedValue('disabled')
+    mocks.getManageAssistantCapability.mockResolvedValue('disabled')
 
     await expect(ManageAssistantPage({})).rejects.toThrow('NOT_FOUND')
     expect(mocks.notFound).toHaveBeenCalledTimes(1)
   })
 
   test('renders a dedicated state for temporary unavailability', async () => {
-    mocks.getManageAiCapability.mockResolvedValue('temporarilyUnavailable')
+    mocks.getManageAssistantCapability.mockResolvedValue(
+      'temporarilyUnavailable'
+    )
 
     const page = await ManageAssistantPage({})
 

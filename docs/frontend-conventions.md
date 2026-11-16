@@ -46,8 +46,12 @@ surfaces, highlight the group containing the student's score, and retain the
 exact range/count table for accessible detail. Show percentile as a 0–100
 ruler with a marker at the student's inclusive percentile rank; do not imply
 that the score groups form a normal or continuous distribution. The comparison
-remains omitted below the existing cohort threshold, and the stored V1 report
-contract is unchanged.
+remains omitted below the existing cohort threshold and in interim reports
+issued before the course end date. Every report issued after the course end
+includes a comparison. While the student's own claims are unchanged, the active
+post-end report is reused even if peer scores change, so two reports cannot be
+differenced to infer a single peer's change. The stored V1 report contract is
+unchanged.
 
 ## Next.js tooling
 
@@ -138,7 +142,7 @@ KB mutations and their follow-up refreshes are separate outcomes (`packages/kb-m
 
 The KB file picker exposes only the production ingestion contract: PDF, TXT, and MD up to 25 MiB. Markdown is uploaded as `text/plain`; do not re-add DOCX/PPTX until the external ingestion platform supports them. Stable quota error codes are localized rather than exposing worker messages.
 
-`packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning.
+`packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning, and `ChatbotKnowledgeBaseSetup.tsx` connects, replaces, disconnects, or creates and connects a KB from the chatbot side. Bindings are not part of the chatbot revision, so a change applies to a published chatbot immediately; the chatbot setup and the KB bindings panel both warn about that for published chatbots. The chatbot list and the KB list summarize material readiness through `KBMaterialsReadiness`: a resource counts as available while it has a serving revision, even when a newer revision is processing or has failed. That summary covers retrieval only and says nothing about question generation. A KB created there is proposed in the chatbot course's language (`en` English, `de` German) when the suggested subject serves it. After creating a KB there, the lecturer lands on its detail page with `?chatbotId=`, which renders a back link only when the id matches one of the lecturer's own chatbots; if the connection fails, the created KB stays selected with a Retry connection action instead of prompting a second creation. In the other direction, the KB bindings link to `/resources/chatbots?createForKb=`, which opens chatbot creation only after `getKb` confirms the lecturer owns that KB, requires an explicit course choice when several courses are eligible, and connects the KB to the new chatbot.
 
 The detail metrics distinguish visible data, quota usage, upload reservations, pending asynchronous cleanup, unknown-size conservative reservations, and linked consumers. Do not present tombstoned storage as already released or treat derived values as mutable counters.
 

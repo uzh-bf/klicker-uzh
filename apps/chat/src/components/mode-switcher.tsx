@@ -1,43 +1,30 @@
 'use client'
 
 import * as SelectPrimitive from '@radix-ui/react-select'
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  GraduationCapIcon,
-  LightbulbIcon,
-  ListChecksIcon,
-  SparklesIcon,
-} from 'lucide-react'
+import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { createElement } from 'react'
 import {
+  type ChatModeOptions,
   formatModeLabel,
   getModeDescription,
+  getModeIcon,
   resolveSelectedMode,
 } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 
 function ModeIcon({ mode, className }: { mode: string; className?: string }) {
-  if (mode === 'tutor') {
-    return <GraduationCapIcon aria-hidden="true" className={className} />
-  }
-
-  if (mode === 'explainer') {
-    return <LightbulbIcon aria-hidden="true" className={className} />
-  }
-
-  if (mode === 'quizzer') {
-    return <ListChecksIcon aria-hidden="true" className={className} />
-  }
-
-  return <SparklesIcon aria-hidden="true" className={className} />
+  return createElement(getModeIcon(mode), {
+    'aria-hidden': true,
+    className,
+  })
 }
 
 export function ModeSwitcher({
   modeOptions: modeOptionsOverride,
   testIdPrefix = 'chat-mode',
 }: {
-  modeOptions?: Record<string, string>
+  modeOptions?: ChatModeOptions
   testIdPrefix?: string
 } = {}) {
   const t = useTranslations()
@@ -51,7 +38,7 @@ export function ModeSwitcher({
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
 
-  const selectedLabel = formatModeLabel(t, effectiveSelectedMode)
+  const selectedLabel = formatModeLabel(t, effectiveSelectedMode, modeOptions)
 
   return (
     <SelectPrimitive.Root
@@ -90,7 +77,7 @@ export function ModeSwitcher({
         >
           <SelectPrimitive.Viewport className="p-1.5">
             {modeKeys.map((mode) => {
-              const label = formatModeLabel(t, mode)
+              const label = formatModeLabel(t, mode, modeOptions)
               const description = getModeDescription(t, mode, modeOptions)
               const descriptionId = `${testIdPrefix}-description-${mode}`
 

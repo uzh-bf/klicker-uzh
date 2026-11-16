@@ -9,11 +9,13 @@ type AttachmentVariant = 'history' | 'edit'
 export function canUseComposerAttachments({
   maxImageAttachments,
   supportsImages,
+  supportsDocuments = false,
 }: {
   maxImageAttachments: number
   supportsImages: boolean
+  supportsDocuments?: boolean
 }): boolean {
-  return supportsImages && maxImageAttachments > 0
+  return supportsDocuments || (supportsImages && maxImageAttachments > 0)
 }
 
 export function getAttachmentPreviewSrc(

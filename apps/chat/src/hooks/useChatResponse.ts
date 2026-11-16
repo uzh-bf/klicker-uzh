@@ -1,19 +1,31 @@
-import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useCallback, useRef } from 'react'
-import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
+import {
+  hasAllImageAttachmentsHydrated,
+  setPendingDocumentPages,
+  takePendingDocumentPages,
+} from '../lib/attachments/attachmentState'
+import {
+  type ImageSupport,
+  withoutPageReview,
+} from '../lib/attachments/documentText'
 import { authedFetch } from '../lib/client/authedFetch'
-import { type ReasoningEffort } from '../lib/config/reasoning'
+import type { ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import { useChatContextStore } from '../stores/chatContextStore'
 import {
-  useChatStore,
   type ExtendedThreadMessageLike,
+  type MeetingClockAnchor,
   type ThreadRunOutcome,
+  useChatStore,
 } from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
+import {
+  selectModelReadsDocumentPages,
+  useSettingsStore,
+} from '../stores/settingsStore'
 import { requestFreshElearningChatContext } from './useEmbeddedChatContext'
 
 type GenerateChatResponseOptions = {
@@ -45,6 +57,11 @@ export function useChatResponse(
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
+  const answerStyle = useSettingsStore((state) => state.answerStyle)
+  const answerTone = useSettingsStore((state) => state.answerTone)
+  const modelReadsImages = useSettingsStore((state) =>
+    selectModelReadsDocumentPages(state, selectedModel)
+  )
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -110,6 +127,17 @@ export function useChatResponse(
       const parentId = triggerMessage?.parentId
       let resolvedTriggerMessage = triggerMessage
       let resolvedMessagesToSend = messagesToSend
+      // Taken up front so no early return can strand them; given back when
+      // the request failed for a transient reason, so "Try again" sends them.
+      // A model switched to one without image support drops them.
+      const takenDocumentPages = takePendingDocumentPages(triggerMessage?.id)
+      const documentPages = modelReadsImages ? takenDocumentPages : []
+      let requestAccepted = false
+      const restoreDocumentPages = () => {
+        if (!requestAccepted && triggerMessage?.id && documentPages.length) {
+          setPendingDocumentPages(triggerMessage.id, documentPages)
+        }
+      }
 
       // generate assistant message ID; also sent to backend for consistency
       const assistantMessageId = generateId()
@@ -144,6 +172,51 @@ export function useChatResponse(
             )
             .map((part) => part.text)
             .join('')
+        }
+
+        // Pages that will not be sent must not stay announced as reviewed.
+        const dropPageReview = (
+          supportsImages: ImageSupport = modelReadsImages
+        ) => {
+          const message = resolvedTriggerMessage
+          if (message?.role !== 'user' || !Array.isArray(message.content)) {
+            return
+          }
+          const updated: ExtendedThreadMessageLike = {
+            ...message,
+            content: message.content.map((part) =>
+              part.type === 'text'
+                ? {
+                    ...part,
+                    text: withoutPageReview(part.text, { supportsImages }),
+                  }
+                : part
+            ),
+          }
+          resolvedTriggerMessage = updated
+          resolvedMessagesToSend = [
+            ...resolvedMessagesToSend.slice(0, -1),
+            updated,
+          ]
+          // Both arrays carry the message; branch switches rebuild the
+          // visible path from allMessages.
+          useChatStore.setState((state) => ({
+            threads: state.threads.map((thread) =>
+              thread.id === threadId
+                ? {
+                    ...thread,
+                    messages: resolvedMessagesToSend,
+                    allMessages: thread.allMessages.map((existing) =>
+                      existing.id === updated.id ? updated : existing
+                    ),
+                  }
+                : thread
+            ),
+          }))
+        }
+        // Runs before image hydration, which may return early.
+        if (documentPages.length === 0) {
+          dropPageReview()
         }
 
         if (
@@ -185,6 +258,7 @@ export function useChatResponse(
             console.error(
               'Image attachments for this message could not be loaded.'
             )
+            restoreDocumentPages()
             return
           }
 
@@ -195,6 +269,8 @@ export function useChatResponse(
           ]
         }
 
+        // Hydration can restore stored headers from an earlier attempt.
+        if (documentPages.length === 0) dropPageReview()
         // A new embedded eLearning question re-requests the page snapshot from
         // the host: the launch snapshot can expire or describe a page the
         // student has left, and a completion change arrives without navigation.
@@ -235,6 +311,8 @@ export function useChatResponse(
             selectedModel,
             selectedMode,
             reasoningEffort: selectedReasoningEffort,
+            answerStyle,
+            answerTone,
             chatContext: requestChatContext ?? undefined,
             parentId: parentId || undefined,
             // A branch (edit) keeps the original question's learning context
@@ -254,6 +332,7 @@ export function useChatResponse(
                 } => typeof attachment.imageBase64 === 'string'
               )
               .map((attachment) => attachment.imageBase64),
+            ...(documentPages.length > 0 ? { documentPages } : {}),
           }),
         })
 
@@ -262,8 +341,11 @@ export function useChatResponse(
           // localized generic message instead (server text may be unlocalized or
           // leak implementation detail)
           let errorDetail = `HTTP error! status: ${response.status}`
+          let errorCode: string | null = null
           try {
             const errorPayload = await response.json()
+            errorCode =
+              typeof errorPayload?.code === 'string' ? errorPayload.code : null
             if (errorPayload?.error) {
               errorDetail = `${errorPayload.error}`
             } else if (errorPayload?.message) {
@@ -280,6 +362,22 @@ export function useChatResponse(
             }
           }
           console.error('Chat request failed:', errorDetail)
+
+          // Only a rejection of the pages themselves repeats on every retry:
+          // a model that cannot read them, a body that failed validation or a
+          // request that is too large. After any other error, such as missing
+          // credits or a concurrent run, "Try again" sends them again.
+          const pagesRejected =
+            errorCode === 'DOCUMENT_PAGES_NOT_SUPPORTED' ||
+            response.status === 413 ||
+            (response.status === 400 && errorDetail === 'Invalid request body')
+          if (!pagesRejected) {
+            restoreDocumentPages()
+          } else if (documentPages.length > 0) {
+            dropPageReview(
+              errorCode === 'DOCUMENT_PAGES_NOT_SUPPORTED' ? false : undefined
+            )
+          }
 
           const assistantMessage: ExtendedThreadMessageLike = {
             id: assistantMessageId,
@@ -303,6 +401,7 @@ export function useChatResponse(
         }
 
         // setup streaming response parsing
+        requestAccepted = true
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -321,6 +420,7 @@ export function useChatResponse(
         } | null = null
         let hasFinishEvent = false
         let hasStreamError = false
+        let meetingClock: MeetingClockAnchor | null = null
 
         const buildAssistantMessage = (): ExtendedThreadMessageLike => ({
           id: assistantMessageId,
@@ -335,6 +435,7 @@ export function useChatResponse(
             (messageMetadata?.reasoningContent ?? currentReasoningContent) ||
             null,
           creditsUsed: messageMetadata?.creditsUsed ?? null,
+          meetingClock,
         })
 
         if (reader) {
@@ -592,6 +693,18 @@ export function useChatResponse(
                 } else if (jsonData.type === 'message-metadata') {
                   // No UI update needed
                 } else if (
+                  jsonData.type === 'start' &&
+                  typeof jsonData.messageMetadata?.meetingClockStartedAt ===
+                    'string' &&
+                  typeof jsonData.messageMetadata?.serverNow === 'string'
+                ) {
+                  meetingClock = {
+                    startedAt: jsonData.messageMetadata.meetingClockStartedAt,
+                    skewMs:
+                      Date.parse(jsonData.messageMetadata.serverNow) -
+                      Date.now(),
+                  }
+                } else if (
                   [
                     'start', // stream started
                     'start-step', // processing step started
@@ -745,6 +858,7 @@ export function useChatResponse(
           hasStreamError || !hasFinishEvent ? 'error' : 'completed'
         )
       } catch (error) {
+        restoreDocumentPages()
         if (error instanceof Error && error.name === 'AbortError') {
           // request was cancelled by user — keep the turn: whatever streamed
           // plus a `chat-stopped` marker (mirrors what the server persists in
@@ -850,9 +964,12 @@ export function useChatResponse(
       }
     },
     [
+      modelReadsImages,
       selectedModel,
       selectedMode,
       selectedReasoningEffort,
+      answerStyle,
+      answerTone,
       chatbotId,
       chatContext,
       loadCredits,

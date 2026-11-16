@@ -1,5 +1,8 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphNode,
+  KnowledgeGraphResponse,
+} from '@klicker-uzh/types'
 import { createRequire } from 'node:module'
 
 export type PublishedKnowledgeGraph = {
@@ -39,7 +42,13 @@ type KnowledgeGraphModule = {
     context: PublishedKnowledgeGraph,
     query: string
   ) => Promise<string[]>
+  readKnowledgeGraphMentions: (
+    context: PublishedKnowledgeGraph,
+    text: string
+  ) => Promise<KnowledgeGraphMention[]>
 }
+
+export type KnowledgeGraphMention = { node: KnowledgeGraphNode; text: string }
 
 const nodeRequire = createRequire(import.meta.url)
 let knowledgeGraph: KnowledgeGraphModule | undefined
@@ -144,6 +153,13 @@ export async function readKnowledgeGraphSearchHints(
     context,
     query
   )
+}
+
+export async function readKnowledgeGraphMentions(
+  context: PublishedKnowledgeGraph,
+  text: string
+): Promise<KnowledgeGraphMention[]> {
+  return (await loadKnowledgeGraph()).readKnowledgeGraphMentions(context, text)
 }
 
 export function isKnowledgeGraphNotPublishedError(

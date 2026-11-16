@@ -1,8 +1,19 @@
+import { extractCitationIndexes } from '@klicker-uzh/util/citations'
+import type { ResponseExampleSearchEvidence } from '@klicker-uzh/util/response-example-runtime'
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { maskCodeRegions } from '../markdown/streamingMath'
+import { isVideoSourceType } from './sourceType'
 import { getPublicSourceUrl } from './sourceUrl'
-import type { ChatSource, ChatSourceType } from './types'
+import type {
+  ChatSource,
+  ChatSourceType,
+  ChatSourceVideoPassage,
+} from './types'
 
-export const MAX_SOURCES = 12
+// 99 is the largest index the two-digit marker parser and `parseCitationHref`
+// accept, so it is also the citation cap: sources beyond it stay model-visible
+// with a null `citation_index` instead of being dropped or renumbered.
+export const MAX_SOURCES = 99
 const EXCERPT_MAX_LENGTH = 240
 const GENERIC_DOCUMENT_TITLE = 'Document'
 const SANITIZED_DOCUMENT_REFERENCE_RE = /^document-[0-9a-f]{16}$/
@@ -20,6 +31,8 @@ const SANITIZED_DOCUMENT_REFERENCE_RE = /^document-[0-9a-f]{16}$/
 const DOC_QUERY_TOOL_NAME_RE = new RegExp(
   `(^|_)doc_query(_[0-9a-f]{${TOOL_NAME_SUFFIX_LENGTH}})?$`
 )
+const VIDEO_CLOCK_MARKER_RE =
+  /\[\d{1,2}[ \t]*,[ \t]*t\.[ \t]*(?:\d{1,2}:)?[0-5]?\d:[0-5]\d\]/i
 
 /**
  * Minimal structural shape shared by live (streamed) and persisted assistant
@@ -44,10 +57,14 @@ interface SourceCandidate {
   labeledPageEnd?: string
   startSec?: number
   endSec?: number
+  videoPassages?: ChatSourceVideoPassage[]
   url?: string
   excerpt?: string
   dedupeKey: string
+  evidence?: Omit<ResponseExampleSourceEvidence, 'citationIndex'>
 }
+
+export type ResponseExampleSourceEvidence = ResponseExampleSearchEvidence
 
 export function isDocQueryToolName(toolName: string): boolean {
   return DOC_QUERY_TOOL_NAME_RE.test(toolName)
@@ -82,46 +99,102 @@ export function resolveCitationSource(
 export function normalizeSourcesFromParts(
   parts: readonly ChatSourcePart[]
 ): ChatSource[] {
+  return normalizeSourceCandidatesFromParts(parts).map((candidate, index) => ({
+    id: candidate.dedupeKey,
+    index: index + 1,
+    type: candidate.type,
+    title: candidate.title,
+    page: candidate.page,
+    pageEnd: candidate.pageEnd,
+    labeledPage: candidate.labeledPage,
+    labeledPageEnd: candidate.labeledPageEnd,
+    startSec: candidate.startSec,
+    endSec: candidate.endSec,
+    videoPassages: candidate.videoPassages,
+    url: candidate.url,
+    excerpt: candidate.excerpt,
+  }))
+}
+
+export function normalizeResponseExampleEvidenceFromParts(
+  parts: readonly ChatSourcePart[],
+  referenceAnswer: string
+): ResponseExampleSourceEvidence[] | null {
+  // Saved examples support bare citation indexes only. Do not issue a receipt
+  // for an answer whose video locators cannot be replayed by capture.
+  if (VIDEO_CLOCK_MARKER_RE.test(maskCodeRegions(referenceAnswer))) return null
+
+  const citationIndexes = [
+    ...new Set(extractCitationIndexes(referenceAnswer)),
+  ].sort((left, right) => left - right)
+  if (citationIndexes.length === 0) return null
+
+  const candidates = normalizeSourceCandidatesFromParts(parts)
+  const evidence: ResponseExampleSourceEvidence[] = []
+  for (const citationIndex of citationIndexes) {
+    const candidate = candidates[citationIndex - 1]
+    if (!candidate?.evidence) return null
+    evidence.push({ citationIndex, ...candidate.evidence })
+  }
+
+  return evidence
+}
+
+function normalizeSourceCandidatesFromParts(
+  parts: readonly ChatSourcePart[]
+): SourceCandidate[] {
   if (!Array.isArray(parts)) return []
 
-  const seenDedupeKeys = new Set<string>()
-  const sources: ChatSource[] = []
+  const candidatesByDedupeKey = new Map<string, SourceCandidate>()
+  const normalizedCandidates: SourceCandidate[] = []
 
   for (const part of parts) {
-    if (sources.length >= MAX_SOURCES) break
     if (!isQualifyingPart(part)) continue
 
     const payload = parseDocQueryPayload(part.result)
     if (!payload || 'error' in payload) continue
 
-    const candidates =
+    const payloadCandidates =
       payload.mode === 'documents'
         ? normalizeDocumentsModeSources(payload)
         : normalizeAnswerModeSources(payload)
 
-    for (const candidate of candidates) {
-      if (sources.length >= MAX_SOURCES) break
-      if (seenDedupeKeys.has(candidate.dedupeKey)) continue
+    for (const candidate of payloadCandidates) {
+      const dedupeKey = candidate.dedupeKey
+      const existing = candidatesByDedupeKey.get(dedupeKey)
+      if (existing) {
+        mergeVideoPassages(existing, candidate)
+        continue
+      }
+      if (normalizedCandidates.length >= MAX_SOURCES) continue
 
-      seenDedupeKeys.add(candidate.dedupeKey)
-      sources.push({
-        id: candidate.dedupeKey,
-        index: sources.length + 1,
-        type: candidate.type,
-        title: candidate.title,
-        page: candidate.page,
-        pageEnd: candidate.pageEnd,
-        labeledPage: candidate.labeledPage,
-        labeledPageEnd: candidate.labeledPageEnd,
-        startSec: candidate.startSec,
-        endSec: candidate.endSec,
-        url: candidate.url,
-        excerpt: candidate.excerpt,
-      })
+      candidatesByDedupeKey.set(dedupeKey, candidate)
+      normalizedCandidates.push(candidate)
     }
   }
 
-  return sources
+  return normalizedCandidates
+}
+
+function mergeVideoPassages(
+  existing: SourceCandidate,
+  repeated: SourceCandidate
+): void {
+  if (existing.type !== 'video' || repeated.type !== 'video') return
+
+  const passages = [...(existing.videoPassages ?? [])]
+  const seen = new Set(passages.map(videoPassageKey))
+  for (const passage of repeated.videoPassages ?? []) {
+    const key = videoPassageKey(passage)
+    if (seen.has(key)) continue
+    seen.add(key)
+    passages.push(passage)
+  }
+  existing.videoPassages = passages
+}
+
+function videoPassageKey(passage: ChatSourceVideoPassage): string {
+  return `${passage.startSec}|${passage.endSec ?? ''}|${passage.excerpt ?? ''}`
 }
 
 /**
@@ -262,6 +335,35 @@ function cleanString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+function cleanEvidence(
+  source: Record<string, unknown>,
+  chunk?: Record<string, unknown>
+): Omit<ResponseExampleSourceEvidence, 'citationIndex'> | undefined {
+  const sourceId =
+    cleanString(chunk?.source_id) ?? cleanString(source.source_id)
+  const chunkId = cleanString(chunk?.chunk_id) ?? cleanString(source.chunk_id)
+  const contentHash =
+    cleanString(chunk?.content_hash) ?? cleanString(source.content_hash)
+  const citationAnchor =
+    cleanString(chunk?.citation_anchor) ?? cleanString(source.citation_anchor)
+  if (
+    !sourceId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      sourceId
+    ) ||
+    !chunkId ||
+    chunkId.length > 256 ||
+    !contentHash ||
+    !/^[0-9a-f]{64}$/.test(contentHash) ||
+    !citationAnchor ||
+    citationAnchor.length > 1_024
+  ) {
+    return undefined
+  }
+
+  return { sourceId, chunkId, contentHash, citationAnchor }
+}
+
 // page_number may arrive as a number or a numeric string.
 function cleanPage(value: unknown): number | undefined {
   if (isNAValue(value)) return undefined
@@ -301,6 +403,23 @@ function cleanVideoRange(source: Record<string, unknown>): {
       : undefined
 
   return { startSec, endSec }
+}
+
+function getVideoPassages(
+  rawChunks: readonly unknown[]
+): ChatSourceVideoPassage[] {
+  const passages: ChatSourceVideoPassage[] = []
+  for (const rawChunk of rawChunks) {
+    if (!isChunkRecord(rawChunk)) continue
+    const { startSec, endSec } = cleanVideoRange(rawChunk)
+    if (startSec === undefined) continue
+    passages.push({
+      startSec,
+      endSec,
+      excerpt: truncateExcerpt(cleanString(rawChunk.content)),
+    })
+  }
+  return passages
 }
 
 function lastPathSegment(value: string): string | undefined {
@@ -457,7 +576,7 @@ function inferSourceType(
   url: string | undefined
 ): ChatSourceType {
   const lower = (typeHint ?? '').toLowerCase()
-  if (lower.includes('video') || lower.includes('youtube')) return 'video'
+  if (isVideoSourceType(typeHint)) return 'video'
   if (
     lower.includes('image') ||
     lower.includes('figure') ||
@@ -536,6 +655,7 @@ function normalizeAnswerModeSources(
       page,
       labeledPage,
       url: getPublicSourceUrl(url),
+      evidence: cleanEvidence(source),
       dedupeKey: buildDedupeKey({
         url: ingestionReference ? rawUrl : url,
         title,
@@ -588,9 +708,9 @@ function normalizeDocumentsModeSources(
     if (!title) continue
 
     const excerpt = truncateExcerpt(cleanString(firstChunk?.content))
-    const { page, pageEnd, labeledPage, labeledPageEnd } = getPageEnvelope(
-      Array.isArray(source.chunks) ? source.chunks : []
-    )
+    const rawChunks = Array.isArray(source.chunks) ? source.chunks : []
+    const { page, pageEnd, labeledPage, labeledPageEnd } =
+      getPageEnvelope(rawChunks)
     const { startSec, endSec } = cleanVideoRange(firstChunk ?? {})
 
     const typeHint = [
@@ -600,6 +720,8 @@ function normalizeDocumentsModeSources(
       .filter((part): part is string => Boolean(part))
       .join(' ')
     const type = inferSourceType(typeHint, url)
+    const videoPassages =
+      type === 'video' ? getVideoPassages(rawChunks) : undefined
 
     candidates.push({
       type,
@@ -612,6 +734,8 @@ function normalizeDocumentsModeSources(
       excerpt,
       startSec,
       endSec,
+      videoPassages,
+      evidence: cleanEvidence(source, firstChunk),
       dedupeKey: buildDedupeKey({
         // Non-link references still identify distinct resources with the same title.
         url: reference,

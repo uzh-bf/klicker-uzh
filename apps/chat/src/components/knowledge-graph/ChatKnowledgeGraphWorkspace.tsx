@@ -1,12 +1,17 @@
 'use client'
 
+import type { KnowledgeGraphFocusRequest } from '@klicker-uzh/shared-components/src/knowledgeGraph/KnowledgeGraphViewer'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import {
   KnowledgeGraphBuildChangedError,
   KnowledgeGraphUnavailableError,
 } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import type {
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
+  KnowledgeGraphResponse,
+} from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -26,6 +31,28 @@ const PUBLICATION_STATUSES = new Set<PublicationStatus>([
   'QUEUED',
   'PROCESSING',
   'FAILED',
+])
+
+const RELATION_TYPES = new Set<KnowledgeGraphRelationType>([
+  'prerequisite_of',
+  'part_of',
+  'example_of',
+  'applies_to',
+  'is_a',
+  'has_formula',
+  'has_variable',
+  'decision_rule',
+  'advantage_of',
+  'disadvantage_of',
+  'contrasts_with',
+  'synonym_of',
+  'related',
+])
+
+const RELATION_STATUSES = new Set<KnowledgeGraphRelationStatus>([
+  'source',
+  'inferred',
+  'extracted',
 ])
 
 type UnknownRecord = Record<string, unknown>
@@ -162,7 +189,12 @@ function isSourceReference(value: unknown): boolean {
     isRecord(value) &&
     typeof value.resourceId === 'string' &&
     typeof value.title === 'string' &&
-    isOptionalString(value.reference)
+    isOptionalString(value.reference) &&
+    (value.pages === undefined ||
+      (Array.isArray(value.pages) &&
+        value.pages.every(
+          (page) => Number.isSafeInteger(page) && (page as number) > 0
+        )))
   )
 }
 
@@ -200,12 +232,18 @@ function isKnowledgeGraphEdge(value: unknown): boolean {
     typeof value.target === 'string' &&
     typeof value.type === 'string' &&
     typeof value.label === 'string' &&
+    RELATION_TYPES.has(value.relationType as KnowledgeGraphRelationType) &&
+    RELATION_STATUSES.has(
+      value.relationStatus as KnowledgeGraphRelationStatus
+    ) &&
+    Array.isArray(value.sourceReferences) &&
+    value.sourceReferences.every(isSourceReference) &&
     isRecord(value.properties) &&
     Object.values(value.properties).every(isEdgeProperty)
   )
 }
 
-function isKnowledgeGraphResponse(
+export function isKnowledgeGraphResponse(
   value: unknown
 ): value is KnowledgeGraphResponse {
   return (
@@ -262,9 +300,11 @@ export function createChatKnowledgeGraphDataSource(
 export function ChatKnowledgeGraphWorkspace({
   chatbotId,
   onAsk,
+  focusRequest,
 }: {
   chatbotId: string
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  focusRequest?: KnowledgeGraphFocusRequest
 }) {
   const t = useTranslations('pwa.chatbot')
   const [selection, setSelection] = useState<{
@@ -335,6 +375,7 @@ export function ChatKnowledgeGraphWorkspace({
           key={`${chatbotId}:${kbId ?? ''}`}
           dataSource={dataSource}
           onAsk={onAsk}
+          focusRequest={focusRequest}
         />
       ) : null}
     </section>

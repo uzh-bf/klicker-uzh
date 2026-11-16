@@ -1,4 +1,8 @@
 const crypto = require('node:crypto')
+const {
+  PLAYWRIGHT_SHARD_COUNT,
+  PLAYWRIGHT_ROUTE_JOBS,
+} = require('./ci-equivalent-run.cjs')
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
@@ -40,6 +44,13 @@ const PROMOTION_REF_API = `heads/${PROMOTION_REF_NAME}`
 const SOURCE_BRANCH_VARIABLE = 'STG_SOURCE_BRANCH'
 const PROMOTION_ENABLED_VARIABLE = 'STG_RELEASE_PROMOTION_ENABLED'
 const MANUAL_CONFIRMATION = 'stg-release'
+// The controller wakes once per trigger workflow completing, so an early wake
+// routinely finds a required workflow that is still executing. These bounds
+// cover the gap between a completion event and readable jobs and artifacts, and
+// let a workflow that finishes inside the window be promoted by the same wake.
+// A gate that is still unfinished when the window closes defers instead of
+// failing: only a concluded non-success is a candidate failure, and the
+// still-running workflow wakes the controller again when it completes.
 const DEFAULT_MAX_ATTEMPTS = 6
 const DEFAULT_RETRY_DELAY_MS = 20_000
 const DEFAULT_POST_PUSH_READBACK_ATTEMPTS = 3
@@ -133,8 +144,8 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
       id === 'test-playwright-status'
         ? [
             { id },
-            ...Array.from({ length: 8 }, (_, i) => ({
-              id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+            ...Array.from({ length: PLAYWRIGHT_SHARD_COUNT }, (_, i) => ({
+              id: `test-playwright-execution ${PLAYWRIGHT_ROUTE_JOBS.hosted.shards}${i + 1}, ${PLAYWRIGHT_SHARD_COUNT})`,
             })),
           ]
         : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
@@ -634,6 +645,77 @@ function jobState(job, expectedJobId, candidateSha) {
   return 'failed'
 }
 
+function skippedHostedShardEvidence(workflow, jobs, run, candidateSha) {
+  const matrixName = `test-playwright-execution ${PLAYWRIGHT_ROUTE_JOBS.hosted.shards.slice(0, -2)}`
+  const expectedIds = Array.from(
+    { length: PLAYWRIGHT_SHARD_COUNT },
+    (_, index) => `${matrixName} (${index + 1}, ${PLAYWRIGHT_SHARD_COUNT})`
+  )
+  const reported = jobs.filter(
+    (job) => typeof job?.name === 'string' && job.name.startsWith(matrixName)
+  )
+  if (
+    !reported.some(
+      (job) => job.name === matrixName || job.conclusion === 'skipped'
+    )
+  ) {
+    return null
+  }
+  const inventories = [
+    workflow.jobs.map(({ id }) => id),
+    requiredJobIds(workflow),
+  ].map((ids) => ids.filter((id) => id.startsWith(matrixName)))
+  if (
+    workflow.path !== '.github/workflows/test-playwright.yml' ||
+    inventories.some(
+      (inventory) =>
+        inventory.length !== expectedIds.length ||
+        expectedIds.some(
+          (id) => inventory.filter((actual) => actual === id).length !== 1
+        )
+    )
+  ) {
+    throw new Error('hosted-shard-inventory-invalid')
+  }
+  // GitHub collapses an entirely skipped matrix to one unsuffixed job. Neither
+  // that placeholder nor eight individually skipped jobs prove execution. They
+  // may only map the exact trusted inventory to independently verified reuse.
+  const collapsed = reported.length === 1 && reported[0].name === matrixName
+  const expanded =
+    reported.length === expectedIds.length &&
+    expectedIds.every(
+      (id) => reported.filter((job) => job.name === id).length === 1
+    )
+  if (
+    (!collapsed && !expanded) ||
+    new Set(reported.map((job) => job.id)).size !== reported.length ||
+    reported.some(
+      (job) =>
+        !Number.isSafeInteger(job.id) ||
+        job.id <= 0 ||
+        jobs.filter((actual) => actual.id === job.id).length !== 1 ||
+        job.run_id !== run.id ||
+        job.run_attempt !== run.run_attempt ||
+        job.head_sha !== candidateSha ||
+        job.status !== 'completed' ||
+        job.conclusion !== 'skipped'
+    )
+  ) {
+    throw new Error('hosted-shard-skip-shape-invalid')
+  }
+  return {
+    shape: collapsed ? 'collapsed' : 'expanded',
+    requiredJobIds: expectedIds,
+    jobs: reported,
+    matches: new Map(
+      expectedIds.map((id) => [
+        id,
+        collapsed ? reported[0] : reported.find((job) => job.name === id),
+      ])
+    ),
+  }
+}
+
 async function collectWorkflowEvidence({
   github,
   context,
@@ -703,6 +785,40 @@ async function collectWorkflowEvidence({
       per_page: 100,
     }
   )
+  let validationReuse = null
+  let skippedHostedShards = null
+  try {
+    skippedHostedShards = skippedHostedShardEvidence(
+      workflow,
+      jobs,
+      exact,
+      candidateSha
+    )
+    if (skippedHostedShards) {
+      // The trusted controller reconstructs proof; no candidate receipt or green
+      // reporter can authorize promotion by itself. All other gates still run.
+      validationReuse =
+        await require('./ci-verified-reuse.cjs').verifyPromotionReuse({
+          github,
+          context,
+          run: exact,
+          candidateSha,
+          sourceBranch,
+          controlSha: process.env.TRUSTED_WORKFLOW_SHA,
+          enabled: process.env.CI_VERIFIED_REUSE_ENABLED === 'true',
+        })
+    }
+  } catch (error) {
+    const cause = /^[a-z0-9-]+$/.test(error?.message ?? '')
+      ? error.message
+      : 'evidence-unavailable'
+    return {
+      path: workflow.path,
+      reason: `skipped Playwright shards lack independently verified reuse (${cause})`,
+      run: exact,
+      status: 'wrong_evidence',
+    }
+  }
   const verifiedJobs = []
   // Every job the candidate had to complete must be present and successful, but
   // only the ARM64 publisher jobs carry an image reference for promotion.
@@ -712,9 +828,11 @@ async function collectWorkflowEvidence({
     // job that delegates is still proved from the run's own job list. More than
     // one match stays a hard failure: two reported names cannot both be the one
     // trusted job this identifier names.
-    const matches = jobs.filter((job) =>
-      jobNameMatches(job?.name, requiredJobId)
-    )
+    const reusedJob =
+      validationReuse && skippedHostedShards.matches.get(requiredJobId)
+    const matches = reusedJob
+      ? [reusedJob]
+      : jobs.filter((job) => jobNameMatches(job?.name, requiredJobId))
     if (matches.length > 1) {
       return {
         path: workflow.path,
@@ -724,8 +842,10 @@ async function collectWorkflowEvidence({
       }
     }
     const matching = matches[0]
-    const stateForJob = jobState(matching, requiredJobId, candidateSha)
-    if (stateForJob !== 'success') {
+    const stateForJob = reusedJob
+      ? 'skipped'
+      : jobState(matching, requiredJobId, candidateSha)
+    if (stateForJob !== 'success' && !reusedJob) {
       return {
         path: workflow.path,
         reason: `${requiredJobId} is ${stateForJob.replace('_', ' ')}`,
@@ -742,6 +862,8 @@ async function collectWorkflowEvidence({
       }
     }
     if (!publisherIds.has(requiredJobId)) continue
+    if (reusedJob && verifiedJobs.some((job) => job.id === matching.id))
+      continue
     verifiedJobs.push({
       id: matching.id,
       name: matching.name,
@@ -750,6 +872,19 @@ async function collectWorkflowEvidence({
     })
   }
   return {
+    ...(validationReuse
+      ? {
+          validationReuse,
+          validationReuseCoverage: {
+            shape: skippedHostedShards.shape,
+            requiredJobIds: skippedHostedShards.requiredJobIds,
+            jobs: skippedHostedShards.jobs.map(({ id, name }) => ({
+              id,
+              name,
+            })),
+          },
+        }
+      : {}),
     jobs: verifiedJobs,
     observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
       id,
@@ -1042,6 +1177,12 @@ function isRetryableEvidenceStatus(status) {
   return status === 'missing' || status === 'running'
 }
 
+// A required workflow in a retryable state is retried inside one wake, because
+// the completion event can precede the jobs and artifacts it just produced. A
+// workflow that is still running once the window closes is pending rather than
+// failed: nothing has concluded, and its own completion wakes the controller
+// again. Evidence that is absent after the same window stays a hard failure,
+// because a required workflow with no run at all will not resolve by waiting.
 async function collectBuildEvidence({
   github,
   context,
@@ -1090,6 +1231,9 @@ async function collectBuildEvidence({
       return {
         attempts,
         failures,
+        pending:
+          retryable &&
+          failures.every((failure) => failure.status === 'running'),
         reason: failures
           .map(({ path, reason }) => `${path} (${reason})`)
           .join(', '),
@@ -2032,6 +2176,26 @@ function setOutput(core, name, value) {
   if (typeof core?.setOutput === 'function') core.setOutput(name, value)
 }
 
+// A candidate whose required evidence has not concluded is neither promoted nor
+// failed. Every required workflow wakes this controller when it completes, so
+// the unresolved state is reported and the evidence is re-read on that wake
+// instead of being counted as a failure the run cannot prove.
+function deferUnfinishedGate({ core, inputs, evidence, gate }) {
+  const unfinished = evidence.failures
+    .map(({ path, reason }) => `${path} (${reason})`)
+    .join(', ')
+  core?.info?.(
+    `Deferring staging release promotion: ${gate} is not concluded yet: ${unfinished}`
+  )
+  setOutput(core, 'decision', 'deferred')
+  return {
+    ...inputs,
+    decision: 'deferred',
+    pending: evidence.failures.map(({ path, status }) => ({ path, status })),
+    skipped: true,
+  }
+}
+
 async function resolveInputs({
   context,
   sourceBranch,
@@ -2196,6 +2360,14 @@ async function runPromotion({
     sleep,
   })
   if (!evidence.valid) {
+    if (evidence.pending) {
+      return deferUnfinishedGate({
+        core,
+        evidence,
+        gate: 'staging build evidence',
+        inputs,
+      })
+    }
     throw new Error(`staging build evidence is incomplete: ${evidence.reason}`)
   }
   const ciEvidence = await collectBuildEvidence({
@@ -2209,6 +2381,14 @@ async function runPromotion({
     sleep,
   })
   if (!ciEvidence.valid) {
+    if (ciEvidence.pending) {
+      return deferUnfinishedGate({
+        core,
+        evidence: ciEvidence,
+        gate: 'staging CI evidence',
+        inputs,
+      })
+    }
     throw new Error(`staging CI evidence is incomplete: ${ciEvidence.reason}`)
   }
   for (const workflow of ciEvidence.workflows) {

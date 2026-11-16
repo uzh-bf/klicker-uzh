@@ -25,6 +25,7 @@ const fixtures = vi.hoisted(() => ({
 
 vi.mock('../src/services/elementGenerationProvider.js', () => ({
   canonicalElementGenerationJson: (value: unknown) => value,
+  isElementRevisionWorkerEnabled: () => false,
   elementGenerationArtifactPayload: (ref: {
     containerName: string
     blobName: string
@@ -65,6 +66,7 @@ vi.mock(
       isFlashcardRetrySpend: vi.fn(async () => false),
       releaseStaleClaimedElementGenerationSpend: vi.fn(async () => true),
       releaseUnclaimedElementGenerationSpend: vi.fn(async () => false),
+      reserveElementGenerationRetrySpend: vi.fn(),
       reserveFlashcardRetrySpend: vi.fn(),
       settleElementGenerationSpend: vi.fn(async () => true),
     }
@@ -99,6 +101,7 @@ vi.mock('../src/services/elementGenerationCompletion.js', () => ({
 import {
   isFlashcardRetrySpend,
   releaseUnclaimedElementGenerationSpend,
+  reserveElementGenerationRetrySpend,
   reserveFlashcardRetrySpend,
 } from '../src/services/elementGenerationAccounting.js'
 import { completeElementGeneration } from '../src/services/elementGenerationCompletion.js'
@@ -108,6 +111,7 @@ import {
 } from '../src/services/flashcardGeneration.js'
 import {
   getQuestionGenerationBuild,
+  retryQuestionGeneration,
   reviewQuestionGenerationDesign,
   startQuestionGeneration,
 } from '../src/services/questionGeneration.js'
@@ -213,6 +217,7 @@ function finalBankArtifact(ids: string[]): Buffer {
       metadata: { format: 'MC5', total_questions: ids.length },
       questions: ids.map((id) => ({
         id,
+        design_slot_id: id,
         stem: `Synthetic question ${id}`,
         bloom_level: 'remember',
         origin_mode: 'new',
@@ -328,6 +333,7 @@ function failedBuildContext(
     elementGenerationRuntime: runtime,
     prisma: {
       elementGenerationBuild: {
+        findMany: vi.fn(async () => []),
         findFirst: vi.fn(async () => build),
         updateMany: vi.fn(async () => ({ count: 1 })),
       },
@@ -717,6 +723,147 @@ describe('flashcard retry preparation lifecycle', () => {
   })
 })
 
+describe('question-generation retry lifecycle', () => {
+  beforeEach(() => {
+    vi.mocked(reserveElementGenerationRetrySpend).mockClear()
+  })
+
+  it('re-dispatches a failed build whose reasons the system can fix', async () => {
+    let current = {
+      ...failedBuild(),
+      status: DB.ElementGenerationBuildStatus
+        .FAILED as DB.ElementGenerationBuildStatus,
+      errorRetryable: true,
+      retryCount: 0,
+      syncLeaseOwner: null as string | null,
+      syncLeaseUntil: null as Date | null,
+      providerEventId: null as string | null,
+    }
+    vi.mocked(reserveElementGenerationRetrySpend).mockImplementationOnce(
+      async (_prisma, input) => {
+        current = {
+          ...current,
+          status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+          stage: 'retry_dispatching',
+          providerDispatchAttemptId: input.dispatchAttemptId,
+        }
+        return true
+      }
+    )
+    const updateMany = vi.fn(async ({ where, data }) => {
+      if (data.syncLeaseOwner && data.syncLeaseUntil) {
+        if (current.syncLeaseOwner !== null) return { count: 0 }
+        current = {
+          ...current,
+          syncLeaseOwner: data.syncLeaseOwner,
+          syncLeaseUntil: data.syncLeaseUntil,
+        }
+        return { count: 1 }
+      }
+      if (data.status === DB.ElementGenerationBuildStatus.DESIGNING) {
+        if (
+          current.status !== DB.ElementGenerationBuildStatus.PREPARING_INPUT ||
+          current.syncLeaseOwner !== where.syncLeaseOwner
+        ) {
+          return { count: 0 }
+        }
+        current = {
+          ...current,
+          ...data,
+          retryCount: current.retryCount + 1,
+        }
+        return { count: 1 }
+      }
+      if (data.syncLeaseOwner === null && where.syncLeaseOwner) {
+        if (current.syncLeaseOwner !== where.syncLeaseOwner) return { count: 0 }
+        current = { ...current, syncLeaseOwner: null, syncLeaseUntil: null }
+        return { count: 1 }
+      }
+      return { count: 0 }
+    })
+    const start = vi.fn(
+      async (
+        _payload: unknown,
+        _scope: string,
+        _dispatchAttemptId: string,
+        beforeProviderDispatch: () => Promise<void>
+      ) => {
+        await beforeProviderDispatch()
+        return { eventId: 'retry-event' }
+      }
+    )
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start,
+      review: vi.fn(),
+      getRun: vi.fn(),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(async () => null),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi.fn(async () => current),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      retryQuestionGeneration(fixtures.buildId, ctx as never)
+    ).resolves.toMatchObject({
+      status: DB.ElementGenerationBuildStatus.DESIGNING,
+    })
+
+    expect(reserveElementGenerationRetrySpend).toHaveBeenCalledWith(
+      ctx.prisma,
+      expect.objectContaining({
+        buildId: fixtures.buildId,
+        ownerId: fixtures.ownerId,
+        spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+        elementTypes: [
+          DB.ElementType.SC,
+          DB.ElementType.MC,
+          DB.ElementType.KPRIM,
+        ],
+        expectedStatus: DB.ElementGenerationBuildStatus.FAILED,
+      })
+    )
+    expect(start).toHaveBeenCalledOnce()
+    expect(current.retryCount).toBe(1)
+    expect(current.providerEventId).toBe('retry-event')
+  })
+
+  it('leaves a failure the lecturer has to fix in place', async () => {
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: { questionInputContainer: 'question-inputs' },
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi.fn(async () => ({
+            ...failedBuild(),
+            errorRetryable: false,
+          })),
+        },
+      },
+    }
+
+    await expect(
+      retryQuestionGeneration(fixtures.buildId, ctx as never)
+    ).rejects.toMatchObject({ code: 'INVALID_STAGE' })
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+  })
+})
+
 describe('terminal workflow artifact lifecycle', () => {
   it('fails a successful question workflow whose required artifact is missing', async () => {
     const build = {
@@ -970,6 +1117,7 @@ describe('terminal workflow artifact lifecycle', () => {
         data: expect.objectContaining({
           status: DB.ElementGenerationBuildStatus.FAILED,
           errorCode: 'WORKFLOW_FAILED',
+          errorRetryable: false,
           resultManifestArtifact: resultArtifact,
         }),
       })
@@ -1672,6 +1820,9 @@ describe('partial question-generation delivery lifecycle', () => {
       providerWorkflowRunId: 'question-run',
       lastSynchronizedAt: new Date('2026-08-26T12:05:00.000Z'),
       planSummary: twoSlotPlanSummary(),
+      designSummary: {
+        slots: ['q01', 'q02'].map((sourceQuestionId) => ({ sourceQuestionId })),
+      },
       // These builds pin no graph evidence, so the delivered bank needs no
       // provenance index; the graph-evidence path has its own artifact suite.
       sourceGraphBuild: {
@@ -1740,6 +1891,7 @@ describe('partial question-generation delivery lifecycle', () => {
         elementGenerationRuntime: runtime,
         prisma: {
           elementGenerationBuild: {
+            findMany: vi.fn(async () => []),
             findFirst,
             updateMany,
           },
@@ -1788,6 +1940,86 @@ describe('partial question-generation delivery lifecycle', () => {
     expect(delivered.map((question) => question.sourceQuestionId)).toEqual([
       'q01',
     ])
+  })
+
+  it('delivers a valid partial result when Design-slot and Plan-question IDs differ', async () => {
+    const build = {
+      ...partialBuild(),
+      designSummary: {
+        slots: ['slot-A', 'slot-B'].map((sourceQuestionId) => ({
+          sourceQuestionId,
+        })),
+      },
+    }
+    const bank = JSON.parse(finalBankArtifact(['q01']).toString())
+    bank.questions[0].design_slot_id = 'slot-A'
+    const runtime = partialRuntime(
+      partialResultArtifact({
+        slot_failures: [groundingSlotFailure({ slot_id: 'slot-B' })],
+      }),
+      Buffer.from(JSON.stringify(bank))
+    )
+    const { ctx } = partialContext(build, runtime, {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.INCOMPLETE,
+      stage: 'incomplete',
+    })
+
+    await getQuestionGenerationBuild(fixtures.buildId, ctx)
+
+    expect(completeElementGeneration).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        resultStatus: 'incomplete',
+        unresolvedElementCount: 1,
+        questions: [expect.objectContaining({ sourceQuestionId: 'q01' })],
+        slotFailures: [expect.objectContaining({ slotId: 'slot-B' })],
+      }),
+      ctx
+    )
+  })
+
+  it.each([
+    { manifest: { requested_questions: 3 } },
+    { manifest: { slot_failures: [groundingSlotFailure({ slot_id: 'q01' })] } },
+    { design: null },
+    { design: { slots: [] } },
+    {
+      design: {
+        slots: [{ sourceQuestionId: 'q01' }, { sourceQuestionId: 'q01' }],
+      },
+    },
+  ])('rejects malformed partial delivery before draft completion %#', async (invalid) => {
+    const build = {
+      ...partialBuild(),
+      ...('design' in invalid ? { designSummary: invalid.design } : {}),
+    }
+    const bank = JSON.parse(finalBankArtifact(['q01']).toString())
+    const runtime = partialRuntime(
+      partialResultArtifact('manifest' in invalid ? invalid.manifest : {}),
+      Buffer.from(JSON.stringify(bank))
+    )
+    const { ctx, updateMany } = partialContext(build, runtime, {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'ARTIFACT_INVALID',
+    })
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await getQuestionGenerationBuild(fixtures.buildId, ctx)
+    } finally {
+      errorLog.mockRestore()
+    }
+
+    expect(completeElementGeneration).not.toHaveBeenCalled()
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorCode: 'ARTIFACT_INVALID',
+        }),
+      })
+    )
   })
 
   it('serves the persisted attention cards of a partial build without a download', async () => {
@@ -1863,6 +2095,7 @@ describe('partial question-generation delivery lifecycle', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           status: DB.ElementGenerationBuildStatus.FAILED,
+          errorRetryable: false,
           planSummary: expect.objectContaining({
             slotFailures: [expect.objectContaining({ slotId: 'q02' })],
           }),
@@ -1870,6 +2103,53 @@ describe('partial question-generation delivery lifecycle', () => {
       })
     )
     expect(completeElementGeneration).not.toHaveBeenCalled()
+  })
+
+  it('offers a retry when a failed result only reports reasons the system can fix', async () => {
+    const build = partialBuild()
+    const resultArtifact = {
+      containerName: 'question-results',
+      blobName: `question-builds/${fixtures.buildId}/result.json`,
+      sha256: 'e'.repeat(64),
+    }
+    const settled = {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'WORKFLOW_FAILED',
+      resultManifestArtifact: resultArtifact,
+    }
+    const resultBytes = failedResultArtifact({
+      requested_questions: 2,
+      slot_failures: [
+        groundingSlotFailure({
+          reason_code: 'NO_DISTINCT_EVIDENCE',
+          failure_class: 'self_repairable',
+        }),
+      ],
+    })
+    const runtime = partialRuntime(resultBytes, finalBankArtifact(['q01']))
+    runtime.downloadImmutable = vi.fn(async () => ({
+      ref: resultArtifact,
+      bytes: resultBytes,
+    }))
+    const { ctx, updateMany } = partialContext(build, runtime, settled)
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx)
+    ).resolves.toMatchObject({
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      slotFailures: [expect.objectContaining({ slotId: 'q02' })],
+    })
+
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorRetryable: true,
+        }),
+      })
+    )
   })
 
   it('keeps a strict completed build on the exact-count path', async () => {

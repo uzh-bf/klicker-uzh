@@ -2,6 +2,8 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // Node renderer tests do not need the application Tailwind pipeline.
+  css: { postcss: { plugins: [] } },
   test: {
     globals: true,
     environment: 'node',

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const sdk = vi.hoisted(() => ({
   close: vi.fn(),
   connect: vi.fn(),
+  delete: vi.fn(),
+  list: vi.fn(),
   on: vi.fn(),
   removeListener: vi.fn(),
   roQuery: vi.fn(),
@@ -16,6 +18,7 @@ vi.mock('falkordb', () => ({
 
 import {
   closeKnowledgeGraphClient,
+  deleteKnowledgeGraph,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   readKnowledgeGraphSearchHints,
@@ -52,15 +55,60 @@ describe('knowledge graph client', () => {
 
     sdk.connect.mockResolvedValue({
       close: sdk.close,
+      list: sdk.list,
       on: sdk.on,
       removeListener: sdk.removeListener,
       selectGraph: sdk.selectGraph,
     })
     sdk.selectGraph.mockReturnValue({
+      delete: sdk.delete,
       query: sdk.query,
       roQuery: sdk.roQuery,
     })
     sdk.close.mockResolvedValue(undefined)
+  })
+
+  it('removes the graph of a retired build', async () => {
+    sdk.delete.mockResolvedValue(undefined)
+
+    await expect(
+      deleteKnowledgeGraph(context.graphName)
+    ).resolves.toBeUndefined()
+
+    expect(sdk.selectGraph).toHaveBeenCalledWith(context.graphName)
+    expect(sdk.delete).toHaveBeenCalledOnce()
+    expect(sdk.list).not.toHaveBeenCalled()
+  })
+
+  it('accepts cleanup of a graph that is already gone', async () => {
+    sdk.delete.mockRejectedValue(
+      new Error('ERR Invalid graph operation on empty key')
+    )
+    sdk.list.mockResolvedValue(['klickeruzh:kb:other-kb:other-build'])
+
+    await expect(
+      deleteKnowledgeGraph(context.graphName)
+    ).resolves.toBeUndefined()
+  })
+
+  it('keeps the deletion failure while the graph is still present', async () => {
+    const failure = new Error('ERR Invalid graph operation on empty key')
+    sdk.delete.mockRejectedValue(failure)
+    sdk.list.mockResolvedValue([context.graphName])
+
+    await expect(deleteKnowledgeGraph(context.graphName)).rejects.toThrow(
+      failure
+    )
+  })
+
+  it('keeps the deletion failure when the graph list is unavailable', async () => {
+    const failure = new Error('NOAUTH Authentication required.')
+    sdk.delete.mockRejectedValue(failure)
+    sdk.list.mockRejectedValue(new Error('NOAUTH Authentication required.'))
+
+    await expect(deleteKnowledgeGraph(context.graphName)).rejects.toThrow(
+      failure
+    )
   })
 
   it('connects once with strict socket and credential configuration', async () => {
