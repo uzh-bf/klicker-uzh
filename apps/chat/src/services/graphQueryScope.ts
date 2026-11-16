@@ -1,4 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { ChatbotStatus } from '@klicker-uzh/prisma/client'
 import { authorizeIdentityForChatbot } from '@/src/lib/server/apiGuards'
 import { isChatbotGraphRetrievalEnabled } from '@/src/lib/server/featureFlags'
 import {
@@ -17,37 +18,19 @@ export function graphQueryDependencies(
   let publication: PublishedKnowledgeGraph | undefined
   return {
     async validateScope() {
-      if (!context.participantId) throw new RequiredMCPUnavailableError()
-      const participant = await prisma.participant.findUnique({
-        where: { id: context.participantId },
-        select: { isActive: true, accounts: { select: { type: true } } },
-      })
-      const guest = participant?.accounts.some(
-        (account) => account.type === GUEST_ACCOUNT_TYPE
-      )
-      if (
-        !participant ||
-        (context.authMode === 'account'
-          ? !participant.isActive || guest
-          : !guest)
-      ) {
-        throw new RequiredMCPUnavailableError()
+      const ownerPreview = context.ownerPreviewUserId !== undefined
+      if (ownerPreview) {
+        if (context.participantId || !context.ownerPreviewUserId)
+          throw new RequiredMCPUnavailableError()
+      } else {
+        await validateParticipantScope(context)
       }
-      const access = await authorizeIdentityForChatbot(
-        { participantId: context.participantId, authMode: context.authMode },
-        context.chatbotId
-      )
-      if (
-        'response' in access ||
-        !context.courseId ||
-        access.chatbot.courseId !== context.courseId
-      )
-        throw new RequiredMCPUnavailableError()
       const chatbot = await prisma.chatbot.findUnique({
         where: { id: context.chatbotId },
         select: {
           knowledgeGraphRetrievalEnabled: true,
           ownerId: true,
+          status: true,
           knowledgeBases: {
             where: { isEnabled: true, kb: { deletedAt: null } },
             select: {
@@ -62,6 +45,9 @@ export function graphQueryDependencies(
       const expected = [...(context.kbIds ?? [])].sort()
       if (
         !chatbot ||
+        (ownerPreview &&
+          (chatbot.ownerId !== context.ownerPreviewUserId ||
+            chatbot.status === ChatbotStatus.PAUSED)) ||
         actual.length === 0 ||
         actual.length !== expected.length ||
         actual.some((id, index) => id !== expected[index])
@@ -91,4 +77,31 @@ export function graphQueryDependencies(
       return selected ? readKnowledgeGraphSearchHints(selected, query) : []
     },
   }
+}
+
+async function validateParticipantScope(context: MCPRequestContext) {
+  if (!context.participantId) throw new RequiredMCPUnavailableError()
+  const participant = await prisma.participant.findUnique({
+    where: { id: context.participantId },
+    select: { isActive: true, accounts: { select: { type: true } } },
+  })
+  const guest = participant?.accounts.some(
+    (account) => account.type === GUEST_ACCOUNT_TYPE
+  )
+  if (
+    !participant ||
+    (context.authMode === 'account' ? !participant.isActive || guest : !guest)
+  ) {
+    throw new RequiredMCPUnavailableError()
+  }
+  const access = await authorizeIdentityForChatbot(
+    { participantId: context.participantId, authMode: context.authMode },
+    context.chatbotId
+  )
+  if (
+    'response' in access ||
+    !context.courseId ||
+    access.chatbot.courseId !== context.courseId
+  )
+    throw new RequiredMCPUnavailableError()
 }

@@ -2,6 +2,7 @@ import type {
   ChatbotStatus,
   CreditResetPeriod,
 } from '@klicker-uzh/prisma/client'
+import type { ChatbotCustomModeConfig } from './chatbotCustomModeConfig.js'
 import type { ChatbotStandardModeConfig } from './chatbotStandardModeConfig.js'
 
 /**
@@ -14,9 +15,14 @@ export type ChatbotAuthoringRevision = {
   description: string | null
   avatar: string | null
   standardModeConfig: ChatbotStandardModeConfig | null
+  // Required so a snapshot rebuilt by spreading the incoming revision cannot
+  // silently drop the custom modes between save and approval.
+  customModeConfig: ChatbotCustomModeConfig | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: Record<string, string[]> | null
+  /** Revisions saved before this field existed inherit the live setting. */
+  answerPreferencesEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: CreditResetPeriod
   creditResetAmount: number

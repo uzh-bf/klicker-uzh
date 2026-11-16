@@ -142,8 +142,10 @@ function context(fullDraft: ReturnType<typeof draft>) {
   )
   const transaction = {
     $queryRaw: vi.fn(async () => []),
+    elementGenerationBuild: { count: vi.fn(async () => 0) },
     generatedElementDraft: {
       findFirst,
+      findMany: vi.fn(async () => []),
       updateMany: vi.fn(async () => ({ count: 1 })),
       findUniqueOrThrow: vi.fn(async () => ({
         ...fullDraft,

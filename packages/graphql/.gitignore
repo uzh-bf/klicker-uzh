@@ -7,5 +7,9 @@ dist/
 instrumented/
 hive.json
 
+# Operator inputs and private verification artifacts
+*.xlsx
+*.csv
+*_data.json
+*dump*.json
 !invitations_dev.csv
-invitations_*.csv

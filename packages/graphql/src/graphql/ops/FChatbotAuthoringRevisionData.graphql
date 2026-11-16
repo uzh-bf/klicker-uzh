@@ -9,13 +9,28 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
     tutorEnabled
     explainerEnabled
     quizzerEnabled
+    writingCoachEnabled
     courseName
     subjectDomain
     languageOfInstruction
     scopeNote
   }
+  customModeConfig {
+    modes {
+      key
+      name
+      description
+      personaText
+      welcomeMessage
+      starterPrompts
+      showReasoning
+      replyLanguage
+      meetingClock
+    }
+  }
   modelSelection
   allowedModelIds
+  answerPreferencesEnabled
   allowedReasoningEffortsByModel {
     modelId
     efforts

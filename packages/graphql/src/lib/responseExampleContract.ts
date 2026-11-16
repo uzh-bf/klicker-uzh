@@ -1,5 +1,11 @@
-import { hasCompleteResponseExampleCitationParity } from '@klicker-uzh/util/response-example-eligibility'
 import { ResponseExampleStyle as DBResponseExampleStyle } from '@klicker-uzh/prisma/client'
+import {
+  type ChatModeMCPConfiguration,
+  isSafeDocQueryBinding,
+  normalizeChatbotStandardModeConfig,
+  resolveEffectiveMCPConfigurations,
+} from '@klicker-uzh/util'
+import { hasCompleteResponseExampleCitationParity } from '@klicker-uzh/util/response-example-eligibility'
 import { z } from 'zod'
 
 export const RESPONSE_EXAMPLE_CHAT_MODE_MAX_LENGTH = 100
@@ -30,19 +36,38 @@ export function canApplyResponseExampleAction(
   }
 }
 
-export function extractChatbotModes(systemPrompts: unknown): string[] {
-  if (
-    !systemPrompts ||
-    typeof systemPrompts !== 'object' ||
-    Array.isArray(systemPrompts)
-  ) {
-    return ['tutor']
+export function extractChatbotModes(
+  systemPrompts: unknown,
+  standardModeConfig: unknown = null,
+  mcpConfigurations: readonly ChatModeMCPConfiguration[] = []
+): string[] {
+  const standard = normalizeChatbotStandardModeConfig(
+    standardModeConfig,
+    systemPrompts
+  )
+  const modes = new Set(
+    systemPrompts &&
+      typeof systemPrompts === 'object' &&
+      !Array.isArray(systemPrompts)
+      ? Object.keys(systemPrompts).filter((mode) => mode.trim())
+      : []
+  )
+  for (const [mode, enabled] of [
+    ['tutor', standard.tutorEnabled],
+    ['explainer', standard.explainerEnabled],
+    [
+      'quizzer',
+      standard.quizzerEnabled &&
+        resolveEffectiveMCPConfigurations(mcpConfigurations, 'quizzer').some(
+          isSafeDocQueryBinding
+        ),
+    ],
+  ] as const) {
+    if (enabled) modes.add(mode)
+    else modes.delete(mode)
   }
 
-  const modes = Object.keys(systemPrompts).filter((mode) => mode.trim())
-  if (modes.length === 0) return ['tutor']
-
-  return modes.sort((left, right) => {
+  return [...modes].sort((left, right) => {
     if (left < right) return -1
     if (left > right) return 1
     return 0

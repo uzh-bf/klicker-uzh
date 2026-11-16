@@ -28,6 +28,13 @@ the beta maintains that sensitive association externally for UZH-issued keys,
 while BYOK lecturers are billed by their own provider. Quota controls apply to
 both paths.
 
+Failed graph builds release their reservation and consume no lecturer quota,
+even when the provider reports partial usage. The build's `actualCostMinorUnits`
+is the user quota charge; its `meteredCost` and token counters retain provider
+usage for diagnostics. A late provider success rejected as stale is a failed
+build under the same rule. This policy does not automatically refund historical
+settlements or resolve holds with ambiguous provider evidence.
+
 Graph-derived Klicker-element generation uses the same owner-semester quota.
 Each initial question or flashcard provider dispatch and every flashcard retry
 has an append-only spend row keyed by its durable dispatch UUID. The beta uses a
@@ -38,3 +45,8 @@ attempt. A claim is released only before provider contact or after its recovery
 grace expires and an exact provider lookup proves that no matching run exists.
 Review and publication events are state transitions on the same generation build
 and do not create additional spend.
+
+A revision request for one generated question runs as a one-slot child build and
+spends one `ELEMENT_REVISION` dispatch. Its price is the question price divided
+by the requested count of the parent build, rounded up (`ceil(build price /
+requested count)`), so revising a slot never costs more than generating it.

@@ -16,9 +16,9 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: ['v3', 'v3*']
-    # "edited" re-analyzes when a pull request is retargeted to another base
-    # branch, so a stale result cannot stand in for the new base.
-    types: [opened, synchronize, reopened, edited, ready_for_review]
+    # No "edited": a title or body edit never changes the tested tree, and a
+    # base retarget is revalidated by the restack push or a close and reopen.
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: '21 7 * * 3'
 

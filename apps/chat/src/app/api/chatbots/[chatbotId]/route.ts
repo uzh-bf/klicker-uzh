@@ -19,8 +19,10 @@ export async function GET(
 
     const chatbotResult = await getChatbotOr404(chatbotId, {
       modelSelection: true,
+      answerPreferencesEnabled: true,
       systemPrompts: true,
       standardModeConfig: true,
+      customModeConfig: true,
       mcpConfigurations: {
         select: {
           allowedTools: true,
@@ -40,10 +42,12 @@ export async function GET(
     const { mcpConfigurations, ...chatbot } = chatbotResult.chatbot
     return NextResponse.json({
       modelSelection: chatbot.modelSelection,
+      answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
       modeOptions: resolveEffectiveChatModeOptions(
         chatbot.systemPrompts,
         mcpConfigurations,
-        chatbot.standardModeConfig
+        chatbot.standardModeConfig,
+        { customModeConfig: chatbot.customModeConfig }
       ),
     })
   } catch (error) {

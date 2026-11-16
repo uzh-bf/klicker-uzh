@@ -21,8 +21,8 @@ const LOG_PREFIX = '[chat:auth/lti]'
 
 const querySchema = z.object({
   jwt: z.string().min(1),
-  courseId: z.string().uuid(),
-  chatbotId: z.string().uuid(),
+  courseId: z.string().guid(),
+  chatbotId: z.string().guid(),
 })
 
 function noLoginRedirect(chatbotId: string | null) {
@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
     const parsed = z
       .object({
         status: z.enum(['ACCOUNT', 'GUEST', 'DENIED']),
-        participantId: z.string().uuid().nullable(),
+        participantId: z.string().guid().nullable(),
         participantToken: z.string().nullable(),
       })
       .parse(body.data?.loginParticipantForLtiChatbot)

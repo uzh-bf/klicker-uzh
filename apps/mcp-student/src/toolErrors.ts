@@ -1,5 +1,6 @@
 export type StudentMcpToolErrorCode =
   | 'BACKEND_UNAVAILABLE'
+  | 'DATA_USE_REQUIRED'
   | 'FORBIDDEN'
   | 'INVALID_INPUT'
   | 'NOT_FOUND'
@@ -59,6 +60,15 @@ export function studentToolErrorCode(error: unknown): StudentMcpToolErrorCode {
   ) {
     return 'SUBMISSION_INVALID'
   }
+  // The backend's participant data-use gate rejects every gated field until
+  // the participant acknowledges the current disclosure.
+  if (
+    /PARTICIPANT_DATA_USE_COMPLETION_REQUIRED|Account data-use completion required/i.test(
+      message
+    )
+  ) {
+    return 'DATA_USE_REQUIRED'
+  }
   if (/No practice pool is available/i.test(message)) {
     return 'PRACTICE_POOL_UNAVAILABLE'
   }
@@ -94,6 +104,8 @@ function safeStudentToolMessage(code: StudentMcpToolErrorCode): string {
   switch (code) {
     case 'BACKEND_UNAVAILABLE':
       return 'Student practice backend unavailable'
+    case 'DATA_USE_REQUIRED':
+      return 'Data-use acknowledgement required for student practice'
     case 'FORBIDDEN':
       return 'Student practice object not found or not accessible'
     case 'INVALID_INPUT':

@@ -1,21 +1,30 @@
+import { generateKeyPairSync } from 'node:crypto'
 import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
-  type Prisma,
-  type PrismaClient,
   KBResourceStatus,
   KBResourceType,
+  Prisma,
+  type PrismaClient,
   ResponseExampleStatus,
   ResponseExampleStyle,
 } from '@klicker-uzh/prisma/client'
+import {
+  signResponseExampleReceipt,
+  type VerifyResponseExampleReceiptInput,
+} from '@klicker-uzh/util/response-example-receipt'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   approveResponseExample,
+  captureResponseExample,
   computeResponseExampleSetDigest,
   editAndApproveResponseExample,
   getChatbotResponseExamples,
+  RESPONSE_EXAMPLE_CAPTURE_STALE,
+  RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE,
   RESPONSE_EXAMPLE_DUPLICATE,
   RESPONSE_EXAMPLE_MODE_UNAVAILABLE,
+  RESPONSE_EXAMPLE_RECEIPT_INVALID,
   RESPONSE_EXAMPLE_SOURCES_REQUIRED,
   RESPONSE_EXAMPLE_STALE_UPDATE,
   RESPONSE_EXAMPLE_STATUS_INVALID,
@@ -46,9 +55,61 @@ const responseExampleSetInclude = {
     },
   },
   chatbot: {
-    select: { systemPrompts: true },
+    select: { systemPrompts: true, standardModeConfig: true },
   },
 } satisfies Prisma.ResponseExampleSetInclude
+
+// Chatbot MCP servers are global rows outside the course/user cascade used by
+// testCleanup, so the retrieval fixture below removes this server itself.
+const QUIZZER_MCP_SERVER_NAME = 'response-examples-quizzer'
+
+const requiredDocQueryParameters: Prisma.InputJsonObject = {
+  required: true,
+  toolAlias: 'doc_query',
+}
+
+type QuizzerMCPConfigRow = {
+  chatMode: string
+  allowedTools?: string[]
+  isEnabled?: boolean
+  parameters?: Prisma.InputJsonObject
+}
+
+const quizzerDenialCases: Array<{
+  label: string
+  quizzerEnabled: boolean
+  rows: QuizzerMCPConfigRow[]
+}> = [
+  { label: 'missing retrieval binding', quizzerEnabled: true, rows: [] },
+  {
+    label: 'unsafe retrieval binding',
+    quizzerEnabled: true,
+    rows: [{ chatMode: 'tutor', allowedTools: ['*'] }],
+  },
+  {
+    label: 'explicitly disabled mode',
+    quizzerEnabled: false,
+    rows: [
+      {
+        chatMode: 'tutor',
+        allowedTools: ['doc_query'],
+        parameters: requiredDocQueryParameters,
+      },
+    ],
+  },
+  {
+    label: 'disabled exact Quizzer row on the same server',
+    quizzerEnabled: true,
+    rows: [
+      {
+        chatMode: 'tutor',
+        allowedTools: ['doc_query'],
+        parameters: requiredDocQueryParameters,
+      },
+      { chatMode: 'quizzer', isEnabled: false },
+    ],
+  },
+]
 
 describe('response-example foundation', () => {
   let prisma: PrismaClient
@@ -56,6 +117,8 @@ describe('response-example foundation', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let receiptPrivateKeyPem: string
+  let receiptSettings: Omit<VerifyResponseExampleReceiptInput, 'token'>
 
   beforeAll(async () => {
     const {
@@ -66,6 +129,18 @@ describe('response-example foundation', () => {
     prisma = newPrisma
     hatchet = newHatchet
     emitter = newEmitter
+    const keyPair = generateKeyPairSync('ec', { namedCurve: 'P-256' })
+    receiptPrivateKeyPem = keyPair.privateKey
+      .export({ format: 'pem', type: 'pkcs8' })
+      .toString()
+    receiptSettings = {
+      publicKeyPem: keyPair.publicKey
+        .export({ format: 'pem', type: 'spki' })
+        .toString(),
+      keyId: 'response-example-capture-test-key',
+      issuer: 'https://chat.klicker.test',
+      audience: 'klicker-response-example-test',
+    }
   })
 
   afterAll(async () => {
@@ -80,7 +155,12 @@ describe('response-example foundation', () => {
     userTwoCtx = otherContext
   })
 
-  afterEach(async () => await testCleanup(prisma))
+  afterEach(async () => {
+    await prisma.chatbotMCPServer.deleteMany({
+      where: { name: QUIZZER_MCP_SERVER_NAME },
+    })
+    await testCleanup(prisma)
+  })
 
   async function seedResponseExampleSet() {
     const course = await seedCourse({}, userOneCtx)
@@ -168,6 +248,79 @@ describe('response-example foundation', () => {
     return { chatbot, kb, currentResource, set: refreshedSet }
   }
 
+  async function buildCaptureInput({
+    answer = 'Use the current course source to justify the result [1].',
+    chatMode = 'tutor',
+    question = 'Why does the result follow?',
+  }: {
+    answer?: string
+    chatMode?: string
+    question?: string
+  } = {}) {
+    await prisma.user.update({
+      where: { id: userOneCtx.user.sub },
+      data: { aiFeaturesEnabled: true },
+    })
+    const seeded = await seedResponseExampleSet()
+    const contentHash = 'b'.repeat(64)
+    await prisma.kBResource.update({
+      where: { id: seeded.currentResource.id },
+      data: { activeContentSha256: contentHash },
+    })
+    const signed = await signResponseExampleReceipt({
+      ...receiptSettings,
+      privateKeyPem: receiptPrivateKeyPem,
+      ownerId: userOneCtx.user.sub,
+      chatbotId: seeded.chatbot.id,
+      kbId: seeded.kb.id,
+      chatMode,
+      question,
+      answer,
+      evidenceReferences: [
+        {
+          citationIndex: 1,
+          sourceId: seeded.currentResource.id,
+          chunkId: 'chunk-capture-1',
+          contentHash,
+          citationAnchor: 'page=4',
+        },
+      ],
+    })
+    return {
+      ...seeded,
+      args: {
+        chatbotId: seeded.chatbot.id,
+        receipt: signed.token,
+        question,
+        answer,
+      },
+    }
+  }
+
+  async function seedQuizzerRetrievalConfiguration(
+    chatbotId: string,
+    rows: ReadonlyArray<QuizzerMCPConfigRow>
+  ) {
+    const server = await prisma.chatbotMCPServer.create({
+      data: {
+        name: QUIZZER_MCP_SERVER_NAME,
+        url: 'https://example.invalid/mcp',
+        authType: 'none',
+      },
+    })
+    await prisma.chatbotMCPConfig.createMany({
+      data: rows.map(({ chatMode, allowedTools, isEnabled, parameters }) => ({
+        chatbotId,
+        mcpServerId: server.id,
+        chatMode,
+        isEnabled: isEnabled ?? true,
+        ...(allowedTools ? { allowedTools } : {}),
+        ...(parameters ? { parameters } : {}),
+      })),
+    })
+    return server
+  }
+
   it('returns one exact-scope set only to its chatbot owner', async () => {
     const { chatbot } = await seedResponseExampleSet()
 
@@ -211,6 +364,316 @@ describe('response-example foundation', () => {
       evidenceEligible: true,
     })
     expect(otherUserSet).toBeNull()
+  })
+
+  it.each([
+    ['tutor', ResponseExampleStyle.GUIDED_QUESTIONS],
+    ['explainer', ResponseExampleStyle.STEP_BY_STEP_EXPLANATION],
+    ['summary', ResponseExampleStyle.CONCISE_ANSWER],
+  ] as const)('captures a grounded %s answer as a reviewable candidate', async (chatMode, expectedStyle) => {
+    const capture = await buildCaptureInput({ chatMode })
+    if (chatMode === 'summary') {
+      await prisma.chatbot.update({
+        where: { id: capture.chatbot.id },
+        data: {
+          systemPrompts: {
+            tutor: { prompt: 'Tutor prompt' },
+            explainer: { prompt: 'Explainer prompt' },
+            summary: { prompt: 'Summary prompt' },
+          },
+        },
+      })
+    }
+    const beforeDigest = capture.set.digest
+
+    const result = await captureResponseExample(
+      capture.args,
+      userOneCtx,
+      receiptSettings
+    )
+
+    expect(result).toEqual({ exampleId: expect.any(String), created: true })
+    const stored = await prisma.responseExample.findUniqueOrThrow({
+      where: { id: result!.exampleId },
+      include: { evidenceReferences: true },
+    })
+    expect(stored).toMatchObject({
+      chatMode,
+      studentMessage: capture.args.question,
+      referenceAnswer: capture.args.answer,
+      responseStyle: expectedStyle,
+      status: ResponseExampleStatus.CANDIDATE,
+      reviewedById: null,
+      reviewedAt: null,
+      evidenceReferences: [
+        expect.objectContaining({
+          sourceId: capture.currentResource.id,
+          chunkId: 'chunk-capture-1',
+          contentHash: 'b'.repeat(64),
+          citationIndex: 1,
+          citationAnchor: 'page=4',
+          evidenceEligible: true,
+        }),
+      ],
+    })
+    const refreshedSet = await prisma.responseExampleSet.findUniqueOrThrow({
+      where: { id: capture.set.id },
+    })
+    expect(refreshedSet.digest).not.toBe(beforeDigest)
+  })
+
+  it('captures and approves an enabled standard mode without legacy prompts', async () => {
+    const capture = await buildCaptureInput({ chatMode: 'explainer' })
+    await prisma.chatbot.update({
+      where: { id: capture.chatbot.id },
+      data: {
+        systemPrompts: Prisma.DbNull,
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+
+    const result = await captureResponseExample(
+      capture.args,
+      userOneCtx,
+      receiptSettings
+    )
+    expect(result).toMatchObject({ created: true })
+    const approved = await approveResponseExample(
+      { id: result!.exampleId },
+      userOneCtx
+    )
+    expect(approved?.chatModes).toEqual(['explainer'])
+    expect(
+      approved?.examples.find(({ id }) => id === result!.exampleId)
+    ).toMatchObject({ status: ResponseExampleStatus.APPROVED })
+  })
+
+  it('rejects capture when a standard mode is disabled after receipt issuance', async () => {
+    const capture = await buildCaptureInput({ chatMode: 'explainer' })
+    await prisma.chatbot.update({
+      where: { id: capture.chatbot.id },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+    })
+  })
+
+  it('rejects capture after the chatbot owner loses AI feature access', async () => {
+    const capture = await buildCaptureInput()
+    await prisma.user.update({
+      where: { id: userOneCtx.user.sub },
+      data: { aiFeaturesEnabled: false },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_UNAVAILABLE },
+    })
+    await expect(
+      prisma.responseExample.findFirst({
+        where: {
+          setId: capture.set.id,
+          chatMode: 'tutor',
+          studentMessage: capture.args.question,
+        },
+      })
+    ).resolves.toBeNull()
+  })
+
+  it.each([
+    ['with a safe document-query binding', true],
+    ['without a document-query binding', false],
+  ] as const)('applies the Quizzer MCP policy during capture %s', async (_, hasSafeBinding) => {
+    const capture = await buildCaptureInput({ chatMode: 'quizzer' })
+    await prisma.chatbot.update({
+      where: { id: capture.chatbot.id },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+    if (hasSafeBinding) {
+      await seedQuizzerRetrievalConfiguration(capture.chatbot.id, [
+        {
+          chatMode: 'tutor',
+          allowedTools: ['doc_query'],
+          parameters: requiredDocQueryParameters,
+        },
+      ])
+    }
+
+    const result = captureResponseExample(
+      capture.args,
+      userOneCtx,
+      receiptSettings
+    )
+    if (hasSafeBinding) {
+      await expect(result).resolves.toMatchObject({ created: true })
+    } else {
+      await expect(result).rejects.toMatchObject({
+        extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+      })
+    }
+  })
+
+  it('rejects receipt binding mismatches and stale evidence', async () => {
+    const mismatch = await buildCaptureInput()
+    await expect(
+      captureResponseExample(
+        { ...mismatch.args, answer: `${mismatch.args.answer} changed` },
+        userOneCtx,
+        receiptSettings
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_RECEIPT_INVALID },
+    })
+    await expect(
+      captureResponseExample(mismatch.args, userTwoCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_RECEIPT_INVALID },
+    })
+
+    await prisma.kBResource.update({
+      where: { id: mismatch.currentResource.id },
+      data: { activeContentSha256: 'c'.repeat(64) },
+    })
+    await expect(
+      captureResponseExample(mismatch.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+    })
+  })
+
+  it('returns one unchanged row for concurrent receipt replay', async () => {
+    const capture = await buildCaptureInput()
+
+    const results = await Promise.all([
+      captureResponseExample(capture.args, userOneCtx, receiptSettings),
+      captureResponseExample(capture.args, userOneCtx, receiptSettings),
+    ])
+
+    expect(results.map((result) => result?.created).sort()).toEqual([
+      false,
+      true,
+    ])
+    expect(new Set(results.map((result) => result?.exampleId)).size).toBe(1)
+    await expect(
+      prisma.responseExample.count({
+        where: {
+          setId: capture.set.id,
+          chatMode: 'tutor',
+          studentMessage: capture.args.question,
+        },
+      })
+    ).resolves.toBe(1)
+  })
+
+  it('never changes an existing approved example on duplicate capture', async () => {
+    const capture = await buildCaptureInput()
+    const existing = await prisma.responseExample.create({
+      data: {
+        setId: capture.set.id,
+        chatMode: 'tutor',
+        studentMessage: capture.args.question,
+        referenceAnswer: 'Lecturer-approved answer [1].',
+        responseStyle: ResponseExampleStyle.WORKED_EXAMPLE,
+        status: ResponseExampleStatus.APPROVED,
+        reviewedById: userOneCtx.user.sub,
+        reviewedAt: new Date('2026-09-03T12:00:00.000Z'),
+        evidenceReferences: {
+          create: {
+            citationIndex: 1,
+            sourceId: capture.currentResource.id,
+            chunkId: 'chunk-approved-1',
+            contentHash: 'b'.repeat(64),
+            citationAnchor: 'page=4',
+            evidenceEligible: true,
+          },
+        },
+      },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).resolves.toEqual({ exampleId: existing.id, created: false })
+    await expect(
+      prisma.responseExample.findUniqueOrThrow({ where: { id: existing.id } })
+    ).resolves.toMatchObject({
+      referenceAnswer: 'Lecturer-approved answer [1].',
+      responseStyle: ResponseExampleStyle.WORKED_EXAMPLE,
+      status: ResponseExampleStatus.APPROVED,
+      reviewedById: userOneCtx.user.sub,
+    })
+  })
+
+  it('rolls back candidate creation when digest refresh fails', async () => {
+    const capture = await buildCaptureInput()
+    await prisma.$executeRawUnsafe(`
+      CREATE FUNCTION fail_capture_digest_update()
+      RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'forced capture digest failure';
+      END;
+      $$ LANGUAGE plpgsql
+    `)
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER fail_capture_digest_update
+      BEFORE UPDATE ON "public"."ResponseExampleSet"
+      FOR EACH ROW EXECUTE FUNCTION fail_capture_digest_update()
+    `)
+    try {
+      await expect(
+        captureResponseExample(capture.args, userOneCtx, receiptSettings)
+      ).rejects.toThrow('forced capture digest failure')
+    } finally {
+      await prisma.$executeRawUnsafe(`
+        DROP TRIGGER IF EXISTS fail_capture_digest_update
+        ON "public"."ResponseExampleSet"
+      `)
+      await prisma.$executeRawUnsafe(
+        'DROP FUNCTION IF EXISTS fail_capture_digest_update()'
+      )
+    }
+
+    await expect(
+      prisma.responseExample.count({
+        where: {
+          setId: capture.set.id,
+          chatMode: 'tutor',
+          studentMessage: capture.args.question,
+        },
+      })
+    ).resolves.toBe(0)
   })
 
   it('keeps owner review mutations current, mutable, and digest-bound', async () => {
@@ -365,7 +828,17 @@ describe('response-example foundation', () => {
 
     await prisma.chatbot.update({
       where: { id: chatbot.id },
-      data: { systemPrompts: { explainer: { prompt: 'Explainer' } } },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: true,
+          quizzerEnabled: false,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
     })
     const candidate = set.examples.find(
       (example) => example.status === ResponseExampleStatus.CANDIDATE
@@ -374,6 +847,260 @@ describe('response-example foundation', () => {
       approveResponseExample({ id: candidate.id }, userOneCtx)
     ).rejects.toMatchObject({
       extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+  })
+
+  it('lists and approves default Explainer examples without prompt overrides', async () => {
+    const { chatbot, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: { systemPrompts: Prisma.DbNull },
+    })
+    await prisma.responseExample.update({
+      where: { id: candidate.id },
+      data: { chatMode: 'explainer' },
+    })
+    const listed = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(listed?.chatModes).toContain('explainer')
+    const approved = await approveResponseExample(
+      { id: candidate.id },
+      userOneCtx
+    )
+    const example = approved?.examples.find(({ id }) => id === candidate.id)
+    expect(example).toMatchObject({
+      chatMode: 'explainer',
+      status: ResponseExampleStatus.APPROVED,
+    })
+    if (!example) throw new Error('Missing approved response example')
+    const edited = await editAndApproveResponseExample(
+      {
+        id: candidate.id,
+        chatMode: 'explainer',
+        studentMessage: candidate.studentMessage,
+        referenceAnswer: candidate.referenceAnswer,
+        responseStyle: candidate.responseStyle,
+        expectedUpdatedAt: example.updatedAt,
+      },
+      userOneCtx
+    )
+    expect(edited?.examples.find(({ id }) => id === candidate.id)?.status).toBe(
+      ResponseExampleStatus.APPROVED
+    )
+  })
+
+  it.each([
+    'legacy',
+    'standard',
+  ] as const)('keeps %s-disabled Explainer unavailable to both approval paths', async (configuration) => {
+    const { chatbot, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data:
+        configuration === 'legacy'
+          ? { systemPrompts: { explainer: { enabled: false } } }
+          : {
+              standardModeConfig: {
+                tutorEnabled: true,
+                explainerEnabled: false,
+                quizzerEnabled: false,
+                courseName: null,
+                subjectDomain: null,
+                languageOfInstruction: null,
+                scopeNote: null,
+              },
+            },
+    })
+    const example = await prisma.responseExample.update({
+      where: { id: candidate.id },
+      data: { chatMode: 'explainer' },
+    })
+    const listed = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(listed?.chatModes).not.toContain('explainer')
+    await expect(
+      approveResponseExample({ id: candidate.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+    await expect(
+      editAndApproveResponseExample(
+        {
+          id: candidate.id,
+          chatMode: 'explainer',
+          studentMessage: candidate.studentMessage,
+          referenceAnswer: candidate.referenceAnswer,
+          responseStyle: candidate.responseStyle,
+          expectedUpdatedAt: example.updatedAt,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+  })
+
+  it('offers Quizzer for NULL prompts with a safe Tutor doc-query binding', async () => {
+    const { chatbot, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        systemPrompts: Prisma.DbNull,
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+    await prisma.responseExample.update({
+      where: { id: candidate.id },
+      data: { chatMode: 'quizzer' },
+    })
+    await seedQuizzerRetrievalConfiguration(chatbot.id, [
+      {
+        chatMode: 'tutor',
+        allowedTools: ['doc_query'],
+        parameters: requiredDocQueryParameters,
+      },
+    ])
+
+    const listed = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(listed?.chatModes).toEqual(['explainer', 'quizzer', 'tutor'])
+
+    const approved = await approveResponseExample(
+      { id: candidate.id },
+      userOneCtx
+    )
+    const approvedExample = approved?.examples.find(
+      ({ id }) => id === candidate.id
+    )
+    expect(approvedExample).toMatchObject({
+      chatMode: 'quizzer',
+      status: ResponseExampleStatus.APPROVED,
+      reviewedById: userOneCtx.user.sub,
+    })
+    if (!approvedExample) throw new Error('Missing approved response example')
+
+    const edited = await editAndApproveResponseExample(
+      {
+        id: candidate.id,
+        chatMode: 'quizzer',
+        studentMessage: candidate.studentMessage,
+        referenceAnswer: candidate.referenceAnswer,
+        responseStyle: candidate.responseStyle,
+        expectedUpdatedAt: approvedExample.updatedAt,
+      },
+      userOneCtx
+    )
+    expect(
+      edited?.examples.find(({ id }) => id === candidate.id)
+    ).toMatchObject({
+      chatMode: 'quizzer',
+      status: ResponseExampleStatus.APPROVED,
+    })
+  })
+
+  it.each(
+    quizzerDenialCases
+  )('denies Quizzer and both approval paths for $label', async ({
+    quizzerEnabled,
+    rows,
+  }) => {
+    const { chatbot, set } = await seedResponseExampleSet()
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        systemPrompts: Prisma.DbNull,
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      },
+    })
+    await prisma.responseExample.update({
+      where: { id: candidate.id },
+      data: { chatMode: 'quizzer' },
+    })
+    if (rows.length > 0) {
+      await seedQuizzerRetrievalConfiguration(chatbot.id, rows)
+    }
+
+    const listed = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(listed?.chatModes).toEqual(['explainer', 'tutor'])
+    expect(
+      listed?.examples.find(({ id }) => id === candidate.id)
+    ).toMatchObject({
+      chatMode: 'quizzer',
+      status: ResponseExampleStatus.CANDIDATE,
+    })
+
+    await expect(
+      approveResponseExample({ id: candidate.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+
+    const stored = await prisma.responseExample.findUniqueOrThrow({
+      where: { id: candidate.id },
+    })
+    await expect(
+      editAndApproveResponseExample(
+        {
+          id: candidate.id,
+          chatMode: 'quizzer',
+          studentMessage: candidate.studentMessage,
+          referenceAnswer: candidate.referenceAnswer,
+          responseStyle: candidate.responseStyle,
+          expectedUpdatedAt: stored.updatedAt,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE },
+    })
+
+    const rejected = await rejectResponseExample(
+      { id: candidate.id },
+      userOneCtx
+    )
+    expect(
+      rejected?.examples.find(({ id }) => id === candidate.id)
+    ).toMatchObject({
+      chatMode: 'quizzer',
+      status: ResponseExampleStatus.REJECTED,
+      reviewedById: userOneCtx.user.sub,
     })
   })
 

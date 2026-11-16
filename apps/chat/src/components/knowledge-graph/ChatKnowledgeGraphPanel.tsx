@@ -1,22 +1,52 @@
 'use client'
 
 import { useAui } from '@assistant-ui/react'
+import type { KnowledgeGraphFocusRequest } from '@klicker-uzh/shared-components/src/knowledgeGraph/KnowledgeGraphViewer'
 import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
+import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { Maximize2, Minimize2, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { ChatGraphConceptContext } from './ChatGraphConcepts'
 import { ChatKnowledgeGraphWorkspace } from './ChatKnowledgeGraphWorkspace'
 
 export function useChatGraphPanel(chatbotId: string, enabled: boolean) {
   const pathname = usePathname()
   const [open, setOpen] = useState(pathname === `/${chatbotId}/graph`)
+  const [focusRequest, setFocusRequest] = useState<KnowledgeGraphFocusRequest>()
+  const focusConcept = useCallback(
+    (response: KnowledgeGraphResponse, nodeId: string) => {
+      setFocusRequest((current) => ({
+        response,
+        nodeId,
+        nonce: (current?.nonce ?? 0) + 1,
+      }))
+      setOpen(true)
+    },
+    []
+  )
+  // Closing drops the request, so reopening the panel shows the overview
+  // instead of replaying the last clicked concept in a fresh viewer.
+  const close = () => {
+    setFocusRequest(undefined)
+    setOpen(false)
+  }
   return {
     open: enabled && open,
-    toggle: () => setOpen((value) => !value),
-    close: () => setOpen(false),
+    toggle: () => (open ? close() : setOpen(true)),
+    close,
+    focusRequest,
+    focusConcept: enabled ? focusConcept : undefined,
   }
 }
 
@@ -24,11 +54,16 @@ export function ChatKnowledgeGraphPanel({
   chatbotId,
   open,
   onClose,
+  focusRequest,
+  onFocusConcept,
   children,
 }: {
   chatbotId: string
   open: boolean
   onClose: () => void
+  focusRequest?: KnowledgeGraphFocusRequest
+  /** Absent when the concept map is disabled, which also disables links. */
+  onFocusConcept?: (response: KnowledgeGraphResponse, nodeId: string) => void
   children: ReactNode
 }) {
   const t = useTranslations('chat.graphPanel')
@@ -87,6 +122,14 @@ export function ChatKnowledgeGraphPanel({
       ?.focus()
   }, [fullscreen, open])
 
+  const conceptContext = useMemo(
+    () =>
+      onFocusConcept === undefined
+        ? null
+        : { chatbotId, focusConcept: onFocusConcept },
+    [chatbotId, onFocusConcept]
+  )
+
   function ask(selection: KnowledgeGraphAskSelection) {
     const prompt =
       selection.kind === 'node'
@@ -119,7 +162,9 @@ export function ChatKnowledgeGraphPanel({
         className="relative flex min-h-0 min-w-0 flex-1 flex-col"
         data-cy="chat-conversation-pane"
       >
-        {children}
+        <ChatGraphConceptContext.Provider value={conceptContext}>
+          {children}
+        </ChatGraphConceptContext.Provider>
       </div>
       {open ? (
         <div
@@ -203,7 +248,11 @@ export function ChatKnowledgeGraphPanel({
               <TooltipContent>{t('close')}</TooltipContent>
             </Tooltip>
           </div>
-          <ChatKnowledgeGraphWorkspace chatbotId={chatbotId} onAsk={ask} />
+          <ChatKnowledgeGraphWorkspace
+            chatbotId={chatbotId}
+            onAsk={ask}
+            focusRequest={focusRequest}
+          />
         </div>
       ) : null}
     </div>

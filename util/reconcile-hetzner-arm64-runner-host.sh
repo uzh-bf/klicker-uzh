@@ -28,7 +28,9 @@ HOST_SLOT=''
 CURRENT_STAGE='initial validation'
 DRIFT_COUNT=0
 RUNNER_ENV_CHANGED=0
+RUNNER_ENV_CHANGED_NAMES=()
 EXPECTED_NAMES=()
+RUNNER_SERVICE_STATES=()
 
 usage() {
   printf '%s\n' \
@@ -43,9 +45,10 @@ usage() {
     '  b  public-pr-arm64-05 through public-pr-arm64-08' \
     '' \
     '--check validates the host and reports drift without changing persistent' \
-    'files or services. --apply installs bounded job telemetry, pre-pulls the' \
-    'pinned CI images, updates each runner .env, and restarts the four idle' \
-    'runner services. It never resets, removes, or re-registers a runner.'
+    'files or services. --apply reconciles managed recovery policy, installs' \
+    'bounded telemetry, pre-pulls CI images, and updates runner hook settings.' \
+    'Only already-active idle services with changed hook settings restart.' \
+    'Stopped and disabled services stay held; no runner is re-registered.'
 }
 
 die() {
@@ -223,6 +226,89 @@ managed_file_matches() {
   [[ "$(sha256sum "$path" | awk '{print $1}')" == "$(expected_digest "$kind")" ]]
 }
 
+runner_unit_path() {
+  printf '/etc/systemd/system/actions.runner.uzh-bf.%s.service\n' "$1"
+}
+
+# The SSH payload is standalone and accepts only the provisioner's known units.
+# Keep this layout aligned with provision-hetzner-arm64-runner.sh; the host test
+# compares complete public-PR units from both renderers.
+render_runner_service() {
+  local name=$1 mount=$2 policy=${3:-current} mount_requirement=''
+  [[ -z "$mount" ]] || mount_requirement="RequiresMountsFor=${mount}"
+  printf '%s\n' \
+    '[Unit]' \
+    "Description=GitHub Actions Runner (actions.runner.uzh-bf.${name})" \
+    'After=network-online.target docker.service' \
+    'Requires=docker.service'
+  if [[ "$policy" == 'current' ]]; then
+    printf '%s\n' 'StartLimitIntervalSec=600' 'StartLimitBurst=3'
+  fi
+  printf '%s\n' "$mount_requirement" '' '[Service]' \
+    "ExecStart=${RUNNER_BASE_DIR}/${name}/runsvc.sh" \
+    "User=${RUNNER_USER}" "WorkingDirectory=${RUNNER_BASE_DIR}/${name}" \
+    'KillMode=process' 'KillSignal=SIGTERM' 'TimeoutStopSec=5min'
+  if [[ "$policy" == 'current' ]]; then
+    printf '%s\n' 'Restart=on-failure' 'RestartSec=60' 'OOMPolicy=stop'
+  fi
+  printf '%s\n' '' '[Install]' 'WantedBy=multi-user.target'
+}
+
+runner_service_mount() {
+  local mount
+  mount=$(state_file_value "${STATE_DIR}/$1.env" VOLUME_MOUNT) || return 1
+  [[ -z "$mount" || "$mount" =~ ^/mnt/HC_Volume_[0-9]+$ ]] ||
+    die 'managed runner volume path is invalid'
+  printf '%s' "$mount"
+}
+
+validate_runner_service() {
+  local name=$1 mount=$2 unit service fragment drop_ins
+  unit=$(runner_unit_path "$name")
+  service="actions.runner.uzh-bf.${name}.service"
+  [[ -f "$unit" && ! -L "$unit" && "$(stat -c '%U:%G:%a' "$unit")" == 'root:root:644' ]] ||
+    die "managed runner unit is invalid: ${name}"
+  fragment=$(systemctl show "$service" -p FragmentPath --value) || return 1
+  drop_ins=$(systemctl show "$service" -p DropInPaths --value) || return 1
+  [[ "$fragment" == "$unit" && -z "$drop_ins" ]] ||
+    die "runner service has an unmanaged definition: ${name}"
+  cmp -s "$unit" <(render_runner_service "$name" "$mount") ||
+    cmp -s "$unit" <(render_runner_service "$name" "$mount" legacy) ||
+    die "runner unit differs from known managed policies: ${name}"
+}
+
+runner_service_state() {
+  local service="actions.runner.uzh-bf.$1.service" active enabled
+  active=$(systemctl show "$service" -p ActiveState --value) || return 1
+  enabled=$(systemctl show "$service" -p UnitFileState --value) || return 1
+  case "$active" in active | inactive | failed) ;; *) die "runner service state is unsafe: $1" ;; esac
+  case "$enabled" in enabled | disabled) ;; *) die "runner service enablement is unsafe: $1" ;; esac
+  printf '%s:%s' "$active" "$enabled"
+}
+
+capture_runner_service_states() {
+  local name state
+  RUNNER_SERVICE_STATES=()
+  for name in "${EXPECTED_NAMES[@]}"; do
+    state=$(runner_service_state "$name") || return 1
+    RUNNER_SERVICE_STATES+=("$state")
+  done
+}
+
+assert_runner_service_states() {
+  local index
+  for ((index = 0; index < ${#EXPECTED_NAMES[@]}; index++)); do
+    [[ "$(runner_service_state "${EXPECTED_NAMES[index]}")" == "${RUNNER_SERVICE_STATES[index]}" ]] ||
+      die 'runner activation or enablement changed; repeat the idle preflight'
+  done
+}
+
+assert_host_idle() {
+  if pgrep -u "$RUNNER_USER" -f 'Runner.Worker' >/dev/null 2>&1; then
+    die 'a runner job is active; wait for all jobs to finish before reconciling'
+  fi
+}
+
 validate_platform() {
   local architecture cpu_count memory_kb available_kb
   command -v python3 >/dev/null 2>&1 || die 'Python 3 is required for safe environment reads'
@@ -260,7 +346,7 @@ validate_firewall() {
 
 validate_runner_installation() {
   local name state_file runner_dir service stored_name stored_profile stored_group
-  local expected_services actual_services
+  local expected_services actual_services mount
 
   id "$RUNNER_USER" >/dev/null 2>&1 || die "runner user is missing: ${RUNNER_USER}"
   [[ -d "$STATE_DIR" && ! -L "$STATE_DIR" ]] || die 'managed state directory is missing'
@@ -296,17 +382,16 @@ validate_runner_installation() {
       die "runner directory ownership differs: ${name}"
     [[ -f "${runner_dir}/.runner" && -f "${runner_dir}/.credentials" ]] ||
       die "runner registration files are missing: ${name}"
-    systemctl is-enabled --quiet "$service" || die "runner service is disabled: ${name}"
-    systemctl is-active --quiet "$service" || die "runner service is inactive: ${name}"
+    mount=$(runner_service_mount "$name") || return 1
+    validate_runner_service "$name" "$mount" || return 1
+    runner_service_state "$name" >/dev/null || return 1
   done
 
-  if pgrep -u "$RUNNER_USER" -f 'Runner.Worker' >/dev/null 2>&1; then
-    die 'a runner job is active; wait for all four jobs to finish before reconciling'
-  fi
+  assert_host_idle
 }
 
 check_reconciliation_state() {
-  local name runner_env image
+  local name runner_env image mount
   DRIFT_COUNT=0
 
   managed_file_matches "$TELEMETRY_SCRIPT" telemetry 755 || {
@@ -323,6 +408,11 @@ check_reconciliation_state() {
   }
 
   for name in "${EXPECTED_NAMES[@]}"; do
+    mount=$(runner_service_mount "$name") || return 1
+    if ! cmp -s "$(runner_unit_path "$name")" <(render_runner_service "$name" "$mount"); then
+      info "Drift: ${name} recovery policy"
+      ((DRIFT_COUNT += 1))
+    fi
     runner_env="${RUNNER_BASE_DIR}/${name}/.env"
     if [[ ! -f "$runner_env" || -L "$runner_env" ]] ||
       [[ "$(stat -c '%U:%G:%a' "$runner_env" 2>/dev/null || true)" != 'root:root:644' ]] ||
@@ -345,7 +435,7 @@ check_reconciliation_state() {
 
 prompt_confirmation() {
   local response
-  printf '\nThis updates telemetry hooks, runner .env files, and local Docker images.\n' >&2
+  printf '\nThis updates managed recovery policy, hooks, and local Docker images; held services stay held.\n' >&2
   printf 'Type exactly: %s: ' "$CONFIRMATION" >&2
   if [[ -t 0 && -r /dev/tty ]]; then
     IFS= read -r response </dev/tty
@@ -378,6 +468,7 @@ install_hooks() {
 configure_runner_envs() {
   local name runner_dir runner_env temporary
   RUNNER_ENV_CHANGED=0
+  RUNNER_ENV_CHANGED_NAMES=()
   for name in "${EXPECTED_NAMES[@]}"; do
     runner_dir="${RUNNER_BASE_DIR}/${name}"
     runner_env="${runner_dir}/.env"
@@ -406,7 +497,27 @@ configure_runner_envs() {
       die "runner environment could not be updated: ${name}"
     fi
     RUNNER_ENV_CHANGED=1
+    RUNNER_ENV_CHANGED_NAMES+=("$name")
   done
+}
+
+configure_runner_services() {
+  local name mount changed=0
+  for name in "${EXPECTED_NAMES[@]}"; do
+    mount=$(runner_service_mount "$name") || return 1
+    validate_runner_service "$name" "$mount" || return 1
+    assert_runner_service_states
+    assert_host_idle
+    if ! cmp -s "$(runner_unit_path "$name")" <(render_runner_service "$name" "$mount"); then
+      render_runner_service "$name" "$mount" |
+        write_file_from_stdin 0644 root root "$(runner_unit_path "$name")"
+      changed=1
+    fi
+  done
+  if ((changed == 1)); then
+    systemctl daemon-reload
+    assert_runner_service_states
+  fi
 }
 
 prepull_images() {
@@ -417,19 +528,31 @@ prepull_images() {
 }
 
 restart_runners() {
-  local name service
+  local name service index mount
   systemctl daemon-reload
-  for name in "${EXPECTED_NAMES[@]}"; do
+  for ((index = 0; index < ${#EXPECTED_NAMES[@]}; index++)); do
+    name=${EXPECTED_NAMES[index]}
     service="actions.runner.uzh-bf.${name}.service"
-    validate_runner_installation
-    systemctl restart "$service"
-    systemctl is-active --quiet "$service" || die "runner did not restart: ${name}"
+    mount=$(runner_service_mount "$name") || return 1
+    validate_runner_service "$name" "$mount" || return 1
+    assert_runner_service_states
+    assert_host_idle
+    if [[ "${RUNNER_SERVICE_STATES[index]}" == active:* &&
+      " ${RUNNER_ENV_CHANGED_NAMES[*]} " == *" ${name} "* ]]; then
+      systemctl restart "$service"
+      systemctl is-active --quiet "$service" || die "runner did not restart: ${name}"
+    fi
   done
 }
 
 print_summary() {
+  local name state
   info "Host slot: ${HOST_SLOT}"
   info "Runners: ${EXPECTED_NAMES[*]}"
+  for name in "${EXPECTED_NAMES[@]}"; do
+    state=$(runner_service_state "$name") || return 1
+    info "${name} ActiveState=${state%:*} UnitFileState=${state#*:}"
+  done
   info "Docker root: $(docker info --format '{{.DockerRootDir}}')"
   info "Disk: $(df -h /var/lib/docker | awk 'NR == 2 {print $3 " used, " $4 " available (" $5 ")"}')"
   info "Telemetry: journalctl -t actions-runner-telemetry"
@@ -441,6 +564,7 @@ main() {
   validate_platform
   validate_firewall
   validate_runner_installation
+  capture_runner_service_states
   check_reconciliation_state
   print_summary
 
@@ -462,7 +586,12 @@ main() {
   acquire_lock
   CURRENT_STAGE='pre-apply idle validation'
   validate_runner_installation
+  assert_runner_service_states
+  CURRENT_STAGE='managed service recovery policy'
+  configure_runner_services
   CURRENT_STAGE='telemetry hook installation'
+  validate_runner_installation
+  assert_runner_service_states
   install_hooks
   CURRENT_STAGE='runner hook configuration'
   configure_runner_envs
@@ -475,6 +604,8 @@ main() {
     info 'Runner hook settings were unchanged; service restart skipped'
   fi
   CURRENT_STAGE='post-apply verification'
+  validate_runner_installation
+  assert_runner_service_states
   check_reconciliation_state
   ((DRIFT_COUNT == 0)) || die 'post-apply configuration still differs'
   print_summary

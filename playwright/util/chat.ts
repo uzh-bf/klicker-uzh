@@ -1,3 +1,4 @@
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
@@ -182,6 +183,25 @@ export async function setParticipantToken(page: Page, participantId: string) {
       secure: url.protocol === 'https:',
     },
   ])
+}
+
+/** Scoped session for the seeded participant, course and chatbot. */
+export async function mintPwaEmbedSessionToken(participantId: string) {
+  const prisma = await getPrisma()
+  const chatbot = await prisma.chatbot.findUniqueOrThrow({
+    where: { id: CHATBOT_ID },
+    select: { courseId: true },
+  })
+  return new jose.SignJWT({
+    sub: participantId,
+    scope: 'PWA_CHAT_EMBED_SESSION',
+    courseId: chatbot.courseId,
+    chatbotId: CHATBOT_ID,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(chatSecret())
 }
 
 // ---------------------------------------------------------------------------
@@ -398,10 +418,7 @@ export type SeedMessage = {
         toolCallId: string
         toolName: string
         args?: Record<string, unknown>
-        result?: {
-          content?: Array<{ type: string; text: string }>
-          isError?: boolean
-        }
+        result?: Prisma.InputJsonValue
       }
   >
   parentId?: string | null
@@ -409,6 +426,9 @@ export type SeedMessage = {
   // Mode the message was sent/answered in ('tutor' | 'explainer' | ...). The
   // most recent message's chatMode becomes the thread's `lastChatMode` (D6).
   chatMode?: string | null
+  // Sibling branches inserted back to back can share a millisecond; the chat
+  // opens the newest sibling, so tests that depend on it set explicit times.
+  createdAt?: Date
 }
 
 // 1x1 PNG as a test image
@@ -457,6 +477,7 @@ export async function seedThread(
         content: m.content,
         parentId: m.parentId !== undefined ? m.parentId : previousId,
         chatMode: m.chatMode ?? null,
+        ...(m.createdAt ? { createdAt: m.createdAt } : {}),
       },
     })
     if (m.attachments?.length) {

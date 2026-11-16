@@ -11,7 +11,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
-import { init } from '@socialgouv/matomo-next'
+import { init, push } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
@@ -37,6 +37,10 @@ function App({ Component, pageProps }: AppProps) {
         url: MATOMO_URL,
         siteId: MATOMO_SITE_ID,
         excludeUrlsPatterns: [/\/verify(?:$|[?#])/],
+        // track the path only: the initial page view would otherwise report
+        // the full URL, including login tokens passed as query parameters
+        onInitialization: () =>
+          push(['setCustomUrl', window.location.pathname]),
       })
     }
 

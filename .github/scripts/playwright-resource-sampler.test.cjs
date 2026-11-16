@@ -26,6 +26,112 @@ test('unavailable counters are null rather than idle measurements', () => {
   })
   assert.equal(result.cpuTicks, null)
   assert.equal(result.memoryAvailableKb, null)
+  assert.deepEqual(result.cgroupMemory, {
+    scope: 'current-cgroup-and-descendants',
+    currentBytes: null,
+    peakBytes: null,
+    anonymousBytes: null,
+    fileBytes: null,
+    kernelBytes: null,
+    events: { high: null, max: null, oom: null, oomKill: null },
+  })
+})
+
+test('attributes memory to the current unified cgroup rather than its parent', () => {
+  const files = {
+    '/proc/self/cgroup': '0::/jobs/job-a\n',
+    '/proc/self/mountinfo':
+      '31 25 0:28 / /sys/fs/cgroup rw - cgroup2 cgroup rw\n',
+    '/sys/fs/cgroup/memory.current': '99999\n',
+    '/sys/fs/cgroup/jobs/job-a/memory.current': '512\n',
+    '/sys/fs/cgroup/jobs/job-a/memory.peak': '1024\n',
+    '/sys/fs/cgroup/jobs/job-a/memory.stat':
+      'anon 128\nfile 256\nkernel 64\nfile_mapped 8\n',
+    '/sys/fs/cgroup/jobs/job-a/memory.events':
+      'low 2\nhigh 3\nmax 4\noom 5\noom_kill 6\n',
+  }
+  const result = snapshot((file) => files[file] || '')
+  assert.deepEqual(result.cgroupMemory, {
+    scope: 'current-cgroup-and-descendants',
+    currentBytes: 512,
+    peakBytes: 1024,
+    anonymousBytes: 128,
+    fileBytes: 256,
+    kernelBytes: 64,
+    events: { high: 3, max: 4, oom: 5, oomKill: 6 },
+  })
+  assert.equal(JSON.stringify(result).includes('/jobs/'), false)
+})
+
+test('resolves namespace roots, subtree mounts and escaped mount points', () => {
+  for (const [group, root, mount, directory] of [
+    ['/', '/', '/sys/fs/cgroup', '/sys/fs/cgroup'],
+    ['/jobs/job-a', '/jobs', '/sys/fs/cgroup', '/sys/fs/cgroup/job-a'],
+    ['/jobs/job-a', '/jobs/job-a', '/sys/fs/cgroup', '/sys/fs/cgroup'],
+    ['/jobs/a b', '/', '/sys/fs/cgroup', '/sys/fs/cgroup/jobs/a b'],
+    ['/jobs/a\\040b', '/', '/sys/fs/cgroup', '/sys/fs/cgroup/jobs/a\\040b'],
+    [
+      '/jobs/job-a',
+      '/',
+      '/sys/cgroup\\040mount',
+      '/sys/cgroup mount/jobs/job-a',
+    ],
+  ]) {
+    const files = {
+      '/proc/self/cgroup': `0::${group}\n`,
+      '/proc/self/mountinfo':
+        '30 25 0:28 /containers/job-a /sys/descendant-cgroup rw - cgroup2 cgroup rw\n' +
+        `31 25 0:28 ${root} ${mount} rw - cgroup2 cgroup rw\n`,
+      '/sys/descendant-cgroup/memory.current': '99999\n',
+      [`${directory}/memory.current`]: '17\n',
+    }
+    assert.equal(
+      snapshot((file) => files[file] || '').cgroupMemory.currentBytes,
+      17
+    )
+  }
+})
+
+test('does not fall back to parent counters for unsupported or unsafe membership', () => {
+  for (const [membership, root] of [
+    ['2:memory:/jobs/job-a', '/'],
+    ['0::/../jobs/job-a', '/'],
+    ['0::/elsewhere', '/jobs'],
+    ['0::/', '/..'],
+    ['0::/', '/../..'],
+    ['0::/', '/containers/job-a'],
+  ]) {
+    const files = {
+      '/proc/self/cgroup': `${membership}\n`,
+      '/proc/self/mountinfo': `31 25 0:28 ${root} /sys/fs/cgroup rw - cgroup2 cgroup rw\n`,
+      '/sys/fs/cgroup/memory.current': '99999\n',
+    }
+    assert.equal(
+      snapshot((file) => files[file] || '').cgroupMemory.currentBytes,
+      null
+    )
+  }
+})
+
+test('distinguishes zero counters from missing or malformed memory data', () => {
+  const files = {
+    '/proc/self/cgroup': '0::/\n',
+    '/proc/self/mountinfo':
+      '31 25 0:28 / /sys/fs/cgroup rw - cgroup2 cgroup rw\n',
+    '/sys/fs/cgroup/memory.current': '0\n',
+    '/sys/fs/cgroup/memory.peak': '9007199254740992\n',
+    '/sys/fs/cgroup/memory.stat': 'anon -1\nfile max\n',
+    '/sys/fs/cgroup/memory.events': 'high 0\nmax NaN\noom 1 extra\n',
+  }
+  assert.deepEqual(snapshot((file) => files[file] || '').cgroupMemory, {
+    scope: 'current-cgroup-and-descendants',
+    currentBytes: 0,
+    peakBytes: null,
+    anonymousBytes: null,
+    fileBytes: null,
+    kernelBytes: null,
+    events: { high: 0, max: null, oom: null, oomKill: null },
+  })
 })
 
 test('preserves failed command exit and writes bounded numeric output', () => {

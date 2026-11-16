@@ -1,25 +1,25 @@
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import { z } from 'zod'
 import {
   PWA_CHAT_EMBED_EXCHANGE_SCOPE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
-import { signJWT, verifyJWT } from '@klicker-uzh/util'
-import { z } from 'zod'
 
 const PWA_CHAT_EMBED_SESSION_EXPIRY = '12h'
 
 const pwaEmbedPayloadSchema = z.object({
   sub: z.string().min(1),
   scope: z.literal(PWA_CHAT_EMBED_EXCHANGE_SCOPE),
-  chatbotId: z.string().uuid(),
+  chatbotId: z.string().guid(),
   cookiesAvailable: z.boolean(),
-  courseId: z.string().uuid(),
+  courseId: z.string().guid(),
 })
 
 const pwaEmbedSessionPayloadSchema = z.object({
   sub: z.string().min(1),
   scope: z.literal(PWA_CHAT_EMBED_SESSION_SCOPE),
-  chatbotId: z.string().uuid(),
-  courseId: z.string().uuid(),
+  chatbotId: z.string().guid(),
+  courseId: z.string().guid(),
   // Opaque eLearning learner pseudonym; set only for eLearning handoffs.
   learnerBinding: z.string().min(1).max(128).optional(),
 })

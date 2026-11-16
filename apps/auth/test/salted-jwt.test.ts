@@ -108,6 +108,11 @@ describe('next-auth JWT contracts', () => {
     expect(payload?.role).toBe('PARTICIPANT')
     expect(payload?.iss).toBe(AUTH_URL)
 
+    // The session token expires after maxAge seconds, relative to issuance.
+    const lifetime = Number(payload?.exp) - Number(payload?.iat)
+    expect(lifetime).toBeGreaterThanOrEqual(900)
+    expect(lifetime).toBeLessThanOrEqual(901)
+
     // Wrong issuer must fail, mirroring the backend's verification. The shared
     // verifier reports that rejection through console.error, so its output is
     // silenced for exactly this expected failure.

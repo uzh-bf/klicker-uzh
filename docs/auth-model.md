@@ -25,7 +25,7 @@ A `Bearer` authorization header is always the final fallback (assessment live-qu
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:
 
-- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). The devcontainer supplies a synthetic `EDUID_CLIENT_SECRET` plus the local OIDC mock's issuer, so the provider is registered there too; in deployments without credentials the provider stays absent — use delegated login.
+- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). The devcontainer supplies a synthetic `EDUID_CLIENT_SECRET` plus the local OIDC mock's issuer while its profile selection routes the mock (the default `full` profile, or `eduid` next to a selective one), so the provider is registered there too; in deployments without credentials the provider stays absent — use delegated login.
 - **Delegated login** (`CredentialsProvider`) — authenticates against `User.shortname` + a `UserLogin` record. Each `UserLogin` carries a `UserLoginScope` that ends up as `token.scope` in the JWT callback: the ladder `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY` is enforced field-by-field in the API layer ([three-layer auth](./graphql-api-layer.md)). Edu-ID logins get scope `EDUID`.
 
 Both edu-ID providers set `idToken: true`, which makes NextAuth build the profile from the ID token alone and never call the UserInfo endpoint. Whether a given attribute reaches the ID token is a per-claim setting in the AAI Resource Registry, not something this repository controls, and edu-ID does not advertise `claims_parameter_supported`, so the `claims` request parameter in the provider config is not honoured — the requested scopes plus the Resource Registry settings decide everything. Set `EDUID_FETCH_USERINFO=true` to additionally call UserInfo and merge its claims over the ID token ones, which makes the Resource Registry's ID-token settings irrelevant; the flag defaults to off.
@@ -38,13 +38,37 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
-- **LTI 1.3 only** — `apps/lti` (ltijs). Launch targets resolve in strict precedence `custom claim (klicker_redirect_to)` → `query redirectTo`, with **no env fallback**; validation fails closed on the first present-but-invalid source and checks URL hostnames exact/subdomain against `COOKIE_DOMAIN` and `DF_DOMAIN` — never substring matching (`apps/lti/src/launchTarget.ts`).
+- **LTI 1.3 only** — `apps/lti` (ltijs 7). ltijs keeps the OIDC launch state in the browser's `localStorage` instead of cookies, so a launch inside an LMS iframe works when the browser blocks third-party cookies, and a launch posted from another browser fails state validation. There is no dev mode that skips this check. The launch then continues on the same-origin `/handoff` route, which issues the 5-minute KlickerUZH LTI token as `?jwt=` and the `lti-token` cookie; each launch can use it once, within 5 minutes. Other services, such as e-learning, also sign users in through this output, so its shape is a contract. Launch targets resolve in strict precedence `custom claim (klicker_redirect_to)` → `query redirectTo`, with **no env fallback**; validation fails closed on the first present-but-invalid source and checks URL hostnames exact/subdomain against `COOKIE_DOMAIN` and `DF_DOMAIN` — never substring matching (`apps/lti/src/launchTarget.ts`).
 
 **LTI 1.1 is retired and must not be reintroduced without signature verification.** The removed path derived a login identity from an unauthenticated form POST; no OAuth 1.0a signature was ever checked. `resolveOrCreateParticipantForLti` (`packages/graphql/src/services/accounts.ts`) now rejects any launch whose `scope` is not `LTI1.3`, so the trust boundary is enforced server-side rather than by the absence of a caller.
 
 Two related properties of that resolver are worth knowing before changing it: it resolves by `ssoId` and then falls back to matching `Participant.email`, and both happen **before** the `allowCreate` gate — so `allowCreate: false` constrains account creation only, never account resolution. Any new launch path must therefore be verified before it reaches this function, not inside it.
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
+
+### LTI failure diagnostics
+
+The LTI service emits `lti_request_failed` JSON records to stderr for failed HTTP requests, independently of `DEBUG`. Each record contains the HTTP status, fixed route and method categories, normalized `Sec-Fetch-Site`/`Mode`/`Dest`, bounded Origin classification, a compatibility-applied boolean, recovered-state presence (`missing`, `empty`, `present`, or `invalid_type`), and booleans for ID-token and state presence. Known ltijs errors retain their machine code; other exception messages become `UNCLASSIFIED_ERROR`. The request-local context keeps concurrent launches separate. Parser errors occur before that context exists and emit a minimal `lti_provider_error` record instead.
+
+For a fresh reproduction, inspect all LTI replicas in the intended environment:
+
+```bash
+kubectl -n <namespace> logs -l app.kubernetes.io/component=lti -c lti \
+  --since=15m --timestamps --prefix --tail=-1 |
+  rg 'lti_request_failed|lti_provider_error|lti_origin_compatibility'
+```
+
+The initial `POST /` with nonempty ID token and state and no recovered-state field receives `Referrer-Policy: origin`. This permits the browser recovery form to supply its Origin on resubmission. Referer carries only scheme, host and port; no launch path or query. The recovery page uses inline scripts and submits back to the tool; it must not load cross-origin subresources or navigate to another origin. Other routes and recovered-state responses retain `no-referrer`.
+
+For recovered-state `POST /` requests with `Sec-Fetch-Site: none`, the service adapts that metadata to `same-origin` only when the single Origin header exactly matches the configured tool origin and the recovered-state string is nonempty. The configured origin must be HTTP(S), without credentials, path, query or fragment. Origin lists, duplicate headers, opaque `null`, missing Origin and mismatches remain ineligible. Host, forwarded headers and Referer do not grant trust. The adapter changes no tokens: ltijs still verifies the signed recovery value, matching state ID, expiry, signed state, ID token and one-use nonce. A nonempty recovery value alone is never proof of validity.
+
+Synthetic iframe tests cover native Origin with injected fetch metadata; compatibility on an affected browser still requires a native launch check.
+
+Logging captures original metadata before adaptation. A successful adapted launch emits `lti_origin_compatibility`; failures retain `lti_request_failed`. Both include `originCompatibilityApplied`. Origin is classified as `same-origin`, `cross-origin`, `null`, `missing` or `invalid`; raw header values are never recorded.
+
+For `INVALID_STATE`, other explicit fetch-site values are rejected before recovered-state verification. The existing permissive behavior for a missing `Sec-Fetch-Site` header is unchanged; exact-Origin gating here applies only to the `none` compatibility path. With `same-origin` or a missing header, an empty recovered state points to failed browser recovery, including a duplicate callback after the first recovery page removed the stored value. A non-empty state still requires verification and can fail because the recovery token or state JWT is invalid or expired. These fields describe what reached the server, rather than proving a browser-storage policy caused it. A browser failure before the callback reaches the service still requires browser-console evidence.
+
+The new records contain no token or state values, hashes, cookies, authorization headers, full URLs, user identifiers, IP addresses, or raw browser information. Raw ltijs error messages are deliberately suppressed even when `DEBUG` is enabled, because they may contain authentication material or upstream payloads. An `UNCLASSIFIED_ERROR` therefore needs a controlled reproduction to investigate further. Debug and warning messages retain their existing gating. These records use the existing operational log destination, access controls, and retention.
 
 ### LTI chatbot entry
 

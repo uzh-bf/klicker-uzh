@@ -362,7 +362,7 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   | { chatbot: Prisma.ChatbotGetPayload<{ select: TSelect }> }
   | { response: NextResponse }
 > {
-  const parsedId = z.string().uuid().safeParse(chatbotId)
+  const parsedId = z.string().guid().safeParse(chatbotId)
   if (!parsedId.success) {
     return {
       response: NextResponse.json(

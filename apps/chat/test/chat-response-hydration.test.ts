@@ -1,18 +1,28 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatResponse } from '../src/hooks/useChatResponse'
+import {
+  setPendingDocumentPages,
+  takePendingDocumentPages,
+} from '../src/lib/attachments/attachmentState'
+import {
+  buildDocumentBlock,
+  parseMessageDocuments,
+} from '../src/lib/attachments/documentText'
 
-const { mockUseChatContextStore, mockUseChatStore } = vi.hoisted(() => ({
-  // The real store is a zustand store, so the stand-in carries the same
-  // subscribe/getState surface the context hook reads at import time.
-  mockUseChatContextStore: Object.assign(vi.fn(), {
-    subscribe: vi.fn(),
-    getState: vi.fn(() => ({ context: null, parentOrigin: null })),
-  }),
-  mockUseChatStore: Object.assign(vi.fn(), {
-    getState: vi.fn(),
-    setState: vi.fn(),
-  }),
-}))
+const { mockUseChatContextStore, mockUseChatStore, modelCapability } =
+  vi.hoisted(() => ({
+    // The real store is a zustand store, so the stand-in carries the same
+    // subscribe/getState surface the context hook reads at import time.
+    mockUseChatContextStore: Object.assign(vi.fn(), {
+      subscribe: vi.fn(),
+      getState: vi.fn(() => ({ context: null, parentOrigin: null })),
+    }),
+    modelCapability: { readsPages: false },
+    mockUseChatStore: Object.assign(vi.fn(), {
+      getState: vi.fn(),
+      setState: vi.fn(),
+    }),
+  }))
 
 const loadCreditsMock = vi.fn().mockResolvedValue(undefined)
 
@@ -39,8 +49,9 @@ vi.mock('../src/lib/utils/chatUtils', () => ({
 }))
 
 vi.mock('../src/stores/settingsStore', () => ({
+  selectModelReadsDocumentPages: () => modelCapability.readsPages,
   useSettingsStore: (selector?: (state: any) => unknown) => {
-    const state = { loadCredits: loadCreditsMock }
+    const state = { loadCredits: loadCreditsMock, modelOptions: [] }
     return selector ? selector(state) : state
   },
 }))
@@ -84,6 +95,7 @@ function createStreamingResponse(lines: string[]) {
 describe('useChatResponse attachment hydration', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    modelCapability.readsPages = false
 
     storeState = {
       threads: [
@@ -116,6 +128,108 @@ describe('useChatResponse attachment hydration', () => {
     })
 
     loadCreditsMock.mockClear()
+  })
+
+  test.each([
+    'absent',
+    'evicted',
+    'present',
+  ])('keeps page-review claims accurate after image hydration with an %s page cache', async (cache) => {
+    modelCapability.readsPages = true
+    const id = 'document-retry'
+    const pages = ['data:image/jpeg;base64,synthetic-page']
+    const otherIds = [
+      'newer-document-1',
+      'newer-document-2',
+      'newer-document-3',
+    ]
+    if (cache !== 'absent') setPendingDocumentPages(id, pages)
+    if (cache === 'evicted')
+      otherIds.forEach((otherId) => setPendingDocumentPages(otherId, pages))
+    const message = {
+      id,
+      role: 'user',
+      parentId: null,
+      content: [
+        {
+          type: 'text',
+          text: buildDocumentBlock({
+            name: 'synthetic.pdf',
+            text: 'Synthetic document body',
+            pages: 1,
+            shortened: false,
+            visualReview: 'reviewed',
+          }),
+        },
+      ],
+      imageAttachments: [
+        {
+          id: 'image-1',
+          type: 'image',
+          position: 0,
+          imagePreviewBase64: 'preview-image',
+          hasFullImage: false,
+        },
+      ],
+    }
+    storeState.threads = [
+      { id: 'thread-1', messages: [message], allMessages: [message] },
+    ]
+    storeState.ensureFullImageAttachments.mockResolvedValue({
+      ...message,
+      imageAttachments: [
+        {
+          ...message.imageAttachments[0],
+          imageBase64: 'full-image',
+          hasFullImage: true,
+        },
+      ],
+    })
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"synthetic answer"}',
+          'data: {"type":"finish"}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+    try {
+      await generateChatResponse([message] as any, 'thread-1')
+      const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
+      expect(body.images).toEqual(['full-image'])
+      expect(body.documentPages).toEqual(
+        cache === 'present' ? pages : undefined
+      )
+      const expected = {
+        text: 'Synthetic document body',
+        visualReview: cache === 'present' ? 'reviewed' : 'skipped',
+      }
+      expect(
+        parseMessageDocuments(body.messages[0].content).documents[0]
+      ).toMatchObject(expected)
+      for (const messages of [
+        storeState.threads[0]!.messages,
+        storeState.threads[0]!.allMessages!,
+      ]) {
+        const stored = messages.find((item: any) => item.id === id)
+        expect(
+          parseMessageDocuments(stored.content[0].text).documents[0]
+        ).toMatchObject(expected)
+        expect(stored.imageAttachments[0]).toMatchObject({
+          imageBase64: 'full-image',
+          hasFullImage: true,
+        })
+      }
+    } finally {
+      ;[id, ...otherIds].forEach(takePendingDocumentPages)
+    }
   })
 
   test('hydrates a historical preview-only trigger message before submit', async () => {
@@ -696,6 +810,55 @@ describe('useChatResponse attachment hydration', () => {
       content.some((part) => part.text?.includes('Response truncated'))
     ).toBe(false)
   })
+
+  for (const regenerate of [false, true]) {
+    test(`refreshes the credit balance once the ${regenerate ? 'regenerated' : 'new'} answer has finished`, async () => {
+      // The balance view reads the store that `loadCredits` fills, so the
+      // refetch must start only after the answer (and its server-side charge)
+      // has finished streaming. Record what the thread looked like at that
+      // moment; an expect inside the mock would be swallowed by the hook.
+      let messagesAtRefresh: unknown[] | undefined
+      loadCreditsMock.mockImplementationOnce(async () => {
+        messagesAtRefresh = JSON.parse(
+          JSON.stringify(storeState.threads[0]?.messages ?? [])
+        )
+      })
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValue(
+          createStreamingResponse([
+            'data: {"type":"text-delta","delta":"finished answer"}',
+            'data: {"type":"finish","messageMetadata":{"finishReason":"stop","creditsUsed":0.02}}',
+            'data: [DONE]',
+          ])
+        )
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const { generateChatResponse } = useChatResponse(
+        'model-1',
+        'chat',
+        'medium'
+      )
+
+      await generateChatResponse(
+        [
+          {
+            id: 'message-1',
+            role: 'user',
+            content: [{ type: 'text', text: 'hello' }],
+            parentId: null,
+          },
+        ] as any,
+        'thread-1',
+        regenerate ? { allowRegeneration: true } : undefined
+      )
+
+      expect(loadCreditsMock).toHaveBeenCalledTimes(1)
+      expect(loadCreditsMock).toHaveBeenCalledWith('chatbot-1')
+      expect(JSON.stringify(messagesAtRefresh)).toContain('finished answer')
+      expect(JSON.stringify(messagesAtRefresh)).toContain('"creditsUsed":0.02')
+    })
+  }
 
   test('an aborted request writes the stopped turn to both message arrays after the cancel resync', async () => {
     const fetchSpy = vi.fn().mockRejectedValue(

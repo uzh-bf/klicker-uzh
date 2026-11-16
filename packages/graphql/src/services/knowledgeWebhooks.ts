@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import {
   KBIngestionOperation,
   KBIngestionStatus,
@@ -5,7 +6,6 @@ import {
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { createKBIngestionWebhookSignature } from '@klicker-uzh/util'
-import { timingSafeEqual } from 'node:crypto'
 
 export { signKBIngestionWebhook } from '@klicker-uzh/util'
 
@@ -307,6 +307,12 @@ export async function handleKBIngestionWebhook({
 
   const transition = transitionForEvent(payload)
   await prisma.$transaction(async (tx) => {
+    const scope = await tx.kBResource.findUnique({
+      where: { id: payload.external_resource_id },
+      select: { kbId: true },
+    })
+    if (!scope) return
+    await tx.$queryRaw`SELECT "id" FROM "public"."KB" WHERE "id" = CAST(${scope.kbId} AS UUID) AND "deletedAt" IS NULL FOR UPDATE`
     if (payload.eventType === 'resource.content_refreshed') {
       const activeResourceVersion = payload.serving.active_resource_version
       const activeContentSha256 = payload.serving.active_sha256

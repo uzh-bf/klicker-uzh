@@ -306,6 +306,7 @@ function finalBank(questionOverrides: Record<string, unknown> = {}) {
     questions: [
       {
         id: 'q01',
+        design_slot_id: undefined as string | undefined,
         stem: 'Welche Umwandlung findet bei der malolaktischen Gärung statt?',
         context_inline: 'Eine Weinprobe wird nach der Gärung untersucht.',
         bloom_level: 'understand',
@@ -401,6 +402,7 @@ function partialResult(
   return {
     ...completedResult(),
     status: 'completed_partial',
+    requested_questions: 2,
     slot_failures: [slotFailure()],
     ...overrides,
   }
@@ -520,6 +522,16 @@ describe('question-generation artifact normalization', () => {
         containerName: 'graph-artifacts',
         blobName: 'bundle/vdb_chunks.json',
         sha256: '5'.repeat(64),
+      },
+      domainPolicyArtifact: {
+        containerName: 'graph-artifacts',
+        blobName: 'bundle/resolved_domain_policy.json',
+        sha256: '3'.repeat(64),
+      },
+      generationRecipeArtifact: {
+        containerName: 'graph-artifacts',
+        blobName: 'bundle/generation_recipe.json',
+        sha256: '4'.repeat(64),
       },
     })
     expect(() =>
@@ -1317,6 +1329,7 @@ describe('question-generation artifact normalization', () => {
       reviewRequiredQuestions: 0,
       reviewRequiredQuestionIds: [],
       slotFailures: [],
+      slotSpecifications: null,
       legacyCompleted: false,
       rejectedAt: null,
       reviewedBy: null,
@@ -1364,14 +1377,24 @@ describe('question-generation artifact normalization', () => {
     })
     currentBank.metadata.format = 'SC'
     currentBank.metadata.item_format = 'sc'
-    const questions = parseQuestionGenerationFinalBank(bytes(currentBank), {
-      questionCount: 1,
-      sourceSnapshot,
-      expectedQuestionIds: ['q01'],
-      result,
-      lineage,
-      provenanceAuthority: provenanceAuthority(),
-    })
+    // A newer worker's extra top-level section must not fail the bank.
+    const bankWithReviewFlags = {
+      ...currentBank,
+      review_flags: [
+        { code: 'bloom_mismatch', detail: 'synthetic', question_id: 'q01' },
+      ],
+    }
+    const questions = parseQuestionGenerationFinalBank(
+      bytes(bankWithReviewFlags),
+      {
+        questionCount: 1,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01'],
+        result,
+        lineage,
+        provenanceAuthority: provenanceAuthority(),
+      }
+    )
 
     expect(questions[0]?.tags).toEqual([
       'Gärung',
@@ -1662,11 +1685,13 @@ describe('question-generation artifact normalization', () => {
   })
 
   it('parses a partial result manifest with its structured slot reasons', () => {
+    const failure = slotFailure()
     const result = parseQuestionGenerationResult(
       bytes(
         partialResult({
+          requested_questions: 3,
           slot_failures: [
-            slotFailure(),
+            failure,
             {
               slot_id: 'q06',
               reason_code: 'SYSTEM_FAILURE',
@@ -1675,7 +1700,7 @@ describe('question-generation artifact normalization', () => {
           ],
         })
       ),
-      { buildId: BUILD_ID, questionCount: 1 }
+      { buildId: BUILD_ID, questionCount: 3 }
     )
 
     expect(result.status).toBe('completed_partial')
@@ -1688,14 +1713,14 @@ describe('question-generation artifact normalization', () => {
       {
         slotId: 'q02',
         moduleId: 'M1',
-        objective: 'Explain malolactic fermentation.',
+        objective: failure.objective,
         objectiveSource: 'provided',
         requestedLevel: 'understand',
-        evidenceTarget: 'wine-chemistry.pdf#page=3',
+        evidenceTarget: failure.evidence_target,
         reasonCode: 'NO_SUPPORTING_DOCUMENTS',
         failureClass: 'user_input',
-        detail: 'No chunk covers the malolactic step.',
-        suggestions: ['Malolactic fermentation', 'Cellar practices'],
+        detail: failure.detail,
+        suggestions: failure.suggestions,
       },
       {
         slotId: 'q06',
@@ -1720,6 +1745,7 @@ describe('question-generation artifact normalization', () => {
     const result = parseQuestionGenerationResult(
       bytes(
         partialResult({
+          requested_questions: 3,
           slot_failures: [
             slotFailure({
               reason_code: 'GROUNDING_EXHAUSTED_AFTER_RETRY',
@@ -1737,7 +1763,7 @@ describe('question-generation artifact normalization', () => {
           ],
         })
       ),
-      { buildId: BUILD_ID, questionCount: 1 }
+      { buildId: BUILD_ID, questionCount: 3 }
     )
 
     expect(result.slotFailures).toEqual([
@@ -1763,7 +1789,71 @@ describe('question-generation artifact normalization', () => {
     expect(() =>
       parseQuestionGenerationResult(
         bytes(partialResult({ slot_failures: [] })),
-        { buildId: BUILD_ID, questionCount: 1 }
+        { buildId: BUILD_ID, questionCount: 2 }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it.each([
+    { requested_questions: undefined },
+    { review_required_questions: undefined },
+    { review_required_question_ids: undefined },
+    { requested_questions: 3 },
+    { generated_questions: 0 },
+    { generated_questions: 2 },
+    { slot_failures: [slotFailure(), slotFailure()] },
+    { schema_version: 2 },
+    {
+      question_provenance_index: {
+        container_name: 'question-results',
+        blob_name: `question-builds/${BUILD_ID}/provenance.json`,
+        sha256: 'a'.repeat(64),
+      },
+    },
+  ])('rejects inconsistent partial manifest metadata %#', (overrides) => {
+    expect(() =>
+      parseQuestionGenerationResult(bytes(partialResult(overrides)), {
+        buildId: BUILD_ID,
+        questionCount: 2,
+      })
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('requires current provenance on a partial result from an evidence-pinned build', () => {
+    const index = {
+      container_name: 'question-results',
+      blob_name: `question-builds/${BUILD_ID}/provenance.json`,
+      sha256: 'a'.repeat(64),
+    }
+    const expected = {
+      buildId: BUILD_ID,
+      questionCount: 2,
+      requiresCompleteProvenance: true,
+    }
+
+    expect(() =>
+      parseQuestionGenerationResult(bytes(partialResult()), expected)
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+    expect(
+      parseQuestionGenerationResult(
+        bytes(
+          partialResult({ schema_version: 2, question_provenance_index: index })
+        ),
+        expected
+      )
+    ).toMatchObject({ status: 'completed_partial', schemaVersion: 2 })
+  })
+
+  it('rejects duplicate partial reasons even when the manifest counts balance', () => {
+    expect(() =>
+      parseQuestionGenerationResult(
+        bytes(
+          partialResult({
+            requested_questions: 3,
+            slot_failures: [slotFailure(), slotFailure()],
+          })
+        ),
+        { buildId: BUILD_ID, questionCount: 3 }
       )
     ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
@@ -2485,26 +2575,163 @@ describe('question-generation artifact normalization', () => {
     ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
 
-  it('accepts a partial bank that is a non-empty subset of the reviewed Plan', () => {
+  it.each([
+    'slot-A',
+    '  slot-A\t',
+  ])('accepts normalized partial Design IDs separately from Plan IDs %#', (retainedSlotId) => {
     const result = parseQuestionGenerationResult(
       bytes(
         partialResult({
           requested_questions: 2,
           generated_questions: 1,
+          slot_failures: [slotFailure({ slot_id: 'slot-B' })],
         })
       ),
       { buildId: BUILD_ID, questionCount: 2 }
     )
 
-    const questions = parseQuestionGenerationFinalBank(bytes(finalBank()), {
-      questionCount: 2,
-      sourceSnapshot,
-      expectedQuestionIds: ['q01', 'q02'],
-      result,
-    })
+    const questions = parseQuestionGenerationFinalBank(
+      bytes(finalBank({ design_slot_id: retainedSlotId })),
+      {
+        questionCount: 2,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01', 'q02'],
+        expectedDesignSlotIds: ['slot-A', 'slot-B'],
+        result,
+      }
+    )
 
     expect(questions).toHaveLength(1)
     expect(questions[0]?.sourceQuestionId).toBe('q01')
+  })
+
+  it('preserves required question review within a valid partial delivery', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          review_required_questions: 1,
+          review_required_question_ids: ['q01'],
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+
+    const questions = parseQuestionGenerationFinalBank(
+      bytes(
+        finalBank({
+          design_slot_id: 'q01',
+          difficulty_status: 'review_required',
+        })
+      ),
+      {
+        questionCount: 2,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01', 'q02'],
+        expectedDesignSlotIds: ['q01', 'q02'],
+        result,
+      }
+    )
+
+    expect(result.status).toBe('completed_partial')
+    expect(questions[0]?.qualityFlags).toContain('difficulty_review_required')
+  })
+
+  it.each([
+    { slotId: undefined, approved: ['slot-A', 'slot-B'], failed: 'slot-B' },
+    { slotId: null, approved: ['slot-A', 'slot-B'], failed: 'slot-B' },
+    { slotId: 1, approved: ['slot-A', 'slot-B'], failed: 'slot-B' },
+    { slotId: 'foreign', approved: ['slot-A', 'slot-B'], failed: 'slot-B' },
+    { slotId: 'slot-A', approved: undefined, failed: 'slot-B' },
+    { slotId: 'slot-A', approved: ['slot-A'], failed: 'slot-B' },
+    { slotId: 'slot-A', approved: ['slot-A', 'slot-A'], failed: 'slot-B' },
+    { slotId: 'slot-A', approved: ['slot-A', 'slot-B'], failed: 'slot-A' },
+    { slotId: 'slot-A', approved: ['slot-A', 'slot-B'], failed: 'foreign' },
+  ])('rejects an unverified partial Design partition %#', ({
+    slotId,
+    approved,
+    failed,
+  }) => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({ slot_failures: [slotFailure({ slot_id: failed })] })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+
+    expect(() =>
+      parseQuestionGenerationFinalBank(
+        bytes(finalBank({ design_slot_id: slotId })),
+        {
+          questionCount: 2,
+          sourceSnapshot,
+          expectedQuestionIds: ['q01', 'q02'],
+          expectedDesignSlotIds: approved,
+          result,
+        }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('rejects duplicate retained Design slots even when Plan IDs are unique', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          requested_questions: 3,
+          generated_questions: 2,
+          slot_failures: [slotFailure({ slot_id: 'slot-C' })],
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 3 }
+    )
+    const bank = finalBank({ design_slot_id: 'slot-A' })
+    bank.metadata.total_questions = 2
+    bank.questions.push({
+      ...bank.questions[0]!,
+      id: 'q02',
+      design_slot_id: ' slot-A ',
+    })
+
+    expect(() =>
+      parseQuestionGenerationFinalBank(bytes(bank), {
+        questionCount: 3,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01', 'q02', 'q03'],
+        expectedDesignSlotIds: ['slot-A', 'slot-B', 'slot-C'],
+        result,
+      })
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('rejects a partial bank whose retained count contradicts its manifest', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          requested_questions: 3,
+          slot_failures: [
+            slotFailure({ slot_id: 'slot-B' }),
+            slotFailure({ slot_id: 'slot-C' }),
+          ],
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 3 }
+    )
+    const bank = finalBank({ design_slot_id: 'slot-A' })
+    bank.metadata.total_questions = 2
+    bank.questions.push({
+      ...bank.questions[0]!,
+      id: 'q02',
+      design_slot_id: 'slot-B',
+    })
+
+    expect(() =>
+      parseQuestionGenerationFinalBank(bytes(bank), {
+        questionCount: 3,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01', 'q02', 'q03'],
+        expectedDesignSlotIds: ['slot-A', 'slot-B', 'slot-C'],
+        result,
+      })
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
 
   it('rejects an inconsistent or out-of-Plan partial bank', () => {

@@ -52,6 +52,31 @@ describe('PWA embed auth', () => {
     expect(payload.cookiesAvailable).toBe(false)
   })
 
+  it.each([
+    'not-an-id',
+    '11111111-1111-1111-1111-11111111111z',
+  ])('rejects malformed chatbot identifiers in signed exchange tokens: %s', async (chatbotId) => {
+    const { signJWT } = await import('@klicker-uzh/util')
+    const { PWA_CHAT_EMBED_EXCHANGE_SCOPE } = await import(
+      '@/src/lib/pwaEmbedAuth'
+    )
+    const { verifyPwaEmbedExchangeToken } = await import(
+      '@/src/lib/server/pwaEmbed'
+    )
+    const token = await signJWT(
+      {
+        sub: 'synthetic-participant',
+        scope: PWA_CHAT_EMBED_EXCHANGE_SCOPE,
+        chatbotId,
+        cookiesAvailable: false,
+        courseId: '22222222-2222-2222-2222-222222222222',
+      },
+      process.env.APP_SECRET as string,
+      { algorithm: 'HS256', expiresIn: '2m' }
+    )
+    await expect(verifyPwaEmbedExchangeToken(token)).rejects.toBeDefined()
+  })
+
   it('rejects exchange tokens with the wrong scope', async () => {
     const { signJWT } = await import('@klicker-uzh/util')
     const { verifyPwaEmbedExchangeToken } = await import(

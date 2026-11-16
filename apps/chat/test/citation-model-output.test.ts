@@ -175,6 +175,80 @@ describe('model-only citation indices', () => {
     expect(withModelCitationIndices(projected, steps)).toEqual(projected)
   })
 
+  test('same-key video repeats keep one index and every raw passage', () => {
+    const first = {
+      reference: 'urn:video:synthetic#t=42.0,59.0',
+      title: 'Synthetic lecture',
+      source_type: 'video',
+      citation_index: 99,
+      chunks: [{ content: 'Passage 42', start_sec: 42, end_sec: 59 }],
+    }
+    const second = {
+      ...first,
+      chunks: [
+        { content: 'Passage 42', start_sec: 42, end_sec: 59 },
+        { content: 'Passage 754', start_sec: 754, end_sec: 800 },
+      ],
+    }
+    const steps = [
+      { content: [call('first'), result('first', payload(first))] },
+      { content: [call('second'), result('second', payload(second))] },
+    ]
+    const projected = withModelCitationIndices(
+      [message('first'), message('second')],
+      steps
+    )
+
+    expect(
+      projected.map(
+        (_message, index) =>
+          projectedPayload(projected, index).sources[0].citation_index
+      )
+    ).toEqual([1, 1])
+    expect(projectedPayload(projected, 1).sources[0].chunks).toEqual(
+      second.chunks
+    )
+  })
+
+  test('different first video ranges keep the original separate indices', () => {
+    const video = (reference: string, start: number, end: number) => ({
+      reference,
+      title: 'Synthetic lecture',
+      source_type: 'video',
+      citation_index: 99,
+      chunks: [
+        {
+          content: `Passage ${start}`,
+          start_sec: start,
+          end_sec: end,
+        },
+      ],
+    })
+    const first = video('urn:video:synthetic#t=42.0,59.0', 42, 59)
+    const second = video('urn:video:synthetic#t=42.0,59.0', 754, 800)
+    const steps = [
+      { content: [call('first'), result('first', payload(first))] },
+      { content: [call('second'), result('second', payload(second))] },
+    ]
+    const projected = withModelCitationIndices(
+      [message('first'), message('second')],
+      steps
+    )
+
+    expect(
+      projected.map(
+        (_message, index) =>
+          projectedPayload(projected, index).sources[0].citation_index
+      )
+    ).toEqual([1, 2])
+    expect(projectedPayload(projected, 0).sources[0].chunks).toEqual(
+      first.chunks
+    )
+    expect(projectedPayload(projected, 1).sources[0].chunks).toEqual(
+      second.chunks
+    )
+  })
+
   test('uses call order despite reversed completion and reuses indices across searches', () => {
     const a = group('urn:a'),
       b = group('urn:b'),
@@ -214,14 +288,14 @@ describe('model-only citation indices', () => {
     ).toEqual([1, 2])
   })
 
-  test('caps new identities but still maps admitted repeats after overflow and skips invalid entries', () => {
-    const sources = Array.from({ length: 13 }, (_, i) => group(`urn:${i}`))
+  test('caps new identities at 99 but still maps admitted repeats after overflow and skips invalid entries', () => {
+    const sources = Array.from({ length: 100 }, (_, i) => group(`urn:${i}`))
     const steps = [
       { content: [call('a'), result('a', payload(...sources))] },
       {
         content: [
           call('b'),
-          result('b', payload(null, {}, sources[0], sources[12])),
+          result('b', payload(null, {}, sources[0], sources[99])),
         ],
       },
     ]
@@ -229,17 +303,40 @@ describe('model-only citation indices', () => {
       [message('a'), message('b')],
       steps
     )
+    const projectedFirst = projectedPayload(projected).sources
+    expect(projectedFirst).toHaveLength(100)
     expect(
-      projectedPayload(projected).sources.map(
+      projectedFirst.map(
         (s: { citation_index: number | null }) => s.citation_index
       )
-    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null])
+    ).toEqual([...Array.from({ length: 99 }, (_, i) => i + 1), null])
+    // The overflow source keeps its text in the model-facing projection; only
+    // its citation_index is null.
+    expect(projectedFirst[99]).toEqual({
+      ...sources[99],
+      citation_index: null,
+    })
     expect(projectedPayload(projected, 1).sources).toEqual([
       null,
       { citation_index: null },
       { ...sources[0], citation_index: 1 },
-      { ...sources[12], citation_index: null },
+      { ...sources[99], citation_index: null },
     ])
+  })
+
+  test('live and persisted parts normalize to the same 99 indices', () => {
+    const sources = Array.from({ length: 100 }, (_, i) => group(`urn:${i}`))
+    const raw = payload(...sources)
+    const steps = [{ content: [call('a'), result('a', raw)] }]
+
+    const live = normalizeSourcesFromParts(mapAssistantStepContent(steps))
+    const persisted = normalizeSourcesFromParts([
+      { type: 'tool-call', toolName: 'KB_doc_query', result: raw },
+    ])
+
+    expect(live).toHaveLength(99)
+    expect(live.at(-1)?.index).toBe(99)
+    expect(persisted).toEqual(live)
   })
 
   test('prefers canonical FastMCP structured data over conflicting text', () => {
