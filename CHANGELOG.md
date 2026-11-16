@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
+* **chat:** include retry handling and terminal tool classification in alpha.95 ([a7515ab](https://github.com/uzh-bf/klicker-uzh/commit/a7515ab6bc18810ad5ce506217c263d4240926fa))
+* **chat:** preserve retry state for reasoning-only responses ([#6914](https://github.com/uzh-bf/klicker-uzh/issues/6914)) ([c5564fc](https://github.com/uzh-bf/klicker-uzh/commit/c5564fc8a17f6b1832fedcc970c06af42400c8bd))
 * **deploy:** restore production CPU requests dropped by a sync merge ([#6904](https://github.com/uzh-bf/klicker-uzh/issues/6904)) ([07d16cc](https://github.com/uzh-bf/klicker-uzh/commit/07d16cc0da6eb07219068aa986baaea4d34bbc06))
 
 
