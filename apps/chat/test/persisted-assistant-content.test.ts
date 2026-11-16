@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import {
   buildAbortedAssistantContent,
+  hasMeaningfulAssistantContent,
   mapAssistantStepContent,
+  withEmptyResponseError,
 } from '../src/lib/server/persistedAssistantContent'
 
 describe('persisted assistant content', () => {
@@ -267,5 +269,45 @@ describe('persisted assistant content', () => {
     expect(buildAbortedAssistantContent(undefined, [])).toEqual([
       { type: 'data', name: 'chat-stopped', data: {} },
     ])
+  })
+})
+
+describe('empty assistant response classification', () => {
+  test.each(
+    [
+      [],
+      [{ type: 'reasoning', text: '' }],
+      [
+        { type: 'reasoning', text: 'Private deliberation' },
+        { type: 'text', text: '  ' },
+      ],
+      [{ type: 'tool-call', toolCallId: 'pending', toolName: 'search' }],
+    ].map((content): { content: Record<string, unknown>[] } => ({ content }))
+  )('adds one stable error for content with no usable response', ({
+    content,
+  }) => {
+    expect(hasMeaningfulAssistantContent(content)).toBe(false)
+    const result = withEmptyResponseError(content)
+    expect(result.at(-1)).toEqual({
+      type: 'data',
+      name: 'chat-error',
+      data: { code: 'EMPTY_RESPONSE' },
+    })
+    expect(withEmptyResponseError(result)).toEqual(result)
+    expect(content.some((part) => part.type === 'data')).toBe(false)
+  })
+
+  test.each(
+    [
+      [{ type: 'text', text: 'Partial response' }],
+      [{ type: 'tool-call', result: { records: [] } }],
+      [{ type: 'data', name: 'chat-stopped', data: {} }],
+      [{ type: 'data', name: 'response-example-receipt', data: {} }],
+    ].map((content): { content: Record<string, unknown>[] } => ({ content }))
+  )('preserves visible text and supported non-text response parts', ({
+    content,
+  }) => {
+    expect(hasMeaningfulAssistantContent(content)).toBe(true)
+    expect(withEmptyResponseError(content)).toEqual(content)
   })
 })
