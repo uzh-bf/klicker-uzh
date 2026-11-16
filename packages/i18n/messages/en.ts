@@ -334,6 +334,8 @@ export default {
       dataProtectionTitle: 'Data Protection',
       dataProtectionText:
         'Do not share any personal information with the chatbot. Your prompts are processed exclusively via Azure OpenAI instances hosted in the EU or Switzerland. Conversations may be reviewed in anonymised form by the KlickerUZH team or your lecturers to improve chatbot quality and course content.',
+      dataProtectionTextAssessment:
+        'Do not share any personal information with the chatbot. Your prompts are processed exclusively via Azure OpenAI instances hosted in the EU or Switzerland. In this assessment, your conversations are stored together with your identity. Authorised lecturers and assessment staff receive them for grading, exam review and follow-up. Other participants cannot see them.',
       consentText:
         'By using the chatbot you acknowledge and accept these conditions. If you have feedback or concerns, please contact your lecturers.',
       decline: 'Decline',

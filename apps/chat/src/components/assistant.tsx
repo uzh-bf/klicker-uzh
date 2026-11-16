@@ -167,6 +167,7 @@ export function Assistant({
         <DisclaimerModal
           disclaimer={disclaimer}
           isOpen={showDisclaimerModal}
+          assessment={assessment}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
           errorMessage={

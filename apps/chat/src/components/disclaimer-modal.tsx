@@ -22,6 +22,8 @@ interface DisclaimerModalProps {
   onDecline: () => void
   stacked?: boolean
   errorMessage?: string | null
+  // Assessment chats store conversations with the student's identity.
+  assessment?: boolean
 }
 
 export const DisclaimerModal = ({
@@ -31,6 +33,7 @@ export const DisclaimerModal = ({
   onDecline,
   stacked = false,
   errorMessage,
+  assessment = false,
 }: DisclaimerModalProps) => {
   const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
@@ -156,7 +159,11 @@ export const DisclaimerModal = ({
               {t('chat.disclaimer.dataProtectionTitle')}
             </h3>
             <p className="mb-4 text-sm">
-              {t('chat.disclaimer.dataProtectionText')}
+              {t(
+                assessment
+                  ? 'chat.disclaimer.dataProtectionTextAssessment'
+                  : 'chat.disclaimer.dataProtectionText'
+              )}
             </p>
             <p className="text-sm">{t('chat.disclaimer.consentText')}</p>
           </div>

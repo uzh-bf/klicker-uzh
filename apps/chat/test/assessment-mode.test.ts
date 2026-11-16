@@ -204,6 +204,9 @@ describe('getChatbotOr404 assessment gating', () => {
       deletionRequestedAt: null,
       isAssessmentEnabled: true,
     })
+    expect(mocks.chatbotFindUnique.mock.calls[0][0].where.disclaimerId).toEqual(
+      { not: null }
+    )
   })
 
   test('refuses assessment-enabled courses in regular mode', async () => {
@@ -213,6 +216,9 @@ describe('getChatbotOr404 assessment gating', () => {
       deletionRequestedAt: null,
       isAssessmentEnabled: false,
     })
+    expect(mocks.chatbotFindUnique.mock.calls[0][0].where).not.toHaveProperty(
+      'disclaimerId'
+    )
   })
 })
 
