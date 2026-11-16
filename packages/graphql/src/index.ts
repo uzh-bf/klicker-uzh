@@ -2,6 +2,10 @@ import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
 export { downloadAssessmentExport } from './services/assessmentExports.js'
+export {
+  downloadAssessmentTranscriptExport,
+  requestAssessmentTranscriptExport,
+} from './services/assessmentTranscriptExports.js'
 export { getChatModelRegistry } from './services/chatbots.js'
 export { downloadResearchExport } from './services/dataExports.js'
 export { settleKbKnowledgeGraphResult } from './services/knowledge.js'
@@ -63,6 +67,10 @@ import './schema/subscription.js'
 //   })
 // }
 
+import {
+  handleProcessAssessmentTranscriptExport,
+  handleSweepAssessmentTranscriptExports,
+} from './services/assessmentTranscriptExports.js'
 import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
@@ -115,4 +123,6 @@ export const handlers: HatchetHandlers = {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
   handleProcessCourseDeletion,
+  handleProcessAssessmentTranscriptExport,
+  handleSweepAssessmentTranscriptExports,
 }

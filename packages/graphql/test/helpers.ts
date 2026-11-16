@@ -18,6 +18,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  type AssessmentTranscriptExportEvent,
   type BuildKBGraphInput,
   type CourseDeletionEvent,
   DisplayMode,
@@ -39,10 +40,14 @@ import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
 import {
+  handleProcessAssessmentTranscriptExport,
+  handleSweepAssessmentTranscriptExports,
+} from '@/services/assessmentTranscriptExports.js'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
+import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -330,6 +335,30 @@ export async function testInitialization(
       name: 'sweep-stale-course-duplications',
       fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
         const success = await handleSweepStaleCourseDuplications(
+          {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    processAssessmentTranscriptExport: hatchet.task({
+      name: 'process-assessment-transcript-export',
+      fn: vi.fn(
+        async (input: AssessmentTranscriptExportEvent, executionCtx) => {
+          const success = await handleProcessAssessmentTranscriptExport(
+            input,
+            hatchetCtx,
+            executionCtx
+          )
+          return { success }
+        }
+      ),
+    }),
+    sweepAssessmentTranscriptExports: hatchet.task({
+      name: 'sweep-assessment-transcript-exports',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepAssessmentTranscriptExports(
           {},
           hatchetCtx,
           executionCtx
