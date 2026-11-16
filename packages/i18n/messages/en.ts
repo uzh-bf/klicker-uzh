@@ -5069,22 +5069,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       scopeLabel: 'Scope',
       courseScope: 'Entire course',
       liveQuizScope: 'Live quiz',
-      lead: 'This file contains directly identifiable personal data and assessment results. It is exclusively intended for conducting, assessing and carrying out necessary follow-up work for this assessment.',
+      lead: 'This file or archive contains directly identifiable personal data and assessment results. A chat transcript export additionally contains the stored conversations of students with the assessment chatbot. It is exclusively intended for conducting, assessing and carrying out necessary follow-up work for this assessment.',
       attestationsHeading: 'By downloading, I confirm:',
       attestations: {
         purposeLabel: 'Purpose limitation.',
         purposeText:
-          'I use the file only for this assessment and not for research.',
+          'I use the file or archive, including any chat transcripts, only for this assessment and not for research.',
         accessLabel: 'Restricted access.',
         accessText:
           'Only people who need these data to conduct, assess or carry out necessary follow-up work for the assessment receive access.',
         storageLabel: 'Secure storage.',
         storageText:
-          'I store and process the file only on UZH devices and storage locations approved for this purpose and protect it from unauthorised access.',
+          'I store and process the file or archive only on UZH devices and storage locations approved for this purpose and protect it from unauthorised access.',
         retentionLabel: 'Retention and deletion.',
         retentionText:
-          'I keep the file only for as long as it is needed for the stated purpose or because of a retention obligation, and then delete it securely.',
+          'I keep the file or archive only for as long as it is needed for the stated purpose or because of a retention obligation, and then delete it securely.',
       },
+      kindLabel: 'Content',
+      kindResults: 'Assessment results (CSV)',
+      kindTranscripts: 'Chat transcripts of one chatbot (ZIP)',
+      chatbotLabel: 'Chatbot',
+      chatbotPlaceholder: 'Select a chatbot',
+      chatbotRequired: 'Select a chatbot.',
+      noChatbots: 'This course has no chatbot.',
+      preparing:
+        'The archive is being prepared. Keep this window open; the download starts automatically and works only once.',
+      transcriptFailed:
+        'The transcript archive could not be created or is no longer available. Please request it again.',
       logging:
         'Your export request and this confirmation are logged with your account, the time and the data scope.',
       acknowledgement: 'I confirm these four points for this export.',

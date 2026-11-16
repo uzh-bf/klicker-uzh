@@ -1,3 +1,5 @@
+import { useQuery } from '@apollo/client'
+import { GetAssessmentExportChatbotsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { ASSESSMENT_EXPORT_DISCLOSURE_VERSION } from '@klicker-uzh/types'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -9,7 +11,11 @@ type AssessmentExportScope = 'COURSE' | 'LIVE_QUIZ'
 
 interface AssessmentExportFormValues {
   acknowledgement: boolean
+  kind: 'results' | 'transcripts'
+  chatbotId: string
 }
+
+const TRANSCRIPT_POLL_INTERVAL_MS = 3000
 
 interface AssessmentExportModalProps {
   courseId: string
@@ -18,13 +24,63 @@ interface AssessmentExportModalProps {
   onClose: () => void
 }
 
-function downloadAssessmentExport(blob: Blob, requestId: string) {
+const exportHeaders = {
+  'Content-Type': 'application/json',
+  'x-graphql-yoga-csrf': '1',
+}
+
+function waitFor(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    const timer = window.setTimeout(resolve, ms)
+    signal.addEventListener(
+      'abort',
+      () => {
+        window.clearTimeout(timer)
+        resolve()
+      },
+      { once: true }
+    )
+  })
+}
+
+// Polls the status route until the archive is ready. The ready response is the
+// ZIP itself and can be fetched once; any other final status is a failure.
+async function fetchTranscriptArchive(
+  exportId: string,
+  signal: AbortSignal
+): Promise<Blob | null> {
+  const url = new URL(
+    `/api/data-exports/assessment-transcripts/${exportId}`,
+    process.env.NEXT_PUBLIC_API_URL as string
+  )
+  while (!signal.aborted) {
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: { 'x-graphql-yoga-csrf': '1' },
+      signal,
+    })
+    if (!response.ok) return null
+    if (response.headers.get('Content-Type')?.includes('application/zip')) {
+      return await response.blob()
+    }
+    const { status } = (await response.json()) as { status?: string }
+    if (status !== 'PENDING') return null
+    await waitFor(TRANSCRIPT_POLL_INTERVAL_MS, signal)
+  }
+  return null
+}
+
+function downloadAssessmentExport(
+  blob: Blob,
+  requestId: string,
+  extension: 'csv' | 'zip' = 'csv'
+) {
   const objectUrl = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
 
   try {
     anchor.href = objectUrl
-    anchor.download = `assessment-export-${requestId}.csv`
+    anchor.download = `assessment-export-${requestId}.${extension}`
     document.body.append(anchor)
     anchor.click()
     anchor.remove()
@@ -44,10 +100,17 @@ function AssessmentExportModal({
   const activeController = useRef<AbortController | null>(null)
   const closed = useRef(false)
   const [submissionStatus, setSubmissionStatus] = useState<
-    'error' | undefined
+    'error' | 'preparing' | 'transcriptFailed' | undefined
   >()
 
   const scope: AssessmentExportScope = liveQuizId ? 'LIVE_QUIZ' : 'COURSE'
+
+  // Chat transcripts are offered for the whole course only.
+  const { data: chatbotData } = useQuery(GetAssessmentExportChatbotsDocument, {
+    variables: { courseId },
+    skip: scope !== 'COURSE',
+  })
+  const chatbots = chatbotData?.assessmentExportChatbots ?? []
 
   useEffect(() => {
     closed.current = false
@@ -62,6 +125,11 @@ function AssessmentExportModal({
     acknowledgement: Yup.boolean()
       .required()
       .oneOf([true], t('manage.assessmentExport.acknowledgementRequired')),
+    chatbotId: Yup.string().when('kind', ([kind], schema) =>
+      kind === 'transcripts'
+        ? schema.required(t('manage.assessmentExport.chatbotRequired'))
+        : schema
+    ),
   })
 
   function handleClose() {
@@ -84,7 +152,11 @@ function AssessmentExportModal({
       dataCloseButton={{ cy: 'assessment-export-close' }}
     >
       <Formik<AssessmentExportFormValues>
-        initialValues={{ acknowledgement: false }}
+        initialValues={{
+          acknowledgement: false,
+          kind: 'results',
+          chatbotId: '',
+        }}
         validateOnMount
         validationSchema={validationSchema}
         onSubmit={async (values) => {
@@ -96,6 +168,48 @@ function AssessmentExportModal({
           const requestId = crypto.randomUUID()
 
           try {
+            if (values.kind === 'transcripts') {
+              const created = await fetch(
+                new URL(
+                  '/api/data-exports/assessment-transcripts',
+                  process.env.NEXT_PUBLIC_API_URL as string
+                ),
+                {
+                  method: 'POST',
+                  credentials: 'include',
+                  headers: exportHeaders,
+                  body: JSON.stringify({
+                    requestId,
+                    courseId,
+                    chatbotId: values.chatbotId,
+                    locale,
+                    disclosureVersion: ASSESSMENT_EXPORT_DISCLOSURE_VERSION,
+                    acknowledgement: values.acknowledgement,
+                  }),
+                  signal: controller.signal,
+                }
+              )
+              if (!created.ok) {
+                if (!controller.signal.aborted && !closed.current) {
+                  setSubmissionStatus('error')
+                }
+                return
+              }
+              setSubmissionStatus('preparing')
+              const archive = await fetchTranscriptArchive(
+                requestId,
+                controller.signal
+              )
+              if (controller.signal.aborted || closed.current) return
+              if (!archive) {
+                setSubmissionStatus('transcriptFailed')
+                return
+              }
+              downloadAssessmentExport(archive, requestId, 'zip')
+              handleClose()
+              return
+            }
+
             const response = await fetch(
               new URL(
                 '/api/data-exports/assessment',
@@ -171,6 +285,64 @@ function AssessmentExportModal({
               </dd>
             </dl>
 
+            {scope === 'COURSE' ? (
+              <fieldset className="flex flex-col gap-2 text-sm">
+                <legend className="font-semibold">
+                  {t('manage.assessmentExport.kindLabel')}
+                </legend>
+                {(['results', 'transcripts'] as const).map((kind) => (
+                  <label key={kind} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="kind"
+                      checked={values.kind === kind}
+                      disabled={isSubmitting}
+                      onChange={() => {
+                        setSubmissionStatus(undefined)
+                        void setFieldValue('kind', kind)
+                      }}
+                      data-cy={`assessment-export-kind-${kind}`}
+                    />
+                    {t(
+                      kind === 'results'
+                        ? 'manage.assessmentExport.kindResults'
+                        : 'manage.assessmentExport.kindTranscripts'
+                    )}
+                  </label>
+                ))}
+                {values.kind === 'transcripts' ? (
+                  chatbots.length > 0 ? (
+                    <label className="flex flex-col gap-1">
+                      <span className="font-semibold">
+                        {t('manage.assessmentExport.chatbotLabel')}
+                      </span>
+                      <select
+                        name="chatbotId"
+                        value={values.chatbotId}
+                        disabled={isSubmitting}
+                        onChange={(event) =>
+                          void setFieldValue('chatbotId', event.target.value)
+                        }
+                        className="rounded border border-gray-300 p-1"
+                        data-cy="assessment-export-chatbot"
+                      >
+                        <option value="">
+                          {t('manage.assessmentExport.chatbotPlaceholder')}
+                        </option>
+                        {chatbots.map((chatbot) => (
+                          <option key={chatbot.id} value={chatbot.id}>
+                            {chatbot.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <p>{t('manage.assessmentExport.noChatbots')}</p>
+                  )
+                ) : null}
+              </fieldset>
+            ) : null}
+
             <p className="text-sm leading-6">
               {t('manage.assessmentExport.lead')}
             </p>
@@ -227,10 +399,23 @@ function AssessmentExportModal({
               <span>{t('manage.assessmentExport.acknowledgement')}</span>
             </label>
 
-            {submissionStatus === 'error' ? (
+            {submissionStatus === 'preparing' ? (
+              <div aria-live="polite">
+                <UserNotification type="info">
+                  {t('manage.assessmentExport.preparing')}
+                </UserNotification>
+              </div>
+            ) : null}
+
+            {submissionStatus === 'error' ||
+            submissionStatus === 'transcriptFailed' ? (
               <div aria-live="polite">
                 <UserNotification type="error">
-                  {t('manage.assessmentExport.requestFailed')}
+                  {t(
+                    submissionStatus === 'error'
+                      ? 'manage.assessmentExport.requestFailed'
+                      : 'manage.assessmentExport.transcriptFailed'
+                  )}
                 </UserNotification>
               </div>
             ) : null}
@@ -249,7 +434,11 @@ function AssessmentExportModal({
               <Button
                 primary
                 type="submit"
-                disabled={isSubmitting || !isValid}
+                disabled={
+                  isSubmitting ||
+                  !isValid ||
+                  (values.kind === 'transcripts' && !values.chatbotId)
+                }
                 loading={isSubmitting}
                 data={{ cy: 'assessment-export-submit' }}
               >

@@ -11,8 +11,10 @@ import {
 } from '@klicker-uzh/feature-flags'
 import {
   downloadAssessmentExport,
+  downloadAssessmentTranscriptExport,
   downloadResearchExport,
   enhanceContext,
+  requestAssessmentTranscriptExport,
   schema,
 } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
@@ -141,25 +143,78 @@ function prepareApp({
   app.use(cookieParser())
   app.use(jwtMiddleware)
 
+  // Shared by every data export route: the management origin plus the CSRF
+  // header, no-store/nosniff headers and an authenticated user.
+  const guardDataExport = (req: any, res: any) => {
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+    if (
+      !process.env.APP_ORIGIN_MANAGE ||
+      req.headers.origin !== process.env.APP_ORIGIN_MANAGE ||
+      req.headers['x-graphql-yoga-csrf'] !== '1'
+    ) {
+      res.status(403).json({ code: 'DATA_EXPORT_FORBIDDEN' })
+      return false
+    }
+    if (!req.locals?.user) {
+      res.status(401).json({ code: 'DATA_EXPORT_UNAUTHENTICATED' })
+      return false
+    }
+    return true
+  }
+
+  const dataExportContext = (req: any, res: any) => ({
+    req,
+    res,
+    user: req.locals.user,
+    prisma,
+    redisExec,
+    redisAssessmentExec,
+    pubSub,
+    emitter,
+    hatchet,
+    tasks,
+    featureFlags,
+  })
+
+  const sendDataExportError = (res: any, error: unknown) => {
+    const candidate = error as { extensions?: { code?: unknown } }
+    const code = candidate.extensions?.code
+    const knownCodes = [
+      'DATA_EXPORT_FORBIDDEN',
+      'DATA_EXPORT_INVALID_REQUEST',
+      'DATA_EXPORT_CLASS_UNAVAILABLE',
+      'DATA_EXPORT_TOO_LARGE',
+      'DATA_EXPORT_ELIGIBILITY_CHANGED',
+      'DATA_EXPORT_REQUEST_ALREADY_USED',
+      'DATA_EXPORT_CANCELLED',
+      'DATA_EXPORT_UNAVAILABLE',
+    ]
+    const safeCode =
+      typeof code === 'string' && knownCodes.includes(code)
+        ? code
+        : 'DATA_EXPORT_FAILED'
+    if (safeCode === 'DATA_EXPORT_FAILED') {
+      console.error('Data export failed unexpectedly')
+    }
+    const statusByCode: Record<string, number> = {
+      DATA_EXPORT_FORBIDDEN: 403,
+      DATA_EXPORT_TOO_LARGE: 413,
+      DATA_EXPORT_ELIGIBILITY_CHANGED: 409,
+      DATA_EXPORT_REQUEST_ALREADY_USED: 409,
+      DATA_EXPORT_UNAVAILABLE: 503,
+      DATA_EXPORT_FAILED: 500,
+    }
+    const status = statusByCode[safeCode] ?? 400
+    res.status(status).json({ code: safeCode })
+  }
+
   app.post(
     ['/api/data-exports/research', '/api/data-exports/assessment'],
     express.json({ limit: '16kb' }),
     async (req: any, res) => {
-      res.setHeader('Cache-Control', 'no-store')
-      res.setHeader('X-Content-Type-Options', 'nosniff')
-      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
-      if (
-        !process.env.APP_ORIGIN_MANAGE ||
-        req.headers.origin !== process.env.APP_ORIGIN_MANAGE ||
-        req.headers['x-graphql-yoga-csrf'] !== '1'
-      ) {
-        res.status(403).json({ code: 'DATA_EXPORT_FORBIDDEN' })
-        return
-      }
-      if (!req.locals?.user) {
-        res.status(401).json({ code: 'DATA_EXPORT_UNAUTHENTICATED' })
-        return
-      }
+      if (!guardDataExport(req, res)) return
       const controller = new AbortController()
       const cancel = () => controller.abort()
       res.once('close', cancel)
@@ -170,19 +225,7 @@ function prepareApp({
           : downloadResearchExport
         const artifact = await download(
           req.body,
-          {
-            req,
-            res,
-            user: req.locals.user,
-            prisma,
-            redisExec,
-            redisAssessmentExec,
-            pubSub,
-            emitter,
-            hatchet,
-            tasks,
-            featureFlags,
-          },
+          dataExportContext(req, res),
           controller.signal
         )
         if (res.destroyed) return
@@ -199,35 +242,56 @@ function prepareApp({
         res.status(200).send(artifact.body)
       } catch (error) {
         if (res.destroyed) return
-        const candidate = error as { extensions?: { code?: unknown } }
-        const code = candidate.extensions?.code
-        const knownCodes = [
-          'DATA_EXPORT_FORBIDDEN',
-          'DATA_EXPORT_INVALID_REQUEST',
-          'DATA_EXPORT_CLASS_UNAVAILABLE',
-          'DATA_EXPORT_TOO_LARGE',
-          'DATA_EXPORT_ELIGIBILITY_CHANGED',
-          'DATA_EXPORT_REQUEST_ALREADY_USED',
-          'DATA_EXPORT_CANCELLED',
-        ]
-        const safeCode =
-          typeof code === 'string' && knownCodes.includes(code)
-            ? code
-            : 'DATA_EXPORT_FAILED'
-        if (safeCode === 'DATA_EXPORT_FAILED') {
-          console.error('Data export failed unexpectedly')
-        }
-        const statusByCode: Record<string, number> = {
-          DATA_EXPORT_FORBIDDEN: 403,
-          DATA_EXPORT_TOO_LARGE: 413,
-          DATA_EXPORT_ELIGIBILITY_CHANGED: 409,
-          DATA_EXPORT_REQUEST_ALREADY_USED: 409,
-          DATA_EXPORT_FAILED: 500,
-        }
-        const status = statusByCode[safeCode] ?? 400
-        res.status(status).json({ code: safeCode })
+        sendDataExportError(res, error)
       } finally {
         res.off('close', cancel)
+      }
+    }
+  )
+
+  // Chat transcripts are built asynchronously: the POST only schedules the
+  // build, the GET reports the status and hands out the ZIP once.
+  app.post(
+    '/api/data-exports/assessment-transcripts',
+    express.json({ limit: '16kb' }),
+    async (req: any, res) => {
+      if (!guardDataExport(req, res)) return
+      try {
+        const { exportId } = await requestAssessmentTranscriptExport(
+          req.body,
+          dataExportContext(req, res)
+        )
+        res.status(202).json({ exportId })
+      } catch (error) {
+        if (res.destroyed) return
+        sendDataExportError(res, error)
+      }
+    }
+  )
+
+  app.get(
+    '/api/data-exports/assessment-transcripts/:exportId',
+    async (req: any, res) => {
+      if (!guardDataExport(req, res)) return
+      try {
+        const result = await downloadAssessmentTranscriptExport(
+          req.params.exportId,
+          dataExportContext(req, res)
+        )
+        if (res.destroyed) return
+        if (result.status !== 'READY') {
+          res.status(200).json({ status: result.status })
+          return
+        }
+        res.setHeader('Content-Type', 'application/zip')
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="assessment-transcripts-${result.exportId}.zip"`
+        )
+        res.status(200).send(result.body)
+      } catch (error) {
+        if (res.destroyed) return
+        sendDataExportError(res, error)
       }
     }
   )
@@ -300,7 +364,7 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
 

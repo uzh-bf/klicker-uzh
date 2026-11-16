@@ -5175,22 +5175,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       scopeLabel: 'Umfang',
       courseScope: 'Gesamter Kurs',
       liveQuizScope: 'Live Quiz',
-      lead: 'Diese Datei enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Sie ist ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.',
+      lead: 'Diese Datei oder dieses Archiv enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Ein Export der Chat-Transkripte enthält zusätzlich die gespeicherten Gespräche der Studierenden mit dem Assessment-Chatbot. Diese Daten sind ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.',
       attestationsHeading: 'Mit dem Download bestätige ich:',
       attestations: {
         purposeLabel: 'Zweckbindung.',
         purposeText:
-          'Ich verwende die Datei nur für dieses Assessment und nicht für Forschung.',
+          'Ich verwende die Datei oder das Archiv, einschliesslich allfälliger Chat-Transkripte, nur für dieses Assessment und nicht für Forschung.',
         accessLabel: 'Beschränkter Zugriff.',
         accessText:
           'Zugriff erhalten nur Personen, die diese Daten für die Durchführung, Bewertung oder notwendige Nachbearbeitung des Assessments benötigen.',
         storageLabel: 'Sichere Ablage.',
         storageText:
-          'Ich speichere und bearbeite die Datei nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.',
+          'Ich speichere und bearbeite die Datei oder das Archiv nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.',
         retentionLabel: 'Aufbewahrung und Löschung.',
         retentionText:
-          'Ich bewahre die Datei nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.',
+          'Ich bewahre die Datei oder das Archiv nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.',
       },
+      kindLabel: 'Inhalt',
+      kindResults: 'Assessment-Ergebnisse (CSV)',
+      kindTranscripts: 'Chat-Transkripte eines Chatbots (ZIP)',
+      chatbotLabel: 'Chatbot',
+      chatbotPlaceholder: 'Chatbot auswählen',
+      chatbotRequired: 'Wähle einen Chatbot.',
+      noChatbots: 'Dieser Kurs hat keinen Chatbot.',
+      preparing:
+        'Das Archiv wird erstellt. Lass dieses Fenster geöffnet; der Download startet automatisch und funktioniert nur einmal.',
+      transcriptFailed:
+        'Das Transkript-Archiv konnte nicht erstellt werden oder ist nicht mehr verfügbar. Bitte fordere es erneut an.',
       logging:
         'Deine Exportanfrage und diese Bestätigung werden mit deinem Konto, Zeitpunkt und Datenumfang protokolliert.',
       acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
