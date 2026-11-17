@@ -773,7 +773,7 @@ backendGraphql:
       # generation, so the 10.00 CHF semester budget does not cover a test
       # cycle. The backend adopts a configured limit at or above an owner's
       # granted ledger limit; a lower configured value never reduces it.
-      semesterQuotaMinorUnits: '5000'
+      semesterQuotaMinorUnits: '10000'
       pricingVersion: 'stg-canary-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'

@@ -29,6 +29,19 @@ version-target list. During PR preparation, pass `--skip.tag` and create the tag
 only at the approved merged release commit. Tag publication and production
 activation remain separately authorized actions.
 
+Run the matching dry-run script first and show the user the version it
+proposes and its release type (alpha, beta, rc, patch, minor or major). Run
+the real script only after the user confirms that version. Do not override the
+computed version with `--release-as` unless the user asks for it. The
+changelog comes only from the conventional commits; never write or edit its
+entries by hand.
+
+Merge a production release PR, push a release tag or activate a release in
+production only when the user explicitly says so for that step. Approving a
+release plan authorizes preparing its PRs, not merging them. Production
+releases happen outside business hours: before 07:00 or after 18:00 Europe/Zurich
+time. During business hours, prepare the PRs and wait.
+
 ## Commands
 
 ### Root-level (from repo root)
@@ -248,7 +261,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.5.1 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`, 0.3.0 removes Docker leftovers of deleted worktrees (see devrouter's [worktree cleanup guide](https://github.com/rschlaefli/devrouter/blob/main/docs/WORKTREE_CLEANUP.md)), 0.4.0 adds `devrouter env`, which the host Playwright launcher uses to find the workspace and its loopback database port, and 0.5.0 adds opt-in idle stop with `devrouter workspace pin` for database-only sessions (see `.devcontainer/README.md`). One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.6.3 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`, 0.3.0 removes Docker leftovers of deleted worktrees (see devrouter's [worktree cleanup guide](https://github.com/rschlaefli/devrouter/blob/main/docs/WORKTREE_CLEANUP.md)), 0.4.0 adds `devrouter env`, which the host Playwright launcher uses to find the workspace and its loopback database port, 0.5.0 adds opt-in idle stop with `devrouter workspace pin` for database-only sessions (see `.devcontainer/README.md`), and 0.6.3 accepts the `freshBootstrap` declaration for empty disposable databases. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA

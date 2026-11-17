@@ -47,8 +47,10 @@ hatchet:
         pullPolicy: IfNotPresent
         tag: v3.4.0-alpha.92
       resources:
+        # Near the per-pod CPU of a busy lecture, so a crowded node does not
+        # throttle this tier first. Usage above the request is still allowed.
         requests:
-          cpu: 50m
+          cpu: 75m
           memory: 512Mi
         limits:
           memory: 2Gi
@@ -575,8 +577,10 @@ frontendPWA:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 50m
+      cpu: 150m
       memory: 320Mi
     limits:
       memory: 1Gi
@@ -709,7 +713,7 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      semesterQuotaMinorUnits: '10000'
       pricingVersion: 'prd-graph-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
@@ -723,6 +727,7 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    revisionWorkerEnabled: true
     cost:
       questionMinorUnits: '1'
       flashcardMinorUnits: '1'
@@ -789,8 +794,10 @@ backendGraphql:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 50m
+      cpu: 150m
       memory: 448Mi
     limits:
       memory: 1Gi

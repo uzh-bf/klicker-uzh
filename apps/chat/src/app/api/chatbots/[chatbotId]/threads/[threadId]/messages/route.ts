@@ -7,7 +7,10 @@ import {
 } from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { isParticipantReasoningVisible } from '@/src/lib/server/effectiveChatModes'
-import { withoutReasoningParts } from '@/src/lib/server/persistedAssistantContent'
+import {
+  withEmptyResponseError,
+  withoutReasoningParts,
+} from '@/src/lib/server/persistedAssistantContent'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
 
 /**
@@ -66,13 +69,15 @@ async function handleGET(
     return NextResponse.json(
       messages.map((msg) => {
         const showReasoning = isReasoningVisible(msg.chatMode)
+        const content =
+          msg.role === 'assistant' && Array.isArray(msg.content)
+            ? withEmptyResponseError(msg.content)
+            : msg.content
         return {
           id: msg.id,
           threadId: msg.threadId,
           role: msg.role,
-          content: showReasoning
-            ? msg.content
-            : withoutReasoningParts(msg.content),
+          content: showReasoning ? content : withoutReasoningParts(content),
           chatMode: msg.chatMode ?? null,
           modelId: msg.modelId ?? null,
           reasoningEffort: msg.reasoningEffort ?? null,

@@ -1488,6 +1488,32 @@ describe('account usage chat route', () => {
     })
   })
 
+  test('persists reasoning-only output as a stable error while finalizing actual usage once', async () => {
+    await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [{ content: [{ type: 'reasoning', text: '' }] }],
+      reasoningText: '',
+    })
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: [
+          { type: 'reasoning', text: '' },
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ],
+        rawCreditsUsed: 0.00006,
+      })
+    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
   test('persists missing terminal usage without either credit decrement', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -1506,7 +1532,7 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
-  test('does not charge an empty terminal result', async () => {
+  test('persists an empty-response error with the reported usage', async () => {
     mocks.finalizeChatTurn.mockResolvedValueOnce({
       outcome: 'empty',
       creditsUsed: null,
@@ -1524,7 +1550,13 @@ describe('account usage chat route', () => {
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: [],
+        content: [
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ],
         rawCreditsUsed: 0.00006,
       })
     )
