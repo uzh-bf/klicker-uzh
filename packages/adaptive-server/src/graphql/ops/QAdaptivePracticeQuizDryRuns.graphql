@@ -1,0 +1,39 @@
+query QAdaptivePracticeQuizDryRuns($practiceQuizId: String!) {
+  adaptivePracticeQuizDryRuns(practiceQuizId: $practiceQuizId) {
+    available
+    unavailableReason
+    publicationId
+    levels {
+      id
+      label
+      order
+    }
+    competences {
+      nodeId
+      name
+    }
+    subcompetences {
+      nodeId
+      rootId
+      name
+    }
+    items {
+      poolItemId
+      elementName
+      levelId
+      rootId
+      nodeNames
+    }
+    defaults
+    scale {
+      thetaMin
+      thetaMax
+      levelMappingRule
+    }
+    maxStudents
+    maxDecisions
+    runs {
+      ...AdaptiveDryRunData
+    }
+  }
+}

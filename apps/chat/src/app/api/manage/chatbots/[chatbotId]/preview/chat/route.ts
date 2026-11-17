@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
@@ -62,6 +63,7 @@ import {
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '@/src/lib/server/responseExampleRuntime'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
@@ -99,9 +101,10 @@ function isRequiredMcp(parameters: unknown): boolean {
   )
 }
 
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
   const auth = await withOwnerPreviewAuth(chatbotId)
@@ -361,10 +364,10 @@ export async function POST(
     tools = mcpToolsHandle.tools
   } catch (error) {
     await closeMcpTools()
-    console.error('Owner preview MCP discovery failed:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.error(
+      { event: 'chat.preview.tools.unavailable' },
+      'Owner preview MCP discovery failed'
+    )
     return NextResponse.json(
       { error: 'Required chatbot tools are unavailable' },
       { status: 503 }
@@ -381,9 +384,9 @@ export async function POST(
         role: 'included',
       })
       if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
-        console.warn(
-          'Response-example skill name conflicts with an existing tool; continuing without response examples',
-          { chatbotId }
+        log.warn(
+          { event: 'chat.preview.response_examples.tool_conflict' },
+          'Response-example skill name conflicts with an existing tool; continuing without response examples'
         )
       } else {
         tools = {
@@ -394,12 +397,9 @@ export async function POST(
         responseExampleSummary = responseExampleSkill.summary
       }
     } catch (error) {
-      console.warn(
-        'Response-example skill loading failed; continuing without response examples',
-        {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        }
+      log.warn(
+        { event: 'chat.preview.response_examples.unavailable' },
+        'Response-example skill loading failed; continuing without response examples'
       )
     }
 
@@ -516,12 +516,11 @@ export async function POST(
           turnSettings.replyLanguage ?? null,
           req.cookies.get('NEXT_LOCALE')?.value
         ),
-        (finish) =>
-          console.warn('Owner preview provider refusal replaced:', {
-            chatbotId,
-            chatMode: selectedMode,
-            ...finish,
-          })
+        () =>
+          log.warn(
+            { event: 'chat.preview.provider_refusal.replaced' },
+            'Owner preview provider refusal replaced'
+          )
       ),
       toolChoice: 'auto',
       // The reply-language reminder ends every step, after tool output, so
@@ -558,10 +557,10 @@ export async function POST(
       onAbort: closeMcpTools,
       onError: async (error) => {
         await closeMcpTools()
-        console.error('Owner preview stream failed:', {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          { event: 'chat.preview.stream.failed' },
+          'Owner preview stream failed'
+        )
       },
     })
 
@@ -574,10 +573,10 @@ export async function POST(
       sendFinish: false,
       onError: (error) => {
         void closeMcpTools()
-        console.error('Owner preview UI stream failed:', {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          { event: 'chat.preview.ui_stream.failed' },
+          'Owner preview UI stream failed'
+        )
         return 'Chatbot preview request failed'
       },
       onEnd: ({ isAborted, responseMessage }) => {
@@ -608,10 +607,10 @@ export async function POST(
               })
             }
           } catch (error) {
-            console.error('Owner preview receipt issuance failed:', {
-              chatbotId,
-              errorType: error instanceof Error ? error.name : typeof error,
-            })
+            log.error(
+              { event: 'chat.preview.receipt.failed' },
+              'Owner preview receipt issuance failed'
+            )
             writer.write({
               type: RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
               data: { unavailable: true },
@@ -631,10 +630,10 @@ export async function POST(
       },
       onError: (error) => {
         void closeMcpTools()
-        console.error('Owner preview response stream failed:', {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          { event: 'chat.preview.response_stream.failed' },
+          'Owner preview response stream failed'
+        )
         return 'Chatbot preview request failed'
       },
     })
@@ -645,13 +644,24 @@ export async function POST(
     })
   } catch (error) {
     await closeMcpTools()
-    console.error('Owner preview request failed:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.error(
+      { event: 'chat.preview.request.failed' },
+      'Owner preview request failed'
+    )
     return NextResponse.json(
       { error: 'Chatbot preview request failed' },
       { status: 500 }
     )
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/manage/chatbots/:chatbotId/preview/chat',
+    (log) => handlePOST(req, context, log)
+  )
 }

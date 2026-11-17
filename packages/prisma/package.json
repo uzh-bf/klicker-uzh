@@ -13,6 +13,7 @@
     "pg": "8.16.3"
   },
   "devDependencies": {
+    "@klicker-uzh/adaptive-persistence": "workspace:*",
     "@pothos/plugin-prisma": "~4.10.0",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
@@ -68,7 +69,8 @@
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio",
-    "test:disposable": "tsx --test test/disposableDatabase.test.ts test/disposable-prisma.test.ts"
+    "test:disposable": "tsx --test test/disposableDatabase.test.ts test/disposable-prisma.test.ts",
+    "verify:adaptive-migration": "tsx src/scripts/verifyAdaptiveMigration.ts"
   },
   "engines": {
     "node": "=24"

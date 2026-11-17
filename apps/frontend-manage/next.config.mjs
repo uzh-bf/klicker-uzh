@@ -45,6 +45,8 @@ nextConfig.transpilePackages = Array.from(
   new Set([
     ...(nextConfig.transpilePackages ?? []),
     '@klicker-uzh/kb-management',
+    '@klicker-uzh/adaptive-manage-ui',
+    '@klicker-uzh/adaptive-i18n',
     'formik',
   ])
 )

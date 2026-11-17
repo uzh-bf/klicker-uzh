@@ -1,0 +1,10 @@
+mutation MUpdateCompetenceTreeMetadataWithRuntimeDefaults(
+  $id: String!
+  $input: CompetenceTreeMetadataInput!
+) {
+  updateCompetenceTreeMetadata(id: $id, input: $input) {
+    ...CompetenceTreeData
+    defaultTotalQuestionCap
+    defaultTimeLimitSeconds
+  }
+}
