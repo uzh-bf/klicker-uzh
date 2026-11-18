@@ -1,3 +1,4 @@
+import ExcelJS from 'exceljs'
 import { describe, expect, it } from 'vitest'
 import {
   type ExportableElement,
@@ -6,6 +7,7 @@ import {
 } from '../src/lib/elementWorkbook/export.js'
 import {
   ELEMENT_WORKBOOK_HEADERS,
+  type ElementWorkbookParseError,
   parseElementWorkbook,
 } from '../src/lib/elementWorkbook/parse.js'
 import { elementIdentity } from '../src/lib/elementWorkbook/plan.js'
@@ -179,6 +181,43 @@ describe('element workbook template', () => {
       )
     ).toEqual([])
   })
+
+  it('spans the filter over the data rows and leaves it out on empty tabs', async () => {
+    const rows = emptyTemplateRows()
+    rows.Content.push(
+      { name: 'One', content: 'First' },
+      { name: 'Two', content: 'Second' }
+    )
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load((await writeElementWorkbook(rows)) as never)
+    // A header-only filter makes Excel report the file as corrupt.
+    expect(workbook.getWorksheet('Content')!.autoFilter).toBe('A6:D9')
+    expect(workbook.getWorksheet('Single choice')!.autoFilter).toBeUndefined()
+  })
+
+  it('reports every invalid row in one pass when asked to collect them', async () => {
+    const rows = emptyTemplateRows()
+    rows.Content.push(
+      { name: 'Valid', content: 'Kept' },
+      { name: 'No content' },
+      { name: 'Also valid', content: 'Kept too' }
+    )
+    rows.Flashcards.push({ name: 'No back', content: 'Front' })
+    const buffer = await writeElementWorkbook(rows)
+    await expect(parseElementWorkbook(buffer)).rejects.toThrow(
+      'REQUIRED_VALUE at Content!B9'
+    )
+    const rowErrors: ElementWorkbookParseError[] = []
+    const parsed = await parseElementWorkbook(buffer, rowErrors)
+    expect(parsed.map((element) => element.name)).toEqual([
+      'Valid',
+      'Also valid',
+    ])
+    expect(rowErrors.map((error) => error.message)).toEqual([
+      'REQUIRED_VALUE at Content!B9',
+      'REQUIRED_VALUE at Flashcards!C8',
+    ])
+  })
 })
 
 describe('exportElementWorkbook', () => {
@@ -213,6 +252,20 @@ describe('exportElementWorkbook', () => {
       )
     }
     expect(byName.get('Capital')!.tags).toEqual(['Geography', 'Week; 1'])
+  })
+
+  it('leaves out every element that does not round-trip in one export', async () => {
+    const missingFeedback = elements.find((element) => element.id === 9)!
+    const result = await exportElementWorkbook(
+      [
+        missingFeedback,
+        elements[0]!,
+        { ...missingFeedback, id: 10, name: 'Also missing feedback' },
+      ],
+      { includeTags: false }
+    )
+    expect(result.exportedIds).toEqual([1])
+    expect(result.unsupported.map((element) => element.id)).toEqual([9, 10])
   })
 
   it('leaves tags out on request', async () => {

@@ -337,6 +337,30 @@ function parseTags(value: string, sheet: string, row: number, column: number) {
   return tags
 }
 
+/**
+ * Pre-checks one cell. In lenient mode a bad cell in an element row is left
+ * to that row's parse, which reports it as a row error.
+ */
+function checkCell(
+  cell: ExcelJS.Cell,
+  sheet: string,
+  row: number,
+  column: number,
+  lenientRows: boolean
+) {
+  try {
+    visibleCellValue(cell, sheet, row, column)
+  } catch (error) {
+    if (
+      lenientRows &&
+      row >= ELEMENT_WORKBOOK_DATA_ROW &&
+      error instanceof ElementWorkbookParseError
+    )
+      return
+    throw error
+  }
+}
+
 function rowValues(
   sheet: ExcelJS.Worksheet,
   row: number,
@@ -359,7 +383,8 @@ function rowValues(
 
 function validateSheet(
   workbook: ExcelJS.Workbook,
-  name: keyof typeof ELEMENT_WORKBOOK_HEADERS
+  name: keyof typeof ELEMENT_WORKBOOK_HEADERS,
+  lenientRows: boolean
 ) {
   const sheet = workbook.getWorksheet(name)
   if (!sheet) fail('MISSING_WORKSHEET', name)
@@ -372,7 +397,7 @@ function validateSheet(
     row.eachCell((cell, column) => {
       cells++
       if (cells > MAX_CELLS) fail('WORKBOOK_TOO_LARGE', name, rowNumber, column)
-      visibleCellValue(cell, name, rowNumber, column)
+      checkCell(cell, name, rowNumber, column, lenientRows)
     })
   )
   for (const [index, header] of headers.entries()) {
@@ -781,8 +806,37 @@ function parseContent(sheet: ExcelJS.Worksheet, row: number): WorkbookElement {
   }
 }
 
+/**
+ * Parses a workbook and stops at the first problem. With `rowErrors`, a
+ * problem confined to one element row is collected there instead and the row
+ * is left out; workbook-level problems still throw.
+ */
+function parseRow(
+  sheet: ExcelJS.Worksheet,
+  row: number,
+  name: keyof typeof ELEMENT_WORKBOOK_HEADERS
+): WorkbookElement {
+  switch (name) {
+    case 'Single choice':
+      return parseChoices(sheet, row, 'SC')
+    case 'Multiple choice':
+      return parseChoices(sheet, row, 'MC')
+    case 'Kprim':
+      return parseChoices(sheet, row, 'KPRIM')
+    case 'Numerical':
+      return parseNumerical(sheet, row)
+    case 'Free text':
+      return parseFreeText(sheet, row)
+    case 'Content':
+      return parseContent(sheet, row)
+    case 'Flashcards':
+      return parseFlashcard(sheet, row)
+  }
+}
+
 export async function parseElementWorkbook(
-  buffer: Buffer
+  buffer: Buffer,
+  rowErrors?: ElementWorkbookParseError[]
 ): Promise<WorkbookElement[]> {
   validateZip(buffer)
   const workbook = new ExcelJS.Workbook()
@@ -812,7 +866,7 @@ export async function parseElementWorkbook(
         workbookCells++
         if (workbookCells > MAX_CELLS)
           fail('WORKBOOK_TOO_LARGE', sheet.name, rowNumber, column)
-        visibleCellValue(cell, sheet.name, rowNumber, column)
+        checkCell(cell, sheet.name, rowNumber, column, rowErrors !== undefined)
       })
     )
   }
@@ -821,7 +875,10 @@ export async function parseElementWorkbook(
       Object.keys(ELEMENT_WORKBOOK_HEADERS) as Array<
         keyof typeof ELEMENT_WORKBOOK_HEADERS
       >
-    ).map((name) => [name, validateSheet(workbook, name)])
+    ).map((name) => [
+      name,
+      validateSheet(workbook, name, rowErrors !== undefined),
+    ])
   ) as Record<keyof typeof ELEMENT_WORKBOOK_HEADERS, ExcelJS.Worksheet>
 
   const elements: WorkbookElement[] = []
@@ -831,28 +888,19 @@ export async function parseElementWorkbook(
     for (let row = ELEMENT_WORKBOOK_DATA_ROW; row <= sheet.rowCount; row++) {
       const values = rowValues(sheet, row, ELEMENT_WORKBOOK_HEADERS[name])
       if (!values.some(Boolean)) continue
-      switch (name) {
-        case 'Single choice':
-          elements.push(parseChoices(sheet, row, 'SC'))
-          break
-        case 'Multiple choice':
-          elements.push(parseChoices(sheet, row, 'MC'))
-          break
-        case 'Kprim':
-          elements.push(parseChoices(sheet, row, 'KPRIM'))
-          break
-        case 'Numerical':
-          elements.push(parseNumerical(sheet, row))
-          break
-        case 'Free text':
-          elements.push(parseFreeText(sheet, row))
-          break
-        case 'Content':
-          elements.push(parseContent(sheet, row))
-          break
-        case 'Flashcards':
-          elements.push(parseFlashcard(sheet, row))
-          break
+      try {
+        elements.push(parseRow(sheet, row, name))
+      } catch (error) {
+        if (
+          rowErrors &&
+          error instanceof ElementWorkbookParseError &&
+          error.sheet === sheet.name &&
+          error.row === row
+        ) {
+          rowErrors.push(error)
+          continue
+        }
+        throw error
       }
       if (elements.length > MAX_ELEMENT_WORKBOOK_ELEMENTS)
         fail('WORKBOOK_TOO_LARGE', sheet.name, row, 1)

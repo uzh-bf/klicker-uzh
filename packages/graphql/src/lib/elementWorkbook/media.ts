@@ -5,6 +5,10 @@ import type { WorkbookElement } from './parse.js'
 import { ELEMENT_WORKBOOK_CONTAINER, getBlobStorage } from './storage.js'
 
 const COPY_CONCURRENCY = 4
+/** Most image copies one import may make; bounds a single request's work. */
+export const MAX_IMAGE_COPIES_PER_IMPORT = 500
+// Keeps `IN` lists well below PostgreSQL's bind-parameter limit.
+const QUERY_CHUNK = 1000
 // Media-library containers are named after their owner's user id.
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -37,6 +41,19 @@ export function findImageLinks(text: string) {
 
 type FirstPartyImage = { href: string; container: string; blob: string }
 
+export class ElementWorkbookMediaError extends Error {
+  constructor(readonly code: 'TOO_MANY_IMAGES') {
+    super(code)
+  }
+}
+
+function chunks<T>(items: T[]) {
+  const result: T[][] = []
+  for (let index = 0; index < items.length; index += QUERY_CHUNK)
+    result.push(items.slice(index, index + QUERY_CHUNK))
+  return result
+}
+
 /**
  * Candidate images in another lecturer's media container: a user-id container
  * and a single path segment. External images, the importer's own images and
@@ -46,15 +63,17 @@ type FirstPartyImage = { href: string; container: string; blob: string }
 export function findForeignImages(
   elements: WorkbookElement[],
   ownerId: string,
-  publicUrl: string
+  accountUrls: string | string[]
 ): FirstPartyImage[] {
+  const bases = typeof accountUrls === 'string' ? [accountUrls] : accountUrls
   const images = new Map<string, FirstPartyImage>()
   for (const element of elements) {
     for (const text of elementTexts(element)) {
       for (const href of findImageLinks(text)) {
-        if (!href.startsWith(`${publicUrl}/`)) continue
+        const base = bases.find((url) => href.startsWith(`${url}/`))
+        if (!base) continue
         const [container, ...rest] = href
-          .slice(publicUrl.length + 1)
+          .slice(base.length + 1)
           .split(/[?#]/)[0]!
           .split('/')
         const blob = rest.join('/')
@@ -85,10 +104,16 @@ async function registeredImages(
   images: FirstPartyImage[]
 ) {
   if (images.length === 0) return []
-  const rows = await prisma.mediaFile.findMany({
-    where: { href: { in: images.map((image) => image.href) } },
-    select: { href: true, ownerId: true, name: true },
-  })
+  const rows = (
+    await Promise.all(
+      chunks(images.map((image) => image.href)).map((hrefs) =>
+        prisma.mediaFile.findMany({
+          where: { href: { in: hrefs } },
+          select: { href: true, ownerId: true, name: true },
+        })
+      )
+    )
+  ).flat()
   const registered = new Map(rows.map((row) => [row.href, row]))
   return images.flatMap((image) => {
     const row = registered.get(image.href)
@@ -104,10 +129,16 @@ async function existingCopies(
   ownerId: string,
   hrefs: string[]
 ) {
-  const copies = await prisma.mediaFile.findMany({
-    where: { ownerId, originalId: { in: hrefs } },
-    select: { href: true, originalId: true },
-  })
+  const copies = (
+    await Promise.all(
+      chunks(hrefs).map((part) =>
+        prisma.mediaFile.findMany({
+          where: { ownerId, originalId: { in: part } },
+          select: { href: true, originalId: true },
+        })
+      )
+    )
+  ).flat()
   return new Map(copies.map((copy) => [copy.originalId!, copy.href]))
 }
 
@@ -118,7 +149,7 @@ export async function countImagesToCopy(
 ) {
   const images = await registeredImages(
     prisma,
-    findForeignImages(elements, ownerId, getBlobStorage().publicUrl)
+    findForeignImages(elements, ownerId, getBlobStorage().accountUrls)
   )
   if (images.length === 0) return 0
   const copied = await existingCopies(
@@ -140,10 +171,10 @@ export async function copyImagesForImport(
   ownerId: string,
   elements: WorkbookElement[]
 ) {
-  const { publicUrl, service } = getBlobStorage()
+  const { accountUrls, publicUrl, service } = getBlobStorage()
   const images = await registeredImages(
     prisma,
-    findForeignImages(elements, ownerId, publicUrl)
+    findForeignImages(elements, ownerId, accountUrls)
   )
   const links = await existingCopies(
     prisma,
@@ -152,6 +183,8 @@ export async function copyImagesForImport(
   )
   const pending = images.filter((image) => !links.has(image.href))
   if (pending.length === 0) return links
+  if (pending.length > MAX_IMAGE_COPIES_PER_IMPORT)
+    throw new ElementWorkbookMediaError('TOO_MANY_IMAGES')
 
   const target = service.getContainerClient(ownerId)
   // Same public read access as media-library uploads (getFileUploadSas).

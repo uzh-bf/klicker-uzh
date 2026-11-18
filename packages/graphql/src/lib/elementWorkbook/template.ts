@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs'
 import {
   ELEMENT_WORKBOOK_DATA_ROW,
   ELEMENT_WORKBOOK_HEADER_ROW,
+  ElementWorkbookParseError,
   MAX_ELEMENT_WORKBOOK_BYTES,
   MAX_ELEMENT_WORKBOOK_ELEMENTS,
 } from './parse.js'
@@ -274,10 +275,16 @@ export async function writeElementWorkbook(rows: TemplateRows) {
               : 22,
     }))
     addTableGuide(sheet, name, rows[name].length > 0)
-    sheet.autoFilter = {
-      from: { row: ELEMENT_WORKBOOK_HEADER_ROW, column: 1 },
-      to: { row: ELEMENT_WORKBOOK_HEADER_ROW, column: fields.length },
-    }
+    // A header-only filter makes Excel report the file as corrupt, so the
+    // filter spans the data rows and is left out on sheets without rows.
+    if (rows[name].length > 0)
+      sheet.autoFilter = {
+        from: { row: ELEMENT_WORKBOOK_HEADER_ROW, column: 1 },
+        to: {
+          row: ELEMENT_WORKBOOK_DATA_ROW + rows[name].length - 1,
+          column: fields.length,
+        },
+      }
     for (const [index, row] of rows[name].entries()) {
       const excelRow = sheet.getRow(ELEMENT_WORKBOOK_DATA_ROW + index)
       fields.forEach((field, column) => {
@@ -291,7 +298,7 @@ export async function writeElementWorkbook(rows: TemplateRows) {
   }
   const buffer = Buffer.from(await workbook.xlsx.writeBuffer())
   if (buffer.length > MAX_ELEMENT_WORKBOOK_BYTES)
-    throw new Error('WORKBOOK_TOO_LARGE')
+    throw new ElementWorkbookParseError('WORKBOOK_TOO_LARGE')
   return buffer
 }
 

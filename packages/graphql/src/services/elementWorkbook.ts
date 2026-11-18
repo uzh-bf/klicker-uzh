@@ -10,6 +10,8 @@ import { exportElementWorkbook as buildExportWorkbook } from '../lib/elementWork
 import {
   copyImagesForImport,
   countImagesToCopy,
+  ElementWorkbookMediaError,
+  MAX_IMAGE_COPIES_PER_IMPORT,
   rewriteImageLinks,
 } from '../lib/elementWorkbook/media.js'
 import {
@@ -45,10 +47,17 @@ const RATE_LIMIT = 30
 const RATE_WINDOW_SECONDS = 60
 const RATE_LIMITED = { code: 'RATE_LIMITED' }
 
+// Increment and expiry run atomically, so a counter can never outlive its
+// window and lock a lecturer out permanently.
+const RATE_LIMIT_SCRIPT = `local count = redis.call('INCR', KEYS[1])
+if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+return count`
+
 async function withinRateLimit(ctx: ContextWithUser) {
   const key = `element-workbook:rate:${ctx.user.sub}`
-  const count = await ctx.redisExec.incr(key)
-  if (count === 1) await ctx.redisExec.expire(key, RATE_WINDOW_SECONDS)
+  const count = Number(
+    await ctx.redisExec.eval(RATE_LIMIT_SCRIPT, 1, key, RATE_WINDOW_SECONDS)
+  )
   return count <= RATE_LIMIT
 }
 
@@ -57,6 +66,23 @@ async function assertWithinRateLimit(ctx: ContextWithUser) {
     throw new GraphQLError('RATE_LIMITED', {
       extensions: { code: 'RATE_LIMITED' },
     })
+}
+
+/**
+ * Expected import failures become typed issues. Only STALE is resolved by
+ * previewing again; LIBRARY_TOO_LARGE is permanent for this file. Anything
+ * else is an invariant failure and stays an internal error.
+ */
+function importIssue(error: unknown): ElementWorkbookIssue | null {
+  if (error instanceof ElementImportError) {
+    if (error.code === 'STALE') return { code: 'PREVIEW_STALE' }
+    if (error.code === 'LIBRARY_TOO_LARGE') return { code: 'LIBRARY_TOO_LARGE' }
+  }
+  if (error instanceof ElementWorkbookMediaError) return { code: error.code }
+  // A concurrent write conflicted with the serializable import transaction.
+  if ((error as { code?: unknown } | null)?.code === 'P2034')
+    return { code: 'PREVIEW_STALE' }
+  return null
 }
 
 function today() {
@@ -120,11 +146,14 @@ export async function previewElementWorkbookImport(
   if (workbook.elements.length === 0)
     return { ...empty, error: { code: 'EMPTY_WORKBOOK' } }
 
-  const preview = await previewImport(
-    ctx.prisma,
-    ctx.user.sub,
-    workbook.elements
-  )
+  let preview: Awaited<ReturnType<typeof previewImport>>
+  try {
+    preview = await previewImport(ctx.prisma, ctx.user.sub, workbook.elements)
+  } catch (error) {
+    const issue = importIssue(error)
+    if (!issue) throw error
+    return { ...empty, error: issue }
+  }
   const existingIds = preview.decisions.flatMap((decision) =>
     decision.existingId === undefined ? [] : [decision.existingId]
   )
@@ -136,6 +165,13 @@ export async function previewElementWorkbookImport(
   const created = workbook.elements.filter(
     (_, index) => preview.decisions[index]!.action === 'CREATE'
   )
+  const imagesToCopy = await countImagesToCopy(
+    ctx.prisma,
+    ctx.user.sub,
+    created
+  )
+  if (imagesToCopy > MAX_IMAGE_COPIES_PER_IMPORT)
+    return { ...empty, error: { code: 'TOO_MANY_IMAGES' } }
 
   return {
     previewToken: digest(preview),
@@ -152,7 +188,7 @@ export async function previewElementWorkbookImport(
           : (names.get(decision.existingId) ?? null),
       firstRow: decision.firstRow ?? null,
     })),
-    imagesToCopy: await countImagesToCopy(ctx.prisma, ctx.user.sub, created),
+    imagesToCopy,
     error: null,
   }
 }
@@ -167,25 +203,29 @@ export async function importElementWorkbook(
   if ('issue' in workbook)
     return { createdElementIds: [], skippedCount: 0, error: workbook.issue }
 
-  const stale = {
+  const failed = (error: ElementWorkbookIssue) => ({
     createdElementIds: [],
     skippedCount: 0,
-    error: { code: 'PREVIEW_STALE' },
-  }
-  // Re-plan before copying images, so only rows that will be created get
-  // copies and a stale preview fails before any storage work.
-  const plan = await previewImport(ctx.prisma, ctx.user.sub, workbook.elements)
-  if (digest(plan) !== previewToken) return stale
-  // Copies are registered by source link before the transaction, so a failed
-  // or repeated import reuses them instead of copying again.
-  const links = await copyImagesForImport(
-    ctx.prisma,
-    ctx.user.sub,
-    workbook.elements.filter(
-      (_, index) => plan.decisions[index]!.action === 'CREATE'
-    )
-  )
+    error,
+  })
   try {
+    // Re-plan before copying images, so only rows that will be created get
+    // copies and a stale preview fails before any storage work.
+    const plan = await previewImport(
+      ctx.prisma,
+      ctx.user.sub,
+      workbook.elements
+    )
+    if (digest(plan) !== previewToken) return failed({ code: 'PREVIEW_STALE' })
+    // Copies are registered by source link before the transaction, so a
+    // failed or repeated import reuses them instead of copying again.
+    const links = await copyImagesForImport(
+      ctx.prisma,
+      ctx.user.sub,
+      workbook.elements.filter(
+        (_, index) => plan.decisions[index]!.action === 'CREATE'
+      )
+    )
     const result = await executeImport(
       ctx.prisma,
       ctx.user.sub,
@@ -200,10 +240,10 @@ export async function importElementWorkbook(
       error: null,
     }
   } catch (error) {
-    // The library changed since the preview, or a concurrent import holds the
-    // owner's lock; both are resolved by previewing again.
-    if (error instanceof ElementImportError) return stale
-    throw error
+    // A library change since the preview is resolved by previewing again.
+    const issue = importIssue(error)
+    if (!issue) throw error
+    return failed(issue)
   }
 }
 
@@ -244,13 +284,25 @@ export async function exportElementWorkbook(
   const order = new Map(ids.map((id, index) => [id, index]))
   elements.sort((a, b) => order.get(a.id)! - order.get(b.id)!)
 
-  const result = await buildExportWorkbook(
-    elements.map((element) => ({
-      ...element,
-      tags: element.tags.map((tag) => tag.name),
-    })),
-    { includeTags }
-  )
+  let result: Awaited<ReturnType<typeof buildExportWorkbook>>
+  try {
+    result = await buildExportWorkbook(
+      elements.map((element) => ({
+        ...element,
+        tags: element.tags.map((tag) => tag.name),
+      })),
+      { includeTags }
+    )
+  } catch (error) {
+    if (
+      error instanceof ElementWorkbookParseError &&
+      error.code === 'WORKBOOK_TOO_LARGE'
+    )
+      throw new GraphQLError('WORKBOOK_TOO_LARGE', {
+        extensions: { code: 'WORKBOOK_TOO_LARGE' },
+      })
+    throw error
+  }
   const filename = `klickeruzh-elements-${today()}.xlsx`
   return {
     filename,
