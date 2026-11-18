@@ -70,7 +70,7 @@ const CITATION_REFERENCE = `(?:${PAGE_REFERENCE}|${VIDEO_REFERENCE})`
 // used only inside `splitCitationMarkers`. Its groups are 1 the marker index,
 // 2 the end of a contiguous index range, 3 and 4 the start and end page of a
 // page detail, and 5 the full clock of a single-source video detail.
-const HAS_CITATION_MARKER_RE = new RegExp(
+export const HAS_CITATION_MARKER_RE = new RegExp(
   `\\[\\d{1,2}(?:[ \\t]*[-–—][ \\t]*\\d{1,2})?(?:[ \\t]*,[ \\t]*${CITATION_REFERENCE})?\\]`,
   'i'
 )
