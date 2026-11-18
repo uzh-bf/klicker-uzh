@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.96](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.95...v3.4.0-alpha.96) (2026-11-17)
+
+
+### Bug Fixes
+
+* **chat:** contain collapsed source-panel overflow ([#6917](https://github.com/uzh-bf/klicker-uzh/issues/6917)) ([baec161](https://github.com/uzh-bf/klicker-uzh/commit/baec1616f03f803c3fd2f157c2537876c46d295a))
+
+
+### Enhancements
+
+* **deploy:** raise the knowledge-graph semester quota to CHF 100 ([#6911](https://github.com/uzh-bf/klicker-uzh/issues/6911)) ([9e8b09d](https://github.com/uzh-bf/klicker-uzh/commit/9e8b09d34a55d4af797bcd087a89a1384f70c19f))
+
+
+### Documentation
+
+* **agents:** confirm release versions and release to production only on explicit go ([#6910](https://github.com/uzh-bf/klicker-uzh/issues/6910)) ([86be74b](https://github.com/uzh-bf/klicker-uzh/commit/86be74bf4d5f8e7d98e1f49b39c6b1e86e657fc3))
+
 ## [3.4.0-alpha.95](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.94...v3.4.0-alpha.95) (2026-11-16)
 
 

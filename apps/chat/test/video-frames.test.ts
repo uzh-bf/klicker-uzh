@@ -56,6 +56,59 @@ describe('video frame selection', () => {
         BLOB_STORAGE_ACCOUNT_NAME: 'storage',
       })
     ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        AZURE_CLIENT_ID: 'synthetic-client',
+        AZURE_TENANT_ID: 'synthetic-tenant',
+        AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+      })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        AZURE_CLIENT_ID: 'synthetic-client',
+        AZURE_TENANT_ID: 'synthetic-tenant',
+        AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        AZURE_CLIENT_ID: 'synthetic-client',
+        AZURE_TENANT_ID: 'synthetic-tenant',
+        AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        AZURE_CLIENT_ID: 'synthetic-client',
+        AZURE_TENANT_ID: 'synthetic-tenant',
+        AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'Invalid-Account',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        AZURE_CLIENT_ID: 'synthetic-client',
+        AZURE_TENANT_ID: 'synthetic-tenant',
+        AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
+        CHAT_VIDEO_FRAME_STORE_PATH: root,
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(false)
   })
 
   it('preserves the representative frame and retrieved time range', () => {
