@@ -16,6 +16,15 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  {{- if or .Values.chat.videoBlob.existingSecret .Values.chat.videoBlob.container .Values.chat.videoBlob.accountName }}
+  {{- $_ := required "chat.videoBlob.existingSecret is required for video frame storage" .Values.chat.videoBlob.existingSecret }}
+  CHAT_VIDEO_BLOB_CONTAINER: {{ required "chat.videoBlob.container is required for video frame storage" .Values.chat.videoBlob.container | quote }}
+  BLOB_STORAGE_ACCOUNT_NAME: {{ required "chat.videoBlob.accountName is required for video frame storage" .Values.chat.videoBlob.accountName | quote }}
+  {{- end }}
+  {{- if .Values.chat.courseImages.existingSecret }}
+  COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER: {{ .Values.chat.courseImages.container | quote }}
+  COURSE_IMAGE_PROJECTION_STORAGE_PREFIX: {{ .Values.chat.courseImages.prefix | quote }}
+  {{- end }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
   KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}

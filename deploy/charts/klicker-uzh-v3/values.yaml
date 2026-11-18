@@ -239,6 +239,18 @@ chat:
   mcp:
     key: ''
 
+  videoBlob:
+    accountName: ''
+    container: ''
+    existingSecret: ''
+    accessKeyKey: BLOB_STORAGE_ACCESS_KEY
+
+  courseImages:
+    existingSecret: ''
+    connectionStringKey: connectionString
+    container: doc-processing
+    prefix: projection
+
   docQueryScope:
     issuer: ''
     audience: ''
@@ -583,6 +595,9 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    # Lecturers can request a revision of one generated question only when the
+    # deployed question worker supports slot specifications.
+    revisionWorkerEnabled: false
     cost:
       questionMinorUnits: ''
       flashcardMinorUnits: ''
