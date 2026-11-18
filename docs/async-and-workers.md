@@ -39,6 +39,8 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
+Standard live-quiz responses are deduplicated per participant through the `lq:<quizId>:i:<instanceId>:responses` hash. Free-text elements with a **response limit** above 1 (element option `responseLimit`, seeded into the instance `:info` hash for standard live quizzes only) use one Lua script in `packages/util/src/liveQuizResponseAdmission.ts`. The script validates the Redis state before its first write, then commits admission, result counters and hashes, the `:respondents` counter, the participant's first-response marker, and first-response points, XP and block/session leaderboards together. It drops retried message ids, repeated answers from the same participant, and responses beyond the limit, so a replay after a lost reply cannot apply a second effect. Anonymous participants have no server identity, so the worker takes the first-response flag from the client's `isFirstResponse` field, defaulting a missing flag to first for legacy clients, and the cap is enforced only on the device. The admission keys share the instance prefix, so block-close expiry and quiz resets clean them up.
+
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
 - `create-audit-log-entry` (event-driven)
