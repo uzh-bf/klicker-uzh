@@ -1,0 +1,25 @@
+fragment StudentLiveQuizBlocksDataWithResponseLimit on LiveQuiz {
+  ...StudentLiveQuizBlocksData
+  blocks {
+    elements {
+      elementData {
+        ... on FreeTextElementData {
+          options {
+            responseLimit
+          }
+        }
+      }
+    }
+  }
+  activeBlock {
+    elements {
+      elementData {
+        ... on FreeTextElementData {
+          options {
+            responseLimit
+          }
+        }
+      }
+    }
+  }
+}

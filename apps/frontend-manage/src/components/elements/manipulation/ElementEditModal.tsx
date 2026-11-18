@@ -3,7 +3,7 @@ import {
   CreateAnswerCollectionDocument,
   ElementType,
   FlagOutdatedElementInstancesDocument,
-  GetSingleElementDocument,
+  GetSingleElementWithResponseLimitDocument,
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
@@ -74,7 +74,7 @@ function ElementEditModal({
     )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
-    GetSingleElementDocument,
+    GetSingleElementWithResponseLimitDocument,
     {
       variables: { id: elementId! },
       skip: typeof elementId === 'undefined' || !isOpen,

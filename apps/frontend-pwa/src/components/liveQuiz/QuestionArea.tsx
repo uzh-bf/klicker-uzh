@@ -12,10 +12,15 @@ import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
-import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
+import { getEffectiveResponseLimit } from './responseLimit'
+import {
+  loadStoredResponse,
+  loadSubmittedResponses,
+  updateStoredResponses,
+} from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
@@ -32,17 +37,20 @@ interface QuestionAreaProps {
     type,
     answer,
     correlationKey,
+    isFirstResponse,
   }: {
     liveQuizId: string
     instanceId: number
     type: ElementType
     answer: any
     correlationKey?: string | null
+    isFirstResponse?: boolean
   }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   quizId: string
   execution: number
   timeLimit?: number
   isStaticPreview?: boolean
+  isAssessmentEnabled?: boolean
 }
 
 function QuestionArea({
@@ -54,6 +62,7 @@ function QuestionArea({
   quizId,
   timeLimit,
   execution,
+  isAssessmentEnabled = false,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
@@ -66,6 +75,36 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  const activeInstanceIdRef = useRef(currentInstance?.id)
+  const pendingResponses = useRef(
+    new Map<
+      number,
+      {
+        input: InstanceStackStudentResponseType
+        promise: Promise<boolean>
+      }
+    >()
+  )
+
+  useLayoutEffect(() => {
+    activeInstanceIdRef.current = currentInstance?.id
+  }, [currentInstance?.id])
+
+  // free-text elements in standard live quizzes may accept several responses,
+  // which stay open after the first one until the limit or the block end
+  const responseLimit = getEffectiveResponseLimit({
+    instance: currentInstance,
+    isAssessmentEnabled,
+  })
+  const [submittedResponses, setSubmittedResponses] = useState<string[]>([])
+  const [expiredAt, setExpiredAt] = useState<number | null>(null)
+  const expiresAtTimestamp = expiresAt ? new Date(expiresAt).getTime() : null
+  const hasExpired = expiredAt !== null && expiredAt === expiresAtTimestamp
+  const isOpenForMoreResponses =
+    !hasExpired &&
+    responseLimit > 1 &&
+    submittedResponses.length > 0 &&
+    submittedResponses.length < responseLimit
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -107,6 +146,15 @@ function QuestionArea({
       setStudentResponse: safeSetStudentResponse,
       setSubmittedAt,
     })
+
+    setSubmittedResponses([])
+    loadSubmittedResponses({ quizId, execution, currentInstance }).then(
+      (stored) => {
+        if (cancelled || !stored) return
+        setSubmittedResponses(stored.responses)
+        setSubmittedAt(stored.responseTimestamp)
+      }
+    )
 
     return () => {
       cancelled = true
@@ -157,14 +205,19 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    // lock the submission button temporarily to avoid double submissions
-    setSubmitting(true)
+    if (
+      hasExpired ||
+      (expiresAtTimestamp !== null && Date.now() >= expiresAtTimestamp)
+    ) {
+      return
+    }
 
     const {
       id: instanceId,
       elementType,
       correlationKey,
     } = instances[activeInstance]
+    const isAnswered = !(remainingQuestions ?? []).includes(activeInstance)
 
     // if the question has been answered, add a response
     const success = await answerQuestion({
@@ -174,23 +227,38 @@ function QuestionArea({
       correlationKey,
     })
 
-    // relese the submission lock on the submission button
-    setSubmitting(false)
-
     // if the submission was not successful, do not block another submission attempt
     if (!success) return
 
+    // further responses to an open question do not change the block navigation
+    if (isAnswered) return
+
     // update the stored responses
     await updateStoredResponses(instanceId, quizId, execution)
+
+    setRemainingQuestions((remaining) =>
+      (remaining ?? []).filter(
+        (question) => !isDeepEqual(activeInstance, question)
+      )
+    )
+
+    if (
+      activeInstanceIdRef.current !== instanceId ||
+      (expiresAtTimestamp !== null && Date.now() >= expiresAtTimestamp)
+    ) {
+      return
+    }
 
     // calculate the new indices of remaining questions
     const newRemaining = (remainingQuestions ?? []).filter(
       (question) => !isDeepEqual(activeInstance, question)
     )
 
-    // update the active instance and the remaining questions
-    setActiveInstance(newRemaining[0] ?? instances.length - 1)
-    setRemainingQuestions(newRemaining)
+    // update the active instance and the remaining questions; a question that
+    // accepts further responses stays visible after the first one
+    if (responseLimit === 1) {
+      setActiveInstance(newRemaining[0] ?? instances.length - 1)
+    }
 
     // if this was the last question of the block and gamification is enabled, show confetti
     if (newRemaining.length === 0 && gamificationEnabled) {
@@ -199,6 +267,8 @@ function QuestionArea({
   }
 
   const onExpire = async (): Promise<void> => {
+    setExpiredAt(expiresAtTimestamp)
+
     const {
       id: instanceId,
       elementType,
@@ -206,8 +276,11 @@ function QuestionArea({
     } = instances[activeInstance]
 
     // save the response, if one was given before the time expired
-    if (studentResponse.valid) {
-      answerQuestion({
+    if (
+      studentResponse.valid &&
+      ((remainingQuestions ?? []).includes(activeInstance) || responseLimit > 1)
+    ) {
+      await answerQuestion({
         instanceId,
         type: elementType,
         input: studentResponse,
@@ -278,19 +351,61 @@ function QuestionArea({
   }
 
   // use the handleNewResponse function to add a response to the question instance
-  // return value is status code: 0 = success, 1 = invalid input, 2 = submission failed, 3 = unsupported type
-  async function answerQuestion({
-    instanceId,
-    type,
-    input,
-    correlationKey,
-  }: {
+  async function answerQuestion(args: {
     instanceId: number
     type: ElementType
     input: InstanceStackStudentResponseType
     correlationKey?: string | null
   }): Promise<boolean> {
+    const pending = pendingResponses.current.get(args.instanceId)
+    if (pending) {
+      if (
+        args.input.type === ElementType.FreeText &&
+        pending.input.type === ElementType.FreeText &&
+        args.input.response !== pending.input.response &&
+        getEffectiveResponseLimit({
+          instance: instances.find(
+            (instance) => instance.id === args.instanceId
+          ),
+          isAssessmentEnabled,
+        }) > 1
+      ) {
+        await pending.promise
+        return answerQuestion(args)
+      }
+      return pending.promise
+    }
+
+    const submission = submitAnswer(args)
+      .catch((error) => {
+        console.error(error)
+        showStatusCodeToast(500)
+        return false
+      })
+      .finally(() => {
+        pendingResponses.current.delete(args.instanceId)
+        setSubmitting(pendingResponses.current.size > 0)
+      })
+    pendingResponses.current.set(args.instanceId, {
+      input: args.input,
+      promise: submission,
+    })
+    setSubmitting(true)
+    return submission
+  }
+
+  async function submitAnswer({
+    instanceId,
+    type,
+    input,
+    correlationKey,
+  }: Parameters<typeof answerQuestion>[0]): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    const instance = instances.find((instance) => instance.id === instanceId)
+    const instanceResponseLimit = getEffectiveResponseLimit({
+      instance,
+      isAssessmentEnabled,
+    })
 
     if (!input.valid) {
       toast({
@@ -328,6 +443,72 @@ function QuestionArea({
         } as any)
         setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
+        return true
+      } else {
+        return false
+      }
+    } else if (
+      ElementType.FreeText === type &&
+      input.type === ElementType.FreeText &&
+      typeof input.response !== 'undefined' &&
+      instanceResponseLimit > 1
+    ) {
+      // repeated free-text responses are collected in a list on this device,
+      // which also enforces the limit for anonymous participants
+      const previous = await loadSubmittedResponses({
+        quizId,
+        execution,
+        currentInstance: instance,
+      })
+      const previousResponses = previous?.responses ?? []
+      const value = input.response.trim()
+
+      if (value.length === 0) {
+        toast({
+          message: t('pwa.assessment.submissionInputsInvalid'),
+          type: 'error',
+        })
+        return false
+      }
+      if (previousResponses.length >= instanceResponseLimit) return false
+      if (previousResponses.includes(value)) {
+        toast({
+          message: t('pwa.liveQuiz.responseAlreadySubmitted'),
+          type: 'error',
+        })
+        return false
+      }
+
+      const result = await handleNewResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: input.response,
+        correlationKey,
+        isFirstResponse: previousResponses.length === 0,
+      })
+
+      // --> show toast based on status code
+      showStatusCodeToast(result.statusCode)
+
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        const responseTimestamp = result.responseTimestamp ?? Date.now()
+        const responses = [...previousResponses, value]
+        await localforage.setItem(`${storageKey}-responses`, {
+          responses,
+          responseTimestamp,
+        })
+        await localforage.removeItem(`${storageKey}-temp`)
+        if (instanceId === activeInstanceIdRef.current) {
+          setSubmittedResponses(responses)
+          setSubmittedAt(responseTimestamp)
+          setStudentResponse((current) =>
+            current.type === ElementType.FreeText &&
+            current.response === input.response
+              ? { ...current, response: '', valid: false }
+              : current
+          )
+        }
         return true
       } else {
         return false
@@ -504,13 +685,14 @@ function QuestionArea({
       </div>
 
       <div className="flex w-full flex-col">
-        {remainingQuestions.length === 0 && (
-          <UserNotification
-            type="success"
-            className={{ root: 'mt-1.5 md:text-base' }}
-            message={t('pwa.liveQuiz.allQuestionsAnswered')}
-          />
-        )}
+        {remainingQuestions.length === 0 &&
+          !(isBlockActive && isOpenForMoreResponses) && (
+            <UserNotification
+              type="success"
+              className={{ root: 'mt-1.5 md:text-base' }}
+              message={t('pwa.liveQuiz.allQuestionsAnswered')}
+            />
+          )}
         {showConfetti ? (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
             <ConfettiExplosion duration={2000} />
@@ -529,9 +711,24 @@ function QuestionArea({
                 : instances.length - 1
               : instances.length - 1
           }
-          isCurrentUnanswered={remainingQuestions.includes(activeInstance)}
+          isCurrentUnanswered={
+            !hasExpired &&
+            (remainingQuestions.includes(activeInstance) ||
+              (isBlockActive && isOpenForMoreResponses))
+          }
           isContent={currentInstance.elementType === ElementType.Content}
-          isBlockOver={remainingQuestions.length === 0}
+          isBlockOver={
+            !isBlockActive ||
+            hasExpired ||
+            (remainingQuestions.length === 0 &&
+              !instances.some(
+                (instance) =>
+                  getEffectiveResponseLimit({
+                    instance,
+                    isAssessmentEnabled,
+                  }) > 1
+              ))
+          }
           canSubmit={!!studentResponse.valid && !submitting}
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
@@ -554,13 +751,34 @@ function QuestionArea({
           sequential
           hideReadButton
           disabledInput={
-            !isBlockActive || !remainingQuestions.includes(activeInstance)
+            !isBlockActive ||
+            hasExpired ||
+            !(
+              remainingQuestions.includes(activeInstance) ||
+              isOpenForMoreResponses
+            )
           }
           element={currentInstance}
           elementIx={activeInstance}
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}
         />
+
+        {responseLimit > 1 ? (
+          <div className="mt-3" data-cy="free-text-own-responses">
+            <div className="text-sm font-bold">
+              {t('pwa.liveQuiz.ownResponses', {
+                count: submittedResponses.length,
+                limit: responseLimit,
+              })}
+            </div>
+            <ul className="list-disc pl-5 text-sm">
+              {submittedResponses.map((response, ix) => (
+                <li key={ix}>{response}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </div>
   )
