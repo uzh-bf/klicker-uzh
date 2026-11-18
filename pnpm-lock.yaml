@@ -21982,6 +21982,8 @@ snapshots:
     dependencies:
       '@azure/msal-common': 16.14.2
 
+  '@azure/msal-common@15.17.0': {}
+
   '@azure/msal-common@16.13.0': {}
 
   '@azure/msal-common@16.14.2': {}
