@@ -2303,7 +2303,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       downloadTemplate: 'Download template',
       dropTitle: 'Drop your filled-in template here',
       dropDescription:
-        'or click to choose a file · .xlsx, up to 5 MB and 2,000 elements',
+        'or click to choose a file · .xlsx, up to {maxSize} MB and {maxElements, number} elements',
       chooseAnotherFile: 'Click to choose another file',
       checkFile: 'Check file',
       uploading: 'Uploading file…',
@@ -2318,6 +2318,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'New elements are private and start with status Review. Tags are kept. Duplicates are skipped.',
       imagesAdded:
         '{count, plural, =1 {1 image was added to your media library.} other {# images were added to your media library.}}',
+      imagesToCopy:
+        "{count, plural, =1 {1 image from another lecturer's media library will be copied to yours.} other {# images from other lecturers' media libraries will be copied to yours.}}",
       importButton:
         '{count, plural, =1 {Import 1 element} other {Import # elements}}',
       importing: 'Importing…',
@@ -2330,9 +2332,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       previewStale:
         'Your library changed while you were reviewing. The preview was updated; check it and import again.',
       fileTooLarge:
-        'This file is larger than 5 MB. Split it into smaller files.',
+        'This file is larger than {maxSize} MB. Split it into smaller files.',
       fileTypeInvalid: 'Choose an Excel file (.xlsx).',
-      exportSummary: '{exported} of {total} selected elements will be exported',
+      exportSummary:
+        'Up to {exported} of {total} selected elements will be exported',
+      exportSummaryHint:
+        "Elements whose content can't be stored in Excel without changes are listed after the export.",
       exportDescription:
         'Saved in the KlickerUZH template, so you can edit offline, share with colleagues, or import into another account.',
       exportUnsupportedTitle:
@@ -2344,7 +2349,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportedDescription:
         '{count, plural, =1 {1 element exported.} other {# elements exported.}} Edit the file and use Import from Excel to bring changes back as new elements.',
       exportFailed: "The file couldn't be created. Try again.",
-      tooManyElements: 'Select at most 2,000 elements to export.',
+      exportTooLarge:
+        'The file would be larger than {maxSize} MB. Export fewer elements at a time.',
+      templateDownloadFailed: "The template couldn't be downloaded. Try again.",
+      tooManyElements:
+        'Select at most {maxElements, number} elements to export.',
       unsupportedReason: {
         TYPE_NOT_SUPPORTED:
           'Case studies and selection elements have no tab in the template.',
@@ -2357,7 +2366,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       errorLocationSheet: '{sheet}:',
       errors: {
         WORKBOOK_TOO_LARGE:
-          'The file is too large (at most 5 MB and 2,000 elements).',
+          'The file is too large. It may have at most {maxSize} MB and {maxElements, number} elements, and only the rows and columns of the template.',
         INVALID_WORKBOOK: "This file isn't a valid Excel workbook.",
         UNSUPPORTED_WORKBOOK_CONTENT:
           'The file contains macros, embedded objects or images. Remove them and upload again.',
@@ -2399,6 +2408,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'Too many imports or exports in a short time. Wait a minute and try again.',
         UPLOAD_NOT_FOUND:
           'The uploaded file is no longer available. Choose the file again.',
+        LIBRARY_TOO_LARGE:
+          'Your element library is too large for an import from Excel. Contact support.',
+        TOO_MANY_IMAGES:
+          'The file links to more than {maxImages} images from other media libraries. Split it into smaller files.',
         EMPTY_WORKBOOK:
           'The file contains no elements. Fill in at least one row from row 8.',
         UNKNOWN: "The file couldn't be checked. Try again.",

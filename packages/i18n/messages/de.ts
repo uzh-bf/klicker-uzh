@@ -2320,7 +2320,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       downloadTemplate: 'Vorlage herunterladen',
       dropTitle: 'Ausgefüllte Vorlage hier ablegen',
       dropDescription:
-        'oder klicken, um eine Datei auszuwählen · .xlsx, bis 5 MB und 2000 Elemente',
+        'oder klicken, um eine Datei auszuwählen · .xlsx, bis {maxSize} MB und {maxElements, number} Elemente',
       chooseAnotherFile: 'Klicken, um eine andere Datei auszuwählen',
       checkFile: 'Datei prüfen',
       uploading: 'Datei wird hochgeladen…',
@@ -2335,6 +2335,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Neue Elemente sind privat und starten mit dem Status «Review». Tags bleiben erhalten. Duplikate werden übersprungen.',
       imagesAdded:
         '{count, plural, =1 {1 Bild wurde zu Ihrer Medienbibliothek hinzugefügt.} other {# Bilder wurden zu Ihrer Medienbibliothek hinzugefügt.}}',
+      imagesToCopy:
+        '{count, plural, =1 {1 Bild aus der Medienbibliothek einer anderen Lehrperson wird in Ihre kopiert.} other {# Bilder aus Medienbibliotheken anderer Lehrpersonen werden in Ihre kopiert.}}',
       importButton:
         '{count, plural, =1 {1 Element importieren} other {# Elemente importieren}}',
       importing: 'Wird importiert…',
@@ -2348,10 +2350,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       previewStale:
         'Ihre Bibliothek hat sich während der Prüfung geändert. Die Vorschau wurde aktualisiert; prüfen Sie sie und importieren Sie erneut.',
       fileTooLarge:
-        'Diese Datei ist grösser als 5 MB. Teilen Sie sie in kleinere Dateien auf.',
+        'Diese Datei ist grösser als {maxSize} MB. Teilen Sie sie in kleinere Dateien auf.',
       fileTypeInvalid: 'Wählen Sie eine Excel-Datei (.xlsx).',
       exportSummary:
-        '{exported} von {total} ausgewählten Elementen werden exportiert',
+        'Bis zu {exported} von {total} ausgewählten Elementen werden exportiert',
+      exportSummaryHint:
+        'Elemente, deren Inhalt sich nicht unverändert in Excel speichern lässt, werden nach dem Export aufgelistet.',
       exportDescription:
         'Gespeichert in der KlickerUZH-Vorlage: offline bearbeiten, mit Kolleg:innen teilen oder in ein anderes Konto importieren.',
       exportUnsupportedTitle:
@@ -2364,7 +2368,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{count, plural, =1 {1 Element exportiert.} other {# Elemente exportiert.}} Bearbeiten Sie die Datei und nutzen Sie «Aus Excel importieren», um Änderungen als neue Elemente zu übernehmen.',
       exportFailed:
         'Die Datei konnte nicht erstellt werden. Versuchen Sie es erneut.',
-      tooManyElements: 'Wählen Sie höchstens 2000 Elemente für den Export aus.',
+      exportTooLarge:
+        'Die Datei wäre grösser als {maxSize} MB. Exportieren Sie weniger Elemente auf einmal.',
+      templateDownloadFailed:
+        'Die Vorlage konnte nicht heruntergeladen werden. Versuchen Sie es erneut.',
+      tooManyElements:
+        'Wählen Sie höchstens {maxElements, number} Elemente für den Export aus.',
       unsupportedReason: {
         TYPE_NOT_SUPPORTED:
           'Fallstudien und Selektionselemente haben kein Tabellenblatt in der Vorlage.',
@@ -2377,7 +2386,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       errorLocationSheet: '{sheet}:',
       errors: {
         WORKBOOK_TOO_LARGE:
-          'Die Datei ist zu gross (höchstens 5 MB und 2000 Elemente).',
+          'Die Datei ist zu gross. Sie darf höchstens {maxSize} MB und {maxElements, number} Elemente enthalten und nur die Zeilen und Spalten der Vorlage nutzen.',
         INVALID_WORKBOOK: 'Diese Datei ist keine gültige Excel-Arbeitsmappe.',
         UNSUPPORTED_WORKBOOK_CONTENT:
           'Die Datei enthält Makros, eingebettete Objekte oder Bilder. Entfernen Sie diese und laden Sie die Datei erneut hoch.',
@@ -2420,6 +2429,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Zu viele Importe oder Exporte in kurzer Zeit. Warten Sie eine Minute und versuchen Sie es erneut.',
         UPLOAD_NOT_FOUND:
           'Die hochgeladene Datei ist nicht mehr verfügbar. Wählen Sie die Datei erneut aus.',
+        LIBRARY_TOO_LARGE:
+          'Ihre Elementbibliothek ist für einen Import aus Excel zu gross. Wenden Sie sich an den Support.',
+        TOO_MANY_IMAGES:
+          'Die Datei verweist auf mehr als {maxImages} Bilder aus anderen Medienbibliotheken. Teilen Sie sie in kleinere Dateien auf.',
         EMPTY_WORKBOOK:
           'Die Datei enthält keine Elemente. Füllen Sie ab Zeile 8 mindestens eine Zeile aus.',
         UNKNOWN:

@@ -1,5 +1,13 @@
 export const ELEMENT_WORKBOOK_MAX_BYTES = 5 * 1024 * 1024
 export const ELEMENT_WORKBOOK_MAX_EXPORT = 2000
+// Mirrors MAX_IMAGE_COPIES_PER_IMPORT in @klicker-uzh/graphql.
+export const ELEMENT_WORKBOOK_MAX_IMAGES = 500
+/** Limits shown in the workbook messages. */
+export const ELEMENT_WORKBOOK_LIMITS = {
+  maxSize: ELEMENT_WORKBOOK_MAX_BYTES / 1024 / 1024,
+  maxElements: ELEMENT_WORKBOOK_MAX_EXPORT,
+  maxImages: ELEMENT_WORKBOOK_MAX_IMAGES,
+}
 const XLSX_TYPE =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 

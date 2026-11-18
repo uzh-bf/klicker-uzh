@@ -12,6 +12,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   downloadWorkbookUrl,
+  ELEMENT_WORKBOOK_LIMITS,
   ELEMENT_WORKBOOK_MAX_EXPORT,
 } from '@lib/elementWorkbookFiles'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
@@ -77,10 +78,16 @@ function ElementWorkbookExportModal({
       setResult(exported)
       if (exported.downloadUrl) downloadWorkbookUrl(exported.downloadUrl)
     } catch (error) {
+      const code = error instanceof Error ? error.message : null
       setError(
-        error instanceof Error && error.message === 'RATE_LIMITED'
+        code === 'RATE_LIMITED'
           ? t('manage.elementWorkbook.errors.RATE_LIMITED')
-          : t('manage.elementWorkbook.exportFailed')
+          : code === 'WORKBOOK_TOO_LARGE'
+            ? t(
+                'manage.elementWorkbook.exportTooLarge',
+                ELEMENT_WORKBOOK_LIMITS
+              )
+            : t('manage.elementWorkbook.exportFailed')
       )
     } finally {
       setExporting(false)
@@ -127,6 +134,9 @@ function ElementWorkbookExportModal({
               <div className="text-sm text-slate-600">
                 {t('manage.elementWorkbook.exportDescription')}
               </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {t('manage.elementWorkbook.exportSummaryHint')}
+              </div>
             </div>
           </div>
         )}
@@ -165,7 +175,10 @@ function ElementWorkbookExportModal({
 
         {tooMany && (
           <p className="text-sm text-red-600" role="alert">
-            {t('manage.elementWorkbook.tooManyElements')}
+            {t(
+              'manage.elementWorkbook.tooManyElements',
+              ELEMENT_WORKBOOK_LIMITS
+            )}
           </p>
         )}
         {error && (
@@ -198,7 +211,12 @@ function ElementWorkbookExportModal({
             </Button>
           ) : (
             <>
-              <Button onClick={onClose} className={{ root: 'h-9' }}>
+              <Button
+                onClick={onClose}
+                disabled={exporting}
+                className={{ root: 'h-9' }}
+                data={{ cy: 'element-workbook-export-cancel' }}
+              >
                 {t('shared.generic.cancel')}
               </Button>
               <Button

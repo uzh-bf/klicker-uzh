@@ -105,7 +105,7 @@ test('offers Excel import and export in the element library', async ({
     )
     await page.getByTestId('export-elements-excel').click()
     await expect(page.getByTestId('element-workbook-summary')).toHaveText(
-      '1 of 1 selected elements will be exported'
+      'Up to 1 of 1 selected elements will be exported'
     )
     await expect(page.getByTestId('element-workbook-unsupported')).toBeHidden()
     await expect(
@@ -217,7 +217,7 @@ test('exports selected elements and re-imports them as duplicates', async ({
     await page.getByTestId('export-elements-excel').click()
 
     await expect(page.getByTestId('element-workbook-summary')).toHaveText(
-      '1 of 2 selected elements will be exported'
+      'Up to 1 of 2 selected elements will be exported'
     )
     await expect(
       page.getByTestId('element-workbook-unsupported')

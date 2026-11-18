@@ -5,6 +5,7 @@ import {
   faCircleInfo,
   faDownload,
   faFileExcel,
+  faImage,
   faUpload,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,6 +14,7 @@ import {
   type ElementWorkbookIssue,
   type ElementWorkbookPreviewRow,
   GetElementWorkbookTemplateDocument,
+  GetUserMediaFilesDocument,
   GetUserTagsDocument,
   ImportElementWorkbookDocument,
   PrepareElementWorkbookUploadDocument,
@@ -20,6 +22,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   downloadBase64Workbook,
+  ELEMENT_WORKBOOK_LIMITS,
   ELEMENT_WORKBOOK_MAX_BYTES,
   uploadWorkbookFile,
 } from '@lib/elementWorkbookFiles'
@@ -101,7 +104,18 @@ const ISSUE_CODES = [
   'EMPTY_WORKBOOK',
   'UPLOAD_NOT_FOUND',
   'RATE_LIMITED',
+  'LIBRARY_TOO_LARGE',
+  'TOO_MANY_IMAGES',
 ] as const
+
+// Problems that are not in the file itself; their messages carry their own
+// recovery instruction.
+const NON_FILE_ISSUES = new Set([
+  'UPLOAD_NOT_FOUND',
+  'RATE_LIMITED',
+  'LIBRARY_TOO_LARGE',
+  'UNKNOWN',
+])
 
 function issueCode(code: string) {
   return (ISSUE_CODES as readonly string[]).includes(code)
@@ -134,8 +148,13 @@ function IssueMessage({ issue }: { issue: ElementWorkbookIssue }) {
             })}{' '}
           </span>
         ) : null}
-        {t(`manage.elementWorkbook.errors.${issueCode(issue.code)}`)}{' '}
-        {t('manage.elementWorkbook.fixAndRetry')}
+        {t(
+          `manage.elementWorkbook.errors.${issueCode(issue.code)}`,
+          ELEMENT_WORKBOOK_LIMITS
+        )}
+        {!NON_FILE_ISSUES.has(issueCode(issue.code)) && (
+          <> {t('manage.elementWorkbook.fixAndRetry')}</>
+        )}
       </div>
     </UserNotification>
   )
@@ -201,11 +220,21 @@ function ElementWorkbookImportModal({
   )
   const [importWorkbook, { loading: importing }] = useMutation(
     ImportElementWorkbookDocument,
-    // Imports can create tags; the sidebar's tag filter has its own query.
-    { refetchQueries: [{ query: GetUserTagsDocument }] }
+    // Imports can create tags and copy images; the sidebar's tag filter and
+    // the media library have their own queries.
+    {
+      refetchQueries: [
+        { query: GetUserTagsDocument },
+        { query: GetUserMediaFilesDocument },
+      ],
+    }
   )
 
+  const busy = uploading || previewing
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    // A file chosen during a check would be replaced by the running check's
+    // result, so the selection is locked until it finishes.
+    disabled: busy,
     multiple: false,
     accept: {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
@@ -219,7 +248,7 @@ function ElementWorkbookImportModal({
         setFile(null)
         setFileError(
           rejected[0]?.errors.some((error) => error.code === 'file-too-large')
-            ? t('manage.elementWorkbook.fileTooLarge')
+            ? t('manage.elementWorkbook.fileTooLarge', ELEMENT_WORKBOOK_LIMITS)
             : t('manage.elementWorkbook.fileTypeInvalid')
         )
         return
@@ -241,8 +270,13 @@ function ElementWorkbookImportModal({
         data.elementWorkbookTemplate.filename,
         data.elementWorkbookTemplate.contentBase64
       )
-    } catch {
-      setFileError(t('manage.elementWorkbook.errors.UNKNOWN'))
+      setFileError(null)
+    } catch (error) {
+      setFileError(
+        isRateLimited(error)
+          ? t('manage.elementWorkbook.errors.RATE_LIMITED')
+          : t('manage.elementWorkbook.templateDownloadFailed')
+      )
     } finally {
       setDownloadingTemplate(false)
     }
@@ -369,8 +403,10 @@ function ElementWorkbookImportModal({
               {...getRootProps()}
               className={twMerge(
                 'cursor-pointer rounded-md border-2 border-dashed border-slate-300 p-6 text-center text-sm hover:bg-slate-50',
-                (file || isDragActive) && 'border-primary-100'
+                (file || isDragActive) && 'border-primary-100',
+                busy && 'cursor-wait opacity-60 hover:bg-transparent'
               )}
+              aria-disabled={busy}
               data-cy="element-workbook-dropzone"
             >
               <input {...getInputProps()} data-cy="element-workbook-file" />
@@ -395,7 +431,10 @@ function ElementWorkbookImportModal({
                     2. {t('manage.elementWorkbook.dropTitle')}
                   </div>
                   <div className="text-slate-600">
-                    {t('manage.elementWorkbook.dropDescription')}
+                    {t(
+                      'manage.elementWorkbook.dropDescription',
+                      ELEMENT_WORKBOOK_LIMITS
+                    )}
                   </div>
                 </>
               )}
@@ -470,6 +509,17 @@ function ElementWorkbookImportModal({
                 </li>
               ))}
             </ul>
+            {counts.create > 0 && imagesToCopy > 0 && (
+              <p
+                className="flex gap-2 text-xs text-slate-600"
+                data-cy="element-workbook-images-to-copy"
+              >
+                <FontAwesomeIcon icon={faImage} className="mt-0.5" />
+                {t('manage.elementWorkbook.imagesToCopy', {
+                  count: imagesToCopy,
+                })}
+              </p>
+            )}
             <p className="flex gap-2 text-xs text-slate-600">
               <FontAwesomeIcon icon={faCircleInfo} className="mt-0.5" />
               {counts.create === 0
@@ -512,12 +562,16 @@ function ElementWorkbookImportModal({
         <div className="flex justify-end gap-2 border-t border-slate-200 pt-3">
           {step === 'upload' && (
             <>
-              <Button onClick={onClose} className={{ root: 'h-9' }}>
+              <Button
+                onClick={onClose}
+                className={{ root: 'h-9' }}
+                data={{ cy: 'element-workbook-import-cancel' }}
+              >
                 {t('shared.generic.cancel')}
               </Button>
               <Button
                 primary
-                disabled={!file || uploading || previewing}
+                disabled={!file || busy}
                 onClick={() => void checkFile()}
                 className={{ root: 'h-9' }}
                 data={{ cy: 'element-workbook-check' }}
