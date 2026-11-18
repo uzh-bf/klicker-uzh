@@ -1678,15 +1678,21 @@ fixture reads are not cached. Ownership, current scope, recording/occurrence bin
 integrity checks still run on each request. The source-video digest identifies the frame's recording; it does not
 require a stored recording object. A representative frame may lie outside the cited transcript
 chunk's time range. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for development fixtures.
-With shared-key authentication, a deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
-`BLOB_STORAGE_ACCESS_KEY` for the producer's frame container. In the active v3 Helm
-chart, set `chat.videoBlob.accountName`, `chat.videoBlob.container`, and
-`chat.videoBlob.existingSecret`; the existing Secret must contain the access key
-under `chat.videoBlob.accessKeyKey` (default `BLOB_STORAGE_ACCESS_KEY`). The chart
-references that Secret without storing credentials in values. Empty defaults leave
-frame storage disabled; partial configuration fails template validation. This
-configuration stores and serves only frame JPEGs and manifests, not recordings.
-For keyless access, use the dedicated [Chat media workload identity](course-image-retrieval.md).
+The deployment selects `CHAT_MEDIA_BACKEND=azure-blob` or `CHAT_MEDIA_BACKEND=s3`.
+Azure shared-key access needs `CHAT_VIDEO_BLOB_CONTAINER`,
+`BLOB_STORAGE_ACCOUNT_NAME`, and `BLOB_STORAGE_ACCESS_KEY`; keyless access uses
+the dedicated [Chat media workload identity](course-image-retrieval.md).
+S3-compatible storage uses the endpoint, region, explicit credentials, and a
+frame bucket separate from the course-image bucket documented in the same guide.
+Both readers apply the byte limit before and while streaming, then verify the
+manifest, occurrence, digest, and image signature. An S3 read is pinned to the
+HEAD ETag with an exact range request, so replacement during a read fails closed.
+In the active v3 Helm chart, Azure configuration remains under
+`chat.videoBlob`, while S3 configuration lives under `chat.mediaStorage.s3`.
+Both reference existing Secrets; credentials are never stored in values. Empty
+defaults leave frame storage disabled, and partial or mixed configuration fails
+template validation. This configuration stores and serves only frame JPEGs and
+manifests, not recordings.
 Inline frames, zoomed frames, and source hover previews use the same authenticated
 image loader as document images, including Bearer-token fallback in embedded chats.
 

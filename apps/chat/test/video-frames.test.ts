@@ -94,6 +94,28 @@ describe('video frame selection', () => {
         BLOB_STORAGE_ACCESS_KEY: 'secret',
       })
     ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_BACKEND: 's3',
+        CHAT_MEDIA_S3_ACCESS_KEY_ID: 'synthetic-access-key',
+        CHAT_MEDIA_S3_SECRET_ACCESS_KEY: 'synthetic-secret-key',
+        CHAT_MEDIA_S3_REGION: 'us-east-1',
+        CHAT_MEDIA_S3_ENDPOINT: 'https://objects.example.test',
+        CHAT_MEDIA_S3_COURSE_IMAGES_BUCKET: 'synthetic-figures',
+        CHAT_MEDIA_S3_VIDEO_FRAMES_BUCKET: 'synthetic-frames',
+      })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_BACKEND: 's3',
+        CHAT_MEDIA_S3_ACCESS_KEY_ID: 'synthetic-access-key',
+        CHAT_MEDIA_S3_SECRET_ACCESS_KEY: 'synthetic-secret-key',
+        CHAT_MEDIA_S3_REGION: 'us-east-1',
+        CHAT_MEDIA_S3_ENDPOINT: 'https://objects.example.test',
+        CHAT_MEDIA_S3_COURSE_IMAGES_BUCKET: 'shared-synthetic-bucket',
+        CHAT_MEDIA_S3_VIDEO_FRAMES_BUCKET: 'shared-synthetic-bucket',
+      })
+    ).toBe(false)
   })
 
   it('preserves the representative frame and retrieved time range', () => {

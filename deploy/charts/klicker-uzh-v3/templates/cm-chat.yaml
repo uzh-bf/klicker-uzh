@@ -7,6 +7,28 @@
 {{- if and $chatTelemetry (hasKey $chatTelemetry "enabled") -}}
 {{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
 {{- end -}}
+{{- $mediaStorage := .Values.chat.mediaStorage | default dict -}}
+{{- $mediaBackend := $mediaStorage.backend | default "azure-blob" -}}
+{{- if not (has $mediaBackend (list "azure-blob" "s3")) -}}
+{{- fail "chat.mediaStorage.backend must be azure-blob or s3" -}}
+{{- end -}}
+{{- if eq $mediaBackend "s3" -}}
+{{- $s3 := $mediaStorage.s3 | default dict -}}
+{{- if or .Values.chat.mediaWorkloadIdentity.enabled .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret .Values.chat.videoBlob.container .Values.chat.videoBlob.accountName -}}
+{{- fail "Configure S3 media storage separately from Azure Blob or workload identity storage" -}}
+{{- end -}}
+{{- $_ := required "chat.mediaStorage.s3.endpoint is required" $s3.endpoint -}}
+{{- $_ := required "chat.mediaStorage.s3.region is required" $s3.region -}}
+{{- $_ := required "chat.mediaStorage.s3.existingSecret is required" $s3.existingSecret -}}
+{{- $_ := required "chat.mediaStorage.s3.courseImagesBucket is required" $s3.courseImagesBucket -}}
+{{- $_ := required "chat.mediaStorage.s3.videoFramesBucket is required" $s3.videoFramesBucket -}}
+{{- if not (hasPrefix "https://" $s3.endpoint) -}}
+{{- fail "chat.mediaStorage.s3.endpoint must use https://" -}}
+{{- end -}}
+{{- if eq $s3.courseImagesBucket $s3.videoFramesBucket -}}
+{{- fail "chat.mediaStorage.s3 course image and video frame buckets must differ" -}}
+{{- end -}}
+{{- end -}}
 {{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
 {{- $scopedMcpEnv := include "chart.docQueryScopedMcpEnv" . -}}
 apiVersion: v1
@@ -16,6 +38,16 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  CHAT_MEDIA_BACKEND: {{ $mediaBackend | quote }}
+  {{- if eq $mediaBackend "s3" }}
+  {{- $s3 := $mediaStorage.s3 }}
+  CHAT_MEDIA_S3_ENDPOINT: {{ $s3.endpoint | quote }}
+  CHAT_MEDIA_S3_REGION: {{ $s3.region | quote }}
+  CHAT_MEDIA_S3_FORCE_PATH_STYLE: {{ $s3.forcePathStyle | quote }}
+  CHAT_MEDIA_S3_COURSE_IMAGES_BUCKET: {{ $s3.courseImagesBucket | quote }}
+  CHAT_MEDIA_S3_VIDEO_FRAMES_BUCKET: {{ $s3.videoFramesBucket | quote }}
+  COURSE_IMAGE_PROJECTION_STORAGE_PREFIX: {{ $s3.courseImagesPrefix | quote }}
+  {{- end }}
   {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
   {{- if or .Values.chat.videoBlob.existingSecret .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.container .Values.chat.videoBlob.accountName }}
   {{- fail "Configure media storage through the reader ConfigMap or the legacy Blob settings, not both" }}
