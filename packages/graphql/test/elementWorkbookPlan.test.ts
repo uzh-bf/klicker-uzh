@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { WorkbookElement } from '../src/scripts/elementWorkbook/parse.js'
+import type { WorkbookElement } from '../src/lib/elementWorkbook/parse.js'
 import {
   comparisonCsv,
   digest,
   elementIdentity,
   planImport,
-} from '../src/scripts/elementWorkbook/plan.js'
+} from '../src/lib/elementWorkbook/plan.js'
 
 const card: WorkbookElement = {
   sheet: 'Flashcards',

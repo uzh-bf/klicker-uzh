@@ -1,0 +1,13 @@
+mutation ExportElementWorkbook($elementIds: [Int!]!, $includeTags: Boolean!) {
+  exportElementWorkbook(elementIds: $elementIds, includeTags: $includeTags) {
+    filename
+    downloadUrl
+    exportedIds
+    unsupported {
+      id
+      name
+      type
+      reason
+    }
+  }
+}

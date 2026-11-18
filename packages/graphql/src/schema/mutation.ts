@@ -11,6 +11,7 @@ import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as ElementWorkbookService from '../services/elementWorkbook.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -49,6 +50,12 @@ import {
   TemplateBlockInput,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
+import {
+  ElementWorkbookExport,
+  ElementWorkbookImportResult,
+  ElementWorkbookPreview,
+  ElementWorkbookUpload,
+} from './elementWorkbook.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -1916,6 +1923,48 @@ export const Mutation = builder.mutationType({
             return await GroupService.changeGroupActivityName(args, ctx)
           }
           return null
+        },
+      }),
+
+      prepareElementWorkbookUpload: t.withAuth(asUserFullAccess).field({
+        type: ElementWorkbookUpload,
+        resolve: async (_, __, ctx) => {
+          return await ElementWorkbookService.prepareElementWorkbookUpload(ctx)
+        },
+      }),
+
+      previewElementWorkbookImport: t.withAuth(asUserFullAccess).field({
+        type: ElementWorkbookPreview,
+        args: {
+          uploadId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementWorkbookService.previewElementWorkbookImport(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      importElementWorkbook: t.withAuth(asUserFullAccess).field({
+        type: ElementWorkbookImportResult,
+        args: {
+          uploadId: t.arg.string({ required: true }),
+          previewToken: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementWorkbookService.importElementWorkbook(args, ctx)
+        },
+      }),
+
+      exportElementWorkbook: t.withAuth(asUserFullAccess).field({
+        type: ElementWorkbookExport,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          includeTags: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementWorkbookService.exportElementWorkbook(args, ctx)
         },
       }),
 

@@ -1,0 +1,6 @@
+mutation PrepareElementWorkbookUpload {
+  prepareElementWorkbookUpload {
+    uploadId
+    uploadUrl
+  }
+}
