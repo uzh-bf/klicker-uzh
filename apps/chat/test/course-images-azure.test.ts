@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readCourseImage } from '../src/lib/server/courseImageStore'
+import {
+  courseImageStoreConfigured,
+  readCourseImage,
+} from '../src/lib/server/courseImageStore'
 import { courseImageCandidates } from '../src/lib/sources/courseImages'
 
 const root = path.resolve('scripts/fixtures/course-images')
@@ -89,6 +92,7 @@ describe('Azure course image storage through the real SDK', () => {
     if (!address || typeof address === 'string')
       throw new Error('Missing test server address')
     vi.stubEnv('CHAT_COURSE_IMAGE_STORE_PATH', '')
+    vi.stubEnv('CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED', undefined)
     vi.stubEnv('COURSE_IMAGE_PROJECTION_STORAGE_PREFIX', undefined)
     vi.stubEnv('COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER', 'course-images')
     vi.stubEnv(
@@ -224,6 +228,21 @@ describe('Azure course image storage through the real SDK', () => {
     missingEtag = true
     await expect(readCourseImage(candidate)).rejects.toThrow()
     expect(requests.some((entry) => entry.method === 'GET')).toBe(false)
+  })
+
+  it('does not fall back to legacy credentials when workload identity is incomplete', async () => {
+    vi.stubEnv('CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED', 'true')
+    vi.stubEnv('CHAT_COURSE_IMAGE_STORE_PATH', root)
+    vi.stubEnv('COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME', undefined)
+
+    await expect(readCourseImage(original)).rejects.toThrow(
+      'workload identity storage unavailable'
+    )
+    await expect(readCourseImage(original, root)).rejects.toThrow(
+      'workload identity storage unavailable'
+    )
+    expect(courseImageStoreConfigured()).toBe(false)
+    expect(requests).toHaveLength(0)
   })
 
   it('still rejects corrupt bytes with a mismatched digest', async () => {

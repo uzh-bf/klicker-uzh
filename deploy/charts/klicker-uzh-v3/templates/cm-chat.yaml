@@ -16,6 +16,12 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+  {{- if or .Values.chat.videoBlob.existingSecret .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.container .Values.chat.videoBlob.accountName }}
+  {{- fail "Configure media storage through the reader ConfigMap or the legacy Blob settings, not both" }}
+  {{- end }}
+  CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: "true"
+  {{- end }}
   {{- if or .Values.chat.videoBlob.existingSecret .Values.chat.videoBlob.container .Values.chat.videoBlob.accountName }}
   {{- $_ := required "chat.videoBlob.existingSecret is required for video frame storage" .Values.chat.videoBlob.existingSecret }}
   CHAT_VIDEO_BLOB_CONTAINER: {{ required "chat.videoBlob.container is required for video frame storage" .Values.chat.videoBlob.container | quote }}

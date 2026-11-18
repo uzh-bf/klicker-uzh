@@ -194,6 +194,9 @@ auth:
       memory: 512Mi
 
 chat:
+  mediaWorkloadIdentity:
+    enabled: true
+    serviceAccountName: chat-course-media-reader
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
