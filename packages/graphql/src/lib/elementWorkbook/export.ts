@@ -1,6 +1,6 @@
 import {
   ELEMENT_WORKBOOK_DATA_ROW,
-  ElementWorkbookParseError,
+  type ElementWorkbookParseError,
   parseElementWorkbook,
   type WorkbookElement,
 } from './parse.js'
@@ -205,7 +205,8 @@ export async function exportElementWorkbook(
     candidates = candidates.filter((c) => c.element.id !== element.id)
   }
 
-  // Each pass removes at least one candidate, so this terminates.
+  // Each pass removes at least one candidate, so this terminates. Invalid
+  // rows are collected in one pass, so usually at most two passes run.
   for (;;) {
     const rows = emptyTemplateRows()
     const positions = new Map<string, ExportableElement>()
@@ -218,16 +219,17 @@ export async function exportElementWorkbook(
       rows[sheet].push(row)
     }
     const buffer = await writeElementWorkbook(rows)
-    let parsed: WorkbookElement[]
-    try {
-      parsed = await parseElementWorkbook(buffer)
-    } catch (error) {
-      const failed =
-        error instanceof ElementWorkbookParseError && error.sheet && error.row
-          ? positions.get(`${error.sheet}:${error.row}`)
-          : undefined
-      if (!failed) throw error
-      exclude(failed)
+    const rowErrors: ElementWorkbookParseError[] = []
+    const parsed: WorkbookElement[] = await parseElementWorkbook(
+      buffer,
+      rowErrors
+    )
+    if (rowErrors.length > 0) {
+      for (const error of rowErrors) {
+        const failed = positions.get(`${error.sheet}:${error.row}`)
+        if (!failed) throw error
+        exclude(failed)
+      }
       continue
     }
     const lossy = parsed

@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   copyImagesForImport,
+  ElementWorkbookMediaError,
   findForeignImages,
   findImageLinks,
+  MAX_IMAGE_COPIES_PER_IMPORT,
   rewriteImageLinks,
 } from '../src/lib/elementWorkbook/media.js'
 import type { WorkbookElement } from '../src/lib/elementWorkbook/parse.js'
@@ -115,6 +117,42 @@ describe('element workbook images', () => {
       [imageOnly(href)]
     )
     expect(links.size).toBe(0)
+    vi.unstubAllEnvs()
+  })
+
+  it('accepts links from every configured account base', () => {
+    const other = '22222222-2222-2222-2222-222222222222'
+    const azure = 'https://klickerdev.blob.core.windows.net'
+    expect(
+      findForeignImages([imageOnly(`${azure}/${other}/a.png`)], owner, [
+        account,
+        azure,
+      ]).map((image) => image.href)
+    ).toEqual([`${azure}/${other}/a.png`])
+  })
+
+  it('refuses an import that would copy more images than allowed', async () => {
+    vi.stubEnv('BLOB_STORAGE_ACCOUNT_NAME', 'klickerdev')
+    vi.stubEnv('BLOB_STORAGE_ACCESS_KEY', 'dGVzdA==')
+    vi.stubEnv('BLOB_STORAGE_ACCOUNT_URL', account)
+    const other = '22222222-2222-2222-2222-222222222222'
+    const hrefs = Array.from(
+      { length: MAX_IMAGE_COPIES_PER_IMPORT + 1 },
+      (_, index) => `${account}/${other}/${index}.png`
+    )
+    const findMany = vi.fn(
+      async ({ where }: { where: { href?: { in: string[] } } }) =>
+        where.href
+          ? where.href.in.map((href) => ({ href, ownerId: other, name: 'x' }))
+          : []
+    )
+    await expect(
+      copyImagesForImport(
+        { mediaFile: { findMany } } as never,
+        owner,
+        hrefs.map(imageOnly)
+      )
+    ).rejects.toBeInstanceOf(ElementWorkbookMediaError)
     vi.unstubAllEnvs()
   })
 })

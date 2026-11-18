@@ -61,6 +61,13 @@ computed from the library on every preview, never stored. Rows matching the
 library are skipped, as are repeats within one file. `executeImport` refuses to
 write when the library changed since the preview token was issued.
 
+`ElementImportError.code` separates recoverable from permanent failures: only
+`STALE` (and a serialization conflict, Prisma `P2034`) becomes
+`PREVIEW_STALE`, which the UI resolves by previewing again.
+`LIBRARY_TOO_LARGE` is reported as its own issue, already by the preview when
+the import would push the library past 50,000 elements. Owner and verification
+failures stay internal errors.
+
 ## Images
 
 On import, `media.ts` copies images that live in another lecturer's media
@@ -73,9 +80,21 @@ images are never fetched. Copies record the source link in
 `MediaFile.originalId`; the duplicate identity maps copies back to their source,
 so re-importing the same file still matches.
 
+Media-library uploads (`getFileUploadSas`) always store the default Azure
+account URL, while workbook storage uses `BLOB_STORAGE_ACCOUNT_URL`; links with
+either base are recognised.
+
 ## Limits
 
 5 MB per file, 25 MB of unpacked XML (ExcelJS holds the whole workbook in
 memory), 2,000 elements, and 30 workbook operations per lecturer per minute
-(Redis key `element-workbook:rate:<userId>`). A 2,000-element import takes a
-few seconds; the import transaction allows 120 seconds.
+(Redis key `element-workbook:rate:<userId>`, incremented and expired in one
+Lua script so a counter cannot lose its expiry). One import copies at most 500
+images (`TOO_MANY_IMAGES`, reported by the preview). A 2,000-element import
+takes a few seconds; the import transaction allows 120 seconds.
+
+Export writes the workbook, re-parses it while collecting every invalid row
+(`parseElementWorkbook(buffer, rowErrors)`), and drops those elements in one
+pass, so an export runs a bounded number of passes. A file over 5 MB fails
+with the GraphQL error `WORKBOOK_TOO_LARGE`. Tabs without rows carry no
+filter: a header-only `autoFilter` makes Excel report the file as corrupt.

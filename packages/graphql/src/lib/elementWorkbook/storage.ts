@@ -27,6 +27,12 @@ export type BlobStorage = {
   credential: StorageSharedKeyCredential
   /** Browser-facing account URL, as stored in authored image links. */
   publicUrl: string
+  /**
+   * Every base an authored media link may start with. Media-library uploads
+   * (`getFileUploadSas`) always use the default Azure URL, which differs from
+   * publicUrl when BLOB_STORAGE_ACCOUNT_URL is configured.
+   */
+  accountUrls: string[]
   /** Backend-facing account URL; differs from publicUrl only locally. */
   service: BlobServiceClient
 }
@@ -51,6 +57,9 @@ export function getBlobStorage(): BlobStorage {
   storage = {
     credential,
     publicUrl,
+    accountUrls: [
+      ...new Set([publicUrl, getBlobStorageAccountUrl(accountName)]),
+    ],
     service: new BlobServiceClient(internalUrl, credential),
   }
   return storage

@@ -9,6 +9,9 @@ import {
   type TextNormalizer,
 } from './plan.js'
 
+/** Largest library the duplicate check reads; also bounds a library after import. */
+export const MAX_IMPORT_LIBRARY_ELEMENTS = 50_000
+
 const selection = {
   id: true,
   name: true,
@@ -50,9 +53,11 @@ async function mediaNormalizer(
   const links = copies
     .map((copy) => [copy.href, copy.originalId!] as const)
     .sort(([a], [b]) => b.length - a.length)
+  // Most texts contain no image link, so skip the rewrite unless one occurs.
   return (text) =>
     links.reduce(
-      (result, [href, source]) => result.replaceAll(href, source),
+      (result, [href, source]) =>
+        result.includes(href) ? result.replaceAll(href, source) : result,
       text
     )
 }
@@ -60,7 +65,8 @@ async function mediaNormalizer(
 /** Snapshot hashes avoid writing existing teaching content or user profiles to disk. */
 export async function readImportState(
   tx: Prisma.TransactionClient,
-  ownerId: string
+  ownerId: string,
+  { identities = true }: { identities?: boolean } = {}
 ) {
   const owner = await tx.user.findUnique({
     where: { id: ownerId },
@@ -68,7 +74,8 @@ export async function readImportState(
   })
   if (!owner || !['USER', 'ADMIN'].includes(owner.role))
     throw new ElementImportError(
-      'Target owner must be an existing lecturer or administrator'
+      'Target owner must be an existing lecturer or administrator',
+      'INVALID_OWNER'
     )
   const normalize = await mediaNormalizer(tx, ownerId)
   const existing: ExistingIdentity[] = []
@@ -97,21 +104,23 @@ export async function readImportState(
       select: selection,
     })
     for (const element of batch) {
-      existing.push({
-        id: element.id,
-        identity: elementIdentity(
-          {
-            ...element,
-            type: element.type as WorkbookElement['type'],
-          },
-          normalize
-        ),
-      })
+      if (identities)
+        existing.push({
+          id: element.id,
+          identity: elementIdentity(
+            {
+              ...element,
+              type: element.type as WorkbookElement['type'],
+            },
+            normalize
+          ),
+        })
       rows.push({ id: element.id, hash: digest(element) })
     }
-    if (rows.length > 50_000)
+    if (rows.length > MAX_IMPORT_LIBRARY_ELEMENTS)
       throw new ElementImportError(
-        'Target library exceeds the operator script limit'
+        'Target library exceeds the operator script limit',
+        'LIBRARY_TOO_LARGE'
       )
     if (batch.length < 1000) break
     cursor = batch.at(-1)!.id
@@ -140,10 +149,22 @@ export async function previewImport(
   return prisma.$transaction(
     async (tx) => {
       const snapshot = await readImportState(tx, ownerId)
-      return {
-        state: snapshot.state,
-        decisions: planImport(elements, snapshot.existing, snapshot.normalize),
-      }
+      const decisions = planImport(
+        elements,
+        snapshot.existing,
+        snapshot.normalize
+      )
+      // Reject here what the import would only discover after writing.
+      const creates = decisions.filter((d) => d.action === 'CREATE').length
+      if (
+        snapshot.state.elements.length + creates >
+        MAX_IMPORT_LIBRARY_ELEMENTS
+      )
+        throw new ElementImportError(
+          'Import would exceed the operator script library limit',
+          'LIBRARY_TOO_LARGE'
+        )
+      return { state: snapshot.state, decisions }
     },
     { isolationLevel: 'RepeatableRead', timeout: 120_000 }
   )
@@ -167,7 +188,8 @@ export async function executeImport(
         typeof expected === 'string' ? expected : digest(expected)
       if (digest({ state: before.state, decisions }) !== expectedDigest)
         throw new ElementImportError(
-          'Database changed since the dry run; use a fresh preview'
+          'Database changed since the dry run; use a fresh preview',
+          'STALE'
         )
       const created: {
         sheet: string
@@ -228,7 +250,8 @@ export async function executeImport(
           saved.permissions[0]?.permissionLevel !== 'OWNER'
         )
           throw new ElementImportError(
-            'Imported element verification failed; rolling back'
+            'Imported element verification failed; rolling back',
+            'VERIFICATION_FAILED'
           )
         created.push({
           sheet: element.sheet,
@@ -237,7 +260,8 @@ export async function executeImport(
           id: inserted.id,
         })
       }
-      const after = await readImportState(tx, ownerId)
+      // Only the state hashes are compared, so skip the duplicate identities.
+      const after = await readImportState(tx, ownerId, { identities: false })
       const afterRows = new Map(after.state.elements.map((e) => [e.id, e.hash]))
       const afterTags = new Map(after.state.tags.map((t) => [t.id, t.hash]))
       if (
@@ -246,7 +270,10 @@ export async function executeImport(
         after.state.elements.length !==
           before.state.elements.length + created.length
       )
-        throw new ElementImportError('Existing state changed; rolling back')
+        throw new ElementImportError(
+          'Existing state changed; rolling back',
+          'STALE'
+        )
       return {
         state: after.state,
         created,
