@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
@@ -55,10 +58,34 @@ async function chatCookie(page: Page, name: string) {
 async function expectChatbotReached(page: Page) {
   await expect(page).toHaveURL(new RegExp(CHATBOT_ID), { timeout: 20_000 })
 
+  const dataUseSubmit = page.getByTestId('chat-data-use-submit')
   const accept = page.getByTestId('chat-disclaimer-accept')
   const composer = page.getByTestId('chat-composer')
   await expect(async () => {
-    if (await accept.isVisible()) await accept.click()
+    // Chat answers on behalf of a persisted participant account, so an
+    // identity without a recorded disclosure meets the data-use notice before
+    // the chatbot disclaimer. Every guest persona and every synthetic account
+    // this spec creates starts in that state.
+    if (await dataUseSubmit.isVisible()) {
+      // The policy links render only on the client; wait for hydration before
+      // interacting with controls that are already present in the server HTML.
+      await expect(
+        page.locator('form a[href$="/privacy_policy"]')
+      ).toBeVisible()
+      await page.getByTestId('chat-data-use-analytics-false').check()
+      await page.getByTestId('chat-data-use-acknowledged').check()
+      await dataUseSubmit.click()
+    }
+    const disclaimerResponse = await page.request.get(
+      `${chatUrl()}/api/chatbots/${CHATBOT_ID}/disclaimer`
+    )
+    expect(disclaimerResponse.ok()).toBe(true)
+    const { status } = await disclaimerResponse.json()
+    if (status.required && !status.accepted) {
+      await expect(accept).toBeVisible()
+      await accept.click()
+      await expect(accept).toBeHidden()
+    }
     await expect(composer).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 30_000 })
 }
@@ -165,6 +192,451 @@ test.describe('LTI chatbot launch identity resolution', () => {
     expect(
       cookieTokenSubject(await chatCookie(page, 'participant_token'))
     ).not.toBe(guestAccount?.participantId)
+  })
+
+  test('onboarding can recover after a revision conflict and a failed reload', async ({
+    page,
+  }) => {
+    let submittedRevision: number | undefined
+    let attempts = 0
+    let rejectReload = false
+    let releaseDisclaimer: (() => void) | undefined
+    const disclaimerReady = new Promise<void>((resolve) => {
+      releaseDisclaimer = resolve
+    })
+    await page.route('**/api/chatbots/*/disclaimer', async (route) => {
+      if (route.request().method() === 'GET') await disclaimerReady
+      await route.continue()
+    })
+    await page.route('**/api/chatbots/*/data-use', async (route) => {
+      if (route.request().method() === 'POST') {
+        attempts += 1
+        submittedRevision = route.request().postDataJSON().expectedRevision
+        if (attempts === 1) {
+          rejectReload = true
+          await route.fulfill({
+            status: 409,
+            json: { error: 'PARTICIPANT_DATA_USE_STALE_REVISION' },
+          })
+          return
+        }
+      } else if (route.request().method() === 'GET' && rejectReload) {
+        rejectReload = false
+        await route.fulfill({ status: 503, json: {} })
+        return
+      }
+      await route.continue()
+    })
+
+    await launchChatbot(page, { sub: LTI_SUB_GUEST })
+    const submit = page.getByTestId('chat-data-use-submit')
+    const acknowledge = page.getByTestId('chat-data-use-acknowledged')
+    await expect(page.locator('form a[href$="/privacy_policy"]')).toBeVisible()
+    await page.getByTestId('chat-data-use-analytics-false').check()
+    await acknowledge.check()
+    await submit.click()
+    await expect(acknowledge).not.toBeChecked()
+    await expect(submit).toBeDisabled()
+    await acknowledge.check()
+    await expect(submit).toBeEnabled()
+    await submit.click()
+    await expect(submit).toBeHidden()
+    await expect(page.getByTestId('chat-composer')).toBeHidden()
+    releaseDisclaimer?.()
+    await expect(page.getByTestId('chat-disclaimer-accept')).toBeVisible()
+    expect(attempts).toBe(2)
+    expect(submittedRevision).toBe(0)
+
+    const prisma = await getPrisma()
+    const guest = await prisma.participantAccount.findFirstOrThrow({
+      where: { ssoId: { startsWith: 'chat-guest:' } },
+      include: { participant: true },
+    })
+    expect(guest.participant.dataUseRevision).toBe(1)
+    expect(guest.participant.learningAnalyticsConsent).toBe(false)
+    expect(guest.participant.dataUseAcknowledgedAt).not.toBeNull()
+  })
+
+  for (const identity of ['registered', 'guest'] as const) {
+    test(`${identity} renewal preserves refusals and settings change each purpose independently`, async ({
+      page,
+      browser,
+    }) => {
+      test.setTimeout(process.env.KLICKER_DPO_GALLERY_DIR ? 240_000 : 120_000)
+      const prisma = await getPrisma()
+      let participantId: string
+      await setLtiProbeCookie(page)
+      if (identity === 'registered') {
+        const participant = await prisma.participant.create({
+          data: {
+            username: 'lti-e2e-data-use',
+            password: FIXTURE_PASSWORD,
+            accounts: { create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' } },
+          },
+        })
+        participantId = participant.id
+        await launchChatbot(page, { sub: LTI_SUB_LINKED })
+      } else {
+        await launchChatbot(page, { sub: LTI_SUB_GUEST })
+        const guest = await prisma.participantAccount.findFirstOrThrow({
+          where: { ssoId: { startsWith: 'chat-guest:' } },
+          select: { participantId: true },
+        })
+        participantId = guest.participantId
+      }
+
+      await expect(
+        page.locator('form a[href$="/privacy_policy"]')
+      ).toBeVisible()
+      const choiceAt = new Date('2026-09-01T12:00:00Z')
+      await prisma.participant.update({
+        where: { id: participantId },
+        data: {
+          researchConsent: false,
+          researchConsentChoiceAt: choiceAt,
+          researchConsentDisclosureVersion:
+            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          learningAnalyticsConsent: false,
+          learningAnalyticsChoiceAt: choiceAt,
+          learningAnalyticsDisclosureVersion:
+            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          dataUseAcknowledgedAt: choiceAt,
+          dataUseAcknowledgedVersion: 'previous-disclosure',
+          dataUseRevision: 1,
+        },
+      })
+      await page.reload()
+      const submit = page.getByTestId('chat-data-use-submit')
+      const researchToggle = page.getByTestId('chat-data-use-research-toggle')
+      const analyticsToggle = page.getByTestId('chat-data-use-analytics-toggle')
+      await expect(
+        page.locator('form a[href$="/privacy_policy"]')
+      ).toBeVisible()
+      await expect(researchToggle).toHaveAttribute('aria-expanded', 'false')
+      await expect(
+        page.getByTestId('chat-data-use-analytics-false')
+      ).toBeChecked()
+      await expect(
+        page.getByTestId('chat-data-use-acknowledged')
+      ).not.toBeChecked()
+      await expect(submit).toBeDisabled()
+      const denied = await page.request.get(
+        `${chatUrl()}/api/chatbots/${CHATBOT_ID}/threads`
+      )
+      expect(denied.status()).toBe(403)
+      expect((await denied.json()).error).toBe(
+        'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED'
+      )
+      const staleCompletion = await page.request.post(
+        `${chatUrl()}/api/chatbots/${CHATBOT_ID}/data-use`,
+        {
+          data: {
+            expectedRevision: 1,
+            disclosureVersion: 'previous-disclosure',
+            researchConsent: true,
+            learningAnalyticsConsent: true,
+            acknowledged: true,
+          },
+        }
+      )
+      expect(staleCompletion.status()).toBe(400)
+      expect(
+        await prisma.participant.findUniqueOrThrow({
+          where: { id: participantId },
+          select: { dataUseRevision: true },
+        })
+      ).toEqual({ dataUseRevision: 1 })
+
+      const galleryDir = process.env.KLICKER_DPO_GALLERY_DIR
+      if (galleryDir) {
+        await mkdir(galleryDir, { recursive: true })
+        for (const locale of ['en', 'de']) {
+          await page.context().addCookies([
+            {
+              name: 'NEXT_LOCALE',
+              value: locale,
+              url: new URL(chatUrl()).origin,
+            },
+          ])
+          await page.reload()
+          await expect(page.locator('h1 + div a')).toBeVisible()
+          await expect(
+            page
+              .getByTestId('chat-data-use-acknowledged')
+              .locator('..')
+              .locator('a')
+              .first()
+          ).toBeVisible()
+          await expect(page.locator('html')).toHaveAttribute('lang', locale)
+          for (const [width, height] of [
+            [1440, 1200],
+            [390, 844],
+          ]) {
+            await page.setViewportSize({ width, height })
+            if ((await researchToggle.getAttribute('aria-expanded')) === 'true')
+              await researchToggle.click()
+            await page.screenshot({
+              animations: 'disabled',
+              path: join(
+                galleryDir,
+                `${identity}-${locale}-${width}-default.png`
+              ),
+              fullPage: true,
+            })
+            await researchToggle.click()
+            await expect(analyticsToggle).toHaveAttribute(
+              'aria-expanded',
+              'true'
+            )
+            await page.screenshot({
+              animations: 'disabled',
+              path: join(
+                galleryDir,
+                `${identity}-${locale}-${width}-expanded.png`
+              ),
+              fullPage: true,
+            })
+          }
+        }
+      }
+      await page.setViewportSize({ width: 1440, height: 1000 })
+      if ((await researchToggle.getAttribute('aria-expanded')) !== 'true')
+        await researchToggle.click()
+      await expect(
+        page.getByTestId('chat-data-use-research-false')
+      ).toBeChecked()
+      await page.getByTestId('chat-data-use-acknowledged').check()
+      await submit.click()
+      await expectChatbotReached(page)
+      const renewed = await prisma.participant.findUniqueOrThrow({
+        where: { id: participantId },
+      })
+      expect(renewed.researchConsent).toBe(false)
+      expect(renewed.learningAnalyticsConsent).toBe(false)
+      expect(renewed.researchConsentChoiceAt).toEqual(choiceAt)
+      expect(renewed.learningAnalyticsChoiceAt).toEqual(choiceAt)
+      expect(renewed.dataUseAcknowledgedVersion).toBe(
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+      )
+      const staleSettings = await page.request.patch(
+        `${chatUrl()}/api/chatbots/${CHATBOT_ID}/data-use`,
+        {
+          data: {
+            purpose: 'analytics',
+            consent: true,
+            expectedRevision: renewed.dataUseRevision,
+            disclosureVersion: 'previous-disclosure',
+          },
+        }
+      )
+      expect(staleSettings.status()).toBe(400)
+
+      await page.getByTestId('chat-data-use-settings-toggle').click()
+      await expect(
+        page.getByTestId('chat-data-use-analytics-false')
+      ).toBeChecked()
+      await page.getByTestId('chat-data-use-research-toggle').click()
+      await expect(
+        page.getByTestId('chat-data-use-research-false')
+      ).toBeChecked()
+      if (galleryDir) {
+        for (const locale of ['en', 'de']) {
+          await page.setViewportSize({ width: 1440, height: 1000 })
+          await page.context().addCookies([
+            {
+              name: 'NEXT_LOCALE',
+              value: locale,
+              url: new URL(chatUrl()).origin,
+            },
+          ])
+          const settingsResearch = page.getByTestId(
+            'chat-data-use-research-toggle'
+          )
+          for (const [width, height] of [
+            [1440, 1000],
+            [390, 844],
+          ]) {
+            await page.setViewportSize({ width, height })
+            await page.reload()
+            await expect(page.locator('html')).toHaveAttribute('lang', locale)
+            const settingsToggle = page.getByTestId(
+              'chat-data-use-settings-toggle'
+            )
+            if (width < 768)
+              await page
+                .locator('[data-cy="chat-header"] button')
+                .first()
+                .click()
+            if (identity === 'guest') {
+              const guestAccount = page.getByTestId('chat-guest-account')
+              await guestAccount.hover()
+              await guestAccount.focus()
+              await expect(guestAccount).toHaveAttribute(
+                'aria-describedby',
+                /.+/
+              )
+              const hintId = await guestAccount.getAttribute('aria-describedby')
+              await expect(page.locator(`[id="${hintId}"]`)).toBeVisible()
+              await page.screenshot({
+                animations: 'disabled',
+                path: join(
+                  galleryDir,
+                  `guest-${locale}-${width}-account-hint.png`
+                ),
+                fullPage: true,
+              })
+            }
+            await settingsToggle.click()
+            await expect(settingsResearch).toHaveAttribute(
+              'aria-expanded',
+              'false'
+            )
+            await page.screenshot({
+              animations: 'disabled',
+              path: join(
+                galleryDir,
+                `${identity}-${locale}-${width}-settings-default.png`
+              ),
+              fullPage: true,
+            })
+            await settingsResearch.click()
+            await page.screenshot({
+              animations: 'disabled',
+              path: join(
+                galleryDir,
+                `${identity}-${locale}-${width}-settings-expanded.png`
+              ),
+              fullPage: true,
+            })
+          }
+        }
+        await page.setViewportSize({ width: 1440, height: 1000 })
+        await page.reload()
+        await page.getByTestId('chat-data-use-settings-toggle').click()
+        await page.getByTestId('chat-data-use-research-toggle').click()
+      }
+      await page.getByTestId('chat-data-use-analytics-true').click()
+      await expect(
+        page.getByTestId('chat-data-use-analytics-true')
+      ).toBeChecked()
+      await expect
+        .poll(async () => {
+          const participant = await prisma.participant.findUniqueOrThrow({
+            where: { id: participantId },
+          })
+          return [
+            participant.researchConsent,
+            participant.learningAnalyticsConsent,
+          ]
+        })
+        .toEqual([false, true])
+      await expect(
+        page.getByTestId('chat-data-use-research-true')
+      ).toBeEnabled()
+      await page.getByTestId('chat-data-use-research-true').click()
+      await expect(
+        page.getByTestId('chat-data-use-research-true')
+      ).toBeChecked()
+      await expect
+        .poll(async () => {
+          const participant = await prisma.participant.findUniqueOrThrow({
+            where: { id: participantId },
+          })
+          return [
+            participant.researchConsent,
+            participant.learningAnalyticsConsent,
+          ]
+        })
+        .toEqual([true, true])
+
+      const fresh = await browser.newContext({
+        ignoreHTTPSErrors: true,
+        storageState: await page.context().storageState(),
+      })
+      try {
+        const returning = await fresh.newPage()
+        await returning.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`)
+        await expect(returning.getByTestId('chat-composer')).toBeVisible()
+        await expect(returning.getByTestId('chat-data-use-submit')).toHaveCount(
+          0
+        )
+        await returning.getByTestId('chat-data-use-settings-toggle').click()
+        await expect(
+          returning.getByTestId('chat-data-use-analytics-true')
+        ).toBeChecked()
+        await returning.getByTestId('chat-data-use-research-toggle').click()
+        await expect(
+          returning.getByTestId('chat-data-use-research-true')
+        ).toBeChecked()
+        await returning.getByTestId('chat-data-use-analytics-false').click()
+        await expect(
+          returning.getByTestId('chat-data-use-analytics-false')
+        ).toBeChecked()
+        await expect
+          .poll(async () => {
+            const participant = await prisma.participant.findUniqueOrThrow({
+              where: { id: participantId },
+            })
+            return [
+              participant.researchConsent,
+              participant.learningAnalyticsConsent,
+            ]
+          })
+          .toEqual([true, false])
+        if (galleryDir) {
+          await returning.setViewportSize({ width: 390, height: 844 })
+          await returning.screenshot({
+            animations: 'disabled',
+            path: join(galleryDir, `${identity}-de-390-embedded-settings.png`),
+            fullPage: true,
+          })
+        }
+      } finally {
+        await fresh.close()
+      }
+    })
+  }
+
+  test('cancelling guest onboarding leaves choices and chat content untouched', async ({
+    page,
+  }) => {
+    await launchChatbot(page, { sub: LTI_SUB_GUEST })
+    await expect(page.locator('form a[href$="/privacy_policy"]')).toBeVisible()
+    const prisma = await getPrisma()
+    const guest = await prisma.participantAccount.findFirstOrThrow({
+      where: { ssoId: { startsWith: 'chat-guest:' } },
+      include: { participant: true },
+    })
+    let modelRequests = 0
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        /\/chat$/.test(new URL(request.url()).pathname)
+      )
+        modelRequests += 1
+    })
+    await page.route(`${siblingAppOrigin('pwa')}/**`, (route) =>
+      route.fulfill({
+        status: 200,
+        body: '<main>Application entry</main>',
+        contentType: 'text/html',
+      })
+    )
+    await page.getByTestId('chat-data-use-cancel').click()
+    await expect(page).toHaveURL(`${siblingAppOrigin('pwa')}/`)
+    const unchanged = await prisma.participant.findUniqueOrThrow({
+      where: { id: guest.participantId },
+    })
+    expect(unchanged.dataUseRevision).toBe(guest.participant.dataUseRevision)
+    expect(unchanged.dataUseAcknowledgedAt).toBeNull()
+    expect(unchanged.researchConsentChoiceAt).toBeNull()
+    expect(unchanged.learningAnalyticsChoiceAt).toBeNull()
+    expect(
+      await prisma.chatThread.count({
+        where: { participantId: guest.participantId },
+      })
+    ).toBe(0)
+    expect(modelRequests).toBe(0)
   })
 
   test('a verified LTI-linked account signs in without a session and gets opt-out participation', async ({
