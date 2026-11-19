@@ -4,6 +4,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { StringDecoder } from 'node:string_decoder'
 import type {
+  ElementGenerationSlotSpecification,
   GeneratedQuestionCitation,
   GeneratedQuestionWithProvenance,
   KBGraphSourceSnapshot,
@@ -547,6 +548,53 @@ const resultSchema = z
       .array(slotFailureSchema)
       .max(MAX_SLOT_FAILURE_COUNT)
       .optional(),
+    slot_specifications: artifactRefSchema.optional(),
+  })
+  .strict()
+
+const slotSpecificationSchema = z
+  .object({
+    question_id: canonicalIdentifier(200),
+    design_slot_id: canonicalIdentifier(200),
+    module_id: z.string(),
+    module_name: z.string(),
+    objective_id: z.string().nullable(),
+    objective_source: z.string().nullable(),
+    learning_objective: z.string(),
+    topic_targets: z.array(z.unknown()),
+    item_format: z.string(),
+    bloom_level: z.string(),
+    content_type: z.string(),
+    difficulty_scale: z.number(),
+    difficulty_mechanism: z.string().nullable(),
+    planned_true_count: z.number().nullable(),
+    permitted_aids: z.unknown(),
+    evidence_target: z.string().nullable(),
+    focus_topic: z.string().nullable().optional(),
+    points: z.number().nullable().optional(),
+    question_kind: z.string(),
+    difficulty_label: z.string(),
+    graph_resolution: z.record(z.string(), z.unknown()),
+    evidence: z.array(z.record(z.string(), z.unknown())).max(500),
+    assertions: z
+      .array(
+        z
+          .object({
+            id: canonicalIdentifier(200),
+            version: z.union([z.number(), z.string()]),
+            statement: z.string().max(20_000).nullable(),
+            rationale: z.string().max(20_000).nullable(),
+          })
+          .strict()
+      )
+      .max(200),
+  })
+  .strict()
+
+const slotSpecificationsSchema = z
+  .object({
+    schema_version: z.literal(1),
+    slots: z.array(slotSpecificationSchema).max(20),
   })
   .strict()
 
@@ -633,7 +681,10 @@ const finalBankSchema = z
       .passthrough(),
     questions: z.array(finalQuestionSchema).min(1).max(20),
   })
-  .strict()
+  // Newer workers add top-level report sections such as review_flags. Only
+  // metadata and questions are read, so unknown sections are dropped rather
+  // than failing the build.
+  .strip()
 
 export type QuestionGenerationResultManifest = {
   schemaVersion: 1 | 2
@@ -650,6 +701,8 @@ export type QuestionGenerationResultManifest = {
   reviewRequiredQuestions: number
   reviewRequiredQuestionIds: string[]
   slotFailures: QuestionGenerationSlotFailure[]
+  // Absent when the worker predates slot specifications.
+  slotSpecifications: QuestionGenerationArtifactRef | null
   legacyCompleted: boolean
   rejectedAt: 'design_review' | 'plan_review' | null
   reviewedBy: string | null
@@ -666,6 +719,8 @@ export type QuestionGenerationGraphLineage = {
 export type QuestionGenerationGraphEvidence = QuestionGenerationGraphLineage & {
   graphArtifact: QuestionGenerationArtifactRef
   chunksArtifact: QuestionGenerationArtifactRef
+  domainPolicyArtifact: QuestionGenerationArtifactRef
+  generationRecipeArtifact: QuestionGenerationArtifactRef
 }
 
 export type QuestionGenerationProvenanceAuthority = {
@@ -1709,6 +1764,8 @@ export function parseQuestionGenerationGraphManifest(
     generationRecipeDigest: manifest.generation_recipe_digest,
     graphArtifact: toArtifactRef(graphArtifacts[0]!),
     chunksArtifact: toArtifactRef(chunkArtifacts[0]!),
+    domainPolicyArtifact: toArtifactRef(manifest.policy),
+    generationRecipeArtifact: toArtifactRef(manifest.recipe),
   }
 }
 
@@ -2072,6 +2129,18 @@ export function parseQuestionGenerationResult(
     // reports the failed status instead, so a partial result without passing
     // questions or without reasons is inconsistent.
     if (
+      !currentSuccessMetadata ||
+      result.requested_questions !== expected.questionCount ||
+      result.generated_questions === 0 ||
+      result.generated_questions >= expected.questionCount ||
+      result.generated_questions + slotFailures.length !==
+        expected.questionCount ||
+      new Set(slotFailures.map((failure) => failure.slotId)).size !==
+        slotFailures.length ||
+      (expected.requiresCompleteProvenance === true &&
+        (result.schema_version !== 2 || questionProvenanceIndex === null)) ||
+      (result.schema_version === 2 && questionProvenanceIndex === null) ||
+      (result.schema_version === 1 && questionProvenanceIndex !== null) ||
       result.final_questions === null ||
       slotFailures.length === 0 ||
       result.rejected_at !== null ||
@@ -2153,10 +2222,33 @@ export function parseQuestionGenerationResult(
     reviewRequiredQuestions,
     reviewRequiredQuestionIds,
     slotFailures,
+    slotSpecifications: result.slot_specifications
+      ? toArtifactRef(result.slot_specifications)
+      : null,
     legacyCompleted,
     rejectedAt: result.rejected_at,
     reviewedBy: result.reviewed_by,
   }
+}
+
+// A slot specification must belong to exactly one slot of the verified bank;
+// a build with a partial bank carries specifications for its delivered slots.
+export function parseQuestionGenerationSlotSpecifications(
+  bytes: Buffer,
+  expectedSlotIds: string[]
+): ElementGenerationSlotSpecification[] {
+  const parsed = slotSpecificationsSchema.safeParse(parseArtifactJson(bytes))
+  if (!parsed.success) {
+    return artifactError('Slot specifications artifact is unsupported')
+  }
+  const slotIds = parsed.data.slots.map((slot) => slot.question_id)
+  if (
+    new Set(slotIds).size !== slotIds.length ||
+    slotIds.some((slotId) => !expectedSlotIds.includes(slotId))
+  ) {
+    return artifactError('Slot specifications do not match the question bank')
+  }
+  return parsed.data.slots as ElementGenerationSlotSpecification[]
 }
 
 export function parseQuestionGenerationFinalBank(
@@ -2166,9 +2258,13 @@ export function parseQuestionGenerationFinalBank(
     questionCount: number
     sourceSnapshot: KBGraphSourceSnapshot
     expectedQuestionIds: string[]
+    expectedDesignSlotIds?: string[]
     result: QuestionGenerationResultManifest
     lineage?: QuestionGenerationGraphLineage | null
     provenanceAuthority?: QuestionGenerationProvenanceAuthority | null
+    // A revision must state the difficulty it targeted instead of inheriting
+    // the generated one.
+    requireTargetDifficulty?: boolean
   }
 ): GeneratedQuestionWithProvenance[] {
   const parsed = finalBankSchema.safeParse(parseArtifactJson(bytes))
@@ -2176,6 +2272,14 @@ export function parseQuestionGenerationFinalBank(
     return artifactError('Final question bank is unsupported')
   }
   const bank = parsed.data
+  if (
+    expected.requireTargetDifficulty &&
+    bank.questions.some(
+      (question) => question.target_difficulty_scale === undefined
+    )
+  ) {
+    return artifactError('Revised question has no target difficulty')
+  }
   const expectedItemType = expected.itemType ?? 'SC'
   // A partial result delivers only the slots the worker could ground, so its
   // bank is a non-empty subset of the Plan universe. A strict run still has to
@@ -2207,6 +2311,39 @@ export function parseQuestionGenerationFinalBank(
         expected.expectedQuestionIds.length !== expected.questionCount)
   ) {
     return artifactError('Final question bank does not match the build')
+  }
+
+  if (partialBank) {
+    const approvedSlotIds = expected.expectedDesignSlotIds ?? []
+    const retainedSlotIds = bank.questions.map((question) =>
+      typeof question.design_slot_id === 'string'
+        ? question.design_slot_id.trim()
+        : question.design_slot_id
+    )
+    const failedSlotIds = expected.result.slotFailures.map(
+      (failure) => failure.slotId
+    )
+    const retainedSlots = new Set(retainedSlotIds)
+    const failedSlots = new Set(failedSlotIds)
+    if (
+      approvedSlotIds.length !== expected.questionCount ||
+      new Set(approvedSlotIds).size !== approvedSlotIds.length ||
+      bank.questions.length !== expected.result.generatedQuestions ||
+      retainedSlots.size !== retainedSlotIds.length ||
+      retainedSlotIds.some(
+        (slotId) =>
+          typeof slotId !== 'string' || !approvedSlotIds.includes(slotId)
+      ) ||
+      failedSlots.size !== failedSlotIds.length ||
+      failedSlotIds.some((slotId) => !approvedSlotIds.includes(slotId)) ||
+      approvedSlotIds.some(
+        (slotId) => retainedSlots.has(slotId) === failedSlots.has(slotId)
+      )
+    ) {
+      return artifactError(
+        'Partial question bank does not partition the approved design slots'
+      )
+    }
   }
 
   const reviewRequiredQuestionIds = bank.questions.flatMap((question) => {

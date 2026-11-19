@@ -111,6 +111,7 @@ export type ExternalKBGraphClient = {
       options?: ExternalKBGraphRequestOptions
     ) => Promise<{
       run: { output: unknown }
+      tasks?: Array<{ displayName: string; actionId?: string; output: unknown }>
     }>
     get_status: (
       runId: string,
@@ -372,6 +373,25 @@ export function getExternalKBGraphClient(
   return externalKBGraphClient!
 }
 
+// Tasks of the external course-kg-ingestion workflow that return the Klicker
+// terminal result: the final summary on success, the failure handler otherwise.
+// Hatchet registers the workflow's on-failure task under its name plus an
+// "-on-failure" suffix.
+const KB_GRAPH_TERMINAL_RESULT_TASKS = [
+  'summarize-kg-run',
+  'emit-klicker-terminal-result',
+  'emit-klicker-terminal-result-on-failure',
+]
+
+function hasResultOutput(output: unknown): boolean {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    !Array.isArray(output) &&
+    Object.keys(output).length > 0
+  )
+}
+
 export async function getKBGraphTerminalResult(
   runId: string,
   clientOrOptions?: ExternalKBGraphClient | ExternalKBGraphRequestOptions
@@ -385,7 +405,21 @@ export async function getKBGraphTerminalResult(
   const details = requestOptions
     ? await client.runs.get(runId, requestOptions)
     : await client.runs.get(runId)
-  return details.run.output
+  // For a multi-task workflow, Hatchet's run-level output can hold any task's
+  // output, so read the task that emits the versioned terminal result. A failed
+  // run also lists the cancelled summary task with an empty output, so skip
+  // terminal tasks that produced nothing.
+  const terminalTask = details.tasks?.find(
+    (task) =>
+      hasResultOutput(task.output) &&
+      KB_GRAPH_TERMINAL_RESULT_TASKS.some(
+        (name) =>
+          task.displayName === name ||
+          task.actionId === name ||
+          task.actionId?.endsWith(`:${name}`)
+      )
+  )
+  return terminalTask ? terminalTask.output : details.run.output
 }
 
 export function getKBGraphSourceUrl(

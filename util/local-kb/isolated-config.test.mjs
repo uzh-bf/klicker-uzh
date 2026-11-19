@@ -117,6 +117,33 @@ test('managed application configuration shares only the isolated provider networ
     ai.compose.services.litellm.environment.UPSTREAM_OPENAI_BASE_URL,
     null
   )
+  const guarded = resolveIsolatedConfig({
+    ...makeInput('a'),
+    aiUpstream: {
+      kind: 'guarded',
+      port: 18020,
+      chatModels: [{ id: 'synthetic' }],
+    },
+  })
+  const guardedConfiguration = renderManagedConfiguration(guarded, source)
+  const appEnvironment = guardedConfiguration.compose.services.app.environment
+  assert.equal(appEnvironment.OPENAI_API_KEY, null)
+  assert.equal(
+    appEnvironment.OPENAI_BASE_URL,
+    appEnvironment.KLICKER_EVAL_GUARD_ORIGIN + '/v1'
+  )
+  assert.ok(
+    appEnvironment.KLICKER_EVAL_GUARD_ORIGIN.endsWith('.localhost:18020')
+  )
+  assert.deepEqual(
+    JSON.parse(appEnvironment.CHAT_MODEL_REGISTRY_JSON),
+    guarded.aiUpstream.chatModels
+  )
+  assert.equal(
+    guardedConfiguration.compose.services.litellm.environment
+      .UPSTREAM_OPENAI_API_KEY,
+    null
+  )
   delete ai.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY
   delete ai.compose.services.litellm.environment.UPSTREAM_OPENAI_BASE_URL
   assert.deepEqual(ai, result)
@@ -218,6 +245,7 @@ test('resolves two independent stacks with complete provider and state ownership
   }
   assert.deepEqual(first.dependencyGraph.nodes.documentProcessing.dependsOn, [
     'docProcessingBacking',
+    'ingestionBacking',
   ])
   assert.deepEqual(first.dependencyGraph.nodes.ingestionApi.dependsOn, [
     'ingestionBacking',
@@ -370,6 +398,83 @@ test('rejects altered dependency wiring in a persisted configuration', () => {
     validateIsolatedConfig(resolveIsolatedConfig(makeInput('a'))),
     true
   )
+})
+
+test('accepts local immutable workload IDs and rejects mutable image tags', () => {
+  const input = makeInput('a')
+  input.images = {
+    api: `sha256:${'a'.repeat(64)}`,
+    worker: `sha256:${'b'.repeat(64)}`,
+  }
+  input.images.minio = `sha256:${'c'.repeat(64)}`
+  const config = resolveIsolatedConfig(input)
+  assert.deepEqual(config.bindings.images, input.images)
+  assert.equal(validateIsolatedConfig(config), true)
+  const commands = providerCommands(config)
+  assert.ok(
+    commands.providers.ingestion.lifecycle.setup.args.includes('--minio-image')
+  )
+  assert.ok(
+    !commands.providers.ingestion.lifecycle.start.args.includes('--minio-image')
+  )
+  for (const image of Object.values(input.images)) {
+    assert.ok(commands.providers.ingestion.lifecycle.setup.args.includes(image))
+  }
+  for (const image of [
+    'example.invalid/api:latest',
+    'sha256:abc',
+    'sha256:' + 'A'.repeat(64),
+  ]) {
+    assert.throws(() =>
+      resolveIsolatedConfig({
+        ...input,
+        images: { ...input.images, api: image },
+      })
+    )
+  }
+})
+
+test('guarded upstream binds a distinct local port and bounded retrieval commands', () => {
+  const input = {
+    ...makeInput('a'),
+    aiUpstream: {
+      kind: 'guarded',
+      port: 18020,
+      chatModels: [{ id: 'synthetic' }],
+    },
+  }
+  const config = resolveIsolatedConfig(input)
+  input.aiUpstream.port = 18021
+  assert.equal(config.aiUpstream.port, 18020)
+  assert.equal(validateIsolatedConfig(config), true)
+  const commands = providerCommands(config)
+  for (const command of Object.values(commands.providers.retrieval.lifecycle)) {
+    for (const name of [
+      'RETRIEVAL_MAX_RETRIES',
+      'DOC_QUERY_RESPONSE_MODE',
+      'RERANKER_TYPE',
+      'RETRIEVAL_QUERY_EXPANSION_ENABLED',
+    ]) {
+      assert.ok(
+        command.args.includes(`${name}=KLICKER_LOCAL_RETRIEVAL_${name}`)
+      )
+    }
+  }
+  for (const upstream of [
+    { kind: 'guarded', port: 18020, chatModels: undefined },
+    { kind: 'guarded', port: 18001 },
+    { kind: 'guarded', port: 80 },
+    { kind: 'guarded', port: '18020' },
+    { kind: 'guarded', port: 18020, host: 'remote.example' },
+    { kind: 'other', port: 18020 },
+  ]) {
+    assert.throws(() =>
+      resolveIsolatedConfig({
+        ...input,
+        aiUpstream: { chatModels: input.aiUpstream.chatModels, ...upstream },
+      })
+    )
+  }
 })
 
 test('rejects a runtime checkout equal to or inside a retained source', () => {

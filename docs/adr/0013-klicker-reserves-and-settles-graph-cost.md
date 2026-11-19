@@ -45,3 +45,8 @@ attempt. A claim is released only before provider contact or after its recovery
 grace expires and an exact provider lookup proves that no matching run exists.
 Review and publication events are state transitions on the same generation build
 and do not create additional spend.
+
+A revision request for one generated question runs as a one-slot child build and
+spends one `ELEMENT_REVISION` dispatch. Its price is the question price divided
+by the requested count of the parent build, rounded up (`ceil(build price /
+requested count)`), so revising a slot never costs more than generating it.

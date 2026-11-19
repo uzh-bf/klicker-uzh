@@ -1,6 +1,7 @@
 {{- if .Values.assessment.frontendPWA.ingress.enabled -}}
 {{- $fullName := include "chart.fullname" . -}}
 {{- $svcPort := .Values.assessment.frontendPWA.service.port -}}
+{{- $assetsEnabled := .Values.assessment.frontendPWA.releaseAssets.enabled -}}
 {{- if and .Values.assessment.frontendPWA.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.assessment.frontendPWA.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.assessment.frontendPWA.ingress.annotations "kubernetes.io/ingress.class" .Values.assessment.frontendPWA.ingress.className}}
@@ -33,6 +34,15 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
+          {{- if $assetsEnabled }}
+          - path: /_next/static
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-frontend-assessment-assets
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
           {{- range .paths }}
           - path: {{ .path }}
             pathType: {{ .pathType }}

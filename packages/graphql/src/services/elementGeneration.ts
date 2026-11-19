@@ -38,11 +38,15 @@ import {
   startQuestionGeneration,
 } from './questionGeneration.js'
 import {
+  assertNoUnfinishedRevision,
+  rejectOtherRevisionChainDrafts,
   setGeneratedQuestionDecision,
   updateGeneratedQuestionDraft,
 } from './questionGenerationDrafts.js'
+import { elementTypeSupportsRevision } from './elementGenerationProvider.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import {
+  assertQuestionGenerationBasisCurrent,
   assertQuestionGenerationPreviewAccess,
   getQuestionGenerationSources,
 } from './questionGenerationGraph.js'
@@ -78,7 +82,7 @@ async function resolveRequestedQuestionFocusTopic(
   if (!normalized) {
     return null
   }
-  if (!(await isFeatureFlagEnabled(ctx, 'question-focus-topic'))) {
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
     throw questionGenerationServiceError(
       'CONFIGURATION_INVALID',
       'This deployment does not support question focus topics'
@@ -88,7 +92,10 @@ async function resolveRequestedQuestionFocusTopic(
 }
 
 export type StartElementGenerationInput = {
+  kbId: string
   graphBuildId: string
+  /** Preparation identity of `graphBuildId` as listed for `kbId`. */
+  basisFingerprint: string
   elementType: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
   language: string
   elementCount: number
@@ -185,19 +192,21 @@ export async function startElementGeneration(
     input.focusTopic,
     ctx
   )
-  if (input.elementType === 'FLASHCARD') {
-    if (
-      input.difficultyPreset != null ||
+  if (
+    input.elementType === 'FLASHCARD' &&
+    (input.difficultyPreset != null ||
       (input.sourceScopes?.length ?? 0) > 0 ||
       (input.bloomLevels?.length ?? 0) > 0 ||
       input.objectives?.some((objective) => objective.bloomLevel != null) ||
-      focusTopic !== null
-    ) {
-      throw questionGenerationServiceError(
-        'CONFIGURATION_INVALID',
-        'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
-      )
-    }
+      focusTopic !== null)
+  ) {
+    throw questionGenerationServiceError(
+      'CONFIGURATION_INVALID',
+      'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
+    )
+  }
+  await assertQuestionGenerationBasisCurrent(input, ctx)
+  if (input.elementType === 'FLASHCARD') {
     return startFlashcardGeneration(
       {
         graphBuildId: input.graphBuildId,
@@ -597,13 +606,15 @@ export async function keepGeneratedElementDraft(
     }
     const canKeep =
       draft.decision === DB.GeneratedElementDecision.OPEN ||
-      draft.decision === DB.GeneratedElementDecision.ACCEPTED
+      draft.decision === DB.GeneratedElementDecision.ACCEPTED ||
+      draft.decision === DB.GeneratedElementDecision.REVISION_REQUESTED
     if (!canKeep) {
       throw questionGenerationServiceError(
         'DRAFT_INVALID',
-        'Only an open or accepted unsaved generated element can be kept'
+        'Only an open, accepted or revision-requested unsaved generated element can be kept'
       )
     }
+    await assertNoUnfinishedRevision(transaction, draft.id)
     if (draft.revision !== input.expectedRevision) {
       throw questionGenerationServiceError(
         'CONCURRENT_MODIFICATION',
@@ -664,6 +675,7 @@ export async function keepGeneratedElementDraft(
         'Generated element draft was changed by another request'
       )
     }
+    await rejectOtherRevisionChainDrafts(transaction, draft.id)
     return transaction.generatedElementDraft.findUniqueOrThrow({
       where: { id: draft.id },
     })
@@ -810,13 +822,21 @@ export async function duplicateGeneratedElementDraft(
 
 export async function setGeneratedElementDecision(
   draftId: string,
-  decision: 'OPEN' | 'ACCEPTED' | 'REJECTED',
-  ctx: ContextWithUser
+  decision: 'OPEN' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED',
+  ctx: ContextWithUser,
+  note?: string | null
 ) {
   const elementType = await ownedDraftType(draftId, ctx)
-  return elementType === DB.ElementType.FLASHCARD
-    ? setGeneratedFlashcardDecision({ draftId, decision }, ctx)
-    : setGeneratedQuestionDecision({ draftId, decision }, ctx)
+  if (elementType === DB.ElementType.FLASHCARD) {
+    if (decision === 'REVISION_REQUESTED') {
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'Revision requests are not available yet'
+      )
+    }
+    return setGeneratedFlashcardDecision({ draftId, decision }, ctx)
+  }
+  return setGeneratedQuestionDecision({ draftId, decision, note }, ctx)
 }
 
 export async function getElementGenerationSources(ctx: ContextWithUser) {
@@ -825,10 +845,7 @@ export async function getElementGenerationSources(ctx: ContextWithUser) {
 
 export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
-  const focusTopicEnabled = await isFeatureFlagEnabled(
-    ctx,
-    'question-focus-topic'
-  )
+  const focusTopicEnabled = await isFeatureFlagEnabled(ctx, 'ai-beta')
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
     languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],
@@ -848,6 +865,9 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         // errorRetryable decides whether the retry is offered for one build.
         supportsRetry: true,
         supportsIncompletePublication: elementType === 'FLASHCARD',
+        // Revision needs the slot-revision worker; flashcards have none.
+        supportsIndividualRegeneration:
+          elementTypeSupportsRevision(elementType),
       })
     ),
     supportsIndividualRegeneration:

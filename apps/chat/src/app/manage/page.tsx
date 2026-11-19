@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ManageAssistant } from '../../components/manage-assistant'
-import { getManageAiCapability } from '../../lib/server/featureFlags'
+import { getManageAssistantCapability } from '../../lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '../../lib/server/manageAuth'
 
 interface ManageAssistantPageProps {
@@ -23,7 +23,7 @@ export default async function ManageAssistantPage({
     return <ManageLoginRequired embedded={embedded} />
   }
 
-  const capability = await getManageAiCapability(manageUser)
+  const capability = await getManageAssistantCapability(manageUser)
   if (capability === 'disabled') {
     notFound()
   }

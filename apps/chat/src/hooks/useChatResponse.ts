@@ -13,6 +13,10 @@ import {
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
+import {
+  hasMeaningfulAssistantContent,
+  withEmptyResponseError,
+} from '../lib/server/persistedAssistantContent'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import { useChatContextStore } from '../stores/chatContextStore'
@@ -410,6 +414,7 @@ export function useChatResponse(
         let currentTextContent = ''
         let currentReasoningContent = ''
         const toolCallsMap: Map<string, any> = new Map()
+        const completedToolCalls = new Set<string>()
         let finishReason: string | null = null
         let messageMetadata: {
           chatMode?: string | null
@@ -597,6 +602,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     const output = normalizeLiveToolOutput(jsonData.output)
+                    completedToolCalls.add(jsonData.toolCallId)
                     existingToolCall.result = output.result
                     existingToolCall.isError = output.isError
 
@@ -610,6 +616,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     const output = normalizeLiveToolOutput(undefined, true)
+                    completedToolCalls.add(jsonData.toolCallId)
                     existingToolCall.result = output.result
                     existingToolCall.isError = output.isError
 
@@ -757,7 +764,22 @@ export function useChatResponse(
             })
           }
 
-          if (finishReason === 'length') {
+          if (
+            hasFinishEvent &&
+            !hasStreamError &&
+            !hasMeaningfulAssistantContent(
+              orderedContentParts.filter(
+                (part) =>
+                  part.type !== 'tool-call' ||
+                  completedToolCalls.has(part.toolCallId)
+              )
+            )
+          ) {
+            hasStreamError = true
+            orderedContentParts.push(...withEmptyResponseError([]))
+          }
+
+          if (finishReason === 'length' && !hasStreamError) {
             orderedContentParts.push({
               type: 'text',
               text: `\n\n_(${t('chat.response.truncated')})_`,

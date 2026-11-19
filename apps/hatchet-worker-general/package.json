@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/hatchet-worker-general",
-  "version": "3.4.0-alpha.89",
+  "version": "3.4.0-alpha.96",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,6 +10,7 @@
   "dependencies": {
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.22.0",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
