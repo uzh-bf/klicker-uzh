@@ -1,0 +1,92 @@
+name: Northflank preview lifecycle
+
+# GitHub registers workflow_dispatch only from the repository default branch.
+# This file on an unmerged candidate branch does not activate dispatch and must
+# not be merged solely to activate it. When it reaches the default branch, the
+# operator-reviewed workflow SHA is the immutable controller; candidate source
+# remains a separate, non-executed checkout. This workflow plans only and has
+# no provider credentials or live-mutation path.
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_revision:
+        description: Full lowercase candidate commit SHA
+        required: true
+        type: string
+      state_json:
+        description: Values-free lifecycle state JSON
+        required: true
+        type: string
+      desired_json:
+        description: Values-free planner output JSON
+        required: true
+        type: string
+      event_json:
+        description: Current forge event JSON
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: northflank-preview-lifecycle-plan
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require default-branch controller
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: test "$GITHUB_REF" = "refs/heads/$DEFAULT_BRANCH"
+
+      - name: Check out trusted controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: controller
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate candidate revision syntax
+        env:
+          CANDIDATE_REVISION: ${{ inputs.candidate_revision }}
+        run: |
+          case "$CANDIDATE_REVISION" in
+            ''|*[!0-9a-f]*) exit 1 ;;
+          esac
+          test "${#CANDIDATE_REVISION}" -eq 40 || test "${#CANDIDATE_REVISION}" -eq 64
+
+      # This checkout supplies source identity only. No candidate script,
+      # action, workflow, hook, package script or container is executed.
+      - name: Check out candidate source only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.candidate_revision }}
+          path: candidate
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify immutable controller and candidate revisions
+        env:
+          CONTROLLER_REVISION: ${{ github.workflow_sha }}
+          CANDIDATE_REVISION: ${{ inputs.candidate_revision }}
+        run: |
+          test "$(git -C controller rev-parse HEAD)" = "$CONTROLLER_REVISION"
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_REVISION"
+          test -z "$(git -C controller status --porcelain)"
+
+      - name: Plan lifecycle without provider access
+        env:
+          STATE_JSON: ${{ inputs.state_json }}
+          DESIRED_JSON: ${{ inputs.desired_json }}
+          EVENT_JSON: ${{ inputs.event_json }}
+        run: |
+          node controller/util/northflank-preview-lifecycle.mjs plan \
+            --state "$STATE_JSON" \
+            --desired "$DESIRED_JSON" \
+            --event "$EVENT_JSON"

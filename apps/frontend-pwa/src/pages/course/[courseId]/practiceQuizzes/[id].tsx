@@ -47,6 +47,7 @@ import {
   type PracticeQuizProgressState,
   summarizePracticeQuizCompletion,
 } from '../../../../components/practiceQuiz/progress'
+import { previewCookieName } from '@klicker-uzh/util'
 
 function PracticeQuizPage({
   courseId,
@@ -476,7 +477,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // remove the lti-token, if it is defined
     try {
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, previewCookieName('lti-token'), {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })

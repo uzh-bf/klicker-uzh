@@ -1,6 +1,6 @@
-import { signJWT } from '@klicker-uzh/util'
+import { previewCookieName, signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
-// @ts-ignore
+// @ts-expect-error
 import Database from 'ltijs-sequelize'
 import { appendJwt, resolveLaunchTarget } from './launchTarget.js'
 
@@ -58,7 +58,7 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 }
 
 // LTI launch callback (token has been verified by ltijs beforehand)
-// @ts-ignore The type here is wrong, a Promise is accepted as per official docs
+// @ts-expect-error The type here is wrong, a Promise is accepted as per official docs
 Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
@@ -81,7 +81,7 @@ Provider.onConnect(async (token, req, res) => {
     }
   )
 
-  res.cookie('lti-token', jwt, {
+  res.cookie(previewCookieName('lti-token'), jwt, {
     maxAge: 5 * 60 * 1000,
     path: '/',
     secure: true,
@@ -99,7 +99,7 @@ Provider.onConnect(async (token, req, res) => {
     )
 
     // remove lti token to avoid issues caused by this cookie
-    res.clearCookie('lti-token', {
+    res.clearCookie(previewCookieName('lti-token'), {
       secure: true,
       sameSite: 'none',
       domain: process.env.COOKIE_DOMAIN as string,
