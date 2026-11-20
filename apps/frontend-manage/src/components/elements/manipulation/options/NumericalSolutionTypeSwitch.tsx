@@ -45,7 +45,7 @@ function NumericalSolutionTypeSwitch({
           onClick={() => helpers.setValue('exact')}
           className={{
             root: twMerge(
-              'rounded-l-none! h-8',
+              'rounded-none! h-8',
               solutionType === 'exact'
                 ? 'bg-primary-100 border-primary-100 hover:bg-primary-100 text-white hover:text-white'
                 : ''
@@ -54,6 +54,21 @@ function NumericalSolutionTypeSwitch({
           data={{ cy: 'set-solution-type-exact' }}
         >
           <Button.Label>{t('manage.elements.exactSolutions')}</Button.Label>
+        </Button>
+        <Button
+          disabled={disabled}
+          onClick={() => helpers.setValue('formula')}
+          className={{
+            root: twMerge(
+              'rounded-l-none! h-8',
+              solutionType === 'formula'
+                ? 'bg-primary-100 border-primary-100 hover:bg-primary-100 text-white hover:text-white'
+                : ''
+            ),
+          }}
+          data={{ cy: 'set-solution-type-formula' }}
+        >
+          <Button.Label>{t('manage.elements.solutionFormula')}</Button.Label>
         </Button>
       </div>
     </div>

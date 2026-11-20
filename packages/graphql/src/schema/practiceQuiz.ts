@@ -24,6 +24,7 @@ import type {
   EscapeRoomProgress as IEscapeRoomProgress,
   EscapeRoomProjector as IEscapeRoomProjector,
   EscapeRoomProjectorRow as IEscapeRoomProjectorRow,
+  EscapeRoomStageMistakeCount as IEscapeRoomStageMistakeCount,
   EscapeRoomStageProgress as IEscapeRoomStageProgress,
 } from '../services/escapeRooms.js'
 import {
@@ -471,6 +472,16 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
   }
 )
 
+export const EscapeRoomStageMistakeCount = builder
+  .objectRef<IEscapeRoomStageMistakeCount>('EscapeRoomStageMistakeCount')
+  .implement({
+    fields: (t) => ({
+      key: t.exposeString('key'),
+      label: t.exposeString('label'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
 export const EscapeRoomStageProgressRef =
   builder.objectRef<IEscapeRoomStageProgress>('EscapeRoomStageProgress')
 export const EscapeRoomStageProgress = EscapeRoomStageProgressRef.implement({
@@ -487,6 +498,7 @@ export const EscapeRoomStageProgress = EscapeRoomStageProgressRef.implement({
     hintsUsed: t.exposeInt('hintsUsed'),
     bonusCorrect: t.exposeInt('bonusCorrect'),
     bonusWrong: t.exposeInt('bonusWrong'),
+    mistakes: t.expose('mistakes', { type: [EscapeRoomStageMistakeCount] }),
     debrief: t.exposeString('debrief', { nullable: true }),
   }),
 })

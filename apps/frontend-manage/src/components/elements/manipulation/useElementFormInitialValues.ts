@@ -97,7 +97,11 @@ function useElementFormInitialValues({
         type: ElementType.Numerical,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
-          solutionType: options.exactSolutions ? 'exact' : 'range',
+          solutionType: question.parametrization
+            ? 'formula'
+            : options.exactSolutions
+              ? 'exact'
+              : 'range',
           accuracy: options.accuracy,
           unit: options.unit,
           restrictions: options.restrictions
@@ -113,6 +117,41 @@ function useElementFormInitialValues({
               }))
             : undefined,
           exactSolutions: options.exactSolutions ?? undefined,
+          parametrization: question.parametrization
+            ? {
+                variables: question.parametrization.variables.map(
+                  (variable) => ({
+                    name: variable.name,
+                    kind: variable.kind,
+                    min: variable.min,
+                    max: variable.max,
+                    step: variable.step,
+                    values: variable.values?.join(', ') ?? '',
+                    decimals: variable.decimals,
+                  })
+                ),
+                derived: (question.parametrization.derived ?? []).map(
+                  (derived) => ({
+                    name: derived.name,
+                    formula: derived.formula,
+                    decimals: derived.decimals,
+                  })
+                ),
+                solution: {
+                  formula: question.parametrization.solution.formula,
+                  tolerance: question.parametrization.solution.tolerance,
+                },
+                numberFormat:
+                  question.parametrization.numberFormat ?? 'APOSTROPHE',
+              }
+            : undefined,
+          mistakes: (question.mistakes ?? []).map((mistake) => ({
+            key: mistake.key,
+            label: mistake.label,
+            feedback: mistake.feedback,
+            formula: mistake.formula,
+            tolerance: mistake.tolerance,
+          })),
         },
       }
     } else if (question.__typename === 'FreeTextElement') {

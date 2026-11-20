@@ -1562,6 +1562,11 @@ type EscapeRoomHintResult {
   hints: [String!]!
 }
 
+type EscapeRoomMistakeFeedback {
+  feedback: String!
+  label: String!
+}
+
 type EscapeRoomProgress {
   activityId: String!
   attempts: [EscapeRoomAttemptProgress!]!
@@ -1627,6 +1632,12 @@ enum EscapeRoomSessionPhase {
   RUNNING
 }
 
+type EscapeRoomStageMistakeCount {
+  count: Int!
+  key: String!
+  label: String!
+}
+
 type EscapeRoomStageOutcome {
   at: String
   outcome: String
@@ -1641,6 +1652,7 @@ type EscapeRoomStageProgress {
   debrief: String
   hintsUsed: Int!
   isBonus: Boolean!
+  mistakes: [EscapeRoomStageMistakeCount!]!
   notReached: Int!
   revealed: Int!
   skipped: Int!
@@ -2589,6 +2601,26 @@ input NumericalParametrizationInput {
   variables: [NumericalVariableInput!]!
 }
 
+type NumericalPreview {
+  errors: [String!]!
+  samples: [NumericalPreviewSample!]!
+}
+
+type NumericalPreviewMistake {
+  key: String!
+  label: String!
+  max: Float!
+  min: Float!
+}
+
+type NumericalPreviewSample {
+  content: String!
+  explanation: String
+  mistakes: [NumericalPreviewMistake!]!
+  solutionMax: Float
+  solutionMin: Float
+}
+
 type NumericalRestrictions {
   max: Float
   min: Float
@@ -3126,6 +3158,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
+  previewNumericalElement(content: String!, explanation: String, options: OptionsNumericalInput!): NumericalPreview!
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   qrScanPrintData(decoyCount: Int!, elementId: Int!): QrScanPrintData
@@ -3399,6 +3432,7 @@ type StackEvaluation {
 type StackFeedback {
   evaluations: [InstanceEvaluation!]
   id: Int!
+  mistakes: [EscapeRoomMistakeFeedback!]
   score: Int
   status: StackFeedbackStatus!
 }

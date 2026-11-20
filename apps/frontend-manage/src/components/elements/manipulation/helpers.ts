@@ -9,6 +9,8 @@ import {
   ElementStatus,
   Exact,
   GetAnswerCollectionsInfoDocument,
+  NumericalNumberFormat,
+  NumericalVariableKind,
   Scalars,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -131,6 +133,66 @@ export function prepareChoicesArgs({
   }
 }
 
+function toOptionalNumber(value?: number | string | null) {
+  return value === null || value === undefined || value === ''
+    ? undefined
+    : Number(value)
+}
+
+// Maps the "Variables and mistakes" form state to the GraphQL input. The
+// server validates the formulas; this only converts the field types.
+export function prepareNumericalTemplateOptions(
+  options: ElementFormTypesNumerical['options']
+) {
+  const parametrization =
+    options.hasSampleSolution &&
+    options.solutionType === 'formula' &&
+    options.parametrization
+      ? {
+          variables: options.parametrization.variables.map((variable) => ({
+            name: variable.name.trim(),
+            kind: variable.kind as NumericalVariableKind,
+            ...(variable.kind === 'PICK'
+              ? {
+                  values: (variable.values ?? '')
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter((value) => value !== '')
+                    .map(Number),
+                }
+              : {
+                  min: toOptionalNumber(variable.min),
+                  max: toOptionalNumber(variable.max),
+                  step: toOptionalNumber(variable.step),
+                }),
+            decimals: toOptionalNumber(variable.decimals),
+          })),
+          derived: options.parametrization.derived.map((derived) => ({
+            name: derived.name.trim(),
+            formula: derived.formula,
+            decimals: toOptionalNumber(derived.decimals),
+          })),
+          solution: {
+            formula: options.parametrization.solution.formula,
+            tolerance: Number(options.parametrization.solution.tolerance),
+          },
+          numberFormat: options.parametrization
+            .numberFormat as NumericalNumberFormat,
+        }
+      : // null removes stored variables; leaving the field out would keep them
+        null
+  const mistakes = options.hasSampleSolution
+    ? (options.mistakes ?? []).map((mistake) => ({
+        key: mistake.key,
+        label: mistake.label,
+        feedback: mistake.feedback,
+        formula: mistake.formula,
+        tolerance: Number(mistake.tolerance),
+      }))
+    : []
+  return { parametrization, mistakes }
+}
+
 interface PrepareNumericalArgsProps {
   elementId?: number
   isDuplication: boolean
@@ -222,6 +284,7 @@ export function prepareNumericalArgs({
                 : Number(value.toFixed(accuracy))
             })
           : undefined,
+      ...prepareNumericalTemplateOptions(values.options),
     },
 
     tags: values.tags,

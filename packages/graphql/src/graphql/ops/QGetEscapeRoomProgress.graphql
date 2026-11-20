@@ -50,6 +50,11 @@ query GetEscapeRoomProgress(
       hintsUsed
       bonusCorrect
       bonusWrong
+      mistakes {
+        key
+        label
+        count
+      }
       debrief
     }
   }

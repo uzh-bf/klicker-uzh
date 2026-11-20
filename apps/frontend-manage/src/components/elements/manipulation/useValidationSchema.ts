@@ -214,7 +214,7 @@ function useOptionsSchemaNumerical(
 
     solutionType: yup
       .string()
-      .oneOf(['range', 'exact'])
+      .oneOf(['range', 'exact', 'formula'])
       .when('hasSampleSolution', {
         is: true,
         then: (schema) =>

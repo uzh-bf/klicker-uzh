@@ -1,4 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import type {
+  NumericalPreviewSample,
+  previewNumericalElement,
+} from '../lib/numericalParametrization.js'
 import {
   ActivityType as ActivityTypeEnum,
   SortByType as SortByTypeEnum,
@@ -891,6 +895,40 @@ export const NumericalMistake = builder
       feedback: t.exposeString('feedback'),
       formula: t.exposeString('formula'),
       tolerance: t.exposeFloat('tolerance'),
+    }),
+  })
+
+type NumericalPreviewMistakeType = NumericalPreviewSample['mistakes'][number]
+export const NumericalPreviewMistake = builder
+  .objectRef<NumericalPreviewMistakeType>('NumericalPreviewMistake')
+  .implement({
+    fields: (t) => ({
+      key: t.exposeString('key'),
+      label: t.exposeString('label'),
+      min: t.exposeFloat('min'),
+      max: t.exposeFloat('max'),
+    }),
+  })
+
+export const NumericalPreviewSampleRef = builder
+  .objectRef<NumericalPreviewSample>('NumericalPreviewSample')
+  .implement({
+    fields: (t) => ({
+      content: t.exposeString('content'),
+      explanation: t.exposeString('explanation', { nullable: true }),
+      solutionMin: t.exposeFloat('solutionMin', { nullable: true }),
+      solutionMax: t.exposeFloat('solutionMax', { nullable: true }),
+      mistakes: t.expose('mistakes', { type: [NumericalPreviewMistake] }),
+    }),
+  })
+
+type NumericalPreviewType = ReturnType<typeof previewNumericalElement>
+export const NumericalPreview = builder
+  .objectRef<NumericalPreviewType>('NumericalPreview')
+  .implement({
+    fields: (t) => ({
+      errors: t.exposeStringList('errors'),
+      samples: t.expose('samples', { type: [NumericalPreviewSampleRef] }),
     }),
   })
 

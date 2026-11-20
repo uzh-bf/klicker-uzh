@@ -2002,6 +2002,7 @@ export type {
   EscapeRoomProgress,
   EscapeRoomProjector,
   EscapeRoomProjectorRow,
+  EscapeRoomStageMistakeCount,
   EscapeRoomStageProgress,
 } from './escapeRoomProgress.js'
 export {

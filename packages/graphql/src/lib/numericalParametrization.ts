@@ -448,6 +448,42 @@ export function validateNumericalParametrization({
   return []
 }
 
+export interface NumericalPreviewSample {
+  content: string
+  explanation: string | null
+  solutionMin: number | null
+  solutionMax: number | null
+  mistakes: Array<{ key: string; label: string; min: number; max: number }>
+}
+
+// Validates a draft like a save does and, when it is valid, renders a few
+// sample draws so the lecturer sees what players will get.
+export function previewNumericalElement(
+  data: RenderableNumericalData,
+  count = 3
+): { errors: string[]; samples: NumericalPreviewSample[] } {
+  const errors = validateNumericalParametrization(data)
+  if (errors.length > 0) return { errors, samples: [] }
+  const labels = new Map(
+    (data.options.mistakes ?? []).map((mistake) => [mistake.key, mistake.label])
+  )
+  const samples = Array.from({ length: count }, (_, index) => {
+    const rendered = renderNumericalElementData(data, `preview:${index}`)
+    const range = rendered.options.solutionRanges?.[0]
+    return {
+      content: rendered.content,
+      explanation: rendered.explanation ?? null,
+      solutionMin: range?.min ?? null,
+      solutionMax: range?.max ?? null,
+      mistakes: (rendered.options.mistakeRanges ?? []).map((mistake) => ({
+        ...mistake,
+        label: labels.get(mistake.key) ?? mistake.key,
+      })),
+    }
+  })
+  return { errors: [], samples }
+}
+
 // Draws one fixed set of numbers for a new element instance. Activities
 // without per-attempt play show these numbers to everyone, and grading,
 // statistics and the Live Quiz cache use them like any numerical question.

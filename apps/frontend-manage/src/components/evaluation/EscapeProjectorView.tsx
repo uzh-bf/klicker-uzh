@@ -296,6 +296,23 @@ function EscapeProjectorContent({
               <StageLabel stage={stage} index={index} />
             </div>
             <StageCounts stage={stage} />
+            {stage.mistakes.length > 0 && (
+              <div
+                className="mt-3 text-2xl text-slate-200"
+                data-cy="escape-projector-mistakes"
+              >
+                <div className="mb-1 font-bold">
+                  {t('manage.evaluation.escapeRoomStageMistakes')}
+                </div>
+                <ul className="list-inside list-disc">
+                  {stage.mistakes.map((mistake) => (
+                    <li key={mistake.key}>
+                      {mistake.label}: {mistake.count}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {stage.debrief && (
               <div
                 className="mt-3 rounded-lg bg-white p-4 text-2xl text-black"

@@ -7,6 +7,7 @@ import {
   compileFormula,
   computeNumericalValues,
   formatNumericalValue,
+  previewNumericalElement,
   renderNumericalElementData,
   validateNumericalParametrization,
 } from '../src/lib/numericalParametrization.js'
@@ -153,6 +154,29 @@ describe('numerical parametrization', () => {
     expect(formatNumericalValue(-1234567.891, 2)).toBe("-1'234'567.89")
     expect(formatNumericalValue(1234.5, 0, 'COMMA')).toBe('1,235')
     expect(formatNumericalValue(-0.001, 1)).toBe('0.0')
+  })
+
+  it('previews three labelled draws, or only the errors of an invalid draft', () => {
+    const preview = previewNumericalElement(data)
+    expect(preview.errors).toEqual([])
+    expect(preview.samples).toHaveLength(3)
+    for (const sample of preview.samples) {
+      expect(sample.content).not.toContain('{{')
+      expect(sample.solutionMax! - sample.solutionMin!).toBeCloseTo(2)
+      expect(sample.mistakes).toEqual([
+        expect.objectContaining({
+          key: 'whole',
+          label: 'Whole requirement instead of the gap',
+        }),
+      ])
+    }
+
+    const invalid = previewNumericalElement({
+      content: 'Value {{missing}}',
+      options,
+    })
+    expect(invalid.errors.length).toBeGreaterThan(0)
+    expect(invalid.samples).toEqual([])
   })
 
   it('validates names, placeholders and formulas on save', () => {
