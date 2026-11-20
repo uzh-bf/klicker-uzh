@@ -362,7 +362,7 @@ async function addCloseQuestion(fixture: Fixture, blockId = fixture.blockId) {
       options: {},
       elementData: {
         ...element,
-        id: String(element.id),
+        id: `${element.id}-v${element.version}`,
         elementId: element.id,
         type: 'SC',
         options: {
