@@ -612,6 +612,9 @@ export async function handleEscapeRoomValidation(
           : {
               stageKey,
               wrongAttempts: previous.wrongAttempts,
+              ...(previous.mistakes?.length
+                ? { mistakes: previous.mistakes }
+                : {}),
               outcome: 'SOLVED',
               at: answeredAt,
             }

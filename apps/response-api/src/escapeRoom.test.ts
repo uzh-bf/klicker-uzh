@@ -968,6 +968,35 @@ describe('response-api escape-room validation', () => {
         ])
       })
 
+      it('keeps earlier mistake keys when the stage is solved', async () => {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        mocks.findAttempt.mockResolvedValue(
+          attempt({
+            stageOutcomes: [
+              {
+                stageKey: '11',
+                wrongAttempts: 1,
+                outcome: null,
+                at: null,
+                mistakes: ['11:whole'],
+              },
+            ],
+          })
+        )
+        mocks.grade.mockReturnValue(1)
+
+        const body = await submitNumerical(redisMock(), 100)
+
+        expect(body.status).toBe('correct')
+        expect(outcomesWritten()).toEqual([
+          expect.objectContaining({
+            outcome: 'SOLVED',
+            mistakes: ['11:whole'],
+          }),
+        ])
+      })
+
       it('returns no feedback for an unmatched wrong answer', async () => {
         mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
         mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
