@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import type {
+  ElementData,
   ElementOptionsNumerical,
   NumericalMistake,
   NumericalMistakeRange,
@@ -439,4 +441,15 @@ export function validateNumericalParametrization({
     }
   }
   return []
+}
+
+// Draws one fixed set of numbers for a new element instance. Activities
+// without per-attempt play show these numbers to everyone, and grading,
+// statistics and the Live Quiz cache use them like any numerical question.
+export function renderInstanceElementData<T extends ElementData>(data: T): T {
+  if (data.type !== 'NUMERICAL') return data
+  return renderNumericalElementData(
+    data as Extract<ElementData, { type: 'NUMERICAL' }>,
+    `instance:${randomUUID()}`
+  ) as T
 }

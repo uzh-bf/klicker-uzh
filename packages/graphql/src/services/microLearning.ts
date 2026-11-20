@@ -36,6 +36,7 @@ import {
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 export async function getMicroLearningData(
   { id }: { id: string },
@@ -409,6 +410,7 @@ export async function manipulateMicroLearning(
                 duplicationInstances,
                 elementMap,
                 userId: ctx.user.sub,
+                renderElementData: renderInstanceElementData,
               })
             ),
           },

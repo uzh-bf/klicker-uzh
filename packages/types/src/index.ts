@@ -279,6 +279,8 @@ export type OptionsNumericalInput = {
   solutionRanges?: SolutionRangeInput[] | null
   exactSolutions?: number[] | null
   feedback?: string | null
+  parametrization?: NumericalParametrization | null
+  mistakes?: NumericalMistake[] | null
 }
 
 export type FreeTextRestrictionsInput = {

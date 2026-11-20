@@ -58,6 +58,7 @@ import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { checkAccess } from './sharing.js'
 import { computeStackEvaluation } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -494,6 +495,7 @@ export async function manipulateLiveQuiz(
               duplicationInstances,
               elementMap,
               userId: ctx.user.sub,
+              renderElementData: renderInstanceElementData,
             })
           ),
         },

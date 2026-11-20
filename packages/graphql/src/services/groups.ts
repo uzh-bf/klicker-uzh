@@ -64,6 +64,7 @@ import {
   updateNumericalResults,
   updateSelectionResults,
 } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
@@ -1091,6 +1092,7 @@ export async function manipulateGroupActivity(
               duplicationInstances,
               elementMap,
               userId: ctx.user.sub,
+              renderElementData: renderInstanceElementData,
             })
           ),
         },

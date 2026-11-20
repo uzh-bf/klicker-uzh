@@ -2437,6 +2437,18 @@ type NumericalActivityEvaluationData {
   type: ElementType!
 }
 
+type NumericalDerivedValue {
+  decimals: Int
+  formula: String!
+  name: String!
+}
+
+input NumericalDerivedValueInput {
+  decimals: Int
+  formula: String!
+  name: String!
+}
+
 type NumericalElement {
   basePoints: Boolean!
   content: String!
@@ -2452,9 +2464,11 @@ type NumericalElement {
   isOwner: Boolean
   isRemovable: Boolean
   isShared: Boolean
+  mistakes: [NumericalMistake!]
   name: String!
   numSharedUsers: Int
   options: NumericalElementOptions!
+  parametrization: NumericalParametrization
   permissionLevel: PermissionLevel
   pointsMultiplier: Int!
   sharingType: SharingType
@@ -2509,6 +2523,16 @@ type NumericalElementSolutions {
   min: Float
 }
 
+type NumericalFormulaSolution {
+  formula: String!
+  tolerance: Float!
+}
+
+input NumericalFormulaSolutionInput {
+  formula: String!
+  tolerance: Float!
+}
+
 type NumericalInstanceEvaluation {
   correctness: Float
   elementType: ElementType!
@@ -2530,6 +2554,41 @@ type NumericalInstanceEvaluation {
   xpAwarded: Int
 }
 
+type NumericalMistake {
+  feedback: String!
+  formula: String!
+  key: String!
+  label: String!
+  tolerance: Float!
+}
+
+input NumericalMistakeInput {
+  feedback: String!
+  formula: String!
+  key: String!
+  label: String!
+  tolerance: Float!
+}
+
+enum NumericalNumberFormat {
+  APOSTROPHE
+  COMMA
+}
+
+type NumericalParametrization {
+  derived: [NumericalDerivedValue!]
+  numberFormat: NumericalNumberFormat
+  solution: NumericalFormulaSolution!
+  variables: [NumericalVariable!]!
+}
+
+input NumericalParametrizationInput {
+  derived: [NumericalDerivedValueInput!]
+  numberFormat: NumericalNumberFormat
+  solution: NumericalFormulaSolutionInput!
+  variables: [NumericalVariableInput!]!
+}
+
 type NumericalRestrictions {
   max: Float
   min: Float
@@ -2543,6 +2602,32 @@ input NumericalRestrictionsInput {
 type NumericalSolutionRange {
   max: Float
   min: Float
+}
+
+type NumericalVariable {
+  decimals: Int
+  kind: NumericalVariableKind!
+  max: Float
+  min: Float
+  name: String!
+  step: Float
+  values: [Float!]
+}
+
+input NumericalVariableInput {
+  decimals: Int
+  kind: NumericalVariableKind!
+  max: Float
+  min: Float
+  name: String!
+  step: Float
+  values: [Float!]
+}
+
+enum NumericalVariableKind {
+  INTEGER
+  PICK
+  RANGE
 }
 
 enum ObjectAccess {
@@ -2600,6 +2685,8 @@ input OptionsNumericalInput {
   feedback: String
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
+  mistakes: [NumericalMistakeInput!]
+  parametrization: NumericalParametrizationInput
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
   unit: String
