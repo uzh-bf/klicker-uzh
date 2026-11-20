@@ -42,3 +42,5 @@ The qualification runner inherits the shared canonical report-directory and rece
 ### Current target integration
 
 Preserve current target application inputs while adding direct Chat API selection to the same managed process fingerprint. Compose the existing browser hook, store and hydration changes with the shared host, keeping default-off routing, canonical history bounds and owner-preview behavior. Requalify the current source through the existing deterministic three-backend launcher and relevant participant browser journeys; earlier component checks do not substitute for the integrated outcome.
+
+The history-bound regressions preserve the complete saved prefix and separately verify the newly appended assistant identity. This composes the target streaming placeholder with the existing message/byte limits without changing production history behavior.

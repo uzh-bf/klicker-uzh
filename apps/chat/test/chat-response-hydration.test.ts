@@ -161,7 +161,12 @@ describe('useChatResponse attachment hydration', () => {
     expect(request.messages[0].role).toBe('user')
     expect(request.messages.at(-1).id).toBe(messages.at(-1)!.id)
     expect(request.parentId).toBe(messages.at(-1)!.parentId)
-    expect(storeState.threads[0]!.allMessages).toEqual(saved)
+    expect(storeState.threads[0]!.allMessages?.slice(0, -1)).toEqual(saved)
+    expect(storeState.threads[0]!.allMessages?.at(-1)).toMatchObject({
+      id: request.assistantMessageId,
+      role: 'assistant',
+      parentId: messages.at(-1)!.id,
+    })
     expect(storeState.threads[0]!.replyContextLimited).toBe(count > 100)
   })
 
@@ -172,6 +177,7 @@ describe('useChatResponse attachment hydration', () => {
       content: [{ type: 'text' as const, text: '界'.repeat(300000) }],
     }))
     storeState.threads[0]!.allMessages = messages
+    const saved = structuredClone(messages)
     const fetchSpy = vi
       .fn()
       .mockResolvedValue(createStreamingResponse(['data: {"type":"finish"}']))
@@ -188,7 +194,12 @@ describe('useChatResponse attachment hydration', () => {
     expect(request.messages.at(-1).content).toBe(
       messages.at(-1)!.content[0]!.text
     )
-    expect(storeState.threads[0]!.allMessages).toHaveLength(25)
+    expect(storeState.threads[0]!.allMessages?.slice(0, -1)).toEqual(saved)
+    expect(storeState.threads[0]!.allMessages?.at(-1)).toMatchObject({
+      id: request.assistantMessageId,
+      role: 'assistant',
+      parentId: messages.at(-1)!.id,
+    })
     expect(storeState.threads[0]!.replyContextLimited).toBe(true)
   })
 

@@ -523,16 +523,13 @@ function resolveProviderKey(
 const MAX_HELD_TEXT_LENGTH = 120
 
 /**
- * A step that returned text while reporting no input and no output tokens
+ * A step that returned text while reporting exactly zero input and output tokens
  * never reached the model: inference always reads the prompt. A provider or
  * gateway safety layer answers some requests this way, with a generic
  * refusal sentence, before the mode instructions apply.
  */
 export function isUnbilledProviderReply(usage: LanguageModelUsage): boolean {
-  return (
-    !(usage.inputTokens && usage.inputTokens > 0) &&
-    !(usage.outputTokens && usage.outputTokens > 0)
-  )
+  return usage.inputTokens === 0 && usage.outputTokens === 0
 }
 
 /**
