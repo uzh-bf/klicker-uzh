@@ -18,6 +18,12 @@ export default defineConfig({
     typescript({
       tsconfig: './tsconfig.json',
       rootDir: 'src',
+      filterRoot: '.',
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      compilerOptions: {
+        incremental: false,
+        tsBuildInfoFile: undefined,
+      },
     }),
   ],
   external: [/@klicker-uzh*/, /node_modules/],

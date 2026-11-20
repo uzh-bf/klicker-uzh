@@ -40,7 +40,7 @@ spec:
         - name: assessment-audit-worker
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.assessmentAudit.worker.image.repository }}:{{ required "assessmentAudit.worker.image.tag is required when assessment audit is enabled" .Values.assessmentAudit.worker.image.tag }}"
+          image: "{{ .Values.assessmentAudit.worker.image.repository | required "assessmentAudit.worker.image.repository is required when assessment audit is enabled" }}:{{ .Values.global.imageTag | default .Values.assessmentAudit.worker.image.tag | required "assessmentAudit.worker.image.tag is required when assessment audit is enabled and global.imageTag is unset" }}"
           imagePullPolicy: {{ .Values.assessmentAudit.worker.image.pullPolicy }}
           envFrom:
             - configMapRef:

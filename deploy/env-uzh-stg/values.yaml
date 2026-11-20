@@ -155,7 +155,7 @@ assessmentAudit:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
   monitoring:
     enabled: false
 
