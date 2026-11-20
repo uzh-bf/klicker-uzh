@@ -5,6 +5,12 @@
 // happened to pull the baseline in first. Mirror the baseline here so suite
 // order cannot decide whether those modules work.
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { afterEach, vi } from 'vitest'
+
+// Config-level unstubGlobals runs before a test, after the next file's imports.
+// Clean up before leaving a test too: a leaked window makes Next imports take
+// the browser path and access document while this runner is still in Node.
+afterEach(() => vi.unstubAllGlobals())
 
 if (typeof globalThis.AsyncLocalStorage !== 'function') {
   globalThis.AsyncLocalStorage = AsyncLocalStorage

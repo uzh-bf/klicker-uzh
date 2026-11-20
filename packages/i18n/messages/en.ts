@@ -1,5 +1,23 @@
 export default {
   chat: {
+    courseImages: {
+      pixelsProvided: 'Pixels provided to model',
+      descriptionOnly: 'Description only',
+      pixelsProvidedExplanation:
+        'This figure’s pixels were included in the model input before selection. This does not prove which input the model relied on.',
+      descriptionOnlyExplanation:
+        'This figure’s pixels were not included in the model input before selection. The model had the retrieved text and any available caption or description.',
+      expandLabel: 'Expand image: {label}',
+      closeViewer: 'Close image viewer',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      zoomLevel: 'Zoom level relative to fitted image',
+      fitImage: 'Fit image',
+      panHint: 'When zoomed in, scroll or swipe to explore the image.',
+      source: '{title} · Page {page}',
+      unavailable: 'This course image is currently unavailable.',
+      retry: 'Retry image',
+    },
     graphPanel: {
       missingEndpoint: 'Unknown concept',
       title: 'Knowledge graph',
@@ -581,6 +599,11 @@ export default {
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
       searchCourseMaterialFailed: 'Course material search failed',
       imageAnalyzed: 'Image analyzed',
+    },
+    videoFrames: {
+      source: '{title} · Frame at {timestamp}',
+      unavailable: 'This video frame is currently unavailable.',
+      retry: 'Retry frame',
     },
     sources: {
       title: 'Sources',
@@ -3282,6 +3305,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           ATTENTION: 'Needs attention',
           ACCEPTED: 'Kept',
           REJECTED: 'Discarded',
+          REVISION_REQUESTED: 'Revision requested',
+        },
+        revision: {
+          request: 'Request revision',
+          noteLabel: 'What should change? (optional)',
+          noteHint: '{count} of {max} characters',
+          evidencePurged:
+            'The source material for this element is no longer available. The revision uses the stored question design only.',
+          submit: 'Request revision',
+          cancel: 'Cancel',
+          running: 'Revision in progress…',
+          failed: 'The revision failed.',
+          retry: 'Retry revision',
+          completed: 'Revision ready. See the revised draft.',
+          history: 'Earlier requests ({count})',
+          revisionOf: 'Revision of “{name}”',
+          earlierDraft: 'an earlier draft',
+          noteShown: 'Note: {note}',
         },
         recoverLegacy: 'Recover accepted elements',
         summary: '{total} total · {accepted} accepted · {open} still undecided',

@@ -56,12 +56,12 @@ const spotTolerations = [
 // Deployments whose replicas a scaler owns, per render environment. Each entry
 // mirrors an exact `/spec/replicas` ignoreDifferences entry that the Argo CD
 // Application for that render must carry; the infrastructure repository owns
-// those Applications. The live stg Application carries the PWA burst entry;
-// the live prd Application carries none.
+// those Applications. The live stg and prd Applications carry the PWA burst
+// entry.
 const expectedArgoReplicaExceptions = {
   base: [],
   stg: [pwaBurstDeploymentName],
-  prd: [],
+  prd: [pwaBurstDeploymentName],
   hpa: [
     `${fullname}-backend-graphql`,
     `${fullname}-frontend-manage`,
@@ -713,9 +713,9 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    { base: 17, stg: 20, prd: 17 }[environment.name]
+    { base: 17, stg: 20, prd: 20 }[environment.name]
   )
-  if (environment.name === 'stg') {
+  if (['stg', 'prd'].includes(environment.name)) {
     assertPwaBurstTier(resources, environment.name)
   }
   assertStaticLti(
@@ -781,5 +781,5 @@ for (const valuesSource of [
 assertNegativeFixtures()
 
 console.log(
-  `Replica ownership, Argo replica exception, PWA burst tier, worker runtime contract, and disruption budget checks passed for ${environments.length} default Helm renders (stg with the PWA burst tier), one all-three-HPA render, one PWA burst render, three values files, and eleven negative fixtures`
+  `Replica ownership, Argo replica exception, PWA burst tier, worker runtime contract, and disruption budget checks passed for ${environments.length} default Helm renders (stg and prd with the PWA burst tier), one all-three-HPA render, one PWA burst render, three values files, and eleven negative fixtures`
 )

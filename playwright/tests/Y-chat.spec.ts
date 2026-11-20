@@ -9,6 +9,7 @@ import {
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
+  mintPwaEmbedSessionToken,
   OTHER_PARTICIPANT_ID,
   resetChatState,
   seedThread,
@@ -2705,6 +2706,134 @@ test.describe('Chatbot Source Citations', () => {
       ],
     }
   }
+
+  test('Course figures authenticate fetching, retry, share viewer bytes and release them on navigation', async ({
+    page,
+  }, testInfo) => {
+    const bearer = await mintPwaEmbedSessionToken(participantId)
+    const assetId = 'a'.repeat(64)
+    const thread = await seedThread(participantId, {
+      messages: [
+        {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'A synthetic figure.' },
+            docQueryPart({
+              toolCallId: 'image-source',
+              sources: [{ file_name: 'synthetic.pdf', page_number: 2 }],
+            }),
+            {
+              type: 'tool-call',
+              toolCallId: 'image-selection',
+              toolName: 'show_course_image',
+              args: { asset_id: assetId },
+              result: {
+                status: 'selected',
+                image: {
+                  asset_id: assetId,
+                  image_sha256: 'b'.repeat(64),
+                  source_content_hash: 'c'.repeat(64),
+                  extraction_options_hash: 'd'.repeat(64),
+                  manifest_sha256: 'e'.repeat(64),
+                  kb_id: '41000000-0000-4000-8000-000000000001',
+                  external_resource_id: '41000000-0000-4000-8000-000000000002',
+                  resource_version: 1,
+                  physical_page_number: 2,
+                  width_px: 320,
+                  height_px: 180,
+                  mime_type: 'image/png',
+                  kind: 'figure',
+                  title: 'Synthetic figure source',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    })
+    await page.addInitScript((token) => {
+      sessionStorage.setItem('chat_pwa_embed_token', token)
+      const revoked: string[] = []
+      Object.defineProperty(window, 'courseImageRevocations', {
+        value: revoked,
+      })
+      const revoke = URL.revokeObjectURL.bind(URL)
+      URL.revokeObjectURL = (url) => {
+        revoked.push(url)
+        revoke(url)
+      }
+    }, bearer)
+    let requests = 0
+    let transientFailure = true
+    let denied = false
+    // The image endpoint is intercepted only in this browser test. Real route
+    // authorization and resource lifecycle checks have separate server coverage.
+    await page.route(
+      '**/api/chatbots/*/threads/*/messages/*/images/*',
+      async (route) => {
+        requests += 1
+        expect(
+          route.request().headers().authorization === `Bearer ${bearer}`
+        ).toBe(true)
+        expect(new URL(route.request().url()).search).toBe('')
+        if (transientFailure || denied) {
+          await route.fulfill({ status: denied ? 403 : 503 })
+          return
+        }
+        await route.fulfill({
+          contentType: 'image/png',
+          body: Buffer.from(TEST_PNG_DATA_URL.split(',')[1]!, 'base64'),
+        })
+      }
+    )
+    const url = `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`
+    await page.goto(url)
+    const card = page.getByTestId('chat-course-image')
+    await expect(card.getByRole('alert')).toBeVisible()
+    const failedRequests = requests
+    transientFailure = false
+    await card.getByRole('button').click()
+    const image = card.locator('img')
+    await expect(image).toBeVisible()
+    await expect(image).toHaveJSProperty('complete', true)
+    await expect(image).not.toHaveJSProperty('naturalWidth', 0)
+    await page.screenshot({
+      path: testInfo.outputPath('course-image-card.png'),
+    })
+    const firstUrl = await image.getAttribute('src')
+    expect(firstUrl).toMatch(/^blob:/)
+    await page.getByTestId('course-image-expand').click()
+    await expect(page.getByTestId('course-image-viewer-image')).toHaveAttribute(
+      'src',
+      firstUrl!
+    )
+    expect(requests).toBe(failedRequests + 1)
+    await page.screenshot({
+      path: testInfo.outputPath('course-image-viewer.png'),
+    })
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('course-image-expand')).toBeFocused()
+    await page.getByTestId('chat-new-thread-button').click()
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (objectUrl) =>
+            (
+              window as unknown as { courseImageRevocations: string[] }
+            ).courseImageRevocations.includes(objectUrl!),
+          firstUrl
+        )
+      )
+      .toBe(true)
+    await page.goto(url)
+    await expect(image).toBeVisible()
+    await expect(image).toHaveAttribute('src', /^blob:/)
+    await expect(image).not.toHaveAttribute('src', firstUrl!)
+    denied = true
+    await page.reload()
+    await expect(card.getByRole('alert')).toBeVisible()
+    await expect(card.locator('img')).toHaveCount(0)
+  })
 
   test('Retrieved chunk details preserve origins and citation identity after reload', async ({
     page,

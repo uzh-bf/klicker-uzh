@@ -1,5 +1,23 @@
 export default {
   chat: {
+    courseImages: {
+      pixelsProvided: 'Bildpixel an das Modell übermittelt',
+      descriptionOnly: 'Nur Beschreibung',
+      pixelsProvidedExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl in der Modelleingabe enthalten. Das belegt nicht, auf welche Eingaben sich das Modell gestützt hat.',
+      descriptionOnlyExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl nicht in der Modelleingabe enthalten. Dem Modell standen der abgerufene Text und gegebenenfalls die Bildunterschrift oder Beschreibung zur Verfügung.',
+      expandLabel: 'Bild vergrössern: {label}',
+      closeViewer: 'Bildansicht schliessen',
+      zoomIn: 'Vergrössern',
+      zoomOut: 'Verkleinern',
+      zoomLevel: 'Zoomstufe relativ zum eingepassten Bild',
+      fitImage: 'Bild einpassen',
+      panHint: 'Zum Erkunden des vergrösserten Bildes scrollen oder wischen.',
+      source: '{title} · Seite {page}',
+      unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
+      retry: 'Bild erneut laden',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       title: 'Wissensgraph',
@@ -592,6 +610,11 @@ export default {
       searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
       imageAnalyzed: 'Bild analysiert',
+    },
+    videoFrames: {
+      source: '{title} · Einzelbild bei {timestamp}',
+      unavailable: 'Dieses Video-Einzelbild ist derzeit nicht verfügbar.',
+      retry: 'Einzelbild erneut laden',
     },
     sources: {
       title: 'Quellen',
@@ -3333,6 +3356,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           ATTENTION: 'Aufmerksamkeit nötig',
           ACCEPTED: 'Behalten',
           REJECTED: 'Verworfen',
+          REVISION_REQUESTED: 'Überarbeitung angefragt',
+        },
+        revision: {
+          request: 'Überarbeitung anfragen',
+          noteLabel: 'Was soll sich ändern? (optional)',
+          noteHint: '{count} von {max} Zeichen',
+          evidencePurged:
+            'Das Quellenmaterial für dieses Element ist nicht mehr verfügbar. Die Überarbeitung nutzt nur den gespeicherten Fragenentwurf.',
+          submit: 'Überarbeitung anfragen',
+          cancel: 'Abbrechen',
+          running: 'Überarbeitung läuft…',
+          failed: 'Die Überarbeitung ist fehlgeschlagen.',
+          retry: 'Überarbeitung wiederholen',
+          completed: 'Überarbeitung bereit. Siehe den überarbeiteten Entwurf.',
+          history: 'Frühere Anfragen ({count})',
+          revisionOf: 'Überarbeitung von «{name}»',
+          earlierDraft: 'einem früheren Entwurf',
+          noteShown: 'Hinweis: {note}',
         },
         recoverLegacy: 'Angenommene Elemente wiederherstellen',
         summary:

@@ -2405,7 +2405,8 @@ export const Mutation = builder.mutationType({
             ElementGenerationService.setGeneratedElementDecision(
               input.draftId,
               input.decision,
-              ctx
+              ctx,
+              input.note
             )
           )
         },

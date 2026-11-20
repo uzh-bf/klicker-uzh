@@ -48,17 +48,25 @@ Note the account-duplication trap: participant emails are only unique per auth m
 
 ### LTI failure diagnostics
 
-The LTI service emits `lti_request_failed` JSON records to stderr for failed HTTP requests, independently of `DEBUG`. Each record contains the HTTP status, fixed route and method categories, normalized `Sec-Fetch-Site`/`Mode`/`Dest`, recovered-state presence (`missing`, `empty`, `present`, or `invalid_type`), and booleans for ID-token and state presence. Known ltijs errors retain their machine code; other exception messages become `UNCLASSIFIED_ERROR`. The request-local context keeps concurrent launches separate. Parser errors occur before that context exists and emit a minimal `lti_provider_error` record instead.
+The LTI service emits `lti_request_failed` JSON records to stderr for failed HTTP requests, independently of `DEBUG`. Each record contains the HTTP status, fixed route and method categories, normalized `Sec-Fetch-Site`/`Mode`/`Dest`, bounded Origin classification, a compatibility-applied boolean, recovered-state presence (`missing`, `empty`, `present`, or `invalid_type`), and booleans for ID-token and state presence. Known ltijs errors retain their machine code; other exception messages become `UNCLASSIFIED_ERROR`. The request-local context keeps concurrent launches separate. Parser errors occur before that context exists and emit a minimal `lti_provider_error` record instead.
 
 For a fresh reproduction, inspect all LTI replicas in the intended environment:
 
 ```bash
 kubectl -n <namespace> logs -l app.kubernetes.io/component=lti -c lti \
   --since=15m --timestamps --prefix --tail=-1 |
-  rg 'lti_request_failed|lti_provider_error'
+  rg 'lti_request_failed|lti_provider_error|lti_origin_compatibility'
 ```
 
-For `INVALID_STATE`, an explicit fetch-site value other than `same-origin` is rejected before recovered-state verification; a missing header is permitted. With `same-origin` or a missing header, an empty recovered state points to failed browser recovery, including a duplicate callback after the first recovery page removed the stored value. A non-empty state still requires verification and can fail because the recovery token or state JWT is invalid or expired. These fields describe what reached the server, rather than proving a browser-storage policy caused it. A browser failure before the callback reaches the service still requires browser-console evidence.
+The initial `POST /` with nonempty ID token and state and no recovered-state field receives `Referrer-Policy: origin`. This permits the browser recovery form to supply its Origin on resubmission. Referer carries only scheme, host and port; no launch path or query. The recovery page uses inline scripts and submits back to the tool; it must not load cross-origin subresources or navigate to another origin. Other routes and recovered-state responses retain `no-referrer`.
+
+For recovered-state `POST /` requests with `Sec-Fetch-Site: none`, the service adapts that metadata to `same-origin` only when the single Origin header exactly matches the configured tool origin and the recovered-state string is nonempty. The configured origin must be HTTP(S), without credentials, path, query or fragment. Origin lists, duplicate headers, opaque `null`, missing Origin and mismatches remain ineligible. Host, forwarded headers and Referer do not grant trust. The adapter changes no tokens: ltijs still verifies the signed recovery value, matching state ID, expiry, signed state, ID token and one-use nonce. A nonempty recovery value alone is never proof of validity.
+
+Synthetic iframe tests cover native Origin with injected fetch metadata; compatibility on an affected browser still requires a native launch check.
+
+Logging captures original metadata before adaptation. A successful adapted launch emits `lti_origin_compatibility`; failures retain `lti_request_failed`. Both include `originCompatibilityApplied`. Origin is classified as `same-origin`, `cross-origin`, `null`, `missing` or `invalid`; raw header values are never recorded.
+
+For `INVALID_STATE`, other explicit fetch-site values are rejected before recovered-state verification. The existing permissive behavior for a missing `Sec-Fetch-Site` header is unchanged; exact-Origin gating here applies only to the `none` compatibility path. With `same-origin` or a missing header, an empty recovered state points to failed browser recovery, including a duplicate callback after the first recovery page removed the stored value. A non-empty state still requires verification and can fail because the recovery token or state JWT is invalid or expired. These fields describe what reached the server, rather than proving a browser-storage policy caused it. A browser failure before the callback reaches the service still requires browser-console evidence.
 
 The new records contain no token or state values, hashes, cookies, authorization headers, full URLs, user identifiers, IP addresses, or raw browser information. Raw ltijs error messages are deliberately suppressed even when `DEBUG` is enabled, because they may contain authentication material or upstream payloads. An `UNCLASSIFIED_ERROR` therefore needs a controlled reproduction to investigate further. Debug and warning messages retain their existing gating. These records use the existing operational log destination, access controls, and retention.
 

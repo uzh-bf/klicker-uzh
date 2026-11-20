@@ -49,12 +49,33 @@ const deployment = (component, constraints) => ({
   },
 })
 
+// The Deployment of one contract entry. A tiered entry, such as the PWA burst
+// tier, carries its tier pod label and names the tier in its selectors.
+const contractDeployment = ({ component, tier }) => {
+  if (tier === undefined) {
+    return deployment(component, spreadConstraints(component))
+  }
+  const tierDeployment = deployment(
+    component,
+    [zoneKey, hostnameKey].map((topologyKey) =>
+      spreadConstraint(component, topologyKey, {
+        labelSelector: {
+          matchLabels: {
+            'app.kubernetes.io/component': component,
+            'klicker.uzh.ch/tier': tier,
+          },
+        },
+      })
+    )
+  )
+  tierDeployment.metadata.name = `app-klicker-${component}-${tier}`
+  tierDeployment.spec.template.metadata.labels['klicker.uzh.ch/tier'] = tier
+  return tierDeployment
+}
+
 // The production render this check must accept: every expected workload with
 // the zone and hostname constraints the chart is meant to forward.
-const renderedContract = () =>
-  expectedSpread.map((entry) =>
-    deployment(entry.component, spreadConstraints(entry.component))
-  )
+const renderedContract = () => expectedSpread.map(contractDeployment)
 
 const withConstraints = (documents, component, constraints) =>
   documents.map((document) =>

@@ -74,13 +74,18 @@ disposable application database through the route-free managed setup profile.
 A completed receipt binds provider preparation, workspace, candidate and local
 Docker context. Partial failure retains its claim and cannot be replayed silently.
 
-Start invokes scraping and document processing, starts Klicker with
-`ai,chat,manage` so the local model gateway is included, then invokes ingestion
-worker activation and retrieval. It never calls setup, migrations or seeding.
+Setup invokes scraping, ingestion, document processing and retrieval in that
+order. Ingestion prepares the Azurite backing that document processing uses.
+Start invokes scraping, prepares consumer backing and starts Klicker with
+`ai,chat,manage,workers` so the gateway prerequisites are available, then invokes
+ingestion, document processing and retrieval. It never calls setup, migrations
+or seeding.
 Resume requires a successful stop of the current cycle and uses the same startup
 path. Concurrent operations and implicit replay after failure are refused.
 
-Stop checks provider identities before invoking the reverse provider order.
+Stop checks provider identities before invoking retrieval, document processing,
+ingestion and scraping in reverse dependency order. This keeps ingestion's
+artifact storage available until the processor has stopped.
 It verifies stopped observations before stopping Klicker and its backing.
 Provider stop may remove its own containers while retaining volumes and state;
 the consumer does not request data deletion. Incomplete attempts remain visible
@@ -91,6 +96,9 @@ It reports sanitized preparation, endpoint readiness and shutdown observations.
 Endpoint health does not establish worker registration, extraction, embeddings,
 retrieval or paid-model capability. `aiQualified` remains false. Neither an empty
 workload list nor a healthy API is proof of successful ingestion.
+The staged processor must report both readiness and `worker_registration: ready`.
+Its provider-owned observation includes the selected Blob store check;
+`unavailable` or `unknown` registration cannot satisfy consumer readiness.
 
 Consumer backend, Blob and model ports use explicit loopback publications.
 Provider port handling is owned by the selected provider revisions and must be
@@ -106,6 +114,31 @@ retrieval share the derived collection identity; retrieval requires signed KB
 scope and excludes inactive resources. By default the local model gateway receives no
 ambient upstream credentials. A nonempty local SDK placeholder is not an
 upstream credential or proof of model availability.
+
+Document processing explicitly selects the staged pipeline with picture
+descriptions off. Its private launcher configuration includes a `blob` object
+with `kind: azurite`, a loopback endpoint derived from the ingestion Azurite
+port and account `devstoreaccount1`, and dedicated container `doc-processing`.
+The facade derives its CPU registration declarations and object-storage settings;
+the consumer does not supply lifecycle-controlled admission or cloud settings.
+The facade checks the selected Blob service before initialization and its
+container on setup, restart and readiness. MinIO health cannot replace those
+observations; MinIO is separate ingestion backing for Milvus.
+
+Chat receives `COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING`,
+`COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER` and
+`COURSE_IMAGE_PROJECTION_STORAGE_PREFIX` in its private generated environment.
+They bind the same artifact account and dedicated container through
+`host.docker.internal` and the ingestion Azurite port, with prefix `projection`.
+Only Azurite's documented public development account key is used for this local
+artifact store. Klicker's upload account and ingestion's snapshot container remain
+separate. Keep generated configurations private.
+
+Configuration and simulated lifecycle tests establish these bindings and ordering.
+Actual Blob authentication, staged publication, installed image/SDK compatibility
+and the complete upload-to-saved-image lifecycle need their own service and
+artifact qualification. Optional image vision also retains its separate
+full-stack acceptance gate; this CPU configuration does not qualify it.
 
 ## Opt-in OpenRouter upstream
 
@@ -124,7 +157,7 @@ node util/local-kb-stack.mjs continue-setup \
 The executor must be committed and clean; the retained application remains at
 its original detached revision. The command verifies provider status, preserves
 completed receipts, and reconciles missing receipts only for prepared, stopped
-providers. It initializes ingestion or retrieval only when their state and
+providers. It initializes untouched providers only when their state and
 runtime resources are absent, except for the explicitly approved pending-ingestion
 recovery below. It never implicitly retries a failed provider or token operation.
 An incomplete continuation is retained and cannot be invoked again.
@@ -146,9 +179,12 @@ the original root claim. Require all three native ingestion preparation states
 pending, only the manifest, `compose-project`, and `project-configs` entries in
 its state directory, no credential files, no ingestion Compose containers,
 networks or volumes, no occupied bound ingestion port, and exited bootstrap
-containers. Scraping and document processing must already be prepared and
-stopped with completed receipts. The command retains predecessor evidence and
-creates an exclusive sibling attempt before invoking ingestion setup once.
+containers. Scraping must already have a completed receipt; document processing
+may remain untouched or prepared and stopped awaiting reconciliation. The interrupted child
+contains its claim, bootstrap intent and ingestion intent, without a processor
+reconciliation receipt. The command retains predecessor evidence and creates an
+exclusive sibling attempt before invoking ingestion setup once, then prepares or reconciles
+the processor before continuing to retrieval.
 Any failure prevents downstream work and another invocation. This option is
 mutually exclusive with `--resume-executor`; it does not authorize token rotation.
 
@@ -205,6 +241,36 @@ receipts. Check both initial startup and retained resume without printing the
 sentinel or later real credentials. Unit checks do not qualify that transport
 or establish successful retrieval.
 
+### Guarded qualification
+
+For a bounded synthetic run, set `aiUpstream.kind` to `guarded`,
+`aiUpstream.port` to the guard port (for example, 18020), and supply the required
+`aiUpstream.chatModels` array in the native Chat model-registry format. Keep the
+required BASE fallback entry and select a fixed, guard-priced model for the run.
+The managed application validates the registry at startup. This binds the gateway
+to a separately operated host guard at
+`http://host.docker.internal:18020/v1`. Inject the guard credential as
+`UPSTREAM_OPENAI_API_KEY` and that exact URL as `UPSTREAM_OPENAI_BASE_URL`.
+Chat connects directly to the same guard through its workspace API localhost
+alias, using the existing evaluation-routing checks and runtime-only guard
+credential. The actual upstream credential stays in the guard process. The guard port must
+be distinct from the configured provider ports and retained endpoints. Mode and
+port are part of preparation identity; they cannot be changed on retained state.
+
+This mode limits each resource to one bounded embedding request with at most four
+chunks and 16 KiB input, disables extra ingestion inference, and uses documents-mode
+retrieval without expansion, reranking or SDK retries. A separate, qualified guard
+must enforce aggregate request/spend ceilings and reject repeated upstream attempts;
+these configuration bounds alone do not enforce a total financial budget or disable
+Chat's SDK retries. Verify that all inference reaches that guard before injecting a
+real upstream key. Description generation and optional pixel inspection remain off.
+
+`images.minio` optionally supplies an immutable local image ID or repository digest
+to the ingestion launcher's `--minio-image`. It requires a provider revision supporting
+that flag. The provider retains the selection for start/stop; omitting it preserves
+its existing default. Record the source/package and image identity when qualifying a
+locally built backing image, and keep it distinct from the published container.
+
 ## Provisioning and acceptance
 
 ### Findings from the first completed end-to-end run
@@ -255,3 +321,11 @@ Until runtime acceptance is complete, there is no qualified one-command full
 local KB stack in this launcher. The API-only
 helper documented in the [devcontainer guide](../../../.devcontainer/README.md#local-kb-ingestion-and-graph-builder)
 does not fill that gap.
+
+A retained continuation that stopped during processor credential preparation can
+resume with `--resume-processor-executor <original-executor-sha>` only after the
+provider-owned recovery reports prepared and stopped. The consumer verifies the
+original continuation claim and its bootstrap, scraping, ingestion and processor
+receipts, then creates one exclusive continuation child. It does not retry token
+issuance or completed providers. Any unexpected downstream progress or prior
+child attempt requires inspection. Retain all earlier receipts and provider data.

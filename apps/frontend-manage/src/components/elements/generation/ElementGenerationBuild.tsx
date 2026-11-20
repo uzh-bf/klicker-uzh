@@ -22,6 +22,7 @@ import {
 import ElementGenerationReviewGatePanel from './ElementGenerationReviewGate'
 import {
   elementGenerationErrorCode,
+  hasUnfinishedRevision,
   isElementGenerationSettled,
 } from './elementGenerationTypes'
 import GeneratedElementReview from './GeneratedElementReview'
@@ -57,7 +58,11 @@ export default function ElementGenerationBuild({
   const { startPolling, stopPolling } = query
 
   useEffect(() => {
-    if (!build || !isElementGenerationSettled(build.status)) {
+    if (
+      !build ||
+      !isElementGenerationSettled(build.status) ||
+      hasUnfinishedRevision(build)
+    ) {
       startPolling(2500)
       return () => stopPolling()
     }
@@ -420,7 +425,13 @@ export default function ElementGenerationBuild({
       {(build.status === ElementGenerationBuildStatus.Completed ||
         build.status === ElementGenerationBuildStatus.Incomplete) &&
       build.drafts.length > 0 ? (
-        <GeneratedElementReview build={build} onChanged={refresh} />
+        <GeneratedElementReview
+          build={build}
+          canRequestRevision={
+            typeCapability?.supportsIndividualRegeneration === true
+          }
+          onChanged={refresh}
+        />
       ) : null}
 
       {isDelivered && resultSurface === 'slotFailures' ? (

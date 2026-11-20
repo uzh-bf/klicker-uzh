@@ -15,6 +15,7 @@ import type { ChatSource } from '@/src/lib/sources/types'
 const EMPTY_SOURCES: ChatSource[] = []
 const EMPTY_CITATION_COUNTS = new Map<number, number>()
 const EMPTY_CITED_PAGE_RANGES: ReadonlyMap<number, string> = new Map()
+const EMPTY_COURSE_IMAGE_SOURCES: ReadonlyMap<string, ChatSource> = new Map()
 const NOOP_CLEANUP = () => {}
 
 export type CitationRegistryState = {
@@ -112,6 +113,7 @@ const DEFAULT_VALUE: MessageSourcesContextValue = {
   messageId: '',
   sources: EMPTY_SOURCES,
   citedPageRanges: EMPTY_CITED_PAGE_RANGES,
+  courseImageSourcesByAssetId: EMPTY_COURSE_IMAGE_SOURCES,
   citationCounts: EMPTY_CITATION_COUNTS,
   citationsReady: true,
   registerCitation: () => NOOP_CLEANUP,
