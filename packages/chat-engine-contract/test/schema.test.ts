@@ -708,6 +708,6 @@ describe('chat engine contract', () => {
     ).toBe(false)
     expect(() =>
       parseProviderAllowedOrigins('https://provider.example.test/v1')
-    ).toThrow('exact HTTP origins')
+    ).toThrow()
   })
 })

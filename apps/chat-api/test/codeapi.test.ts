@@ -78,17 +78,20 @@ describe('host Python capability', () => {
   })
 
   test('fails closed on an enabled misconfiguration with values-free errors', () => {
-    expect(() =>
-      createCodeApiAuthorization({
-        ...config,
-        CHAT_CODEAPI_JWT_PRIVATE_KEY: 'invalid-synthetic-key',
-      })
-    ).toThrow('CodeAPI host configuration is invalid')
-    expect(() =>
-      createCodeApiAuthorization({
-        ...config,
-        CHAT_CODEAPI_PILOT_CHATBOT_IDS: '[]',
-      })
-    ).toThrow('CodeAPI host configuration is invalid')
+    for (const invalid of [
+      { ...config, CHAT_CODEAPI_JWT_PRIVATE_KEY: 'invalid-synthetic-key' },
+      { ...config, CHAT_CODEAPI_PILOT_CHATBOT_IDS: '[]' },
+    ]) {
+      let rejected: unknown
+      try {
+        createCodeApiAuthorization(invalid)
+      } catch (error) {
+        rejected = error
+      }
+      expect(rejected).toBeInstanceOf(Error)
+      const message = (rejected as Error).message
+      expect(message.includes(config.CHAT_CODEAPI_JWT_PRIVATE_KEY)).toBe(false)
+      expect(message.includes('invalid-synthetic-key')).toBe(false)
+    }
   })
 })

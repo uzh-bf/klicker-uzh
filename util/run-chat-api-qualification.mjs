@@ -1504,6 +1504,42 @@ async function worker() {
   }
 }
 
+const artifactFingerprintProgram = String.raw`
+const fs = require('node:fs')
+const path = require('node:path')
+const { createHash } = require('node:crypto')
+let entries = 0, bytes = 0
+const roots = process.argv.slice(1).flatMap((root) =>
+  root === '--workspace-dists'
+    ? fs.readdirSync('packages').sort().map((name) => path.join('packages', name, 'dist')).filter((name) => fs.existsSync(name))
+    : [root]
+)
+const result = roots.map((root) => {
+  if (!fs.lstatSync(root).isDirectory()) throw Error('Artifact root must be a directory')
+  const digest = createHash('sha256')
+  const visit = (entry) => {
+    if (++entries > 100000) throw Error('Artifact entry limit exceeded')
+    const stat = fs.lstatSync(entry), name = path.relative(root, entry)
+    if (stat.isSymbolicLink()) {
+      digest.update(JSON.stringify(['link', name, fs.readlinkSync(entry)]))
+    } else if (stat.isDirectory()) {
+      digest.update(JSON.stringify(['directory', name]))
+      for (const child of fs.readdirSync(entry).sort()) visit(path.join(entry, child))
+    } else if (stat.isFile()) {
+      bytes += stat.size
+      if (bytes > 2 * 1024 * 1024 * 1024) throw Error('Artifact byte limit exceeded')
+      const content = fs.readFileSync(entry)
+      if (content.length !== stat.size) throw Error('Artifact changed while hashing')
+      digest.update(JSON.stringify(['file', name, stat.mode & 0o777, stat.size]))
+      digest.update(content)
+    } else throw Error('Unsupported artifact entry')
+  }
+  visit(root)
+  return { path: root, sha256: digest.digest('hex') }
+})
+process.stdout.write(JSON.stringify(result))
+`
+
 async function host() {
   const executables = new Map(
     ['docker', 'git', 'devsy'].map((command) => {
@@ -1564,6 +1600,10 @@ async function host() {
     )
     return value
   }
+  assert(
+    !run('git', ['ls-files', '--others', '--exclude-standard', '-z']),
+    'The public qualification source contains nonignored untracked paths'
+  )
   const publicState = inspect(publicId, root, '/workspaces/klicker-uzh')
   const privateState = inspect(privateId, privateSource, '/workspaces/catalyst')
   const graphIndex = process.argv.indexOf('--graph-container')
@@ -1599,6 +1639,45 @@ async function host() {
     '--',
     'apps/tutoring-engine',
   ])
+  assert(
+    !run('git', [
+      '-C',
+      privateSource,
+      'ls-files',
+      '--others',
+      '--exclude-standard',
+      '-z',
+      '--',
+      'apps/tutoring-engine',
+    ]),
+    'The private engine source contains nonignored untracked paths'
+  )
+  const artifactFingerprints = (container, folder, paths) =>
+    JSON.parse(
+      run('docker', [
+        'exec',
+        '-w',
+        folder,
+        container,
+        'node',
+        '-e',
+        artifactFingerprintProgram,
+        ...paths,
+      ])
+    )
+  const executedArtifacts = {
+    public: artifactFingerprints(publicId, '/workspaces/klicker-uzh', [
+      'apps/chat-api/dist',
+      'apps/chat-engine-default/dist',
+      'apps/chat/.next/standalone',
+      'apps/chat/.next/static',
+      'apps/chat/public',
+      '--workspace-dists',
+    ]),
+    private: artifactFingerprints(privateId, '/workspaces/catalyst', [
+      'apps/tutoring-engine/dist',
+    ]),
+  }
   const alias = publicState.NetworkSettings.Networks.devnet?.Aliases?.find(
     (value) => value.endsWith('-app') && value !== 'app'
   )
@@ -1616,6 +1695,8 @@ async function host() {
       .update(run('git', ['diff', 'HEAD']))
       .digest('hex'),
     privateRevision: revision,
+    executedArtifacts,
+    containerImages: { public: publicState.Image, private: privateState.Image },
     graphContainer: graphId,
     graphImage: graphState.Image,
     graphHost,
