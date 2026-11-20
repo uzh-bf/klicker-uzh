@@ -56,6 +56,7 @@ import {
 } from '../lib/manageAiFeatureGate.js'
 import {
   fetchKbSourceInventory,
+  type KbImportedSourceItem,
   type KbSourceInventoryDeps,
 } from './docQuerySources.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
@@ -177,6 +178,45 @@ export interface KBIngestAllResult {
   alreadyCurrentCount: number
   alreadyInProgressCount: number
   queueFailureCount: number
+}
+
+/**
+ * Extracts a normalized resource UUID from an explicit ID or a legacy ingestion
+ * URL on the configured source gateway. Returns null when neither is valid.
+ * The candidate is not proof of ownership: callers must match it within the KB.
+ */
+function getManagedResourceCandidateId(source: KbImportedSourceItem) {
+  if (source.externalResourceId && validateUuid(source.externalResourceId)) {
+    return source.externalResourceId.toLowerCase()
+  }
+  if (!source.sourceUrl) return null
+
+  try {
+    const sourceUrl = new URL(source.sourceUrl)
+    const configuredGatewayUrl = process.env.KB_SOURCE_GATEWAY_URL?.trim()
+    if (!configuredGatewayUrl) return null
+    const gatewayUrl = new URL(configuredGatewayUrl)
+    if (
+      (gatewayUrl.protocol !== 'http:' && gatewayUrl.protocol !== 'https:') ||
+      gatewayUrl.username ||
+      gatewayUrl.password ||
+      gatewayUrl.pathname !== '/' ||
+      gatewayUrl.search ||
+      gatewayUrl.hash ||
+      sourceUrl.origin !== gatewayUrl.origin
+    ) {
+      return null
+    }
+
+    const pathname = sourceUrl.pathname
+    const match =
+      /^\/api\/ingestion\/resources\/([^/]+)\/versions\/\d+\/?$/.exec(pathname)
+    if (!match?.[1]) return null
+    const resourceId = decodeURIComponent(match[1])
+    return validateUuid(resourceId) ? resourceId.toLowerCase() : null
+  } catch {
+    return null
+  }
 }
 
 type KBResourceReconciliationRecord = Pick<
@@ -1139,6 +1179,12 @@ export async function getKbResourcesConnection(
   }
 }
 
+/**
+ * Loads one indexed-source page after checking AI access and KB ownership.
+ * Resolves managed resource IDs within this KB, hides internal blob gateway
+ * URLs, and preserves public website URLs and the inventory's scan metadata.
+ * Inventory and enrichment failures are surfaced as a GraphQL error.
+ */
 export async function getKbImportedSourcesConnection(
   {
     kbId,
@@ -1173,26 +1219,49 @@ export async function getKbImportedSourcesConnection(
     // up, and only the UUID-shaped ones, so one bounded indexed read answers the
     // whole page without touching the import lane's non-UUID markers.
     const candidateResourceIds = inventory.items
-      .map((item) => item.externalResourceId)
-      .filter((value): value is string => value !== null && validateUuid(value))
-    const resourceIds = new Set(
+      .map(getManagedResourceCandidateId)
+      .filter((value): value is string => value !== null)
+    const resourcesById = new Map(
       candidateResourceIds.length === 0
         ? []
         : (
             await ctx.prisma.kBResource.findMany({
               where: { kbId, id: { in: candidateResourceIds } },
-              select: { id: true },
+              select: {
+                id: true,
+                type: true,
+                sourceUrl: true,
+                ingestedAt: true,
+              },
             })
-          ).map((resource) => resource.id)
+          ).map((resource) => [resource.id, resource] as const)
     )
     return {
       items: inventory.items.map(
         ({ externalResourceId, ...item }): KBImportedSource => ({
           ...item,
-          origin:
-            externalResourceId !== null && resourceIds.has(externalResourceId)
-              ? 'MANAGED'
-              : 'IMPORTED',
+          ...(() => {
+            const resource = resourcesById.get(
+              getManagedResourceCandidateId({
+                externalResourceId,
+                ...item,
+              }) ?? ''
+            )
+            if (!resource) return { origin: 'IMPORTED' as const }
+
+            return {
+              origin: 'MANAGED' as const,
+              // Blob resources use an internal authenticated gateway URL for
+              // machine ingestion. It is neither useful nor reachable as a
+              // teacher-facing source link. URL resources keep their original
+              // public source instead.
+              sourceUrl:
+                resource.type === DB.KBResourceType.URL
+                  ? resource.sourceUrl
+                  : null,
+              ingestedAt: item.ingestedAt ?? resource.ingestedAt,
+            }
+          })(),
         })
       ),
       pageInfo: {

@@ -3,7 +3,7 @@ import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSettings'
@@ -13,6 +13,11 @@ import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
+/**
+ * Renders the KB workspace with optional advanced management panels.
+ * Coordinates separate resource and indexed-source refreshes so completing
+ * ingestion updates the inventory without reloading the page.
+ */
 function KnowledgeBaseDetail({
   kbId,
   backLink,
@@ -31,8 +36,13 @@ function KnowledgeBaseDetail({
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
+  const [importedSourcesRefreshKey, setImportedSourcesRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
+  const refreshImportedSources = useCallback(
+    () => setImportedSourcesRefreshKey((current) => current + 1),
+    []
+  )
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
   })
@@ -237,13 +247,19 @@ function KnowledgeBaseDetail({
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
+        onIngestionSettled={refreshImportedSources}
         advanced={advanced}
         onAddResource={(trigger) => {
           addResourceTriggerRef.current = trigger
           setAddResourceOpen(true)
         }}
       />
-      {advanced ? <KnowledgeBaseImportedSourceList kbId={kbId} /> : null}
+      {advanced ? (
+        <KnowledgeBaseImportedSourceList
+          kbId={kbId}
+          refreshKey={importedSourcesRefreshKey}
+        />
+      ) : null}
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
       {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
       {addResourceOpen ? (
