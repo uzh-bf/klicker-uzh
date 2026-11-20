@@ -890,6 +890,96 @@ describe('response-api escape-room validation', () => {
       ])
     })
 
+    describe('typical mistakes on numerical stages', () => {
+      const numericalInfo = {
+        ...info,
+        type: 'NUMERICAL',
+        solutions: JSON.stringify([{ min: 99, max: 101 }]),
+        mistakes: JSON.stringify([
+          {
+            key: 'whole',
+            min: 9,
+            max: 11,
+            label: 'Whole requirement',
+            feedback: 'Subtract what the bank already holds.',
+          },
+        ]),
+      }
+
+      async function submitNumerical(redis: any, value: number) {
+        const { response, result } = responseRecorder()
+        await handleEscapeRoomValidation(
+          response,
+          { ...payload, response: { value: String(value) } } as any,
+          'participant_token=token',
+          numericalInfo,
+          redis
+        )
+        return JSON.parse(result.body)
+      }
+
+      it('returns the matched feedback and records the mistake key', async () => {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        mocks.findAttempt.mockResolvedValue(attempt())
+
+        const body = await submitNumerical(redisMock(), 10)
+
+        expect(body).toEqual(
+          expect.objectContaining({
+            status: 'incorrect',
+            mistake: {
+              label: 'Whole requirement',
+              feedback: 'Subtract what the bank already holds.',
+            },
+          })
+        )
+        expect(outcomesWritten()).toEqual([
+          expect.objectContaining({ stageKey: '11', mistakes: ['11:whole'] }),
+        ])
+      })
+
+      it('keeps earlier mistake keys and reports the mistake on reveal', async () => {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        mocks.findAttempt.mockResolvedValue(
+          attempt({
+            stageOutcomes: [
+              {
+                stageKey: '11',
+                wrongAttempts: 1,
+                outcome: null,
+                at: null,
+                mistakes: ['11:whole'],
+              },
+            ],
+          })
+        )
+
+        const body = await submitNumerical(redisMock(), 10.5)
+
+        expect(body.revealed).toBe(true)
+        expect(body.mistake?.label).toBe('Whole requirement')
+        expect(outcomesWritten()).toEqual([
+          expect.objectContaining({
+            outcome: 'REVEALED',
+            mistakes: ['11:whole', '11:whole'],
+          }),
+        ])
+      })
+
+      it('returns no feedback for an unmatched wrong answer', async () => {
+        mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
+        mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
+        mocks.findAttempt.mockResolvedValue(attempt())
+
+        const body = await submitNumerical(redisMock(), 50)
+
+        expect(body.mistake).toBeNull()
+        expect(outcomesWritten()[0]).not.toHaveProperty('mistakes')
+      })
+    })
+
     it('reveals the solution after the last wrong attempt without event or lockout', async () => {
       mocks.findInstance.mockResolvedValue(activeInstanceState(rules))
       mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
