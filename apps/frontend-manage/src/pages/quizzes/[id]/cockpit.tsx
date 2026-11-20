@@ -185,7 +185,7 @@ function Cockpit() {
               <Button
                 onClick={() =>
                   window.open(
-                    `/quizzes/${id}/escape-projector/${escapeBlock.id}?digest=${encodeURIComponent(escapeRoomData.escapeRoomProgress!.projectorDigest!)}`,
+                    `/${router.locale}/quizzes/${id}/escape-projector/${escapeBlock.id}?digest=${encodeURIComponent(escapeRoomData.escapeRoomProgress!.projectorDigest!)}`,
                     '_blank',
                     'noopener'
                   )
