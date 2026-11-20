@@ -48,6 +48,7 @@ import {
 } from '@/services/groups.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handleCloseExpiredLiveQuizBlock,
   handlePublishScheduledLiveQuiz,
   handleStandardLiveQuizBlockClosureAggregation,
 } from '@/services/liveQuizzes.js'
@@ -241,6 +242,21 @@ export async function testInitialization(
           { groupActivityId },
           hatchetCtx,
           executionCtx
+        )
+        return { success }
+      },
+    }),
+    closeExpiredLiveQuizBlock: hatchet.task({
+      name: 'close-expired-live-quiz-block',
+      retries: 3,
+      fn: async (
+        input: { liveQuizId: string; blockId: number; expiresAt: string },
+        executionContext
+      ) => {
+        const success = await handleCloseExpiredLiveQuizBlock(
+          input,
+          hatchetCtx,
+          executionContext
         )
         return { success }
       },
