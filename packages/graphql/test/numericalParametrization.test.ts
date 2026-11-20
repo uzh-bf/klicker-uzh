@@ -198,4 +198,53 @@ describe('numerical parametrization', () => {
     })
     expect(errors.length).toBeGreaterThanOrEqual(6)
   })
+
+  it('shows a drawn variable without declared decimals as graded', () => {
+    const rendered = renderNumericalElementData(
+      {
+        content: 'Rate {{r}}',
+        explanation: null,
+        options: <ElementOptionsNumerical>{
+          parametrization: {
+            variables: [
+              { name: 'r', kind: 'RANGE', min: 0.031, max: 0.039, step: 0.001 },
+            ],
+            solution: { formula: 'r', tolerance: 0 },
+          },
+        },
+      },
+      'attempt-decimals'
+    )
+    const shown = Number(rendered.content.replace('Rate ', ''))
+    expect(rendered.options.solutionRanges?.[0]?.min).toBe(shown)
+  })
+
+  it('redraws an attempt whose own draw fails, but not on save', () => {
+    const fragile = {
+      content: '{{A}}',
+      explanation: null,
+      options: <ElementOptionsNumerical>{
+        parametrization: {
+          variables: [{ name: 'A', kind: 'INTEGER', min: 0, max: 1 }],
+          solution: { formula: 'sqrt(A - 1)', tolerance: 0 },
+        },
+      },
+    }
+    const failing = Array.from({ length: 50 }, (_, ix) => `attempt-${ix}`).find(
+      (seed) => {
+        try {
+          renderNumericalElementData(fragile, seed, { redraw: false })
+          return false
+        } catch {
+          return true
+        }
+      }
+    )
+    expect(failing).toBeDefined()
+    const rendered = renderNumericalElementData(fragile, failing!)
+    expect(rendered.content).toBe('1')
+    expect(
+      renderNumericalElementData(fragile, failing!).options.solutionRanges
+    ).toEqual(rendered.options.solutionRanges)
+  })
 })

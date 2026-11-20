@@ -4,6 +4,7 @@ import type { GraphQLObjectType } from 'graphql'
 import { describe, expect, it } from 'vitest'
 import { computeNumericalValues } from '../src/lib/numericalParametrization.js'
 import { manipulateElement } from '../src/services/elements.js'
+import { renderEscapeRoomStacksForAttempt } from '../src/services/escapeRooms.js'
 import {
   courseId,
   createdElementIds,
@@ -418,5 +419,51 @@ describe('escape room numbers: per-attempt play', () => {
         })
       ).results
     ).toEqual(resultsBefore)
+  })
+})
+
+describe('escape room numbers: explanations of open stages', () => {
+  it('withholds the bonus explanation of a completed attempt until it is answered', () => {
+    const stacks = [
+      {
+        id: 1,
+        elements: [
+          {
+            elementType: DB.ElementType.NUMERICAL,
+            elementData: {
+              elementId: 7,
+              content: 'Bonus',
+              explanation: 'The answer is 42.',
+              options: {},
+            },
+            responses: [],
+          },
+        ],
+      },
+    ]
+    const attempt = (status: DB.EscapeRoomStatus, startedAt: Date) =>
+      ({
+        id: 'attempt-bonus',
+        status,
+        startedAt,
+        timeLimit: 600,
+        penaltySeconds: 0,
+        stageOutcomes: [],
+      }) as unknown as DB.EscapeRoomAttempt
+    const explanationFor = (status: DB.EscapeRoomStatus, startedAt: Date) =>
+      (
+        renderEscapeRoomStacksForAttempt(stacks, attempt(status, startedAt))[0]!
+          .elements[0]!.elementData as { explanation: string | null }
+      ).explanation
+
+    const justStarted = new Date()
+    const longAgo = new Date(Date.now() - 3600 * 1000)
+    expect(
+      explanationFor(DB.EscapeRoomStatus.COMPLETED, justStarted)
+    ).toBeNull()
+    // once the time is up the bonus can no longer be answered
+    expect(explanationFor(DB.EscapeRoomStatus.COMPLETED, longAgo)).toBe(
+      'The answer is 42.'
+    )
   })
 })

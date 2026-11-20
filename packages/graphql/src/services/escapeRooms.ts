@@ -438,6 +438,17 @@ export function renderEscapeRoomElementForAttempt<
     : { ...element, elementData }
 }
 
+// A completed attempt still accepts its one bonus answer until the time runs
+// out, so an unanswered bonus stage stays open and keeps its explanation
+// hidden.
+function isEscapeRoomAttemptAnswerable(attempt: DB.EscapeRoomAttempt) {
+  return (
+    attempt.status === DB.EscapeRoomStatus.IN_PROGRESS ||
+    (attempt.status === DB.EscapeRoomStatus.COMPLETED &&
+      !isEscapeRoomExpired(attempt))
+  )
+}
+
 export function renderEscapeRoomStacksForAttempt<
   T extends {
     id: number
@@ -452,9 +463,10 @@ export function renderEscapeRoomStacksForAttempt<
 >(stacks: T[], attempt: DB.EscapeRoomAttempt | null): T[] {
   if (!attempt) return stacks
   const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
+  const answerable = isEscapeRoomAttemptAnswerable(attempt)
   return stacks.map((stack) => {
     const stageOpen =
-      attempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
+      answerable &&
       !isEscapeRoomStackCleared(
         stack.elements,
         getStageOutcome(outcomes, stack.id)

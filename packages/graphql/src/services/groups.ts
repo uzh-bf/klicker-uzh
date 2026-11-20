@@ -1572,7 +1572,10 @@ export async function getGroupActivityDetails(
           renderEscapeRoomElementForAttempt(
             element,
             attempt.id,
-            attempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
+            // a completed attempt may still answer its bonus stage, so the
+            // bonus explanation stays hidden until the team answers it
+            (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS ||
+              attempt.status === DB.EscapeRoomStatus.COMPLETED) &&
               !clearedStageIds.has(element.id)
           )
         ),

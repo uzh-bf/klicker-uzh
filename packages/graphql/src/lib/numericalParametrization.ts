@@ -184,11 +184,19 @@ function decimalsFor(
   value: number,
   parametrization: NumericalParametrization
 ): number {
+  const variable = parametrization.variables.find(
+    (variable) => variable.name === name
+  )
   const declared =
-    parametrization.variables.find((variable) => variable.name === name)
-      ?.decimals ??
+    variable?.decimals ??
     parametrization.derived?.find((derived) => derived.name === name)?.decimals
   if (typeof declared === 'number') return declared
+  // Grading uses the drawn value itself, so a drawn variable without declared
+  // decimals is shown exactly; toPrecision drops float noise such as 0.3 * 3.
+  if (variable) {
+    const fraction = String(Number(value.toPrecision(12))).split('.')[1]
+    return fraction?.length ?? 0
+  }
   return Number.isInteger(value) ? 0 : 2
 }
 
@@ -274,7 +282,9 @@ export function hasNumericalMistakes(
 // attempt. Data without parametrization or mistakes is returned unchanged.
 export function renderNumericalElementData<T extends RenderableNumericalData>(
   data: T,
-  seedSource: string
+  seedSource: string,
+  // save-time validation renders without redraws so failing formulas surface
+  { redraw = true }: { redraw?: boolean } = {}
 ): T {
   const { parametrization, mistakes } = data.options
   if (!isParametrizedNumerical(data.options) && !mistakes?.length) {
@@ -302,17 +312,12 @@ export function renderNumericalElementData<T extends RenderableNumericalData>(
   const contentTemplate = data.options.contentTemplate ?? data.content
   const explanationTemplate =
     data.options.explanationTemplate ?? data.explanation
-  const values = computeNumericalValues(parametrization, seedSource)
-  const solution = compileFormula(
-    parametrization.solution.formula,
-    new Set(Object.keys(values))
-  ).evaluate(values)
-  const solutionRanges = [
-    {
-      min: solution - parametrization.solution.tolerance,
-      max: solution + parametrization.solution.tolerance,
-    },
-  ]
+  const { values, solutionRanges, mistakeRanges } = drawUsableValues(
+    parametrization,
+    mistakes ?? [],
+    seedSource,
+    redraw ? MAX_REDRAWS : 0
+  )
 
   return {
     ...data,
@@ -327,13 +332,50 @@ export function renderNumericalElementData<T extends RenderableNumericalData>(
       explanationTemplate,
       solutionRanges,
       exactSolutions: undefined,
-      mistakeRanges: computeMistakeRanges(
-        mistakes ?? [],
-        values,
-        solutionRanges
-      ),
+      mistakeRanges,
     },
   }
+}
+
+const MAX_REDRAWS = 20
+
+// Saving checks a fixed set of sample draws, but an attempt's own seed can
+// still hit a value a formula cannot handle, such as a negative square root.
+// The seed is fixed per attempt, so such a draw would fail every read. A
+// failing draw is replaced by a deterministic redraw from a suffixed seed.
+function drawUsableValues(
+  parametrization: NumericalParametrization,
+  mistakes: readonly NumericalMistake[],
+  seedSource: string,
+  maxRedraws: number
+) {
+  let lastError: unknown
+  for (let redraw = 0; redraw <= maxRedraws; redraw++) {
+    try {
+      const values = computeNumericalValues(
+        parametrization,
+        redraw === 0 ? seedSource : `${seedSource}:redraw${redraw}`
+      )
+      const solution = compileFormula(
+        parametrization.solution.formula,
+        new Set(Object.keys(values))
+      ).evaluate(values)
+      const solutionRanges = [
+        {
+          min: solution - parametrization.solution.tolerance,
+          max: solution + parametrization.solution.tolerance,
+        },
+      ]
+      return {
+        values,
+        solutionRanges,
+        mistakeRanges: computeMistakeRanges(mistakes, values, solutionRanges),
+      }
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError
 }
 
 function checkName(name: string, seen: Set<string>, errors: string[]) {
@@ -440,7 +482,9 @@ export function validateNumericalParametrization({
   const data = { content, explanation, options }
   for (let sample = 0; sample < VALIDATION_SAMPLES; sample++) {
     try {
-      renderNumericalElementData(data, `validation:${sample}`)
+      renderNumericalElementData(data, `validation:${sample}`, {
+        redraw: false,
+      })
     } catch (error) {
       return [(error as Error).message]
     }
