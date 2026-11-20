@@ -2,16 +2,27 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { ElementOptionsNumerical } from '@klicker-uzh/types'
 import type { GraphQLObjectType } from 'graphql'
 import { describe, expect, it } from 'vitest'
+import { computeNumericalValues } from '../src/lib/numericalParametrization.js'
 import { manipulateElement } from '../src/services/elements.js'
 import {
   courseId,
   createdElementIds,
   createdQuizIds,
+  getGroupActivityDetails,
+  getPracticeQuizData,
   lecturerCtx,
   manipulatePracticeQuiz,
+  participantCtx,
   prisma,
   recomputeDerivedPermissions,
+  respondToElementStack,
   schema,
+  seedEscapeRoomGroupActivity,
+  seedEscapeRoomPracticeQuiz,
+  seedParticipant,
+  StackFeedbackStatus,
+  startEscapeRoomAttempt,
+  submitGroupActivityDecisions,
   TEST_PREFIX,
 } from './escapeRoomTestHarness.js'
 
@@ -169,5 +180,243 @@ describe('escape room numbers: authoring and instances', () => {
     for (const field of ['parametrization', 'mistakes', 'mistakeRanges']) {
       expect(participantOptions.getFields()[field]).toBeUndefined()
     }
+  })
+})
+
+function solutionFor(attemptId: string, elementId: number) {
+  const values = computeNumericalValues(
+    parametrizedOptions.parametrization,
+    `${attemptId}:${elementId}`
+  )
+  return { values, solution: values.target! - values.E! }
+}
+
+function numericalResponse(instanceId: number, value: number) {
+  return {
+    instanceId,
+    type: DB.ElementType.NUMERICAL,
+    numericalResponse: value,
+  }
+}
+
+describe('escape room numbers: per-attempt play', () => {
+  async function seedQuizWithPlayers() {
+    const element = await createParametrizedElement()
+    const quiz = await seedEscapeRoomPracticeQuiz(
+      {
+        elements: [element],
+        courseId,
+        status: DB.PublicationStatus.PUBLISHED,
+        lockoutSeconds: 0,
+      },
+      lecturerCtx
+    )
+    createdQuizIds.push(quiz.id)
+    const players = [
+      await seedParticipant(`numbers-a-${quiz.id}`),
+      await seedParticipant(`numbers-b-${quiz.id}`),
+    ]
+    for (const player of players) {
+      await startEscapeRoomAttempt(
+        { practiceQuizId: quiz.id },
+        participantCtx(player.id)
+      )
+    }
+    const attempts = await Promise.all(
+      players.map((player) =>
+        prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: {
+            participantId_practiceQuizId: {
+              participantId: player.id,
+              practiceQuizId: quiz.id,
+            },
+          },
+        })
+      )
+    )
+    return { element, quiz, players, attempts }
+  }
+
+  it('shows each player their own numbers and grades against their own solution', async () => {
+    const { element, quiz, players, attempts } = await seedQuizWithPlayers()
+    const stack = quiz.stacks[0]!
+    const instance = stack.elements[0]!
+    const [a, b] = attempts.map((attempt) =>
+      solutionFor(attempt.id, element.id)
+    )
+    expect(a!.values).not.toEqual(b!.values)
+
+    const view = await getPracticeQuizData(
+      { id: quiz.id },
+      participantCtx(players[0]!.id)
+    )
+    const viewData = view!.stacks[0]!.elements[0]!.elementData as {
+      content: string
+      explanation: string | null
+    }
+    expect(viewData.content).toContain(
+      a!.values.A!.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'")
+    )
+    // the stage is open, so its explanation is withheld
+    expect(viewData.explanation).toBeNull()
+
+    if (Math.abs(a!.solution - b!.solution) > 2) {
+      const other = await respondToElementStack(
+        {
+          stackId: stack.id,
+          courseId,
+          responses: [numericalResponse(instance.id, b!.solution)],
+          stackAnswerTime: 5,
+        },
+        participantCtx(players[0]!.id)
+      )
+      expect(other!.status).toBe(StackFeedbackStatus.INCORRECT)
+    }
+    const own = await respondToElementStack(
+      {
+        stackId: stack.id,
+        courseId,
+        responses: [numericalResponse(instance.id, a!.solution)],
+        stackAnswerTime: 5,
+      },
+      participantCtx(players[0]!.id)
+    )
+    expect(own!.status).toBe(StackFeedbackStatus.CORRECT)
+    const evaluation = own!.evaluations![0] as {
+      solutionRanges?: { min: number; max: number }[]
+    }
+    expect(evaluation.solutionRanges).toEqual([
+      { min: a!.solution - 1, max: a!.solution + 1 },
+    ])
+  })
+
+  it('returns mistake feedback, records the key and keeps it through later writes', async () => {
+    const { element, quiz, players, attempts } = await seedQuizWithPlayers()
+    const stack = quiz.stacks[0]!
+    const instance = stack.elements[0]!
+    const { values } = solutionFor(attempts[0]!.id, element.id)
+
+    const result = await respondToElementStack(
+      {
+        stackId: stack.id,
+        courseId,
+        responses: [numericalResponse(instance.id, values.target!)],
+        stackAnswerTime: 5,
+      },
+      participantCtx(players[0]!.id)
+    )
+    expect(result!.status).toBe(StackFeedbackStatus.INCORRECT)
+    expect(result!.mistakes).toEqual([
+      {
+        label: 'Whole requirement instead of the gap',
+        feedback: 'Subtract the capital the bank already holds.',
+      },
+    ])
+    expect(result!.evaluations).toBeUndefined()
+
+    // a later wrong answer rewrites the outcome list and must keep the key
+    const unmatched = await respondToElementStack(
+      {
+        stackId: stack.id,
+        courseId,
+        responses: [numericalResponse(instance.id, -1)],
+        stackAnswerTime: 5,
+      },
+      participantCtx(players[0]!.id)
+    )
+    expect(unmatched!.mistakes).toBeUndefined()
+    const stored = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+      where: { id: attempts[0]!.id },
+    })
+    expect(
+      (
+        stored.stageOutcomes as { stageKey: string; mistakes?: string[] }[]
+      ).find((entry) => entry.stageKey === String(stack.id))?.mistakes
+    ).toEqual([`${instance.id}:whole`])
+  })
+
+  it('keeps answers to parametrized stages out of the shared instance statistics', async () => {
+    const { element, quiz, players, attempts } = await seedQuizWithPlayers()
+    const stack = quiz.stacks[0]!
+    const instance = stack.elements[0]!
+    const before = await prisma.elementInstance.findUniqueOrThrow({
+      where: { id: instance.id },
+    })
+    const { solution } = solutionFor(attempts[0]!.id, element.id)
+    await respondToElementStack(
+      {
+        stackId: stack.id,
+        courseId,
+        responses: [numericalResponse(instance.id, solution)],
+        stackAnswerTime: 5,
+      },
+      participantCtx(players[0]!.id)
+    )
+    const after = await prisma.elementInstance.findUniqueOrThrow({
+      where: { id: instance.id },
+    })
+    expect(after.results).toEqual(before.results)
+    const responses = await prisma.questionResponse.findMany({
+      where: { elementInstanceId: instance.id, participantId: players[0]!.id },
+    })
+    expect(responses).toHaveLength(1)
+  })
+
+  it('gives each group its own numbers and returns mistake feedback on a wrong answer', async () => {
+    const element = await createParametrizedElement()
+    const memberA = await seedParticipant(`numbers-ga-${element.id}`)
+    const memberB = await seedParticipant(`numbers-gb-${element.id}`)
+    const first = await seedEscapeRoomGroupActivity(
+      { elements: [element], courseId, participantIds: [memberA.id] },
+      lecturerCtx
+    )
+    const second = await seedEscapeRoomGroupActivity(
+      { elements: [element], courseId, participantIds: [memberB.id] },
+      lecturerCtx
+    )
+    const a = solutionFor(first.attempt.id, element.id)
+    const b = solutionFor(second.attempt.id, element.id)
+    expect(a.values).not.toEqual(b.values)
+
+    const details = await getGroupActivityDetails(
+      { activityId: first.groupActivity.id, groupId: first.group.id },
+      participantCtx(memberA.id)
+    )
+    const stage = details!.stacks[0]!.elements[0]!
+    expect(
+      (stage.elementData as { explanation: string | null }).explanation
+    ).toBeNull()
+
+    const instanceId = first.groupActivity.stacks[0]!.elements[0]!.id
+    const resultsBefore = (
+      await prisma.elementInstance.findUniqueOrThrow({
+        where: { id: instanceId },
+      })
+    ).results
+    const error = await submitGroupActivityDecisions(
+      {
+        activityId: first.activityInstance.id,
+        responses: [numericalResponse(instanceId, a.values.target!)],
+      },
+      participantCtx(memberA.id)
+    ).catch((caught) => caught)
+    expect(error.extensions.code).toBe('ESCAPE_ROOM_LOCKOUT')
+    expect(error.extensions.mistake).toEqual({
+      label: 'Whole requirement instead of the gap',
+      feedback: 'Subtract the capital the bank already holds.',
+    })
+    const attempt = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+      where: { id: first.attempt.id },
+    })
+    expect(
+      (attempt.stageOutcomes as { mistakes?: string[] }[])[0]?.mistakes
+    ).toEqual([`${instanceId}:whole`])
+    expect(
+      (
+        await prisma.elementInstance.findUniqueOrThrow({
+          where: { id: instanceId },
+        })
+      ).results
+    ).toEqual(resultsBefore)
   })
 })

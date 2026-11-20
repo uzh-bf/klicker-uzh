@@ -724,6 +724,10 @@ export interface ElementOptionsNumerical extends BaseElementOptions {
   parametrization?: NumericalParametrization | null
   mistakes?: NumericalMistake[] | null
   mistakeRanges?: NumericalMistakeRange[] | null
+  // content and explanation with placeholders, kept when an instance's
+  // content is filled with its fixed draw
+  contentTemplate?: string | null
+  explanationTemplate?: string | null
 }
 
 export type FreeTextRestrictions = {

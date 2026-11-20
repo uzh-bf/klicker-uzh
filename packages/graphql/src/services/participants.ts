@@ -12,6 +12,7 @@ import {
   type ParticipantDataUseFields,
   participantDataUseSelect,
 } from '../lib/learningAnalytics.js'
+import { renderEscapeRoomStacksForAttempt } from './escapeRooms.js'
 
 dayjs.extend(isoWeek)
 
@@ -569,7 +570,38 @@ export async function getBookmarkedElementStacks(
     },
   })
 
-  return participation?.bookmarkedElementStacks ?? []
+  const stacks = participation?.bookmarkedElementStacks ?? []
+
+  // bookmarked escape room stages show the participant's own numbers
+  const attempts = await ctx.prisma.escapeRoomAttempt.findMany({
+    where: {
+      participantId: ctx.user.sub,
+      OR: [
+        {
+          practiceQuizId: {
+            in: stacks.flatMap((stack) => stack.practiceQuizId ?? []),
+          },
+        },
+        {
+          microLearningId: {
+            in: stacks.flatMap((stack) => stack.microLearningId ?? []),
+          },
+        },
+      ],
+    },
+  })
+  return stacks.map((stack) => {
+    const attempt = attempts.find(
+      (entry) =>
+        (!!stack.practiceQuizId &&
+          entry.practiceQuizId === stack.practiceQuizId) ||
+        (!!stack.microLearningId &&
+          entry.microLearningId === stack.microLearningId)
+    )
+    return attempt
+      ? renderEscapeRoomStacksForAttempt([stack], attempt)[0]!
+      : stack
+  })
 }
 
 export async function flagElement(

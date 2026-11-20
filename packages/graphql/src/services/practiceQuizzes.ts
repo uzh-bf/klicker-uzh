@@ -27,6 +27,7 @@ import {
 import {
   getEscapeRoomRulesData,
   isEscapeRoomStackCleared,
+  renderEscapeRoomStacksForAttempt,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
@@ -123,7 +124,10 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       isOwner,
-      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
+      stacks: restoreUsedEscapeRoomHints(
+        renderEscapeRoomStacksForAttempt(filteredStacks, attempt),
+        attempt?.hintsUsed
+      ),
       numOfStacks: orderedStacks.length,
     }
   }

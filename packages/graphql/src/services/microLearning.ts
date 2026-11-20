@@ -26,6 +26,7 @@ import {
 import {
   getEscapeRoomRulesData,
   isEscapeRoomStackCleared,
+  renderEscapeRoomStacksForAttempt,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
@@ -117,7 +118,10 @@ export async function getMicroLearningData(
     return {
       ...microLearning,
       isOwner,
-      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
+      stacks: restoreUsedEscapeRoomHints(
+        renderEscapeRoomStacksForAttempt(filteredStacks, attempt),
+        attempt?.hintsUsed
+      ),
       // escape rooms mask locked stacks, so the total is reported separately
       numOfStacks: orderedStacks.length,
     }

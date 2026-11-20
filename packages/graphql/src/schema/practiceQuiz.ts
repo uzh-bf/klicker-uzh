@@ -184,6 +184,16 @@ export const StackResponseInput = StackResponseInputRef.implement({
   }),
 })
 
+// Feedback for a wrong answer that matches a typical mistake.
+export const EscapeRoomMistakeFeedback = builder
+  .objectRef<{ label: string; feedback: string }>('EscapeRoomMistakeFeedback')
+  .implement({
+    fields: (t) => ({
+      label: t.exposeString('label'),
+      feedback: t.exposeString('feedback'),
+    }),
+  })
+
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')
   .implement({
@@ -193,6 +203,10 @@ export const StackFeedback = builder
       score: t.exposeInt('score', { nullable: true }),
       evaluations: t.expose('evaluations', {
         type: [InstanceEvaluation],
+        nullable: true,
+      }),
+      mistakes: t.expose('mistakes', {
+        type: [EscapeRoomMistakeFeedback],
         nullable: true,
       }),
     }),

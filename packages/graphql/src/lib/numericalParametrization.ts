@@ -299,6 +299,9 @@ export function renderNumericalElementData<T extends RenderableNumericalData>(
     }
   }
 
+  const contentTemplate = data.options.contentTemplate ?? data.content
+  const explanationTemplate =
+    data.options.explanationTemplate ?? data.explanation
   const values = computeNumericalValues(parametrization, seedSource)
   const solution = compileFormula(
     parametrization.solution.formula,
@@ -313,13 +316,15 @@ export function renderNumericalElementData<T extends RenderableNumericalData>(
 
   return {
     ...data,
-    content: renderNumericalTemplate(data.content, values, parametrization),
+    content: renderNumericalTemplate(contentTemplate, values, parametrization),
     explanation:
-      typeof data.explanation === 'string'
-        ? renderNumericalTemplate(data.explanation, values, parametrization)
-        : data.explanation,
+      typeof explanationTemplate === 'string'
+        ? renderNumericalTemplate(explanationTemplate, values, parametrization)
+        : explanationTemplate,
     options: {
       ...data.options,
+      contentTemplate,
+      explanationTemplate,
       solutionRanges,
       exactSolutions: undefined,
       mistakeRanges: computeMistakeRanges(

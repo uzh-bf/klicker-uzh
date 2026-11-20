@@ -118,6 +118,10 @@ describe('numerical parametrization', () => {
       { key: 'whole', min: values.target! - 1, max: values.target! + 1 },
     ])
     expect(rendered.options.parametrization).toEqual(parametrization)
+
+    // rendering an already rendered instance draws from the templates again
+    const again = renderNumericalElementData(rendered, 'attempt-2:el')
+    expect(again).toEqual(renderNumericalElementData(data, 'attempt-2:el'))
   })
 
   it('computes mistake ranges for elements without variables', () => {
