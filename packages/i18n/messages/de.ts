@@ -2834,6 +2834,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       variableKindRANGE: 'Bereich',
       variableKindPICK: 'Liste',
       variableStep: 'Schritt',
+      variableFactor: 'Faktor',
       variableValues: 'Werte (durch Kommas getrennt)',
       variableDecimals: 'Nachkommastellen',
       addVariable: 'Variable hinzufügen',

@@ -2804,6 +2804,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       variableKindRANGE: 'Range',
       variableKindPICK: 'List',
       variableStep: 'Step',
+      variableFactor: 'Multiplier',
       variableValues: 'Values (comma-separated)',
       variableDecimals: 'Decimals',
       addVariable: 'Add variable',

@@ -111,7 +111,13 @@ export function NumericalParametrizationInput({
                         <FormikNumberField
                           disabled={disabled}
                           name={`${path}.step`}
-                          label={t('manage.elements.variableStep')}
+                          // whole numbers are multiplied by it, ranges are
+                          // rounded to it
+                          label={t(
+                            variable.kind === 'INTEGER'
+                              ? 'manage.elements.variableFactor'
+                              : 'manage.elements.variableStep'
+                          )}
                           className={{ root: 'w-20' }}
                           data={{ cy: `numerical-variable-step-${index}` }}
                         />
