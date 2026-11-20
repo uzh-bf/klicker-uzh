@@ -26,8 +26,8 @@ import {
 } from '../src/provider.js'
 
 function mockStream(
-  inputTokens = 12,
-  outputTokens = 8,
+  inputTokens: number | null = 12,
+  outputTokens: number | null = 8,
   text = 'A bond is debt.'
 ) {
   return new ReadableStream({
@@ -45,14 +45,14 @@ function mockStream(
         finishReason: { unified: 'stop', raw: 'stop' },
         usage: {
           inputTokens: {
-            total: inputTokens,
-            noCache: inputTokens,
+            total: inputTokens ?? undefined,
+            noCache: inputTokens ?? undefined,
             cacheRead: undefined,
             cacheWrite: undefined,
           },
           outputTokens: {
-            total: outputTokens,
-            text: outputTokens,
+            total: outputTokens ?? undefined,
+            text: outputTokens ?? undefined,
             reasoning: undefined,
           },
         },
@@ -198,6 +198,7 @@ function modelToolResults(prompt: Array<{ role: string; content: unknown }>) {
 describe('default chat engine', () => {
   test.each([
     [0, 0, 'test-provider-reply', 'test-replacement'],
+    [null, null, 'test-provider-reply', 'test-provider-reply'],
     [20, 5, 'test-provider-reply', 'test-provider-reply'],
     [0, 0, 'x'.repeat(121), 'x'.repeat(121)],
   ])('applies the host unbilled-reply policy only to a short unbilled step (%s, %s)', async (inputTokens, outputTokens, text, expected) => {
