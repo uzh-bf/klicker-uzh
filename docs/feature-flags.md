@@ -23,21 +23,27 @@ product and admission flag listed under [Active flags](#active-flags) and
 [Knowledge-base admission controls](#knowledge-base-admission-controls).
 Applications initialize GrowthBook only when they adopt their first flag.
 
-`ai-beta` is not the whole gate over the lecturer AI surfaces. For Knowledge
-Base access and question/graph generation, the account's `aiFeaturesEnabled`
-column remains an independent approval gate, and both conditions must hold.
-Chatbot authoring is preapproval: it uses the database beta preference and the
-`ai-beta` rollout with Catalyst and allowed account scope, without requiring
-`aiFeaturesEnabled`. Chatbot publication and model usage still require that
-approval — see [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
-In `frontend-manage`, `aiFeaturesEnabled` controls the Knowledge Bases and
-generation entries while the separate authoring gate can expose the Chatbots
-entry before AI approval; each denied route renders a localized unavailable
-state instead of redirecting. GraphQL applies the combined flag and approval
-gate to every lecturer KB and question/graph-generation entry point. Chatbot
-authoring uses the separate beta preference and rollout gate, while publication
-and model usage still check `aiFeaturesEnabled`; participant chatbot discovery
-and worker-only KB settlement are unaffected.
+`ai-beta` is not the whole gate over the lecturer AI surfaces. Three gates
+build on it:
+
+- **Manage assistant.** Every Catalyst lecturer with the database beta
+  preference and the `ai-beta` rollout. It does not require
+  `aiFeaturesEnabled`; its per-user rate limits bound its use.
+- **Knowledge bases and chatbots.** These also require the account's
+  `aiFeaturesEnabled` approval. Auth sets it when a UZH account is created
+  (`isUzhAffiliated` in `packages/util/src/auth.ts`: email or eduID affiliation
+  on `uzh.ch` or a subdomain), and administrators can change it. Manage shows
+  the Chatbots surface only with the approval. On the API, creating,
+  publishing and model usage check the approval, while saving and withdrawing
+  an existing chatbot keep the authoring gate (beta preference, `ai-beta`,
+  Catalyst and allowed account scope). See
+  [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
+- **Question and flashcard generation.** These additionally require the
+  `question-generation` flag, so the approval alone does not open them.
+
+In `frontend-manage`, each denied route renders a localized unavailable state
+instead of redirecting. Participant chatbot discovery and worker-only KB
+settlement are unaffected.
 
 ## Active flags
 
@@ -45,11 +51,9 @@ and worker-only KB settlement are unaffected.
 | ----------------------------- | ------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
 | `learning-analytics`          | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                              |
 | `ai-beta`                     | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                    |
-| `kb-ingestion`                | Lecturer KB ingestion admission                         | `false`  | New upload, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue   |
-| `kb-graph-builds`             | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue   |
-| `kb-graph-domain-selection`   | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                                |
-| `question-focus-topic`        | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                    |
+| `chatbot-response-examples`   | Response example review in Manage                       | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples              |
 | `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save   | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged |
+| `question-generation`         | Question and flashcard generation in Manage and GraphQL | `false`  | The generate entry points are hidden and every generation API call is denied                                      |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information
@@ -68,8 +72,8 @@ from a broken control without implying that lecturers can enable it themselves.
 
 ### AI capability states
 
-The backend-owned capability for Knowledge Bases, generation, and Manage assistants
-has three states. Chatbot authoring keeps its separate upstream gate.
+The backend-owned capability for Knowledge Bases, chatbots and generation has
+three states. The Manage assistant uses its own gate without the AI approval.
 
 | State                    | Meaning                                                      | Manage behavior                                    |
 | ------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
@@ -442,11 +446,12 @@ evaluation only; it does not persist or mutate beta membership. Token
 provisioning and validation belong to v3-ai and are outside this contract.
 
 `User.aiFeaturesEnabled` defaults to `false` and remains the sole account
-approval gate for Knowledge Base access, question/graph generation, chatbot
-publication, and model usage, even when budget enforcement is disabled.
-Chatbot authoring is preapproval and may use the beta preference and `ai-beta`
-rollout without that approval, but neither grants it. Per-chatbot publication
-review and published participant access remain separate and unchanged.
+approval gate for Knowledge Base access, chatbot creation and publication,
+question/graph generation, and model usage, even when budget enforcement is
+disabled. Auth sets it when a UZH account is created. Question and flashcard
+generation additionally require `question-generation`. The Manage assistant
+does not require the approval. Per-chatbot publication review and published
+participant access remain separate and unchanged.
 
 ### Transition from saved-group targeting
 
@@ -508,7 +513,10 @@ No live rule or saved-group contents were verified for this change.
 - For `ai-beta`, an explicit backend denial and an unavailable GrowthBook
   decision use separate capability states and public error contracts. Only the
   unavailable state preserves a visible, disabled Manage entry for recovery;
-  neither state authorizes a protected operation.
+  neither state authorizes a protected operation. The Manage assistant launcher
+  follows the browser `ai-beta` evaluation instead, so it stays hidden while the
+  browser has no usable payload; the chat app still renders its own retryable
+  state for a backend outage.
 - Feature definitions and targeting rules are managed in GrowthBook. Ordinary
   SDK evaluation never uses the optional management API key; the beta
   preference path uses only the read-only SDK payload and has no management
@@ -564,43 +572,61 @@ The architectural rationale is recorded in
 [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md) and
 [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md).
 
+### Simple and advanced chatbot settings
+
+Manage has no feature flag for advanced chatbot settings. Lecturers choose
+between "Simple settings" and "Advanced settings" with a switch next to the
+chatbot header and on the knowledge-base page. The choice is stored in the
+browser (`klicker-manage-ai-settings-mode` in local storage) and defaults to
+simple. Simple settings show materials, student information, learning modes,
+usage limits and the publication request. Advanced settings add model
+selection, the knowledge-graph controls, the technical details block and the
+"Ingest all" action on the knowledge-base page. Usage limits are budgets in US
+dollars and are always visible. Manage has no MCP settings UI, so there is
+nothing to reveal for MCP. The switch is a display preference, not an
+authorization boundary; see
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md) for the
+backend-enforced entitlements that gate the underlying mutations. Response
+examples keep their own flag, `chatbot-response-examples`.
+
 ### Chatbot graph-assisted retrieval
 
-`chatbot-graphrag` defaults off. It exposes the lecturer retrieval control and
-allows retrieval only together with the approved chatbot retrieval policy.
-Backend activation/publication and Chat runtime target the owning lecturer's
-current id, role, Catalyst status and beta preference. The map remains an
-independent lecturer opt-in and does not depend on this retrieval flag.
-Missing/unusable flag configuration fails closed. Shared refresh (30 seconds)
-and maximum payload age (120 seconds) bound eventual revocation; this is not
-an instantaneous global kill switch. Deploy the source disabled, validate map
-and ordinary retrieval on staging, then enable only a named evaluation cohort.
+Graph-assisted retrieval is available to every lecturer who has `ai-beta`; no
+separate flag exists. Retrieval is allowed only together with the approved
+chatbot retrieval policy. Backend activation/publication and the Chat runtime
+evaluate `ai-beta` for the owning lecturer's current id, role, Catalyst status
+and beta preference, and deny the owner who has not opted into the beta.
+The map remains an independent lecturer opt-in. Missing/unusable flag
+configuration fails closed. Shared refresh (30 seconds) and maximum payload age
+(120 seconds) bound eventual revocation; this is not an instantaneous global
+kill switch.
 
 ### Knowledge-base admission controls
 
-Four flags decide whether an actor may start new knowledge-base work. They are
-backend-enforced entitlements under [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md):
-the capability queries advertise what the requesting actor's own evaluation
-allows, and every entry point re-evaluates the flag before it accepts work.
+Whether an actor may start new knowledge-base work is decided by `ai-beta`
+alone. This covers ingestion (upload tickets, upload confirmation, URL
+resources, file replacement, and ingest/retry work), graph opt-in and rebuilds,
+explicit graph-domain selection, per-batch question-generation focus, and
+scheduled graph preparation. New knowledge bases start opted into the graph for
+every lecturer with `ai-beta`. These are backend-enforced entitlements under
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md): the capability
+queries advertise what the requesting actor's own evaluation allows, and every
+entry point re-evaluates it before it accepts work. Refusals keep their error
+codes: `KB_INGESTION_DISABLED`, `KB_GRAPH_DISABLED`,
+`KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`, and `CONFIGURATION_INVALID` for a
+requested question focus. Reads, deletion, cleanup, queued reconciliation,
+published graphs, and accepted builds stay live.
 
-| Key                         | Admits                                                                 | Closed or unavailable behavior                                                                                                              |
-| --------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kb-ingestion`              | Upload tickets, URL resources, file replacement, and ingest/retry work | `KB_INGESTION_DISABLED` on new requests only; reads, upload confirmation, deletion, cleanup and queued reconciliation stay live             |
-| `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation  | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
-| `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                    | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
-| `question-focus-topic`      | A per-batch question-generation focus                                  | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
-
-These flags narrow existing provider contracts and never replace them. Explicit
+`ai-beta` narrows existing provider contracts and never replaces them. Explicit
 domain selection still requires `KB_GRAPH_DOMAIN_CATALOG_REVISION` to match the
 shipped catalog, and question focus still needs a question worker that
 understands the blueprint field, because the provider rejects an unknown field
 instead of ignoring it. A deployment declares what its provider pipeline
-supports; GrowthBook decides who may use it.
+supports; GrowthBook decides who holds the beta.
 
 A denied or unusable evaluation refuses new work and never rewrites an accepted
 request. Persisted builds keep the inputs they were accepted with, and their
-settlement, publication, cleanup and reconciliation paths do not read these
-flags.
+settlement, publication, cleanup and reconciliation paths do not read the flag.
 
 Every key falls back to `false`, so a missing definition closes the capability
 everywhere until its environment's default value or a targeting rule admits it.
@@ -613,4 +639,7 @@ own `temporarilyUnavailable` state for a GrowthBook outage. The two
 knowledge-base worker gates, `KB_INGESTION_WORKER_DISABLED` and the general
 worker's `KB_GRAPH_DISABLED`, remain deployment configuration: they stop this
 deployment's worker from registering or dispatching work at all, independently
-of any actor's rollout.
+of any actor's rollout. Scheduled graph preparation runs in the general worker,
+which evaluates the KB owner's flags with its own GrowthBook client from the
+shared `GROWTHBOOK_*` settings; while that client has no usable payload every
+owner is refused.

@@ -15,6 +15,7 @@ export type PersistedAssistantContentPart =
   // user-facing strings — the server has no reliable locale, so the client
   // renders the stopped notice from its own translations keyed on `name`.
   | { type: 'data'; name: 'chat-stopped'; data: Record<string, never> }
+  | EmptyResponseError
 
 type UnfinishedAssistantContentPart =
   | { type: 'text'; text: string }
@@ -144,4 +145,42 @@ export function withoutReasoningParts(content: unknown): unknown {
         (part as { type?: unknown }).type === 'reasoning'
       )
   )
+}
+
+type EmptyResponseError = {
+  type: 'data'
+  name: 'chat-error'
+  data: { code: 'EMPTY_RESPONSE' }
+}
+
+/** Reasoning and unfinished tool calls do not constitute a usable response. */
+export function hasMeaningfulAssistantContent(content: unknown): boolean {
+  if (!Array.isArray(content)) return false
+  return content.some((part) => {
+    if (!part || typeof part !== 'object') return false
+    if (part.type === 'text') {
+      return typeof part.text === 'string' && part.text.trim().length > 0
+    }
+    if (part.type === 'tool-call') {
+      return part.result !== undefined && part.result !== null
+    }
+    return (
+      part.type === 'data' &&
+      ['chat-error', 'chat-stopped', 'response-example-receipt'].includes(
+        part.name
+      )
+    )
+  })
+}
+
+/** Keep failed output retryable after reload without inventing model text. */
+export function withEmptyResponseError<T>(
+  content: T[]
+): (T | EmptyResponseError)[] {
+  return hasMeaningfulAssistantContent(content)
+    ? content
+    : [
+        ...content,
+        { type: 'data', name: 'chat-error', data: { code: 'EMPTY_RESPONSE' } },
+      ]
 }

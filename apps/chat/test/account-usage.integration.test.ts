@@ -325,9 +325,16 @@ describePostgres('account usage PostgreSQL integration', () => {
     ).toBe(0)
   })
 
-  test('debits participant credits in the finalization transaction once', async () => {
+  test.each(
+    [
+      [{ type: 'text', text: 'Synthetic response' }],
+      [{ type: 'data', name: 'chat-error', data: { code: 'EMPTY_RESPONSE' } }],
+    ].map((content) => ({ content }))
+  )('debits finalized response usage once, including an empty-response error', async ({
+    content,
+  }) => {
     const messageId = randomUUID()
-    const input = await claimedTurnInput(messageId)
+    const input = await claimedTurnInput(messageId, { content })
 
     await expect(accountUsage.finalizeChatTurn(input)).resolves.toEqual({
       outcome: 'completed',

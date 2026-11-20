@@ -13,6 +13,8 @@ import { withInputContextContract } from './inputContextInstructions.js'
 import { withLanguageStyleContract } from './languageInstructions.js'
 import { withOutputFormatContract } from './outputFormatInstructions.js'
 import { renderPromptTemplate } from './promptTemplates.js'
+import { COURSE_IMAGE_TOOL } from '../sources/courseImages.js'
+import { isDocQueryToolName } from '../sources/normalizeSources.js'
 
 export type SystemPromptCompilationContext = {
   courseDisplayName: string
@@ -20,6 +22,7 @@ export type SystemPromptCompilationContext = {
   standardModeConfig?: unknown
   answerStyle?: AnswerStyle
   answerTone?: AnswerTone
+  courseImageVision?: boolean
   /**
    * The custom modes the calling surface should compile. Participant routes
    * pass the live column; owner preview passes the saved revision so it
@@ -237,8 +240,18 @@ export function compileSystemPrompt(
   )
   const outputFormat = withOutputFormatContract(coursePolicy, customPersona)
   const citations = withCitationContract(outputFormat, context.toolNames)
+  const images =
+    context.toolNames.includes(COURSE_IMAGE_TOOL) &&
+    context.toolNames.some(isDocQueryToolName)
+      ? `${citations}\n\n${renderPromptTemplate('course-images', {
+          courseImageTool: COURSE_IMAGE_TOOL,
+          visualEvidence: context.courseImageVision
+            ? renderPromptTemplate('course-image-vision', {})
+            : '',
+        })}`
+      : citations
   return withLanguageStyleContract(
-    citations,
+    images,
     customMode(context.customModeConfig, selectedMode)?.replyLanguage ?? null
   )
 }

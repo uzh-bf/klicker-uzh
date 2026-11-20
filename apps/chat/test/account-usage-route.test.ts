@@ -53,7 +53,7 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
-vi.mock('@/src/services/disclaimers', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/disclaimers', () => ({
   DisclaimersService: {
     checkDisclaimerStatus: mocks.checkDisclaimerStatus,
   },
@@ -90,7 +90,7 @@ vi.mock('@klicker-uzh/chat-api/host/lib/server/responseExampleRuntime', () => ({
   createResponseExampleSearchTool: mocks.createResponseExampleSearchTool,
 }))
 
-vi.mock('@/src/services/threads', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
     findFailedTurnThreadId: mocks.findFailedTurnThreadId,
@@ -98,7 +98,7 @@ vi.mock('@/src/services/threads', () => ({
   },
 }))
 
-vi.mock('@/src/services/credits', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/credits', () => ({
   CreditsService: {
     previewUserCredits: mocks.previewUserCredits,
     getUserCredits: mocks.getUserCredits,
@@ -125,7 +125,7 @@ vi.mock('@/src/services/accountUsage', async (importOriginal) => {
   }
 })
 
-vi.mock('@/src/lib/server/imagePreview', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/imagePreview', () => ({
   ensureImagePreviewBase64: mocks.ensureImagePreviewBase64,
 }))
 
@@ -1429,6 +1429,32 @@ describe('account usage chat route', () => {
     })
   })
 
+  test('persists reasoning-only output as a stable error while finalizing actual usage once', async () => {
+    await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [{ content: [{ type: 'reasoning', text: '' }] }],
+      reasoningText: '',
+    })
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: [
+          { type: 'reasoning', text: '' },
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ],
+        rawCreditsUsed: 0.00006,
+      })
+    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
   test('persists missing terminal usage without either credit decrement', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -1447,7 +1473,7 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
-  test('does not charge an empty terminal result', async () => {
+  test('persists an empty-response error with the reported usage', async () => {
     mocks.finalizeChatTurn.mockResolvedValueOnce({
       outcome: 'empty',
       creditsUsed: null,
@@ -1465,7 +1491,13 @@ describe('account usage chat route', () => {
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: [],
+        content: [
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ],
         rawCreditsUsed: 0.00006,
       })
     )

@@ -51,7 +51,7 @@ export NEXT_PUBLIC_MATOMO_SITE_ID=''
 
 export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
 export AUTH_STUDENT_ALLOWED_HOSTS='127.0.0.1:3001'
-export AUTH_LECTURER_ALLOWED_HOSTS='127.0.0.1:3002'
+export AUTH_LECTURER_ALLOWED_HOSTS='127.0.0.1:3002,127.0.0.1:3003'
 export AUTH_PWA_HOSTS='127.0.0.1:3000'
 
 # The devcontainer's CI-parity Playwright runtime serves the same production
@@ -88,7 +88,7 @@ if [ -n "${KLICKER_TEST_ROUTED_DOMAIN:-}" ]; then
 	export NEXTAUTH_URL="$APP_ORIGIN_AUTH"
 	export CORS_ALLOWED_ORIGINS="$APP_ORIGIN_PWA"
 	export AUTH_STUDENT_ALLOWED_HOSTS="$(routed_host pwa)"
-	export AUTH_LECTURER_ALLOWED_HOSTS="$(routed_host manage)"
+	export AUTH_LECTURER_ALLOWED_HOSTS="$(routed_host manage),$(routed_host control)"
 	export AUTH_PWA_HOSTS="$(routed_host api)"
 fi
 

@@ -114,6 +114,76 @@ const body = {
 
 describe('chat-api Slice 2 tracer', () => {
   test.each([
+    'empty',
+    'reasoning',
+  ])('persists retryable completion for %s output', async (kind) => {
+    const dependencies = baseDependencies(async (request) =>
+      engineSse([
+        ...(kind === 'reasoning'
+          ? [
+              { type: 'reasoning-start', id: 'reasoning-1' },
+              {
+                type: 'reasoning-delta',
+                id: 'reasoning-1',
+                delta: 'synthetic reasoning',
+              },
+              { type: 'reasoning-end', id: 'reasoning-1' },
+            ]
+          : []),
+        {
+          type: 'finish',
+          finishReason: 'stop',
+          messageMetadata: {
+            contractVersion: CHAT_ENGINE_CONTRACT_V2,
+            engineId: 'fake-engine',
+            runId: request.runId,
+            modelId: request.generation.modelId,
+            deploymentId: request.generation.deploymentId,
+            usage: {
+              inputTokens: 12,
+              outputTokens: 8,
+              reasoningTokens: null,
+              cacheReadTokens: null,
+              cacheWriteTokens: null,
+              totalTokens: 20,
+            },
+            reasoningContent: null,
+            aborted: false,
+          },
+        },
+      ])
+    )
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: {
+          cookie: 'participant_token=test',
+          origin: 'http://localhost',
+        },
+        body: JSON.stringify(body),
+      }
+    )
+    expect(response.status).toBe(200)
+    await response.text()
+    expect(dependencies.finalizeAssistantTurn).toHaveBeenCalledTimes(1)
+    expect(
+      vi.mocked(dependencies.finalizeAssistantTurn).mock.calls[0]?.[0].outcome
+    ).not.toBe('failed')
+    expect(dependencies.finalizeAssistantTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.arrayContaining([
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ]),
+      })
+    )
+  })
+
+  test.each([
     ['de-CH;q=0.8,en;q=0.5', 'de-CH'],
     ['*', 'en'],
     ['zh-Hant-TW-x-private;q=0.9', 'en'],

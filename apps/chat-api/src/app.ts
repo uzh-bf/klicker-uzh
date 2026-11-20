@@ -18,6 +18,7 @@ import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { getCookie } from 'hono/cookie'
 import { z } from 'zod'
+import { withEmptyResponseError } from './host/lib/server/persistedAssistantContent.js'
 import {
   createEngineClient,
   type EngineClient,
@@ -1185,6 +1186,7 @@ export function createChatApiApp(
             threadId: input.threadId,
             messages: input.messages,
             isElearningThread: thread.origin === 'elearning',
+            supportsImageAttachments: model.supportsImageAttachments,
           })
           hostToolSession = await toolDispatcher.register({
             tools: hostTools,
@@ -1303,6 +1305,7 @@ export function createChatApiApp(
             'en',
           systemPrompt: getSystemPrompt(chatbot, input.selectedMode, {
             toolNames: hostTools.promptToolNames,
+            ...(hostTools.courseImageVision ? { courseImageVision: true } : {}),
             answerStyle: chatbot.answerPreferencesEnabled
               ? input.answerStyle
               : DEFAULT_ANSWER_STYLE,
@@ -1537,7 +1540,9 @@ export function createChatApiApp(
                       ...state.parts,
                       { type: 'data', name: 'chat-stopped', data: {} },
                     ]
-                  : state.parts
+                  : state.status === 'finished'
+                    ? withEmptyResponseError(state.parts)
+                    : state.parts
               const failed = state.status === 'error' || content.length === 0
               const result =
                 content.length > 0 || (creditsUsed !== null && creditsUsed > 0)

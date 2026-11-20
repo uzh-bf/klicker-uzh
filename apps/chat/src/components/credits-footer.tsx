@@ -4,15 +4,7 @@ import { Progress } from '@uzh-bf/design-system'
 import { Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useSettingsStore } from '../stores/settingsStore'
-import { formatCredits } from './thread-credits-format'
-
-function CreditBalance({ current, total }: { current: number; total: number }) {
-  return (
-    <>
-      {formatCredits(current)} / {formatCredits(total)}
-    </>
-  )
-}
+import { formatCreditPercent } from './thread-credits-format'
 
 /**
  * Keeps the balance and exhausted state visible in the main mobile layout
@@ -40,7 +32,7 @@ export function MobileCreditsBar() {
           data-cy="chat-mobile-credits-display"
           className="ml-auto shrink-0 font-medium tabular-nums"
         >
-          <CreditBalance current={credits.current} total={credits.total} />
+          {formatCreditPercent(credits.current, credits.total)}%
         </span>
       </div>
       {credits.current === 0 ? (
@@ -85,7 +77,7 @@ export function CreditsFooter() {
           data-cy="chat-credits-display"
           className="text-muted-foreground ml-auto text-sm tabular-nums"
         >
-          {Math.round(credits.current)} / {credits.total}
+          {formatCreditPercent(credits.current, credits.total)}%
         </span>
       </div>
 
@@ -105,6 +97,11 @@ export function CreditsFooter() {
           indicator: `h-1.5 ${indicatorColor}`,
         }}
         formatter={() => null}
+        // The indicator otherwise keeps a 40px minimum width for its (unused)
+        // label, so a nearly empty or exhausted balance would still look like
+        // a sizable bar. Each message moves the balance by a fraction of a
+        // credit, and the bar has to show that.
+        noMinWidth
       />
 
       <p className="text-muted-foreground text-xs">

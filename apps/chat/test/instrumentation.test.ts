@@ -20,9 +20,12 @@ describe('chat startup validation', () => {
     const getChatModelRegistry = vi.fn(() => [])
     const registerLangfuseTelemetry = vi.fn(async () => false)
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
-    vi.doMock('../src/lib/server/chatModelRegistry', () => ({
-      getChatModelRegistry,
-    }))
+    vi.doMock(
+      '@klicker-uzh/chat-api/host/lib/server/chatModelRegistry',
+      () => ({
+        getChatModelRegistry,
+      })
+    )
     vi.doMock('../src/lib/server/langfuseTracing', () => ({
       registerLangfuseTelemetry,
     }))

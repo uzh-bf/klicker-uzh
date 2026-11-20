@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/util",
-  "version": "3.4.0-alpha.89",
+  "version": "3.4.0-alpha.96",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -92,6 +92,10 @@
     "./chatbot-custom-mode-limits": {
       "types": "./dist/chatbotCustomModeLimits.d.ts",
       "default": "./dist/chatbotCustomModeLimits.js"
+    },
+    "./chatbot-credit-policy-defaults": {
+      "types": "./dist/chatbotCreditPolicyDefaults.d.ts",
+      "default": "./dist/chatbotCreditPolicyDefaults.js"
     }
   },
   "type": "module"

@@ -54,6 +54,7 @@ describe('Integration tests for lecturer chatbot management', () => {
       isEnabled: (key) => key === 'ai-beta',
     } as NonNullable<ContextWithUser['featureFlags']>
     userTwoCtx = ctx2
+    userTwoCtx.featureFlags = userOneCtx.featureFlags
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
       // The built-in model registry classifies Auto as advanced.
@@ -98,6 +99,10 @@ describe('Integration tests for lecturer chatbot management', () => {
           allowedReasoningEffortsByModel: true,
           knowledgeGraphVisible: true,
           knowledgeGraphRetrievalEnabled: true,
+          creditInitialCredits: true,
+          creditResetPeriod: true,
+          creditResetAmount: true,
+          creditMaxCredits: true,
         },
       })
       expect(row).toEqual({
@@ -110,7 +115,65 @@ describe('Integration tests for lecturer chatbot management', () => {
         allowedReasoningEffortsByModel: null,
         knowledgeGraphVisible: false,
         knowledgeGraphRetrievalEnabled: false,
+        creditInitialCredits: 3,
+        creditResetPeriod: CreditResetPeriod.DAILY,
+        creditResetAmount: 3,
+        creditMaxCredits: 3,
       })
+    })
+
+    it('creates the provided disclaimer with the chatbot', async () => {
+      const course = await seedCourse({}, userOneCtx)
+
+      const chatbot = await createChatbot(
+        {
+          name: 'Disclaimed Tutor',
+          courseId: course.id,
+          disclaimerTitle: ' About this chatbot ',
+          disclaimerIntroText: 'Check answers against your course materials.',
+        },
+        userOneCtx
+      )
+
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: chatbot.id },
+        select: {
+          disclaimer: {
+            select: { title: true, introText: true, ownerId: true },
+          },
+        },
+      })
+      expect(row.disclaimer).toEqual({
+        title: 'About this chatbot',
+        introText: 'Check answers against your course materials.',
+        ownerId: userOneCtx.user.sub,
+      })
+
+      await expect(
+        createChatbot(
+          {
+            name: 'Half Disclaimer',
+            courseId: course.id,
+            disclaimerTitle: 'T',
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow()
+    })
+
+    it('rejects creation without the AI approval', async () => {
+      const course = await seedCourse({}, userOneCtx)
+      await prisma.user.update({
+        where: { id: userOneCtx.user.sub },
+        data: { aiFeaturesEnabled: false },
+      })
+
+      await expect(
+        createChatbot({ name: 'Unapproved', courseId: course.id }, userOneCtx)
+      ).rejects.toThrow()
+      await expect(
+        prisma.chatbot.count({ where: { courseId: course.id } })
+      ).resolves.toBe(0)
     })
 
     it('rejects creation against a course the caller does not own', async () => {

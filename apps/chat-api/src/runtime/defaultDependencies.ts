@@ -130,6 +130,7 @@ export function getSystemPrompt(
     toolNames: readonly string[]
     answerStyle?: AnswerStyle
     answerTone?: AnswerTone
+    courseImageVision?: boolean
   }
 ): string {
   return compileSystemPrompt(chatbot.systemPrompts, mode, {

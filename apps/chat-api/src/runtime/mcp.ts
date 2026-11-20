@@ -26,6 +26,21 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { z } from 'zod'
 import { withCalculatorTool } from '../host/lib/server/calculatorTool.js'
+import { readCourseImagePreview } from '../host/lib/server/courseImagePreviewStore.js'
+import { courseImageStoreConfigured } from '../host/lib/server/courseImageStore.js'
+import {
+  canRegisterCourseImageTool,
+  withCourseImageTool,
+} from '../host/lib/server/courseImageTools.js'
+import {
+  courseImageVisionEnabled,
+  createCourseImageVision,
+} from '../host/lib/server/courseImageVision.js'
+import {
+  readVideoFrame,
+  videoFrameStoreConfigured,
+} from '../host/lib/server/videoFrameStore.js'
+import { withVideoFrameTool } from '../host/lib/server/videoFrameTools.js'
 import type { AuthMode } from '../host/lib/server/chatGuestToken.js'
 import { withModelCitationIndices } from '../host/lib/server/citationInstructions.js'
 import { resolveEffectiveMCPConfigurations } from '../host/lib/server/effectiveChatModes.js'
@@ -57,6 +72,7 @@ export type HostToolInput = {
   threadId: string
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
   isElearningThread: boolean
+  supportsImageAttachments?: boolean
 }
 
 export type HostToolSet = {
@@ -64,6 +80,7 @@ export type HostToolSet = {
   promptContext: string
   close: () => Promise<void>
   promptToolNames: string[]
+  courseImageVision?: ReturnType<typeof createCourseImageVision>
 }
 
 export async function prepareHostTools(
@@ -76,6 +93,7 @@ export async function prepareHostTools(
     input.mode,
     selected
   )
+  const scopedKbIds = kbIds ?? []
   let handle: Awaited<ReturnType<typeof getAggregatedMCPTools>> = {
     tools: {},
     close: async () => undefined,
@@ -121,7 +139,10 @@ export async function prepareHostTools(
         throw error
       await handle.close()
     }
-    const tools: ToolSet = { ...handle.tools }
+    let tools: ToolSet = { ...handle.tools }
+    if (scopedKbIds.length && videoFrameStoreConfigured()) {
+      tools = withVideoFrameTool(tools, scopedKbIds, readVideoFrame)
+    }
     const promptContext: string[] = []
     try {
       const skill = await loadResponseExampleRuntimeSkill({
@@ -186,7 +207,29 @@ export async function prepareHostTools(
         }),
       })
     }
+    const imageDecisionEnabled =
+      courseImageStoreConfigured() &&
+      canRegisterCourseImageTool(tools, scopedKbIds)
+    const imageVisionEnabled =
+      imageDecisionEnabled &&
+      courseImageVisionEnabled(input.supportsImageAttachments === true)
+    const courseImageVision = imageVisionEnabled
+      ? createCourseImageVision({
+          kbIds: scopedKbIds,
+          readImage: (image) => readCourseImagePreview(image, scopedKbIds),
+        })
+      : undefined
+    if (imageDecisionEnabled) {
+      tools = withCourseImageTool(
+        tools,
+        scopedKbIds,
+        (image) => readCourseImagePreview(image, scopedKbIds),
+        imageVisionEnabled,
+        courseImageVision?.hasPixelInput
+      )
+    }
     return {
+      courseImageVision,
       tools: withCalculatorTool(input.mode, tools),
       promptToolNames: Object.keys(tools),
       promptContext: promptContext.join('\n\n'),
@@ -304,6 +347,7 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
       >()
       let cacheBytes = 0
       let projectionRequests = 0
+      let projectionQueue = Promise.resolve()
       let acceptedIds: string[] = []
       const expiresAt = now() + (input.python ? 120_000 : 300_000)
       let closed = false
@@ -461,33 +505,29 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
           )
             throw new Error('Tool projection request limit reached')
           const body = engineToolProjectionV2RequestSchema.parse(raw)
-          if (
-            body.toolCallIds.length < acceptedIds.length ||
-            acceptedIds.some((id, index) => body.toolCallIds[index] !== id)
-          )
-            throw new Error('Tool projection order changed')
-          const ordered = body.toolCallIds.map((toolCallId) => {
-            const call = calls.get(toolCallId)
-            if (!call?.encoded) throw new Error('Tool result is unavailable')
-            return {
-              toolCallId,
-              request: call.request,
-              result: JSON.parse(call.encoded) as EngineToolExecutionV2Result,
-            }
+          const previousProjection = projectionQueue
+          let releaseProjection!: () => void
+          projectionQueue = new Promise<void>((resolve) => {
+            releaseProjection = resolve
           })
-          const projected = withModelCitationIndices(
-            [
-              {
-                role: 'tool',
-                content: ordered.map(({ toolCallId, request, result }) => ({
-                  type: 'tool-result',
-                  toolCallId,
-                  toolName: request.toolName,
-                  output: result.modelOutput!,
-                })),
-              },
-            ] as ModelMessage[],
-            [
+          await previousProjection
+          try {
+            callSignal.throwIfAborted()
+            if (
+              body.toolCallIds.length < acceptedIds.length ||
+              acceptedIds.some((id, index) => body.toolCallIds[index] !== id)
+            )
+              throw new Error('Tool projection order changed')
+            const ordered = body.toolCallIds.map((toolCallId) => {
+              const call = calls.get(toolCallId)
+              if (!call?.encoded) throw new Error('Tool result is unavailable')
+              return {
+                toolCallId,
+                request: call.request,
+                result: JSON.parse(call.encoded) as EngineToolExecutionV2Result,
+              }
+            })
+            const completedSteps = [
               {
                 content: ordered.flatMap(({ toolCallId, request, result }) => [
                   {
@@ -505,27 +545,51 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
                 ]),
               },
             ]
-          )
-          const message = projected[0]
-          if (message?.role !== 'tool')
-            throw new Error('Tool projection is unavailable')
-          const result = engineToolProjectionV2ResultSchema.parse({
-            contractVersion: CHAT_ENGINE_CONTRACT_V2,
-            outputs: message.content.map((part) => {
-              if (part.type !== 'tool-result')
-                throw new Error('Tool projection is unavailable')
-              return { toolCallId: part.toolCallId, modelOutput: part.output }
-            }),
-          })
-          if (
-            Buffer.byteLength(JSON.stringify(result)) >
-            CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES
-          )
-            throw new Error('Tool projection exceeds the byte limit')
-          callSignal.throwIfAborted()
-          if (expiresAt <= now()) throw new Error('Tool capability expired')
-          acceptedIds = [...body.toolCallIds]
-          return result
+            let projected = withModelCitationIndices(
+              [
+                {
+                  role: 'tool',
+                  content: ordered.map(({ toolCallId, request, result }) => ({
+                    type: 'tool-result',
+                    toolCallId,
+                    toolName: request.toolName,
+                    output: result.modelOutput!,
+                  })),
+                },
+              ] as ModelMessage[],
+              completedSteps
+            )
+            if (input.tools.courseImageVision) {
+              const prepared =
+                await input.tools.courseImageVision.prepareMessages(
+                  projected,
+                  completedSteps
+                )
+              projected = prepared.messages
+            }
+            const message = projected[0]
+            if (message?.role !== 'tool')
+              throw new Error('Tool projection is unavailable')
+            const result = engineToolProjectionV2ResultSchema.parse({
+              contractVersion: CHAT_ENGINE_CONTRACT_V2,
+              outputs: message.content.map((part) => {
+                if (part.type !== 'tool-result')
+                  throw new Error('Tool projection is unavailable')
+                return { toolCallId: part.toolCallId, modelOutput: part.output }
+              }),
+            })
+            if (
+              Buffer.byteLength(JSON.stringify(result)) >
+              CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES
+            )
+              throw new Error('Tool projection exceeds the byte limit')
+            callSignal.throwIfAborted()
+            if (expiresAt <= now()) throw new Error('Tool capability expired')
+            acceptedIds = [...body.toolCallIds]
+            return result
+          } finally {
+            releaseProjection()
+          }
         },
       })
       return { tools: descriptors, executionToken: token, close }

@@ -16,9 +16,11 @@ import {
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import type {
-  DeleteKBResourceInput,
-  IngestKBResourceInput,
+import {
+  clearSlotSpecificationEvidence,
+  type DeleteKBResourceInput,
+  type IngestKBResourceInput,
+  type QuestionGenerationDesignSummary,
 } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { getKBGraphArtifactBlobName } from './kbGraphIngestionApi.js'
@@ -820,6 +822,8 @@ export async function maintainKBResources(
           inputArtifactPrefix: true,
           outputArtifactContainer: true,
           outputArtifactPrefix: true,
+          designSummary: true,
+          evidencePurgedAt: true,
         },
       },
       kb: { select: { ownerId: true } },
@@ -940,6 +944,37 @@ export async function maintainKBResources(
             generation.outputArtifactPrefix!
           )
         }
+      }
+      // Slot specifications keep their ids but lose the course material text
+      // that lives only as long as its knowledge base (ADR 0057). Child builds
+      // share the source graph build, so they are cleared here as well.
+      for (const generation of build.elementGenerationBuilds) {
+        if (generation.evidencePurgedAt !== null) continue
+        const summary =
+          generation.designSummary as QuestionGenerationDesignSummary | null
+        await dependencies.prisma.elementGenerationBuild.updateMany({
+          where: { id: generation.id, evidencePurgedAt: null },
+          data: {
+            evidencePurgedAt: now,
+            ...(summary?.slots?.some((slot) => slot.specification)
+              ? {
+                  designSummary: {
+                    ...summary,
+                    slots: summary.slots.map((slot) =>
+                      slot.specification
+                        ? {
+                            ...slot,
+                            specification: clearSlotSpecificationEvidence(
+                              slot.specification
+                            ),
+                          }
+                        : slot
+                    ),
+                  } as unknown as Prisma.InputJsonValue,
+                }
+              : {}),
+          },
+        })
       }
       // The ledger row survives the purge (ADR 0013 keeps its cost evidence);
       // only the stamps recording that the artifacts are gone are written.

@@ -16,14 +16,6 @@ const lecturer: AuthenticatedManageUser = {
 
 // The helper keeps one GrowthBook client per process, so each case needs a
 // fresh module instance to pick up its own environment.
-async function loadGate(forcedOn?: string) {
-  vi.resetModules()
-  vi.stubEnv('GROWTHBOOK_ENV', 'development')
-  vi.stubEnv('FEATURE_FLAGS_FORCED_ON', forcedOn ?? '')
-  const { isManageAiEnabled } = await import('@/src/lib/server/featureFlags')
-  return isManageAiEnabled
-}
-
 async function loadCapability({
   apiHost,
   clientKey,
@@ -38,85 +30,64 @@ async function loadCapability({
   vi.stubEnv('GROWTHBOOK_API_HOST', apiHost ?? '')
   vi.stubEnv('GROWTHBOOK_CLIENT_KEY', clientKey ?? '')
   vi.stubEnv('FEATURE_FLAGS_FORCED_ON', forcedOn ?? '')
-  const { getManageAiCapability } = await import(
+  const { getManageAssistantCapability } = await import(
     '@/src/lib/server/featureFlags'
   )
-  return getManageAiCapability
+  return getManageAssistantCapability
 }
 
-describe('isManageAiEnabled', () => {
+describe('getManageAssistantCapability', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
     mocks.findUniqueUser.mockReset()
   })
 
-  test('opens only when the flag and the account entitlement both hold', async () => {
-    mocks.findUniqueUser.mockResolvedValue({
-      aiFeaturesEnabled: true,
-      betaEnabled: true,
-    })
-    const isEnabled = await loadGate('ai-beta')
+  test('opens for a Catalyst lecturer in the beta without the AI approval', async () => {
+    mocks.findUniqueUser.mockResolvedValue({ betaEnabled: true })
+    const getCapability = await loadCapability({ forcedOn: 'ai-beta' })
 
-    await expect(isEnabled(lecturer)).resolves.toBe(true)
+    await expect(getCapability(lecturer)).resolves.toBe('enabled')
   })
 
-  test('stays closed for an entitled account outside the beta', async () => {
-    mocks.findUniqueUser.mockResolvedValue({
-      aiFeaturesEnabled: true,
-      betaEnabled: true,
-    })
-    const isEnabled = await loadGate()
+  test('does not open without a rollout decision', async () => {
+    mocks.findUniqueUser.mockResolvedValue({ betaEnabled: true })
+    const getCapability = await loadCapability()
 
-    await expect(isEnabled(lecturer)).resolves.toBe(false)
+    await expect(getCapability(lecturer)).resolves.not.toBe('enabled')
   })
 
-  test('stays closed inside the beta without the account entitlement', async () => {
-    mocks.findUniqueUser.mockResolvedValue({
-      aiFeaturesEnabled: false,
-      betaEnabled: true,
-    })
-    const isEnabled = await loadGate('ai-beta')
+  test('stays closed for a non-Catalyst session without reading the account', async () => {
+    const getCapability = await loadCapability({ forcedOn: 'ai-beta' })
 
-    await expect(isEnabled(lecturer)).resolves.toBe(false)
+    await expect(getCapability({ ...lecturer, catalyst: false })).resolves.toBe(
+      'disabled'
+    )
+    expect(mocks.findUniqueUser).not.toHaveBeenCalled()
   })
 
-  // The Manage assistant, knowledge-graph generation, and element generation
-  // are platform-funded and keep their own quota, so a chatbot billing address
-  // must never become a condition of this shared lecturer gate.
-  test('stays open for an entitled account without a chatbot cost center', async () => {
-    mocks.findUniqueUser.mockResolvedValue({
-      aiFeaturesEnabled: true,
-      betaEnabled: true,
-      aiChatbotCostCenter: null,
-    })
-    const isEnabled = await loadGate('ai-beta')
+  test.each([
+    false,
+    null,
+  ])('denies an opted-out or unknown preference (%s) despite forced rollout', async (betaEnabled) => {
+    mocks.findUniqueUser.mockResolvedValue({ betaEnabled })
+    const getCapability = await loadCapability({ forcedOn: 'ai-beta' })
 
-    await expect(isEnabled(lecturer)).resolves.toBe(true)
+    await expect(getCapability(lecturer)).resolves.toBe('disabled')
   })
 
   test('stays closed when the account no longer exists', async () => {
     mocks.findUniqueUser.mockResolvedValue(null)
-    const isEnabled = await loadGate('ai-beta')
+    const getCapability = await loadCapability({ forcedOn: 'ai-beta' })
 
-    await expect(isEnabled(lecturer)).resolves.toBe(false)
+    await expect(getCapability(lecturer)).resolves.toBe('disabled')
   })
 
-  test('reads the live account entitlement before evaluating GrowthBook', async () => {
-    const isEnabled = await loadGate()
-
-    await expect(isEnabled(lecturer)).resolves.toBe(false)
-    expect(mocks.findUniqueUser).toHaveBeenCalledTimes(1)
-  })
-
-  test('reports a temporary state when an entitled account has no usable payload', async () => {
+  test('reports a temporary state when GrowthBook has no usable payload', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(new Response('unavailable', { status: 503 }))
     )
-    mocks.findUniqueUser.mockResolvedValue({
-      aiFeaturesEnabled: true,
-      betaEnabled: true,
-    })
+    mocks.findUniqueUser.mockResolvedValue({ betaEnabled: true })
     const getCapability = await loadCapability({
       apiHost: 'https://growthbook.test',
       clientKey: 'sdk-test',
@@ -126,16 +97,5 @@ describe('isManageAiEnabled', () => {
       'temporarilyUnavailable'
     )
     vi.unstubAllGlobals()
-  })
-  test.each([
-    false,
-    null,
-  ])('denies an opted-out or unknown preference (%s) despite forced rollout', async (betaEnabled) => {
-    mocks.findUniqueUser.mockResolvedValue({
-      aiFeaturesEnabled: true,
-      betaEnabled,
-    })
-    const getCapability = await loadCapability({ forcedOn: 'ai-beta' })
-    await expect(getCapability(lecturer)).resolves.toBe('disabled')
   })
 })

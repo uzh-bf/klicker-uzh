@@ -58,7 +58,7 @@ vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
-vi.mock('@/src/lib/server/chatModelRegistry', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/chatModelRegistry', () => ({
   getAutomaticModelId: mocks.getAutomaticModelId,
   getModelsForChatbot: mocks.getModelsForChatbot,
 }))
@@ -71,11 +71,11 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
   buildPromptCacheRequest: mocks.buildPromptCacheRequest,
 }))
 
-vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
 }))
 
-vi.mock('@/src/lib/server/openaiResponsesOptions', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/openaiResponsesOptions', () => ({
   getOpenAIResponsesStore: () => true,
 }))
 

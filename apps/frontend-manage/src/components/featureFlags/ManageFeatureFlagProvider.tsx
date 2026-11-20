@@ -3,6 +3,7 @@ import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
 import {
   type BrowserFeatureFlagConfig,
   FeatureFlagProvider,
+  useFeatureFlag,
 } from '@klicker-uzh/feature-flags/react'
 import {
   ManageAiCapabilityState as GraphQLManageAiCapabilityState,
@@ -52,6 +53,33 @@ const ManageAiCapabilityContext = createContext<ManageAiCapabilityContextValue>(
 
 export function useManageAiCapability(): ManageAiCapabilityContextValue {
   return useContext(ManageAiCapabilityContext)
+}
+
+// The Manage assistant opens to every Catalyst lecturer in the AI beta. Unlike
+// knowledge bases, chatbots and question generation, it does not require the
+// per-account `aiFeaturesEnabled` approval; the chat app enforces the same
+// rule on every assistant route.
+const ManageAssistantAvailabilityContext = createContext(false)
+
+export function useManageAssistantAvailable(): boolean {
+  return useContext(ManageAssistantAvailabilityContext)
+}
+
+function ManageAssistantAvailabilityProvider({
+  children,
+  available,
+}: {
+  children: ReactNode
+  available: boolean
+}) {
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
+  return (
+    <ManageAssistantAvailabilityContext.Provider
+      value={available && aiBetaEnabled}
+    >
+      {children}
+    </ManageAssistantAvailabilityContext.Provider>
+  )
 }
 
 const ManageFeatureProfileLoadingContext = createContext(true)
@@ -144,7 +172,17 @@ function ManageFeatureFlagProvider({
           betaEnabled={betaEnabled}
           confirmBetaPreference={confirmBetaPreference}
         >
-          {children}
+          <ManageAssistantAvailabilityProvider
+            available={
+              !skipUserProfile &&
+              router.pathname !== '/login' &&
+              profileReady &&
+              userCatalyst === true &&
+              betaEnabled
+            }
+          >
+            {children}
+          </ManageAssistantAvailabilityProvider>
         </ManageAiCapabilityProvider>
       </ManageFeatureProfileLoadingContext.Provider>
     </FeatureFlagProvider>

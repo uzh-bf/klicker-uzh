@@ -177,6 +177,11 @@ chat:
   mcp:
     key: ''
 
+  videoBlob:
+    accountName: ''
+    accessKey: ''
+    container: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always

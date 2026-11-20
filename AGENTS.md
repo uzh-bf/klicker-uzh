@@ -29,6 +29,19 @@ version-target list. During PR preparation, pass `--skip.tag` and create the tag
 only at the approved merged release commit. Tag publication and production
 activation remain separately authorized actions.
 
+Run the matching dry-run script first and show the user the version it
+proposes and its release type (alpha, beta, rc, patch, minor or major). Run
+the real script only after the user confirms that version. Do not override the
+computed version with `--release-as` unless the user asks for it. The
+changelog comes only from the conventional commits; never write or edit its
+entries by hand.
+
+Merge a production release PR, push a release tag or activate a release in
+production only when the user explicitly says so for that step. Approving a
+release plan authorizes preparing its PRs, not merging them. Production
+releases happen outside business hours: before 07:00 or after 18:00 Europe/Zurich
+time. During business hours, prepare the PRs and wait.
+
 ## Commands
 
 ### Root-level (from repo root)
@@ -177,6 +190,10 @@ Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no Edu
 devrouter ensure .
 ```
 
+New empty disposable databases require the explicit one-shot initialization
+contract in [.devcontainer/README.md](.devcontainer/README.md#fresh-disposable-database-initialization).
+Automatic startup verifies an existing schema and preserves its contents.
+
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `standard` profile runs ordinary apps and workers without the deterministic MCP fixture; explicit `full` selects every capability. `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
@@ -244,7 +261,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.5.1 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`, 0.3.0 removes Docker leftovers of deleted worktrees (see devrouter's [worktree cleanup guide](https://github.com/rschlaefli/devrouter/blob/main/docs/WORKTREE_CLEANUP.md)), 0.4.0 adds `devrouter env`, which the host Playwright launcher uses to find the workspace and its loopback database port, and 0.5.0 adds opt-in idle stop with `devrouter workspace pin` for database-only sessions (see `.devcontainer/README.md`). One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.6.3 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison, 0.2.0 reads the `worktrees` cleanup declarations in `.devrouter.yml`, 0.3.0 removes Docker leftovers of deleted worktrees (see devrouter's [worktree cleanup guide](https://github.com/rschlaefli/devrouter/blob/main/docs/WORKTREE_CLEANUP.md)), 0.4.0 adds `devrouter env`, which the host Playwright launcher uses to find the workspace and its loopback database port, 0.5.0 adds opt-in idle stop with `devrouter workspace pin` for database-only sessions (see `.devcontainer/README.md`), and 0.6.3 accepts the `freshBootstrap` declaration for empty disposable databases. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -314,9 +331,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Pre-commit / Pre-push
 
-- **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
+- **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + whole-tree format:check + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
-- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
+- `pnpm run check:format` retains the staged-only lint-staged check: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs. See [Playwright](playwright/README.md#local-run) for dependency-free launcher help and version inspection.
 
 ## Important Notes
 
