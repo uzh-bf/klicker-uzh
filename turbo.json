@@ -1,6 +1,15 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalEnv": [
+    "CHAT_COURSE_IMAGE_STORE_PATH",
+    "CHAT_COURSE_IMAGE_VISION_ENABLED",
+    "CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED",
+    "COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING",
+    "COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME",
+    "COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER",
+    "COURSE_IMAGE_PROJECTION_STORAGE_PREFIX",
+    "DOC_PROCESSING_AZURE_STORAGE_CONNECTION_STRING",
+    "DOC_PROCESSING_AZURE_STORAGE_CONTAINER",
     "API_DOMAIN",
     "APP_CONTROL_DOMAIN",
     "APP_CONTROL_SUBDOMAIN",
@@ -20,10 +29,14 @@
     "AUTH_STUDENT_ALLOWED_HOSTS",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
+    "AZURE_CLIENT_ID",
+    "AZURE_FEDERATED_TOKEN_FILE",
+    "AZURE_TENANT_ID",
     "BLOB_STORAGE_ACCESS_KEY",
     "BLOB_STORAGE_ACCOUNT_NAME",
     "BLOB_STORAGE_ACCOUNT_URL",
     "BLOB_STORAGE_INTERNAL_ACCOUNT_URL",
+    "CONTROL_API_PROXY_URL",
     "COOKIE_DOMAIN",
     "CORS_ALLOWED_ORIGINS",
     "CRON_TOKEN",
@@ -91,6 +104,14 @@
     "KB_GRAPH_HIGH_GENERATION_MODEL",
     "KB_GRAPH_HIGH_CLEANING_MODEL",
     "KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS",
+    "KB_GRAPH_AUTO_PREPARATION_WINDOW",
+    "KB_GRAPH_AUTO_PREPARATION_WINDOW_TIMEZONE",
+    "KB_GRAPH_AUTO_PREPARATION_QUIET_PERIOD_MINUTES",
+    "KB_GRAPH_AUTO_PREPARATION_MAX_DEFERRAL_MINUTES",
+    "KB_GRAPH_AUTO_PREPARATION_FAILURE_BACKOFF_MINUTES",
+    "KB_GRAPH_AUTO_PREPARATION_MAX_CONSECUTIVE_FAILURES",
+    "KB_GRAPH_AUTO_PREPARATION_CONCURRENCY",
+    "KB_GRAPH_AUTO_PREPARATION_HEADROOM_MINOR_UNITS",
     "KB_QUESTION_GENERATION_HATCHET_CLIENT_TOKEN",
     "KB_GENERATION_HATCHET_CLIENT_HOST_PORT",
     "KB_GENERATION_HATCHET_CLIENT_SERVER_URL",
@@ -101,6 +122,7 @@
     "KB_QUESTION_INPUT_CONTAINER",
     "KB_QUESTION_OUTPUT_CONTAINER",
     "KB_QUESTION_OUTPUT_PREFIX",
+    "ELEMENT_REVISION_WORKER_ENABLED",
     "KB_FALKORDB_HOST",
     "KB_FALKORDB_PORT",
     "KB_FALKORDB_USERNAME",
@@ -115,6 +137,10 @@
     "DOC_QUERY_SCOPE_KID",
     "DOC_QUERY_SCOPE_ISSUER",
     "DOC_QUERY_SCOPE_AUDIENCE",
+    "RESPONSE_EXAMPLE_RECEIPT_PUBLIC_KEY",
+    "RESPONSE_EXAMPLE_RECEIPT_KID",
+    "RESPONSE_EXAMPLE_RECEIPT_ISSUER",
+    "RESPONSE_EXAMPLE_RECEIPT_AUDIENCE",
     "DOC_QUERY_SCOPED_MCP_SERVER_ID",
     "DOC_QUERY_SCOPED_MCP_LEGACY_URL",
     "DOC_QUERY_SCOPED_MCP_URL",
@@ -134,6 +160,7 @@
     "LTI_PORT",
     "LTI_REDIRECT_URL",
     "NEXTAUTH_URL",
+    "NEXT_PUBLIC_CONTROL_API_URL",
     "NEXT_PUBLIC_EDUID_ID",
     "NEXT_PUBLIC_ENV",
     "NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON",
@@ -192,6 +219,8 @@
     "CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED",
     "GROWTHBOOK_REFRESH_INTERVAL_MS",
     "CHAT_TURN_LIFECYCLE_WRITES_ENABLED",
+    "CHAT_VIDEO_BLOB_CONTAINER",
+    "CHAT_VIDEO_FRAME_STORE_PATH",
     "CHAT_MODEL_REGISTRY_JSON",
     "DOC_QUERY_SCOPE_AUDIENCE",
     "DOC_QUERY_SCOPE_ISSUER",
@@ -276,6 +305,12 @@
       "dependsOn": ["^build"],
       "persistent": true
     },
+    "@klicker-uzh/chat#dev": {
+      "cache": false,
+      "dependsOn": ["^build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "persistent": true
+    },
     "dev:lti": {
       "cache": false,
       "dependsOn": ["^build"],
@@ -299,6 +334,12 @@
       "cache": false,
       "persistent": true
     },
+    "@klicker-uzh/chat#dev:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
+      "persistent": true
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]
@@ -307,8 +348,18 @@
       "dependsOn": ["^build", "build"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
+    "@klicker-uzh/chat#start": {
+      "dependsOn": ["^build", "build"],
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+    },
     "start:test": {
       "cache": false,
+      "persistent": true
+    },
+    "@klicker-uzh/chat#start:test": {
+      "cache": false,
+      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
       "persistent": true
     },
     "test": {

@@ -72,7 +72,10 @@ node playwright/lti-harness/mockPlatform.ts
 
 `guest-transfer.spec.ts` exercises real launches into Chat before and after
 linking the same LMS subject to an account. It checks ownership, unchanged
-activity timestamps, visible history and repeat-launch idempotency. Top-level
+activity timestamps, visible history and repeat-launch idempotency. A stored
+recording frame is readable by the guest before transfer and by the linked
+account afterward. The old guest token then receives a 404 for the same frame.
+This uses the seeded KB server definition and the local JPEG fixture. Top-level
 launches run in each browser; WebKit additionally verifies the cross-site iframe
 path without the shared LTI cookie. Account linkage and history use synthetic
 database fixtures, so this does not test the account-registration UI or an LLM.

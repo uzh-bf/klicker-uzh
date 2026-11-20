@@ -315,6 +315,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '2700'
+      OCR_ADAPTER_PROVIDER: mistral-deepseek
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -414,8 +415,16 @@ jobs:
       - name: Configure ephemeral Mistral access
         id: configure
         if: needs.start.outputs.run_review == 'true'
+        env:
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+          OCR_ADVISOR_STATE_PATH: ${{ runner.temp }}/final-ai-review-advisor-state.json
+          OCR_ADVISOR_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl
         run: |
           set -euo pipefail
+          printf 'OCR_ADVISOR_STATE_PATH=%s\nOCR_ADVISOR_DIAGNOSTICS_PATH=%s\n' \
+            "${OCR_ADVISOR_STATE_PATH}" "${OCR_ADVISOR_DIAGNOSTICS_PATH}" >>"${GITHUB_ENV}"
+          node .github/scripts/final-ai-review.js initialize-advisor
           node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
@@ -425,6 +434,7 @@ jobs:
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
@@ -436,6 +446,7 @@ jobs:
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
@@ -697,6 +708,10 @@ jobs:
           path: |
             ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
             ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl.tools.jsonl
+            ${{ runner.temp }}/final-ai-review-advisor-diagnostics.jsonl.expected.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -708,7 +723,7 @@ jobs:
           PREFLIGHT_RECEIPTS: ${{ steps.preflight.outcome == 'skipped' && '0' || '1' }}
           ADAPTER_RECEIPTS: ${{ steps.run_review.outputs.adapter_lifetimes || '0' }}
         run: >-
-          node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          node .github/scripts/ocr-mistral-adapter.cjs final-summary "${DIAGNOSTICS_PATH}"
           "preflight=${PREFLIGHT_RECEIPTS}" "adapter=${ADAPTER_RECEIPTS}"
 
   finalize:
@@ -949,6 +964,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '1800'
+      OCR_ADAPTER_PROVIDER: mistral-deepseek
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&
@@ -1063,8 +1079,16 @@ jobs:
       - name: Configure ephemeral Mistral access
         id: configure
         if: needs.start_stack.outputs.run_review == 'true'
+        env:
+          HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
+          OCR_ADVISOR_STATE_PATH: ${{ runner.temp }}/final-ai-stack-advisor-state.json
+          OCR_ADVISOR_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl
         run: |
           set -euo pipefail
+          printf 'OCR_ADVISOR_STATE_PATH=%s\nOCR_ADVISOR_DIAGNOSTICS_PATH=%s\n' \
+            "${OCR_ADVISOR_STATE_PATH}" "${OCR_ADVISOR_DIAGNOSTICS_PATH}" >>"${GITHUB_ENV}"
+          node .github/scripts/final-ai-review.js initialize-advisor
           node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
@@ -1074,6 +1098,7 @@ jobs:
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
@@ -1085,6 +1110,7 @@ jobs:
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           BACKGROUND: ${{ needs.start_stack.outputs.background }}
           HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
@@ -1273,7 +1299,9 @@ jobs:
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
+          HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
           MANIFEST_DIGEST: ${{ needs.start_stack.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           CODE_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -1393,6 +1421,10 @@ jobs:
           path: |
             ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
             ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl.events.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl.tools.jsonl
+            ${{ runner.temp }}/final-ai-stack-advisor-diagnostics.jsonl.expected.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -1405,7 +1437,7 @@ jobs:
           ADAPTER_RECEIPTS: ${{ steps.code_review.outputs.adapter_lifetimes || '0' }}
           TOPOLOGY_RECEIPTS: ${{ steps.topology_review.outcome == 'skipped' && '0' || '1' }}
         run: >-
-          node .github/scripts/ocr-mistral-adapter.cjs summary "${DIAGNOSTICS_PATH}"
+          node .github/scripts/ocr-mistral-adapter.cjs final-summary "${DIAGNOSTICS_PATH}"
           "preflight=${PREFLIGHT_RECEIPTS}" "adapter=${ADAPTER_RECEIPTS}"
           "topology=${TOPOLOGY_RECEIPTS}"
 

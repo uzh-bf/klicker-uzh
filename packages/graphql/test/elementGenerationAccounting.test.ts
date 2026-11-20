@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import {
   ElementGenerationBuildStatus,
   ElementType,
@@ -66,6 +69,7 @@ function buildData({
 
 describe('element-generation cost accounting', () => {
   beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     ownerId = randomUUID()
     const kbId = randomUUID()
     graphBuildId = randomUUID()
@@ -91,6 +95,7 @@ describe('element-generation cost accounting', () => {
   })
 
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.user.delete({ where: { id: ownerId } })
   })
 

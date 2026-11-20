@@ -1,3 +1,5 @@
+import type { ElementGenerationSlotSpecification } from './elementGeneration.js'
+
 export type QuestionGenerationArtifactRef = {
   containerName: string
   blobName: string
@@ -243,6 +245,8 @@ export type QuestionGenerationDesignSlotSummary = {
   // evidence candidates. Only these ids leave the parser; the surrounding
   // resolution remains server-internal. Empty when the artifact carries none.
   evidenceEntityIds: string[]
+  // The slot's full specification when the worker's result provided it.
+  specification?: ElementGenerationSlotSpecification
 }
 
 // Structured per-slot failure reason reported by the question-generation

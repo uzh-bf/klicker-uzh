@@ -57,6 +57,16 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { buildChatTurnRequest } from '@/src/lib/server/chatTurnRequest'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import { readCourseImagePreview } from '@/src/lib/server/courseImagePreviewStore'
+import { courseImageStoreConfigured } from '@/src/lib/server/courseImageStore'
+import {
+  canRegisterCourseImageTool,
+  withCourseImageTool,
+} from '@/src/lib/server/courseImageTools'
+import {
+  courseImageVisionEnabled,
+  createCourseImageVision,
+} from '@/src/lib/server/courseImageVision'
 import {
   getCustomModeTurnSettings,
   isParticipantReasoningVisible,
@@ -86,7 +96,9 @@ import { getOpenAIProviderOptions } from '@/src/lib/server/openaiProviderOptions
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
+  hasMeaningfulAssistantContent,
   mapAssistantStepContent,
+  withEmptyResponseError,
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
@@ -105,6 +117,11 @@ import {
   hashSnippet,
   summarizeToolDiagnostics,
 } from '@/src/lib/server/toolDiagnostics'
+import {
+  readVideoFrame,
+  videoFrameStoreConfigured,
+} from '@/src/lib/server/videoFrameStore'
+import { withVideoFrameTool } from '@/src/lib/server/videoFrameTools'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
@@ -1358,6 +1375,10 @@ export async function POST(
       )
     }
 
+    if (scopedKbIds?.length && videoFrameStoreConfigured()) {
+      mcpTools = withVideoFrameTool(mcpTools, scopedKbIds, readVideoFrame)
+    }
+
     let responseExampleSummary = ''
     let responseExampleSetDigest: string | null = null
     let responseExampleProjectionDigest: string | null = null
@@ -1484,10 +1505,32 @@ export async function POST(
       })
     }
 
-    const chatTools: Record<string, any> = {
+    let chatTools: Record<string, any> = {
       ...(mcpTools || {}),
       ...responseExampleTools,
       ...studentPracticeTools,
+    }
+    const imageDecisionEnabled =
+      courseImageStoreConfigured() &&
+      canRegisterCourseImageTool(chatTools, scopedKbIds ?? [])
+    const imageVisionEnabled =
+      imageDecisionEnabled &&
+      courseImageVisionEnabled(selectedModelConfig.supportsImageAttachments)
+    const courseImageVision = imageVisionEnabled
+      ? createCourseImageVision({
+          kbIds: scopedKbIds ?? [],
+          readImage: (image) =>
+            readCourseImagePreview(image, scopedKbIds ?? []),
+        })
+      : undefined
+    if (imageDecisionEnabled) {
+      chatTools = withCourseImageTool(
+        chatTools,
+        scopedKbIds ?? [],
+        (image) => readCourseImagePreview(image, scopedKbIds ?? []),
+        imageVisionEnabled,
+        courseImageVision?.hasPixelInput
+      )
     }
     const toolNames = Object.keys(chatTools)
     // The calculator is added after the system prompt inputs are fixed, so
@@ -1529,6 +1572,7 @@ export async function POST(
         answerStyle: appliedAnswerStyle,
         answerTone: appliedAnswerTone,
         customModeConfig: chatbot.customModeConfig,
+        ...(imageVisionEnabled ? { courseImageVision: true } : {}),
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
@@ -1840,6 +1884,7 @@ export async function POST(
       answerTone: appliedAnswerTone,
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
+      courseImageVisionEnabled: imageVisionEnabled,
       toolNames,
       practiceCandidateCount,
       hasResponseExampleSkill: Boolean(
@@ -2298,29 +2343,38 @@ export async function POST(
           steps,
           initialMessages,
           responseMessages,
-        }) => ({
-          // Standard platform modes retrieve first, so the answer is grounded
-          // before it is written. Custom modes keep the retrieval tool offered
-          // but choose for themselves, so attaching a knowledge base never
-          // forces a retrieval call ahead of the persona's own answer.
-          ...(docQueryToolName &&
-          Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
-          stepNumber === 0
-            ? {
-                toolChoice: {
-                  type: 'tool' as const,
-                  toolName: docQueryToolName,
-                },
-              }
-            : {}),
-          messages: [
-            ...initialMessages,
-            ...(docQueryToolName && stepNumber > 0
-              ? withModelCitationIndices(responseMessages, steps)
-              : responseMessages),
-            stepReminder,
-          ],
-        }),
+        }) => {
+          const prepared = {
+            // Standard platform modes retrieve first, so the answer is grounded
+            // before it is written. Custom modes keep the retrieval tool offered
+            // but choose for themselves, so attaching a knowledge base never
+            // forces a retrieval call ahead of the persona's own answer.
+            ...(docQueryToolName &&
+            Object.hasOwn(DEFAULT_PROMPT, selectedMode) &&
+            stepNumber === 0
+              ? {
+                  toolChoice: {
+                    type: 'tool' as const,
+                    toolName: docQueryToolName,
+                  },
+                }
+              : {}),
+            messages: [
+              ...initialMessages,
+              ...(docQueryToolName && stepNumber > 0
+                ? withModelCitationIndices(responseMessages, steps)
+                : responseMessages),
+              stepReminder,
+            ],
+          }
+          // Keep the off path synchronous and unchanged. Preview bytes exist
+          // only in model input, never in persisted steps or streamed tool data.
+          return courseImageVision
+            ? courseImageVision
+                .prepareMessages(prepared.messages, steps)
+                .then(({ messages }) => ({ ...prepared, messages }))
+            : prepared
+        },
         stopWhen: isStepCount(5),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
@@ -2441,15 +2495,17 @@ export async function POST(
             hadAbort: sawAbort,
           })
 
+          const completedContent = mapAssistantStepContent(result.steps)
+          const emptyResponse = !hasMeaningfulAssistantContent(completedContent)
           await finalizeAssistantLifecycle({
-            content: mapAssistantStepContent(result.steps),
+            content: withEmptyResponseError(completedContent),
             reasoningContent: finishedReasoningContent,
             rawCreditsUsed,
             phase: 'complete',
           })
 
           if (!firstError) {
-            emitFinalOnce('success', {
+            emitFinalOnce(emptyResponse ? 'error' : 'success', {
               elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
               usage: result.usage
                 ? {
@@ -2460,7 +2516,7 @@ export async function POST(
                 : null,
               stepsCount: result.steps?.length ?? 0,
             })
-            finishLangfuseTrace('success', {
+            finishLangfuseTrace(emptyResponse ? 'error' : 'success', {
               responseLength: partialContent.length,
               reasoningLength: partialReasoningContent.length,
               stepsCount: result.steps?.length ?? 0,

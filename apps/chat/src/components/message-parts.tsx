@@ -30,6 +30,7 @@ import {
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
+import { ResponseExampleCaptureAction } from './response-example-capture-action'
 import { ToolFallback } from './tool-fallback'
 
 type MessageWithCustomMetadata = {
@@ -156,8 +157,8 @@ const ToolGroup: FC<
 }
 
 type ChatErrorPartData = {
-  errorLabel: string
-  message: string
+  errorLabel?: string
+  message?: string
 }
 
 /**
@@ -182,8 +183,10 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
           aria-hidden
         />
         <p>
-          <span className="font-medium">{data.errorLabel}</span>
-          {`: ${data.message}`}
+          <span className="font-medium">
+            {data.errorLabel ?? t('chat.response.errorLabel')}
+          </span>
+          {`: ${data.message ?? t('chat.response.genericError')}`}
         </p>
       </div>
       {hasAvailableMode && (
@@ -279,7 +282,11 @@ export const AssistantMessageParts: FC = () => {
               </div>
             )
           case 'data':
-            return part.name === 'chat-error' ? (
+            return part.name === 'response-example-receipt' ? (
+              <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <ResponseExampleCaptureAction data={part.data} />
+              </div>
+            ) : part.name === 'chat-error' ? (
               <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
                 <ChatErrorPart data={part.data as ChatErrorPartData} />
               </div>

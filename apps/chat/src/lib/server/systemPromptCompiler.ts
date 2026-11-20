@@ -13,6 +13,8 @@ import { withInputContextContract } from '@/src/lib/server/inputContextInstructi
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { withOutputFormatContract } from '@/src/lib/server/outputFormatInstructions'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import { COURSE_IMAGE_TOOL } from '@/src/lib/sources/courseImages'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 
 export type SystemPromptCompilationContext = {
   courseDisplayName: string
@@ -20,6 +22,7 @@ export type SystemPromptCompilationContext = {
   standardModeConfig?: unknown
   answerStyle?: AnswerStyle
   answerTone?: AnswerTone
+  courseImageVision?: boolean
   /**
    * The custom modes the calling surface should compile. Participant routes
    * pass the live column; owner preview passes the saved revision so it
@@ -162,7 +165,8 @@ function standardModeContextSection(
   if (
     selectedMode !== 'tutor' &&
     selectedMode !== 'explainer' &&
-    selectedMode !== 'quizzer'
+    selectedMode !== 'quizzer' &&
+    selectedMode !== 'writing-coach'
   ) {
     return null
   }
@@ -186,7 +190,12 @@ function standardModeContextSection(
   return promptSection(
     'Lecturer-provided standard-mode context',
     renderPromptTemplate('lecturer-standard-context', {
-      personaContextJson: JSON.stringify(personaContext),
+      // The serialized value keeps valid JSON while losing every `<`, so a
+      // stored value cannot close the delimiter block around it.
+      personaContextJson: JSON.stringify(personaContext).replaceAll(
+        '<',
+        '\\u003C'
+      ),
     })
   )
 }
@@ -231,8 +240,18 @@ export function compileSystemPrompt(
   )
   const outputFormat = withOutputFormatContract(coursePolicy, customPersona)
   const citations = withCitationContract(outputFormat, context.toolNames)
+  const images =
+    context.toolNames.includes(COURSE_IMAGE_TOOL) &&
+    context.toolNames.some(isDocQueryToolName)
+      ? `${citations}\n\n${renderPromptTemplate('course-images', {
+          courseImageTool: COURSE_IMAGE_TOOL,
+          visualEvidence: context.courseImageVision
+            ? renderPromptTemplate('course-image-vision', {})
+            : '',
+        })}`
+      : citations
   return withLanguageStyleContract(
-    citations,
+    images,
     customMode(context.customModeConfig, selectedMode)?.replyLanguage ?? null
   )
 }

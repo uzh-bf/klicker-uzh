@@ -5,7 +5,6 @@ import type {
   AvatarSettings,
   ChatbotAuthoringRevision,
   ChatbotCustomModeConfig,
-  ChatbotStandardModeConfig,
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
@@ -25,6 +24,7 @@ import type {
   QuestionGenerationQuestionProvenance,
   SingleQuestionResponse,
   SingleQuestionResponseLiveQuiz,
+  StoredChatbotStandardModeConfig,
 } from '@klicker-uzh/types'
 
 type KBGraphMeteredCost = {
@@ -73,6 +73,7 @@ declare global {
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshot
+    type PrismaChatbotStandardModeConfig = StoredChatbotStandardModeConfig
     type PrismaKBGraphMeteredCost = KBGraphMeteredCost
     type PrismaElementGenerationArtifactRef = QuestionGenerationArtifactRef
     type PrismaElementGenerationConfiguration =
@@ -89,7 +90,6 @@ declare global {
     type PrismaGeneratedElementCitations = GeneratedQuestionCitation[]
     type PrismaElementGenerationProvenance =
       QuestionGenerationQuestionProvenance
-    type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
     type PrismaChatbotCustomModeConfig = ChatbotCustomModeConfig
     type PrismaChatbotAuthoringRevision = ChatbotAuthoringRevision
   }

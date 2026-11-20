@@ -438,6 +438,17 @@ secrets. Never print or commit secret values; query by key/status only.
 
 ## Progress
 
+### Current verification scope — 2026-11-20
+
+Refresh the existing PR against `v3-ai` at `9de3af8bee`, including the
+Safari recovered-launch origin validation and the course-media permission
+routes. Keep Control routing and the mock LMS frame policy together. Exercise
+the frame endpoint with a real guest session before transfer, the linked
+account after transfer, and the previous guest session after transfer. Verify
+the two concurrent index scripts on the current disposable schema and retain
+the cookie-blocked WebKit history and repeat-launch assertions. Finish with CI
+and the repository final AI review on the pushed commit.
+
 ### Post-prerequisite verification — 2026-10-28
 
 The refreshed target and the additional local harness are implemented. All 30

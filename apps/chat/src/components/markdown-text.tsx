@@ -38,12 +38,15 @@ import {
   parseConceptHref,
   remarkConceptLinks,
 } from '../lib/markdown/remarkConceptLinks'
+import { remarkCourseImages } from '../lib/markdown/remarkCourseImages'
 import {
+  escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
 } from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
 import { CitationChip } from './citation-chip'
+import { InlineCourseImage } from './course-images-section'
 import { useConceptMentions } from './knowledge-graph/ChatGraphConcepts'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -56,6 +59,7 @@ const remarkPlugins: RemarkPlugins = [
   remarkGfm,
   remarkMath,
   remarkCitationMarkers,
+  remarkCourseImages,
 ]
 const rehypePlugins: NonNullable<
   ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
@@ -124,7 +128,11 @@ const MarkdownTextImpl = () => {
   const { hasMathOpener } = inspectStreamingMath(text)
   const preprocess = useCallback(
     (input: string) =>
-      normalizeCustomMathTags(isRunning ? hideIncompleteMath(input) : input),
+      normalizeCustomMathTags(
+        isRunning
+          ? hideIncompleteMath(input).replace(/\[course-image:[a-f0-9]*$/, '')
+          : input
+      ),
     [isRunning]
   )
 
@@ -192,6 +200,14 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
+  div: ({
+    'data-course-image': assetId,
+    ...props
+  }: ComponentProps<'div'> & { 'data-course-image'?: string }) => {
+    if (typeof assetId === 'string')
+      return <InlineCourseImage assetId={assetId} />
+    return <div {...props} />
+  },
   // Shift Markdown headings down one level because the chatbot shell owns the
   // page's h1. The smaller scale keeps answer structure readable without
   // making a chat bubble look like a document title page.
@@ -381,8 +397,10 @@ const defaultComponents = memoizeMarkdownComponents({
 })
 
 export function normalizeCustomMathTags(input: string): string {
+  // Escape currency before converting the explicit delimiters, so converted
+  // spans are always rendered as math.
   return (
-    input
+    escapeNonMathDollars(input)
       // Keep display-math fences on their own lines so multiline formulas
       // cannot consume the Markdown that follows them.
       .replace(

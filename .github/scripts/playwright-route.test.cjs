@@ -42,6 +42,61 @@ function cloudAdmission(overrides = {}) {
   })
 }
 
+test('priority admission selects the public paid lane without normal pool rollout', () => {
+  const result = choosePlaywrightRoute(
+    pullRequest({
+      publicRolloutEnabled: '',
+      priorityAdmitted: 'true',
+      priorityAttempt: '1',
+      runAttempt: '1',
+    })
+  )
+  assert.equal(result.provider, 'warpbuild')
+  assert.equal(result.route, 'public-pr')
+  assert.equal(result.admissionAttempt, '1')
+})
+
+test('priority respects forced hosted controls and rejects stale paid attempts', () => {
+  const input = pullRequest({
+    publicRolloutEnabled: '',
+    priorityAdmitted: 'true',
+    priorityAttempt: '1',
+    runAttempt: '1',
+  })
+  for (const changes of [
+    { forceHostedCanaryPr: '1234' },
+    { runAttempt: '2' },
+    { prDraft: 'true' },
+    { headRepository: 'synthetic/fork' },
+  ]) {
+    assert.notEqual(
+      choosePlaywrightRoute({ ...input, ...changes }).provider,
+      'warpbuild'
+    )
+  }
+})
+
+test('denied label-only events defer execution and priority conflicts do not consume legacy tickets', async () => {
+  const label = choosePlaywrightRoute(pullRequest({ prAction: 'labeled' }))
+  assert.equal(label.selectorPrState, 'deferred')
+  const input = cloudAdmission({ priorityRequested: 'true' })
+  assert.notEqual(choosePlaywrightRoute(input).provider, 'warpbuild')
+  let requests = 0
+  const result = await chooseRouteWithAdmission(
+    input,
+    {
+      WARPBUILD_ADMISSION_URL: 'https://example.invalid/admit',
+    },
+    async () => {
+      requests++
+      throw new Error('unexpected request')
+    }
+  )
+  assert.notEqual(result.provider, 'warpbuild')
+  assert.equal(requests, 0)
+  assert.equal(choosePlaywrightRoute(cloudAdmission()).provider, 'warpbuild')
+})
+
 test('preparation obtains an exact ticket before selecting the paid backend', async (t) => {
   const deadlines = []
   t.mock.method(AbortSignal, 'timeout', (milliseconds) => {
@@ -485,5 +540,34 @@ test('draft sync pull requests defer Playwright to the ready transition', () => 
     const route = choosePlaywrightRoute({ ...syncDraft, ...overrides })
     assert.notEqual(route.selectorPrState, 'deferred')
     assert.ok(!route.reasonCodes.includes('draft-sync-deferred'))
+  }
+})
+
+test('priority duration survives routing only for a current admitted public paid attempt', () => {
+  const input = pullRequest({
+    publicRolloutEnabled: '',
+    priorityAdmitted: 'true',
+    priorityAttempt: '1',
+    runAttempt: '1',
+    priorityJobTimeout: '7',
+  })
+  assert.equal(choosePlaywrightRoute(input).jobTimeout, 7)
+  for (const changes of [
+    { forceHostedCanaryPr: '1234' },
+    { priorityAdmitted: 'false' },
+    { runAttempt: '2' },
+    { prDraft: 'true' },
+    { headRepository: 'synthetic/fork' },
+  ]) {
+    assert.equal(
+      choosePlaywrightRoute({ ...input, ...changes }).jobTimeout,
+      undefined
+    )
+  }
+  for (const value of ['0', '16', '01', '7.5', ' 7', '1e1']) {
+    assert.throws(
+      () => choosePlaywrightRoute({ ...input, priorityJobTimeout: value }),
+      /invalid priority job timeout/
+    )
   }
 })

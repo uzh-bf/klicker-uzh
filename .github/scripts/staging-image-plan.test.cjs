@@ -155,6 +155,25 @@ test('every matrix entry names the registry image it publishes', () => {
   )
 })
 
+// A build argument that its Dockerfile does not declare is silently dropped, so
+// the flag would promise release history that the image never carries.
+test('release assets are requested only by Dockerfiles that declare the input', () => {
+  const flagged = STAGING_IMAGE_TARGETS.filter(
+    (target) => matrixEntry(target).releaseAssets
+  )
+  assert.deepEqual(
+    flagged.map((target) => target.id),
+    ['frontend-assessment-arm', 'frontend-pwa-arm']
+  )
+  for (const target of flagged) {
+    assert.match(
+      fs.readFileSync(path.join(root, target.dockerfile), 'utf8'),
+      /^ARG PREVIOUS_IMAGE\b/m,
+      target.id + ' does not declare PREVIOUS_IMAGE'
+    )
+  }
+})
+
 test('availability follows the tree, not the branch name', () => {
   const limited = scratch()
   fs.mkdirSync(path.join(limited, 'apps/auth'), { recursive: true })
@@ -286,6 +305,7 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
     'synchronize',
     'reopened',
     'ready_for_review',
+    'labeled',
   ])
   // No path filter: the required context must always be reportable.
   assert.equal(workflow.on.pull_request.paths, undefined)
@@ -301,15 +321,24 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   // The terminal job keeps the exact required context name.
   assert.ok(workflow.jobs['build-images-status'])
   assert.equal(
-    workflow.jobs['build-images-status'].if,
-    'always()',
-    'the status job must always report'
+    workflow.jobs['build-images-status'].if
+      .replace(/\s+/g, ' ')
+      .replace(
+        /^!\(vars\.PRIORITY_CI_ENABLED.*?\) && \((always\(\).*)\)$/,
+        '$1'
+      ),
+    "always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true')",
+    'ordinary and admitted priority status must always report'
   )
 })
 
-test('the consolidated workflow has a single concurrency lane', () => {
+test('the consolidated workflow separates priority from ordinary cancellation', () => {
   const workflow = YAML.parse(fs.readFileSync(CONSOLIDATED, 'utf8'))
-  assert.equal(workflow.concurrency['cancel-in-progress'], true)
+  assert.match(
+    workflow.concurrency['cancel-in-progress'],
+    /github\.event\.action != 'labeled'/
+  )
+  assert.match(workflow.concurrency.group, /priority-/)
   assert.match(workflow.concurrency.group, /github\.workflow/)
 })
 

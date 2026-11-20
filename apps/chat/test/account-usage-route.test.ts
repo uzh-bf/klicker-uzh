@@ -380,6 +380,65 @@ describe('account usage chat route', () => {
     )
   })
 
+  test.each([
+    'tutor',
+    'explainer',
+    'quizzer',
+    'writing-coach',
+  ])('sends full current lecturer context to the %s model on each request', async (mode) => {
+    const contexts = ['x'.repeat(1000), 'y'.repeat(1000)]
+    for (const [index, scopeNote] of contexts.entries()) {
+      mocks.chatbotFindUnique.mockResolvedValueOnce(
+        chatbot({
+          standardModeConfig: {
+            tutorEnabled: true,
+            explainerEnabled: true,
+            quizzerEnabled: true,
+            writingCoachEnabled: true,
+            scopeNote,
+          },
+          mcpConfigurations:
+            mode === 'quizzer'
+              ? [
+                  {
+                    chatMode: 'quizzer',
+                    isEnabled: true,
+                    allowedTools: ['doc_query'],
+                    parameters: null,
+                    mcpServer: { id: 'synthetic-server' },
+                  },
+                ]
+              : [],
+        })
+      )
+      mocks.getAggregatedMCPTools.mockResolvedValueOnce(
+        mode === 'quizzer'
+          ? { tools: { Course_doc_query: {} }, close: mocks.closeMCPTools }
+          : { tools: {}, close: mocks.closeMCPTools }
+      )
+      const response = await POST(
+        createRequest({
+          selectedMode: mode,
+          assistantMessageId: `assistant-context-${index}`,
+        }),
+        {
+          params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+        }
+      )
+      expect(response.status).toBe(200)
+      expect(mocks.streamText).toHaveBeenCalledTimes(index + 1)
+      expect(mocks.streamConfig?.instructions).toContain(
+        JSON.stringify(scopeNote)
+      )
+      if (index > 0) {
+        expect(mocks.streamConfig?.instructions).not.toContain(
+          JSON.stringify(contexts[0])
+        )
+      }
+    }
+    expect(mocks.chatbotFindUnique).toHaveBeenCalledTimes(2)
+  })
+
   test('enables metadata-only Langfuse tracing and closes an aborted turn once', async () => {
     mocks.isAiTelemetryEnabled.mockReturnValue(true)
 
@@ -1370,6 +1429,32 @@ describe('account usage chat route', () => {
     })
   })
 
+  test('persists reasoning-only output as a stable error while finalizing actual usage once', async () => {
+    await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [{ content: [{ type: 'reasoning', text: '' }] }],
+      reasoningText: '',
+    })
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: [
+          { type: 'reasoning', text: '' },
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ],
+        rawCreditsUsed: 0.00006,
+      })
+    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
   test('persists missing terminal usage without either credit decrement', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -1388,7 +1473,7 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
-  test('does not charge an empty terminal result', async () => {
+  test('persists an empty-response error with the reported usage', async () => {
     mocks.finalizeChatTurn.mockResolvedValueOnce({
       outcome: 'empty',
       creditsUsed: null,
@@ -1406,7 +1491,13 @@ describe('account usage chat route', () => {
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: [],
+        content: [
+          {
+            type: 'data',
+            name: 'chat-error',
+            data: { code: 'EMPTY_RESPONSE' },
+          },
+        ],
         rawCreditsUsed: 0.00006,
       })
     )

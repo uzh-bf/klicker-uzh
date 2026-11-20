@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { decodeJwt, type JWTPayload } from 'jose'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import frameFixture from '../../apps/chat/scripts/fixtures/video-frames/query-result.json' with { type: 'json' }
 import { getPrisma } from '../global-setup.js'
 import { chatUrl, siblingAppOrigin } from '../util/chat.js'
 import { type MockPlatform, startMockPlatform } from './mockPlatform.js'
@@ -8,6 +9,7 @@ import { type MockPlatform, startMockPlatform } from './mockPlatform.js'
 for (const embedding of ['top-level', 'iframe'] as const) {
   test(`${embedding} real LMS launch transfers guest history to the linked account`, async ({
     page,
+    request,
   }, testInfo) => {
     test.skip(
       embedding === 'iframe' &&
@@ -92,6 +94,9 @@ for (const embedding of ['top-level', 'iframe'] as const) {
           ownerId,
         },
       })
+      const source = frameFixture.sources[0]
+      const { assets, ...metadata } = source.chunks[0].video_frames
+      const frame = { ...metadata, ...assets[0], title: source.title }
       await prisma.chatbot.create({
         data: {
           id: chatbotId,
@@ -100,6 +105,18 @@ for (const embedding of ['top-level', 'iframe'] as const) {
           ownerId,
           status: 'PUBLISHED',
           creditInitialCredits: 100,
+          mcpConfigurations: {
+            create: {
+              chatMode: 'tutor',
+              mcpServer: { connect: { name: 'KB' } },
+              allowedTools: ['doc_query'],
+              parameters: {
+                kb_id: frame.kb_id,
+                required: true,
+                toolAlias: 'doc_query',
+              },
+            },
+          },
           systemPrompts: {
             tutor: { prompt: 'Synthetic tutor', description: 'Tutor' },
           },
@@ -135,6 +152,39 @@ for (const embedding of ['top-level', 'iframe'] as const) {
           },
         },
       })
+      const message = await prisma.chatMessage.create({
+        data: {
+          threadId: thread.id,
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolName: 'show_video_frame',
+              result: { status: 'selected', frame },
+            },
+          ],
+        },
+      })
+      const frameUrl = new URL(
+        `/api/chatbots/${chatbotId}/threads/${thread.id}/messages/${message.id}/frames/${frame.asset_id}`,
+        target.origin
+      )
+      // The standalone request fixture has no browser session cookies.
+      const getFrame = (token: string) =>
+        request.get(frameUrl.href, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      const expectFrame = async (token: string) => {
+        const response = await getFrame(token)
+        expect(response.status()).toBe(200)
+        expect(response.headers()['content-type']).toBe('image/jpeg')
+        expect(
+          createHash('sha256')
+            .update(await response.body())
+            .digest('hex')
+        ).toBe(frame.frame_sha256)
+      }
+      await expectFrame(guestToken!)
       const account = await prisma.participant.create({
         data: {
           username: subject,
@@ -150,6 +200,8 @@ for (const embedding of ['top-level', 'iframe'] as const) {
       const accountToken = await sessionToken('chat_pwa_embed_token')
       expect(accountToken).toBeTruthy()
       expect(decodeJwt(accountToken!).sub).toBe(account.id)
+      await expectFrame(accountToken!)
+      expect((await getFrame(guestToken!)).status()).toBe(404)
       const transferred = await prisma.chatThread.findUniqueOrThrow({
         where: { id: thread.id },
       })

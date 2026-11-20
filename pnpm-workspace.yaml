@@ -61,6 +61,10 @@ minimumReleaseAgeExclude:
   - '@img/sharp-win32-arm64@0.35.5'
   - '@img/sharp-win32-ia32@0.35.5'
   - '@img/sharp-win32-x64@0.35.5'
+  # Reviewed security fix for the 2026-10-31 backend image scan:
+  # follow-redirects 1.16.2 (CVE-2026-116689). Drop once it ages past the
+  # 14-day window.
+  - 'follow-redirects@1.16.2'
   # Reviewed React Email preview Next.js 16.4.1.
   - 'next@16.4.1'
   - '@next/env@16.4.1'
@@ -150,7 +154,13 @@ overrides:
   'brace-expansion@>=1.0.0 <1.1.20': 1.1.20
   'brace-expansion@>=2.0.0 <2.1.6': 2.1.6
   'brace-expansion@>=5.0.0 <5.0.11': 5.0.11
-  'postcss@>=8.0.0 <8.5.18': 8.5.18
+  # The @uzh-bf/design-system peer-context hash includes postcss. The frontends
+  # declare postcss ~8.5.26 while packages/* inherit next's 8.5.18, so the apps
+  # and packages/kb-management each installed their own design-system copy. The
+  # built bundle inlines sonner, so a toast raised from the package reached a
+  # store no mounted <Toaster> renders. Consolidate the patch line up to 8.5.26
+  # so every importer resolves one copy; this also covers the lift above.
+  'postcss@>=8.0.0 <8.5.26': 8.5.26
   # prisma 7.8.0 pins mysql2 3.15.3.
   'mysql2@<3.22.0': 3.22.0
   # express 4.21.2 pins path-to-regexp 0.1.12.
@@ -180,6 +190,9 @@ overrides:
   # vulnerable release through a range that already allows the fix, so lift
   # that line here.
   'sharp@>=0.35.0 <0.35.5': 0.35.5
+  # follow-redirects 1.16.2 fixes CVE-2026-116689 in the backend image; axios and
+  # http-proxy keep resolving 1.16.1 through ranges that already allow the fix.
+  'follow-redirects@<1.16.2': 1.16.2
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.

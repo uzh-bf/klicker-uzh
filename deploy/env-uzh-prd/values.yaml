@@ -45,10 +45,12 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.92
       resources:
+        # Near the per-pod CPU of a busy lecture, so a crowded node does not
+        # throttle this tier first. Usage above the request is still allowed.
         requests:
-          cpu: 50m
+          cpu: 75m
           memory: 512Mi
         limits:
           memory: 2Gi
@@ -86,7 +88,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.92
       resources:
         requests:
           cpu: 25m
@@ -127,7 +129,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.92
       resources:
         requests:
           cpu: 50m
@@ -194,7 +196,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     annotations:
@@ -252,11 +254,11 @@ chat:
 
   modelRegistry:
     # Auto is the global automatic-model primary, so chatbots using automatic
-    # model selection route through auto-router-v2, as on staging. Explicit
+    # model selection route through auto-router-v4, as on staging. Explicit
     # model selections remain respected. GPT-6 Luna is the participant-credit
     # fallback.
-    # "Auto" routes through the LiteLLM auto-router-v2, which self-selects the
-    # tier per request (SIMPLE=gpt-6-luna-high, MEDIUM=gpt-6.1-sol-low,
+    # "Auto" routes through the LiteLLM auto-router-v4, which self-selects the
+    # tier per request (SIMPLE=gpt-6.1-terra-low, MEDIUM=gpt-6.1-sol-low,
     # COMPLEX=gpt-6.1-sol-medium, REASONING=gpt-6.1-sol-high), as on staging.
     # Auto is a BASE model; Sol selected directly stays ADVANCED.
     # A chatbot can be pinned to Auto-only via its DB columns
@@ -265,7 +267,7 @@ chat:
     # 50% Sol at GPT-6 list prices. Classifier overhead remains outside the
     # registry's selected-model token fields.
     - id: auto
-      deploymentId: klickeruzh/azure/auto-router-v2
+      deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
@@ -334,6 +336,7 @@ chat:
       supportedReasoningEfforts:
         - low
         - medium
+        - high
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
@@ -355,7 +358,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     annotations:
@@ -423,7 +426,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   strategy:
     type: RollingUpdate
@@ -473,7 +476,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   strategy:
     type: RollingUpdate
@@ -489,10 +492,39 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 4
+  # Three static replicas leave one voluntary disruption under the baseline
+  # budget's minimum of two; the burst tier adds up to five on spot.
+  replicaCount: 3
 
   autoscaling:
     enabled: false
+
+  # Spot burst tier next to the static replicas, which carry full load on
+  # their own. Its replicas are owned by the burst HPA, which the prd Argo CD
+  # Application excludes from replica drift.
+  burst:
+    enabled: true
+    maxReplicas: 5
+    # Soft spread, so losing one spot node does not remove the whole tier
+    # while a tight pool can still place every burst pod. The selector names
+    # the tier label, so baseline pods do not count toward the skew.
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-pwa
+            klicker.uzh.ch/tier: burst
+
+  preStopSleepSeconds: 5
 
   affinity:
     podAntiAffinity:
@@ -510,7 +542,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     className: haproxy
@@ -533,11 +565,18 @@ frontendPWA:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 100m
+      cpu: 150m
       memory: 320Mi
     limits:
       memory: 1Gi
+
+  # Serves /_next/static from its own Deployment, so pages of an earlier
+  # release keep their assets during and after a rollout.
+  releaseAssets:
+    enabled: true
 
 frontendManage:
   priorityClassName: production-workload
@@ -563,7 +602,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   ingress:
     className: haproxy
@@ -601,7 +640,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   affinity:
     podAntiAffinity:
@@ -648,16 +687,20 @@ backendGraphql:
   priorityClassName: production-workload
 
   knowledgeGraph:
-    host: 'prd-falkordb-aigeneric-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
+    host: 'prd-falkordb-aigeneric-ha-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # Opens explicit subject and language selection and lets scheduled graph
+    # preparation run. It must equal the revision of the domain catalog the
+    # deployed images ship.
+    domainCatalogRevision: 'kg-domains-v1-793deb4279a163c357bd976868bee17606d6a352f9596a7b961dc4c200f65e72'
     cost:
       currency: 'CHF'
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      semesterQuotaMinorUnits: '10000'
       pricingVersion: 'prd-graph-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
@@ -671,6 +714,7 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    revisionWorkerEnabled: true
     cost:
       questionMinorUnits: '1'
       flashcardMinorUnits: '1'
@@ -698,7 +742,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -737,8 +781,10 @@ backendGraphql:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 100m
+      cpu: 150m
       memory: 448Mi
     limits:
       memory: 1Gi
@@ -751,7 +797,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
 
   affinity:
     podAntiAffinity:
@@ -821,7 +867,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.93
 
   ingress:
     className: haproxy
@@ -853,7 +899,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.92
     pullPolicy: IfNotPresent
 
   affinity:
@@ -943,7 +989,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.92
 
     ingress:
       className: haproxy
@@ -971,6 +1017,26 @@ assessment:
         memory: 200Mi
       limits:
         memory: 1Gi
+
+    # Serves /_next/static from its own Deployment, so pages of an earlier
+    # release keep their assets during and after a rollout. It runs on the
+    # reserved assessment nodes like the frontend it serves.
+    releaseAssets:
+      enabled: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickerasm
+                    operator: In
+                    values:
+                      - reserved
+      tolerations:
+        - key: klickerasm
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
 
   backendGraphql:
     priorityClassName: production-workload
@@ -1018,7 +1084,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.92
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1094,7 +1160,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.92
 
     ingress:
       className: haproxy

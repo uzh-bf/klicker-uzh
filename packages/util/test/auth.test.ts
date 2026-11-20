@@ -7,6 +7,7 @@ import {
   extractBearerToken,
   extractProviderFromAffiliationId,
   generateRandomString,
+  isUzhAffiliated,
   parseCookiesHeader,
   parseCsvHosts,
   reduceCatalyst,
@@ -63,6 +64,28 @@ describe('Auth helpers', () => {
     it('propagates accumulator for non-matching domains', () => {
       expect(reduceCatalyst(false, 'user@example.com')).toBe(false)
       expect(reduceCatalyst(true, 'user@example.com')).toBe(true)
+    })
+  })
+
+  describe('isUzhAffiliated', () => {
+    it('accepts uzh.ch and its subdomains from email or affiliation', () => {
+      expect(isUzhAffiliated({ email: 'lecturer@UZH.ch' })).toBe(true)
+      expect(isUzhAffiliated({ email: 'lecturer@df.uzh.ch' })).toBe(true)
+      expect(
+        isUzhAffiliated({
+          email: 'lecturer@example.com',
+          affiliations: ['staff@ifi.uzh.ch'],
+        })
+      ).toBe(true)
+    })
+
+    it('rejects USZ and look-alike domains', () => {
+      expect(isUzhAffiliated({ email: 'lecturer@usz.ch' })).toBe(false)
+      expect(isUzhAffiliated({ email: 'lecturer@notuzh.ch' })).toBe(false)
+      expect(
+        isUzhAffiliated({ email: null, affiliations: ['staff@uzh.ch.example'] })
+      ).toBe(false)
+      expect(isUzhAffiliated({})).toBe(false)
     })
   })
 

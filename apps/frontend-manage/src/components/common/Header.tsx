@@ -47,6 +47,7 @@ function Header({
     aiCapability === 'enabled' || aiCapability === 'temporarilyUnavailable'
   const aiBetaEnabled = useFeatureFlag('ai-beta')
   const canAuthorChatbots =
+    showBroaderAi &&
     aiBetaEnabled &&
     betaEnabled &&
     user?.catalyst === true &&

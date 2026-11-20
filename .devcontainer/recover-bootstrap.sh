@@ -62,25 +62,9 @@ import {
 
 assertNoPostgresEnvironmentOverrides()
 
-const requiredSchemaColumns = [
-  { table_name: "User", column_name: "id" },
-  { table_name: "User", column_name: "email" },
-  { table_name: "User", column_name: "shortname" },
-  { table_name: "User", column_name: "betaEnabled" },
-  { table_name: "Course", column_name: "id" },
-  { table_name: "Course", column_name: "name" },
-  { table_name: "Course", column_name: "ownerId" },
-  { table_name: "Course", column_name: "isGamificationEnabled" },
-  { table_name: "Participant", column_name: "id" },
-  { table_name: "Participant", column_name: "username" },
-  { table_name: "Element", column_name: "id" },
-  { table_name: "Element", column_name: "ownerId" },
-]
-
 const check = async (
   connectionString: string | undefined,
-  database: "klicker_test" | "klicker_test_shadow",
-  requireSchema: boolean
+  database: "klicker_test" | "klicker_test_shadow"
 ) => {
   const validated = validateDisposableDatabaseUrl(connectionString, database)
   const client = new pg.Client({
@@ -91,25 +75,6 @@ const check = async (
     await client.connect()
     const identity = await client.query(disposableDatabaseIdentityQuery)
     assertDisposableDatabaseIdentity(identity.rows, database)
-
-    if (requireSchema) {
-      const schema = await client.query({
-        text: `
-          SELECT required.table_name, required.column_name
-          FROM jsonb_to_recordset($2::jsonb)
-            AS required(table_name text, column_name text)
-          LEFT JOIN information_schema.columns AS available
-            ON available.table_schema = $1
-           AND available.table_name = required.table_name
-           AND available.column_name = required.column_name
-          WHERE available.table_name IS NULL
-          ORDER BY required.table_name, required.column_name`,
-        values: ["public", JSON.stringify(requiredSchemaColumns)],
-      })
-      if (schema.rows.length !== 0) {
-        throw new Error("Application schema is not ready")
-      }
-    }
   } finally {
     await client.end().catch(() => undefined)
   }
@@ -117,11 +82,11 @@ const check = async (
 
 async function main() {
 try {
-  await check(process.env.DATABASE_URL, "klicker_test", process.env.KLICKER_RECOVERY_IDENTITY_ONLY !== "1")
-  await check(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow", false)
+  await check(process.env.DATABASE_URL, "klicker_test")
+  await check(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow")
 } catch {
   console.error(
-    "[recover-bootstrap] Disposable database identity or schema readiness check failed."
+    "[recover-bootstrap] Disposable database identity check failed."
   )
   process.exitCode = 1
 }
@@ -129,7 +94,25 @@ try {
 void main()
 TS
 )"
-  ) || die 'Marked disposable databases or the application schema are not ready.'
+  ) || die 'Marked disposable databases are not ready.'
+}
+
+verify_schema() {
+  local status=0
+
+  # Compare the complete Prisma-managed schema without replaying migrations
+  # or changing either database. Raw engine diagnostics may contain URLs.
+  (
+    cd "$ROOT/packages/prisma"
+    pnpm exec prisma migrate diff --config prisma.config.ts \
+      --from-config-datasource --to-schema src/prisma/schema --exit-code \
+      >/dev/null 2>&1
+  ) || status=$?
+  case "$status" in
+    0) ;;
+    2) die 'Retained application schema differs from the current Prisma schema; startup refused. No schema changes were applied.' ;;
+    *) die 'Application schema comparison failed; startup refused. No schema changes were applied.' ;;
+  esac
 }
 
 # Invalidate the old marker before resolving any other prerequisite. The
@@ -175,13 +158,14 @@ done
 
 capture_hatchet_token
 if [ "${1:-}" = '--initialize-new-disposable' ]; then
-  KLICKER_RECOVERY_IDENTITY_ONLY=1 verify_databases
+  verify_databases
   pnpm --filter @klicker-uzh/prisma run prisma:push:raw
   pnpm --filter @klicker-uzh/prisma-data run seed:raw
 elif [ "$#" -ne 0 ]; then
   die 'Unsupported recovery bootstrap argument.'
 fi
 verify_databases
+verify_schema
 
 echo '[recover-bootstrap] Bootstrap prerequisites are ready; publishing marker.'
 bash "$ROOT/util/dev-runtime.sh" complete-bootstrap

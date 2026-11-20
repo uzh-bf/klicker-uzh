@@ -46,7 +46,10 @@ describe('chatbot bootstrap route', () => {
 
     expect(response.status).toBe(200)
     const payload = await response.json()
-    expect(Object.keys(payload)).toEqual(['modelSelection', 'modeOptions'])
+    expect(Object.keys(payload).sort()).toEqual([
+      'modeOptions',
+      'modelSelection',
+    ])
     expect(payload.modelSelection).toBe(true)
     expect(typeof payload.modeOptions.tutor.description).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
