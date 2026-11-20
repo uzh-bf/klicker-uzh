@@ -191,6 +191,15 @@ export function useEscapeRoom({
     }
 
     await startAttemptMutation({ variables })
+    if (!isGroup) {
+      // Cached stack answers are keyed by activity, not by player. A new
+      // attempt draws its own numbers, so answers and explanations cached
+      // by an earlier player on this device must not carry over.
+      for (const key of Object.keys(localStorage)) {
+        if (key === `pq-${activity.id}` || key.startsWith(`qi-${activity.id}-`))
+          localStorage.removeItem(key)
+      }
+    }
     await refetch()
   }
 
