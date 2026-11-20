@@ -121,6 +121,8 @@ function GroupActivityStack({
   )
   const [localLockoutRemaining, setLocalLockoutRemaining] = useState(0)
   const [incorrectNotice, setIncorrectNotice] = useState<string | null>(null)
+  // typical mistake matched by the team's last wrong answer
+  const [mistakeNotice, setMistakeNotice] = useState<string | null>(null)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: true,
@@ -163,6 +165,7 @@ function GroupActivityStack({
   // a wrong-answer notice belongs to the stage it was shown for
   useEffect(() => {
     setIncorrectNotice(null)
+    setMistakeNotice(null)
   }, [currentStageId])
 
   useEffect(() => {
@@ -330,6 +333,14 @@ function GroupActivityStack({
             String(entry.extensions?.code).startsWith('ESCAPE_ROOM_')
           )
         : undefined
+    const mistake = escapeError?.extensions?.mistake as
+      | { label?: unknown; feedback?: unknown }
+      | null
+      | undefined
+    const mistakeText =
+      typeof mistake?.label === 'string' && typeof mistake.feedback === 'string'
+        ? `${mistake.label}: ${mistake.feedback}`
+        : null
     if (escapeError?.extensions?.code === 'ESCAPE_ROOM_LOCKOUT') {
       const remaining = escapeError.extensions.lockoutRemainingSeconds
       const attemptsLeft = escapeError.extensions.attemptsLeft
@@ -342,12 +353,15 @@ function GroupActivityStack({
             })
           : t('pwa.practiceQuiz.escapeRoomIncorrectToast')
       )
+      setMistakeNotice(mistakeText)
     } else if (escapeError?.extensions?.code === 'ESCAPE_ROOM_REVEALED') {
       // The stage is cleared without a correct answer; the refetch below
-      // unlocks the next one.
+      // unlocks the next one, so a matched mistake goes into the toast.
       toast({
         type: 'error',
-        message: t('pwa.practiceQuiz.escapeRoomRevealedToast'),
+        message: mistakeText
+          ? `${t('pwa.practiceQuiz.escapeRoomRevealedToast')} ${mistakeText}`
+          : t('pwa.practiceQuiz.escapeRoomRevealedToast'),
       })
     } else if (escapeError?.extensions?.code === 'ESCAPE_ROOM_SKIP_DISABLED') {
       toast({
@@ -557,6 +571,14 @@ function GroupActivityStack({
                         data={{ cy: 'escape-room-incorrect-notice' }}
                       />
                     )}
+                    {mistakeNotice && (
+                      <UserNotification
+                        type="warning"
+                        className={{ root: 'mt-2' }}
+                        message={mistakeNotice}
+                        data={{ cy: 'escape-room-mistake-feedback' }}
+                      />
+                    )}
                     {lockoutRemaining > 0 && (
                       <div aria-live="off">
                         <UserNotification
@@ -641,6 +663,7 @@ function GroupActivityStack({
           }
           onClick={async () => {
             setIncorrectNotice(null)
+            setMistakeNotice(null)
             try {
               const result = await submitGroupActivityDecisions({
                 variables: {

@@ -96,6 +96,33 @@ Participants must be logged in and enrolled in the course to start an attempt. G
 
 ---
 
+## Give each player their own numbers
+
+A numerical question can draw its numbers per attempt, so neighbours cannot copy a result. Each participant, or each group in a Group Activity, gets its own values and is graded against its own solution. The numbers stay the same after a reload.
+
+**To set up per-attempt numbers:**
+
+1. Edit the numerical question, turn on the sample solution, and choose **Formula (own numbers per player)** as the solution type.
+2. Add the variables. A **Whole number** or **Range** variable draws between its minimum and maximum in steps of the given size; a **List** variable picks one of the listed values. **Decimals** sets how the value is shown.
+3. Optionally add **Derived values**, which are computed from the variables, for example a total the question shows.
+4. Show a value in the question or explanation by writing its name in double curly braces, for example `{{A}}`.
+5. Enter the **Solution formula** and its **Tolerance**. Answers within the tolerance count as correct.
+6. Select **Preview three draws** to check the numbers, the correct range and the mistake ranges before you save.
+
+Formulas use `+ - * / ^`, parentheses and the functions `abs`, `round`, `floor`, `ceil`, `min`, `max`, `sqrt`, `exp`, `log` and `log10`. The question cannot be saved while a formula or a placeholder does not work for every tested draw.
+
+Only Escape Room stages draw numbers per attempt. Every other activity, including an Escape Room's evaluation charts, uses one fixed draw for everyone, made when the question is added to the activity.
+
+**To give feedback on typical mistakes:**
+
+1. In the same question, select **Add typical mistake**.
+2. Enter a label, a formula for the wrong result (for example the total without the discount), a tolerance, and the feedback text.
+3. When a participant's wrong answer falls within the tolerance of a mistake, the Escape Room shows the label and the feedback. A mistake whose range overlaps the correct answer is ignored.
+
+Typical mistakes work with every solution type. Outside Escape Room stages they show no feedback. The stage results count each matched mistake, and the Live Quiz projector lists them after the block closes.
+
+---
+
 ## Add a QR Scan stage
 
 QR Scan is a question type available exclusively inside Escape Rooms. It connects a digital stage to a physical location, requiring participants to find and scan (or manually enter) a code placed in the room.
@@ -137,7 +164,7 @@ The **Lecturer Cockpit** displays per-participant progress for the active Escape
 
 **Stage results and export**
 
-In all four modes, the table is followed by a section with one row per stage. It counts how many participants (or groups) solved, revealed, or skipped the stage, tried it without clearing it, or never reached it, plus wrong attempts, hints used, and the bonus result, and shows the stage's debrief text. The counts cover participants who started an attempt. Use **Export CSV** to download the attempt table.
+In all four modes, the table is followed by a section with one row per stage. It counts how many participants (or groups) solved, revealed, or skipped the stage, tried it without clearing it, or never reached it, plus wrong attempts, hints used, and the bonus result, and shows the stage's debrief text and how often each typical mistake was made. The counts cover participants who started an attempt. Use **Export CSV** to download the attempt table.
 
 The tables list every participant. Only participants who joined the leaderboard receive a rank.
 
