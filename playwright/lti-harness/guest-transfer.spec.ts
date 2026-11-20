@@ -139,6 +139,7 @@ for (const embedding of ['top-level', 'iframe'] as const) {
           where: { participantId: guest.sub, type: 'lti_guest' },
         })
       ).not.toBeNull()
+      const userMessageId = randomUUID()
       const thread = await prisma.chatThread.create({
         data: {
           participantId: guest.sub!,
@@ -146,6 +147,7 @@ for (const embedding of ['top-level', 'iframe'] as const) {
           title: `Guest history ${randomUUID()}`,
           messages: {
             create: {
+              id: userMessageId,
               role: 'user',
               content: [{ type: 'text', text: randomUUID() }],
             },
@@ -155,11 +157,14 @@ for (const embedding of ['top-level', 'iframe'] as const) {
       const message = await prisma.chatMessage.create({
         data: {
           threadId: thread.id,
+          parentId: userMessageId,
           role: 'assistant',
           content: [
             {
               type: 'tool-call',
+              toolCallId: randomUUID(),
               toolName: 'show_video_frame',
+              args: { asset_id: frame.asset_id },
               result: { status: 'selected', frame },
             },
           ],
