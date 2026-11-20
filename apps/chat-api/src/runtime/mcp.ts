@@ -347,6 +347,7 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
       >()
       let cacheBytes = 0
       let projectionRequests = 0
+      let projectionQueue = Promise.resolve()
       let acceptedIds: string[] = []
       const expiresAt = now() + (input.python ? 120_000 : 300_000)
       let closed = false
@@ -504,80 +505,91 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
           )
             throw new Error('Tool projection request limit reached')
           const body = engineToolProjectionV2RequestSchema.parse(raw)
-          if (
-            body.toolCallIds.length < acceptedIds.length ||
-            acceptedIds.some((id, index) => body.toolCallIds[index] !== id)
-          )
-            throw new Error('Tool projection order changed')
-          const ordered = body.toolCallIds.map((toolCallId) => {
-            const call = calls.get(toolCallId)
-            if (!call?.encoded) throw new Error('Tool result is unavailable')
-            return {
-              toolCallId,
-              request: call.request,
-              result: JSON.parse(call.encoded) as EngineToolExecutionV2Result,
-            }
+          const previousProjection = projectionQueue
+          let releaseProjection!: () => void
+          projectionQueue = new Promise<void>((resolve) => {
+            releaseProjection = resolve
           })
-          const completedSteps = [
-            {
-              content: ordered.flatMap(({ toolCallId, request, result }) => [
-                {
-                  type: 'tool-call',
-                  toolCallId,
-                  toolName: request.toolName,
-                  input: request.input,
-                },
-                {
-                  type: 'tool-result',
-                  toolCallId,
-                  toolName: request.toolName,
-                  output: result.output,
-                },
-              ]),
-            },
-          ]
-          let projected = withModelCitationIndices(
-            [
+          await previousProjection
+          try {
+            callSignal.throwIfAborted()
+            if (
+              body.toolCallIds.length < acceptedIds.length ||
+              acceptedIds.some((id, index) => body.toolCallIds[index] !== id)
+            )
+              throw new Error('Tool projection order changed')
+            const ordered = body.toolCallIds.map((toolCallId) => {
+              const call = calls.get(toolCallId)
+              if (!call?.encoded) throw new Error('Tool result is unavailable')
+              return {
+                toolCallId,
+                request: call.request,
+                result: JSON.parse(call.encoded) as EngineToolExecutionV2Result,
+              }
+            })
+            const completedSteps = [
               {
-                role: 'tool',
-                content: ordered.map(({ toolCallId, request, result }) => ({
-                  type: 'tool-result',
-                  toolCallId,
-                  toolName: request.toolName,
-                  output: result.modelOutput!,
-                })),
+                content: ordered.flatMap(({ toolCallId, request, result }) => [
+                  {
+                    type: 'tool-call',
+                    toolCallId,
+                    toolName: request.toolName,
+                    input: request.input,
+                  },
+                  {
+                    type: 'tool-result',
+                    toolCallId,
+                    toolName: request.toolName,
+                    output: result.output,
+                  },
+                ]),
               },
-            ] as ModelMessage[],
-            completedSteps
-          )
-          if (input.tools.courseImageVision) {
-            const prepared =
-              await input.tools.courseImageVision.prepareMessages(
-                projected,
-                completedSteps
-              )
-            projected = prepared.messages
+            ]
+            let projected = withModelCitationIndices(
+              [
+                {
+                  role: 'tool',
+                  content: ordered.map(({ toolCallId, request, result }) => ({
+                    type: 'tool-result',
+                    toolCallId,
+                    toolName: request.toolName,
+                    output: result.modelOutput!,
+                  })),
+                },
+              ] as ModelMessage[],
+              completedSteps
+            )
+            if (input.tools.courseImageVision) {
+              const prepared =
+                await input.tools.courseImageVision.prepareMessages(
+                  projected,
+                  completedSteps
+                )
+              projected = prepared.messages
+            }
+            const message = projected[0]
+            if (message?.role !== 'tool')
+              throw new Error('Tool projection is unavailable')
+            const result = engineToolProjectionV2ResultSchema.parse({
+              contractVersion: CHAT_ENGINE_CONTRACT_V2,
+              outputs: message.content.map((part) => {
+                if (part.type !== 'tool-result')
+                  throw new Error('Tool projection is unavailable')
+                return { toolCallId: part.toolCallId, modelOutput: part.output }
+              }),
+            })
+            if (
+              Buffer.byteLength(JSON.stringify(result)) >
+              CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES
+            )
+              throw new Error('Tool projection exceeds the byte limit')
+            callSignal.throwIfAborted()
+            if (expiresAt <= now()) throw new Error('Tool capability expired')
+            acceptedIds = [...body.toolCallIds]
+            return result
+          } finally {
+            releaseProjection()
           }
-          const message = projected[0]
-          if (message?.role !== 'tool')
-            throw new Error('Tool projection is unavailable')
-          const result = engineToolProjectionV2ResultSchema.parse({
-            contractVersion: CHAT_ENGINE_CONTRACT_V2,
-            outputs: message.content.map((part) => {
-              if (part.type !== 'tool-result')
-                throw new Error('Tool projection is unavailable')
-              return { toolCallId: part.toolCallId, modelOutput: part.output }
-            }),
-          })
-          if (
-            Buffer.byteLength(JSON.stringify(result)) >
-            CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES
-          )
-            throw new Error('Tool projection exceeds the byte limit')
-          callSignal.throwIfAborted()
-          if (expiresAt <= now()) throw new Error('Tool capability expired')
-          acceptedIds = [...body.toolCallIds]
-          return result
         },
       })
       return { tools: descriptors, executionToken: token, close }
