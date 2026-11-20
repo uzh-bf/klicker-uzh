@@ -282,6 +282,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/next-config':
         specifier: workspace:*
         version: link:../../packages/next-config
@@ -439,6 +442,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -560,6 +566,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   apps/chat:
     dependencies:
@@ -608,6 +617,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../../packages/knowledge-graph
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -948,6 +960,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1129,6 +1144,9 @@ importers:
       '@klicker-uzh/kb-management':
         specifier: workspace:*
         version: link:../../packages/kb-management
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1376,6 +1394,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1566,6 +1587,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1578,12 +1602,6 @@ importers:
       ioredis:
         specifier: 5.4.1
         version: 5.4.1(supports-color@8.1.1)
-      pino:
-        specifier: 9.9.5
-        version: 9.9.5
-      pino-pretty:
-        specifier: 13.1.3
-        version: 13.1.3
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -1630,6 +1648,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1676,6 +1697,9 @@ importers:
 
   apps/lti:
     dependencies:
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1835,6 +1859,9 @@ importers:
 
   apps/olat-api:
     dependencies:
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1914,6 +1941,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -2166,6 +2196,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2386,6 +2419,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2543,6 +2579,40 @@ importers:
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+
+  packages/logging:
+    dependencies:
+      pino:
+        specifier: 9.14.0
+        version: 9.14.0
+    devDependencies:
+      '@rollup/plugin-node-resolve':
+        specifier: ~15.3.1
+        version: 15.3.1(rollup@4.34.9)
+      '@rollup/plugin-typescript':
+        specifier: ~12.1.4
+        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      cross-env:
+        specifier: ~7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: ~4.1.5
+        version: 4.1.5
+      pino-pretty:
+        specifier: ~13.1.3
+        version: 13.1.3
+      rollup:
+        specifier: ~4.34.9
+        version: 4.34.9
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   packages/markdown:
     dependencies:
@@ -7346,6 +7416,9 @@ packages:
   '@peculiar/webcrypto@1.5.0':
     resolution: {integrity: sha512-BRs5XUAwiyCDQMsVA9IDvDa7UBR9gAvPHgugOeGng3YN6vJ9JYonyDc0lNczErgtCWtucjR5N7VtaonboD/ezg==}
     engines: {node: '>=10.12.0'}
+
+  '@pinojs/redact@0.4.0':
+    resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -13536,10 +13609,6 @@ packages:
   fast-querystring@1.1.2:
     resolution: {integrity: sha512-g6KuKWmFXc0fID8WWH0jit4g0AGBoJhCkJMb1RmbsSEUNvQ+ZC8D6CUZ+GtF8nMzSPXnhiePyyqqipzNNEnHjg==}
 
-  fast-redact@3.5.0:
-    resolution: {integrity: sha512-dwsoQlS7h9hMeYUq1W++23NDcBLV4KqONnITDV9DjfS3q1SgDGVrBdvvTLUotWtPSD7asWDV9/CmsZPy8Hf70A==}
-    engines: {node: '>=6'}
-
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
 
@@ -17149,8 +17218,8 @@ packages:
   pino-std-serializers@7.0.0:
     resolution: {integrity: sha512-e906FRY0+tV27iq4juKzSYPbUj2do2X2JX4EzSca1631EB2QJQUqGbDuERal7LCtOpxl6x3+nvo9NPZcmjkiFA==}
 
-  pino@9.9.5:
-    resolution: {integrity: sha512-d1s98p8/4TfYhsJ09r/Azt30aYELRi6NNnZtEbqFw6BoGsdPVf5lKNK3kUwH8BmJJfpTLNuicjUQjaMbd93dVg==}
+  pino@9.14.0:
+    resolution: {integrity: sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w==}
     hasBin: true
 
   pipenet@1.4.2:
@@ -19069,9 +19138,6 @@ packages:
   socks@2.8.9:
     resolution: {integrity: sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
-
-  sonic-boom@4.2.0:
-    resolution: {integrity: sha512-INb7TM37/mAcsGmc9hyyI6+QR3rR1zVRu36B0NeGXKnOOLiZOfER5SA+N7X7k3yUYRzLWafduTDvJAfDswwEww==}
 
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
@@ -26451,6 +26517,8 @@ snapshots:
       tslib: 2.8.1
       webcrypto-core: 1.8.1
 
+  '@pinojs/redact@0.4.0': {}
+
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
@@ -33443,8 +33511,6 @@ snapshots:
     dependencies:
       fast-decode-uri-component: 1.0.1
 
-  fast-redact@3.5.0: {}
-
   fast-safe-stringify@2.1.1: {}
 
   fast-uri@3.1.8: {}
@@ -37867,10 +37933,10 @@ snapshots:
 
   pino-std-serializers@7.0.0: {}
 
-  pino@9.9.5:
+  pino@9.14.0:
     dependencies:
+      '@pinojs/redact': 0.4.0
       atomic-sleep: 1.0.0
-      fast-redact: 3.5.0
       on-exit-leak-free: 2.1.2
       pino-abstract-transport: 2.0.0
       pino-std-serializers: 7.0.0
@@ -37878,7 +37944,7 @@ snapshots:
       quick-format-unescaped: 4.0.4
       real-require: 0.2.0
       safe-stable-stringify: 2.5.0
-      sonic-boom: 4.2.0
+      sonic-boom: 4.2.1
       thread-stream: 3.1.0
 
   pipenet@1.4.2(supports-color@8.1.1):
@@ -40455,10 +40521,6 @@ snapshots:
       ip-address: 10.3.1
       smart-buffer: 4.2.0
     optional: true
-
-  sonic-boom@4.2.0:
-    dependencies:
-      atomic-sleep: 1.0.0
 
   sonic-boom@4.2.1:
     dependencies:

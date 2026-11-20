@@ -13,10 +13,23 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     else process.env.DEBUG = previousDebug
   })
   const records = []
-  const consoleCalls = []
-  t.mock.method(console, 'error', (...args) => {
-    consoleCalls.push(args)
-    records.push(JSON.parse(args[0]))
+  const structuredRecords = []
+  const logOutput = []
+  const passthroughWrite = process.stdout.write.bind(process.stdout)
+  t.mock.method(process.stdout, 'write', (chunk, ...args) => {
+    const value = String(chunk)
+    if (!value.includes('"event":"lti_')) {
+      return passthroughWrite(chunk, ...args)
+    }
+    logOutput.push(value)
+    for (const line of value.split('\n')) {
+      if (!line) continue
+      const record = JSON.parse(line)
+      structuredRecords.push(record)
+      const { level, service, time, ...boundedRecord } = record
+      records.push(boundedRecord)
+    }
+    return true
   })
   const logging = createRequestLogging('https://tool.example.test')
   const handler = new ExpressHttpHandler(logging.logger, {
@@ -144,7 +157,6 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
         'secFetchSite',
         'statePresent',
         'status',
-        'ts',
       ].sort()
     )
   }
@@ -211,18 +223,15 @@ test('failed requests produce bounded diagnostics without DEBUG or HTTP changes'
     'component',
     'errorCode',
     'event',
-    'ts',
   ])
   assert.equal(records.at(-1).event, 'lti_provider_error')
   assert.equal(records.at(-1).errorCode, 'UNCLASSIFIED_ERROR')
   assert.equal(records.at(-1).component, 'http_handler')
   assert.equal(records.length, 8)
-  for (const args of consoleCalls) {
-    assert.equal(args.length, 1)
-    assert.equal(typeof args[0], 'string')
+  for (const record of structuredRecords) {
+    assert.equal(record.level, 'error')
+    assert.equal(record.service, 'lti')
+    assert.equal(typeof record.time, 'number')
   }
-  assert.equal(
-    JSON.stringify(consoleCalls).includes('SYNTHETIC_PRIVATE'),
-    false
-  )
+  assert.equal(logOutput.join('').includes('SYNTHETIC_PRIVATE'), false)
 })
