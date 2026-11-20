@@ -15,6 +15,7 @@ query ElementGenerationCapabilities {
       supportsFocusTopic
       supportsRetry
       supportsIncompletePublication
+      supportsIndividualRegeneration
     }
   }
 }

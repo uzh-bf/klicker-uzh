@@ -129,6 +129,9 @@ function maintenancePrisma({
       findMany: graphBuildFindMany,
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
+    elementGenerationBuild: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
     $transaction: vi.fn(),
     $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
   }
@@ -783,6 +786,28 @@ describe('KB retention maintenance', () => {
               inputArtifactPrefix: `question-builds/${generationBuildId}`,
               outputArtifactContainer: 'question-results',
               outputArtifactPrefix: `element-results/${generationBuildId}`,
+              evidencePurgedAt: null,
+              designSummary: {
+                slots: [
+                  {
+                    sourceQuestionId: 'slot-1',
+                    specification: {
+                      question_id: 'slot-1',
+                      design_slot_id: 'design-1',
+                      learning_objective: 'synthetic objective',
+                      evidence: [{ id: 'chunk-1', text: 'synthetic text' }],
+                      assertions: [
+                        {
+                          id: 'a-1',
+                          version: 1,
+                          statement: 'synthetic claim',
+                          rationale: 'synthetic reason',
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
             },
           ],
           kb: { ownerId: OWNER_ID },
@@ -805,6 +830,28 @@ describe('KB retention maintenance', () => {
       ['question-inputs', `question-builds/${generationBuildId}`],
       ['question-results', `element-results/${generationBuildId}`],
     ])
+    expect(prisma.elementGenerationBuild.updateMany).toHaveBeenCalledWith({
+      where: { id: generationBuildId, evidencePurgedAt: null },
+      data: {
+        evidencePurgedAt: NOW,
+        designSummary: {
+          slots: [
+            {
+              sourceQuestionId: 'slot-1',
+              specification: {
+                question_id: 'slot-1',
+                design_slot_id: 'design-1',
+                learning_objective: 'synthetic objective',
+                evidence: [],
+                assertions: [
+                  { id: 'a-1', version: 1, statement: null, rationale: null },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
     expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith({
       where: {
         id: BUILD_ID,

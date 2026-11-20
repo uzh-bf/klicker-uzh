@@ -1,0 +1,24 @@
+mutation UpdateKb(
+  $id: ID!
+  $name: String
+  $description: String
+  $domainPolicyId: String
+  $domainPolicyVersion: Int
+  $domainPolicyLanguage: String
+) {
+  updateKb(
+    id: $id
+    name: $name
+    description: $description
+    domainPolicyId: $domainPolicyId
+    domainPolicyVersion: $domainPolicyVersion
+    domainPolicyLanguage: $domainPolicyLanguage
+  ) {
+    id
+    name
+    description
+    domainPolicyId
+    domainPolicyVersion
+    domainPolicyLanguage
+  }
+}

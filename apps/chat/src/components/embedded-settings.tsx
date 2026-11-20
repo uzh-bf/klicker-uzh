@@ -17,6 +17,7 @@ import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
+import { formatCreditPercent } from './thread-credits-format'
 
 const COMPACT_SELECT_CLASS =
   'border-input bg-background bg-none text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1'
@@ -212,11 +213,8 @@ export function EmbeddedCreditsBar({ className }: { className?: string }) {
   const exhausted = credits.current === 0
   // A percentage is the most compact honest shape for the tiny embedded bar:
   // it avoids the "3 / 3" width while still degrading visibly as the student
-  // spends credits. Rounding down can never advertise more than is left.
-  const percent =
-    credits.total > 0
-      ? Math.max(0, Math.floor((credits.current / credits.total) * 100))
-      : 0
+  // spends credits. The sidebar and mobile bars show the same percentage.
+  const percent = formatCreditPercent(credits.current, credits.total)
 
   // One line only: the bar has a single row of vertical room, so the exhausted
   // explanation lives in the tooltip and accessible name rather than a second

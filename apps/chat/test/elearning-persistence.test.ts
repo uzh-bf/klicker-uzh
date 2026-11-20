@@ -32,7 +32,7 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
-vi.mock('@/src/services/disclaimers', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/disclaimers', () => ({
   DisclaimersService: {
     checkDisclaimerStatus: mocks.checkDisclaimerStatus,
   },
@@ -67,7 +67,7 @@ vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
-vi.mock('@/src/services/threads', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
     findFailedTurnThreadId: mocks.findFailedTurnThreadId,
@@ -75,7 +75,7 @@ vi.mock('@/src/services/threads', () => ({
   },
 }))
 
-vi.mock('@/src/services/credits', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/credits', () => ({
   CreditsService: {
     previewUserCredits: mocks.previewUserCredits,
     getUserCredits: mocks.getUserCredits,
@@ -94,7 +94,7 @@ vi.mock('@/src/services/accountUsage', () => ({
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
 
-vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
 }))
 

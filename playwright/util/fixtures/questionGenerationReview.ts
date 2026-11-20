@@ -11,6 +11,8 @@ const FAILURE_BUILD_ID = 'b0000000-0000-4000-8000-000000000004'
 const PARTIAL_BUILD_ID = 'b0000000-0000-4000-8000-000000000005'
 const LEGACY_FAILURE_BUILD_ID = 'b0000000-0000-4000-8000-000000000006'
 const ZERO_PASSING_BUILD_ID = 'b0000000-0000-4000-8000-000000000007'
+const REVISION_BUILD_ID = 'b0000000-0000-4000-8000-000000000008'
+const PURGED_BUILD_ID = 'b0000000-0000-4000-8000-000000000009'
 const FIXTURE_BUILD_IDS = [
   BUILD_ID,
   ATTENTION_BUILD_ID,
@@ -19,6 +21,8 @@ const FIXTURE_BUILD_IDS = [
   PARTIAL_BUILD_ID,
   LEGACY_FAILURE_BUILD_ID,
   ZERO_PASSING_BUILD_ID,
+  REVISION_BUILD_ID,
+  PURGED_BUILD_ID,
 ]
 
 const KB_ID = 'b0000000-0000-4000-8000-000000000010'
@@ -48,6 +52,19 @@ export type QuestionGenerationReviewFixture = {
   partialDeliveredDraftId: string
   legacyFailureBuildId: string
   zeroPassingBuildId: string
+  // Revision requests: one build with a running request, a failed retryable
+  // request with an earlier failed one, a finished request with its revised
+  // draft and a plain draft; one build whose evidence was purged.
+  revisionBuildId: string
+  revisionDraftIds: {
+    running: string
+    failed: string
+    original: string
+    revised: string
+    plain: string
+  }
+  purgedBuildId: string
+  purgedDraftId: string
 }
 
 // One structured reason per unsupported slot. The set covers every failure
@@ -225,6 +242,19 @@ function attentionDraft(index: number, qualityFlags: string[]) {
     targetDifficulty: 3,
     predictedDifficulty: 3.2,
     qualityFlags,
+  }
+}
+
+function revisionDraftId(index: number) {
+  return `b0000000-0000-4000-8000-${String(400 + index).padStart(12, '0')}`
+}
+
+function revisionDraft(index: number, decision?: DB.GeneratedElementDecision) {
+  return {
+    ...attentionDraft(index, []),
+    id: revisionDraftId(index),
+    sourceElementId: `synthetic-revision-${index + 1}`,
+    ...(decision ? { decision } : {}),
   }
 }
 
@@ -654,7 +684,140 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
     },
   })
 
+  const revisionBuildId = REVISION_BUILD_ID
+  const requested = DB.GeneratedElementDecision.REVISION_REQUESTED
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: revisionBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-revision`,
+      configurationHash: 'synthetic-configuration-revision',
+      configuration: buildConfiguration(),
+      requestedElementCount: 5,
+      generatedElementCount: 5,
+      status: DB.ElementGenerationBuildStatus.COMPLETED,
+      stage: 'completed',
+      completedAt: new Date('2026-08-29T14:00:00.000Z'),
+      drafts: {
+        create: [
+          revisionDraft(0, requested),
+          revisionDraft(1, requested),
+          revisionDraft(2, requested),
+          {
+            ...revisionDraft(3),
+            sourceElementId: 'synthetic-revision-3',
+            duplicationIndex: 1,
+          },
+          revisionDraft(4),
+        ],
+      },
+    },
+  })
+  const childBase = {
+    ownerId: USER_ID_TEST,
+    sourceGraphBuildId: GRAPH_BUILD_ID,
+    elementType: 'SC' as const,
+    configuration: buildConfiguration(),
+    requestedElementCount: 1,
+    parentBuildId: revisionBuildId,
+  }
+  const childSeeds = [
+    {
+      key: 'running',
+      draft: 0,
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      note: 'Make the distractors more plausible',
+    },
+    {
+      key: 'failed-old',
+      draft: 1,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      note: 'First attempt',
+      error: 'Synthetic revision failure.',
+      completedAt: new Date('2026-08-29T14:10:00.000Z'),
+    },
+    {
+      key: 'failed',
+      draft: 1,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      note: 'Shorter stem please',
+      error: 'Synthetic revision failure.',
+      completedAt: new Date('2026-08-29T14:20:00.000Z'),
+    },
+    {
+      key: 'finished',
+      draft: 2,
+      status: DB.ElementGenerationBuildStatus.COMPLETED,
+      note: 'Use a real-world example',
+      completedAt: new Date('2026-08-29T14:30:00.000Z'),
+    },
+  ]
+  const childIds: Record<string, string> = {}
+  for (const [index, seed] of childSeeds.entries()) {
+    const id = `b0000000-0000-4000-8000-${String(500 + index).padStart(12, '0')}`
+    childIds[seed.key] = id
+    await prisma.elementGenerationBuild.create({
+      data: {
+        ...childBase,
+        id,
+        idempotencyKey: `${FIXTURE_PREFIX}-revision-child-${seed.key}`,
+        configurationHash: `synthetic-configuration-revision-${seed.key}`,
+        revisionOfDraftId: revisionDraftId(seed.draft),
+        revisionNote: seed.note,
+        status: seed.status,
+        stage: 'revising',
+        errorCode: seed.error ? 'WORKFLOW_FAILED' : null,
+        errorMessage: seed.error ?? null,
+        errorRetryable: seed.error ? true : null,
+        completedAt: seed.completedAt ?? null,
+        createdAt: seed.completedAt
+          ? new Date(seed.completedAt.getTime() - 60_000)
+          : new Date(),
+      },
+    })
+  }
+  await prisma.generatedElementDraft.update({
+    where: { id: revisionDraftId(3) },
+    data: {
+      parentDraftId: revisionDraftId(2),
+      revisionOfDraftId: revisionDraftId(2),
+      revisionBuildId: childIds.finished,
+    },
+  })
+
+  const purgedBuildId = PURGED_BUILD_ID
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: purgedBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-purged`,
+      configurationHash: 'synthetic-configuration-purged',
+      configuration: buildConfiguration(),
+      requestedElementCount: 1,
+      generatedElementCount: 1,
+      status: DB.ElementGenerationBuildStatus.COMPLETED,
+      stage: 'completed',
+      completedAt: new Date('2026-08-29T15:00:00.000Z'),
+      evidencePurgedAt: new Date('2026-08-29T16:00:00.000Z'),
+      drafts: { create: [revisionDraft(5)] },
+    },
+  })
+
   return {
+    revisionBuildId,
+    revisionDraftIds: {
+      running: revisionDraftId(0),
+      failed: revisionDraftId(1),
+      original: revisionDraftId(2),
+      revised: revisionDraftId(3),
+      plain: revisionDraftId(4),
+    },
+    purgedBuildId,
+    purgedDraftId: revisionDraftId(5),
     primaryBuildId,
     tagIdByExistingName,
     primaryDraftIds: Array.from(

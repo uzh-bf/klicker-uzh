@@ -166,8 +166,9 @@ function UsageLaneCard({
   const formatter = useFormatter()
   const exhausted = lane.usedCredits > 0 && lane.remainingCredits === 0
   const empty = lane.budgetCredits === 0 && lane.usedCredits === 0
+  // Credits are US dollars, so the lanes show them as an amount in USD.
   const formatCredits = (value: number) =>
-    formatter.number(value, { maximumFractionDigits: 6 })
+    `${t('manage.settings.usageCredits')} ${formatter.number(value, { maximumFractionDigits: 2 })}`
   const formatResetDate = (value: unknown) =>
     formatter.dateTime(new Date(String(value)), { dateStyle: 'medium' })
 

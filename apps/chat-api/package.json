@@ -9,6 +9,8 @@
   ],
   "dependencies": {
     "@ai-sdk/mcp": "2.0.25",
+    "@azure/identity": "4.13.0",
+    "@azure/storage-blob": "12.25.0",
     "@hono/node-server": "1.19.11",
     "@klicker-uzh/chat-engine-contract": "workspace:*",
     "@klicker-uzh/doc-query-client": "workspace:*",

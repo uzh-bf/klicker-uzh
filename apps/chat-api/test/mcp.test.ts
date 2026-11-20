@@ -1,3 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { readCourseImage } from '../src/host/lib/server/courseImageStore.js'
+import { createCourseImageVision } from '../src/host/lib/server/courseImageVision.js'
+import { courseImageCandidates } from '../src/host/lib/sources/courseImages.js'
 import {
   CHAT_ENGINE_CONTRACT_V2,
   CHAT_ENGINE_MAX_V2_DISPATCHER_CACHE_BYTES,
@@ -83,6 +88,70 @@ function fixture() {
 }
 
 describe('admitted-turn host tool capabilities', () => {
+  test('projects scoped figure pixels only into model input and preserves the raw retrieval result', async () => {
+    const fixtureRoot = fileURLToPath(
+      new URL('../../chat/scripts/fixtures/course-images/', import.meta.url)
+    )
+    const raw = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../chat/scripts/fixtures/course-images/query-result.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    )
+    const image = courseImageCandidates(raw)[0]
+    if (!image)
+      throw new Error('Synthetic fixture must offer an admitted figure')
+    const vision = createCourseImageVision({
+      kbIds: [image.kb_id],
+      readImage: (candidate) => readCourseImage(candidate, fixtureRoot),
+    })
+    const execute = vi.fn(async () => raw)
+    const dispatcher = createHostToolDispatcher()
+    const session = await register(dispatcher, {
+      signal: signal(),
+      tools: {
+        tools: {
+          KB_doc_query: tool({
+            inputSchema: z.object({ query: z.string() }),
+            execute,
+          }),
+        },
+        promptToolNames: ['KB_doc_query'],
+        promptContext: '',
+        close: async () => undefined,
+        courseImageVision: vision,
+      },
+    })
+    const call = request('figure-search', undefined, 'KB_doc_query')
+    const original = await dispatcher.execute(
+      session.executionToken,
+      call,
+      signal()
+    )
+    expect(original?.output).toEqual(raw)
+    const projected = await dispatcher.project(
+      session.executionToken,
+      projection('figure-search'),
+      signal()
+    )
+    const output = projected?.outputs[0]?.modelOutput
+    if (output?.type !== 'content')
+      throw new Error('Missing model-only figure projection')
+    const file = output.value.find((part) => part.type === 'file')
+    expect(file).toMatchObject({
+      mediaType: 'image/png',
+      data: { type: 'data' },
+    })
+    expect(vision.hasPixelInput(image)).toBe(true)
+    expect(
+      await dispatcher.execute(session.executionToken, call, signal())
+    ).toEqual(original)
+    expect(execute).toHaveBeenCalledTimes(1)
+  })
+
   test('denies missing, foreign and expired capabilities without execution', async () => {
     let now = 1
     const dispatcher = createHostToolDispatcher(() => now)
