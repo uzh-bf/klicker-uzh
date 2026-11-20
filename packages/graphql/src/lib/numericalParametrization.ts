@@ -194,8 +194,10 @@ function decimalsFor(
   // Grading uses the drawn value itself, so a drawn variable without declared
   // decimals is shown exactly; toPrecision drops float noise such as 0.3 * 3.
   if (variable) {
-    const fraction = String(Number(value.toPrecision(12))).split('.')[1]
-    return fraction?.length ?? 0
+    // exponent form avoids String()'s switch to e-notation for tiny values
+    const [mantissa, exponent] = value.toExponential(11).split('e')
+    const digits = mantissa!.split('.')[1]?.replace(/0+$/, '').length ?? 0
+    return Math.min(20, Math.max(0, digits - Number(exponent)))
   }
   return Number.isInteger(value) ? 0 : 2
 }
