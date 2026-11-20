@@ -494,7 +494,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/test-graphql-execution.yml@d8fdaac4b6dc1ab66bd3ed6e45f2a10cd9ab0fb9
+    uses: uzh-bf/klicker-uzh/.github/workflows/test-graphql-execution.yml@622dd8a9f8af8ee55db6ead66d53cc0f7a5ad1c2
     secrets: inherit
 
   priority-status:
