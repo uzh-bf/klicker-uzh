@@ -1621,6 +1621,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
@@ -1667,6 +1670,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   apps/lti:
     dependencies:
@@ -1939,6 +1945,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   packages/audit:
     dependencies:
@@ -1957,6 +1966,9 @@ importers:
       canonicalize:
         specifier: 3.0.0
         version: 3.0.0
+      file-type:
+        specifier: 21.3.4
+        version: 21.3.4(supports-color@8.1.1)
       uuid:
         specifier: 10.0.0
         version: 10.0.0
