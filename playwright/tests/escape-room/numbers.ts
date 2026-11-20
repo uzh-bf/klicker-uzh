@@ -124,8 +124,8 @@ export function registerEscapeRoomNumbersTests() {
       String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, "'")
     )
 
+    // clearing the only stage opens the completion screen right away
     await answer(page, amount * 3)
-    await page.getByTestId('student-stack-continue').click()
     await expect(page.getByTestId('escape-room-completed')).toBeVisible()
 
     const other = await createStudentPage(browser)
