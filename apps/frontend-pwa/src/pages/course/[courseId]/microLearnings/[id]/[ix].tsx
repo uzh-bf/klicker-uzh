@@ -20,6 +20,7 @@ import {
   getStageOutcome,
   hasBonusStage,
   isStageCleared,
+  getStackStorageId,
   useEscapeRoom,
 } from '../../../../../components/hooks/useEscapeRoom'
 import Layout from '../../../../../components/Layout'
@@ -237,7 +238,9 @@ function MicrolearningInstance() {
       return
     }
 
-    localStorage.removeItem(`qi-${microLearning.id}-${currentStack.id}`)
+    localStorage.removeItem(
+      `qi-${getStackStorageId(microLearning.id, attempt)}-${currentStack.id}`
+    )
     setEscapeRetryNonce((nonce) => nonce + 1)
     await refetch()
   }
@@ -281,6 +284,7 @@ function MicrolearningInstance() {
             singleSubmission={!isEscapeRoom}
             key={`${currentStack.id}-${isEscapeRoom ? escapeRetryNonce : 0}`}
             parentId={microLearning.id}
+            storageId={getStackStorageId(microLearning.id, attempt)}
             courseId={microLearning.course!.id}
             stack={currentStack}
             currentStep={ix + 1}

@@ -20,6 +20,7 @@ import {
   getStageOutcome,
   hasBonusStage,
   isStageCleared,
+  getStackStorageId,
   useEscapeRoom,
 } from '../hooks/useEscapeRoom'
 import ElementStack from './ElementStack'
@@ -49,7 +50,13 @@ export function resetPracticeQuizLocalStorage(id: string) {
   const stackPrefix = `qi-${id}-`
   const localStorageKeys = Object.keys(localStorage)
   localStorageKeys.forEach((key) => {
-    if (key === progressKey || key.startsWith(stackPrefix)) {
+    // escape room caches are scoped to an attempt (`<id>:<attemptId>`)
+    if (
+      key === progressKey ||
+      key.startsWith(`${progressKey}:`) ||
+      key.startsWith(stackPrefix) ||
+      key.startsWith(`qi-${id}:`)
+    ) {
       localStorage.removeItem(key)
     }
   })
@@ -106,26 +113,6 @@ function PracticeQuiz({
     router.push(`/`)
   }
 
-  const [progressState, setProgressState] =
-    useLocalStorage<PracticeQuizProgressState>(
-      `pq-${quiz.id}`,
-      quiz.stacks?.reduce<PracticeQuizProgressState>((acc, stack) => {
-        acc[stack.id] = {
-          status: StackFeedbackStatus.Unanswered,
-          score: null,
-        }
-        return acc
-      }, {})
-    )
-
-  const navigableUntilIx =
-    embedded && hostNavigationRequested
-      ? findFirstUnansweredStack(
-          progressState,
-          quiz.stacks?.map((stack) => stack.id) ?? []
-        )
-      : undefined
-
   const isEscapeRoom = !!quiz.escapeRoomConfig
   const escapeRoomHintPenalty = quiz.escapeRoomConfig?.hintPenalty ?? 120
   const escapeTotalStacks = quiz.numOfStacks ?? quiz.stacks?.length ?? 0
@@ -147,6 +134,27 @@ function PracticeQuiz({
     activityType: 'practiceQuiz',
     refetch: resolvedRefetch,
   })
+  const storageId = getStackStorageId(quiz.id, attempt)
+
+  const [progressState, setProgressState] =
+    useLocalStorage<PracticeQuizProgressState>(
+      `pq-${storageId}`,
+      quiz.stacks?.reduce<PracticeQuizProgressState>((acc, stack) => {
+        acc[stack.id] = {
+          status: StackFeedbackStatus.Unanswered,
+          score: null,
+        }
+        return acc
+      }, {})
+    )
+
+  const navigableUntilIx =
+    embedded && hostNavigationRequested
+      ? findFirstUnansweredStack(
+          progressState,
+          quiz.stacks?.map((stack) => stack.id) ?? []
+        )
+      : undefined
 
   const escapeStages = getIndividualEscapeRoomStages({
     stacks: quiz.stacks,
@@ -255,7 +263,7 @@ function PracticeQuiz({
         handleNextElement()
       }
     } else {
-      localStorage.removeItem(`qi-${quiz.id}-${currentStack.id}`)
+      localStorage.removeItem(`qi-${storageId}-${currentStack.id}`)
       setEscapeRetryNonce((nonce) => nonce + 1)
       refetch?.()
     }
@@ -415,6 +423,7 @@ function PracticeQuiz({
                 : currentStack.id
             }
             parentId={quiz.id}
+            storageId={storageId}
             courseId={quiz.course!.id}
             embedded={embedded}
             stack={currentStack}

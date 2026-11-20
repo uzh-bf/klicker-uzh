@@ -110,6 +110,16 @@ export function getEscapeRoomStageRules({
   }
 }
 
+// Answers cached in the browser are keyed by this id. An escape room attempt
+// has its own numbers and solutions, so its cache is scoped to the attempt:
+// another player, account or device never reads it.
+export function getStackStorageId(
+  activityId: string,
+  attempt: { id: string } | null | undefined
+) {
+  return attempt ? `${activityId}:${attempt.id}` : activityId
+}
+
 export function useEscapeRoom({
   activity,
   activityType,
@@ -192,11 +202,15 @@ export function useEscapeRoom({
 
     await startAttemptMutation({ variables })
     if (!isGroup) {
-      // Cached stack answers are keyed by activity, not by player. A new
-      // attempt draws its own numbers, so answers and explanations cached
-      // by an earlier player on this device must not carry over.
+      // Caches of earlier attempts on this device are never read again, so a
+      // new attempt drops them instead of letting them pile up.
       for (const key of Object.keys(localStorage)) {
-        if (key === `pq-${activity.id}` || key.startsWith(`qi-${activity.id}-`))
+        if (
+          key === `pq-${activity.id}` ||
+          key.startsWith(`pq-${activity.id}:`) ||
+          key.startsWith(`qi-${activity.id}-`) ||
+          key.startsWith(`qi-${activity.id}:`)
+        )
           localStorage.removeItem(key)
       }
     }

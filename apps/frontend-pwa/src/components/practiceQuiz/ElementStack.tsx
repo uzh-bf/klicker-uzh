@@ -49,6 +49,8 @@ const CHOICES_ELEMENT_TYPES = [
 
 interface ElementStackProps {
   parentId: string
+  // key of the answers cached in the browser; defaults to parentId
+  storageId?: string
   courseId: string
   embedded?: boolean
   stack: ElementStackType
@@ -101,6 +103,7 @@ interface ElementStackProps {
 
 function ElementStack({
   parentId,
+  storageId = parentId,
   courseId,
   embedded = false,
   stack,
@@ -160,7 +163,7 @@ function ElementStack({
 
   const [stackStorage, setStackStorage] =
     useLocalStorage<StackStudentResponseType>(
-      `qi-${parentId}-${stack.id}`,
+      `qi-${storageId}-${stack.id}`,
       undefined
     )
 
