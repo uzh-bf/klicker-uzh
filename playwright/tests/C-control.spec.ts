@@ -120,6 +120,7 @@ test.describe
       .getByTestId(`start-live-quiz-${CONTROL_FIXTURE.quizName}`)
       .click()
     await page.getByTestId('confirm-start-live-quiz').click()
+    await expect(page.getByTestId('activate-next-block')).toBeVisible()
 
     // Mobile navigation test (iphone-6: 375x667): session and course navigation
     await page.setViewportSize(viewPorts.iphone6)
@@ -334,10 +335,11 @@ test.describe
       page.getByTestId('audience-feedback-summary')
     ).toHaveAccessibleName(/\b3\b/)
     feedbackMode = 'error'
+    // Allow the polling interval and both configured network retry delays.
     await expect(page.getByTestId('audience-feedback-summary')).toHaveAttribute(
       'data-state',
       'stale',
-      { timeout: 8000 }
+      { timeout: 15000 }
     )
     await expect(
       page.getByTestId('audience-feedback-speed-meter')
