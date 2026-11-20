@@ -1,8 +1,8 @@
 # Escape Room — Per-attempt numbers and mistake feedback (W4)
 
-- **Status:** draft for rulings N1–N5; executable once they are settled
+- **Status:** rulings N1–N5 settled 2026-11-20; executable
 - **Roadmap:** W4 of [the classroom escape rooms roadmap](2026-11-07-classroom-escape-rooms-plan.md), cards D and F. It builds on the shared scoring rules (W2, W7), the dashboard insights and debrief (W3a), and the Group Activity session clock (W3b).
-- **Approval mode:** executable batch under the roadmap approval of 2026-11-08 (cards A–F), the reorder of 2026-11-14 ("Live Quiz first: W7, W3", with Live Quiz mistake feedback following in W4), and the user's "Plan W4" of 2026-11-20. Rulings N1–N5 are pending.
+- **Approval mode:** executable batch under the roadmap approval of 2026-11-08 (cards A–F), the reorder of 2026-11-14 ("Live Quiz first: W7, W3", with Live Quiz mistake feedback following in W4), and the user's "Plan W4" of 2026-11-20. Rulings N1–N5 of 2026-11-20, all as recommended.
 - **Goal:** each player or team gets its own numbers on a numerical Escape Room stage and is graded against its own solution. A wrong answer that matches a typical mistake shows targeted feedback. The debrief counts each mistake per stage.
 - **Branch:** `codex/escape-room-numbers` on top of `codex/escape-room-group-session` (#6907). It is added to native stack 5228 as its top layer.
 - **Ceremony tier:** full path. The server evaluates formulas that lecturers type, and a new rendering step sits on every participant read path of an escape stage.
@@ -36,7 +36,9 @@ The lecturer's materials stay outside the repository; tests use synthetic fixtur
 - Live Quiz stage outcomes are written to Postgres by the Response API; its cache prefers `exactSolutions` over ranges.
 - `packages/grading` depends only on `remeda`, declares no `exports` map and builds one Rollup entry. `packages/util` imports it, and the frontends import util. `mathjs` 11.9.1 is pinned in `packages/graphql`. The Response API depends on grading but not on graphql.
 
-## Rulings needed
+## Rulings (user, 2026-11-20)
+
+The user chose the recommendation for every ruling: fixed numbers outside per-attempt play with mistake feedback only in escape stages (N1, N2), the full editor section (N3), standing approval of local re-seeds of `klicker_test` during W4 (N4), and the evaluator in `packages/graphql` (N5).
 
 - **N1 — Parametrized elements outside per-attempt play.** Per-attempt numbers apply to escape stages in Practice Quiz, Microlearning and Group Activity. The same element can also sit in a normal activity or a Live Quiz block.
   - **Recommended:** activity creation draws one fixed set of numbers per instance and writes the result into the instance like a normal numerical question. Everyone in that activity sees the same numbers. Grading, statistics, the Live Quiz cache and evaluation work unchanged, and the element stays reusable.
@@ -190,14 +192,13 @@ Granted:
 - a draft PR on top of #6907, added to stack 5228
 - the PR description and synthetic screenshots
 - adding `mathjs` 11.9.1 to `packages/grading`, only under the N5 alternative (approved in the roadmap)
-- re-seeding the local disposable database, if N4 is approved
+- re-seeding the local disposable database (`klicker_test`) during W4 verification (N4)
 
 Withheld:
 
 - marking ready, reviewer requests, merge, deployment
 - force-pushes of lower layers
 - contacting the lecturer, committing the lecturer's materials
-- re-seeds, if N4 is declined (each then needs its own approval)
 
 ## Recovery and terminal condition
 
@@ -214,3 +215,4 @@ Withheld:
 
 - 2026-11-20: card D pre-check done; the lecturer's files share no numbers. Drafted after mapping numerical grading, the three escape adapters, participant reads, statistics, the editor and the W3 debrief.
 - 2026-11-20: independent critique (planner) returned REVISE with 12 findings; load-bearing claims checked in source. Accepted: narrow statistics skip instead of `skipTracking`; random fixed draw at the GraphQL callers instead of an instance-id seed inside `processElementData`; `mathjs` kept out of `packages/util`; evaluator home raised as ruling N5; `mistakes` added to both outcome parsers; per-attempt plumbing into grading, `getPreviousStackEvaluation` and bookmarks; Live Quiz outcomes are in Postgres and reveal also returns the mistake, exact solutions cleared; per-variable hashing and the card D departure stated; `parametrization` only on the lecturer type with an operation test; element-level number format instead of an unavailable participant locale; element-prefixed mistake keys, instance labels, no bonus mistakes, edit-preserves test. Preview kept as one lecturer query in slice 5 instead of a separate slice 2 query.
+- 2026-11-20: rulings N1–N5 settled as recommended.
