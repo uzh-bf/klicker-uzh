@@ -1,0 +1,22 @@
+{{- if .Values.chatAssessment.enabled -}}
+{{- /* Both public URLs are required: the chat falls back to the regular PWA and
+chat hosts when they are unset, which would send exam students there. */ -}}
+{{- if not .Values.global.appOrigins.assessmentPwa -}}
+{{- fail "chatAssessment requires global.appOrigins.assessmentPwa" -}}
+{{- end -}}
+{{- if not .Values.global.appOrigins.assessmentChat -}}
+{{- fail "chatAssessment requires global.appOrigins.assessmentChat" -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-chat-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  CHAT_ASSESSMENT_MODE: "true"
+  CHAT_PUBLIC_PWA_URL: {{ .Values.global.appOrigins.assessmentPwa | quote }}
+  CHAT_PUBLIC_URL: {{ .Values.global.appOrigins.assessmentChat | quote }}
+  # The exam chat is opened full-page and is never embedded.
+  ALLOWED_FRAME_ANCESTORS: "'self'"
+{{- end }}

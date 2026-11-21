@@ -430,7 +430,7 @@ test('all first-party chart images prefer the optional global tag', () => {
   assert.equal(values.global.imageTag, '')
 
   const imageSources = templateImageSources()
-  assert.equal(imageSources.length, 18)
+  assert.equal(imageSources.length, 19)
   for (const { name, line } of imageSources) {
     assert.match(
       line,
