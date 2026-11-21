@@ -2,7 +2,7 @@
 
 import { Maximize2, Minimize2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useFramed } from '../hooks/useFramed'
 import { useFullscreenActive } from './chat-ui-context'
@@ -10,6 +10,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 const subscribeToNothing = () => () => {}
+
+// Entering or leaving fullscreen swaps the framed layout between the floating
+// controls and the header, which remounts this control. When the user switched
+// with the control itself, the instance mounted right after takes the focus
+// back, unless something else already holds it.
+const REFOCUS_WINDOW_MS = 2000
+let refocusRequestedAt = 0
 
 /**
  * Lets a framed chat take over the whole screen, because the host page
@@ -33,12 +40,23 @@ export function FullscreenToggle({ className }: { className?: string }) {
     () => false
   )
   const active = useFullscreenActive()
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (Date.now() - refocusRequestedAt > REFOCUS_WINDOW_MS) return
+    refocusRequestedAt = 0
+    const current = document.activeElement
+    if (current && current !== document.body) return
+    buttonRef.current?.focus()
+  }, [])
 
   if (!framed || !available) return null
 
   const label = t(active ? 'chat.fullscreen.exit' : 'chat.fullscreen.enter')
 
   const toggle = async () => {
+    refocusRequestedAt =
+      document.activeElement === buttonRef.current ? Date.now() : 0
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen()
@@ -46,6 +64,7 @@ export function FullscreenToggle({ className }: { className?: string }) {
         await document.documentElement.requestFullscreen()
       }
     } catch {
+      refocusRequestedAt = 0
       // The browser or the host refused the request; the chat stays usable in
       // its frame and `fullscreenchange` never fires, so the control keeps
       // offering the same action.
@@ -56,6 +75,7 @@ export function FullscreenToggle({ className }: { className?: string }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <button
+          ref={buttonRef}
           type="button"
           data-cy="chat-fullscreen-toggle"
           onClick={toggle}
