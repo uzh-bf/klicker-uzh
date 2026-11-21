@@ -1011,7 +1011,7 @@ use `toolbarIconButtonClassName` (a square ghost button, 44 pixels on touch and
 `actionBarButtonClassName`, and the composer keeps its round attach and send
 buttons. The embedded toolbar keeps native selects for its compact height.
 
-The `fine-pointer` variant in `globals.css` wraps its rules in `:root &`. The
+The `fine-pointer` variant in `globals.css` wraps its rules in `&:is(:root *)`. The
 design-system stylesheet loads after the chat stylesheet and emits the same
 base utilities (`size-11`, `h-11`, `min-h-11`) at equal specificity, so a plain
 media-query variant silently loses and every control stays at its touch size
