@@ -17,6 +17,7 @@ import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
+import { FullscreenToggle } from './fullscreen-toggle'
 import { formatCreditPercent } from './thread-credits-format'
 
 const COMPACT_SELECT_CLASS =
@@ -373,6 +374,7 @@ export function EmbeddedToolbar() {
         <EmbeddedAnswerPreferences className="order-last w-full sm:order-none sm:w-auto" />
       ) : null}
       <EmbeddedNewConversation className="ml-auto" />
+      <FullscreenToggle className="rounded-md" />
       <EmbeddedCloseButton />
     </div>
   )

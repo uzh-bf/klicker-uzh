@@ -124,6 +124,10 @@ export default {
     embedded: {
       close: 'Chat schliessen',
     },
+    fullscreen: {
+      enter: 'Vollbild',
+      exit: 'Vollbild beenden',
+    },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
       participationRequiredDefaultMessage:

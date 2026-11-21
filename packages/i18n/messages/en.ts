@@ -123,6 +123,10 @@ export default {
     embedded: {
       close: 'Close chat',
     },
+    fullscreen: {
+      enter: 'Fullscreen',
+      exit: 'Exit fullscreen',
+    },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
       participationRequiredDefaultMessage:

@@ -28,6 +28,7 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
+import { FullscreenToggle } from './fullscreen-toggle'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
@@ -514,6 +515,7 @@ function SidebarMain({
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
+  const { compact } = useChatUi()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const createThread = useChatStore((state) => state.createThread)
@@ -553,8 +555,11 @@ function SidebarMain({
         {/* Persistent header identity (V3): name (+ avatar) stays visible
             here regardless of sidebar open/closed state, so the sidebar's own
             header no longer repeats it (see app-sidebar.tsx). */}
+        {/* A framed chat sits on a host page that already names the course,
+            so the name stays only as the page heading for assistive tech. The
+            empty grid cell keeps the mode menu and actions in place. */}
         <div className="flex min-w-0 items-center gap-2">
-          {chatbot.avatar && (
+          {chatbot.avatar && !compact && (
             <Image
               src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
               alt=""
@@ -564,7 +569,14 @@ function SidebarMain({
               className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
             />
           )}
-          <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
+          <h1
+            className={twMerge(
+              'min-w-0 truncate text-sm',
+              compact && 'sr-only'
+            )}
+          >
+            {chatbot.name}
+          </h1>
         </div>
         <ModeSwitcher />
         <Tooltip>
@@ -584,12 +596,15 @@ function SidebarMain({
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
-        {knowledgeGraphVisible ? (
-          <ChatGraphModeSwitch
-            open={graphPanel.open}
-            onToggle={graphPanel.toggle}
-          />
-        ) : null}
+        <div className="flex items-center gap-2">
+          {knowledgeGraphVisible ? (
+            <ChatGraphModeSwitch
+              open={graphPanel.open}
+              onToggle={graphPanel.toggle}
+            />
+          ) : null}
+          <FullscreenToggle />
+        </div>
       </header>
       <MobileCreditsBar />
       <main
