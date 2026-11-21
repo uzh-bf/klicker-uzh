@@ -30,7 +30,11 @@ import * as yup from 'yup'
 import type { ElementSelectCourse } from '../../ActivityCreation'
 import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
-import { useEscapeRoomYupFields } from '../escapeRoomValidation'
+import {
+  getEscapeRoomHintsFormValue,
+  getEscapeRoomRulesFormValues,
+  useEscapeRoomYupFields,
+} from '../escapeRoomValidation'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { type PracticeQuizFormValues } from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
@@ -79,7 +83,11 @@ interface PracticeQuizWizardProps {
   conversion: boolean
   editMode: boolean
   duplicationMode: boolean
-  escapeRoomHints: Array<{ instanceId: number; hint: string }>
+  escapeRoomHints: Array<{
+    instanceId: number
+    hint: string
+    hints?: { text: string }[] | null
+  }>
 }
 
 function PracticeQuizWizard({
@@ -112,7 +120,10 @@ function PracticeQuizWizard({
     })
   const escapeRoomYupFields = useEscapeRoomYupFields()
   const escapeRoomHintMap = new Map(
-    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+    escapeRoomHints.map((entry) => [
+      entry.instanceId,
+      getEscapeRoomHintsFormValue(entry),
+    ])
   )
 
   const nameValidationSchema = yup.object().shape({
@@ -204,6 +215,7 @@ function PracticeQuizWizard({
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
     escapeRoomIntroText: '',
+    ...getEscapeRoomRulesFormValues(),
   }
 
   const workflowItems = [
@@ -280,6 +292,7 @@ function PracticeQuizWizard({
     escapeRoomIntroText:
       initialValues?.escapeRoomConfig?.introText ??
       formDefaultValues.escapeRoomIntroText,
+    ...getEscapeRoomRulesFormValues(initialValues?.escapeRoomConfig),
   })
 
   const { recoveryProps, closeWizardAndClearSnapshot } =

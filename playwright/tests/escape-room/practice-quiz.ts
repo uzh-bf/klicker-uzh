@@ -28,7 +28,7 @@ import {
 // Wizard flow of createPracticeQuiz (activities fixture) extended with the
 // escape-room settings on the settings step and hint authoring on the
 // stacks step.
-async function createEscapeRoomPracticeQuiz(
+export async function createEscapeRoomPracticeQuiz(
   page: Page,
   {
     name,
@@ -40,6 +40,8 @@ async function createEscapeRoomPracticeQuiz(
     hintPenaltySeconds,
     introText,
     hints,
+    applyPreset = false,
+    ruleOverrides = {},
   }: {
     name: string
     displayName: string
@@ -50,6 +52,10 @@ async function createEscapeRoomPracticeQuiz(
     hintPenaltySeconds: string
     introText: string
     hints: { stackIx: number; elementIx: number; text: string }[]
+    // scoring rules: optionally start from the classroom preset, then fill
+    // individual rule fields by their test id
+    applyPreset?: boolean
+    ruleOverrides?: Record<string, string>
   }
 ) {
   await page.getByTestId('create-practice-quiz').click()
@@ -73,6 +79,12 @@ async function createEscapeRoomPracticeQuiz(
   await page.getByTestId('toggle-escape-room').click()
   await expect(page.getByTestId('escape-room-time-limit')).toBeVisible()
   await expect(page.getByTestId('select-order')).toBeDisabled()
+  if (applyPreset) {
+    await page.getByTestId('escape-room-apply-preset').click()
+  }
+  for (const [testId, value] of Object.entries(ruleOverrides)) {
+    await page.getByTestId(testId).fill(value)
+  }
   await page.getByTestId('escape-room-time-limit').fill(timeLimitMinutes)
   await page.getByTestId('escape-room-hint-penalty').fill(hintPenaltySeconds)
   await page.getByTestId('escape-room-intro-text').fill(introText)
@@ -250,7 +262,7 @@ export function registerPracticeEscapeRoomTests() {
     ).not.toBeAttached()
   })
 
-  test('Reveal a hint at the cost of a time penalty and clear the first stage', async ({
+  test('Reveal a hint at the cost of a ranked-time penalty and clear the first stage', async ({
     page: testPage,
   }, testInfo) => {
     const page = testPage
@@ -265,6 +277,7 @@ export function registerPracticeEscapeRoomTests() {
     await page.getByTestId(`practice-quiz-${QUIZ.displayName}`).click()
     await page.getByTestId('start-practice-quiz').click()
     await expect(page.getByText(SC1.content).first()).toBeVisible()
+    const beforeHintAt = Date.now()
     const beforeHint = timerSeconds(
       (await page.getByRole('timer').textContent()) ?? '0:00'
     )
@@ -296,7 +309,10 @@ export function registerPracticeEscapeRoomTests() {
     const afterHint = timerSeconds(
       (await page.getByRole('timer').textContent()) ?? '0:00'
     )
-    expect(afterHint).toBeLessThanOrEqual(beforeHint - 25)
+    // the 30-second hint penalty counts toward the ranked time only; the
+    // countdown drops by the elapsed wall-clock time, not by the penalty
+    const elapsedSeconds = Math.ceil((Date.now() - beforeHintAt) / 1000)
+    expect(afterHint).toBeGreaterThanOrEqual(beforeHint - elapsedSeconds - 5)
 
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()

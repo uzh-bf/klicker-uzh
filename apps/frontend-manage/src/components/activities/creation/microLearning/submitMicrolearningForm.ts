@@ -13,6 +13,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import {
+  getEscapeRoomHintsInput,
+  getEscapeRoomRulesInput,
+} from '../escapeRoomValidation'
+import {
   ElementStackFormValues,
   MicroLearningFormValues,
 } from '../WizardLayout'
@@ -78,8 +82,8 @@ async function submitMicrolearningForm({
           order: ix,
           existingInstanceId: element.existingInstanceId,
           duplicateInstance: element.duplicateInstance,
-          escapeRoomHint: values.isEscapeRoom
-            ? (element.escapeRoomHint ?? undefined)
+          escapeRoomHints: values.isEscapeRoom
+            ? getEscapeRoomHintsInput(element.escapeRoomHint)
             : undefined,
         })),
       })),
@@ -96,6 +100,9 @@ async function submitMicrolearningForm({
         : undefined,
       escapeRoomIntroText: values.isEscapeRoom
         ? values.escapeRoomIntroText || undefined
+        : undefined,
+      escapeRoomRules: values.isEscapeRoom
+        ? getEscapeRoomRulesInput(values)
         : undefined,
     }
 

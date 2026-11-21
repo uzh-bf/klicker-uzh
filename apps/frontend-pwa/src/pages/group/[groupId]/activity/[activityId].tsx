@@ -22,15 +22,22 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
-import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
+import GroupActivityStack, {
+  isGroupEscapeRoomResponseType,
+} from '../../../../components/groupActivity/GroupActivityStack'
 import GroupActivitySubscriber from '../../../../components/groupActivity/GroupActivitySubscriber'
-import { useEscapeRoom } from '../../../../components/hooks/useEscapeRoom'
+import {
+  hasBonusStage,
+  useEscapeRoom,
+} from '../../../../components/hooks/useEscapeRoom'
 import EscapeRoomOverlay from '../../../../components/practiceQuiz/EscapeRoomOverlay'
 
 function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
+  // The bonus question can be answered once after completion, while time remains
+  const [bonusActive, setBonusActive] = useState(false)
 
   const {
     data,
@@ -117,6 +124,30 @@ function GroupActivityDetails() {
   const escapeRoomHintPenalty =
     groupActivity.escapeRoomConfig?.hintPenalty ?? 120
   const instance = groupActivity.activityInstance
+  const escapeRoomConfig = groupActivity.escapeRoomConfig
+  const escapeStages = (groupActivity.stacks[0]?.elements ?? []).filter(
+    (element) => isGroupEscapeRoomResponseType(element.elementType)
+  )
+  // The bonus stage is the last response element; only the team's answer is
+  // recorded for it, so its result is not known here.
+  const bonusInstanceId =
+    isEscapeRoom && hasBonusStage(escapeRoomConfig, escapeStages.length)
+      ? escapeStages[escapeStages.length - 1]?.id
+      : undefined
+  const bonusAnswered =
+    bonusInstanceId !== undefined &&
+    !!attempt &&
+    !!groupActivity.escapeRoomAttempts
+      ?.at(-1)
+      ?.stageDecisions?.some(
+        (decision) => decision.instanceId === bonusInstanceId
+      )
+  const bonusAvailable =
+    bonusInstanceId !== undefined &&
+    isCompleted &&
+    !bonusAnswered &&
+    remainingSeconds !== null &&
+    remainingSeconds > 0
   const maxTotalPoints = instance?.results?.grading.reduce(
     (acc: number, grading: GroupActivityGrading) => {
       return acc + grading.maxPoints
@@ -141,7 +172,7 @@ function GroupActivityDetails() {
       {isEscapeRoom && !!instance && (
         <EscapeRoomOverlay
           isStarted={isStarted}
-          isCompleted={isCompleted}
+          isCompleted={isCompleted && !(bonusActive && bonusAvailable)}
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
           timeLimit={groupActivity.escapeRoomConfig?.timeLimit ?? 3600}
@@ -153,6 +184,16 @@ function GroupActivityDetails() {
           loading={attemptLoading}
           attempt={attempt}
           introText={groupActivity.escapeRoomConfig?.introText}
+          bonus={
+            bonusInstanceId !== undefined
+              ? {
+                  seconds: escapeRoomConfig?.bonusSeconds ?? 0,
+                  available: bonusAvailable,
+                  outcome: bonusAnswered ? 'SUBMITTED' : undefined,
+                  onStart: () => setBonusActive(true),
+                }
+              : undefined
+          }
         />
       )}
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
@@ -321,6 +362,21 @@ function GroupActivityDetails() {
                 groupActivityId={isEscapeRoom ? groupActivity.id : undefined}
                 groupId={isEscapeRoom ? groupActivity.group.id : undefined}
                 hintPenalty={isEscapeRoom ? escapeRoomHintPenalty : undefined}
+                escapeRoomRules={
+                  isEscapeRoom && escapeRoomConfig
+                    ? {
+                        hintPenalties: escapeRoomConfig.hintPenalties,
+                        maxWrongAttempts: escapeRoomConfig.maxWrongAttempts,
+                        revealPenalty: escapeRoomConfig.revealPenalty,
+                        skipPenalty: escapeRoomConfig.skipPenalty,
+                        stageOutcomes: attempt?.stageOutcomes ?? [],
+                        attemptInProgress:
+                          attempt?.status === EscapeRoomStatus.InProgress,
+                        bonusInstanceId,
+                        bonusOpen: bonusActive && bonusAvailable,
+                      }
+                    : undefined
+                }
                 onEscapeRoomStateChanged={
                   isEscapeRoom ? refetchEscapeRoom : undefined
                 }

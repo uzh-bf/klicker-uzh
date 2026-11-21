@@ -10,5 +10,9 @@ query GetEscapeRoomHints(
   ) {
     instanceId
     hint
+    hints {
+      text
+      penalty
+    }
   }
 }

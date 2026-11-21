@@ -30,7 +30,11 @@ import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupA
 import type { ElementSelectCourse } from '../../ActivityCreation'
 import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
-import { useEscapeRoomYupFields } from '../escapeRoomValidation'
+import {
+  getEscapeRoomHintsFormValue,
+  getEscapeRoomRulesFormValues,
+  useEscapeRoomYupFields,
+} from '../escapeRoomValidation'
 import WizardLayout, {
   type GroupActivityClueFormValues,
   type GroupActivityFormValues,
@@ -74,7 +78,11 @@ interface GroupActivityWizardProps {
   initialValues?: GroupActivity
   editMode: boolean
   duplicationMode: boolean
-  escapeRoomHints: Array<{ instanceId: number; hint: string }>
+  escapeRoomHints: Array<{
+    instanceId: number
+    hint: string
+    hints?: { text: string }[] | null
+  }>
 }
 
 function GroupActivityWizard({
@@ -107,7 +115,10 @@ function GroupActivityWizard({
   })
   const escapeRoomYupFields = useEscapeRoomYupFields()
   const escapeRoomHintMap = new Map(
-    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+    escapeRoomHints.map((entry) => [
+      entry.instanceId,
+      getEscapeRoomHintsFormValue(entry),
+    ])
   )
 
   const nameValidationSchema = yup.object().shape({
@@ -265,6 +276,7 @@ function GroupActivityWizard({
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
     escapeRoomIntroText: '',
+    ...getEscapeRoomRulesFormValues(),
   }
 
   const workflowItems = [
@@ -354,6 +366,7 @@ function GroupActivityWizard({
     escapeRoomIntroText:
       initialValues?.escapeRoomConfig?.introText ??
       formDefaultValues.escapeRoomIntroText,
+    ...getEscapeRoomRulesFormValues(initialValues?.escapeRoomConfig),
   })
 
   const { recoveryProps, closeWizardAndClearSnapshot } =

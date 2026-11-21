@@ -75,6 +75,7 @@ import type {
 } from '../ops.js'
 import {
   finalizeEscapeRoomStackSubmission,
+  isEscapeRoomStageOpenForParticipant,
   prepareEscapeRoomStackSubmission,
   releaseEscapeRoomStackSubmission,
 } from './escapeRoomStackSubmissions.js'
@@ -3248,7 +3249,16 @@ export async function respondToElementStack(
       }
     }
 
-    await finalizeEscapeRoomStackSubmission(escapeRoomState, stackFeedback, ctx)
+    const stageOpen = await finalizeEscapeRoomStackSubmission(
+      escapeRoomState,
+      stackFeedback,
+      ctx
+    )
+
+    // an escape room stage that stays open must not reveal its solution
+    if (stageOpen) {
+      return { id: stackId, status: stackFeedback }
+    }
 
     return {
       id: stackId,
@@ -4219,6 +4229,15 @@ export async function getPreviousStackEvaluation(
 ) {
   // previous results only exist for logged in users
   if (!ctx.user?.sub || ctx.user?.role !== DB.UserRole.PARTICIPANT) {
+    return null
+  }
+
+  if (
+    await isEscapeRoomStageOpenForParticipant(
+      { stackId, participantId: ctx.user.sub },
+      ctx
+    )
+  ) {
     return null
   }
 

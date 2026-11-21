@@ -4,7 +4,7 @@ title: Escape Room
 
 ## What Is an Escape Room?
 
-An Escape Room is a timed challenge available in four activity types: Practice Quiz, Microlearning, Group Activity, and Live Quiz. Practice Quiz and Microlearning present questions in ordered stacks. Live Quiz runs the challenge question by question inside a single block. Group Activity gives the whole group one shared challenge to complete together.
+An Escape Room is a timed challenge available in four activity types: Practice Quiz, Microlearning, Group Activity, and Live Quiz. Practice Quiz and Microlearning present questions in ordered stacks. Live Quiz runs the challenge question by question inside a single block. Group Activity gives the whole group one shared challenge, with questions unlocked one at a time.
 
 For a full overview of how lecturers set up Escape Rooms, see the [lecturer tutorial](/tutorials/escape_room).
 
@@ -20,11 +20,17 @@ Each logged-in participant has exactly one attempt in Practice Quiz, Microlearni
 
 ## Working Through the Challenge
 
-In Practice Quiz and Microlearning, questions are grouped into ordered stacks – a stack may contain more than one question, and the next stack unlocks only after every question in the current stack is answered correctly. In a Live Quiz Escape Room, questions progress one at a time within the block; the next question unlocks after the current answer is correct. In a Group Activity, the complete set of questions is visible from the start and all answers are submitted together when the group is ready.
+In Practice Quiz and Microlearning, questions are grouped into ordered stacks – a stack may contain more than one question, and the next stack unlocks only after every question in the current stack is answered correctly. In a Live Quiz Escape Room, questions progress one at a time within the block; the next question unlocks after the current answer is correct. In a Group Activity, the group works through the questions one at a time; a correct answer by any member unlocks the next question for everyone.
 
-A wrong submission does not reset progress – the current question or shared task stays open, and a short lockout applies before another attempt can be made.
+A wrong submission does not reset progress – the current question stays open, and a short lockout may apply before another attempt can be made.
 
-If the lecturer added a hint to a question, a **Reveal hint** button appears. Selecting it deducts the corresponding number of seconds from the remaining time and displays the hint. Hints that have already been revealed are restored on reload.
+If the lecturer added hints to a question, a **Reveal hint** button appears. Each hint adds the penalty shown on the button to your penalty time; a question can have several hints, revealed one after another. Hints that have already been revealed are restored on reload. Penalties never shorten the countdown.
+
+Depending on the lecturer's rules, Practice Quiz, Microlearning, and Group Activity Escape Rooms may also:
+
+- show how many tries are left on a question; after the last wrong try, the solution counts as revealed, a penalty is added, and the next question unlocks;
+- let you **skip** the current question for a penalty;
+- end with a **bonus question** that becomes available after all other questions are cleared and can be answered once – a correct answer reduces your ranked time.
 
 Reloading restores server-recorded progress. The timer keeps running during a reload, so there is no benefit to refreshing mid-attempt.
 
@@ -34,8 +40,8 @@ Some stages require scanning a QR code at a physical station in the room. To sca
 
 ## Group Activity: One Attempt, Shared by All
 
-The Group Activity Escape Room gives every group member access to the full set of questions from the start. The attempt, revealed hints, any lockout period, and completion are shared across the group. Each member selects answers in their own browser, and any member may submit the complete answer set for the group when it is ready. Group members cannot reset the shared attempt themselves; a lecturer reset restores access to the entire group.
+In a Group Activity Escape Room, the attempt, the current question, revealed hints, any lockout period, and completion are shared across the group. Any member may answer the current question for the group, and the next question unlocks for everyone. Group members cannot reset the shared attempt themselves; a lecturer reset restores access to the entire group.
 
 ## Completion and Results
 
-After completing an Escape Room, the result screen shows the escape time, hints used, and total penalty. If time expires, staged modes additionally show which stages were cleared. Group Activity has no cleared-stage data; the result reports the shared challenge outcome instead. Results are final unless a lecturer resets the attempt.
+After completing an Escape Room, the result screen shows the escape time, hints used, and total penalty. If time expires, it additionally shows how many stages were cleared. Lecturers rank attempts by the number of questions solved without reveal or skip, then by ranked time: the time until the last regular question was cleared, plus penalties, minus any bonus credit. Results are final unless a lecturer resets the attempt.
