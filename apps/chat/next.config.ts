@@ -34,8 +34,13 @@ const nextConfig: NextConfig = {
   },
 }
 
+nextConfig.serverExternalPackages = [
+  ...(nextConfig.serverExternalPackages ?? []),
+  '@klicker-uzh/chat-api',
+]
+
 nextConfig.outputFileTracingIncludes = {
-  '/*': ['./src/prompts/*.hbs'],
+  '/*': ['../chat-api/dist/host/prompts/*.hbs'],
 }
 
 export default withNextIntl(nextConfig)

@@ -23,7 +23,7 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
-vi.mock('@/src/services/disclaimers', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/disclaimers', () => ({
   DisclaimersService: {
     checkDisclaimerStatus: mocks.checkDisclaimerStatus,
   },
@@ -40,11 +40,11 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('@/src/services/mcpClients', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
-vi.mock('@/src/services/threads', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
     findFailedTurnThreadId: mocks.findFailedTurnThreadId,
@@ -52,7 +52,7 @@ vi.mock('@/src/services/threads', () => ({
   },
 }))
 
-vi.mock('@/src/services/credits', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/credits', () => ({
   CreditsService: {
     previewUserCredits: mocks.previewUserCredits,
     getUserCredits: mocks.getUserCredits,
@@ -71,30 +71,35 @@ vi.mock('@/src/services/accountUsage', () => ({
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
 
-vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
 }))
 
 // Every default model reads images, so the registry gains a text-only one.
-vi.mock('@/src/lib/server/chatModelRegistry', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../src/lib/server/chatModelRegistry')>()
-  const imageModel = actual.DEFAULT_MODEL_REGISTRY.find(
-    (model) => model.id === 'gpt-4.1'
-  )!
-  return {
-    ...actual,
-    getChatModelRegistry: () => [
-      ...actual.DEFAULT_MODEL_REGISTRY,
-      {
-        ...imageModel,
-        id: 'text-only',
-        deploymentId: 'text-only',
-        supportsImageAttachments: false,
-      },
-    ],
+vi.mock(
+  '@klicker-uzh/chat-api/host/lib/server/chatModelRegistry',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../src/lib/server/chatModelRegistry')
+      >()
+    const imageModel = actual.DEFAULT_MODEL_REGISTRY.find(
+      (model) => model.id === 'gpt-4.1'
+    )!
+    return {
+      ...actual,
+      getChatModelRegistry: () => [
+        ...actual.DEFAULT_MODEL_REGISTRY,
+        {
+          ...imageModel,
+          id: 'text-only',
+          deploymentId: 'text-only',
+          supportsImageAttachments: false,
+        },
+      ],
+    }
   }
-})
+)
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
 import { RequiredMCPUnavailableError } from '../src/lib/server/mcpRuntimePolicy'

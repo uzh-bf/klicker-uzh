@@ -18,13 +18,13 @@ vi.mock('@klicker-uzh/prisma', () => ({
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: async () => ({ participantId: 'student' }),
 }))
-vi.mock('@/src/lib/server/videoFrameStore', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/videoFrameStore', () => ({
   readVideoFrame: mocks.read,
 }))
 // Exercise the real shared configuration resolver and scope validation. Only
 // database, login and storage are replaced; no identity resolver or scope stub.
 vi.mock(
-  '@/src/lib/server/effectiveChatModes',
+  '@klicker-uzh/chat-api/host/lib/server/effectiveChatModes',
   async () => import('../../../packages/util/src/chatbotMCPConfiguration')
 )
 

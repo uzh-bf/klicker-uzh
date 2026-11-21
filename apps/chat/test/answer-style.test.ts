@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { describe, expect, test, vi } from 'vitest'
 import {
   DEFAULT_ANSWER_STYLE,
@@ -9,6 +10,24 @@ import {
 } from '../src/lib/server/answerStyleInstructions'
 
 describe('answer preference request fields', () => {
+  test('composes shared parsing with the legacy request schema', () => {
+    const request = z.object({
+      answerStyle: answerStyleSchema,
+      answerTone: answerToneSchema,
+    })
+    expect(request.parse({})).toEqual({
+      answerStyle: DEFAULT_ANSWER_STYLE,
+      answerTone: DEFAULT_ANSWER_TONE,
+    })
+    expect(
+      request.parse({ answerStyle: 'bullets', answerTone: 'friendly' })
+    ).toEqual({ answerStyle: 'bullets', answerTone: 'friendly' })
+    expect(request.parse({ answerStyle: {}, answerTone: null })).toEqual({
+      answerStyle: DEFAULT_ANSWER_STYLE,
+      answerTone: DEFAULT_ANSWER_TONE,
+    })
+  })
+
   test('accepts every style and tone', () => {
     for (const style of ['balanced', 'bullets']) {
       expect(answerStyleSchema.parse(style)).toBe(style)

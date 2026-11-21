@@ -54,11 +54,11 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-vi.mock('@/src/services/mcpClients', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
-vi.mock('@/src/lib/server/chatModelRegistry', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/chatModelRegistry', () => ({
   getAutomaticModelId: mocks.getAutomaticModelId,
   getModelsForChatbot: mocks.getModelsForChatbot,
 }))
@@ -71,11 +71,11 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
   buildPromptCacheRequest: mocks.buildPromptCacheRequest,
 }))
 
-vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
 }))
 
-vi.mock('@/src/lib/server/openaiResponsesOptions', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/openaiResponsesOptions', () => ({
   getOpenAIResponsesStore: () => true,
 }))
 
@@ -84,7 +84,7 @@ vi.mock('@/src/lib/server/responseExampleReceipt', () => ({
   RESPONSE_EXAMPLE_RECEIPT_DATA_PART: 'data-response-example-receipt',
 }))
 
-vi.mock('@/src/lib/server/responseExampleRuntime', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/responseExampleRuntime', () => ({
   createResponseExampleSearchTool: mocks.createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill: mocks.loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME: 'search_response_examples',

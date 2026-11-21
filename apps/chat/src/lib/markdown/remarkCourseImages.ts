@@ -8,8 +8,7 @@ const paragraphRegex = new RegExp(
   String.raw`^\[course-image:(${COURSE_IMAGE_DIGEST_PATTERN})\][ \t]*$`
 )
 
-export const courseImageMarker = (assetId: string) =>
-  `[course-image:${assetId}]`
+export { courseImageMarker } from '../sources/courseImageIdentity'
 
 function isNestedListPlacement(
   lines: readonly string[],

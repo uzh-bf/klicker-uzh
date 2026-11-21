@@ -1,8 +1,1 @@
-import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
-
-export const DEFAULT_PROMPT: Record<string, { prompt: string }> = {
-  tutor: { prompt: renderPromptTemplate('mode-tutor', {}) },
-  explainer: { prompt: renderPromptTemplate('mode-explainer', {}) },
-  quizzer: { prompt: renderPromptTemplate('mode-quizzer', {}) },
-  'writing-coach': { prompt: renderPromptTemplate('mode-writing-coach', {}) },
-}
+export * from '@klicker-uzh/chat-api/host/lib/config/prompts'

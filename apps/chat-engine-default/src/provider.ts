@@ -1,5 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import type { ResolvedGeneration } from '@klicker-uzh/chat-engine-contract'
+import type {
+  EngineV2ChatRequest,
+  ResolvedGeneration,
+} from '@klicker-uzh/chat-engine-contract'
 import type { LanguageModel } from 'ai'
 
 export type ProviderConfig = {
@@ -36,7 +39,7 @@ export const responsesApiFetch: typeof globalThis.fetch = async (
 }
 
 export function createProviderModel(
-  generation: ResolvedGeneration,
+  generation: ResolvedGeneration | EngineV2ChatRequest['generation'],
   providerApiKey: string,
   config: ProviderConfig
 ): LanguageModel {
@@ -53,19 +56,28 @@ export function createProviderModel(
     apiKey: providerApiKey,
     fetch: responsesApiFetch,
   })
-  const usesResponsesApi = generation.reasoningEffort !== 'none'
+  const usesResponsesApi =
+    'providerApi' in generation && generation.providerApi
+      ? generation.providerApi === 'responses'
+      : generation.reasoningEffort !== 'none'
   return usesResponsesApi
     ? provider.responses(generation.deploymentId)
     : provider.chat(generation.deploymentId)
 }
 
-export function providerOptionsForGeneration(generation: ResolvedGeneration) {
-  const usesResponsesApi = generation.reasoningEffort !== 'none'
+export function providerOptionsForGeneration(
+  generation: ResolvedGeneration | EngineV2ChatRequest['generation']
+) {
+  const usesResponsesApi =
+    'providerApi' in generation && generation.providerApi
+      ? generation.providerApi === 'responses'
+      : generation.reasoningEffort !== 'none'
   return {
     openai: {
       ...(usesResponsesApi ? { store: generation.responseStorage } : {}),
-      ...(usesResponsesApi
+      ...(generation.reasoningEffort !== 'none'
         ? {
+            forceReasoning: true,
             reasoningEffort: generation.reasoningEffort,
             reasoningSummary: generation.reasoningSummary,
           }

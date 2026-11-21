@@ -18,13 +18,15 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 vi.mock('@/src/lib/server/apiGuards', () => ({ withChatbotAuth: mocks.auth }))
-vi.mock('@/src/lib/server/effectiveChatModes', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/effectiveChatModes', () => ({
   resolveEffectiveMCPConfigurations: (configs: unknown) => configs,
 }))
-vi.mock('@/src/lib/server/videoFrameStore', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/videoFrameStore', () => ({
   readVideoFrame: mocks.read,
 }))
-vi.mock('@/src/services/mcpScope', () => ({ resolveMcpScope: mocks.scope }))
+vi.mock('@klicker-uzh/chat-api/host/services/mcpScope', () => ({
+  resolveMcpScope: mocks.scope,
+}))
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/frames/[assetId]/route'
 
