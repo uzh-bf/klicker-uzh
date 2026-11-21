@@ -131,7 +131,7 @@ only allowed pending job after apply starts and is reconciled by exact read-back
 
 Partial recovery: private receipt records immutable bindings, original action IDs,
 and intent/completion around each effect. Fresh preview checks remaining roots.
-Absent hard-deleted roots count as complete only for prior intended actions;
+A distinct pre-send lease error clears only the new intent checkpoint because no request was sent; unknown network outcomes retain intent. Absent hard-deleted roots count as complete only for prior intended actions;
 Element tombstones require normal-deletion evidence and unused checks before
 purge. Pending course marker means observe, not resubmit. Unknown GraphQL outcome
 is read back before any further action; null/false stops. Already-absent exact
@@ -195,22 +195,40 @@ outstanding source blockers constitute terminal source delivery.
 
 ## Progress
 
-Full path, standard execution. Source implementation is in progress under the
-existing user approval and no-freezing correction. Existing native two-layer
-stack retained. Bottom layer owns inventory and guarded DB cleanup with focused
-service tests. Top layer owns CLI, command integration tests, script typecheck and
-operator documentation. No production data queried or changed in this phase.
+Source candidate prepared; final recovery corrections, their verification and hosted CI remain pending.
+Full path, standard execution, existing two-layer draft stack retained. Lower:
+https://github.com/uzh-bf/klicker-uzh/pull/6736. Upper:
+https://github.com/uzh-bf/klicker-uzh/pull/6737. No real account, cloud or deployment
+effects. No schema, auth, upload or account-freezing changes.
 
-Opus 5.5 high plan consultation completed REVISE. Accepted hostname-independent
-media matching, target-as-grantee sharing blockers, bounded course recovery,
-background-task classification and removal of dead group-delete wording. Retained
-the complete capped media scan after inspecting unstructured copy paths; a fixed
-list could silently miss foreign content. Focused correction Opus pass completed REVISE. Accepted delegated-login blocker, media-ID drift checks, and an audit assertion. Rejected its proposed locked per-mutation global concurrency guarantee because it reintroduces the superseded freeze contract; fresh checks cannot promise atomicity across service commits. Production-scale scan feasibility remains an explicit operational limitation; no production copy is available or authorized for this source task. Earlier freezing plan/source is archived only in ignored local reviews.
+The user removed freezing. Opus's two plan consultations were dispositioned:
+accepted hostname-independent media, foreign-grantee blockers, explicit course
+recovery, delegated-login and background-task coverage, per-step/media checks and
+audit verification. Broader concurrent-write locking was rejected under the
+cooperative contract. Complete capped media discovery remains conservative;
+production-size latency and real Azure behavior are documented operational gaps.
 
-Twenty synthetic tests and the script checker passed. Latest delegated-login/media-drift guards require the final focused run. Real resolver execution, whole-command sharing stop,
-lost mutation-response recovery and stuck course no-resubmit are covered. Offline
-help and existing operation validation pass. Script typecheck exposed inherited
-declaration portability checks from the emitting config; the existing noEmit
-script config now explicitly disables declarations like tsconfig.check.json.
-No test evidence is a real-deletion authorization. Final verification, reviews,
-commits and draft stack delivery remain outstanding.
+Independent lower risk review passed after explicit ADR0042 historic disclaimer
+acceptance guards. Upper risk review passed. Integrated final review found old soft-deleted question replay; its correction review accepted the tombstone and token fixes and identified a pre-send receipt edge. The current candidate distinguishes a proven no-send lease loss from an unknown mutation outcome. New regression tests await execution; no final pass is claimed. Both simplifiers completed; applied
+local redundancy removal, public-schema signature reduction and intended-course
+map. Reports in ignored project/_local/reviews. All source paths were covered.
+
+Verification: freshly reset identity-guarded disposable DB, 24 focused tests pass;
+all four draft activity types and course completion use real mutation/service
+logic. Whole-run sharing stop, lost response without replay, stuck course without
+resubmit, retained history and media drift are covered. Script and GraphQL
+checkers pass. Root check:all was split only for the two host-only suites:
+35 container tasks and 162 host tests pass. Full root build:23 tasks pass.
+Focused Opengrep reports zero findings and no parse errors. No browser contract
+changes or migration; screenshots do not apply. Final runtime shutdown pending.
+
+Substantive package size: lower 2202 lines including consequential integration
+tests, upper approximately1800 lines; no generated output or dependency additions.
+Each layer has one coherent responsibility and independently runnable tests.
+Main preserved unrelated checkout work. Existing task branches remain unchanged
+in topology and names. Ordinary commits/pushes/drafts are within approved source
+delivery; readiness, merge and real deletion require their separate authority.
+
+Terminal remains complete source reviews and exact-head hosted checks for both
+drafts, with the task runtime stopped. No CI, synthetic test or preview grants
+real-deletion authority.

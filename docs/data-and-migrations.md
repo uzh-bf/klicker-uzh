@@ -228,3 +228,78 @@ Data-export gotchas that bite when touching report generation:
 - Prisma relation inference can collapse nested `ElementInstance`/`ElementBlock` selects to `never` — keep explicit row DTOs at the query boundary and cast once there.
 - ExcelJS sheet names collide **case-insensitively** and cap at 31 chars — dedupe on a lowercase key (`exportCourse.ts`).
 - ExcelJS `autoFilter` must span data rows: a header-only range (or autoFilter on an empty sheet) makes Excel flag the workbook as corrupt on open — set `to.row` to the last data row and skip autoFilter on header-only sheets (`exportCourse.ts:addSheet`).
+
+## Lecturer account deletion
+
+`packages/graphql/src/scripts/deleteLecturerAccount.ts` is an operator command
+for a cooperative account deletion. The lecturer must remain out of the account
+throughout the run, including anyone using its delegated credentials. Write-capable delegated logins block preview. Other accounts can stay online. Preview is read-only; there
+is no account freeze, authentication change or schema migration.
+
+Run from `packages/graphql` in a checkout matching the target application
+revision. Generate the existing operation manifests with `pnpm run generate`.
+Inject the target environment through the approved secret manager; native
+variables are `DATABASE_URL`, `APP_SECRET`, `LECTURER_DELETION_API_URL`,
+`BLOB_STORAGE_ACCOUNT_NAME`, `BLOB_STORAGE_ACCESS_KEY`, `REDIS_HOST`, and the
+existing optional `REDIS_PORT`, `REDIS_PASS`, `REDIS_TLS`. Use the public schema
+without ambient `PG*` overrides. Never put secrets or real account data in Git.
+
+```bash
+pnpm exec tsx src/scripts/deleteLecturerAccount.ts --help
+pnpm exec tsx src/scripts/deleteLecturerAccount.ts \
+  --user <exact-lecturer-UUID> --email <exact-email> \
+  --state-dir /absolute/private/path/outside-the-repository
+```
+
+The private directory must belong to the operator and allow no group/other
+access. The report identifies blockers and lists actions without returning
+foreign content or participant records. Shared/public content, foreign uses or
+permissions, results/assessment, group membership/audit attribution, active work,
+unsupported roots and incomplete discovery block the whole apply before any
+business or storage effect. Decide whether each shared object should be
+transferred or deleted, resolve it explicitly through the normal application
+workflow, then generate and review a new preview. There is no force option.
+
+The command prints an environment fingerprint. Confirm that the database, API,
+Redis and blob storage actually belong to the same intended environment; matching
+API user UUID/email cannot distinguish database clones. An inspected preview and
+exact confirmations are required for apply:
+
+```bash
+pnpm exec tsx src/scripts/deleteLecturerAccount.ts \
+  --user <exact-lecturer-UUID> --email <exact-email> \
+  --state-dir /absolute/private/path/outside-the-repository \
+  --apply --confirm-user <same-UUID> --confirm-email <same-email> \
+  --confirm-environment <printed-fingerprint>
+```
+
+Apply checks the current preview again, invokes existing registered GraphQL
+mutations, and removes the account last. Only unused private question tombstones
+are purged after ordinary deletion; checked helpers remove unused competency
+trees/disclaimers where no deletion mutation exists. Foreign access must be
+revoked through application logic first. Retained data and unresolved attribution
+remain blockers. A complete capped text/JSON scan catches copied container links
+without relying on a hostname or teaching foreign key; a timeout blocks apply.
+Large inventories or scans exceeding the hard limits require investigation,
+never disabling the checks.
+
+Mutations commit separately. A later refusal can leave a partial deletion, and
+storage effects cannot be rolled back by a database transaction. Inspect the
+private receipt and a new preview before adding `--resume` to the apply command.
+A crash leaves `.running`; remove that exact file only after proving the previous
+process ended and reconciling its receipt. Never edit receipt action IDs to make a
+run pass or discard state and restart an uncertain operation.
+
+Pending or uncertain course deletion reports its UUID, request time and receipt
+action key. Fix/reconcile the worker or job manually; the command observes it
+without cancelling or submitting another job. Lost mutation responses require
+read-back; an already soft-deleted question is purged only after the guarded
+checks. New roots, grants or storage reappearance stop further effects.
+
+Storage addresses only the exact UUID container on the confirmed account. The
+command waits through the documented container-deletion propagation interval and
+checks current absence before removing media metadata and User. This establishes
+active container unavailability; provider soft delete, backups, CDN copies and
+independent analytics stores require their own retention process. Delete private
+local reports according to the operator's retention policy when reconciliation
+is complete. Preparing this script does not authorize a real account deletion.
