@@ -7,12 +7,14 @@ const SOURCES = Object.fromEntries(PAIRS.map(({ head, base }) => [base, head]))
 // Sync target -> the branches it feeds, which must never flow back into it,
 // pinned to their oldest own first-parent commit. Every later downstream commit
 // descends from the root, so any back-merge carries it, even after an earlier
-// bypass already contaminated the target. v3-adaptive-learning was branched
-// from v3-audit, so one root covers both. v3 has no entry: ADR 0007 plans to
-// fold v3-ai back into v3, and this guard does not run there.
+// bypass already contaminated the target. The v3-ai root is the oldest own
+// commit of v3-audit, which is no longer a sync target; v3-adaptive-learning
+// was branched from v3-audit and inherits it, so v3-ai still rejects audit-line
+// history. v3 has no entry: ADR 0007 plans to fold v3-ai back into v3, and this
+// guard does not run there.
 const DOWNSTREAM_ROOTS = {
   'v3-ai': {
-    downstreams: ['v3-audit', 'v3-adaptive-learning'],
+    downstreams: ['v3-adaptive-learning'],
     root: 'f9c8fa7c72f201bec66e99c0b886b1f6a9e87ef1',
   },
 }
