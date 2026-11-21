@@ -69,7 +69,7 @@ function subscribeToFullscreen(onChange: () => void) {
 export function useFullscreenActive() {
   return useSyncExternalStore(
     subscribeToFullscreen,
-    () => document.fullscreenElement !== null,
+    () => Boolean(document.fullscreenElement),
     () => false
   )
 }
