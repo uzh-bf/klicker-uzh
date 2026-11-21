@@ -1,7 +1,8 @@
-import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus } from '@klicker-uzh/prisma/client'
 import { NextResponse } from 'next/server'
+import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
+import { getRouteLogger } from '@/src/lib/server/requestLogging'
 
 const OWNER_PREVIEW_SCOPES = new Set(['ACCOUNT_OWNER', 'FULL_ACCESS'])
 
@@ -70,10 +71,10 @@ export async function getOwnerPreviewAccess(
 
     return { userId: manageUser.sub, scope: manageUser.scope }
   } catch (error) {
-    console.error('Owner preview authorization unavailable:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    getRouteLogger().error(
+      { event: 'chat.preview.authorization.unavailable' },
+      'Owner preview authorization unavailable'
+    )
     return { error: 'INTERNAL_ERROR' }
   }
 }

@@ -1,5 +1,6 @@
 import { signJWT } from '@klicker-uzh/util'
 import { afterEach, describe, expect, test, vi } from 'vitest'
+import { logger } from '../src/lib/server/logger'
 import {
   buildManageProposalGraphqlRequest,
   confirmManageProposal,
@@ -329,8 +330,8 @@ describe('recordProposalConfirmationAudit (extension roadmap X5)', () => {
   })
 
   test('is best-effort: a write failure is swallowed, not thrown', async () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
+    const loggerErrorSpy = vi
+      .spyOn(logger, 'error')
       .mockImplementation(() => undefined)
     mockAuditLogEntryCreate.mockRejectedValue(new Error('DB unavailable'))
 
@@ -344,11 +345,19 @@ describe('recordProposalConfirmationAudit (extension roadmap X5)', () => {
       })
     ).resolves.toBeUndefined()
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Failed to record Manage-assistant proposal confirmation audit entry:',
-      expect.any(Error)
+    expect(loggerErrorSpy).toHaveBeenCalledTimes(1)
+    const [fields, message] = loggerErrorSpy.mock.calls[0] as [
+      Record<string, unknown>,
+      string,
+    ]
+    expect(fields.event).toBe('chat.audit.confirm.failed')
+    expect((fields.err as Error).message).toBe(
+      'Failed to record Manage-assistant proposal confirmation audit entry'
     )
-    consoleErrorSpy.mockRestore()
+    expect(message).toBe(
+      'Failed to record Manage-assistant proposal confirmation audit entry'
+    )
+    loggerErrorSpy.mockRestore()
   })
 })
 
