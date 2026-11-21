@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { GetAssessmentResultsLiveQuizQuery } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
-import { Select } from '@uzh-bf/design-system'
+import { Button, Select } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { type Dispatch, type SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -14,7 +14,7 @@ type AssessmentStudentResult = NonNullable<
 export type PageSizeOption = '10' | '15' | '30' | 'all'
 
 function AssessmentStudentResultsTable({
-  quizName,
+  onOpenExport,
   studentResults,
   selectedParticipantId,
   onSelect,
@@ -24,7 +24,7 @@ function AssessmentStudentResultsTable({
   pageSizeOption,
   setPageSizeOption,
 }: {
-  quizName: string
+  onOpenExport: () => void
   studentResults: AssessmentStudentResult[]
   selectedParticipantId: string | null
   onSelect: Dispatch<SetStateAction<{ id: string; email: string } | null>>
@@ -93,7 +93,14 @@ function AssessmentStudentResultsTable({
             )}`}</span>
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            onClick={onOpenExport}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'assessment-export-open' }}
+          >
+            <Button.Label>{t('manage.assessmentExport.open')}</Button.Label>
+          </Button>
           <Select
             value={pageSizeOption}
             items={pageSizeItems}
@@ -109,7 +116,6 @@ function AssessmentStudentResultsTable({
           pageSizeOption === 'all' ? undefined : Number(pageSizeOption)
         }
         isPaginated={pageSizeOption !== 'all'}
-        csvFilename={`live-quiz-results-${quizName}.csv`}
         columns={[
           {
             accessorKey: 'participantEmail',
