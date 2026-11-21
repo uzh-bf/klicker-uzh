@@ -1,3 +1,4 @@
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { RESPONSE_EXAMPLE_RECEIPT_MAX_TOKEN_CHARACTERS } from '@klicker-uzh/util/response-example-receipt'
 import { cookies } from 'next/headers'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -45,6 +46,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
+  if (isAssessmentMode()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const { chatbotId } = await params
   const auth = await withOwnerPreviewAuth(chatbotId)
   if ('response' in auth) return auth.response

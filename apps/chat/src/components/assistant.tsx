@@ -60,10 +60,12 @@ interface AssistantProps {
   readonly initialModeOptions: ChatModeOptions
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
+  readonly pwaUrl: string
 }
 
 interface ParticipationRequiredProps {
   readonly embedded: boolean
+  readonly pwaUrl: string
   readonly message: string | null
 }
 
@@ -82,6 +84,7 @@ export function Assistant({
   initialModeOptions,
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
+  pwaUrl,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -111,6 +114,7 @@ export function Assistant({
     return (
       <ParticipationRequired
         embedded={embedded}
+        pwaUrl={pwaUrl}
         message={
           participationMessage ??
           t('chat.assistant.participationRequiredDefaultMessage')
@@ -308,11 +312,9 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
 function ParticipationRequired({
   embedded,
   message,
+  pwaUrl,
 }: ParticipationRequiredProps) {
   const t = useTranslations()
-  const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
-    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
-    : 'https://pwa.klicker.uzh.ch'
 
   return (
     <main
@@ -348,7 +350,7 @@ function ParticipationRequired({
         </p>
         {!embedded && (
           <Link
-            href={pwaBaseUrl}
+            href={pwaUrl}
             className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             prefetch={false}
           >

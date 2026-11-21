@@ -5,6 +5,12 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { hasLocale } from 'next-intl'
 import {
+  getAccountSessionConfig,
+  isAssessmentBlockedPath,
+  isAssessmentMode,
+  isAssessmentSessionPayload,
+} from '@/src/lib/assessmentMode'
+import {
   CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -99,6 +105,25 @@ async function verifyPwaEmbedTokenInProxy({
   }
 }
 
+// Assessment mode checks every claim the auth app signs into the session, not
+// only the signature, because this is the only gate in front of the page.
+async function verifyAssessmentSessionInProxy(token: string): Promise<boolean> {
+  const appSecret = process.env.APP_SECRET
+  const { issuer } = getAccountSessionConfig()
+  if (!appSecret || !issuer) return false
+
+  try {
+    const result = await jwtVerify(token, new TextEncoder().encode(appSecret), {
+      issuer,
+      algorithms: ['HS256'],
+      requiredClaims: ['exp'],
+    })
+    return isAssessmentSessionPayload(result.payload)
+  } catch {
+    return false
+  }
+}
+
 function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
   const noLoginUrl = request.nextUrl.clone()
   noLoginUrl.pathname = '/noLogin'
@@ -136,6 +161,11 @@ function passThroughWithScopedToken(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const assessmentMode = isAssessmentMode()
+
+  if (assessmentMode && isAssessmentBlockedPath(pathname)) {
+    return applyFrameAncestorsCSP(new NextResponse(null, { status: 404 }))
+  }
 
   // The embedded Manage assistant and the eLearning handoff receive their locale
   // as a query parameter, but Chat's root layout resolves the active locale from
@@ -202,6 +232,19 @@ export async function proxy(request: NextRequest) {
     ? { locale: queryLocale, path: `/${pathSegments[0]}` }
     : null
 
+  if (assessmentMode) {
+    const sessionToken = request.cookies.get(
+      getAccountSessionConfig().cookieName
+    )?.value
+    if (
+      !sessionToken ||
+      !(await verifyAssessmentSessionInProxy(sessionToken))
+    ) {
+      return redirectToNoLogin(request, false)
+    }
+    return passThroughWithScopedToken(request, null, promotedLocale)
+  }
+
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
   // future "switch to anonymous" flow only needs to set this cookie.
   // Falls back to `?_t=` query and `Authorization: Bearer` header for the
@@ -266,7 +309,9 @@ export async function proxy(request: NextRequest) {
   // 2. participant_token (account). Raw participant-token header fallback is
   // intentionally not supported; PWA iframe fallback uses the scoped token
   // branch above.
-  const participantToken = request.cookies.get('participant_token')?.value
+  const participantToken = request.cookies.get(
+    getAccountSessionConfig().cookieName
+  )?.value
 
   if (!participantToken) {
     return redirectToNoLogin(request, hadGuestToken)
