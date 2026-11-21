@@ -123,6 +123,10 @@ export default {
     embedded: {
       close: 'Close chat',
     },
+    fullscreen: {
+      enter: 'Fullscreen',
+      exit: 'Exit fullscreen',
+    },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
       participationRequiredDefaultMessage:
@@ -597,7 +601,6 @@ export default {
     },
     sources: {
       title: 'Sources',
-      cited: 'Cited in this answer',
       otherRetrieved: 'Other retrieved material ({count})',
       page: 'p. {page}',
       video: 'Video',

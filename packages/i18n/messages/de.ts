@@ -124,6 +124,10 @@ export default {
     embedded: {
       close: 'Chat schliessen',
     },
+    fullscreen: {
+      enter: 'Vollbild',
+      exit: 'Vollbild beenden',
+    },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
       participationRequiredDefaultMessage:
@@ -608,7 +612,6 @@ export default {
     },
     sources: {
       title: 'Quellen',
-      cited: 'In dieser Antwort zitiert',
       otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',

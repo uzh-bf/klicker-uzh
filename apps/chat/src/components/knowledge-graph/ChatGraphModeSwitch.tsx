@@ -4,6 +4,7 @@ import { Network } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { toolbarIconButtonClassName } from '../ui/toolbar-icon-button'
 
 export function ChatGraphModeSwitch({
   open,
@@ -25,7 +26,7 @@ export function ChatGraphModeSwitch({
           onClick={onToggle}
           data-cy="knowledge-graph-mode-link"
           className={twMerge(
-            'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 shrink-0 items-center justify-center rounded-full touch-manipulation focus-visible:outline-none focus-visible:ring-2 fine-pointer:size-8',
+            toolbarIconButtonClassName,
             open && 'bg-primary/10 text-primary'
           )}
         >

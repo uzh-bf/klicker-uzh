@@ -24,7 +24,10 @@ import {
   type HistoryRailTickRange,
   toHistoryRailPlainText,
 } from '@/src/lib/history-rail'
+import { twMerge } from 'tailwind-merge'
+import { useChatUi } from './chat-ui-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 type HistoryRailProps = {
   entries: readonly HistoryRailEntry[]
@@ -336,7 +339,7 @@ const HistoryDialog: FC<{
         <button
           type="button"
           aria-label={t('chat.historyRail.closeHistory')}
-          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={toolbarIconButtonClassName}
           onClick={onClose}
         >
           <XIcon className="size-4" aria-hidden />
@@ -415,6 +418,7 @@ const HistoryDialog: FC<{
 
 export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
   const t = useTranslations()
+  const { headerless } = useChatUi()
   const railRef = useRef<HTMLElement>(null)
   const mobileNavRef = useRef<HTMLElement>(null)
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null)
@@ -692,7 +696,12 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
         aria-label={t('chat.historyRail.label')}
         data-cy="chat-history-rail"
         ref={railRef}
-        className="absolute inset-y-3 left-1 z-20 hidden w-8 overflow-visible md:block"
+        // Without a header bar the controls float in the top corners, so the
+        // rail starts below them.
+        className={twMerge(
+          'absolute inset-y-3 left-1 z-20 hidden w-8 overflow-visible md:block',
+          headerless && 'top-14'
+        )}
       >
         {/* Nested inside the labeled `aside` above; left unlabeled so this
             navigation landmark doesn't duplicate its parent's accessible
