@@ -4,7 +4,8 @@ import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs
 assertPlaywrightHostBoundary()
 
 // Local-only LTI launch harness (see lti-harness/README.md). It has no global
-// setup, so it never resets or seeds the database.
+// setup. Only the guest-transfer spec creates guarded synthetic prerequisites;
+// neither spec resets the database.
 export default defineConfig({
   testDir: './lti-harness',
   testMatch: '**/*.spec.ts',
