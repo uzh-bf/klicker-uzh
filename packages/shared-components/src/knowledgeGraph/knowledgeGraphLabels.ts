@@ -61,6 +61,7 @@ export type KnowledgeGraphViewerLabels = {
   notReadyTitle: string
   checkAgain: string
   searchResults: string
+  showAsList: string
   loadedConcepts: (count: number) => string
   noConceptsLoaded: string
   loadedRelationships: (count: number) => string
@@ -125,6 +126,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   notReadyTitle: 'Knowledge graph not ready',
   checkAgain: 'Check again',
   searchResults: 'Search results',
+  showAsList: 'Show as list',
   loadedConcepts: (count) => `Loaded concepts (${count})`,
   noConceptsLoaded: 'No concepts loaded.',
   loadedRelationships: (count) => `Loaded relationships (${count})`,
