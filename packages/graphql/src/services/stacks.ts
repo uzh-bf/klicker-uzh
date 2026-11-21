@@ -16,7 +16,6 @@ import type {
   CaseStudySolutionsObject,
   Choice,
   ChoicesElementData,
-  ChoicesResponse,
   ContentElementData,
   ElementData,
   ElementInstanceResults,
@@ -50,13 +49,21 @@ import type {
   SingleQuestionResponseFlashcard,
   SingleQuestionResponseSelection,
   SingleQuestionResponseValue,
+  StackResponseInput,
 } from '@klicker-uzh/types'
-import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
+import {
+  FlashcardCorrectness,
+  gradeQrScanResponse,
+  isValidQrScanCode,
+  normalizeQrScanCode,
+  StackFeedbackStatus,
+} from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
@@ -66,6 +73,11 @@ import type {
   CaseStudyElementOptions,
   ResponseInput,
 } from '../ops.js'
+import {
+  finalizeEscapeRoomStackSubmission,
+  prepareEscapeRoomStackSubmission,
+  releaseEscapeRoomStackSubmission,
+} from './escapeRoomStackSubmissions.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
@@ -1198,6 +1210,7 @@ async function getValidateElementInstance({
       id,
     },
     include: {
+      element: { select: { qrScanCode: true } },
       elementStack: true,
       instanceStatistics: true,
       responses: participantId
@@ -1932,11 +1945,13 @@ function updateQuestionResults({
   participation,
   response,
   caseStudySolutions,
+  qrScanCode,
 }: {
   existingInstance: DB.ElementInstance
   participation: (DB.Participation & { participant: DB.Participant }) | null
   response: ResponseInput
   caseStudySolutions?: CaseStudySolutionsObject
+  qrScanCode?: string | null
 }): {
   correctness: number | null
   results: ElementInstanceResults
@@ -1985,6 +2000,13 @@ function updateQuestionResults({
     return {
       ...res,
       correctness,
+    }
+  } else if (elementData.type === DB.ElementType.QR_SCAN) {
+    const value = normalizeQrScanCode(response.value)
+    return {
+      correctness: gradeQrScanResponse(qrScanCode, value) ? 1 : 0,
+      results: { total: previousResults.total + 1 },
+      modified: value !== '',
     }
   } else if (
     elementData.type === DB.ElementType.FREE_TEXT &&
@@ -2334,6 +2356,11 @@ function computeAggregatedResponsesQuestion({
       responseAssessment: response.assessment!,
       solutions: caseStudySolutions,
     })
+  } else if (instance.elementType === DB.ElementType.QR_SCAN) {
+    const previous = (existingResponse?.aggregatedResponses ?? {
+      total: 0,
+    }) as { total: number }
+    return { total: previous.total + 1 }
   }
 
   return null
@@ -2651,6 +2678,7 @@ export async function respondToQuestion(
       participation,
       response,
       caseStudySolutions,
+      qrScanCode: existingInstance.element.qrScanCode,
     })
 
     if (!modified || results === null) {
@@ -2706,8 +2734,19 @@ export async function respondToQuestion(
       multiplier: updatedInstance.options.pointsMultiplier,
     })
 
+    const effectiveEvaluation =
+      existingInstance.elementType === DB.ElementType.QR_SCAN
+        ? {
+            score: correctness === 1 ? POINTS_PER_INSTANCE : 0,
+            xp: 0,
+            percentile: correctness ?? 0,
+            pointsMultiplier: updatedInstance.options.pointsMultiplier ?? 1,
+            explanation: existingInstance.elementData.explanation,
+          }
+        : questionEval
+
     // processing of percentile into status of instance
-    const percentile = questionEval?.percentile ?? 0
+    const percentile = effectiveEvaluation?.percentile ?? 0
     const status =
       percentile === 0
         ? StackFeedbackStatus.INCORRECT
@@ -2717,16 +2756,16 @@ export async function respondToQuestion(
 
     // if participant is not logged in, return early and return the evaluation
     if (
-      !questionEval ||
+      !effectiveEvaluation ||
       !participation ||
       !ctx.user?.sub ||
       ctx.user.role !== DB.UserRole.PARTICIPANT
     ) {
       return {
         ...updatedInstance,
-        evaluation: questionEval
+        evaluation: effectiveEvaluation
           ? {
-              ...questionEval,
+              ...effectiveEvaluation,
               pointsAwarded: undefined,
               newPointsFrom: undefined,
               xpAwarded: undefined,
@@ -2746,8 +2785,8 @@ export async function respondToQuestion(
       xpAwarded,
       newXpFrom,
     } = computeAwardedPointsAndXP({
-      score: questionEval.score ?? 0,
-      xp: questionEval.xp ?? 0,
+      score: effectiveEvaluation.score ?? 0,
+      xp: effectiveEvaluation.xp ?? 0,
       existingResponse,
       participation,
       instance: updatedInstance,
@@ -2785,7 +2824,7 @@ export async function respondToQuestion(
         participantId: ctx.user.sub,
         courseId,
         response,
-        score: questionEval.score ?? 0,
+        score: effectiveEvaluation.score ?? 0,
         pointsAwarded,
         xpAwarded,
         answerTime,
@@ -2803,7 +2842,7 @@ export async function respondToQuestion(
         courseId,
         response,
         correctness: percentile,
-        score: questionEval.score ?? 0,
+        score: effectiveEvaluation.score ?? 0,
         pointsAwarded,
         lastAwardedAt: lastAwardedAt ?? new Date(),
         xpAwarded,
@@ -2856,7 +2895,7 @@ export async function respondToQuestion(
     return {
       ...updatedInstance,
       evaluation: {
-        ...questionEval,
+        ...effectiveEvaluation,
         pointsAwarded,
         newPointsFrom,
         xpAwarded,
@@ -2872,26 +2911,6 @@ export async function respondToQuestion(
 
 // ! Element & Stack Response & Combination Logic
 // #region
-interface ElementResponseInput {
-  instanceId: number
-  type: DB.ElementType
-  flashcardResponse?: FlashcardCorrectness | null
-  contentReponse?: boolean | null
-  choicesResponse?: ChoicesResponse[] | null
-  numericalResponse?: number | null
-  freeTextResponse?: string | null
-  selectionResponse?: number[] | null
-  caseStudyResponse?:
-    | {
-        caseId: string
-        itemResponses: {
-          itemId: number
-          criterionResponses: { criterionId: string; response: number }[]
-        }[]
-      }[]
-    | null
-}
-
 async function respondToElement({
   ctx,
   response,
@@ -2900,7 +2919,7 @@ async function respondToElement({
   skipTracking = false,
 }: {
   ctx: Context
-  response: ElementResponseInput
+  response: StackResponseInput
   courseId: string
   answerTime: number
   skipTracking?: boolean
@@ -3081,6 +3100,32 @@ async function respondToElement({
         evaluation: null,
       }
     }
+  } else if (response.type === DB.ElementType.QR_SCAN) {
+    const qrScanResponse = normalizeQrScanCode(response.qrScanResponse)
+    if (!isValidQrScanCode(qrScanResponse)) {
+      throw new GraphQLError('Invalid QR scan response', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      })
+    }
+    const result = await respondToQuestion(
+      {
+        id: response.instanceId,
+        courseId,
+        response: { value: qrScanResponse },
+        answerTime,
+        participation,
+        skipTracking,
+      },
+      ctx
+    )
+
+    return result
+      ? {
+          grading: result.status,
+          score: result.evaluation?.score ?? 0,
+          evaluation: null,
+        }
+      : { grading: null, score: null, evaluation: null }
   } else if (response.type === DB.ElementType.SELECTION) {
     const result = await respondToQuestion(
       {
@@ -3156,91 +3201,63 @@ async function respondToElement({
 export interface RespondToElementStackInput {
   stackId: number
   courseId: string
-  responses: ElementResponseInput[]
+  responses: StackResponseInput[]
   stackAnswerTime: number
-  isOwner?: boolean
 }
 
 export async function respondToElementStack(
-  {
-    stackId,
-    courseId,
-    responses,
-    stackAnswerTime,
-    isOwner,
-  }: RespondToElementStackInput,
+  { stackId, courseId, responses, stackAnswerTime }: RespondToElementStackInput,
   ctx: Context
 ) {
-  // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
-    const stack = await ctx.prisma.elementStack.findUnique({
-      where: { id: stackId },
-      include: {
-        microLearning: true,
-        elements: {
-          include: {
-            responses: {
-              where: {
-                participantId: ctx.user.sub,
-              },
-            },
-          },
-        },
-      },
-    })
+  const escapeRoomState = await prepareEscapeRoomStackSubmission(
+    { stackId, courseId, responses },
+    ctx
+  )
+  if (escapeRoomState.kind === 'skip') return null
 
-    if (
-      !isOwner &&
-      stack?.microLearning &&
-      (stack.elements.some((element) => element.responses.length > 0) ||
-        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
-    ) {
-      return null
-    }
-  }
+  try {
+    let stackScore: number | undefined = undefined
+    let stackFeedback = StackFeedbackStatus.UNANSWERED
+    const evaluationsArr: InstanceEvaluation[] = []
 
-  let stackScore: number | undefined = undefined
-  let stackFeedback = StackFeedbackStatus.UNANSWERED
-  const evaluationsArr: InstanceEvaluation[] = []
+    // compute average answer time per element / question by dividing the
+    // answer time for the entire stack through the number of responses
+    const elementAnswerTime = round(stackAnswerTime / responses.length)
 
-  // compute average answer time per element / question by dividing the
-  // answer time for the entire stack through the number of responses
-  const elementAnswerTime = round(stackAnswerTime / responses.length)
-
-  for (const response of responses) {
-    const { grading, score, evaluation } = await respondToElement({
-      ctx,
-      response,
-      courseId,
-      answerTime: elementAnswerTime,
-      skipTracking: isOwner,
-    })
-
-    // update stack status
-    if (grading) {
-      stackFeedback = combineStackStatus({
-        prevStatus: stackFeedback,
-        newStatus: grading,
+    for (const response of responses) {
+      const { grading, score, evaluation } = await respondToElement({
+        ctx,
+        response,
+        courseId,
+        answerTime: elementAnswerTime,
+        skipTracking: escapeRoomState.isOwner,
       })
+
+      if (grading) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: grading,
+        })
+      }
+      if (score !== null) {
+        stackScore =
+          typeof stackScore === 'undefined' ? score : stackScore + score
+      }
+      if (evaluation) {
+        evaluationsArr.push(evaluation)
+      }
     }
 
-    // update stack score
-    if (score !== null) {
-      stackScore =
-        typeof stackScore === 'undefined' ? score : stackScore + score
-    }
+    await finalizeEscapeRoomStackSubmission(escapeRoomState, stackFeedback, ctx)
 
-    // add evaluation to the array
-    if (evaluation) {
-      evaluationsArr.push(evaluation)
+    return {
+      id: stackId,
+      status: stackFeedback,
+      score: stackScore,
+      evaluations: evaluationsArr,
     }
-  }
-
-  return {
-    id: stackId,
-    status: stackFeedback,
-    score: stackScore,
-    evaluations: evaluationsArr,
+  } finally {
+    await releaseEscapeRoomStackSubmission(escapeRoomState, ctx)
   }
 }
 // #endregion

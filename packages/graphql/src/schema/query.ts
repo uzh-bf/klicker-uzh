@@ -11,6 +11,7 @@ import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as EscapeRoomService from '../services/escapeRooms.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -70,6 +71,7 @@ import {
   UserElementList,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
+import { EscapeRoomHint } from './escapeRoomConfig.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -98,6 +100,7 @@ import { AssessmentParticipantInvitationPage } from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
+  EscapeRoomProgress,
   PracticeQuiz,
   PublicationStatus,
   ReviewStatus,
@@ -653,11 +656,60 @@ export const Query = builder.queryType({
           (args) => ({ practiceQuizId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await PracticeQuizService.getPracticeQuizEvaluation(
-              args,
+            const evaluation =
+              await PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
+            if (!evaluation) return null
+            const canResetEscapeRoom = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
               ctx
             )
+            return {
+              ...evaluation,
+              canResetEscapeRoom,
+            }
           }
+        ),
+      }),
+
+      escapeRoomProgress: t.withAuth(asUser).field({
+        nullable: true,
+        type: EscapeRoomProgress,
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+        },
+        resolve: withPermission(
+          (args) =>
+            args.practiceQuizId
+              ? { practiceQuizId: args.practiceQuizId }
+              : { microLearningId: args.microLearningId },
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await EscapeRoomService.getEscapeRoomProgress(args, ctx)
+          }
+        ),
+      }),
+
+      escapeRoomHints: t.withAuth(asUser).field({
+        nullable: true,
+        type: [EscapeRoomHint],
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+        },
+        resolve: withPermission(
+          (args) =>
+            args.practiceQuizId
+              ? { practiceQuizId: args.practiceQuizId }
+              : { microLearningId: args.microLearningId },
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) =>
+            EscapeRoomService.getEscapeRoomHints(args, ctx)
         ),
       }),
 
@@ -678,10 +730,22 @@ export const Query = builder.queryType({
           (args) => ({ microLearningId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await MicroLearningService.getMicroLearningEvaluation(
-              args,
+            const evaluation =
+              await MicroLearningService.getMicroLearningEvaluation(args, ctx)
+            if (!evaluation) return null
+            const canResetEscapeRoom = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
               ctx
             )
+            return {
+              ...evaluation,
+              canResetEscapeRoom,
+            }
           }
         ),
       }),

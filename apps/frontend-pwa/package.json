@@ -74,7 +74,8 @@
     "tailwindcss": "~4.3.3",
     "tsx": "~4.19.4",
     "tw-animate-css": "~1.3.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "3.2.4"
   },
   "scripts": {
     "build": "next build --webpack",
@@ -91,8 +92,9 @@
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
     "start:test": "node ../../util/playwright-next-runtime.mjs start 3001",
-    "test": "pnpm run test:run",
-    "test:run": "tsx --test \"src/**/*.test.ts\""
+    "test": "pnpm run test:run && pnpm run test:vitest",
+    "test:run": "tsx --test \"src/**/*.test.ts\"",
+    "test:vitest": "vitest run singleStudentResponse.spec"
   },
   "engines": {
     "node": "=24"

@@ -10,16 +10,21 @@ import {
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
+import { useEscapeRoom } from '../hooks/useEscapeRoom'
 import ElementStack from './ElementStack'
 import type { EmbedQuizNavigationState } from './embed'
+import EscapeRoomOverlay from './EscapeRoomOverlay'
 import PracticeQuizOverview from './PracticeQuizOverview'
 import {
   findFirstUnansweredStack,
   type PracticeQuizProgressState,
 } from './progress'
+
+const noopRefetch = async () => undefined
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -57,6 +62,7 @@ interface PracticeQuizProps {
   hostNavigationRequested?: boolean
   hostAdvanceRequest?: number
   onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
+  refetch?: () => Promise<unknown>
 }
 
 function PracticeQuiz({
@@ -73,6 +79,7 @@ function PracticeQuiz({
   hostNavigationRequested = false,
   hostAdvanceRequest = 0,
   onHostNavigationStateChange,
+  refetch,
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -112,6 +119,103 @@ function PracticeQuiz({
         )
       : undefined
 
+  const isEscapeRoom = !!quiz.escapeRoomConfig
+  const escapeRoomHintPenalty = quiz.escapeRoomConfig?.hintPenalty ?? 120
+  const resolvedRefetch = refetch ?? noopRefetch
+  const {
+    attempt,
+    isStarted,
+    isCompleted,
+    isExpired,
+    remainingSeconds,
+    startAttempt,
+    loading: attemptLoading,
+  } = useEscapeRoom({
+    activity: quiz,
+    activityType: 'practiceQuiz',
+    refetch: resolvedRefetch,
+  })
+
+  // Synchronize localStorage progress state with server's isCorrect fields if they differ
+  useEffect(() => {
+    if (isEscapeRoom && quiz.stacks) {
+      setProgressState((prev) => {
+        let changed = false
+        const next = { ...prev }
+        for (const stack of quiz.stacks!) {
+          const currentStatus = next[stack.id]?.status
+          if (
+            stack.isCorrect &&
+            currentStatus !== StackFeedbackStatus.Correct
+          ) {
+            next[stack.id] = {
+              status: StackFeedbackStatus.Correct,
+              score: next[stack.id]?.score ?? null,
+            }
+            changed = true
+          }
+        }
+        return changed ? next : prev
+      })
+    }
+  }, [isEscapeRoom, quiz.stacks, setProgressState])
+
+  const handleSetCurrentIx = (ix: number) => {
+    if (isEscapeRoom && ix >= 0) {
+      const activeFirstUncleared =
+        quiz.stacks?.findIndex(
+          (stack) =>
+            progressState?.[stack.id]?.status !== StackFeedbackStatus.Correct
+        ) ?? 0
+
+      if (activeFirstUncleared !== -1 && ix > activeFirstUncleared) {
+        setCurrentIx(activeFirstUncleared)
+        return
+      }
+    }
+    setCurrentIx(ix)
+  }
+
+  // Escape mode masks locked stacks server-side, so quiz.stacks only contains
+  // cleared stacks plus the first uncleared one — never the full quiz. The
+  // regular advance logic (currentStep === totalSteps → completion) would
+  // treat every stack as the last one and boot the participant back home.
+  // Instead: on a correct answer refetch (unmasking the next stack) and
+  // advance; on an incorrect answer wipe the stored evaluation and remount the
+  // stack so it can be retried once the lockout elapses. Completion is
+  // server-driven (attempt status flips → overlay takes over).
+  const [escapeRetryNonce, setEscapeRetryNonce] = useState(0)
+  const escapeTotalStacks = quiz.numOfStacks ?? quiz.stacks?.length ?? 0
+  const handleEscapeAdvance = async (gradedStatus?: StackFeedbackStatus) => {
+    if (!currentStack) return
+    const status = gradedStatus ?? progressState?.[currentStack.id]?.status
+    if (status === StackFeedbackStatus.Correct) {
+      if (refetch) await refetch()
+      if (currentIx + 1 < escapeTotalStacks) {
+        handleNextElement()
+      }
+    } else {
+      localStorage.removeItem(`qi-${quiz.id}-${currentStack.id}`)
+      setEscapeRetryNonce((nonce) => nonce + 1)
+      refetch?.()
+    }
+  }
+
+  const handleStartQuiz = async () => {
+    if (isEscapeRoom) {
+      if (!isStarted) {
+        await startAttempt()
+      }
+      // Trigger a direct refetch to make sure isCorrect fields are up-to-date
+      if (refetch) {
+        await refetch()
+      }
+      handleSetCurrentIx(0)
+    } else {
+      setCurrentIx(0)
+    }
+  }
+
   const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
     variables: {
       courseId: router.query.courseId as string,
@@ -126,6 +230,28 @@ function PracticeQuiz({
 
   return (
     <div className="flex-1">
+      {isEscapeRoom && !previewOnly && (
+        <EscapeRoomOverlay
+          isStarted={isStarted}
+          isCompleted={isCompleted}
+          isExpired={isExpired}
+          remainingSeconds={remainingSeconds}
+          timeLimit={quiz.escapeRoomConfig?.timeLimit ?? 3600}
+          hintPenalty={escapeRoomHintPenalty}
+          onStart={startAttempt}
+          loading={attemptLoading}
+          attempt={attempt}
+          clearedStacks={
+            quiz.stacks?.filter(
+              (stack) =>
+                progressState?.[stack.id]?.status ===
+                StackFeedbackStatus.Correct
+            ).length ?? 0
+          }
+          totalStacks={quiz.numOfStacks ?? quiz.stacks?.length ?? 0}
+          introText={quiz.escapeRoomConfig?.introText}
+        />
+      )}
       <div
         className={twMerge(
           focusedEmbed
@@ -152,11 +278,13 @@ function PracticeQuiz({
             }) || []
           }
           currentIx={currentIx}
-          setCurrentIx={setCurrentIx}
+          setCurrentIx={handleSetCurrentIx}
           navigableUntilIx={navigableUntilIx}
           readOnly={hostNavigation}
           resetLocalStorage={
-            showResetLocalStorage && !hostNavigation
+            // hidden in escape mode: local progress mirrors the server-side
+            // attempt, so a local reset would only desync the participant view
+            showResetLocalStorage && !hostNavigation && !isEscapeRoom
               ? () => {
                   resetPracticeQuizLocalStorage(quiz.id)
                   window.location.reload()
@@ -183,20 +311,27 @@ function PracticeQuiz({
             // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
             // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
             pointsMultiplier={quiz.pointsMultiplier}
-            setCurrentIx={setCurrentIx}
+            setCurrentIx={handleStartQuiz}
             previewOnly={previewOnly}
+            isEscapeRoom={isEscapeRoom}
           />
         )}
 
         {currentStack && (
           <ElementStack
-            key={currentStack.id}
+            key={
+              isEscapeRoom
+                ? `${currentStack.id}-${escapeRetryNonce}`
+                : currentStack.id
+            }
             parentId={quiz.id}
             courseId={quiz.course!.id}
             embedded={embedded}
             stack={currentStack}
             currentStep={currentIx + 1}
-            totalSteps={quiz.stacks?.length ?? 0}
+            totalSteps={
+              isEscapeRoom ? escapeTotalStacks : (quiz.stacks?.length ?? 0)
+            }
             setStepStatus={(value) => {
               setProgressState((prev) => {
                 const next = { ...prev }
@@ -204,18 +339,31 @@ function PracticeQuiz({
                 return next
               })
             }}
-            handleNextElement={handleNextElement}
+            handleNextElement={
+              isEscapeRoom ? handleEscapeAdvance : handleNextElement
+            }
             withParticipant={
               !!dataParticipant?.self &&
               dataParticipant.self.role !== UserRole.TemporaryParticipant
             }
-            onAllStacksCompletion={handleAllStacksCompletion}
+            onAllStacksCompletion={
+              isEscapeRoom ? handleEscapeAdvance : handleAllStacksCompletion
+            }
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
             focusedPresentation={focusedEmbed}
             hostNavigation={hostNavigation}
             hostAdvanceRequest={hostAdvanceRequest}
             onHostNavigationStateChange={onHostNavigationStateChange}
+            escapeRoom={
+              isEscapeRoom
+                ? {
+                    activityType: 'practiceQuiz',
+                    hintPenalty: escapeRoomHintPenalty,
+                    onStateChanged: resolvedRefetch,
+                  }
+                : undefined
+            }
           />
         )}
       </div>

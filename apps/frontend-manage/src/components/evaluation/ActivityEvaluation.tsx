@@ -1,6 +1,9 @@
+import { useQuery } from '@apollo/client'
+import EscapeRoomProgress from '@components/evaluation/EscapeRoomProgress'
 import {
   ConfusionTimestep,
   Feedback,
+  GetEscapeRoomProgressDocument,
   LocaleType,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -8,18 +11,18 @@ import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Leaderboard, {
   LeaderboardCombinedEntry,
 } from '@klicker-uzh/shared-components/src/Leaderboard'
+import useEvaluationInitialization from '@lib/hooks/useEvaluationInitialization'
+import useEvaluationSettingsInitialization from '@lib/hooks/useEvaluationSettingsInitialization'
 import { useSessionStorage } from '@uidotdev/usehooks'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
-import { useReducer, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
-import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
 import ElementEvaluation from './ElementEvaluation'
 import EvaluationFooter from './EvaluationFooter'
 import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
@@ -31,7 +34,12 @@ import EvaluationNavigation from './navigation/EvaluationNavigation'
 import { sizeReducer, TextSizes } from './textSizes'
 
 export type ActivityEvaluationType = 'LiveQuiz' | 'Asynchronous'
-export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
+export type ActiveStackType =
+  | number
+  | 'feedbacks'
+  | 'confusion'
+  | 'leaderboard'
+  | 'escapeRoom'
 
 interface ActivityEvaluationProps {
   courseId?: string | null
@@ -46,6 +54,10 @@ interface ActivityEvaluationProps {
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
   type?: ActivityEvaluationType
+  // when set, an "Escape Room" tab surfaces the per-participant progress
+  // dashboard (owner-scoped query returns null for non-escape-room activities)
+  escapeRoomActivityType?: 'practiceQuiz' | 'microLearning'
+  canResetEscapeRoom?: boolean
 }
 
 function ActivityEvaluation({
@@ -61,6 +73,8 @@ function ActivityEvaluation({
   pinCode,
   hideActiveBlockResults = false,
   type = 'Asynchronous',
+  escapeRoomActivityType,
+  canResetEscapeRoom = false,
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -113,6 +127,52 @@ function ActivityEvaluation({
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
   const stackInstanceMap = useStackInstanceMap({ stacks })
 
+  // escape-room monitoring: the owner-scoped query returns null for
+  // non-escape-room activities, so the tab only appears when data is present.
+  const {
+    data: escapeRoomData,
+    error: escapeRoomError,
+    loading: escapeRoomLoading,
+    refetch: refetchEscapeRoom,
+    startPolling: startEscapeRoomPolling,
+    stopPolling: stopEscapeRoomPolling,
+  } = useQuery(GetEscapeRoomProgressDocument, {
+    variables:
+      escapeRoomActivityType === 'microLearning'
+        ? { microLearningId: activityId }
+        : { practiceQuizId: activityId },
+    skip: !escapeRoomActivityType,
+  })
+  const escapeRoomProgress = escapeRoomData?.escapeRoomProgress ?? null
+  const escapeRoomAvailable = escapeRoomProgress !== null
+
+  // only poll while the lecturer is actively viewing the escape-room tab
+  useEffect(() => {
+    if (escapeRoomAvailable && activeStack === 'escapeRoom') {
+      startEscapeRoomPolling(5000)
+      return () => stopEscapeRoomPolling()
+    }
+    stopEscapeRoomPolling()
+  }, [
+    escapeRoomAvailable,
+    activeStack,
+    startEscapeRoomPolling,
+    stopEscapeRoomPolling,
+  ])
+
+  // With no ordinary responses yet, asynchronous evaluation has no active
+  // instance to select. Open the roster dashboard directly so NOT_STARTED
+  // participants remain visible before the first attempt.
+  useEffect(() => {
+    if (
+      escapeRoomAvailable &&
+      instanceResults.length === 0 &&
+      typeof activeStack === 'number'
+    ) {
+      setActiveStack('escapeRoom')
+    }
+  }, [activeStack, escapeRoomAvailable, instanceResults.length])
+
   // update the chart type as soon as the active instance changes
   useChartTypeUpdate({
     activeInstance,
@@ -122,6 +182,8 @@ function ActivityEvaluation({
   })
 
   if (
+    !escapeRoomLoading &&
+    !escapeRoomAvailable &&
     typeof activeStack === 'number' &&
     typeof instanceResults[activeInstance] === 'undefined'
   ) {
@@ -156,11 +218,26 @@ function ActivityEvaluation({
             feedbacksAvailable={
               feedbacks !== null && confusionFeedbacks !== null
             }
+            escapeRoomAvailable={escapeRoomAvailable}
           />
         </div>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">
+        {escapeRoomError ? (
+          <div className="flex flex-col items-start gap-2 p-4">
+            <UserNotification
+              type="error"
+              message={t('shared.generic.systemError')}
+            />
+            <Button
+              data-cy="escape-room-progress-retry"
+              onClick={() => void refetchEscapeRoom()}
+            >
+              {t('shared.generic.tryAgain')}
+            </Button>
+          </div>
+        ) : null}
         {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
             requireShowResultsConfirmation={
@@ -263,6 +340,18 @@ function ActivityEvaluation({
               </div>
             </div>
           )}
+
+        {escapeRoomActivityType &&
+          escapeRoomProgress !== null &&
+          activeStack === 'escapeRoom' && (
+            <EscapeRoomProgress
+              activityType={escapeRoomActivityType}
+              activityId={activityId}
+              progress={escapeRoomProgress}
+              onReset={refetchEscapeRoom}
+              canReset={canResetEscapeRoom}
+            />
+          )}
       </div>
 
       <div
@@ -270,7 +359,8 @@ function ActivityEvaluation({
           'z-20 h-max flex-none',
           (activeStack === 'feedbacks' ||
             activeStack === 'confusion' ||
-            activeStack === 'leaderboard') &&
+            activeStack === 'leaderboard' ||
+            activeStack === 'escapeRoom') &&
             'h-[2.3rem]'
         )}
       >
