@@ -1,0 +1,11 @@
+# Select for reviewed unsupported cases, even when irrelevant passages were retrieved.
+- name: appropriate_abstention
+  modes: [ground-truth]
+  threshold: 0.8
+  criteria: 'Assess whether the answer acknowledges the source limitation described by the expected answer without inventing a requested answer or attributing one to the teaching sources.'
+  evaluation_steps:
+    - 'Read the question and factual source limitation in the expected answer.'
+    - 'Require an explicit acknowledgement that the teaching sources do not establish the requested answer.'
+    - 'Reject a fabricated algorithm, number, procedure or source attribution, even when accompanied by a disclaimer.'
+    - 'Permit a clarification question or a suggestion to consult another source, without requiring particular wording.'
+  evaluation_params: [INPUT, ACTUAL_OUTPUT, EXPECTED_OUTPUT]

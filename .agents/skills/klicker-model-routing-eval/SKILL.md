@@ -20,7 +20,11 @@ This skill is the procedure and the decision rules.
   `ai-generic-prd` profile; use it only for GET requests.
 - Paid runs need a stated bound: `--limit`, `--repeats` and `--max-calls`
   for bench. The default bench (5 arms × 27 questions × 2) costs a few USD
-  including the judge.
+  for answers only; `bench.py` requires `--no-judge` and no longer grades.
+- Answer quality and pairwise preference run through the pinned DeepEval
+  framework, not the routing environment: call quality and Arena commands with
+  `evaluation/framework/.venv/bin/python` (DeepEval is not a routing
+  dependency). The routing environment skips the native pairwise tests.
 - The router config lives in `ai-infrastructure/deployment` (`litellm/*-generic/config.yaml`).
   This repository mirrors it in `util/litellm/config.yaml` and records the
   deployed tier map in the `modelRegistry` comment of `deploy/env-uzh-*/values.yaml`.
@@ -38,15 +42,24 @@ This skill is the procedure and the decision rules.
    unstable share above about 20% means tier choices for MEDIUM matter more
    than the others, because borderline questions land there.
 3. **Bench.** Benchmark each model and effort that any candidate map uses,
-   plus the current map's arms. Use a judge from another model family than
-   the arms (`--judge`, default Claude Opus).
+   plus the current map's arms. `bench.py` requires `--no-judge` and records
+   answers, latency and token usage only. Add `--keep-text` when answer quality
+   is needed, then convert the capture offline with
+   `bench.py --import-answers --qa-dir <dir>` into one standard DeepEval QA
+   artifact per arm and repeat plus a manifest; the import overwrites nothing.
+   Grade each artifact with `util/_run_klicker_eval.sh --mode eval` and
+   `evaluation/data/metrics/klicker_routing_quality.yaml`.
 4. **Analyze.** Run `analyze.py` with each candidate as `--tier-map`, the
    observed mix and token profile (`--mix observe:<file>#<router>`), monthly
    volume from the observed week, and `--compare` for every tier where
-   candidates differ. Never quote cost from a replay or explicit mix: benchmark
-   prompts lack the chatbot's system prompt and course context.
-5. **DeepEval.** After both routers exist in staging, compare them on the
-   deployed path (below).
+   candidates differ. `--quality <manifest.json> <eval_results files>` adds the
+   native DeepEval 0-1 scores (mean of correctness, completeness and clarity,
+   plus major errors); the 1-10 paired comparisons only work on earlier graded
+   bench files, and the two scales are never translated. Never quote cost from
+   a replay or explicit mix: benchmark prompts lack the chatbot's system
+   prompt and course context.
+5. **DeepEval.** Compare the arms with the native pairwise Arena below, and
+   after both routers exist in staging compare them on the deployed path.
 6. **Record** the report, the decision and the rollback in the MR/PR that
    changes the tiers. Keep run outputs in `evaluation/routing/_local/`.
 
@@ -81,8 +94,32 @@ Without a direct route to the staging proxy, a `kubectl port-forward` to
 This sends only the question, without a chatbot system prompt or knowledge
 base, so it measures the routers and models. For the full chatbot path, use
 the launcher's `--local-target` mode against a stack whose registry points
-`auto` at each router in turn. The default judge is GPT-5.6 Luna; when it
-judges GPT-6 answers, confirm a close result with the bench's non-OpenAI judge.
+`auto` at each router in turn. The default judge is GPT-5.6 Luna; the routing
+scripts no longer run a custom judge, so DeepEval is the only quality path.
+
+### Pairwise answer comparison (native Arena)
+
+`pairwise.py` compares two answer files (one arm each, `q`/`rep`/`text` rows)
+with DeepEval's native `ArenaGEval`: contestant names are masked and positions
+randomised, one winner is named per case and there is no tie option. Criteria
+and explicit steps come from
+`evaluation/data/metrics/klicker_routing_pairwise.yaml`, so a case costs
+exactly two judge requests (winner and rewritten reason) with no step
+generation, one attempt per request and no retry; a third request within a
+case is refused. Runs are serial and stop at the first judge error.
+
+```bash
+# Offline: pairing, reference join and the request budget. No credential.
+uv run --frozen python src/routing_eval/pairwise.py \
+  --answers-a _local/arm-a.jsonl --answers-b _local/arm-b.jsonl --check
+
+# Live, explicit opt-in: judge calls only, bounded by --max-cases (required),
+# and it refuses to overwrite an existing --out.
+../framework/.venv/bin/python src/routing_eval/pairwise.py \
+  --answers-a _local/arm-a.jsonl --answers-b _local/arm-b.jsonl \
+  --label-a gpt-6-luna:high --label-b gpt-6.1-sol:low \
+  --max-cases 25 --out _local/pairwise.jsonl --execute-live
+```
 
 ## Decision rules
 
