@@ -1722,7 +1722,7 @@ importers:
         version: link:../../packages/util
       fastmcp:
         specifier: 4.13.1
-        version: 4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.20.0)(jose@5.9.4)(supports-color@8.1.1)
+        version: 4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.22.1)(jose@5.9.4)(supports-color@8.1.1)
       jose:
         specifier: 5.9.4
         version: 5.9.4
@@ -1762,7 +1762,7 @@ importers:
         version: link:../../packages/util
       fastmcp:
         specifier: 4.13.1
-        version: 4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.20.0)(jose@6.2.10)(supports-color@8.1.1)
+        version: 4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.22.1)(jose@6.2.10)(supports-color@8.1.1)
       graphql:
         specifier: 16.11.0
         version: 16.11.0
@@ -33359,7 +33359,7 @@ snapshots:
       path-expression-matcher: 1.5.0
       strnum: 2.3.0
 
-  fastmcp@4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.20.0)(jose@5.9.4)(supports-color@8.1.1):
+  fastmcp@4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.22.1)(jose@5.9.4)(supports-color@8.1.1):
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.0(supports-color@8.1.1)(zod@4.6.6)
       '@standard-schema/spec': 1.1.0
@@ -33371,7 +33371,7 @@ snapshots:
       strict-event-emitter-types: 2.0.0
       undici: 7.29.0
       uri-templates: 0.2.0
-      xsschema: 0.4.4(effect@3.20.0)(zod-to-json-schema@3.25.2(zod@4.6.6))(zod@4.6.6)
+      xsschema: 0.4.4(effect@3.22.1)(zod-to-json-schema@3.25.2(zod@4.6.6))(zod@4.6.6)
       yargs: 18.1.0
       zod: 4.6.6
       zod-to-json-schema: 3.25.2(zod@4.6.6)
@@ -33387,7 +33387,7 @@ snapshots:
       - supports-color
       - sury
 
-  fastmcp@4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.20.0)(jose@6.2.10)(supports-color@8.1.1):
+  fastmcp@4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.22.1)(jose@6.2.10)(supports-color@8.1.1):
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.0(supports-color@8.1.1)(zod@4.6.6)
       '@standard-schema/spec': 1.1.0
@@ -33399,7 +33399,7 @@ snapshots:
       strict-event-emitter-types: 2.0.0
       undici: 7.29.0
       uri-templates: 0.2.0
-      xsschema: 0.4.4(effect@3.20.0)(zod-to-json-schema@3.25.2(zod@4.6.6))(zod@4.6.6)
+      xsschema: 0.4.4(effect@3.22.1)(zod-to-json-schema@3.25.2(zod@4.6.6))(zod@4.6.6)
       yargs: 18.1.0
       zod: 4.6.6
       zod-to-json-schema: 3.25.2(zod@4.6.6)
@@ -42338,9 +42338,9 @@ snapshots:
 
   xmlchars@2.2.0: {}
 
-  xsschema@0.4.4(effect@3.20.0)(zod-to-json-schema@3.25.2(zod@4.6.6))(zod@4.6.6):
+  xsschema@0.4.4(effect@3.22.1)(zod-to-json-schema@3.25.2(zod@4.6.6))(zod@4.6.6):
     optionalDependencies:
-      effect: 3.20.0
+      effect: 3.22.1
       zod: 4.6.6
       zod-to-json-schema: 3.25.2(zod@4.6.6)
 
