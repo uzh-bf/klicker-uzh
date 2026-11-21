@@ -4,7 +4,10 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Assistant } from '../../components/assistant'
 import { ChatRecoveryCard } from '../../components/chat-recovery-card'
-import { getAccountSessionConfig } from '../../lib/assessmentMode'
+import {
+  getAccountSessionConfig,
+  isAssessmentMode,
+} from '../../lib/assessmentMode'
 import {
   CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -127,6 +130,7 @@ export default async function ChatLayout({
         initialModeOptions={initialModeOptions}
         knowledgeGraphVisible={chatbot.knowledgeGraphVisible}
         pwaUrl={getPwaBaseUrl()}
+        assessment={isAssessmentMode()}
       />
       {children}
     </>

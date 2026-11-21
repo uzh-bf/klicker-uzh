@@ -29,6 +29,7 @@ import {
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
 import { resolveDisclosureOpen } from './message-parts-state'
+import { useChatUi } from './chat-ui-context'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ResponseExampleCaptureAction } from './response-example-capture-action'
 import { ToolFallback } from './tool-fallback'
@@ -170,6 +171,8 @@ type ChatErrorPartData = {
 const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   const t = useTranslations()
   const hasAvailableMode = useHasAvailableChatMode()
+  // The exam conversation has no regeneration; the student retypes instead.
+  const { assessment } = useChatUi()
 
   return (
     <div
@@ -189,7 +192,7 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
           {`: ${data.message ?? t('chat.response.genericError')}`}
         </p>
       </div>
-      {hasAvailableMode && (
+      {hasAvailableMode && !assessment && (
         <ActionBarPrimitive.Reload asChild>
           <button
             type="button"
@@ -215,6 +218,8 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
 const ChatStoppedPart: FC = () => {
   const t = useTranslations()
   const hasAvailableMode = useHasAvailableChatMode()
+  // The exam conversation has no regeneration; the student retypes instead.
+  const { assessment } = useChatUi()
 
   return (
     <div
@@ -225,7 +230,7 @@ const ChatStoppedPart: FC = () => {
         <CircleStopIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
         <p>{t('chat.message.stoppedNotice')}</p>
       </div>
-      {hasAvailableMode && (
+      {hasAvailableMode && !assessment && (
         <ActionBarPrimitive.Reload asChild>
           <button
             type="button"

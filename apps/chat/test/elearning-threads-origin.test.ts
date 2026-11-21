@@ -41,7 +41,10 @@ beforeEach(() => {
     learnerBinding: 'binding-1',
     chatbot: { courseId: 'course-1' },
   })
-  mocks.createThread.mockResolvedValue({ id: 'thread-1' })
+  mocks.createThread.mockResolvedValue({
+    thread: { id: 'thread-1' },
+    created: true,
+  })
 })
 
 describe('threads route eLearning origin', () => {

@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl'
 import type * as React from 'react'
 import { useChatStore } from '@/src/stores/chatStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
+import { useChatUi } from './chat-ui-context'
 import { CreditsFooter } from './credits-footer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
@@ -29,6 +30,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
   const authMode = useSettingsStore((s) => s.authMode)
+  const { assessment } = useChatUi()
   const { setOpenMobile } = useSidebar()
 
   const handleNewThread = async () => {
@@ -63,21 +65,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </TooltipContent>
                 </Tooltip>
               )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    data-cy="chat-new-thread-button"
-                    onClick={handleNewThread}
-                    disabled={participationRequired}
-                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8"
-                  >
-                    <Plus className="size-4" />
-                    <span className="sr-only">{t('chat.sidebar.newChat')}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
-              </Tooltip>
+              {!assessment && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-cy="chat-new-thread-button"
+                      onClick={handleNewThread}
+                      disabled={participationRequired}
+                      className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8"
+                    >
+                      <Plus className="size-4" />
+                      <span className="sr-only">
+                        {t('chat.sidebar.newChat')}
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
+                </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   {/* The design-system trigger ships a hardcoded English
@@ -97,10 +103,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <p className="text-foreground px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide">
-          {t('chat.sidebar.conversationsLabel')}
-        </p>
-        <ThreadList />
+        {!assessment && (
+          <>
+            <p className="text-foreground px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide">
+              {t('chat.sidebar.conversationsLabel')}
+            </p>
+            <ThreadList />
+          </>
+        )}
       </SidebarContent>
 
       <SidebarRail aria-label={t('chat.sidebar.toggleSidebar')} />

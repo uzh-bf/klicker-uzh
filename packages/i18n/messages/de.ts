@@ -340,6 +340,8 @@ export default {
       dataProtectionTitle: 'Datenschutz',
       dataProtectionText:
         'Teile keine persönlichen Informationen mit dem Chatbot. Deine Eingaben werden ausschliesslich über Azure-OpenAI-Instanzen verarbeitet, die in der EU oder in der Schweiz gehostet werden. Unterhaltungen können in anonymisierter Form vom KlickerUZH-Team oder Deinen Dozierenden überprüft werden, um die Qualität des Chatbots und die Kursinhalte zu verbessern.',
+      dataProtectionTextAssessment:
+        'Teile keine persönlichen Informationen mit dem Chatbot. Deine Eingaben werden ausschliesslich über Azure-OpenAI-Instanzen verarbeitet, die in der EU oder in der Schweiz gehostet werden. In diesem Assessment werden Deine Unterhaltungen zusammen mit Deiner Identität gespeichert. Berechtigte Dozierende und Assessment-Mitarbeitende erhalten sie zur Bewertung, Prüfungseinsicht und Nachbearbeitung. Andere Teilnehmende sehen sie nicht.',
       consentText:
         'Durch die Nutzung des Chatbots erkennst Du diese Bedingungen an und akzeptierst sie. Bei Feedback oder Bedenken wende Dich bitte an Deine Dozierenden.',
       decline: 'Ablehnen',
@@ -634,6 +636,8 @@ export default {
         'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
       genericError:
         'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
+      turnInProgress:
+        'Die vorherige Antwort wird noch abgeschlossen. Warte einen Moment und sende Deine Nachricht dann erneut.',
       connectionInterrupted:
         'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
       truncated:

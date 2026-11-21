@@ -1,5 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
-import type { ChatThread } from '@klicker-uzh/prisma/client'
+import { type ChatThread, Prisma } from '@klicker-uzh/prisma/client'
+import { isAssessmentMode } from '../lib/assessmentMode'
+import { withTransaction } from '../utils/transactions'
 
 export interface Thread {
   id: string
@@ -35,7 +37,9 @@ export class ThreadService {
   }
 
   /**
-   * Creates new thread with optional title
+   * Creates new thread with optional title. In assessment mode a participant
+   * holds one thread per chatbot: the oldest existing thread is returned with
+   * `created: false`, and the advisory lock makes two concurrent creates agree.
    */
   static async createThread(
     participantId: string,
@@ -43,22 +47,45 @@ export class ThreadService {
     title?: string | null,
     id?: string,
     origin?: string | null
-  ): Promise<Thread> {
-    const thread = await prisma.chatThread.create({
-      data: {
-        ...(id ? { id } : {}),
-        title,
-        ...(origin ? { origin } : {}),
-        participant: {
-          connect: { id: participantId },
-        },
-        chatbot: {
-          connect: { id: chatbotId },
-        },
+  ): Promise<{ thread: Thread; created: boolean }> {
+    const data = {
+      ...(id ? { id } : {}),
+      title,
+      ...(origin ? { origin } : {}),
+      participant: {
+        connect: { id: participantId },
       },
-    })
+      chatbot: {
+        connect: { id: chatbotId },
+      },
+    }
 
-    return this.mapThreadToResponse(thread)
+    if (isAssessmentMode()) {
+      return withTransaction(async (tx) => {
+        await tx.$executeRaw(
+          Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${`chat-thread-create:${participantId}:${chatbotId}`}))`
+        )
+        const existing = await tx.chatThread.findFirst({
+          where: { participantId, chatbotId },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        })
+        if (existing) {
+          return {
+            thread: ThreadService.mapThreadToResponse(existing),
+            created: false,
+          }
+        }
+        const thread = await tx.chatThread.create({ data })
+        return {
+          thread: ThreadService.mapThreadToResponse(thread),
+          created: true,
+        }
+      })
+    }
+
+    const thread = await prisma.chatThread.create({ data })
+
+    return { thread: ThreadService.mapThreadToResponse(thread), created: true }
   }
 
   /**
@@ -109,7 +136,10 @@ export class ThreadService {
     })
 
     return threads.map((thread) =>
-      this.mapThreadToResponse(thread, thread.messages[0]?.chatMode ?? null)
+      ThreadService.mapThreadToResponse(
+        thread,
+        thread.messages[0]?.chatMode ?? null
+      )
     )
   }
 
@@ -130,7 +160,7 @@ export class ThreadService {
     })
 
     if (!thread) return null
-    return this.mapThreadToResponse(thread)
+    return ThreadService.mapThreadToResponse(thread)
   }
 
   /**
@@ -143,7 +173,7 @@ export class ThreadService {
     title: string
   ): Promise<Thread | null> {
     // verify ownership
-    const existingThread = await this.getThreadById(
+    const existingThread = await ThreadService.getThreadById(
       threadId,
       participantId,
       chatbotId
@@ -155,7 +185,7 @@ export class ThreadService {
       data: { title },
     })
 
-    return this.mapThreadToResponse(thread)
+    return ThreadService.mapThreadToResponse(thread)
   }
 
   /**
@@ -183,6 +213,6 @@ export class ThreadService {
       data: { updatedAt: new Date() },
     })
 
-    return this.mapThreadToResponse(thread)
+    return ThreadService.mapThreadToResponse(thread)
   }
 }
