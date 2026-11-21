@@ -358,7 +358,7 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const resolvedSuggestions =
     suggestions ??
     getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
@@ -376,7 +376,8 @@ export const Thread: FC<ThreadProps> = ({
   return (
     <ThreadPrimitive.Root
       data-cy="chat-thread"
-      className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
+      data-compact={compact}
+      className="group/thread bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: embedded
           ? 'min(100%, 48rem)'
@@ -410,7 +411,11 @@ export const Thread: FC<ThreadProps> = ({
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-2 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
-                showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
+                showHistoryRail && 'pt-14 md:pl-10 md:pt-8',
+                // Below `md` the history rail sits above the messages and
+                // needs the default top padding for its trigger; from `md` it
+                // moves to the left gutter.
+                compact && (showHistoryRail ? 'pb-2 md:pt-3' : 'pb-2 sm:pt-3')
               )
         )}
       >
@@ -455,7 +460,10 @@ export const Thread: FC<ThreadProps> = ({
           'z-10 flex w-full flex-col items-center justify-end',
           embedded
             ? 'relative shrink-0 px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]'
-            : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
+            : twMerge(
+                'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4',
+                compact && 'pb-[max(0.375rem,env(safe-area-inset-bottom))]'
+              )
         )}
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
@@ -946,7 +954,7 @@ const Composer: FC<{
   allowDocumentAttachments: boolean
 }> = ({ maxImageAttachments, allowDocumentAttachments }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const { clearError: clearDictationError } = useDictationContext()
@@ -1013,7 +1021,8 @@ const Composer: FC<{
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-1.5 text-sm leading-6' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-1.5 text-sm leading-6' : 'max-h-40 py-4',
+              compact && 'max-h-32 py-2'
             )}
           />
           <DictationButton />
@@ -1030,8 +1039,15 @@ const Composer: FC<{
 // from input/output tokens, so the figure varies by model and exchange length —
 // which is exactly what `chat.credits.costHint` already says, in the credits
 // surfaces that can also show the balance it applies to.
+//
+// A framed chat has little height, so there the caveat is shown while the
+// thread is empty and yields its line to the conversation afterwards.
 const ComposerHint: FC = () => {
   const t = useTranslations()
+  const { compact } = useChatUi()
+  const threadIsEmpty = useAuiState((s) => s.thread.isEmpty)
+
+  if (compact && !threadIsEmpty) return null
 
   return (
     <p
@@ -1721,7 +1737,7 @@ const ComposerAttachButton: FC<{
   dataCy,
 }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const aui = useAui()
   const composerImageCount = useAuiState(
     (s) => s.composer.attachments.filter(isImageAttachment).length
@@ -1820,7 +1836,8 @@ const ComposerAttachButton: FC<{
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md touch-manipulation',
           embedded
             ? 'size-11 fine-pointer:size-8'
-            : 'size-11 fine-pointer:size-9'
+            : 'size-11 fine-pointer:size-9',
+          compact && 'fine-pointer:size-8'
         )}
         aria-label={t(
           allowDocumentAttachments
@@ -1836,7 +1853,7 @@ const ComposerAttachButton: FC<{
 
 const ComposerAction: FC = () => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   // M6: a single persistent circular shell — both buttons always mount and
   // stack in the same slot, so there is no layout jump between send and stop.
   // `Send`/`Cancel` already self-disable via their own hooks (disabled when
@@ -1899,7 +1916,8 @@ const ComposerAction: FC = () => {
         'relative shrink-0',
         embedded
           ? 'm-1 size-11 fine-pointer:size-8'
-          : 'm-2 size-11 fine-pointer:size-9'
+          : 'm-2 size-11 fine-pointer:size-9',
+        compact && 'm-1 fine-pointer:size-8'
       )}
     >
       <ComposerPrimitive.Send asChild>
@@ -1979,7 +1997,7 @@ function getEditTooltip(
 
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const attachments = getMessageAttachments(message)
   const documents = getMessageDocuments(message)
 
@@ -1990,7 +2008,8 @@ const UserMessage: FC = () => {
       tabIndex={-1}
       className={twMerge(
         'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
-        embedded && 'py-1 sm:py-1.5'
+        embedded && 'py-1 sm:py-1.5',
+        compact && 'py-1 sm:py-1'
       )}
     >
       <div
@@ -2411,7 +2430,7 @@ const AssistantMessage: FC<{
 }> = ({ chatbotAvatar: explicitAvatar, chatbotFallbackIcon }) => {
   const contextAvatar = useContext(ChatbotAvatarContext)
   const chatbotAvatar = explicitAvatar || contextAvatar
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const messageId = useAuiState((s) => s.message.id)
   // True only for the synthetic empty assistant message the runtime injects
   // while a response is pending (before the first streamed part arrives).
@@ -2443,7 +2462,8 @@ const AssistantMessage: FC<{
         'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
         embedded
           ? 'grid-cols-[auto_1fr] gap-x-2 py-1 sm:py-1.5'
-          : 'grid-cols-[auto_auto_1fr]'
+          : 'grid-cols-[auto_auto_1fr]',
+        compact && 'py-1 sm:py-1'
       )}
     >
       {embedded ? (
@@ -2533,7 +2553,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   return (
     <div
       className={twMerge(
-        'row-start-2 min-h-11 fine-pointer:min-h-8',
+        'row-start-2 min-h-11 fine-pointer:min-h-8 fine-pointer:group-data-[compact=true]/thread:min-h-7',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >
