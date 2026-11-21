@@ -55,6 +55,6 @@ host databases are not valid test-seed targets. Every new destructive test seed
 must await `requireDisposableDatabase(client)` before using its actual client,
 including cleanup after failed setup.
 
-## Boot-time data migrations (rare)
+## Runtime data migrations (rare)
 
-One-off production data fixes go into the homegrown runner `apps/backend-docker/src/migration.ts` (own `Migration` table), NOT into Prisma migrations. Currently empty — read its `migrate()` before adding an entry.
+One-off production data fixes go into the homegrown runner `apps/backend-docker/src/migration.ts` (own `Migration` table), NOT into Prisma migrations. Read `migrate()` before adding an entry, and remove the entry once every environment has applied it. Startup awaits `migrate(prisma)` before the HTTP server listens, so keep entries short. A failed run is logged, the server starts in a degraded state, and the missing record makes the next restart retry the entry. Mark an entry `isIdempotent: true` only when rerunning the complete data change is safe. Other entries run in one Prisma transaction that first takes a transaction-scoped advisory lock on the entry id, so concurrent replicas serialize. Transient database errors get three bounded attempts with exponential backoff; keep the classification code-first and use message matching only as a fallback.
