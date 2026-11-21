@@ -290,6 +290,36 @@ function WizardElementList({
                 }}
               />
             )}
+            {isEscapeRoom && type === 'block' && (
+              <FormikTextareaField
+                name={`blocks.${stackIx}.elements.${elementIdx}.escapeRoomDebrief`}
+                label={t('manage.activityWizard.escapeRoomDebrief')}
+                placeholder={t(
+                  'manage.activityWizard.escapeRoomDebriefPlaceholder'
+                )}
+                className={{ root: 'mb-1 px-1', input: 'h-16 w-full' }}
+                data={{
+                  cy: `escape-room-debrief-${type}-${stackIx}-${elementIdx}`,
+                }}
+              />
+            )}
+            {isEscapeRoom && type === 'stack' && (
+              <FormikTextareaField
+                name={
+                  singleStackMode
+                    ? `stack.elements.${elementIdx}.escapeRoomDebrief`
+                    : `stacks.${stackIx}.elements.${elementIdx}.escapeRoomDebrief`
+                }
+                label={t('manage.activityWizard.escapeRoomDebrief')}
+                placeholder={t(
+                  'manage.activityWizard.escapeRoomDebriefPlaceholder'
+                )}
+                className={{ root: 'mb-1 px-1', input: 'h-16 w-full' }}
+                data={{
+                  cy: `escape-room-debrief-${type}-${stackIx}-${elementIdx}`,
+                }}
+              />
+            )}
           </div>
         )
       })}

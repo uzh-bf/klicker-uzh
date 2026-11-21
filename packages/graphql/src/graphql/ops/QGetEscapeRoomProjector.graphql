@@ -1,0 +1,47 @@
+query GetEscapeRoomProjector(
+  $liveQuizId: String
+  $elementBlockId: Int
+  $digest: String
+) {
+  escapeRoomProjector(
+    liveQuizId: $liveQuizId
+    elementBlockId: $elementBlockId
+    digest: $digest
+  ) {
+    phase
+    serverNow
+    closesAt
+    timeLimit
+    totalStages
+    startedCount
+    rankedCount
+    rows {
+      rank
+      displayName
+      avatar
+      clearedStages
+      solvedStages
+      revealedStages
+      skippedStages
+      bonusCorrect
+      rankedSeconds
+      status
+      endsAt
+    }
+    stages {
+      stageKey
+      title
+      isBonus
+      solved
+      revealed
+      skipped
+      attemptedNotCleared
+      notReached
+      wrongAttempts
+      hintsUsed
+      bonusCorrect
+      bonusWrong
+      debrief
+    }
+  }
+}

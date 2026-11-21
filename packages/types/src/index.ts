@@ -161,6 +161,8 @@ export type ElementInstanceInput = {
   // `options` on create/duplicate; see ElementInstanceOptions.escapeRoomHint.
   escapeRoomHint?: string | null
   escapeRoomHints?: EscapeRoomHintEntry[] | null
+  // Lecturer-only debrief text of this stage; see EscapeRoomDebriefOptions.
+  escapeRoomDebrief?: string | null
 }
 
 export type ElementVersionInput = {
@@ -785,6 +787,13 @@ export type ElementInstanceOptions = {
   // Ordered hint list with optional per-hint penalties. When present it wins
   // over `escapeRoomHint`, which then mirrors the first hint's text.
   escapeRoomHints?: EscapeRoomHintEntry[] | null
+}
+
+// Debrief text stored next to the hints in the instance `options`. It is kept
+// out of ElementInstanceOptions on purpose: that type describes what
+// participants can read, and the debrief is shown to lecturers only.
+export interface EscapeRoomDebriefOptions {
+  escapeRoomDebrief?: string | null
 }
 
 export interface EscapeRoomHintEntry {
