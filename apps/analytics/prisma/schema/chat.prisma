@@ -267,6 +267,7 @@ model ResponseExampleSet {
 
   digest   String @default("")
   examples ResponseExample[]
+  baselineReport ResponseExampleBaselineReport?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -382,4 +383,96 @@ model ChatbotDisclaimer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum BaselineReportStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  INCOMPLETE
+}
+
+enum BaselineCaseStatus {
+  PENDING
+  TARGET_COMPLETE
+  COMPLETED
+  UNASSESSED
+}
+
+enum BaselineOperationStage {
+  TARGET
+  JUDGE
+}
+
+enum BaselineOperationStatus {
+  CLAIMED
+  DISPATCHED
+  SETTLED
+  RELEASED
+  UNCERTAIN
+}
+
+model ResponseExampleBaselineReport {
+  id                       String                        @id @default(uuid()) @db.Uuid
+  setId                    String                        @unique @db.Uuid
+  set                      ResponseExampleSet            @relation(fields: [setId], references: [id], onDelete: Cascade)
+  ownerId                  String                        @db.Uuid
+  setDigest                String
+  configurationDigest      String
+  status                   BaselineReportStatus          @default(QUEUED)
+  excludedCount            Int                           @default(0)
+  deadline                 DateTime
+  errorCode                String?
+  modelId                  String?
+  modelConfigurationDigest String?
+  cases                    ResponseExampleBaselineCase[]
+  createdAt                DateTime                      @default(now())
+  updatedAt                DateTime                      @updatedAt
+}
+
+model ResponseExampleBaselineCase {
+  id               String                        @id @default(uuid()) @db.Uuid
+  reportId         String                        @db.Uuid
+  report           ResponseExampleBaselineReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  exampleId        String                        @db.Uuid
+  ordinal          Int
+  chatMode         String
+  question         String                        @db.Text
+  idealAnswer      String                        @db.Text
+  expectedEvidence Json
+  status           BaselineCaseStatus            @default(PENDING)
+  actualAnswer     String?                       @db.Text
+  actualEvidence   Json?
+  assessment       Json?
+  errorCode        String?
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+
+  @@unique([reportId, exampleId], map: "BaselineCase_report_example_key")
+  @@unique([reportId, ordinal], map: "BaselineCase_report_order_key")
+}
+
+// Accounting survives report replacement and never grants participant access.
+model ResponseExampleBaselineOperation {
+  id           String                  @id @default(uuid()) @db.Uuid
+  ownerId      String                  @db.Uuid
+  owner        User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerSlotId  String?                 @unique @db.Uuid
+  chatbotId    String                  @db.Uuid
+  runId        String                  @db.Uuid
+  caseId       String                  @db.Uuid
+  stage        BaselineOperationStage
+  status       BaselineOperationStatus @default(CLAIMED)
+  monthStart   DateTime                @db.Date
+  inputRate    Decimal                 @db.Decimal(18, 6)
+  outputRate   Decimal                 @db.Decimal(18, 6)
+  creditsUsed  Decimal?                @db.Decimal(18, 6)
+  dispatchedAt DateTime?
+  settledAt    DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@unique([runId, caseId, stage], map: "BaselineOperation_run_case_stage_key")
+  @@index([ownerId, status], map: "BaselineOperation_owner_status_idx")
 }

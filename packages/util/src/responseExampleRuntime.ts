@@ -177,3 +177,42 @@ export function boundResponseExampleSearchResults(
 
   return selected
 }
+
+/** Execution inputs that make a current baseline report stale when changed. */
+export function computeResponseExampleBaselineConfigurationDigest(
+  chatbot: Record<string, unknown>
+) {
+  const selected = Object.fromEntries(
+    [
+      'systemPrompts',
+      'standardModeConfig',
+      'customModeConfig',
+      'draftConfig',
+      'answerPreferencesEnabled',
+      'knowledgeGraphRetrievalEnabled',
+      'openaiApiKey',
+      'openaiBaseUrl',
+      'knowledgeBases',
+      'mcpConfigurations',
+      'course',
+    ].map((key) => [key, chatbot[key] ?? null])
+  )
+  return computeResponseExampleBaselineValueDigest(selected)
+}
+
+export function computeResponseExampleBaselineValueDigest(chatbot: unknown) {
+  function canonical(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(canonical)
+    if (value !== null && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, item]) => [key, canonical(item)])
+      )
+    }
+    return value
+  }
+  return createHash('sha256')
+    .update(JSON.stringify(canonical(chatbot)))
+    .digest('hex')
+}
