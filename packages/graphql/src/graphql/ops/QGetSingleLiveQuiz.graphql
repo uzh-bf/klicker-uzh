@@ -1,4 +1,8 @@
 query GetSingleLiveQuiz($quizId: String!) {
+  escapeRoomHints(liveQuizId: $quizId) {
+    instanceId
+    hint
+  }
   liveQuiz(id: $quizId) {
     id
     name
@@ -10,6 +14,11 @@ query GetSingleLiveQuiz($quizId: String!) {
       status
       timeLimit
       randomSelection
+      escapeRoomConfig {
+        timeLimit
+        hintPenalty
+        introText
+      }
       elements {
         id
         type

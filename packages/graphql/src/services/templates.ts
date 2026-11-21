@@ -3,6 +3,7 @@ import {
   ActivityType,
   CaseStudyElementData,
   ElementOptionsInput,
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
   SelectionElementData,
   TemplateBlockInput,
 } from '@klicker-uzh/types'
@@ -22,6 +23,7 @@ import type {
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import { manipulateElement } from './elements.js'
+import { validateEscapeRoomConfig } from './escapeRooms.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 
@@ -1315,6 +1317,7 @@ export async function getActivityTemplate(
         include: {
           blocks: {
             include: {
+              escapeRoomConfig: true,
               elements: {
                 orderBy: {
                   order: 'asc',
@@ -1537,19 +1540,32 @@ export async function createLiveQuizFromTemplate(
   },
   ctx: ContextWithUser
 ): Promise<string | null> {
-  if (
-    blocks.some((block) =>
-      block.elements.some(
-        (element) =>
-          element.useNewElement &&
-          element.newElement?.type === DB.ElementType.QR_SCAN
+  for (const block of blocks) {
+    const newElementTypes = block.elements.flatMap((element) =>
+      element.useNewElement && element.newElement
+        ? [element.newElement.type]
+        : []
+    )
+    if (
+      !block.isEscapeRoom &&
+      newElementTypes.includes(DB.ElementType.QR_SCAN)
+    ) {
+      throw new GraphQLError(
+        'QR scan questions are only supported in escape room activities',
+        { extensions: { code: 'BAD_USER_INPUT' } }
       )
-    )
-  ) {
-    throw new GraphQLError(
-      'QR scan questions are not supported in activities yet',
-      { extensions: { code: 'BAD_USER_INPUT' } }
-    )
+    }
+    if (
+      block.isEscapeRoom &&
+      newElementTypes.some(
+        (type) => !ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(type)
+      )
+    ) {
+      throw new GraphQLError(
+        'Escape room blocks only support SC, MC, KPRIM, numerical, free-text, and QR scan questions',
+        { extensions: { code: 'BAD_USER_INPUT' } }
+      )
+    }
   }
 
   const { accessible, template } = await validateTemplateAccessible(
@@ -1559,6 +1575,13 @@ export async function createLiveQuizFromTemplate(
 
   if (!accessible || !template || !template.liveQuizId) {
     return null
+  }
+
+  for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
+    validateEscapeRoomConfig({
+      timeLimit: block.escapeRoomTimeLimit ?? 300,
+      hintPenalty: block.escapeRoomHintPenalty ?? 0,
+    })
   }
 
   // get the available answer collection ids for the activity linked to the template
@@ -1572,11 +1595,28 @@ export async function createLiveQuizFromTemplate(
       id: template.liveQuizId,
       status: DB.PublicationStatus.TEMPLATE,
     },
+    include: {
+      blocks: {
+        include: { elements: true },
+      },
+    },
   })
 
   if (!templateLiveQuiz) {
     return null
   }
+
+  // Raw hints stay server-side even for publicly readable templates. The
+  // positional mapping preserves them when a user instantiates the template
+  // without exposing solution-like content through GraphQL.
+  const sourceEscapeRoomHints = new Map(
+    templateLiveQuiz.blocks.flatMap((block) =>
+      block.elements.map((instance) => [
+        `${block.order}:${instance.order}`,
+        instance.options.escapeRoomHint ?? null,
+      ])
+    )
+  )
 
   // check if the calling user has sufficient permissions on the course and the course exists
   const cleanCourseId =
@@ -1612,8 +1652,14 @@ export async function createLiveQuizFromTemplate(
         blocks: {
           order: number
           timeLimit?: number | null
+          isEscapeRoom?: boolean | null
+          escapeRoomTimeLimit?: number | null
+          escapeRoomHintPenalty?: number | null
+          escapeRoomLockoutSeconds?: number | null
+          escapeRoomIntroText?: string | null
           elements: {
             order: number
+            escapeRoomHint?: string | null
             element: DB.Element
           }[]
         }[]
@@ -1623,6 +1669,7 @@ export async function createLiveQuizFromTemplate(
       for (const block of blocks) {
         const elements: {
           order: number
+          escapeRoomHint?: string | null
           element: DB.Element & {
             answerCollection?:
               | (DB.AnswerCollection & { entries: DB.AnswerCollectionEntry[] })
@@ -1631,6 +1678,9 @@ export async function createLiveQuizFromTemplate(
           }
         }[] = []
         for (const element of block.elements) {
+          const escapeRoomHint = sourceEscapeRoomHints.get(
+            `${block.order}:${element.order}`
+          )
           if (element.useExistingElement) {
             if (
               element.existingElementId === null ||
@@ -1668,10 +1718,18 @@ export async function createLiveQuizFromTemplate(
                 'Existing element does not exist or user does not have access to it'
               )
             }
-
-            if (existingElement.type === DB.ElementType.QR_SCAN) {
+            if (
+              (!block.isEscapeRoom &&
+                existingElement.type === DB.ElementType.QR_SCAN) ||
+              (block.isEscapeRoom &&
+                !ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(
+                  existingElement.type
+                ))
+            ) {
               throw new GraphQLError(
-                'QR scan questions are not supported in activities yet',
+                block.isEscapeRoom
+                  ? 'Escape room blocks only support SC, MC, KPRIM, numerical, free-text, and QR scan questions'
+                  : 'QR scan questions are only supported in escape room activities',
                 { extensions: { code: 'BAD_USER_INPUT' } }
               )
             }
@@ -1679,6 +1737,7 @@ export async function createLiveQuizFromTemplate(
             // add existing element to content map
             elements.push({
               order: element.order,
+              escapeRoomHint,
               element: existingElement,
             })
           } else if (element.useNewElement) {
@@ -1855,6 +1914,7 @@ export async function createLiveQuizFromTemplate(
 
             elements.push({
               order: element.order,
+              escapeRoomHint,
               element: newElement,
             })
           } else {
@@ -1866,6 +1926,11 @@ export async function createLiveQuizFromTemplate(
         liveQuizContent.blocks.push({
           order: block.order,
           timeLimit: block.timeLimit,
+          isEscapeRoom: block.isEscapeRoom,
+          escapeRoomTimeLimit: block.escapeRoomTimeLimit,
+          escapeRoomHintPenalty: block.escapeRoomHintPenalty,
+          escapeRoomLockoutSeconds: block.escapeRoomLockoutSeconds,
+          escapeRoomIntroText: block.escapeRoomIntroText,
           elements,
         })
       }
@@ -1894,6 +1959,19 @@ export async function createLiveQuizFromTemplate(
             create: liveQuizContent.blocks.map((block) => ({
               order: block.order,
               timeLimit: block.timeLimit,
+              escapeRoomConfig: block.isEscapeRoom
+                ? {
+                    create: {
+                      timeLimit: block.escapeRoomTimeLimit ?? 300,
+                      hintPenalty: block.escapeRoomHintPenalty ?? 0,
+                      lockoutSeconds: Math.max(
+                        block.escapeRoomLockoutSeconds ?? 5,
+                        0
+                      ),
+                      introText: block.escapeRoomIntroText?.trim() || null,
+                    },
+                  }
+                : undefined,
               elements: {
                 create: block.elements.map((entry) => {
                   const elementData = processElementData(entry.element)
@@ -1909,6 +1987,7 @@ export async function createLiveQuizFromTemplate(
                       pointsMultiplier:
                         templateLiveQuiz.pointsMultiplier *
                         entry.element.pointsMultiplier,
+                      escapeRoomHint: entry.escapeRoomHint?.trim() || null,
                     },
                     results: initialResults,
                     anonymousResults: initialResults,
