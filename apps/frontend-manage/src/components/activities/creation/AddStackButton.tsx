@@ -5,7 +5,6 @@ import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
-import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../elements/Element'
 import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
@@ -34,6 +33,9 @@ function AddStackButton({
   acceptedTypes,
 }: AddStackButtonProps | AddBlockButtonProps) {
   const t = useTranslations()
+  const acceptedSelection = Object.values(selection ?? {}).filter((question) =>
+    acceptedTypes.includes(question.type)
+  )
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
@@ -71,7 +73,7 @@ function AddStackButton({
 
   return (
     <div className="flex flex-row gap-2">
-      {selection && !isEmpty(selection) && (
+      {acceptedSelection.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <Button
             fluid
@@ -79,7 +81,7 @@ function AddStackButton({
               root: 'flex max-w-[135px] flex-1 flex-col gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              const elements = Object.values(selection).map((question) => ({
+              const elements = acceptedSelection.map((question) => ({
                 id: question.id,
                 title: question.name,
                 type: question.type,
@@ -112,10 +114,10 @@ function AddStackButton({
             <Button.Label className={{ root: 'max-w-full whitespace-normal' }}>
               {type === 'block'
                 ? t('manage.activityWizard.newBlockSelected', {
-                    count: Object.keys(selection).length,
+                    count: acceptedSelection.length,
                   })
                 : t('manage.activityWizard.newStackSelected', {
-                    count: Object.keys(selection).length,
+                    count: acceptedSelection.length,
                   })}
             </Button.Label>
           </Button>
@@ -125,7 +127,7 @@ function AddStackButton({
               root: 'flex max-w-[135px] flex-1 flex-col gap-2 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              Object.values(selection).forEach((question) => {
+              acceptedSelection.forEach((question) => {
                 const elements = [
                   {
                     id: question.id,
@@ -169,7 +171,7 @@ function AddStackButton({
                   ? 'manage.activityWizard.pasteSingleElementsBlock'
                   : 'manage.activityWizard.pasteSingleElementsStack',
                 {
-                  count: Object.keys(selection).length,
+                  count: acceptedSelection.length,
                 }
               )}
             </div>

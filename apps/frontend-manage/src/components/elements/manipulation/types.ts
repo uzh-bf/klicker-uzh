@@ -132,6 +132,11 @@ export interface ElementFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
 }
 
+export interface ElementFormTypesQrScan extends SharedQuestionFormProps {
+  type: ElementType.QrScan
+  explanation?: string | null
+}
+
 export type ElementBatchOperationActions = {
   archive: boolean
   unarchive: boolean
@@ -160,3 +165,4 @@ export type ElementFormTypes =
   | ElementFormTypesContent
   | ElementFormTypesSelection
   | ElementFormTypesCaseStudy
+  | ElementFormTypesQrScan
