@@ -26,10 +26,11 @@ function LiveQuizEvaluation() {
   })
 
   // the HMAC link carries no login, so escape tables are requested for the
-  // logged-in lecturer view only
+  // logged-in lecturer view only; the quiz id is known before the router is
+  // ready but the hmac search parameter is not, so wait for the router
   const { data: escapeBlocksData } = useQuery(GetLiveQuizEscapeBlocksDocument, {
     variables: { quizId: router.query.id as string },
-    skip: !router.query.id || !!router.query.hmac,
+    skip: !router.isReady || !router.query.id || !!router.query.hmac,
   })
 
   if (loading) {

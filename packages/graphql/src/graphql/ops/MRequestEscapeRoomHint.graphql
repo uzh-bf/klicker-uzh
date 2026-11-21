@@ -25,6 +25,8 @@ mutation RequestEscapeRoomHint(
       remainingSeconds
       expiresInSeconds
       lockoutUntil
+      lockoutRemainingSeconds
+      sessionPhase
       hintsUsed
       status
       completedAt

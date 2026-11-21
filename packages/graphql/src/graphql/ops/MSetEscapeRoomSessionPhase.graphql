@@ -1,0 +1,13 @@
+mutation SetEscapeRoomSessionPhase(
+  $groupActivityId: String!
+  $phase: EscapeRoomSessionPhase!
+) {
+  setEscapeRoomSessionPhase(groupActivityId: $groupActivityId, phase: $phase) {
+    id
+    sessionClock
+    sessionPhase
+    sessionStartedAt
+    sessionEndedAt
+    sessionPausedAt
+  }
+}

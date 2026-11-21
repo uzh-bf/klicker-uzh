@@ -71,7 +71,7 @@ import {
   UserElementList,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
-import { EscapeRoomHint } from './escapeRoomConfig.js'
+import { EscapeRoomHint, EscapeRoomSessionPhase } from './escapeRoomConfig.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -701,6 +701,20 @@ export const Query = builder.queryType({
             return await EscapeRoomService.getEscapeRoomProgress(args, ctx)
           }
         ),
+      }),
+
+      // Cheap poll for the lobby of a Group Activity session; null when the
+      // activity has no session clock or the caller is not in the group.
+      escapeRoomSessionPhase: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: EscapeRoomSessionPhase,
+        args: {
+          groupActivityId: t.arg.string({ required: true }),
+          groupId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await EscapeRoomService.getEscapeRoomSessionPhase(args, ctx)
+        },
       }),
 
       // Open to anonymous callers holding the block's projector digest;

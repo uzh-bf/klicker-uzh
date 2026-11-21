@@ -97,6 +97,9 @@ async function submitGroupActivityForm({
           escapeRoomRules: values.isEscapeRoom
             ? getEscapeRoomRulesInput(values)
             : undefined,
+          escapeRoomSessionClock: values.isEscapeRoom
+            ? (values.escapeRoomSessionClock ?? false)
+            : undefined,
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early
@@ -190,6 +193,9 @@ async function submitGroupActivityForm({
             : undefined,
           escapeRoomRules: values.isEscapeRoom
             ? getEscapeRoomRulesInput(values)
+            : undefined,
+          escapeRoomSessionClock: values.isEscapeRoom
+            ? (values.escapeRoomSessionClock ?? false)
             : undefined,
         },
         update: (cache, { data: res }) => {

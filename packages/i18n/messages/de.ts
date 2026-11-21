@@ -1390,6 +1390,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
       escapeRoomExpiredDesc:
         'Dieser Versuch ist beendet und kann nicht neu gestartet werden.',
+      escapeRoomSessionWaiting:
+        'Warten, bis die Dozentin oder der Dozent den Escape Room startet. Diese Seite aktualisiert sich automatisch.',
+      escapeRoomSessionWaitingButton: 'Warten auf den Start',
+      escapeRoomSessionPausedNoStart:
+        'Der Escape Room ist pausiert. Sie können starten, sobald er fortgesetzt wird.',
+      escapeRoomPausedTitle: 'Von den Dozierenden pausiert',
+      escapeRoomPausedDesc:
+        'Euer Countdown steht still und die Stationen sind ausgeblendet. Das Spiel geht weiter, sobald der Escape Room fortgesetzt wird.',
+      escapeRoomSessionEndedTitle: 'Der Escape Room ist beendet',
+      escapeRoomSessionEndedDesc:
+        'Die Sitzung wurde beendet, daher werden keine weiteren Antworten mehr angenommen. Alle Stationen sind wieder sichtbar.',
+      escapeRoomSessionClearedProgress:
+        'Eure Gruppe hat {cleared} von {total, plural, one {# Station} other {# Stationen}} abgeschlossen.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
         'Herzlichen Glückwunsch! Du hast alle Stationen hinter dir und den Escape Room abgeschlossen.',
@@ -1483,6 +1496,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast einen einzigen Versuch. Die Zeit läuft ab dem Start des Versuchs und wird nie angehalten, auch nicht, wenn du diese Seite schliesst.',
       escapeRoomStartWarningGroup:
         'Eure Gruppe hat einen gemeinsamen Versuch. Die Zeit läuft für die ganze Gruppe, sobald ein Mitglied den Versuch startet, und wird nie angehalten, auch nicht, wenn die Seite geschlossen wird.',
+      escapeRoomStartWarningGroupSession:
+        'Eure Gruppe hat einen gemeinsamen Versuch. Die Zeit läuft für die ganze Gruppe, sobald ein Mitglied den Versuch startet, und hält nur an, wenn die Dozierenden den Escape Room pausieren.',
       escapeRoomNotNow: 'Jetzt nicht',
       escapeRoomBackToCourse: 'Zurück zum Kurs',
       escapeRoomContinue: 'Weiter',
@@ -3125,6 +3140,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
       escapeRoomMode: 'Escape Room',
+      escapeRoomSessionClock: 'Von Dozierenden gesteuerte Sitzung',
       escapeRoomTimeLimit: 'Zeitlimit',
       escapeRoomTimeLimitTooltip:
         'Minuten, die Studierende oder Gruppen nach dem Start des Versuchs für den gesamten Escape Room haben. Pflichtfeld.',
@@ -3589,6 +3605,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       participationNote:
         '{started, plural, one {# Team spielt} other {# Teams spielen}}, {ranked} in der Rangliste',
       finalRanking: 'Schlussrangliste',
+      groupLobbyHeading: 'Der Escape Room beginnt gleich',
+      paused: 'Pausiert',
       error:
         'Die Projektoransicht ist nicht verfügbar. Bitte den Link prüfen oder im Cockpit erneut öffnen.',
     },
@@ -5209,6 +5227,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       finalizeGradingSuccess: 'Die Bewertung wurde erfolgreich abgeschlossen.',
       finalizeGradingError:
         'Beim Abschliessen der Bewertung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass alle Abgaben bewertet wurden und versuchen Sie es erneut.',
+      escapeSessionTitle: 'Escape-Room-Sitzung',
+      escapeSessionPhase: 'Phase',
+      escapeSessionPhaseLobby: 'Lobby',
+      escapeSessionPhaseRunning: 'Läuft',
+      escapeSessionPhasePaused: 'Pausiert',
+      escapeSessionPhaseEnded: 'Beendet',
+      escapeSessionWindowEnd: 'Zeitfenster endet: {datetime}',
+      escapeSessionStart: 'Starten',
+      escapeSessionPause: 'Pausieren',
+      escapeSessionResume: 'Fortsetzen',
+      escapeSessionEnd: 'Beenden',
+      escapeSessionEndConfirm:
+        'Das Beenden der Sitzung ist endgültig. Laufende Versuche werden abgeschlossen und alle Stationen werden wieder sichtbar. Danach können Gruppen weder spielen noch zurückgesetzt werden.',
+      escapeSessionError:
+        'Die Sitzungsphase konnte nicht geändert werden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.',
+      escapeSessionProjector: 'Projektoransicht öffnen',
       alreadyGraded:
         'Die Bewertungen für diese Gruppenaktivität wurden bereits finalisiert und können nicht mehr geändert werden.',
       nOfTotalPoints: '{number}/{total} Punkte',

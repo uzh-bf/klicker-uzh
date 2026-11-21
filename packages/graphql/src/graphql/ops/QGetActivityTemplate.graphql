@@ -43,6 +43,8 @@ query GetActivityTemplate($templateId: String!) {
           skipPenalty
           bonusSeconds
           introText
+          sessionClock
+          sessionPhase
         }
         elements {
           id
@@ -76,6 +78,8 @@ query GetActivityTemplate($templateId: String!) {
         skipPenalty
         bonusSeconds
         introText
+        sessionClock
+        sessionPhase
       }
 
       stacks {
@@ -116,6 +120,8 @@ query GetActivityTemplate($templateId: String!) {
         skipPenalty
         bonusSeconds
         introText
+        sessionClock
+        sessionPhase
       }
 
       stacks {
@@ -156,6 +162,8 @@ query GetActivityTemplate($templateId: String!) {
         skipPenalty
         bonusSeconds
         introText
+        sessionClock
+        sessionPhase
       }
 
       clues {

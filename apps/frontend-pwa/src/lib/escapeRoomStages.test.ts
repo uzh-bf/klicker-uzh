@@ -340,6 +340,27 @@ describe('escape ranked seconds', () => {
     assert.equal(getEscapeRankedSeconds({ ...base, completedAt: null }), null)
   })
 
+  it('leaves session pauses out of the ranked time', () => {
+    const session = {
+      sessionClock: true,
+      sessionPauses: [
+        {
+          startedAt: '2026-01-01T10:02:00.000Z',
+          endedAt: '2026-01-01T10:04:00.000Z',
+        },
+      ],
+      sessionPausedAt: null,
+    }
+    assert.equal(getEscapeRankedSeconds({ ...base, session }), 510)
+    assert.equal(
+      getEscapeRankedSeconds({
+        ...base,
+        session: { ...session, sessionClock: false },
+      }),
+      630
+    )
+  })
+
   it('rounds elapsed time to whole seconds like the lecturer view', () => {
     assert.equal(
       getEscapeRankedSeconds({

@@ -19,6 +19,8 @@ mutation StartEscapeRoomAttempt(
     remainingSeconds
     expiresInSeconds
     lockoutUntil
+    lockoutRemainingSeconds
+    sessionPhase
     hintsUsed
     stageOutcomes {
       stageKey

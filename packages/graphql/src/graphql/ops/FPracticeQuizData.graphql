@@ -21,6 +21,8 @@ fragment PracticeQuizData on PracticeQuiz {
     skipPenalty
     bonusSeconds
     introText
+    sessionClock
+    sessionPhase
   }
   escapeRoomAttempts {
     id
@@ -39,6 +41,7 @@ fragment PracticeQuizData on PracticeQuiz {
     status
     completedAt
     lockoutUntil
+    lockoutRemainingSeconds
   }
   # previouslyAnswered
   # previousScore

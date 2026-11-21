@@ -1377,6 +1377,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       escapeRoomStartButton: 'Start Attempt',
       escapeRoomExpiredTitle: "Time's Up!",
       escapeRoomExpiredDesc: 'This attempt is over and cannot be restarted.',
+      escapeRoomSessionWaiting:
+        'Waiting for the lecturer to start the Escape Room. This page updates automatically.',
+      escapeRoomSessionWaitingButton: 'Waiting for the lecturer',
+      escapeRoomSessionPausedNoStart:
+        'The Escape Room is paused. You can start once the lecturer resumes it.',
+      escapeRoomPausedTitle: 'Paused by the lecturer',
+      escapeRoomPausedDesc:
+        'Your countdown is frozen and the stages are hidden. Play continues when the lecturer resumes the Escape Room.',
+      escapeRoomSessionEndedTitle: 'The Escape Room has ended',
+      escapeRoomSessionEndedDesc:
+        'The lecturer ended this session, so no further answers are accepted. All stages are visible again.',
+      escapeRoomSessionClearedProgress:
+        'Your group cleared {cleared} of {total, plural, one {# stage} other {# stages}}.',
       escapeRoomCompletedTitle: 'Escaped successfully!',
       escapeRoomCompletedDesc:
         'Congratulations! You cleared every stage and completed the Escape Room.',
@@ -1467,6 +1480,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You get one attempt. The clock starts when you start the attempt and never pauses, not even if you close this page.',
       escapeRoomStartWarningGroup:
         'Your group gets one shared attempt. The clock starts for the whole group when one member starts the attempt and never pauses, not even if the page is closed.',
+      escapeRoomStartWarningGroupSession:
+        'Your group gets one shared attempt. The clock starts for the whole group when one member starts the attempt and stops only while the lecturer pauses the Escape Room.',
       escapeRoomNotNow: 'Not now',
       escapeRoomBackToCourse: 'Back to course',
       escapeRoomContinue: 'Continue',
@@ -3084,6 +3099,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
       escapeRoomMode: 'Escape Room',
+      escapeRoomSessionClock: 'Lecturer-controlled session',
       escapeRoomTimeLimit: 'Time limit',
       escapeRoomTimeLimitTooltip:
         'Minutes a student or group has for the whole Escape Room after starting the attempt. Required.',
@@ -3525,6 +3541,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       participationNote:
         '{started, plural, one {# team playing} other {# teams playing}}, {ranked} on the leaderboard',
       finalRanking: 'Final ranking',
+      groupLobbyHeading: 'The Escape Room starts soon',
+      paused: 'Paused',
       error:
         'The projector view is unavailable. Please check the link or open it again from the cockpit.',
     },
@@ -5107,6 +5125,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       finalizeGradingSuccess: 'Grading was finalized successfully.',
       finalizeGradingError:
         'An error occurred while finalizing the grading. Please make sure that all submissions have been graded and try again.',
+      escapeSessionTitle: 'Escape Room session',
+      escapeSessionPhase: 'Phase',
+      escapeSessionPhaseLobby: 'Lobby',
+      escapeSessionPhaseRunning: 'Running',
+      escapeSessionPhasePaused: 'Paused',
+      escapeSessionPhaseEnded: 'Ended',
+      escapeSessionWindowEnd: 'Window ends: {datetime}',
+      escapeSessionStart: 'Start',
+      escapeSessionPause: 'Pause',
+      escapeSessionResume: 'Resume',
+      escapeSessionEnd: 'End',
+      escapeSessionEndConfirm:
+        'Ending the session is final. Running attempts are finished and all stages become visible again. Groups cannot play or be reset afterwards.',
+      escapeSessionError:
+        'The session phase could not be changed. Please reload and try again.',
+      escapeSessionProjector: 'Open projector view',
       alreadyGraded:
         'The grading for this group activity has already been finalized and can no longer be changed.',
       nOfTotalPoints: '{number}/{total} Points',

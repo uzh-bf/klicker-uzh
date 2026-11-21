@@ -19,6 +19,8 @@ mutation SkipEscapeRoomStage(
     remainingSeconds
     expiresInSeconds
     lockoutUntil
+    lockoutRemainingSeconds
+    sessionPhase
     hintsUsed
     status
     completedAt

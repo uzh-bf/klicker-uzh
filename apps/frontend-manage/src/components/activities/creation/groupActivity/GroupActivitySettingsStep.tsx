@@ -4,6 +4,7 @@ import EscapeRoomSettingsFields, {
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  Checkbox,
   FormikDatetimePicker,
   FormikSelectField,
   UserNotification,
@@ -155,6 +156,23 @@ function GroupActivitySettingsStep({
                     isEscapeRoom={!!values.isEscapeRoom}
                     onToggle={(next) => setFieldValue('isEscapeRoom', next)}
                   />
+                  {values.isEscapeRoom && (
+                    <Checkbox
+                      label={t('manage.activityWizard.escapeRoomSessionClock')}
+                      checked={!!values.escapeRoomSessionClock}
+                      onCheck={() =>
+                        setFieldValue(
+                          'escapeRoomSessionClock',
+                          !values.escapeRoomSessionClock
+                        )
+                      }
+                      className={{
+                        indicator: 'text-xs',
+                        root: 'w-4.5 h-4.5',
+                      }}
+                      data={{ cy: 'toggle-escape-room-session-clock' }}
+                    />
+                  )}
                 </div>
               </div>
               <EscapeRoomRulesCard isEscapeRoom={!!values.isEscapeRoom} />

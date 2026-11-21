@@ -14,6 +14,8 @@ import {
   ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
   type EscapeRoomDebriefOptions,
+  type EscapeRoomSessionTiming,
+  getEscapeRoomActiveSeconds,
   getEscapeRoomHintKey,
   getEscapeRoomInstanceHints,
   getEscapeRoomLifecycleClaimKey,
@@ -142,20 +144,142 @@ export function getRemainingSecondsUntil(deadline: Date, now = Date.now()) {
 
 export function getEscapeRoomRemainingSeconds(
   attempt: Pick<DB.EscapeRoomAttempt, 'startedAt' | 'timeLimit'>,
-  now = Date.now()
+  now = Date.now(),
+  session?: EscapeRoomSessionTiming | null
 ) {
-  const elapsedSeconds = (now - new Date(attempt.startedAt).getTime()) / 1000
+  const elapsedSeconds = getEscapeRoomActiveSeconds(
+    attempt.startedAt,
+    now,
+    session
+  )
   return Math.max(0, Math.ceil(attempt.timeLimit - elapsedSeconds))
 }
 
 export function getEscapeRoomExpiresInSeconds(
   attempt: Pick<DB.EscapeRoomAttempt, 'startedAt' | 'timeLimit'>,
-  now = Date.now()
+  now = Date.now(),
+  session?: EscapeRoomSessionTiming | null
 ) {
   return getEscapeRoomRemainingSeconds(
     { ...attempt, timeLimit: attempt.timeLimit + ESCAPE_ROOM_GRACE_SECONDS },
-    now
+    now,
+    session
   )
+}
+
+type EscapeRoomSessionState = Pick<
+  DB.EscapeRoomConfig,
+  'sessionClock' | 'sessionPhase' | 'sessionPauses' | 'sessionPausedAt'
+>
+
+// Pause-aware timing applies to Group Activity escape rooms with the session
+// clock on; every other mode passes no session and keeps its wall-clock times.
+export function getGroupEscapeRoomSession<
+  T extends EscapeRoomSessionState &
+    Pick<DB.EscapeRoomConfig, 'groupActivityId'>,
+>(config: T | null | undefined): T | undefined {
+  return config?.groupActivityId && config.sessionClock ? config : undefined
+}
+
+// Seconds of a running lockout left for the client. While the session is
+// paused the lockout stands still, so it is measured from the pause start.
+export function getEscapeRoomLockoutRemainingSeconds(
+  attempt: Pick<DB.EscapeRoomAttempt, 'lockoutUntil'>,
+  now = Date.now(),
+  session?: EscapeRoomSessionState | null
+) {
+  if (!attempt.lockoutUntil) return 0
+  const reference =
+    session?.sessionClock &&
+    session.sessionPhase === DB.EscapeRoomSessionPhase.PAUSED &&
+    session.sessionPausedAt
+      ? new Date(session.sessionPausedAt).getTime()
+      : now
+  return getRemainingSecondsUntil(attempt.lockoutUntil, reference)
+}
+
+// The phase players and lecturers see: the stored phase, unless the session
+// ended or the activity has ended or passed its window, which ends it for
+// good. A draft or scheduled activity keeps its stored lobby phase, so a
+// projector opened before publication shows the lobby, not the results.
+export function getEscapeRoomEffectivePhase(
+  config: Pick<DB.EscapeRoomConfig, 'sessionPhase'>,
+  activity: Pick<DB.GroupActivity, 'status' | 'scheduledEndAt'>,
+  now = Date.now()
+): DB.EscapeRoomSessionPhase {
+  return config.sessionPhase === DB.EscapeRoomSessionPhase.ENDED ||
+    activity.status === DB.PublicationStatus.ENDED ||
+    activity.status === DB.PublicationStatus.GRADED ||
+    now > activity.scheduledEndAt.getTime()
+    ? DB.EscapeRoomSessionPhase.ENDED
+    : config.sessionPhase
+}
+
+export function assertEscapeRoomSessionRunning(
+  config: Pick<DB.EscapeRoomConfig, 'sessionClock' | 'sessionPhase'> | null
+) {
+  if (
+    config?.sessionClock &&
+    config.sessionPhase !== DB.EscapeRoomSessionPhase.RUNNING
+  ) {
+    throw new GraphQLError('The escape room session is not running', {
+      extensions: {
+        code: 'ESCAPE_ROOM_SESSION_NOT_RUNNING',
+        sessionPhase: config.sessionPhase,
+      },
+    })
+  }
+}
+
+// Reads the session inside the caller's transaction, so a concurrent
+// transition conflicts with the write that follows instead of being missed.
+export async function requireRunningEscapeRoomSession(
+  prisma: DB.Prisma.TransactionClient,
+  groupActivityId: string
+) {
+  const config = await prisma.escapeRoomConfig.findUnique({
+    where: { groupActivityId },
+  })
+  assertEscapeRoomSessionRunning(config)
+  return config
+}
+
+// Session timing and effective phase of the activity an attempt belongs to;
+// null for other modes and for activities without a session clock. Cached per
+// attempt object so the payload fields share one lookup.
+const attemptSessionCache = new WeakMap<
+  object,
+  Promise<{
+    config: DB.EscapeRoomConfig
+    phase: DB.EscapeRoomSessionPhase
+  } | null>
+>()
+
+export function getEscapeRoomAttemptSession(
+  attempt: Pick<DB.EscapeRoomAttempt, 'groupActivityId'>,
+  ctx: Pick<ContextWithUser, 'prisma'>
+) {
+  if (!attempt.groupActivityId) return Promise.resolve(null)
+  let cached = attemptSessionCache.get(attempt)
+  if (!cached) {
+    cached = ctx.prisma.escapeRoomConfig
+      .findUnique({
+        where: { groupActivityId: attempt.groupActivityId },
+        include: {
+          groupActivity: { select: { status: true, scheduledEndAt: true } },
+        },
+      })
+      .then((config) =>
+        config?.sessionClock && config.groupActivity
+          ? {
+              config,
+              phase: getEscapeRoomEffectivePhase(config, config.groupActivity),
+            }
+          : null
+      )
+    attemptSessionCache.set(attempt, cached)
+  }
+  return cached
 }
 
 export async function getEscapeRoomHints(
@@ -580,25 +704,35 @@ export async function startEscapeRoomAttempt(
 
   try {
     const attemptWhere = getAttemptWhere(activity, participantId)
-    const existingAttempt = await ctx.prisma.escapeRoomAttempt.findUnique({
-      where: attemptWhere,
-    })
+    const run = async (prisma: DB.Prisma.TransactionClient) => {
+      // A Group Activity session clock gates the start: groups wait in the
+      // lobby, and nobody starts or continues outside a running session.
+      const session =
+        activity.reference.kind === 'groupActivity'
+          ? await requireRunningEscapeRoomSession(prisma, activity.reference.id)
+          : null
+      const existingAttempt = await prisma.escapeRoomAttempt.findUnique({
+        where: attemptWhere,
+      })
 
-    if (existingAttempt) {
-      if (
-        existingAttempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
-        isEscapeRoomExpired(existingAttempt)
-      ) {
-        return await ctx.prisma.escapeRoomAttempt.update({
-          where: { id: existingAttempt.id },
-          data: { status: DB.EscapeRoomStatus.EXPIRED },
-        })
+      if (existingAttempt) {
+        if (
+          existingAttempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
+          isEscapeRoomExpired(
+            existingAttempt,
+            undefined,
+            getGroupEscapeRoomSession(session)
+          )
+        ) {
+          return await prisma.escapeRoomAttempt.update({
+            where: { id: existingAttempt.id },
+            data: { status: DB.EscapeRoomStatus.EXPIRED },
+          })
+        }
+        return existingAttempt
       }
-      return existingAttempt
-    }
 
-    try {
-      return await ctx.prisma.escapeRoomAttempt.upsert({
+      return await prisma.escapeRoomAttempt.upsert({
         where: attemptWhere,
         update: {},
         create: {
@@ -610,15 +744,42 @@ export async function startEscapeRoomAttempt(
           status: DB.EscapeRoomStatus.IN_PROGRESS,
         },
       })
+    }
+
+    try {
+      if (activity.reference.kind !== 'groupActivity') {
+        return await run(ctx.prisma)
+      }
+      // With a session clock every group starts in the same second, so a
+      // serialization conflict is expected under load; retry it a few times
+      // before reporting it.
+      for (let retry = 0; ; retry++) {
+        try {
+          return await ctx.prisma.$transaction(run, {
+            isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+          })
+        } catch (error) {
+          const isConflict =
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'P2034'
+          if (!isConflict || retry >= 2) throw error
+        }
+      }
     } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2002'
-      ) {
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? error.code
+          : null
+      if (code === 'P2002') {
         return await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
           where: attemptWhere,
+        })
+      }
+      if (code === 'P2034') {
+        throw new GraphQLError('This start conflicted with another update', {
+          extensions: { code: 'ESCAPE_ROOM_CONFLICT' },
         })
       }
       throw error
@@ -670,6 +831,16 @@ async function revealEscapeRoomHint(
   activity: ResolvedParticipantEscapeRoom,
   ctx: ContextWithUser
 ): Promise<EscapeRoomHintResult> {
+  // The raw update below re-checks the phase atomically; this read rejects
+  // early and supplies the pause-aware session for the expiry check.
+  const sessionConfig =
+    activity.reference.kind === 'groupActivity'
+      ? await ctx.prisma.escapeRoomConfig.findUnique({
+          where: { groupActivityId: activity.reference.id },
+        })
+      : null
+  assertEscapeRoomSessionRunning(sessionConfig)
+  const session = getGroupEscapeRoomSession(sessionConfig)
   const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
     where: getAttemptWhere(activity, participantId),
   })
@@ -694,7 +865,7 @@ async function revealEscapeRoomHint(
       }
     )
   }
-  if (isEscapeRoomExpired(attempt)) {
+  if (isEscapeRoomExpired(attempt, undefined, session)) {
     await ctx.prisma.escapeRoomAttempt.update({
       where: { id: attempt.id },
       data: { status: DB.EscapeRoomStatus.EXPIRED },
@@ -828,13 +999,44 @@ async function revealEscapeRoomHint(
       hintIndex,
       hints[hintIndex]!.penalty
     )
-    await ctx.prisma.$executeRaw`
-      UPDATE "EscapeRoomAttempt"
-      SET "penaltySeconds" = "penaltySeconds" + ${penalty},
-          "hintsUsed" = "hintsUsed" || ${JSON.stringify([hintKey])}::jsonb
-      WHERE "id" = ${attempt.id}::uuid
-        AND NOT ("hintsUsed" @> ${JSON.stringify([hintKey])}::jsonb)
+    // The status and phase conditions keep a hint from being charged after
+    // the attempt ended or the session paused between the checks above and
+    // this write.
+    const updatedRows = await ctx.prisma.$executeRaw`
+      UPDATE "EscapeRoomAttempt" AS a
+      SET "penaltySeconds" = a."penaltySeconds" + ${penalty},
+          "hintsUsed" = a."hintsUsed" || ${JSON.stringify([hintKey])}::jsonb
+      WHERE a."id" = ${attempt.id}::uuid
+        AND a."status" = 'IN_PROGRESS'
+        AND NOT (a."hintsUsed" @> ${JSON.stringify([hintKey])}::jsonb)
+        AND NOT EXISTS (
+          SELECT 1 FROM "EscapeRoomConfig" AS c
+          WHERE c."groupActivityId" = a."groupActivityId"
+            AND c."sessionClock"
+            AND c."sessionPhase" <> 'RUNNING'
+        )
     `
+    if (updatedRows === 0) {
+      // Either a concurrent request revealed this hint (idempotent) or the
+      // attempt or session moved on; never return hint text in the latter case.
+      const current = await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
+        where: { id: attempt.id },
+      })
+      const revealedByOther = Array.isArray(current.hintsUsed)
+        ? current.hintsUsed.map(String).includes(hintKey)
+        : false
+      if (!revealedByOther) {
+        if (current.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
+          throw new GraphQLError(
+            'No active escape room attempt found for this activity',
+            { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
+          )
+        }
+        throw new GraphQLError('The escape room session is not running', {
+          extensions: { code: 'ESCAPE_ROOM_SESSION_NOT_RUNNING' },
+        })
+      }
+    }
   }
 
   const updatedAttempt = await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
@@ -909,14 +1111,17 @@ export async function requestEscapeRoomHint(
   }
 }
 
-function assertSkippableAttempt(attempt: DB.EscapeRoomAttempt | null) {
+function assertSkippableAttempt(
+  attempt: DB.EscapeRoomAttempt | null,
+  session?: EscapeRoomSessionTiming | null
+) {
   if (!attempt || attempt.status !== DB.EscapeRoomStatus.IN_PROGRESS) {
     throw new GraphQLError(
       'No active escape room attempt found for this activity',
       { extensions: { code: 'ESCAPE_ROOM_NO_ATTEMPT' } }
     )
   }
-  if (isEscapeRoomExpired(attempt)) {
+  if (isEscapeRoomExpired(attempt, undefined, session)) {
     throw new GraphQLError('Escape room time has expired', {
       extensions: { code: 'ESCAPE_ROOM_EXPIRED' },
     })
@@ -1112,10 +1317,15 @@ async function skipGroupStage(
   const groupId = activity.groupId!
   return ctx.prisma.$transaction(
     async (prisma) => {
+      const sessionConfig = await requireRunningEscapeRoomSession(
+        prisma,
+        groupActivityId
+      )
       const attempt = assertSkippableAttempt(
         await prisma.escapeRoomAttempt.findUnique({
           where: { groupId_groupActivityId: { groupId, groupActivityId } },
-        })
+        }),
+        getGroupEscapeRoomSession(sessionConfig)
       )
       const stacks = await prisma.elementStack.findMany({
         where: { groupActivityId },
@@ -1449,7 +1659,28 @@ export async function resetEscapeRoomAttempt(
             },
           })
           break
-        case 'groupActivity':
+        case 'groupActivity': {
+          // An ended session is final: a reset would delete a ranked result
+          // the group can no longer replay.
+          const sessionConfig = await tx.escapeRoomConfig.findUnique({
+            where: { groupActivityId: activityReference.id },
+            include: {
+              groupActivity: { select: { status: true, scheduledEndAt: true } },
+            },
+          })
+          if (
+            sessionConfig?.sessionClock &&
+            sessionConfig.groupActivity &&
+            getEscapeRoomEffectivePhase(
+              sessionConfig,
+              sessionConfig.groupActivity
+            ) === DB.EscapeRoomSessionPhase.ENDED
+          ) {
+            throw new GraphQLError(
+              'The escape room session has ended and can no longer be reset',
+              { extensions: { code: 'ESCAPE_ROOM_SESSION_ENDED' } }
+            )
+          }
           await tx.escapeRoomAttempt.deleteMany({ where: attemptWhere })
           await tx.groupActivityInstance.deleteMany({
             where: {
@@ -1458,6 +1689,7 @@ export async function resetEscapeRoomAttempt(
             },
           })
           break
+        }
         case 'liveQuizBlock':
           await tx.escapeRoomAttempt.deleteMany({ where: attemptWhere })
           break
@@ -1470,15 +1702,250 @@ export async function resetEscapeRoomAttempt(
   return true
 }
 
-export {
-  getEscapeRoomProgress,
-  getEscapeRoomProjector,
-  getEscapeRoomProjectorDigest,
-} from './escapeRoomProgress.js'
+// Ends the session of a Group Activity whose clock is running or paused and
+// finalizes its running attempts. A pause that is still open stays open: no
+// time counts after the end. Returns whether a session was ended.
+export async function endEscapeRoomSession(
+  prisma: DB.Prisma.TransactionClient,
+  groupActivityId: string,
+  now = new Date()
+) {
+  const ended = await prisma.escapeRoomConfig.updateMany({
+    where: {
+      groupActivityId,
+      sessionClock: true,
+      sessionPhase: {
+        in: [
+          DB.EscapeRoomSessionPhase.RUNNING,
+          DB.EscapeRoomSessionPhase.PAUSED,
+        ],
+      },
+    },
+    data: {
+      sessionPhase: DB.EscapeRoomSessionPhase.ENDED,
+      sessionEndedAt: now,
+    },
+  })
+  if (ended.count === 0) return false
+  await prisma.escapeRoomAttempt.updateMany({
+    where: { groupActivityId, status: DB.EscapeRoomStatus.IN_PROGRESS },
+    data: { status: DB.EscapeRoomStatus.EXPIRED },
+  })
+  return true
+}
+
+const SESSION_TRANSITIONS: Record<
+  DB.EscapeRoomSessionPhase,
+  DB.EscapeRoomSessionPhase[]
+> = {
+  LOBBY: [DB.EscapeRoomSessionPhase.RUNNING],
+  RUNNING: [DB.EscapeRoomSessionPhase.PAUSED, DB.EscapeRoomSessionPhase.ENDED],
+  PAUSED: [DB.EscapeRoomSessionPhase.RUNNING, DB.EscapeRoomSessionPhase.ENDED],
+  ENDED: [],
+}
+
+function sessionError(message: string, code: string) {
+  return new GraphQLError(message, { extensions: { code } })
+}
+
+// Moves the session of a Group Activity along lobby, running, paused and
+// ended. Every move compares against the phase it read, so repeated clicks
+// and concurrent lecturers cannot apply one transition twice. The caller has
+// checked write access to the activity.
+export async function setEscapeRoomSessionPhase(
+  {
+    groupActivityId,
+    phase,
+  }: { groupActivityId: string; phase: DB.EscapeRoomSessionPhase },
+  ctx: Pick<ContextWithUser, 'prisma'>
+) {
+  try {
+    return await ctx.prisma.$transaction(
+      async (prisma) => {
+        const config = await prisma.escapeRoomConfig.findUnique({
+          where: { groupActivityId },
+          include: {
+            groupActivity: {
+              select: {
+                isDeleted: true,
+                status: true,
+                scheduledStartAt: true,
+                scheduledEndAt: true,
+              },
+            },
+          },
+        })
+        if (!config?.groupActivity || config.groupActivity.isDeleted) {
+          throw new GraphQLError('Escape room not found')
+        }
+        if (!config.sessionClock) {
+          throw sessionError(
+            'This escape room has no session clock',
+            'ESCAPE_ROOM_SESSION_DISABLED'
+          )
+        }
+        const from = config.sessionPhase
+        if (!SESSION_TRANSITIONS[from].includes(phase)) {
+          throw sessionError(
+            `The session cannot move from ${from} to ${phase}`,
+            'ESCAPE_ROOM_SESSION_TRANSITION'
+          )
+        }
+
+        const now = new Date()
+        const { groupActivity } = config
+        if (
+          phase === DB.EscapeRoomSessionPhase.RUNNING &&
+          (groupActivity.status !== DB.PublicationStatus.PUBLISHED ||
+            now < groupActivity.scheduledStartAt ||
+            now > groupActivity.scheduledEndAt)
+        ) {
+          throw sessionError(
+            'The session can only run while the activity is published and inside its window',
+            'ESCAPE_ROOM_SESSION_OUTSIDE_WINDOW'
+          )
+        }
+
+        const resuming =
+          from === DB.EscapeRoomSessionPhase.PAUSED &&
+          phase === DB.EscapeRoomSessionPhase.RUNNING
+        const pausedAt = config.sessionPausedAt
+        const updated = await prisma.escapeRoomConfig.updateMany({
+          where: { id: config.id, sessionClock: true, sessionPhase: from },
+          data: {
+            sessionPhase: phase,
+            ...(from === DB.EscapeRoomSessionPhase.LOBBY
+              ? { sessionStartedAt: now }
+              : {}),
+            ...(phase === DB.EscapeRoomSessionPhase.PAUSED
+              ? { sessionPausedAt: now }
+              : {}),
+            ...(phase === DB.EscapeRoomSessionPhase.ENDED
+              ? { sessionEndedAt: now }
+              : {}),
+            ...(resuming && pausedAt
+              ? {
+                  sessionPausedAt: null,
+                  sessionPauses: [
+                    ...(Array.isArray(config.sessionPauses)
+                      ? config.sessionPauses
+                      : []),
+                    {
+                      startedAt: pausedAt.toISOString(),
+                      endedAt: now.toISOString(),
+                    },
+                  ] as DB.Prisma.InputJsonValue,
+                }
+              : {}),
+          },
+        })
+        if (updated.count !== 1) {
+          throw sessionError(
+            'The session changed while this move was applied',
+            'ESCAPE_ROOM_CONFLICT'
+          )
+        }
+
+        if (resuming && pausedAt) {
+          // A lockout that was still running when play paused resumes with
+          // the time it had left, so the pause does not shorten it.
+          const pauseMs = now.getTime() - pausedAt.getTime()
+          const lockedOut = await prisma.escapeRoomAttempt.findMany({
+            where: {
+              groupActivityId,
+              status: DB.EscapeRoomStatus.IN_PROGRESS,
+              lockoutUntil: { gt: pausedAt },
+            },
+            select: { id: true, lockoutUntil: true },
+          })
+          for (const attempt of lockedOut) {
+            await prisma.escapeRoomAttempt.update({
+              where: { id: attempt.id },
+              data: {
+                lockoutUntil: new Date(
+                  attempt.lockoutUntil!.getTime() + pauseMs
+                ),
+              },
+            })
+          }
+        }
+        if (phase === DB.EscapeRoomSessionPhase.ENDED) {
+          await prisma.escapeRoomAttempt.updateMany({
+            where: { groupActivityId, status: DB.EscapeRoomStatus.IN_PROGRESS },
+            data: { status: DB.EscapeRoomStatus.EXPIRED },
+          })
+        }
+
+        return await prisma.escapeRoomConfig.findUniqueOrThrow({
+          where: { id: config.id },
+        })
+      },
+      { isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable }
+    )
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2034'
+    ) {
+      throw sessionError(
+        'The session changed while this move was applied',
+        'ESCAPE_ROOM_CONFLICT'
+      )
+    }
+    throw error
+  }
+}
+
+// The effective phase of a group's session for the participant polling the
+// lobby; null when the clock is off or the participant has no access.
+export async function getEscapeRoomSessionPhase(
+  { groupActivityId, groupId }: { groupActivityId: string; groupId: string },
+  ctx: ContextWithUser
+) {
+  const activity = await ctx.prisma.groupActivity.findFirst({
+    where: {
+      id: groupActivityId,
+      isDeleted: false,
+      status: {
+        in: [
+          DB.PublicationStatus.PUBLISHED,
+          DB.PublicationStatus.ENDED,
+          DB.PublicationStatus.GRADED,
+        ],
+      },
+      escapeRoomConfig: { sessionClock: true },
+      course: {
+        deletionRequestedAt: null,
+        participantGroups: {
+          some: {
+            id: groupId,
+            participants: { some: { id: ctx.user.sub } },
+          },
+        },
+      },
+    },
+    select: {
+      status: true,
+      scheduledEndAt: true,
+      escapeRoomConfig: { select: { sessionPhase: true } },
+    },
+  })
+  return activity?.escapeRoomConfig
+    ? getEscapeRoomEffectivePhase(activity.escapeRoomConfig, activity)
+    : null
+}
+
 export type {
   EscapeRoomAttemptProgress,
   EscapeRoomProgress,
   EscapeRoomProjector,
   EscapeRoomProjectorRow,
   EscapeRoomStageProgress,
+} from './escapeRoomProgress.js'
+export {
+  getEscapeRoomProgress,
+  getEscapeRoomProjector,
+  getEscapeRoomProjectorDigest,
 } from './escapeRoomProgress.js'

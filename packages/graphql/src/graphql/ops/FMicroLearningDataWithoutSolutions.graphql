@@ -20,6 +20,8 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
     skipPenalty
     bonusSeconds
     introText
+    sessionClock
+    sessionPhase
   }
   escapeRoomAttempts {
     id
@@ -38,6 +40,7 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
     status
     completedAt
     lockoutUntil
+    lockoutRemainingSeconds
   }
   course {
     id

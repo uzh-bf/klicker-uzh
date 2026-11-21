@@ -14,6 +14,7 @@ mutation EditGroupActivity(
   $escapeRoomHintPenalty: Int
   $escapeRoomIntroText: String
   $escapeRoomRules: EscapeRoomRulesInput
+  $escapeRoomSessionClock: Boolean
 ) {
   editGroupActivity(
     id: $id
@@ -31,6 +32,7 @@ mutation EditGroupActivity(
     escapeRoomHintPenalty: $escapeRoomHintPenalty
     escapeRoomIntroText: $escapeRoomIntroText
     escapeRoomRules: $escapeRoomRules
+    escapeRoomSessionClock: $escapeRoomSessionClock
   ) {
     ...ActivityInfoData
   }
