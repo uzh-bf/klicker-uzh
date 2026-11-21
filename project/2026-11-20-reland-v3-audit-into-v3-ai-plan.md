@@ -854,6 +854,13 @@ The user also has to accept or reject one departure from this plan: #6204 is
 replayed directly after #5320 (see "Layer boundaries"). `v3-audit-merge`
 cannot be force-pushed, so the commit order is permanent once landed.
 
+A second independent review on 2026-11-21 (see "External review") agrees
+with the #6204 order, accepts the red non-required checks with the
+dispositions recorded in roadmap step 3b, and recommends keeping five layers.
+It also points out that "Recovery" treats a failed final-review workflow as a
+blocker. Whether that review stands in for the failed `/final-review-stack`
+run is the user's decision.
+
 Options offered:
 
 - **Land as is** (recommended). The stack stays a faithful replay, and the
@@ -913,23 +920,78 @@ Steps run in this order. "Authority" names what is already approved.
      `tool-fallback` unit test and the retained citations spec. The chip
      state is visible UI, so the pull request needs browser screenshots.
      Staging has the same regression.
-   - **3b. Scanner findings.** Decide each with the frozen list under
-     "Simplification" in mind.
+   - **3b. Scanner findings.** Dispositions from the external review. No
+     code change is needed for these, apart from the drain defect in 3f.
+     Marking an alert as accepted in SonarCloud or CodeQL is the user's
+     action.
 
-     | Finding | Where | Note |
+     | Finding | Where | Disposition |
      | --- | --- | --- |
-     | `.sort()` without a compare function (S2871) | `packages/audit/src/azure/table-reader.ts`, `packages/audit/src/baseline/media-references.ts`, `assessmentAuditProducers.ts`, `assessmentAuditRollout.ts`, `elements.ts` in `packages/graphql/src/services`, `util/check-server-console.mjs` | Where the order feeds canonical or hashed output, keep code-unit order with an explicit comparator. `localeCompare` would change hashes. |
-     | `md5` (S4790) | `apps/hatchet-worker-response-processor/src/processors/assessmentAggregation.ts` | Groups identical response values; not a security use. Changing it changes aggregation keys. Marking it safe in SonarCloud is the user's action. |
-     | Unawaited promises (S9383) | `packages/hatchet/src/logging.ts` | Small fix. |
-     | `PATH` in child processes (S4036) | `.github/scripts/stg-image-reuse-ancestry.cjs`, `util/check-assessment-audit-rollout-render.mjs` | CI helpers; minor. |
-     | Duplicated lines above the gate | layer 1 | Reduced by the simplification candidates. |
-     | File-system race (CodeQL) | `packages/audit/test/cli-export.test.ts` | Test code. |
+     | `.sort()` without a compare function (S2871) | `table-reader.ts`, `media-references.ts`, `assessmentAuditProducers.ts`, `assessmentAuditRollout.ts`, `elements.ts`, `util/check-server-console.mjs` | Sorts string identifiers or paths; default code-unit order is deterministic and intended. Do not switch to `localeCompare`: evidence ordering feeds hashes. |
+     | `md5` (S4790) | `assessmentAggregation.ts` in the response processor | Labels transient Redis histogram buckets; evidence uses SHA-256. Not a security use. |
+     | Unawaited promises (S9383) | `packages/hatchet/src/logging.ts` | Intentional: the facade queues the writes. Awaiting would defeat the non-blocking design. The real defect is 3f. |
+     | `PATH` in child processes (S4036) | two CI helper scripts | Literal executables with argument arrays and no shell; no injection path. |
+     | Duplicated lines above the gate | layer 1 | Quality gate only; not a functional defect. |
+     | File-system race (CodeQL) | `packages/audit/test/cli-export.test.ts` | False positive: private temporary fixture; production export uses exclusive creation and an atomic hard link. |
+     | `@azure/msal-node` advisory (Dependency Review) | layer 1 | Real. Affects the authorization-code flow; audit uses workload identity. #6744 accepts it until 2027-01-31; upgrade to a patched major before then. |
 
    - **3c. Small cleanups.** Remove the duplicate
      `COPY … doc-query-client/dist` line that #5994 leaves in
      `apps/backend-docker/Dockerfile`. Decide whether to fix the five tests in
      `packages/hatchet/test/logging.test.ts` that fail against Hatchet SDK
      1.22.0; no CI workflow runs that suite.
+   - **3e. Audit payload filter rejects valid answers** (should-fix,
+     inherited from the audit line). `forbiddenEvidenceValuePatterns` in
+     `packages/audit/src/contract/payloads/common.ts` applies
+     `/(?:^|\s)Bearer\s+[A-Za-z0-9._~+/-]+/i` to every string in a payload,
+     including question content and free-text answers. "Bearer bonds pay the
+     holder." is rejected. The response processor emits the submission events
+     in the same transaction as the `LiveQuizResponse` write, so the write
+     rolls back and every retry fails the same way. Baseline question text
+     with that phrase blocks activation. Fix: apply the credential patterns to
+     transport and metadata fields, not to schema-approved content; add
+     regression cases for bearer-bond text next to the credential rejections.
+     Changing this filter changes which events are accepted, not their
+     canonical form; existing evidence keeps verifying.
+   - **3f. Lost task logs on shutdown** (should-fix). In
+     `packages/hatchet/src/logging.ts`, `withTaskLoggingContext` returns the
+     raw SDK context when an input has no `loggingContext` (cron tasks, older
+     queued work). Those lifecycle writes bypass the queue that
+     `drainTaskLogWrites()` waits for, and the general worker calls
+     `process.exit(0)` after draining. Queue lifecycle writes whether or not
+     correlation metadata exists, with the same bounded failure logging.
+   - **3g. Audit concurrency** (should-fix, one pull request, two tests).
+     - `changeLiveQuizSettings` in `liveQuizzes.ts` loads the `before`
+       snapshot before the update locks the row. Two concurrent reversals
+       (`false → true` and `true → false`) can leave the setting disabled
+       while the audit trail ends at enabled, because the second request
+       compares `false → false` and emits nothing. Lock the row before the
+       snapshot read.
+     - Activation in `assessmentAuditActivation.ts` locks the `LiveQuiz` row,
+       but `joinCourseLeaderboard` (`courses.ts`) creates a `Participation`
+       without that lock. An enrollment committed between activation's final
+       snapshot read and its commit is in neither the baseline nor an
+       eligibility event. Share one serialization boundary between
+       activation and mutations of baseline dependencies, with consistent
+       lock order.
+     - Both need deterministic interleaving tests against PostgreSQL.
+   - **3h. Smaller items.**
+     - `apps/chat/test/proxy-correlation.test.ts`, chat guest case: when
+       override headers exist, the test never copies the
+       `x-middleware-request-*` values, so it checks freshly generated IDs.
+       Rebuild the forwarded headers as the auth case does and assert
+       equality with the response IDs.
+     - LTI handoff, startup and idle database-client errors now pass the
+       whole error object to the logger, where `v3-ai` logged the message
+       only. Pino's redaction does not cover arbitrary `err.*` properties.
+       No credential exposure was demonstrated; log an application-owned
+       message plus approved code fields at those boundaries.
+     - Plan ledger: name the remaining staging-only differences (the FalkorDB
+       HA hostname from staging #6842, the backend Dockerfile comment from
+       #6346, a type-only import in a PWA course page, lockfile resolution).
+   - **Order.** 3e and 3g before relying on this code for audited
+     assessments; they also affect staging today. 3a, 3f and 3h next. 3d
+     last.
    - **3d. Simplification package.** Start with the simplifier pass over the
      areas the first scan missed, then deliver the candidates listed under
      "Simplification", each with its protecting test named.
@@ -1011,6 +1073,31 @@ three layers, and the stack was rebuilt once.
   than on the audit line. It changes one file that no commit in between
   touches, so every pick's diff and the tip tree stay the same. This is the
   one departure from the historical order, and it awaits the user's ruling.
+
+### External review (2026-11-21)
+
+A second, read-only review by another model covered all nine areas of the
+handover request in an isolated clone; it ran no runtime, database or GitHub
+action.
+
+- **Verdict.** Ready with listed fixes for landing on `v3-audit-merge`,
+  subject to resolving the final-review gate. Keep the five layers and the
+  pins, land with merge commits, and fix the findings in follow-up pull
+  requests into `v3-audit-merge`.
+- **Confirmed.** 46 commits, 35 picks with zero author mismatches and no
+  duplicates; every conflict resolution keeps the newer `v3-ai` behaviour;
+  334 of the 373 changed files are byte-identical to staging and the other
+  39 are attributed; migrations, schema mirrors, outbox and sealing
+  safeguards are consistent; all workspace dependencies resolve and layers
+  1 to 3 do not reference the logging package; 35 executor combinations pass
+  parity and reachability; audit stays disabled outside staging.
+- **Findings.** Three audit correctness defects (3e, 3g), one logging
+  reliability defect (3f) and two smaller items (3h). All are inherited: the
+  affected files are byte-identical to staging.
+- **Not covered.** Fresh PostgreSQL or Azure runs; the private scratch tree
+  `S` and local backups; a fresh full secret scan. The findings in 3e, 3f
+  and 3g were confirmed by reading the tip source; 3e and 3f were also
+  reproduced against the extracted functions.
 
 ### Picks shorter than their source
 
@@ -1096,7 +1183,8 @@ wording edits: `project/2026-09-18-staging-image-consolidation-plan.md` and
   on 2026-11-20. Batch terminal: the stack landed on `v3-audit-merge`, the
   draft final pull request, the follow-up drafts, the readiness report and
   the chain pull request as a draft.
-- **Next action.** Obtain the user's answer to the open decision, then
+- **Next action.** Obtain the user's answer to the open decision, including
+  whether the external review stands in for the failed AI stack review, then
   roadmap step 1.
 - **Assumption most likely to be wrong.** That the stack lands as five merge
   commits through one asynchronous merge of the top pull request. The repository
