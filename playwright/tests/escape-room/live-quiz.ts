@@ -12,6 +12,7 @@ import {
   COURSE,
   LIVE,
   SC1,
+  SC2,
   captureEvidence,
   createStudentPage,
   deMessages,
@@ -19,6 +20,12 @@ import {
   messages,
   setLocale,
 } from './shared.js'
+import { SC3 } from './rules.js'
+
+const LIVE_RULES = {
+  name: 'Escape Room Live Rules Quiz',
+  displayName: 'Escape Room Live Rules Quiz Display',
+}
 
 export function registerLiveQuizEscapeRoomTests() {
   test('Author a LiveQuiz escape-room block and confirm the time limit round-trips in minutes on edit', async ({
@@ -205,6 +212,128 @@ export function registerLiveQuizEscapeRoomTests() {
       await student.reload()
       await expect(student.getByTestId('escape-room-start')).toBeVisible()
       await expect(student.getByText(SC1.content)).not.toBeAttached()
+    } finally {
+      await student.context().close()
+    }
+  })
+
+  test('LiveQuiz block with the classroom preset: wrong answer, reveal, skip, bonus and ranking', async ({
+    browser,
+    page: testPage,
+  }, testInfo) => {
+    const page = testPage
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+
+    // --- author: one block of three questions; the last one becomes the
+    // bonus stage through the classroom preset, with two tries per stage ---
+    await page.getByTestId('create-live-quiz').click()
+    await page.getByTestId('insert-live-quiz-name').fill(LIVE_RULES.name)
+    await page.getByTestId('next-or-submit').click()
+    await page
+      .getByTestId('insert-live-display-name')
+      .fill(LIVE_RULES.displayName)
+    await page.getByTestId('insert-live-description').click()
+    await page
+      .getByTestId('insert-live-description')
+      .pressSequentially(LIVE.description)
+    await page.getByTestId('next-or-submit').click()
+    await selectOption(page, '[data-cy="select-course"]', COURSE)
+    await expect(page.getByTestId('select-course')).toContainText(COURSE)
+    await page.getByTestId('next-or-submit').click()
+    await createStacks(page, {
+      stacks: [{ elements: [SC1.title, SC2.title, SC3.title] }],
+      type: 'block',
+    })
+    await page.getByTestId('open-block-0-countdown').click()
+    await page.getByTestId('toggle-escape-room').click()
+    await expect(page.getByTestId('escape-room-time-limit')).toBeVisible()
+    await page.getByTestId('escape-room-apply-preset').click()
+    await page.getByTestId('escape-room-max-wrong-attempts').fill('2')
+    await page.getByTestId('escape-room-time-limit').fill('45')
+    await page.getByTestId('close-block-countdown').click()
+    await page.getByTestId('next-or-submit').click()
+    await page.waitForTimeout(500)
+
+    // --- run the quiz and open the block ---
+    await page.getByTestId('activities').click()
+    await page.getByTestId('activities-search-input').fill(LIVE_RULES.name)
+    await page.getByTestId('activities-search-input').press('Enter')
+    await page.getByTestId(`start-live-quiz-${LIVE_RULES.name}`).click()
+    await expect(page.getByTestId('next-block-timeline')).toBeVisible({
+      timeout: 30_000,
+    })
+    await page.getByTestId('next-block-timeline').click()
+
+    const student = await createStudentPage(browser)
+    try {
+      await loginStudentPassword(student, {
+        username: env('STUDENT_USERNAME'),
+      })
+      await openStudentLiveQuiz(student, LIVE_RULES.displayName)
+      await acceptGamifiedLiveQuizAccountPrompt(
+        student,
+        LIVE_RULES.displayName,
+        'escape-room-start'
+      )
+      await student.getByTestId('escape-room-start').click()
+      await expect(student.getByText(SC1.content).first()).toBeVisible()
+      await expect(student.getByTestId('escape-room-tries-left')).toBeVisible()
+
+      // first wrong answer: one try is left
+      await student.getByTestId('sc-0-answer-option-1').click()
+      await student.getByTestId('student-submit-answer').click()
+      await expect(
+        student.getByTestId('escape-room-incorrect-notice')
+      ).toBeVisible()
+      await expect(student.getByTestId('escape-room-tries-left')).toBeVisible()
+      await expect(
+        student.getByTestId('escape-room-lockout-countdown')
+      ).toBeHidden({ timeout: 30_000 })
+
+      // second wrong answer: the solution is revealed instead of a lockout
+      await student.getByTestId('sc-0-answer-option-1').click()
+      await student.getByTestId('student-submit-answer').click()
+      await expect(
+        student.getByTestId('escape-room-revealed-notice')
+      ).toBeVisible()
+      await expect(
+        student.getByTestId('escape-room-revealed-solution')
+      ).toContainText(SC1.choices[0]!.value)
+      await student.getByTestId('escape-room-revealed-continue').click()
+
+      // skip the second stage after confirming; the bonus stage is not a
+      // regular stage, so this completes the attempt
+      await expect(student.getByText(SC2.content).first()).toBeVisible()
+      await student.getByTestId('escape-room-skip').click()
+      await student.getByTestId('escape-room-skip-confirm').click()
+      await expect(
+        student.getByTestId('escape-room-completed')
+      ).toHaveAttribute('data-outcome', 'assisted', { timeout: 30_000 })
+
+      // the bonus question is offered once and answered correctly
+      await student.getByTestId('escape-room-bonus').click()
+      await expect(student.getByText(SC3.content).first()).toBeVisible()
+      await expect(student.getByTestId('escape-room-skip')).not.toBeAttached()
+      await student.getByTestId('sc-0-answer-option-0').click()
+      await student.getByTestId('student-submit-answer').click()
+      await expect(
+        student.getByTestId('escape-room-bonus-result')
+      ).toHaveAttribute('data-outcome', 'BONUS_CORRECT', { timeout: 30_000 })
+
+      // the cockpit ranks the attempt and lists the outcomes
+      const attemptRow = page
+        .locator('[data-cy^="escape-room-attempt-"]')
+        .filter({ hasText: env('STUDENT_USERNAME') })
+        .first()
+      await expect(attemptRow).toContainText(
+        messages.manage.evaluation.escapeRoomStatusCompleted,
+        { timeout: 30_000 }
+      )
+      await expect(
+        page.locator(`[data-cy="escape-room-rank-${env('STUDENT_USERNAME')}"]`)
+      ).toHaveText('1', { timeout: 30_000 })
     } finally {
       await student.context().close()
     }

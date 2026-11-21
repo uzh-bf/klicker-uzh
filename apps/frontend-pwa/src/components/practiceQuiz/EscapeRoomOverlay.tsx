@@ -45,8 +45,7 @@ export type EscapeRoomMode =
   | 'groupActivity'
   | 'liveQuiz'
 
-// Structural subset of the escape room config the start dialog lists. The
-// Live Quiz only enforces hints and the lockout wait and ignores the rest.
+// Structural subset of the escape room config the start dialog lists.
 export interface EscapeRoomRules {
   timeLimit: number // in seconds
   hintPenalty: number // in seconds
@@ -349,7 +348,15 @@ export default function EscapeRoomOverlay({
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
   const headingId = useId()
-  const isLive = mode === 'liveQuiz'
+  // A Live Quiz without scoring rules keeps its plain escape time ending.
+  const plainLive =
+    mode === 'liveQuiz' &&
+    !(
+      (rules.wrongAnswerPenalty ?? 0) > 0 ||
+      rules.maxWrongAttempts != null ||
+      rules.skipPenalty != null ||
+      (rules.bonusSeconds ?? 0) > 0
+    )
   const isGroup = mode === 'groupActivity'
   const timeLimit = rules.timeLimit
 
@@ -410,7 +417,7 @@ export default function EscapeRoomOverlay({
         seconds: rules.hintPenalty,
       })
     }
-    const wrongPenalty = isLive ? 0 : (rules.wrongAnswerPenalty ?? 0)
+    const wrongPenalty = plainLive ? 0 : (rules.wrongAnswerPenalty ?? 0)
     const lockout = rules.lockoutSeconds ?? 0
     if (wrongPenalty > 0 || lockout > 0) {
       rows.push({
@@ -431,7 +438,7 @@ export default function EscapeRoomOverlay({
         lockout,
       })
     }
-    if (!isLive) {
+    if (!plainLive) {
       if (rules.maxWrongAttempts != null && rules.maxWrongAttempts > 0) {
         const revealPenalty = rules.revealPenalty ?? 0
         rows.push({
@@ -513,7 +520,7 @@ export default function EscapeRoomOverlay({
           rows={rows}
           label={t('pwa.practiceQuiz.escapeRoomRulesLabel')}
         />
-        {!isLive && (
+        {!plainLive && (
           <p className={twMerge('text-xs leading-relaxed', FRAME.muted)}>
             {t('pwa.practiceQuiz.escapeRoomRankingNote')}
           </p>
@@ -633,7 +640,7 @@ export default function EscapeRoomOverlay({
     ).length
     const isAssisted = revealedCount + skippedCount > 0
     const bonusCredited = bonus?.outcome === 'BONUS_CORRECT'
-    const rankedSeconds = isLive
+    const rankedSeconds = plainLive
       ? null
       : getEscapeRankedSeconds({
           startedAt: attempt?.startedAt,
@@ -642,7 +649,7 @@ export default function EscapeRoomOverlay({
           bonusSeconds: bonus?.seconds ?? rules.bonusSeconds,
           bonusOutcome: bonus?.outcome,
         })
-    const headlineSeconds = isLive
+    const headlineSeconds = plainLive
       ? escapeSeconds !== null
         ? Math.max(0, Math.round(escapeSeconds))
         : null
@@ -705,14 +712,16 @@ export default function EscapeRoomOverlay({
         {headlineSeconds !== null && (
           <div className="text-center">
             <div className={twMerge('text-xs uppercase', FRAME.muted)}>
-              {isLive
+              {plainLive
                 ? t('pwa.practiceQuiz.escapeRoomStatsTime')
                 : t('pwa.practiceQuiz.escapeRoomRankedTimeLabel')}
             </div>
             <div
               className="text-4xl font-bold text-white"
               data-cy={
-                isLive ? 'escape-room-escape-time' : 'escape-room-ranked-time'
+                plainLive
+                  ? 'escape-room-escape-time'
+                  : 'escape-room-ranked-time'
               }
               data-seconds={headlineSeconds}
             >
@@ -759,7 +768,7 @@ export default function EscapeRoomOverlay({
             className="w-full space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-left text-xs"
             data-cy="escape-room-completed-stats"
           >
-            {escapeSeconds !== null && !isLive && (
+            {escapeSeconds !== null && !plainLive && (
               <StatRow
                 label={t('pwa.practiceQuiz.escapeRoomStatsTime')}
                 value={
@@ -785,7 +794,7 @@ export default function EscapeRoomOverlay({
                 }
               />
             )}
-            {bonusCredited && !isLive && (
+            {bonusCredited && !plainLive && (
               <StatRow
                 dataCy="escape-room-stats-bonus"
                 label={t('pwa.practiceQuiz.escapeRoomStatsBonus')}

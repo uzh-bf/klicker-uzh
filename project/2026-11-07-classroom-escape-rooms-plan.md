@@ -237,8 +237,8 @@ The four stack PRs are refreshed (W0), #5226 is amended (W1), and W2–W7 stack 
 
 ### W7 — Live Quiz adapter
 
-- **Outcome:** card E rules and mistake feedback for Live Quiz Escape Room blocks through the Response API. Mistake ranges and rule settings enter the block-activation cache. Reveal and skip clear a stage in Redis without emitting a solved response. Penalties and mistake keys reach the shared dashboard and debrief.
-- **Acceptance:** Response API tests for wrong-answer penalty, reveal, skip and mistake feedback; existing claim and close-gate tests and worker deduplication tests still pass; browser evidence of a Live Quiz block with mistake feedback.
+- **Outcome:** card E rules for Live Quiz Escape Room blocks through the Response API; mistake feedback for Live Quiz follows with W4, which the user ordered after W7 and W3 on 2026-11-14. Mistake ranges and rule settings enter the block-activation cache. Reveal and skip clear a stage in Redis without emitting a solved response. Penalties and mistake keys reach the shared dashboard and debrief.
+- **Acceptance:** Response API tests for wrong-answer penalty, reveal, skip and bonus (mistake feedback with W4); existing claim and close-gate tests and worker deduplication tests still pass; browser evidence of a Live Quiz block with the classroom rules. Execution plan: [2026-11-14-escape-room-live-rules-plan.md](2026-11-14-escape-room-live-rules-plan.md).
 
 ## Test portfolio (roadmap level)
 
