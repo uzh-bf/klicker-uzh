@@ -1,6 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { fetchChatApi } from '../lib/api/types'
 import {
   ANSWER_STYLES,
   ANSWER_TONES,
@@ -9,7 +10,6 @@ import {
   DEFAULT_ANSWER_STYLE,
   DEFAULT_ANSWER_TONE,
 } from '../lib/config/answerStyles'
-import { authedFetch } from '../lib/client/authedFetch'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import {
@@ -207,7 +207,7 @@ export const useSettingsStore = create<SettingsState>()(
         })
 
         try {
-          const response = await authedFetch(`/api/chatbots/${chatbotId}`)
+          const response = await fetchChatApi(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
@@ -264,7 +264,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
 
         try {
-          const response = await authedFetch(
+          const response = await fetchChatApi(
             `/api/chatbots/${chatbotId}/credits`
           )
           if (requestGeneration !== creditsRequestGeneration) return

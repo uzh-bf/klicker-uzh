@@ -32,6 +32,8 @@ playwright,manage|yes|no|no|$B $A $M $P $C $T $R|auth frontend-manage chat front
 manage|yes|no|no|$B $A $M|auth frontend-manage
 pwa|yes|no|no|$B $A $P|auth frontend-pwa
 chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+chat-api|no|no|no|||
+chat,chat-api|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 live-quiz|yes|no|yes|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa response-api
 workers|yes|no|yes|$B $A $W1 $W2|auth
 ai|no|no|no|||
