@@ -25,6 +25,9 @@ export default {
       close: 'Wissensgraph schliessen',
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
+      resize: 'Grösse des Wissensgraphen ändern',
+      resizeHint:
+        'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',

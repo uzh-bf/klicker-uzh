@@ -25,6 +25,9 @@ export default {
       close: 'Close knowledge graph',
       fullscreen: 'Expand graph to fullscreen',
       restore: 'Return graph to sidebar',
+      resize: 'Resize knowledge graph',
+      resizeHint:
+        'Drag to resize. The arrow keys also resize the knowledge graph.',
       ask: 'Ask about this',
       showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',

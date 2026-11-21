@@ -21,7 +21,7 @@ const SIDEBAR_LAYOUT_CLASSES =
 // A compact host overlays the pane inside the graph, so the canvas keeps its
 // full width and the loaded concept and relationship lists stay reachable.
 const CONTAINED_LAYOUT_CLASSES =
-  'absolute inset-x-0 bottom-0 z-30 max-h-[80%] lg:max-h-[60%] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]'
+  'absolute inset-x-0 bottom-0 z-30 max-h-[55%] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]'
 
 type KnowledgeGraphDetailsProps = {
   node?: KnowledgeGraphNode
