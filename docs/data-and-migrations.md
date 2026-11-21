@@ -111,13 +111,17 @@ Two independent seed paths — changing one does NOT update the other:
 1. **Dev seed**: the raw sequence below performs seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
 2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
-Prisma 7 does not seed after migrate/reset automatically. In the provisioned
-self-contained container, use the config-derived sequence from
-`.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
-then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
-`pnpm --filter @klicker-uzh/prisma-data run seed:raw`. These commands are
-destructive and require the disposable identity and marker, not merely seeded
-data. The retained `*:qa` reset/push/test-seed wrappers intentionally fail the
+Prisma 7 does not seed after migrate/reset automatically. Automatic post-create
+verifies an existing application schema without resetting, pushing or seeding.
+New empty disposable databases use the separate
+[fresh initialization contract](../.devcontainer/README.md#fresh-disposable-database-initialization).
+
+A separately authorized destructive reset in a provisioned disposable container
+uses `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then
+`pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`. These commands require
+explicit authority for the data loss as well as the disposable identity and
+marker; seeded data or a marker alone does not authorize them. The retained `*:qa` reset/push/test-seed wrappers intentionally fail the
 same guard against staging; their names do not authorize staging mutations.
 
 ### First-login demo content

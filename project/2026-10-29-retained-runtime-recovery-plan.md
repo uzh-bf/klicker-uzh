@@ -81,3 +81,38 @@ Slice 1 implements preserving lifecycle entry points and explicit initialization
 Slice 2 is blocked before runtime creation: a supported managed one-shot initialization and retained-replacement path has not been established. No application runtime was touched. No provider/content preservation claim is made from script mocks. The acceptance procedure remains documented for qualification when the capability is available.
 
 Remaining: independent integrated source review, ordinary task-branch publication and draft/hosted delivery. No active child or watcher yet. Substantive size excluding project artifacts: 385 changed lines, including 292 executable/test lines. The short AGENTS pointer was added because the fresh-setup contract changes. No additional solution document is needed because it would duplicate the recovery guide. Next action: commit the complete candidate, request its independent review and open the draft for hosted checks.
+
+### Approved provider adoption continuation — 2026-10-30
+
+The human approved task-local pinned Devrouter 0.6.3 adoption, official Devsy
+1.24 agent-cache preparation and minimal consumer recipe/resource-limit
+configuration, followed by the original conditional synthetic acceptance.
+This adds those setup actions to the original batch and preserves its resource,
+data, stop and withheld-authority boundaries. Source changes are limited to
+`.devrouter.yml`, the existing fresh-initialization guide and this plan.
+
+The native planner's focused continuation critique identified effective cap
+propagation and host-governed agent readiness as real risks. Use an explicit
+fourth Compose reference in the canonical descriptor for an ignored in-checkout
+acceptance overlay. Keep that local descriptor/overlay unchanged through stop;
+verify all six selected services' effective limits before initialization. The
+planned limits total 7.5 CPU and 15.5 GiB. Verify a concrete official Linux ARM64
+1.24 agent path, digest and managed/explicit source; generic readiness is not
+cache preparation evidence.
+
+Current source delivery: preserving executable source is merged; its full
+lifecycle tests and independent review remain applicable. The docs correction
+is held in [draft PR #6773](https://github.com/uzh-bf/klicker-uzh/pull/6773). The new provider declaration and effective six-service render pass focused
+static checks; independent integration review and real acceptance remain pending. Consumer runtime acceptance
+starts only after supported identity, source, mounts, caps and agent checks pass.
+The original single runtime/90-minute limit and final exact non-destructive
+stop/zero-routes/data-retained terminal condition still apply.
+
+
+Provider capability preflight now stops before runtime creation: the released
+managed CLI exposes initialization, ordinary startup and stop, but no explicit
+application-container replacement operation. Managed ensure refuses its legacy
+recreation fallback; repair only starts retained resources and reruns preserving
+adapters. Direct provider recreation is outside this batch's managed path.
+The single runtime budget remains unused. Source adoption can finish with this
+explicit limitation; consumer content preservation remains unqualified.
