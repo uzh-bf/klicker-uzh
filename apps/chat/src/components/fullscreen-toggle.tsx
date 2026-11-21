@@ -7,6 +7,7 @@ import { twMerge } from 'tailwind-merge'
 import { useFramed } from '../hooks/useFramed'
 import { useFullscreenActive } from './chat-ui-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 const subscribeToNothing = () => () => {}
 
@@ -58,10 +59,7 @@ export function FullscreenToggle({ className }: { className?: string }) {
           type="button"
           data-cy="chat-fullscreen-toggle"
           onClick={toggle}
-          className={twMerge(
-            'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 fine-pointer:size-8',
-            className
-          )}
+          className={twMerge(toolbarIconButtonClassName, className)}
         >
           {active ? (
             <Minimize2 aria-hidden="true" className="size-4" />

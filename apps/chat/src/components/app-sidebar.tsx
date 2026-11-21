@@ -24,6 +24,8 @@ import { ModeSwitcher } from './mode-switcher'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { twMerge } from 'tailwind-merge'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const t = useTranslations()
@@ -47,13 +49,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="px-3 py-1.5">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex min-w-0 items-center gap-1 py-1.5 pl-3">
+            <div className="flex min-w-0 items-center gap-1">
               {/* A framed chat has no header bar, so the mode menu moves here,
                   next to the conversations it applies to. */}
-              {headerless ? <ModeSwitcher /> : null}
+              {headerless ? (
+                <ModeSwitcher className="min-w-0 flex-1" fullWidth />
+              ) : null}
               {/* Name lives in the persistent top header now (assistant.tsx
                   SidebarMain) — showing it again here while the sidebar is
                   open would just duplicate it. */}
@@ -76,7 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}
-                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8"
+                    className={twMerge(toolbarIconButtonClassName, 'ml-auto')}
                   >
                     <Plus className="size-4" />
                     <span className="sr-only">{t('chat.sidebar.newChat')}</span>
@@ -90,7 +94,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       "Toggle Sidebar" sr-only label; an explicit aria-label
                       wins over it so screen readers follow the UI locale. */}
                   <SidebarTrigger
-                    className="mr-2 size-11 shrink-0 touch-manipulation fine-pointer:size-8"
+                    className={toolbarIconButtonClassName}
                     aria-label={t('chat.sidebar.closeSidebar')}
                   />
                 </TooltipTrigger>

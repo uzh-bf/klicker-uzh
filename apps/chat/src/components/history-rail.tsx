@@ -27,6 +27,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { useChatUi } from './chat-ui-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 type HistoryRailProps = {
   entries: readonly HistoryRailEntry[]
@@ -338,7 +339,7 @@ const HistoryDialog: FC<{
         <button
           type="button"
           aria-label={t('chat.historyRail.closeHistory')}
-          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={toolbarIconButtonClassName}
           onClick={onClose}
         >
           <XIcon className="size-4" aria-hidden />

@@ -91,7 +91,7 @@ export function CreditsFooter() {
         aria-expanded={open}
         aria-controls={detailsId}
         onClick={() => setExpanded(!open)}
-        className="hover:bg-accent focus-visible:ring-ring -mx-1 flex min-h-11 w-[calc(100%+0.5rem)] items-center gap-2 rounded-md px-1 text-start transition-colors focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-7"
+        className="hover:bg-accent focus-visible:ring-ring -mx-1 flex min-h-11 w-[calc(100%+0.5rem)] items-center gap-2 rounded-md px-1 text-start transition-colors focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
       >
         <Zap aria-hidden="true" className="size-4 shrink-0" />
         <span className="text-sm font-medium">{t('chat.credits.title')}</span>
@@ -119,9 +119,9 @@ export function CreditsFooter() {
         // element; reuse the same i18n key as the visible title.
         aria-label={t('chat.credits.title')}
         className={{
-          root: 'mt-0.5 h-1',
+          root: 'mt-0.5 h-1!',
           background: 'bg-muted',
-          indicator: `h-1 ${indicatorColor}`,
+          indicator: `h-1! ${indicatorColor}`,
         }}
         formatter={() => null}
         // The indicator otherwise keeps a 40px minimum width for its (unused)

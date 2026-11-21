@@ -38,6 +38,7 @@ import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 interface ChatbotDisclaimer {
   id: string
@@ -541,10 +542,7 @@ function SidebarMain({
           type="button"
           onClick={handleNewThread}
           disabled={participationRequired}
-          className={twMerge(
-            'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
-            open && 'md:hidden'
-          )}
+          className={twMerge(toolbarIconButtonClassName, open && 'md:hidden')}
         >
           <Plus aria-hidden="true" className="size-4" />
           <span className="sr-only">{t('chat.sidebar.newChat')}</span>
@@ -555,7 +553,7 @@ function SidebarMain({
   )
 
   return (
-    <SidebarInset id="main-content" tabIndex={-1} className="relative min-w-0">
+    <SidebarInset className="relative min-w-0">
       {headerless ? (
         // A framed chat keeps its height for the conversation: no header bar.
         // The page heading stays for assistive tech and the mode menu moves
@@ -571,20 +569,23 @@ function SidebarMain({
             <div
               data-cy="chat-overlay-controls-start"
               className={twMerge(
-                'flex shrink-0 items-center gap-1 md:bg-background/85 md:absolute md:left-1 md:top-1 md:z-20 md:rounded-full md:shadow-sm md:backdrop-blur-sm',
+                'flex shrink-0 items-center gap-1 md:bg-background/85 md:absolute md:left-1 md:top-1 md:z-20 md:rounded-lg md:border md:shadow-sm md:backdrop-blur-sm',
                 open && 'md:hidden'
               )}
             >
               <SidebarTrigger
-                className="size-11 touch-manipulation rounded-full fine-pointer:size-8"
+                className={toolbarIconButtonClassName}
                 aria-label={t('chat.sidebar.openSidebar')}
               />
               {newChatButton}
             </div>
+            {/* Below md the sidebar is a drawer, so the mode stays reachable
+                here. */}
+            <ModeSwitcher className="md:hidden" testIdPrefix="chat-row-mode" />
             <MobileCreditsBar inline />
             <div
               data-cy="chat-overlay-controls-end"
-              className="ml-auto flex shrink-0 items-center gap-1 empty:hidden md:bg-background/85 md:absolute md:right-1 md:top-1 md:z-20 md:rounded-full md:shadow-sm md:backdrop-blur-sm"
+              className="ml-auto flex shrink-0 items-center gap-1 empty:hidden md:bg-background/85 md:absolute md:right-1 md:top-1 md:z-20 md:rounded-lg md:border md:shadow-sm md:backdrop-blur-sm"
             >
               {knowledgeGraphVisible ? (
                 <ChatGraphModeSwitch
@@ -599,24 +600,21 @@ function SidebarMain({
       ) : (
         <header
           data-cy="chat-header"
-          className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b px-2 py-1.5"
+          className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5"
         >
           {/* Only visible when the sidebar is closed — once it's open, the
             sidebar's own trigger closes it, so this stays the single toggle
-            on screen at any given time. The dedicated grid column keeps the
-            title, mode menu, and new-chat action from overlapping at narrow
-            widths. */}
+            on screen at any given time. A flex row (not a fixed grid) keeps
+            the title truncating in the remaining width when this trigger and
+            the new-chat action are hidden. */}
           <SidebarTrigger
-            className={twMerge(
-              'size-11 touch-manipulation fine-pointer:size-8',
-              open && 'md:hidden'
-            )}
+            className={twMerge(toolbarIconButtonClassName, open && 'md:hidden')}
             aria-label={t('chat.sidebar.openSidebar')}
           />
           {/* Persistent header identity (V3): name (+ avatar) stays visible
             here regardless of sidebar open/closed state, so the sidebar's own
             header no longer repeats it (see app-sidebar.tsx). */}
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {chatbot.avatar && (
               <Image
                 src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}

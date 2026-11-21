@@ -19,6 +19,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 import { FullscreenToggle } from './fullscreen-toggle'
 import { formatCreditPercent } from './thread-credits-format'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 const COMPACT_SELECT_CLASS =
   'border-input bg-background bg-none text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1'
@@ -288,10 +289,7 @@ export function EmbeddedNewConversation({ className }: { className?: string }) {
       disabled={blocked || creating}
       aria-label={t('chat.sidebar.newChat')}
       title={t('chat.sidebar.newChat')}
-      className={twMerge(
-        'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50',
-        className
-      )}
+      className={twMerge(toolbarIconButtonClassName, 'size-8', className)}
     >
       <Plus aria-hidden="true" className="size-4" />
     </button>
@@ -331,10 +329,7 @@ export function EmbeddedCloseButton({ className }: { className?: string }) {
       }}
       aria-label={t('chat.embedded.close')}
       title={t('chat.embedded.close')}
-      className={twMerge(
-        'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2',
-        className
-      )}
+      className={twMerge(toolbarIconButtonClassName, 'size-8', className)}
     >
       <X aria-hidden="true" className="size-4" />
     </button>
@@ -374,7 +369,7 @@ export function EmbeddedToolbar() {
         <EmbeddedAnswerPreferences className="order-last w-full sm:order-none sm:w-auto" />
       ) : null}
       <EmbeddedNewConversation className="ml-auto" />
-      <FullscreenToggle className="rounded-md" />
+      <FullscreenToggle className="size-8" />
       <EmbeddedCloseButton />
     </div>
   )

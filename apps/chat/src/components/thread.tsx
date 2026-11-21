@@ -326,7 +326,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   // caption as a dangling "— 5 minutes ago".
   return (
     <div
-      className="text-foreground mt-1 text-xs"
+      className="text-muted-foreground mt-1 text-xs"
       title={hasCustomMetadata ? fullParts.join(' — ') : undefined}
     >
       {hasCustomMetadata && (
@@ -418,7 +418,7 @@ export const Thread: FC<ThreadProps> = ({
                 compact && (showHistoryRail ? 'pb-2 md:pt-3' : 'pb-2 sm:pt-3'),
                 // Without a header bar the first message must clear the
                 // floating corner controls.
-                headerless && 'md:pt-12'
+                headerless && 'md:pr-12 md:pt-12'
               )
         )}
       >
@@ -620,11 +620,12 @@ const ThreadScrollToBottom: FC = () => {
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
           <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9">
-            <ArrowDownIcon />
+            <ArrowDownIcon aria-hidden="true" className="size-4" />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
         </ThreadPrimitive.ScrollToBottom>
       </TooltipTrigger>
+      <TooltipContent>{t('chat.thread.scrollToBottom')}</TooltipContent>
     </Tooltip>
   )
 }
@@ -1848,7 +1849,7 @@ const ComposerAttachButton: FC<{
             : 'chat.composer.attachImage'
         )}
       >
-        <PaperclipIcon className={embedded ? 'size-4' : 'size-5'} />
+        <PaperclipIcon className={embedded || compact ? 'size-4' : 'size-5'} />
       </button>
     </>
   )
@@ -1903,7 +1904,7 @@ const ComposerAction: FC = () => {
       ?.focus()
   }, [isRunning])
 
-  const iconSize = embedded ? 'size-4' : 'size-5'
+  const iconSize = embedded || compact ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
   // focus ring is lost when swapping to a plain <button> (see Send note below),
   // so restore an equivalent `focus-visible` ring here.
@@ -2481,36 +2482,15 @@ const AssistantMessage: FC<{
           />
         </div>
       ) : (
-        <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start pr-1 sm:mr-3 sm:mt-3 sm:pr-2">
-          <Image
-            src={
-              chatbotAvatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '/user-solid.svg'
-            }
-            alt=""
-            width={chatbotAvatar ? '35' : '32'}
-            height="35"
-            unoptimized
-            className={twMerge(
-              'hidden rounded-full bg-white sm:block',
-              chatbotAvatar ? '' : 'p-1'
-            )}
-          />
-          <Image
-            src={
-              chatbotAvatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '/user-solid.svg'
-            }
-            alt=""
-            width="24"
-            height="24"
-            unoptimized
-            className={twMerge(
-              'rounded-full bg-white sm:hidden',
-              chatbotAvatar ? '' : 'p-1'
-            )}
+        // Same avatar component as the welcome screen and the embedded
+        // widget, so a chatbot without its own avatar shows the bot icon
+        // instead of a generic person silhouette.
+        <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start sm:mr-3 sm:mt-2.5">
+          <ChatbotAvatar
+            avatar={chatbotAvatar}
+            fallbackIcon={chatbotFallbackIcon}
+            className="text-uzh-blue ring-border size-6 bg-white ring-1 sm:size-8"
+            iconClassName="size-3.5 sm:size-4"
           />
         </div>
       )}
