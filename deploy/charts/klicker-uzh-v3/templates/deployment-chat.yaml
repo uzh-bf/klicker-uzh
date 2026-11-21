@@ -1,3 +1,5 @@
+{{- $mediaStorage := .Values.chat.mediaStorage | default dict -}}
+{{- $mediaBackend := $mediaStorage.backend | default "azure-blob" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,8 +58,28 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          {{- if or .Values.chat.mediaWorkloadIdentity.enabled .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret }}
+          {{- if or (eq $mediaBackend "s3") .Values.chat.mediaWorkloadIdentity.enabled .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret }}
           env:
+            {{- if eq $mediaBackend "s3" }}
+            {{- $s3 := $mediaStorage.s3 }}
+            - name: CHAT_MEDIA_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $s3.existingSecret | quote }}
+                  key: {{ $s3.accessKeyIdKey | quote }}
+            - name: CHAT_MEDIA_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $s3.existingSecret | quote }}
+                  key: {{ $s3.secretAccessKeyKey | quote }}
+            {{- if $s3.sessionTokenKey }}
+            - name: CHAT_MEDIA_S3_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $s3.existingSecret | quote }}
+                  key: {{ $s3.sessionTokenKey | quote }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
             {{- range $key := list "COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME" "COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER" "COURSE_IMAGE_PROJECTION_STORAGE_PREFIX" "BLOB_STORAGE_ACCOUNT_NAME" "CHAT_VIDEO_BLOB_CONTAINER" }}
             - name: {{ $key }}
