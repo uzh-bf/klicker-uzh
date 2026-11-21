@@ -1,0 +1,29 @@
+# LiteLLM config for the chat exam load harness (util/load-test/README.md).
+# Every chat model alias resolves to a local mock, so no upstream key is used
+# and no provider cost can occur. Use it instead of config.yaml through
+# util/load-test/mock-litellm.sh; config.yaml itself stays untouched.
+#
+# mock_delay holds each response open so stream concurrency resembles a real
+# model; see the README for how it behaves on streams.
+
+litellm_settings:
+  drop_params: true
+
+model_list:
+  - model_name: 'gpt-6-luna'
+    litellm_params: &mock
+      model: 'openai/load-test-mock'
+      mock_response: 'This is a synthetic load-test answer. It has a few sentences so the stream carries several text deltas. The content never changes between requests.'
+      mock_delay: 8
+  - model_name: 'gpt-6-sol'
+    litellm_params: *mock
+  - model_name: 'gpt-6.1-sol'
+    litellm_params: *mock
+  - model_name: 'gpt-5.4'
+    litellm_params: *mock
+  - model_name: 'gpt-4.1'
+    litellm_params: *mock
+  - model_name: 'auto-router'
+    litellm_params: *mock
+  - model_name: 'auto-router-v2'
+    litellm_params: *mock
