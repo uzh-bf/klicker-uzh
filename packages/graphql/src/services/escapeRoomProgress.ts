@@ -145,6 +145,8 @@ export interface EscapeRoomStageResult {
   outcome: EscapeRoomStageOutcome | null
   wrongAttempts: number
   hints: number
+  // keys of matched typical mistakes (`<instanceId>:<mistakeKey>`)
+  mistakes: string[]
 }
 
 /**
@@ -190,6 +192,7 @@ export function getEscapeRoomStageResults(
           ? 'SOLVED'
           : recorded.outcome,
       wrongAttempts: recorded.wrongAttempts,
+      mistakes: recorded.mistakes ?? [],
       hints: hintInstanceIds.filter((id) => stage.instanceIds.includes(id))
         .length,
     }
@@ -212,7 +215,39 @@ export interface EscapeRoomStageProgress {
   hintsUsed: number
   bonusCorrect: number
   bonusWrong: number
+  // Matched typical mistakes by label, most frequent first.
+  mistakes: EscapeRoomStageMistakeCount[]
   debrief: string | null
+}
+
+export interface EscapeRoomStageMistakeCount {
+  key: string
+  label: string
+  count: number
+}
+
+// Labels of the typical mistakes of a stage's elements, keyed like the
+// recorded outcome keys (`<instanceId>:<mistakeKey>`).
+function getMistakeLabels(elements: StageSource[]): Map<string, string> {
+  const labels = new Map<string, string>()
+  for (const element of elements) {
+    const mistakes = (
+      element.elementData as {
+        options?: { mistakes?: Array<{ key?: unknown; label?: unknown }> }
+      } | null
+    )?.options?.mistakes
+    if (!Array.isArray(mistakes)) continue
+    for (const mistake of mistakes) {
+      if (typeof mistake?.key !== 'string') continue
+      labels.set(
+        `${element.id}:${mistake.key}`,
+        typeof mistake.label === 'string' && mistake.label.trim()
+          ? mistake.label
+          : mistake.key
+      )
+    }
+  }
+  return labels
 }
 
 export interface EscapeRoomProgress {
@@ -240,6 +275,7 @@ interface StageSource {
   id: number
   order: number
   options: unknown
+  elementData: unknown
   element: { name: string }
 }
 
@@ -329,6 +365,7 @@ export async function getEscapeRoomProgress(
               elementType: true,
               order: true,
               options: true,
+              elementData: true,
               element: { select: { name: true } },
             },
           },
@@ -349,6 +386,7 @@ export async function getEscapeRoomProgress(
             id: true,
             order: true,
             options: true,
+            elementData: true,
             element: { select: { name: true } },
           },
           orderBy: { order: 'asc' },
@@ -788,10 +826,16 @@ export async function getEscapeRoomProgress(
       hintsUsed: 0,
       bonusCorrect: 0,
       bonusWrong: 0,
+      mistakes: [],
       debrief: joinDebriefs(elements),
     }
+    const mistakeLabels = getMistakeLabels(elements)
+    const mistakeCounts = new Map<string, number>()
     for (const results of stageResultsByAttempt) {
-      const { outcome, wrongAttempts, hints } = results[index]!
+      const { outcome, wrongAttempts, hints, mistakes } = results[index]!
+      for (const key of mistakes) {
+        mistakeCounts.set(key, (mistakeCounts.get(key) ?? 0) + 1)
+      }
       stage.wrongAttempts += wrongAttempts
       stage.hintsUsed += hints
       if (outcome === 'SOLVED') stage.solved += 1
@@ -802,6 +846,13 @@ export async function getEscapeRoomProgress(
       else if (wrongAttempts > 0 || hints > 0) stage.attemptedNotCleared += 1
       else stage.notReached += 1
     }
+    stage.mistakes = [...mistakeCounts]
+      .map(([key, count]) => ({
+        key,
+        label: mistakeLabels.get(key) ?? key,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
     return stage
   })
 
@@ -1029,6 +1080,8 @@ async function getGroupActivityProjector(
     rows,
     stages: progress.stages.map((stage) => ({
       ...stage,
+      // Mistake labels can hint at answers, so they wait for the debrief.
+      mistakes: phase === 'CLOSED' ? stage.mistakes : [],
       debrief: phase === 'CLOSED' ? stage.debrief : null,
     })),
   }
@@ -1179,6 +1232,8 @@ export async function getEscapeRoomProjector(
     rows,
     stages: progress.stages.map((stage) => ({
       ...stage,
+      // Mistake labels can hint at answers, so they wait for the debrief.
+      mistakes: phase === 'CLOSED' ? stage.mistakes : [],
       debrief: phase === 'CLOSED' ? stage.debrief : null,
     })),
   }

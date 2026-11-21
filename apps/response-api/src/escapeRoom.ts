@@ -9,6 +9,7 @@ import {
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
+  matchNumericalMistake,
   parseEscapeRoomStageOutcomeRecords,
   resolveEscapeRoomAnswerableStage,
   setEscapeRoomStageOutcomeRecord,
@@ -228,6 +229,31 @@ async function completeAttempt(attemptId: string) {
     where: { id: attemptId, status: 'IN_PROGRESS' },
     data: { status: 'COMPLETED', completedAt: new Date(), lockoutUntil: null },
   })
+}
+
+interface CachedMistake {
+  key: string
+  label: string
+  feedback: string
+  min: number
+  max: number
+}
+
+// Typical mistakes are cached with their concrete ranges at block activation.
+function matchCachedMistake(
+  cached: string | undefined,
+  response: number
+): CachedMistake | null {
+  if (!cached) return null
+  let mistakes: CachedMistake[]
+  try {
+    mistakes = JSON.parse(cached)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(mistakes)) return null
+  const key = matchNumericalMistake({ response, mistakeRanges: mistakes })
+  return mistakes.find((mistake) => mistake.key === key) ?? null
 }
 
 export async function handleEscapeRoomValidation(
@@ -586,6 +612,9 @@ export async function handleEscapeRoomValidation(
           : {
               stageKey,
               wrongAttempts: previous.wrongAttempts,
+              ...(previous.mistakes?.length
+                ? { mistakes: previous.mistakes }
+                : {}),
               outcome: 'SOLVED',
               at: answeredAt,
             }
@@ -640,6 +669,17 @@ export async function handleEscapeRoomValidation(
 
     const wrong = applyEscapeRoomWrongAnswer(rules, previous.wrongAttempts)
     const penaltySeconds = priorPenaltySeconds + wrong.penaltySeconds
+    const mistake =
+      type === 'NUMERICAL'
+        ? matchCachedMistake(instanceInfo.mistakes, Number(response.value))
+        : null
+    const mistakes = mistake
+      ? [...(previous.mistakes ?? []), `${instanceId}:${mistake.key}`]
+      : previous.mistakes
+    const mistakeRecord = mistakes?.length ? { mistakes } : {}
+    const mistakeFeedback = mistake
+      ? { label: mistake.label, feedback: mistake.feedback }
+      : null
 
     if (wrong.revealed) {
       // Reveal clears the stage without a solved response: Prisma first, then
@@ -648,6 +688,7 @@ export async function handleEscapeRoomValidation(
         {
           stageKey,
           wrongAttempts: wrong.wrongAttempts,
+          ...mistakeRecord,
           outcome: 'REVEALED',
           at: answeredAt,
         },
@@ -669,6 +710,7 @@ export async function handleEscapeRoomValidation(
         penaltySeconds,
         bonusPending: blockCompleted && hasBonus,
         bonus: null,
+        mistake: mistakeFeedback,
       })
       return true
     }
@@ -688,6 +730,7 @@ export async function handleEscapeRoomValidation(
       {
         stageKey,
         wrongAttempts: wrong.wrongAttempts,
+        ...mistakeRecord,
         outcome: null,
         at: null,
       },
@@ -708,6 +751,7 @@ export async function handleEscapeRoomValidation(
       penaltySeconds,
       bonusPending: false,
       bonus: null,
+      mistake: mistakeFeedback,
     })
     return true
   } finally {

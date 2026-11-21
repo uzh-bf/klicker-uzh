@@ -171,6 +171,15 @@ Practice Quizzes, Microlearnings, Group Activities, and individual Live Quiz blo
 
 Individual attempts store outcomes in `EscapeRoomAttempt.stageOutcomes`, keyed by stack ID (by element instance ID in Live Quiz blocks). Group attempts append revealed, skipped, and bonus stages to `stageResponses` (with a `null` response for reveal and skip); their `stageOutcomes` hold the wrong-attempt counts and mirror the reveal, skip, and bonus outcomes that the participant view reads.
 
+### Per-attempt numbers and typical mistakes
+
+A numerical element can carry `parametrization` (variables, derived values, a solution formula with tolerance, and a number format) and `mistakes` (label, feedback, formula, tolerance) in its element options. `packages/graphql/src/lib/numericalParametrization.ts` owns the evaluator. Formulas are parsed with `mathjs` and checked against an arithmetic allowlist before they run, and a save is rejected with `INVALID_NUMERICAL_PARAMETRIZATION` unless 20 sample draws render. `mathjs` stays in `packages/graphql`; `packages/grading` only matches a response against precomputed `mistakeRanges`.
+
+- **Seeds.** Each variable draws from a hash of `<attemptId>:<elementId>:<name>`, so an attempt keeps its numbers across reloads and reordered variables, and players and groups differ. Instance creation draws one fixed set (`instance:<uuid>`) and stores rendered content, `solutionRanges` and `mistakeRanges`; it keeps `contentTemplate` and `explanationTemplate` so escape stages can render again per attempt. Only escape stages render per attempt; every other activity uses the fixed draw.
+- **Visibility.** `parametrization` and `mistakes` are exposed only on the lecturer `NumericalElement` type, never on the options type shared with participant element data. Explanations of open escape stages are withheld.
+- **Statistics.** Answers to a per-attempt stage skip the shared instance results and statistics, because each player answers different numbers. Response records, points and XP are still written.
+- **Mistakes.** A wrong or revealing answer within a mistake range records `<instanceId>:<key>` in the stage outcome's `mistakes` and returns the label and feedback (stack feedback, the `mistake` extension of `ESCAPE_ROOM_LOCKOUT` and `ESCAPE_ROOM_REVEALED`, or the Response API JSON). Live Quiz activation caches the ranges and labels next to the solutions. A mistake overlapping the solution is dropped, and bonus stages record none. The progress service counts mistakes per stage with labels from the instance data.
+
 ### Individual Practice Quiz and Microlearning
 
 Participants must explicitly start one unique attempt per activity. The backend masks future stacks, validates that submissions target the current stage, claims concurrent submissions through Redis, grades exact response sets, applies the scoring rules, and completes the attempt once every non-bonus stack is solved, revealed, or skipped. Participant payloads never contain QR answer codes or unused hint text.

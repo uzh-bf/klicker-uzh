@@ -380,7 +380,9 @@ export async function prepareEscapeRoomStackSubmission(
 export async function finalizeEscapeRoomStackSubmission(
   state: EscapeRoomStackSubmissionState,
   stackFeedback: StackFeedbackStatus,
-  ctx: Context
+  ctx: Context,
+  // keys of typical mistakes matched by this submission
+  mistakeKeys: string[] = []
 ) {
   if (state.kind !== 'escape-room') return false
 
@@ -417,6 +419,9 @@ export async function finalizeEscapeRoomStackSubmission(
     : {
         ...current,
         wrongAttempts: wrong!.wrongAttempts,
+        ...(mistakeKeys.length > 0
+          ? { mistakes: [...(current.mistakes ?? []), ...mistakeKeys] }
+          : {}),
         ...(wrong!.revealed
           ? { outcome: 'REVEALED' as const, at: now.toISOString() }
           : {}),

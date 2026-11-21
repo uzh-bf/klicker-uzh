@@ -3,6 +3,7 @@ import type {
   CaseStudyCaseSolution,
   CaseStudyResponseObject,
   ChoicesResponse,
+  NumericalMistakeRange,
   NumericalSolutionRange,
 } from '@klicker-uzh/types'
 import { isDeepEqual, toLowerCase } from 'remeda'
@@ -142,6 +143,23 @@ export function gradeQuestionNumerical({
 interface GradeQuestionFreeTextArgs {
   response: string
   solutions: string[] | undefined | null
+}
+
+// Returns the key of the first typical mistake whose range contains the
+// response, or null. Ranges are computed for the participant's own numbers.
+export function matchNumericalMistake({
+  response,
+  mistakeRanges,
+}: {
+  response: number
+  mistakeRanges?: NumericalMistakeRange[] | null
+}): string | null {
+  if (!Number.isFinite(response) || !mistakeRanges?.length) return null
+  const match = mistakeRanges.find(
+    ({ min, max }) =>
+      response >= min - Number.EPSILON && response <= max + Number.EPSILON
+  )
+  return match?.key ?? null
 }
 
 export function gradeQuestionFreeText({

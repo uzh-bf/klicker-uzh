@@ -127,7 +127,7 @@ function GroupActivityGrading() {
               <Button
                 onClick={() =>
                   window.open(
-                    `/courses/grading/groupActivity/${groupActivity.id}/escape-projector?digest=${encodeURIComponent(escapeRoomData.escapeRoomProgress!.projectorDigest!)}`,
+                    `/${router.locale}/courses/grading/groupActivity/${groupActivity.id}/escape-projector?digest=${encodeURIComponent(escapeRoomData.escapeRoomProgress!.projectorDigest!)}`,
                     '_blank',
                     'noopener'
                   )

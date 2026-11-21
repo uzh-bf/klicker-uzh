@@ -44,6 +44,7 @@ import {
   endEscapeRoomSession,
   getEscapeRoomEffectivePhase,
   getEscapeRoomRulesData,
+  renderEscapeRoomElementForAttempt,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
@@ -64,6 +65,7 @@ import {
   updateNumericalResults,
   updateSelectionResults,
 } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
@@ -1091,6 +1093,7 @@ export async function manipulateGroupActivity(
               duplicationInstances,
               elementMap,
               userId: ctx.user.sub,
+              renderElementData: renderInstanceElementData,
             })
           ),
         },
@@ -1532,7 +1535,12 @@ export async function getGroupActivityDetails(
         where: {
           groupId_groupActivityId: { groupId, groupActivityId: activityId },
         },
-        select: { hintsUsed: true, stageResponses: true, status: true },
+        select: {
+          id: true,
+          hintsUsed: true,
+          stageResponses: true,
+          status: true,
+        },
       })
     : null
 
@@ -1550,9 +1558,33 @@ export async function getGroupActivityDetails(
         )
       : groupActivity.stacks
 
+  // Visible stages show the group's own numbers; the explanation of the stage
+  // the group is still working on stays hidden.
+  const clearedStageIds = new Set(
+    parseGroupEscapeRoomStageResponses(attempt?.stageResponses).map(
+      (entry) => entry.instanceId
+    )
+  )
+  const attemptStacks = attempt
+    ? visibleStacks.map((stack) => ({
+        ...stack,
+        elements: stack.elements.map((element) =>
+          renderEscapeRoomElementForAttempt(
+            element,
+            attempt.id,
+            // a completed attempt may still answer its bonus stage, so the
+            // bonus explanation stays hidden until the team answers it
+            (attempt.status === DB.EscapeRoomStatus.IN_PROGRESS ||
+              attempt.status === DB.EscapeRoomStatus.COMPLETED) &&
+              !clearedStageIds.has(element.id)
+          )
+        ),
+      }))
+    : visibleStacks
+
   return {
     ...groupActivity,
-    stacks: restoreUsedEscapeRoomHints(visibleStacks, attempt?.hintsUsed ?? []),
+    stacks: restoreUsedEscapeRoomHints(attemptStacks, attempt?.hintsUsed ?? []),
     // Locked stages are withheld above, so the participant cannot count them.
     escapeRoomStageCount: groupActivity.escapeRoomConfig
       ? getGroupEscapeRoomStages(groupActivity.stacks).length

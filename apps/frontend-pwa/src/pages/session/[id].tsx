@@ -122,6 +122,11 @@ Promise<
             json.bonus === 'correct' || json.bonus === 'wrong'
               ? json.bonus
               : null,
+          mistake:
+            typeof json.mistake?.label === 'string' &&
+            typeof json.mistake?.feedback === 'string'
+              ? { label: json.mistake.label, feedback: json.mistake.feedback }
+              : null,
         }
       }
     } catch (_) {

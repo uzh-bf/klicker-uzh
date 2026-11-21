@@ -43,7 +43,7 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
       min?: number | string | null
       max?: number | string | null
     } | null
-    solutionType?: 'range' | 'exact'
+    solutionType?: 'range' | 'exact' | 'formula'
     solutionRanges?:
       | {
           min?: number | string | null
@@ -51,7 +51,41 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
         }[]
       | null
     exactSolutions?: (number | string)[] | null
+    // per-attempt numbers, used when solutionType is 'formula'
+    parametrization?: NumericalParametrizationFormValues
+    // typical mistakes, usable with every solution type
+    mistakes?: NumericalMistakeFormValues[]
   }
+}
+
+// Form state of per-attempt numbers; number inputs may hold empty strings.
+export interface NumericalVariableFormValues {
+  name: string
+  kind: 'INTEGER' | 'RANGE' | 'PICK'
+  min?: number | string | null
+  max?: number | string | null
+  step?: number | string | null
+  values?: string | null
+  decimals?: number | string | null
+}
+
+export interface NumericalParametrizationFormValues {
+  variables: NumericalVariableFormValues[]
+  derived: {
+    name: string
+    formula: string
+    decimals?: number | string | null
+  }[]
+  solution: { formula: string; tolerance: number | string }
+  numberFormat: 'APOSTROPHE' | 'COMMA'
+}
+
+export interface NumericalMistakeFormValues {
+  key: string
+  label: string
+  feedback: string
+  formula: string
+  tolerance: number | string
 }
 
 export interface ElementFormTypesFreeText extends SharedQuestionFormProps {

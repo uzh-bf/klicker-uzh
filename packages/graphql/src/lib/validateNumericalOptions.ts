@@ -13,6 +13,10 @@ function validateNumericalOptions(options?: ElementOptionsInput | null) {
     return false
   }
 
+  // a parametrized element computes its solution from a formula per attempt;
+  // the formula is validated together with the content in manipulateElement
+  if (options.parametrization) return true
+
   // if sample solution is enabled, check for solution ranges or exact solutions
   if (options.hasSampleSolution) {
     // either solution ranges or exact solutions need to be defined

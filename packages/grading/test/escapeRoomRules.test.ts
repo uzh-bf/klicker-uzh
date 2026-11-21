@@ -5,6 +5,7 @@ import {
   resolveEscapeRoomAnswerableStage,
   getEscapeRoomHintPenalty,
   isEscapeRoomBonusStage,
+  parseEscapeRoomStageOutcomeRecords,
   rankEscapeRoomScores,
   scoreEscapeRoomAttempt,
   type EscapeRoomRules,
@@ -185,5 +186,24 @@ describe('escape room answerable stage', () => {
 
   it('maps a missing config to rules that are all off', () => {
     expect(getEscapeRoomRulesFromConfig(null).maxWrongAttempts).toBeNull()
+  })
+})
+
+describe('escape room stage outcome records', () => {
+  it('keeps mistake keys through a parse and write round trip', () => {
+    const records = parseEscapeRoomStageOutcomeRecords([
+      {
+        stageKey: '7',
+        wrongAttempts: 2,
+        outcome: null,
+        at: null,
+        mistakes: ['el-1:sign', 3, 'el-1:factor'],
+      },
+    ])
+    expect(records[0]?.mistakes).toEqual(['el-1:sign', 'el-1:factor'])
+    const again = parseEscapeRoomStageOutcomeRecords(
+      JSON.parse(JSON.stringify(records))
+    )
+    expect(again).toEqual(records)
   })
 })

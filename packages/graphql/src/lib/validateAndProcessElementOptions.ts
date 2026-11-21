@@ -51,7 +51,9 @@ function validateAndProcessElementOptions(
       if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options.hasSampleSolution,
+        hasSampleSolution: options.parametrization
+          ? true
+          : options.hasSampleSolution,
         unit: options.unit ?? undefined,
         accuracy: options.accuracy ?? undefined,
         placeholder: options.placeholder ?? undefined,
@@ -60,13 +62,19 @@ function validateAndProcessElementOptions(
           max: options.restrictions?.max ?? undefined,
         },
         solutionRanges:
-          options.hasSampleSolution && options.solutionRanges
+          options.hasSampleSolution &&
+          options.solutionRanges &&
+          !options.parametrization
             ? options.solutionRanges
             : undefined,
         exactSolutions:
-          options.hasSampleSolution && options.exactSolutions
+          options.hasSampleSolution &&
+          options.exactSolutions &&
+          !options.parametrization
             ? options.exactSolutions
             : undefined,
+        parametrization: options.parametrization,
+        mistakes: options.mistakes,
       }
     }
 

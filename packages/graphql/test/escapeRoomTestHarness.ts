@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { afterAll, beforeAll, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
+import { renderInstanceElementData } from '../src/lib/numericalParametrization.js'
 import {
   getEscapeRoomExpiresInSeconds,
   getEscapeRoomHints,
@@ -208,7 +209,9 @@ async function seedEscapeRoomPracticeQuiz(
       ownerId: ctx.user.sub,
       stacks: {
         create: elements.map((element, index) => {
-          const elementData = processElementData(element)
+          const elementData = renderInstanceElementData(
+            processElementData(element)
+          )
           const results = getInitialInstanceResults(elementData)
           return {
             order: index,
@@ -300,7 +303,9 @@ async function seedEscapeRoomGroupActivity(
           type: DB.ElementStackType.GROUP_ACTIVITY,
           elements: {
             create: elements.map((element, index) => {
-              const elementData = processElementData(element)
+              const elementData = renderInstanceElementData(
+                processElementData(element)
+              )
               const results = getInitialInstanceResults(elementData)
               return {
                 order: index,
@@ -376,7 +381,9 @@ async function seedEscapeRoomMicroLearning(
       ownerId: ctx.user.sub,
       stacks: {
         create: elements.map((element, index) => {
-          const elementData = processElementData(element)
+          const elementData = renderInstanceElementData(
+            processElementData(element)
+          )
           const results = getInitialInstanceResults(elementData)
           return {
             order: index,
