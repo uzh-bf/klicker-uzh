@@ -51,6 +51,56 @@ export function extractProviderFromAffiliationId(
   }
 }
 
+export function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const trimmed = headerValue.trim()
+  let separatorIndex = -1
+
+  for (let index = 0; index < trimmed.length; index++) {
+    const char = trimmed[index]
+    if (
+      char === ' ' ||
+      char === '\t' ||
+      char === '\n' ||
+      char === '\r' ||
+      char === '\f'
+    ) {
+      separatorIndex = index
+      break
+    }
+  }
+
+  if (separatorIndex === -1) return null
+  if (trimmed.slice(0, separatorIndex).toLowerCase() !== 'bearer') return null
+
+  const token = trimmed.slice(separatorIndex).trim()
+  return token.length > 0 ? token : null
+}
+
+export const LTI_PROBE_COOKIE_NAME = 'lti-token'
+
+export function cookiesAvailableViaLtiProbe(
+  cookies: Record<string, string | undefined>
+): boolean {
+  return !!cookies[LTI_PROBE_COOKIE_NAME]
+}
+
+export function cookieSecurityOptions({
+  isProduction,
+}: {
+  isProduction: boolean
+}): {
+  secure: boolean
+  sameSite: 'lax' | 'none'
+  partitioned: boolean
+} {
+  return {
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    partitioned: isProduction,
+  }
+}
+
 /**
  * Reduce over affiliation strings to determine whether the Catalyst flag should be set.
  * Returns true if any affiliation domain contains 'uzh.ch' or 'usz.ch'.
@@ -67,6 +117,28 @@ export function reduceCatalyst(acc: boolean, affiliation: string): boolean {
   } catch {
     return false
   }
+}
+
+function isUzhDomain(address: string | null | undefined): boolean {
+  const domain = address?.split('@')[1]?.trim().toLowerCase()
+  return domain === 'uzh.ch' || domain?.endsWith('.uzh.ch') === true
+}
+
+/**
+ * Whether an account belongs to UZH proper: its email, or one of its eduID
+ * affiliations, is on `uzh.ch` or a subdomain of it. Unlike `reduceCatalyst`,
+ * this excludes USZ and look-alike domains such as `notuzh.ch`. The data
+ * migration `20261103200000_ai_features_for_uzh_lecturers` applies the same
+ * rule in SQL.
+ */
+export function isUzhAffiliated({
+  email,
+  affiliations,
+}: {
+  email?: string | null
+  affiliations?: string[] | null
+}): boolean {
+  return isUzhDomain(email) || (affiliations ?? []).some(isUzhDomain)
 }
 
 /**

@@ -54,17 +54,27 @@ export function isAiTelemetryEnabled() {
   return getLangfuseTelemetryConfiguration().enabled
 }
 
-export async function getChatTraceContext({
-  assistantMessageId,
-  chatbotId,
-  threadId,
-}: {
+type ChatTraceIdentity = {
   assistantMessageId: string
   chatbotId: string
   threadId: string
-}) {
+}
+
+/** Pseudonymous Langfuse trace id of one assistant answer. */
+export function getTraceIdForMessage({
+  assistantMessageId,
+  chatbotId,
+  threadId,
+}: ChatTraceIdentity) {
+  return createTraceId(
+    `chat-turn:${chatbotId}:${threadId}:${assistantMessageId}`
+  )
+}
+
+export async function getChatTraceContext(identity: ChatTraceIdentity) {
+  const { chatbotId, threadId } = identity
   const [traceId, sessionId, pseudonymousChatbotId] = await Promise.all([
-    createTraceId(`chat-turn:${chatbotId}:${threadId}:${assistantMessageId}`),
+    getTraceIdForMessage(identity),
     createTraceId(`chat-session:${threadId}`),
     createTraceId(`chatbot:${chatbotId}`),
   ])
@@ -224,7 +234,12 @@ export async function registerLangfuseTelemetry() {
         mask: maskLangfuseData,
       })
     )
-    const sdk = new NodeSDK({ spanProcessors: [processor] })
+    const sdk = new NodeSDK({
+      // Identifies spans in Langfuse as coming from the chat app; without an
+      // explicit name the exporter reports the generic unknown_service:node.
+      serviceName: 'klicker-chat',
+      spanProcessors: [processor],
+    })
 
     try {
       sdk.start()
@@ -242,8 +257,4 @@ export async function registerLangfuseTelemetry() {
     })
     return false
   }
-}
-
-export function resetLangfuseTelemetryForTests() {
-  delete runtimeState.__klickerLangfuseRuntime
 }

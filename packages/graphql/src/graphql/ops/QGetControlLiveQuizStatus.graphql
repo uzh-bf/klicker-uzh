@@ -1,0 +1,13 @@
+query GetControlLiveQuizStatus($id: String!) {
+  liveQuiz(id: $id) {
+    id
+    name
+    status
+    course {
+      id
+    }
+    blocks {
+      id
+    }
+  }
+}

@@ -1,0 +1,16 @@
+mutation CaptureResponseExample(
+  $chatbotId: String!
+  $receipt: String!
+  $question: String!
+  $answer: String!
+) {
+  captureResponseExample(
+    chatbotId: $chatbotId
+    receipt: $receipt
+    question: $question
+    answer: $answer
+  ) {
+    exampleId
+    created
+  }
+}

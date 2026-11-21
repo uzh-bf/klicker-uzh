@@ -1,0 +1,9 @@
+query GetUnassignedControlLiveQuizzes {
+  unassignedLiveQuizzes {
+    id
+    name
+    status
+    isAssessmentEnabled
+    availableFrom
+  }
+}

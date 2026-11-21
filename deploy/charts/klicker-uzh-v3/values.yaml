@@ -239,6 +239,11 @@ chat:
   mcp:
     key: ''
 
+  mediaWorkloadIdentity:
+    enabled: false
+    # The infrastructure stack owns the ServiceAccount and same-named storage ConfigMap.
+    serviceAccountName: ''
+
   videoBlob:
     accountName: ''
     container: ''

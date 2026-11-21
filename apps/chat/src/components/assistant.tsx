@@ -14,17 +14,31 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
+import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
+import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
+import { authedFetch } from '../lib/client/authedFetch'
+import type { ChatModeOptions } from '../lib/config/modes'
+import { getKlickerChatContextLabel } from '../services/chatContext'
+import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
-import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
+import { EmbeddedToolbar } from './embedded-settings'
+import { FullscreenToggle } from './fullscreen-toggle'
+import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
+import {
+  ChatKnowledgeGraphPanel,
+  useChatGraphPanel,
+} from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 interface ChatbotDisclaimer {
   id: string
@@ -45,7 +59,9 @@ interface DisclaimerStatus {
 
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
-  readonly initialModeOptions: Record<string, string>
+  readonly initialModeOptions: ChatModeOptions
+  readonly initialModeOptionsAreFallback?: boolean
+  readonly knowledgeGraphVisible: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -63,8 +79,18 @@ interface DisclaimerDeclinedProps {
   readonly onDecline: () => Promise<void>
 }
 
-export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
+export function Assistant({
+  chatbot,
+  initialModeOptions,
+  initialModeOptionsAreFallback = false,
+  knowledgeGraphVisible,
+}: AssistantProps) {
+  // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
+  // sessionStorage and strip it from the URL on first render.
+  useChatGuestTokenBootstrap()
+
   const t = useTranslations()
+  usePwaEmbedTokenBootstrap()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
     (state) => state.participationRequired
@@ -123,7 +149,12 @@ export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
           initialModeOptions={initialModeOptions}
         >
           <HandoffPrefill />
-          <AssistantLayout chatbot={chatbot} />
+          <AssistantLayout
+            chatbot={chatbot}
+            initialModeOptions={initialModeOptions}
+            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            knowledgeGraphVisible={knowledgeGraphVisible}
+          />
         </RuntimeProvider>
       </ChatUiProvider>
 
@@ -154,7 +185,9 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
   useEffect(() => {
     const fetchDisclaimerInfo = async () => {
       try {
-        const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`)
+        const response = await authedFetch(
+          `/api/chatbots/${chatbotId}/disclaimer`
+        )
         if (response.ok) {
           const data = await response.json()
           setDisclaimer(data.disclaimer)
@@ -192,16 +225,19 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'accept',
-          disclaimerId: disclaimer.id,
-        }),
-      })
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'accept',
+            disclaimerId: disclaimer.id,
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
@@ -227,15 +263,18 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'decline',
-        }),
-      })
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'decline',
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
@@ -464,11 +503,20 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
+  graphPanel,
+  knowledgeGraphVisible,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
+  graphPanel: ReturnType<typeof useChatGraphPanel>
+  knowledgeGraphVisible: boolean
+  initialModeOptions: ChatModeOptions
+  initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
+  const { headerless } = useChatUi()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const createThread = useChatStore((state) => state.createThread)
@@ -487,102 +535,112 @@ function SidebarMain({
     }
   }
 
+  const newChatButton = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleNewThread}
+          disabled={participationRequired}
+          className={twMerge(toolbarIconButtonClassName, open && 'md:hidden')}
+        >
+          <Plus aria-hidden="true" className="size-4" />
+          <span className="sr-only">{t('chat.sidebar.newChat')}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
+    </Tooltip>
+  )
+
   return (
-    <SidebarInset id="main-content" tabIndex={-1}>
-      <header
-        data-cy="chat-header"
-        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5"
-      >
-        {/* Only visible when the sidebar is closed — once it's open, the
-            sidebar's own trigger closes it, so this stays the single toggle
-            on screen at any given time. The dedicated grid column keeps the
-            title, mode menu, and new-chat action from overlapping at narrow
-            widths. */}
-        <SidebarTrigger
-          className={twMerge(
-            'size-11 touch-manipulation fine-pointer:size-8',
-            open && 'md:hidden'
-          )}
-          aria-label={t('chat.sidebar.openSidebar')}
-        />
-        {/* Persistent header identity (V3): name (+ avatar) stays visible
-            here regardless of sidebar open/closed state, so the sidebar's own
-            header no longer repeats it (see app-sidebar.tsx). */}
-        <div className="flex min-w-0 items-center gap-2">
-          {chatbot.avatar && (
-            <Image
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
-              alt=""
-              width={24}
-              height={24}
-              unoptimized
-              className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
-            />
-          )}
-          <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
-        </div>
-        <ModeSwitcher />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={handleNewThread}
-              disabled={participationRequired}
+    <SidebarInset className="relative min-w-0">
+      {headerless ? (
+        // A framed chat keeps its height for the conversation: no header bar.
+        // The page heading stays for assistive tech and the mode menu moves
+        // into the sidebar. From md up the remaining controls float over the
+        // thread corners; below md they share one slim row with the credits,
+        // which would otherwise sit underneath them.
+        <>
+          <h1 className="sr-only">{chatbot.name}</h1>
+          <div
+            data-cy="chat-overlay-controls"
+            className="flex shrink-0 items-center gap-1 border-b px-1 py-0.5 md:contents"
+          >
+            <div
+              data-cy="chat-overlay-controls-start"
               className={twMerge(
-                'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
+                'flex shrink-0 items-center gap-1 md:bg-background/85 md:absolute md:left-1 md:top-1 md:z-20 md:rounded-lg md:border md:shadow-sm md:backdrop-blur-sm',
                 open && 'md:hidden'
               )}
             >
-              <Plus aria-hidden="true" className="size-4" />
-              <span className="sr-only">{t('chat.sidebar.newChat')}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
-        </Tooltip>
-      </header>
-      <MobileCreditsBar />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          {isLoading && (
-            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
-              <ThreadSkeleton />
+              <SidebarTrigger
+                className={toolbarIconButtonClassName}
+                aria-label={t('chat.sidebar.openSidebar')}
+              />
+              {newChatButton}
             </div>
-          )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
+            {/* Below md the sidebar is a drawer, so the mode stays reachable
+                here. */}
+            <ModeSwitcher className="md:hidden" testIdPrefix="chat-row-mode" />
+            <MobileCreditsBar inline />
+            <div
+              data-cy="chat-overlay-controls-end"
+              className="ml-auto flex shrink-0 items-center gap-1 empty:hidden md:bg-background/85 md:absolute md:right-1 md:top-1 md:z-20 md:rounded-lg md:border md:shadow-sm md:backdrop-blur-sm"
+            >
+              {knowledgeGraphVisible ? (
+                <ChatGraphModeSwitch
+                  open={graphPanel.open}
+                  onToggle={graphPanel.toggle}
+                />
+              ) : null}
+              <FullscreenToggle />
+            </div>
+          </div>
+        </>
+      ) : (
+        <header
+          data-cy="chat-header"
+          className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5"
+        >
+          {/* Only visible when the sidebar is closed — once it's open, the
+            sidebar's own trigger closes it, so this stays the single toggle
+            on screen at any given time. A flex row (not a fixed grid) keeps
+            the title truncating in the remaining width when this trigger and
+            the new-chat action are hidden. */}
+          <SidebarTrigger
+            className={twMerge(toolbarIconButtonClassName, open && 'md:hidden')}
+            aria-label={t('chat.sidebar.openSidebar')}
           />
-        </div>
-      </div>
-    </SidebarInset>
-  )
-}
-
-function AssistantLayout({
-  chatbot,
-}: {
-  chatbot: { id: string; name: string; avatar?: string }
-}) {
-  const { showSidebar } = useChatUi()
-  const isLoading = useChatStore((state) => state.isLoading)
-
-  if (showSidebar) {
-    return (
-      <SidebarProvider className="h-dvh overflow-hidden">
-        <AppSidebar />
-        <SidebarMain chatbot={chatbot} />
-      </SidebarProvider>
-    )
-  }
-
-  return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
-        <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
-          {chatbot.name}
-        </h1>
-        <EmbeddedSettings />
-      </div>
+          {/* Persistent header identity (V3): name (+ avatar) stays visible
+            here regardless of sidebar open/closed state, so the sidebar's own
+            header no longer repeats it (see app-sidebar.tsx). */}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {chatbot.avatar && (
+              <Image
+                src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
+                alt=""
+                width={24}
+                height={24}
+                unoptimized
+                className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
+              />
+            )}
+            <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
+          </div>
+          <ModeSwitcher />
+          {newChatButton}
+          <div className="flex items-center gap-2">
+            {knowledgeGraphVisible ? (
+              <ChatGraphModeSwitch
+                open={graphPanel.open}
+                onToggle={graphPanel.toggle}
+              />
+            ) : null}
+            <FullscreenToggle />
+          </div>
+        </header>
+      )}
+      {headerless ? null : <MobileCreditsBar />}
       <main
         id="main-content"
         tabIndex={-1}
@@ -594,12 +652,108 @@ function AssistantLayout({
               <ThreadSkeleton />
             </div>
           )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-          />
+          <ChatKnowledgeGraphPanel
+            chatbotId={chatbot.id}
+            open={graphPanel.open}
+            onClose={graphPanel.close}
+            focusRequest={graphPanel.focusRequest}
+            onFocusConcept={graphPanel.focusConcept}
+          >
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          </ChatKnowledgeGraphPanel>
         </div>
-        <EmbeddedCreditsBar />
+      </main>
+    </SidebarInset>
+  )
+}
+
+function AssistantLayout({
+  chatbot,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
+  knowledgeGraphVisible,
+}: {
+  chatbot: { id: string; name: string; avatar?: string }
+  initialModeOptions: ChatModeOptions
+  initialModeOptionsAreFallback: boolean
+  knowledgeGraphVisible: boolean
+}) {
+  const t = useTranslations('chat.thread.learningContext')
+  const { showSidebar } = useChatUi()
+  const isLoading = useChatStore((state) => state.isLoading)
+  const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
+  useEmbeddedChatContext()
+  const context = useChatContextStore((state) => state.context)
+  const contextUnavailable = useChatContextStore(
+    (state) => state.contextUnavailable
+  )
+  const contextLabel = getKlickerChatContextLabel(context)
+  const hasQuestionContext =
+    context?.source === 'pwa' && Boolean(context.question)
+
+  if (showSidebar) {
+    return (
+      <SidebarProvider className="h-dvh overflow-hidden">
+        <AppSidebar />
+        <SidebarMain
+          chatbot={chatbot}
+          graphPanel={graphPanel}
+          knowledgeGraphVisible={knowledgeGraphVisible}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+        />
+      </SidebarProvider>
+    )
+  }
+
+  return (
+    <div className="flex h-dvh w-full flex-col overflow-hidden">
+      <div className="bg-muted/50 flex shrink-0 items-center border-b px-3 py-2">
+        <EmbeddedToolbar />
+      </div>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        {contextUnavailable && (
+          <p
+            role="status"
+            className="text-muted-foreground border-b px-4 py-2 text-xs"
+          >
+            {t('refreshUnavailable')}
+          </p>
+        )}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {isLoading && (
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
+            </div>
+          )}
+          {/* Embedded mode shows no graph toggle, but the /graph deep link
+              stays reachable for direct embedding of the graph pane. */}
+          <ChatKnowledgeGraphPanel
+            chatbotId={chatbot.id}
+            open={graphPanel.open}
+            onClose={graphPanel.close}
+            focusRequest={graphPanel.focusRequest}
+            onFocusConcept={graphPanel.focusConcept}
+          >
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              contextLabel={contextLabel}
+              contextualSuggestions={hasQuestionContext}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          </ChatKnowledgeGraphPanel>
+        </div>
       </main>
     </div>
   )

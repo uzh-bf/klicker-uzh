@@ -64,5 +64,20 @@ describe('answer preference settings', () => {
       answerStyle: 'bullets',
       answerTone: 'direct',
     })
+
+    for (const preferences of [
+      { answerStyle: 'retired', answerTone: 'shouty' },
+      { answerStyle: null, answerTone: 3 },
+    ]) {
+      items.set(
+        'settings-storage',
+        JSON.stringify({ state: preferences, version: 0 })
+      )
+      await useSettingsStore.persist.rehydrate()
+      expect(useSettingsStore.getState()).toMatchObject({
+        answerStyle: DEFAULT_ANSWER_STYLE,
+        answerTone: DEFAULT_ANSWER_TONE,
+      })
+    }
   })
 })

@@ -34,8 +34,10 @@ hatchet:
     workflowName: 'course-kg-ingestion'
     standardGenerationModel: 'klickeruzh/azure/gpt-6-luna'
     standardCleaningModel: 'klickeruzh/azure/gpt-6-luna'
-    highGenerationModel: 'klickeruzh/azure/gpt-6-luna'
-    highCleaningModel: 'klickeruzh/azure/gpt-6-luna'
+    # The High tier tests GPT-6.1 Terra at low reasoning effort. Terra costs
+    # about ten times Luna per token, so the High estimate below follows it.
+    highGenerationModel: 'klickeruzh/azure/gpt-6.1-terra-low'
+    highCleaningModel: 'klickeruzh/azure/gpt-6.1-terra-low'
   workers:
     general:
       replicaCount: 1
@@ -194,6 +196,9 @@ auth:
       memory: 512Mi
 
 chat:
+  mediaWorkloadIdentity:
+    enabled: true
+    serviceAccountName: chat-course-media-reader
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
@@ -692,14 +697,14 @@ backendGraphql:
     cost:
       currency: 'CHF'
       standardEstimateMinorUnits: '100'
-      highEstimateMinorUnits: '200'
-      maxCostMinorUnits: '250'
+      highEstimateMinorUnits: '2000'
+      maxCostMinorUnits: '2500'
       # Staging carries the full domain and language comparison plus element
       # generation, so the 10.00 CHF semester budget does not cover a test
       # cycle. The backend adopts a configured limit at or above an owner's
       # granted ledger limit; a lower configured value never reduces it.
       semesterQuotaMinorUnits: '10000'
-      pricingVersion: 'stg-canary-v1'
+      pricingVersion: 'stg-canary-v2'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
 

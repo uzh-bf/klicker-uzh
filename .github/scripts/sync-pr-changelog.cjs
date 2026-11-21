@@ -183,7 +183,7 @@ function createChangelog({
     if (closed) throw new Error('Changelog analysis is closed')
     try {
       return execFileSync(
-        'git',
+        '/usr/bin/git',
         [
           '-c',
           `core.hooksPath=${os.devNull}`,

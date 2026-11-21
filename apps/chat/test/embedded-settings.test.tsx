@@ -20,7 +20,13 @@ const mocks = vi.hoisted(() => ({
   },
 }))
 
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ chatbotId: 'synthetic-chatbot' }),
+  useSearchParams: () => new URLSearchParams('embed=true'),
+}))
+
 vi.mock('next-intl', () => ({
+  useLocale: () => 'en',
   useTranslations: () => (key: string) => key,
 }))
 

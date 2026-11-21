@@ -8,9 +8,15 @@ interface FCEvaluationProps {
   evaluation: FlashcardActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
+  showPercentages?: boolean
 }
 
-function FCEvaluation({ evaluation, textSize, chartType }: FCEvaluationProps) {
+function FCEvaluation({
+  evaluation,
+  textSize,
+  chartType,
+  showPercentages,
+}: FCEvaluationProps) {
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex-none">
@@ -27,6 +33,7 @@ function FCEvaluation({ evaluation, textSize, chartType }: FCEvaluationProps) {
           showSolution={false}
           showExplanation={false}
           textSize={textSize}
+          showPercentages={showPercentages}
         />
       </div>
     </div>

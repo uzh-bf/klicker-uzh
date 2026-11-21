@@ -5092,3 +5092,39 @@ test('provider unavailability blocks final status even with successful stage env
     assert.equal(status.description.includes('evidence='), false)
   }
 })
+
+test('finding evidence supports code spans containing template literal backticks', () => {
+  const { validateFinding } = require('./final-ai-review')
+  const finding = {
+    path: 'src/example.ts',
+    start_line: 1,
+    end_line: 1,
+    category: 'bug',
+    severity: 'medium',
+    content:
+      'Confidence: 80/100\nAutofix: manual\nMotivating line: ``return `hello ${name}` ``\nExplain the failure.',
+  }
+  assert.doesNotThrow(() => validateFinding(finding, 0))
+  for (const line of [
+    '``return value`',
+    '`return `value``',
+    '`` ``',
+    '```return value``',
+  ]) {
+    assert.throws(() =>
+      validateFinding(
+        {
+          ...finding,
+          content: `Confidence: 80/100\nAutofix: manual\nMotivating line: ${line}\nExplain the failure.`,
+        },
+        0
+      )
+    )
+  }
+  assert.throws(() =>
+    validateFinding(
+      { ...finding, content: finding.content.replace('80/100', '74/100') },
+      0
+    )
+  )
+})

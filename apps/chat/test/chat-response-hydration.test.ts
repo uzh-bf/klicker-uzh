@@ -9,13 +9,20 @@ import {
   parseMessageDocuments,
 } from '../src/lib/attachments/documentText'
 
-const { mockUseChatStore, modelCapability } = vi.hoisted(() => ({
-  modelCapability: { readsPages: false },
-  mockUseChatStore: Object.assign(vi.fn(), {
-    getState: vi.fn(),
-    setState: vi.fn(),
-  }),
-}))
+const { mockUseChatContextStore, mockUseChatStore, modelCapability } =
+  vi.hoisted(() => ({
+    // The real store is a zustand store, so the stand-in carries the same
+    // subscribe/getState surface the context hook reads at import time.
+    mockUseChatContextStore: Object.assign(vi.fn(), {
+      subscribe: vi.fn(),
+      getState: vi.fn(() => ({ context: null, parentOrigin: null })),
+    }),
+    modelCapability: { readsPages: false },
+    mockUseChatStore: Object.assign(vi.fn(), {
+      getState: vi.fn(),
+      setState: vi.fn(),
+    }),
+  }))
 
 const loadCreditsMock = vi.fn().mockResolvedValue(undefined)
 
@@ -51,6 +58,10 @@ vi.mock('../src/stores/settingsStore', () => ({
 
 vi.mock('../src/stores/chatStore', () => ({
   useChatStore: mockUseChatStore,
+}))
+
+vi.mock('../src/stores/chatContextStore', () => ({
+  useChatContextStore: mockUseChatContextStore,
 }))
 
 type MockThread = {
@@ -97,6 +108,11 @@ describe('useChatResponse attachment hydration', () => {
       ],
       ensureFullImageAttachments: vi.fn(),
     }
+
+    mockUseChatContextStore.mockReset()
+    mockUseChatContextStore.mockImplementation((selector: any) =>
+      selector({ context: null })
+    )
 
     mockUseChatStore.mockReset()
     mockUseChatStore.mockReturnValue(undefined)
@@ -422,6 +438,61 @@ describe('useChatResponse attachment hydration', () => {
     )
   })
 
+  test('sends embedded chat context with the chat request', async () => {
+    const context = {
+      version: 1,
+      source: 'pwa',
+      surface: 'practice-quiz',
+      locale: 'en',
+      courseId: 'course-1',
+      activity: { type: 'practiceQuiz', id: 'quiz-1' },
+      question: {
+        stackId: '10',
+        elementInstanceId: 20,
+        type: 'SC',
+        contentPreview: 'What is opportunity cost?',
+        currentStep: 1,
+        totalSteps: 3,
+      },
+    }
+    mockUseChatContextStore.mockImplementation((selector: any) =>
+      selector({ context })
+    )
+
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"hello"}',
+          'data: {"type":"finish","messageMetadata":{"chatMode":"chat","modelId":"model-1","reasoningEffort":"medium"}}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'help me' }],
+          parentId: null,
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).toMatchObject({
+      chatContext: context,
+    })
+  })
+
   test('same-session local full images are sent directly without hydration', async () => {
     const fetchSpy = vi
       .fn()
@@ -740,6 +811,55 @@ describe('useChatResponse attachment hydration', () => {
     ).toBe(false)
   })
 
+  for (const regenerate of [false, true]) {
+    test(`refreshes the credit balance once the ${regenerate ? 'regenerated' : 'new'} answer has finished`, async () => {
+      // The balance view reads the store that `loadCredits` fills, so the
+      // refetch must start only after the answer (and its server-side charge)
+      // has finished streaming. Record what the thread looked like at that
+      // moment; an expect inside the mock would be swallowed by the hook.
+      let messagesAtRefresh: unknown[] | undefined
+      loadCreditsMock.mockImplementationOnce(async () => {
+        messagesAtRefresh = JSON.parse(
+          JSON.stringify(storeState.threads[0]?.messages ?? [])
+        )
+      })
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValue(
+          createStreamingResponse([
+            'data: {"type":"text-delta","delta":"finished answer"}',
+            'data: {"type":"finish","messageMetadata":{"finishReason":"stop","creditsUsed":0.02}}',
+            'data: [DONE]',
+          ])
+        )
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const { generateChatResponse } = useChatResponse(
+        'model-1',
+        'chat',
+        'medium'
+      )
+
+      await generateChatResponse(
+        [
+          {
+            id: 'message-1',
+            role: 'user',
+            content: [{ type: 'text', text: 'hello' }],
+            parentId: null,
+          },
+        ] as any,
+        'thread-1',
+        regenerate ? { allowRegeneration: true } : undefined
+      )
+
+      expect(loadCreditsMock).toHaveBeenCalledTimes(1)
+      expect(loadCreditsMock).toHaveBeenCalledWith('chatbot-1')
+      expect(JSON.stringify(messagesAtRefresh)).toContain('finished answer')
+      expect(JSON.stringify(messagesAtRefresh)).toContain('"creditsUsed":0.02')
+    })
+  }
+
   test('an aborted request writes the stopped turn to both message arrays after the cancel resync', async () => {
     const fetchSpy = vi.fn().mockRejectedValue(
       Object.assign(new Error('The user aborted a request.'), {
@@ -835,5 +955,101 @@ describe('useChatResponse attachment hydration', () => {
       'message-1',
       'message-2',
     ])
+  })
+
+  describe('empty completed responses', () => {
+    test.each([
+      false,
+      true,
+    ])('classifies tool output by receipt, completed=%s', async (completed) => {
+      const events = [
+        { type: 'tool-input-start', toolCallId: 'call-1', toolName: 'search' },
+        { type: 'tool-input-available', toolCallId: 'call-1', input: {} },
+        ...(completed
+          ? [
+              {
+                type: 'tool-output-available',
+                toolCallId: 'call-1',
+                output: [],
+              },
+            ]
+          : []),
+        { type: 'finish', messageMetadata: { finishReason: 'length' } },
+      ]
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            createStreamingResponse(
+              events.map((event) => `data: ${JSON.stringify(event)}`)
+            )
+          )
+      )
+      const { generateChatResponse } = useChatResponse(
+        'auto',
+        'explainer',
+        'none'
+      )
+      await generateChatResponse(
+        [
+          {
+            id: 'question',
+            role: 'user',
+            content: [{ type: 'text', text: 'Synthetic request' }],
+          },
+        ] as any,
+        'thread-1'
+      )
+      const content = storeState.threads[0]?.messages.at(-1)?.content
+      expect(
+        content.some(
+          (part: any) => part.type === 'data' && part.name === 'chat-error'
+        )
+      ).toBe(!completed)
+      expect((storeState.threads[0] as any).lastRunOutcome).toBe(
+        completed ? 'completed' : 'error'
+      )
+      if (completed) expect(content[0].result).toEqual([])
+      else expect(content.some((part: any) => part.type === 'text')).toBe(false)
+    })
+
+    test.each([
+      'stop',
+      'length',
+    ])('retains retry state for reasoning-only %s finish', async (finishReason) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            createStreamingResponse([
+              'data: {"type":"reasoning-delta","delta":""}',
+              `data: {"type":"finish","messageMetadata":{"finishReason":"${finishReason}"}}`,
+              'data: [DONE]',
+            ])
+          )
+      )
+      const { generateChatResponse } = useChatResponse(
+        'auto',
+        'explainer',
+        'none'
+      )
+      await generateChatResponse(
+        [
+          {
+            id: 'question',
+            role: 'user',
+            content: [{ type: 'text', text: 'Synthetic request' }],
+          },
+        ] as any,
+        'thread-1'
+      )
+      const content = storeState.threads[0]?.messages.at(-1)?.content
+      expect(content).toEqual([
+        { type: 'data', name: 'chat-error', data: { code: 'EMPTY_RESPONSE' } },
+      ])
+      expect((storeState.threads[0] as any).lastRunOutcome).toBe('error')
+    })
   })
 })
