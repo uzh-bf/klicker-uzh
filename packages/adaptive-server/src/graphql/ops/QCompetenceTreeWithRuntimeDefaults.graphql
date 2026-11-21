@@ -1,0 +1,7 @@
+query QCompetenceTreeWithRuntimeDefaults($id: String!) {
+  competenceTree(id: $id) {
+    ...CompetenceTreeData
+    defaultTotalQuestionCap
+    defaultTimeLimitSeconds
+  }
+}

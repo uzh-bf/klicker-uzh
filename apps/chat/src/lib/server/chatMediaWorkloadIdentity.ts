@@ -38,12 +38,20 @@ export function resolveChatMediaWorkloadIdentityStorage(
   const accountName = env[accountVariable]
   if (!accountName || !AZURE_STORAGE_ACCOUNT_NAME.test(accountName))
     throw new Error('Media workload identity storage unavailable')
-  if (!container?.trim())
+  const name = container?.trim()
+  if (
+    !name ||
+    !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(name) ||
+    name.includes('--') ||
+    !env.AZURE_CLIENT_ID?.trim() ||
+    !env.AZURE_TENANT_ID?.trim() ||
+    !env.AZURE_FEDERATED_TOKEN_FILE?.trim()
+  )
     throw new Error('Media workload identity storage unavailable')
 
   return Object.freeze({
     accountName,
-    container,
+    container: name,
   })
 }
 

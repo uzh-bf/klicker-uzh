@@ -64,3 +64,6 @@ pnpm-lock.yaml
 **/*.py
 **/*.txt
 **/.codex/
+
+# Catalyst owns formatting through its standalone CI.
+external/catalyst/
