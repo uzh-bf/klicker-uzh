@@ -1,6 +1,7 @@
 import { useThreadViewportStore } from '@assistant-ui/react'
 import {
   BookOpenIcon,
+  ChevronRightIcon,
   ExternalLinkIcon,
   FileTextIcon,
   ImageIcon,
@@ -82,10 +83,14 @@ function SourceCard({
       >
         {source.index}
       </span>
-      <Icon
-        aria-hidden="true"
-        className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
-      />
+      {/* Documents are the default source kind, so only media and links
+          carry a type icon; the index badge alone identifies a document. */}
+      {source.type !== 'document' && (
+        <Icon
+          aria-hidden="true"
+          className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
+        />
+      )}
       <span className="min-w-0 flex-1">
         {/* Two lines, not `truncate`: these are file names like
             `kapitel-4-erwartungswert-und-varianz.pdf`, which a single
@@ -214,7 +219,7 @@ export function SourcesSection() {
           className="text-muted-foreground mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide"
         >
           <BookOpenIcon aria-hidden="true" className="size-3" />
-          {t('chat.sources.title')} · {sources.length}
+          {t('chat.sources.title')}
         </h3>
         <ul data-cy="chat-cited-sources" className="flex min-w-0 flex-col">
           {citedSources.map((source) => (
@@ -258,27 +263,16 @@ export function SourcesSection() {
     <section
       aria-labelledby={headingId}
       data-cy="chat-sources-section"
-      className="border-border animate-in fade-in mt-3 min-w-0 border-t border-dashed pt-3 duration-300 motion-reduce:animate-none"
+      className="animate-in fade-in mt-3 min-w-0 duration-300 motion-reduce:animate-none"
     >
-      {/* One row for the section heading and the cited-list label. The
-          heading itself stays unchanged: it names the section and anchors the
-          reveal scroll above. */}
-      <div className="text-muted-foreground mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-semibold uppercase tracking-wide">
-        <h3
-          ref={headingRef}
-          id={headingId}
-          className="flex items-center gap-1.5"
-        >
-          <BookOpenIcon aria-hidden="true" className="size-3.5" />
-          {t('chat.sources.title')} · {sources.length}
-        </h3>
-        {previewSources.length > 0 && (
-          <span className="font-medium normal-case tracking-normal">
-            <span aria-hidden="true">· </span>
-            {t('chat.sources.cited')}
-          </span>
-        )}
-      </div>
+      <h3
+        ref={headingRef}
+        id={headingId}
+        className="text-muted-foreground mb-1.5 flex items-center gap-1.5 text-xs font-medium"
+      >
+        <BookOpenIcon aria-hidden="true" className="size-3.5" />
+        {t('chat.sources.title')}
+      </h3>
 
       {previewSources.length > 0 && (
         <>
@@ -302,14 +296,15 @@ export function SourcesSection() {
       )}
 
       {otherSources.length > 0 && (
-        <details
-          data-cy="chat-other-sources"
-          className="mt-3 rounded-md border border-dashed px-3 py-2"
-        >
+        <details data-cy="chat-other-sources" className="group/other mt-1.5">
           <summary
             data-cy="chat-other-sources-toggle"
-            className="text-muted-foreground cursor-pointer text-xs font-semibold uppercase tracking-wide outline-none focus-visible:ring-1"
+            className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer list-none items-center gap-1 rounded-sm text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
           >
+            <ChevronRightIcon
+              aria-hidden="true"
+              className="size-3.5 transition-transform group-open/other:rotate-90 motion-reduce:transition-none"
+            />
             {t('chat.sources.otherRetrieved', {
               count: otherSources.length,
             })}

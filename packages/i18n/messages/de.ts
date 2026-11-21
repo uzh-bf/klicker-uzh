@@ -612,7 +612,6 @@ export default {
     },
     sources: {
       title: 'Quellen',
-      cited: 'In dieser Antwort zitiert',
       otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
