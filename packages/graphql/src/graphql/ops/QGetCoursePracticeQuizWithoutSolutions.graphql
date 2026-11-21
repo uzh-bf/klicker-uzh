@@ -1,0 +1,8 @@
+query GetCoursePracticeQuizWithoutSolutions(
+  $chatbotId: String!
+  $courseId: String!
+) {
+  studentMcpCoursePracticeQuiz(chatbotId: $chatbotId, courseId: $courseId) {
+    ...PracticeQuizDataWithoutSolutions
+  }
+}

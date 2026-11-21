@@ -9,7 +9,7 @@ import {
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import ParticipantDataUseChoices from '@klicker-uzh/shared-components/src/participant/ParticipantDataUseChoices'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/dist/participantAccountDataUse'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
   clearDataUseReturnTarget,

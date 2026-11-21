@@ -39,7 +39,7 @@ Reuse and revalidate existing owners before creating any competing PR:
 | [#5881 — maintenance reconciliation](https://github.com/uzh-bf/klicker-uzh/pull/5881) | Reuse applicable integration work only after checking current parents and scope. Its production-control/value changes are not implicitly approved by this staging plan. |
 | [#5882 — explicit staging selection](https://github.com/uzh-bf/klicker-uzh/pull/5882) | Reuse the narrow trusted-controller repair. Refresh CI and review; the preparatory production receipt helper is not production enforcement. |
 | [#5883 — audit forward integration](https://github.com/uzh-bf/klicker-uzh/pull/5883) | Reconcile against today's audit head. Its historical claim of tree equality with maintenance must not remove the 11 current audit-only commits. |
-| [#5905 — audit media capture](https://github.com/uzh-bf/klicker-uzh/pull/5905) | Treat as a conditional audit-acceptance prerequisite if copied/legacy media is part of the staging contract. It has failed general checks and unverified source-storage access; repair and verify before inclusion. |
+| [#5905 — audit media capture](https://github.com/uzh-bf/klicker-uzh/pull/5905) | Leave unmerged. Separate the existing lock-response verification bug from additional source-account support. Legacy-account capture is excluded from this cutover. |
 
 Use existing merge/sync PRs if their ownership and final diff fit this scope; otherwise create narrowly scoped successor PRs with predecessor links. Do not automatically merge unrelated open feature PRs. Do not retarget or rewrite existing PRs without a specific, reviewed need. Preserve all original migration files/checksums; author no new migration merely to synchronize branches.
 
@@ -115,7 +115,7 @@ Route: executor for bounded worker-image template repair; main for configuration
 
 Fix the two dedicated audit worker templates to consume the staging global SHA override, with explicit fallback behavior preserving other environments. They currently use mutable `v3-audit` tags. Render the exact candidate chart plus staging values and actual Argo parameters. Bind every enabled workload, including both audit workers and the PreSync migrator, to the approved candidate or separately recorded immutable digest; verify the publisher receipt covers each underlying image.
 
-Staging audit values already specify `enabled=true` and `rollout=all`. Accept that explicit behavior only with audit identities/storage/retention dependencies proven. Record every new resource, effective configuration change, audit capability, and prune effect. Preserve existing retained evidence. The acceptance flow includes primary and copied/legacy-account images, including an explanation reference, and a verified owner export. Therefore refresh and qualify #5905 or an equivalent scoped repair before final C is selected; do not silently drop copied-media coverage to avoid its access prerequisite.
+Staging audit values already specify `enabled=true` and `rollout=all`. Accept that explicit behavior only with audit identities/storage/retention dependencies proven. Record every new resource, effective configuration change, audit capability, and prune effect. Preserve existing retained evidence. The acceptance flow uses synthetic assessment images from staging's own configured storage account, including an explanation reference, and a verified owner export. The user explicitly approved this narrower scope on 12 September. Leave #5905 unmerged; prepare only its lock-response verification repair separately. No cross-account configuration or additional IAM access is required or authorized by this cutover.
 
 
 Compare source migration paths and hashes across both parents/result and obtain sanitized applied/pending migration ledgers for every affected staging database/client, including Analytics if independently connected. Rehearse the exact pending upgrade on an isolated representative schema with approved synthetic data and existing migration tooling. Record backup/restore readiness and forward-recovery compatibility. Do not reset shared staging, rewrite migrations, restore a production database into staging, or cancel an active migration. Missing ledgers or an unapproved destructive operation blocks deployment, not source preparation.
@@ -188,3 +188,35 @@ Audit-image PR #5917 additionally fixes the inherited domain-model formatting fa
 ### Failed CI correction
 
 User requested investigation and repair of both failing PRs. #5917 code-check failure was the inherited replica inventory expecting 17 staging deployments although audit enables two more; commit `603b1ee1cba908a4d7a49abba13c7c371662d9f7` repairs the count and retains per-deployment owner assertions. Helm checks pass. Playwright shards fail before tests because the trusted `v3` build action omits audit/dist; the audit branch action already includes it but is not executed. #5919 repairs trusted artifact coverage for all built workspace packages. Its draft-deferred failures are corrected by executing real applicable validation on drafts, preserving failure for missing or skipped selected work. Draft status remains unchanged; full hosted validation is required before merge.
+
+
+### Downstream synchronization in progress
+
+[CI prerequisite #5919](https://github.com/uzh-bf/klicker-uzh/pull/5919) merged into stable at `8c6a4c74f3bba3b73a5b5c3a185f6a1f0d3e89f5`. Automatic promotion is paused; the selector remains `v3-ai` and the recorded release is `21ef2e9818b3e50e592fca3db8bdd9e22f8df524`. Revalidate writer quiescence and the release before shared-branch mutation.
+
+Stable-to-AI integration is being prepared from AI `21ef2e9818b3e50e592fca3db8bdd9e22f8df524`. Preserve both document-counting and citation-index behavior, AI test selectors, and MCP publisher coverage when reconciling the six conflicted files. Local verification, hosted CI and integration review remain pending. No synchronization PR exists yet.
+
+[Audit worker image PR #5917](https://github.com/uzh-bf/klicker-uzh/pull/5917) targets `v3-audit`; its fresh validation head is `098bcb304c8315260eb32912a69b345156466955`. Its base is intentional. The final audit candidate must include both this repair and the synchronized AI history.
+
+[Audit media PR #5905](https://github.com/uzh-bf/klicker-uzh/pull/5905) has a human changes-requested review explicitly asking that it not be merged while the need for the change is evaluated. Preserve that review gate. The accepted scope correction below removes cross-account copied media from staging prerequisites.
+
+
+Stable merged-push qualification completed successfully, including all eight Playwright shards in run `34701263187`. Ruleset `23042571` now requires all eight approved contexts on `v3`, with no bypass actor; the API readback confirmed the exact contexts. Integration ruleset remains at its bootstrap baseline pending downstream source rollout.
+
+The synchronization tree passed 131 focused CI contracts, 135 chat tests, and all 40 workspace type-check/build tasks. The first commit attempt did not complete: host Playwright dependency setup requested runtime stop during the remaining hooks, which reported `Execution completion is unknown`. Finish host browser setup, rerun interrupted hooks serially, and complete review before shared-branch merge. The initial local Prisma `P1017` recovered through the existing fresh-database setup retry; managed startup completed successfully.
+
+
+### Accepted media scope correction
+
+The user approved separating the existing Azure lock-response verification bug from #5905's legacy-account expansion. Keep #5905 unmerged. Qualify staging with synthetic media in its own storage account, including explanation imagery and verified owner export. Cross-account capture is excluded; it is no longer a cutover prerequisite. The narrow lock-response repair is prepared on `rs/audit-lock-response-fix`; no PR exists yet.
+
+
+### Source delivery checkpoint
+
+Stable-to-AI synchronization is draft [#5928](https://github.com/uzh-bf/klicker-uzh/pull/5928), head `23c2e4a3933320773ddaadbe28ec79c616476502`, preserving both merge parents. Focused CI/chat/browser checks, workspace checks, lint and formatting passed. Slice review and simplification found no code issues. Full local production build stalled after Prisma emitted output; it has no passing result. Hosted CI is pending; description edits cancelled earlier attempts, whose failed terminal summaries remain visible until replacement results arrive. Final review returned one MCP trigger inconsistency and the known hosted-verification gap. Commit `ff49769a6f` aligns both MCP triggers; all 24 related contract tests passed. Hosted qualification remains required.
+
+The trusted chatbot-authoring profile omitted Chat, explaining #5917's preview failure. Draft [#5929](https://github.com/uzh-bf/klicker-uzh/pull/5929), head `f039d692f8e0d50e75c8bf2f722a5fca50e63be2`, moves that spec to `manage,chat`; 22 selector/route tests passed. It must land on stable before downstream trusted CI can use it.
+
+#5917's content/flashcard edit failures were reproduced as a TypeError: processElementData omits options for both types, while assessment snapshot mapping used the in operator on undefined. Commit `a9f9e968b4` guards all four accesses. Both regression cases fail before the fix and all five baseline tests pass after it; GraphQL codegen/schema consistency and type checking passed. Hosted save/reload validation and review remain pending.
+
+The isolated lock-response repair is draft [#5930](https://github.com/uzh-bf/klicker-uzh/pull/5930), head `a3839a59f97cff0321cdf92ef1e77ed0242641a7` (four files, no account/config/IAM changes). After managed startup stalled, an isolated network-disabled test container reused the already-built dependency volumes: all 33 adapter tests and audit type checking passed. The broader offline run passed 125 tests; three service-dependent suites could not run without Azurite/PostgreSQL. Slice review found no issues; final review requested one explanatory casing comment, addressed by `b6f9c23c6f`. Hosted CI remains pending and currently inherits the audit image contract prerequisite from #5917. Both managed runtimes are stopped with zero routes and both short-lived test containers exited. #5905 stays unmerged. Staging still selects `v3-ai`, automatic promotion remains disabled, and no audit deployment has occurred.

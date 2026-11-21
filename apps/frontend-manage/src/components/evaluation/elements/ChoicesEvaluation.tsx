@@ -21,6 +21,7 @@ interface ChoicesEvaluationProps {
   chartType: ChartType
   showSolution: boolean
   showExplanation: boolean
+  showPercentages?: boolean
   isAssessmentEnabled: boolean
   pinCode?: string | null
   type: ActivityEvaluationType
@@ -33,6 +34,7 @@ function ChoicesEvaluation({
   chartType,
   showSolution,
   showExplanation,
+  showPercentages,
   isAssessmentEnabled,
   pinCode,
   type,
@@ -49,6 +51,7 @@ function ChoicesEvaluation({
           instanceEvaluation={instanceEvaluation}
           showSolution={showSolution}
           showExplanation={showExplanation}
+          showPercentages={showPercentages}
           textSize={textSize}
         />
       </ResizablePanel>

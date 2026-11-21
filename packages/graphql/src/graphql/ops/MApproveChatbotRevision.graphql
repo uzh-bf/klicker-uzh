@@ -1,0 +1,15 @@
+mutation MApproveChatbotRevision($id: String!, $expectedRevisionVersion: Int!) {
+  approveChatbotRevision(
+    id: $id
+    expectedRevisionVersion: $expectedRevisionVersion
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    publishedAt
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

@@ -1,12 +1,38 @@
 import type { Locale } from '@klicker-uzh/prisma/client'
-import type {
-  ChatbotStandardModeConfig,
-  ChatbotStandardModeConfigInput,
+import {
+  CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+  type ChatbotStandardModeConfig,
+  type ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 
 export const CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH = 160
-export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
+export { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
+
+/**
+ * Mode keys the standard-mode configuration governs. The chat runtime's prompt
+ * registry has to offer exactly these keys, and its test suite asserts that.
+ */
+export const CHATBOT_STANDARD_MODE_KEYS = [
+  'tutor',
+  'explainer',
+  'quizzer',
+  'writing-coach',
+] as const
+
+export type ChatbotStandardModeKey = (typeof CHATBOT_STANDARD_MODE_KEYS)[number]
+
+/**
+ * Standard modes that carry their own knowledge-base retrieval binding. Quizzer
+ * stays out because it inherits the Tutor binding under ADR 0021.
+ */
+export const CHATBOT_KB_RETRIEVAL_MODE_KEYS = ['tutor', 'explainer'] as const
+
+export function isChatbotStandardModeKey(
+  mode: string
+): mode is ChatbotStandardModeKey {
+  return (CHATBOT_STANDARD_MODE_KEYS as readonly string[]).includes(mode)
+}
 
 const supportedLocales = new Set<Locale>(['en', 'de'])
 
@@ -25,6 +51,7 @@ function defaultConfig(systemPrompts: unknown): ChatbotStandardModeConfig {
     tutorEnabled: isLegacyModeEnabled(systemPrompts, 'tutor'),
     explainerEnabled: isLegacyModeEnabled(systemPrompts, 'explainer'),
     quizzerEnabled: isLegacyModeEnabled(systemPrompts, 'quizzer'),
+    writingCoachEnabled: false,
     courseName: null,
     subjectDomain: null,
     languageOfInstruction: null,
@@ -97,14 +124,22 @@ function parseConfig(value: unknown): ChatbotStandardModeConfig {
   if (typeof value.quizzerEnabled !== 'boolean') {
     throw new Error('quizzerEnabled must be a boolean')
   }
-  if (!value.tutorEnabled && !value.explainerEnabled) {
-    throw new Error('Tutor or Explainer must remain enabled')
+  if (
+    value.writingCoachEnabled != null &&
+    typeof value.writingCoachEnabled !== 'boolean'
+  ) {
+    throw new Error('writingCoachEnabled must be a boolean')
+  }
+  const writingCoachEnabled = value.writingCoachEnabled === true
+  if (!value.tutorEnabled && !value.explainerEnabled && !writingCoachEnabled) {
+    throw new Error('Tutor, Explainer or Writing Coach must remain enabled')
   }
 
   return {
     tutorEnabled: value.tutorEnabled,
     explainerEnabled: value.explainerEnabled,
     quizzerEnabled: value.quizzerEnabled,
+    writingCoachEnabled,
     courseName: normalizeSingleLineText(
       value.courseName,
       'courseName',
