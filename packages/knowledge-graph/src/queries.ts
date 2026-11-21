@@ -42,13 +42,19 @@ function validateNodeId(nodeId: string): void {
   }
 }
 
+/**
+ * The best-connected concepts, so the starting map shows the graph's backbone
+ * instead of an arbitrary storage-order sample full of isolated nodes.
+ */
 export function getOverviewNodesQuery(): FixedQuery {
   return {
     cypher: `
       MATCH (n)
-      WITH n LIMIT ${KNOWLEDGE_GRAPH_OVERVIEW_NODE_LIMIT + 1}
+      WITH n, indegree(n) + outdegree(n) AS degree
+      WHERE degree > 0
+      WITH n, degree ORDER BY degree DESC, id(n) LIMIT ${KNOWLEDGE_GRAPH_OVERVIEW_NODE_LIMIT + 1}
       RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties,
-        indegree(n) + outdegree(n) AS degree
+        degree
     `,
     params: {},
   }

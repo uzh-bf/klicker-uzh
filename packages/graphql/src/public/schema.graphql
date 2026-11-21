@@ -1728,7 +1728,7 @@ type Chatbot {
   status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
-  writingCoachUnavailableReason: String
+  writingCoachUnavailableReason: String @deprecated(reason: "Writing Coach availability no longer depends on tool bindings.")
 }
 
 type ChatbotAuthoringRevision {

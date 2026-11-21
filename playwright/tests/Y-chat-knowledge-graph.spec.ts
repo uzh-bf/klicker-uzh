@@ -16,12 +16,17 @@ import {
   testImageUpload,
 } from '../util/chat.js'
 
-// The chatbot fixture is created by whichever chat spec runs first in a shard,
-// so this file cannot rely on another spec having seeded it. The upsert is
-// idempotent, so seeding it here as well keeps the file self-sufficient.
-test.beforeAll(async () => {
-  await ensureChatbotSeeded()
-})
+// The docked panel keeps its concept and relationship lists collapsed so the
+// graph gets the height; open them before interacting with list entries.
+async function showGraphLists(page: Page) {
+  const lists = page.getByTestId('knowledge-graph-lists')
+  if ((await lists.getAttribute('open')) === null) {
+    // An open details sheet may cover the toggle, so use the keyboard.
+    await lists.locator('summary').focus()
+    await page.keyboard.press('Enter')
+  }
+  await expect(lists).toHaveAttribute('open', '')
+}
 
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
 // The host launcher must preserve that disposable database between setup and test.
@@ -108,6 +113,7 @@ test('Native knowledge graph exploration and lecturer visibility policy', async 
     await page.keyboard.press('Enter')
     await expect(page.getByTestId('knowledge-graph-details')).toBeVisible()
     await page.getByTestId('knowledge-graph-expand').click()
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -244,6 +250,7 @@ test('Native answer concepts link to the published graph', async ({ page }) => {
     await covariance.click()
 
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -481,6 +488,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     expect(conversation!.x + conversation!.width).toBeLessThanOrEqual(
       dock!.x + 1
     )
+    await showGraphLists(page)
     await page.getByTestId('knowledge-graph-loaded-node').first().click()
     const fullscreen = page.getByTestId('knowledge-graph-fullscreen')
     await fullscreen.click()
@@ -574,6 +582,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       if (request.method() === 'POST' && request.url().endsWith('/chat'))
         sent.push(request.url())
     })
+    await showGraphLists(page)
     await page
       .getByTestId('knowledge-graph-loaded-relationship')
       .first()
@@ -822,6 +831,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await link.click()
 
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -848,6 +858,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await expect(option).toBeVisible()
     await option.click()
 
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -908,6 +919,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       await expect(option).toBeVisible()
       await option.tap()
 
+      await showGraphLists(page)
       await expect(
         page
           .getByTestId('knowledge-graph-loaded-node')
