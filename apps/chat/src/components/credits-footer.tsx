@@ -12,7 +12,9 @@ import { formatCreditPercent } from './thread-credits-format'
  * while the sidebar is closed. The embedded layout has its own
  * `EmbeddedCreditsBar`, so this is rendered only by `SidebarMain`.
  */
-export function MobileCreditsBar() {
+// `inline` renders the bar inside the framed chat's control row, which owns
+// the border and spacing.
+export function MobileCreditsBar({ inline = false }: { inline?: boolean }) {
   const t = useTranslations()
   const credits = useSettingsStore((state) => state.credits)
   const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
@@ -22,7 +24,11 @@ export function MobileCreditsBar() {
   return (
     <div
       data-cy="chat-mobile-credits-bar"
-      className="bg-background border-b px-3 py-1.5 md:hidden"
+      className={
+        inline
+          ? 'min-w-0 flex-1 px-1 md:hidden'
+          : 'bg-background border-b px-3 py-1.5 md:hidden'
+      }
     >
       <div className="flex items-center gap-1.5 text-xs">
         <Zap className="text-muted-foreground size-3.5 shrink-0" />

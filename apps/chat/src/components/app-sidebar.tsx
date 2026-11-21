@@ -20,6 +20,7 @@ import { useChatStore } from '@/src/stores/chatStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 import { CreditsFooter } from './credits-footer'
+import { ModeSwitcher } from './mode-switcher'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -31,7 +32,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { createThread, participationRequired } = useChatStore()
   const authMode = useSettingsStore((s) => s.authMode)
   const { setOpenMobile } = useSidebar()
-  const { compact } = useChatUi()
+  const { compact, headerless } = useChatUi()
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -49,7 +50,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center py-1.5 pl-3">
+            <div className="flex min-w-0 items-center gap-1 py-1.5 pl-3">
+              {/* A framed chat has no header bar, so the mode menu moves here,
+                  next to the conversations it applies to. */}
+              {headerless ? <ModeSwitcher /> : null}
               {/* Name lives in the persistent top header now (assistant.tsx
                   SidebarMain) — showing it again here while the sidebar is
                   open would just duplicate it. */}

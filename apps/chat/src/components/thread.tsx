@@ -358,7 +358,7 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
-  const { embedded, compact } = useChatUi()
+  const { embedded, compact, headerless } = useChatUi()
   const resolvedSuggestions =
     suggestions ??
     getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
@@ -415,7 +415,10 @@ export const Thread: FC<ThreadProps> = ({
                 // Below `md` the history rail sits above the messages and
                 // needs the default top padding for its trigger; from `md` it
                 // moves to the left gutter.
-                compact && (showHistoryRail ? 'pb-2 md:pt-3' : 'pb-2 sm:pt-3')
+                compact && (showHistoryRail ? 'pb-2 md:pt-3' : 'pb-2 sm:pt-3'),
+                // Without a header bar the first message must clear the
+                // floating corner controls.
+                headerless && 'md:pt-12'
               )
         )}
       >

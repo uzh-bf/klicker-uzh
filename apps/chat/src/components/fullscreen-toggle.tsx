@@ -5,14 +5,10 @@ import { useTranslations } from 'next-intl'
 import { useSyncExternalStore } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useFramed } from '../hooks/useFramed'
+import { useFullscreenActive } from './chat-ui-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 const subscribeToNothing = () => () => {}
-
-function subscribeToFullscreen(onChange: () => void) {
-  document.addEventListener('fullscreenchange', onChange)
-  return () => document.removeEventListener('fullscreenchange', onChange)
-}
 
 /**
  * Lets a framed chat take over the whole screen, because the host page
@@ -35,11 +31,7 @@ export function FullscreenToggle({ className }: { className?: string }) {
     () => document.fullscreenEnabled === true,
     () => false
   )
-  const active = useSyncExternalStore(
-    subscribeToFullscreen,
-    () => document.fullscreenElement !== null,
-    () => false
-  )
+  const active = useFullscreenActive()
 
   if (!framed || !available) return null
 
