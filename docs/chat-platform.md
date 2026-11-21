@@ -972,6 +972,37 @@ later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
+## Framed layouts and fullscreen
+
+The chat distinguishes two independent facts about where it runs. `useEmbedded`
+reads the explicit `?embed=1` contract, which selects the minimal embedded
+layout (PWA drawer, Manage assistant dock, eLearning `embed=1`). `useFramed`
+reports whether the document runs inside any host frame at all. An LMS LTI
+launch and the eLearning `embed=0` launch frame the full participant layout
+without the embed marker, usually at a fraction of a window's height.
+
+`ChatUiContext.compact` is true for the participant variant when the chat is
+framed and not embedded. It tightens the thread (top and bottom padding,
+message spacing, composer padding, 28-pixel message actions on fine pointers)
+and the sidebar (logo and legal line on one small row, title filter only past
+eight threads). The accuracy caveat under the composer is shown only while the
+thread is empty. The composer keeps its 16-pixel font because iOS Safari zooms
+on focus below that size, and touch targets stay at 44 pixels. Standalone and
+embedded layouts are unaffected. Detection is client-only; the provider mounts
+after the client-side disclaimer fetch, so there is no server-render mismatch.
+
+`FullscreenToggle` lets a framed chat take over the screen with the Fullscreen
+API on the document element, so portalled dialogs and tooltips stay visible.
+The host decides: a cross-origin frame may enter fullscreen only when its
+`<iframe>` grants the permission, and the control renders nothing unless the
+chat is framed and `document.fullscreenEnabled` is true. Use `allowfullscreen`
+(or `allow="fullscreen *"`) on host frames: the LTI launch redirects through
+other origins before reaching the chat, and a bare `allow="fullscreen"` grants
+only the frame's initial origin. Upstream OpenOlat sets `allowfullscreen` on
+its LTI frames. iPhone Safari has no element fullscreen, so the control is
+absent there. While fullscreen is active the browser consumes Escape to leave
+it, so an open dialog does not receive that key press.
+
 ## Lecturer authoring and publication contract
 
 Administrators review pending publication requests in Manage's `/admin` panel.

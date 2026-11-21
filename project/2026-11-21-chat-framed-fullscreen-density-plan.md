@@ -125,6 +125,12 @@ would cover local commits, pushing this task branch and a draft pull request to
   hidden until more than eight threads exist, and stays visible while a filter
   query is active so a filtered list can always be cleared. The filter change
   is optional and is the first item to drop if it complicates the slice.
+- **Header when framed (added 2026-11-21 at the user's suggestion).** The
+  chatbot name and avatar are hidden visually; the name stays the page's
+  level-one heading for assistive technology. The mode menu stays in the
+  header: it is a per-conversation choice, and in the sidebar it would vanish
+  whenever the sidebar is collapsed. The header row remains for the sidebar
+  toggle and the fullscreen control, so moving the menu would save no height.
 - **Dropped from the earlier proposal.** Collapsing the sidebar by default and
   a credits chip in the header: the user wants more history visible, which a
   default-closed sidebar works against. Collapsing tool-call groups: they are
@@ -206,16 +212,15 @@ locally under `project/_local/reviews/`. No substantive decision is open.
 ## Progress
 
 - Root outcome: more usable space for the framed chat, per the user's requests
-  of 2026-11-21. Authorized terminal: draft PR to `v3-ai`.
-- Status: plan final after the planning critique. Waiting for the user's
-  go-ahead; the user asked on 2026-11-21 to stop once the plan is final.
-- Uncommitted draft code for slices 1 and 2 exists in the worktree
-  (`useFramed.ts`, `fullscreen-toggle.tsx`, context, headers, thread spacing,
-  action-button constant, EN/DE labels). It has not been type-checked or run
-  and is not evidence of completion. Known defect to correct: the compact top
-  padding also applies between the `sm` and `md` breakpoints while the history
-  rail is shown, which would cover the rail trigger.
-- Remaining: slices 1 to 4 verified and committed, browser verification,
-  draft PR.
-- Next action: on approval, type-check the draft, finish slice 3, verify in the
-  browser.
+  of 2026-11-21. Authorized terminal: draft PR to `v3-ai` (user approved the
+  plan on 2026-11-21).
+- Status: slices 1 to 4 implemented, plus the framed header change.
+- Verification: chat type check and ESLint (0 errors) pass in the container;
+  the chat unit suite passes (2013 tests). Host Playwright against this
+  worktree's stack: 29 affected `Y-chat` tests pass (credits, sources,
+  composer hint, thread filter). A local capture harness framed the chat from
+  the PWA origin: the toggle enters and leaves fullscreen with
+  `allowfullscreen`, is absent without it while the density stays compact,
+  and standalone stays unchanged. EN and DE captured. The chat app has no
+  dark theme, so no dark captures apply.
+- Remaining: push and draft PR.
