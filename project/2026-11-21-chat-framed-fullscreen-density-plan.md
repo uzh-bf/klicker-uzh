@@ -104,12 +104,15 @@ would cover local commits, pushing this task branch and a draft pull request to
   can react without changing its twelve call sites in `thread.tsx` and
   `branch-picker.tsx`. Slice 2 first confirms that the stacked variant
   compiles; if it does not, the call sites take the compact class instead.
-- **Sources header (non-embedded variant, every layout).** "Sources · N" and
-  "Cited in this answer" share one row; the separate sub-heading goes away.
-  The existing heading element stays untouched, because it names the section,
-  anchors the reveal scroll and is asserted by a test. The cited label is a
-  sibling of it and appears only when cited sources exist. The embedded
-  variant already uses a single header.
+- **Sources block (every layout; revised 2026-11-21 at the user's request).**
+  The heading reads just "Sources" in sentence case, without a count, and the
+  separate "Cited in this answer" label is removed. Inline citation chips
+  already link each number to its card. Cards keep their index badge, because
+  it matches the chips, and drop the file icon for documents; video, image and
+  link sources keep a type icon. The dashed rule above the section and the
+  dashed box around other retrieved material give way to spacing and a plain
+  chevron disclosure. The heading element keeps its id, so it still names the
+  section and anchors the reveal scroll.
 - **Credits block (every layout).** A toggle row (icon, title, percentage,
   chevron) built like the settings toggle directly above it, with the thin bar
   beneath. The bar stays outside the button so its progress semantics survive.
@@ -125,12 +128,15 @@ would cover local commits, pushing this task branch and a draft pull request to
   hidden until more than eight threads exist, and stays visible while a filter
   query is active so a filtered list can always be cleared. The filter change
   is optional and is the first item to drop if it complicates the slice.
-- **Header when framed (added 2026-11-21 at the user's suggestion).** The
-  chatbot name and avatar are hidden visually; the name stays the page's
-  level-one heading for assistive technology. The mode menu stays in the
-  header: it is a per-conversation choice, and in the sidebar it would vanish
-  whenever the sidebar is collapsed. The header row remains for the sidebar
-  toggle and the fullscreen control, so moving the menu would save no height.
+- **No header bar when framed (revised 2026-11-21 at the user's request).**
+  A framed, non-fullscreen chat drops the header bar. The chatbot name stays
+  the page's level-one heading for assistive technology. The mode menu moves
+  to the top of the sidebar. From `md` up, the sidebar trigger and new-chat
+  button float at the thread's top left while the sidebar is closed, and the
+  fullscreen and knowledge-graph controls float at the top right. Below `md`
+  these controls share one slim row with the credits, which would otherwise
+  sit underneath them. Fullscreen and standalone keep the full header with the
+  chatbot name, because there the title identifies the chat.
 - **Dropped from the earlier proposal.** Collapsing the sidebar by default and
   a credits chip in the header: the user wants more history visible, which a
   default-closed sidebar works against. Collapsing tool-call groups: they are
@@ -214,7 +220,8 @@ locally under `project/_local/reviews/`. No substantive decision is open.
 - Root outcome: more usable space for the framed chat, per the user's requests
   of 2026-11-21. Authorized terminal: draft PR to `v3-ai` (user approved the
   plan on 2026-11-21).
-- Status: slices 1 to 4 implemented, plus the framed header change.
+- Status: slices 1 to 4 implemented, plus the headerless framed layout and the
+  decluttered sources block.
 - Verification: chat type check and ESLint (0 errors) pass in the container;
   the chat unit suite passes (2013 tests). Host Playwright against this
   worktree's stack: 29 affected `Y-chat` tests pass (credits, sources,

@@ -991,6 +991,16 @@ on focus below that size, and touch targets stay at 44 pixels. Standalone and
 embedded layouts are unaffected. Detection is client-only; the provider mounts
 after the client-side disclaimer fetch, so there is no server-render mismatch.
 
+`ChatUiContext.headerless` is true while a compact chat is not in fullscreen.
+It drops the header bar: the chatbot name stays an `sr-only` level-one
+heading, and the mode menu moves to the top of the sidebar. From `md` up, the
+sidebar trigger and new-chat button float at the thread's top left while the
+sidebar is closed, and the fullscreen and knowledge-graph controls float at
+the top right; the thread and the desktop history rail start below them.
+Below `md`, the same controls and the credits share one slim row in the flow.
+Fullscreen and standalone keep the full header with the name, because there
+the title identifies the chat.
+
 `FullscreenToggle` lets a framed chat take over the screen with the Fullscreen
 API on the document element, so portalled dialogs and tooltips stay visible.
 The host decides: a cross-origin frame may enter fullscreen only when its
