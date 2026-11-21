@@ -831,7 +831,13 @@ Nothing has landed: `v3-audit-merge` still equals `v3-ai` at `9de3af8bee`.
   `v3` from `rs/retire-v3-audit-sync-pair` in the worktree
   `trees/retire-v3-audit-sync-pair`.
 - **Runtime.** The devrouter runtime of `trees/reland-audit-foundation` is
-  stopped.
+  stopped and cannot be restarted: `devrouter ensure` refuses it with
+  "Managed Compose configuration changed for service 'app'", also with
+  `--repair`. It never completed a clean start and only ran commands while
+  its containers were up. Documentation-only commits pass the pre-commit
+  hook without it. Any code commit needs a working runtime first, which
+  means a freshly initialized one (`devrouter ensure <path> --initialize-new`
+  on a new worktree) or the user's approval to delete and recreate this one.
 
 ### Open decision
 
@@ -965,11 +971,12 @@ releases and production enablement.
   the published commits and compare each tip tree with the previous
   publication.
 - **Commits and hooks.** The pre-commit hook runs `check:all` in the
-  worktree's devrouter container, and the pre-push hook builds there. Start
-  the runtime with `devrouter ensure` on the worktree, run
+  worktree's devrouter container, and the pre-push hook builds there. With
+  a working runtime (see "Where it stands"), run
   `pnpm install --frozen-lockfile` in the container at the tip being
-  committed or pushed, and stop the runtime afterwards. Push the stack with
-  `gh stack push`, which is atomic and uses `--force-with-lease`.
+  committed or pushed, and stop the runtime afterwards. Do not stop a runtime
+  that is known to be degraded before the last commit that needs it. Push the
+  stack with `gh stack push`, which is atomic and uses `--force-with-lease`.
 - **Tests.** Reset the disposable test database
   (`prisma:reset:raw -f` in `packages/prisma`) before each full GraphQL run.
   Playwright runs from the host only.
