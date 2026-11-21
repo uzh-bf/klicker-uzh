@@ -4,11 +4,11 @@
 
 /* The design-system stylesheet loads after this one and ships the same
    base utilities (`size-11`, `h-11`, `min-h-11`) at equal specificity, which
-   would cancel every fine-pointer reduction. `:root &` lifts the variant to
-   (0,2,0), as the theme block below does for the tokens. */
+   would cancel every fine-pointer reduction. `:is(:root *)` lifts the variant
+   to (0,2,0), as the theme block below does for the tokens. */
 @custom-variant fine-pointer {
   @media (hover: hover) and (pointer: fine) {
-    :root & {
+    &:is(:root *) {
       @slot;
     }
   }
