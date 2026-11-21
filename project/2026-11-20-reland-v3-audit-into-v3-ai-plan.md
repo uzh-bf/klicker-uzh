@@ -788,97 +788,310 @@ through its top PR, and the real conflict count of a sequential replay.
 
 ## Progress
 
-- Status: Cards 1–4 approved by the user on 2026-11-20. The five layers are
-  published as draft pull requests into `v3-audit-merge`. Per-layer CI on
-  the first publication showed three layers red on their own, and the stack
-  was rebuilt once to make every layer green (see "Layer boundaries").
-- Done: `v3-audit-merge` created on the remote at `9de3af8bee`.
-- Done (slice 2): the reference tree `S`, the layer-tip derivation, the
-  scratch replay and the attribution check. Results are under "Scratch
-  replay" above.
-- Done (slices 3–7): the five layer branches, stacked on `v3-ai` at
-  `9de3af8bee`. 35 commits are replayed with their original author and date
-  (24 by the first author, 11 by the second). Each layer ends with one
-  integration commit, and the layers that change a canonical CI workflow
-  add one commit that pins the caller to the regenerated executor.
+Last updated 2026-11-21. This section is the handover. Whoever continues
+needs this section, the approval cards above and the linked pull requests.
 
-  | Layer | Branch | Content |
-  | --- | --- | --- |
-  | 1 | `rs/reland-audit-foundation` | 2 picks, integration, executor pin |
-  | 2 | `rs/reland-audit-producers` | 11 picks, two integrations, executor pin |
-  | 3 | `rs/reland-audit-submissions` | 3 picks, integration |
-  | 4 | `rs/reland-logging` | 4 picks, integration, executor pin |
-  | 5 | `rs/reland-audit-sealing` | 15 picks, integration, executor pin, this plan |
+### Where it stands
 
-- Layer boundaries: the audit line itself was red in two stretches, and a
-  layer that ends inside one fails CI on its own.
-  - Layer 1: `v3-ai` requires every first-party chart image to prefer the
-    optional global image tag. The audit worker template gets that form only
-    in #5917, so the layer 1 integration commit takes that one line early
-    and counts the template in the contract test. The #5917 pick then stops
-    on the test file and takes its own version.
-  - Layer 2: two GraphQL suites fail once the producers exist and pass again
-    with #5917 and #5937. The boundary between layers 2 and 3 moved from
-    after #5369 to after #5937, within the historical order. Layer 3 keeps
-    the three submission fixes that follow.
-  - Layer 4: #5320 adds a proxy test that the auth proxy satisfies only with
-    #6204. #6204 is replayed directly after #5320, two positions earlier
-    than in the audit line. It changes one file that no commit in between
-    touches, so every pick's diff and the tip tree stay the same. This is
-    the one departure from the historical order.
+The stack is published, ready for review and green on every required check.
+Nothing has landed: `v3-audit-merge` still equals `v3-ai` at `9de3af8bee`.
 
-- Equivalence: the first build ended on a tree equal to `S` (`add7aa4e72`).
-  Local test runs then showed three gaps in `S`, all adaptations that the
-  staging branch carries outside the audit line. The final tip differs from
-  `S` by exactly these:
+| Layer | Pull request | Branch | Content |
+| --- | --- | --- | --- |
+| 1 | [#6925](https://github.com/uzh-bf/klicker-uzh/pull/6925) | `rs/reland-audit-foundation` | #5311, #5356, integration, executor pin |
+| 2 | [#6926](https://github.com/uzh-bf/klicker-uzh/pull/6926) | `rs/reland-audit-producers` | #5367, #5369, integration, #5378 to #5937 (9 picks), integration, executor pin |
+| 3 | [#6927](https://github.com/uzh-bf/klicker-uzh/pull/6927) | `rs/reland-audit-submissions` | #5930, #5965, #5994, integration |
+| 4 | [#6928](https://github.com/uzh-bf/klicker-uzh/pull/6928) | `rs/reland-logging` | #5316, #5319, #5320, #6204, integration, executor pin |
+| 5 | [#6929](https://github.com/uzh-bf/klicker-uzh/pull/6929) | `rs/reland-audit-sealing` | #6066 to #6660 without #6204 (14 picks), #6744, integration, executor pin, this plan |
+
+- **Commits.** 35 picks keep their original author and date (24 by the first
+  author, 11 by the second). 11 integration, pin and plan commits are by the
+  integrator, plus the plan updates on top of layer 5.
+- **Required checks.** `check`, `check-gitleaks`, `test-graphql-status`,
+  `test-playwright-status`, `test-unit-status`, `test-olat-api-status`,
+  `test-intl-production-status` and `build-images-status` pass on the head of
+  each of the five pull requests. A push to layer 5 (such as a plan update)
+  restarts them there; read them again before landing.
+- **Independent final review** (slice 7): no blocker and no should-fix
+  finding. Its one low finding is recorded under "Picks shorter than their
+  source" below. It did not check dependency resolution or chart render
+  counts at the intermediate tips; the per-layer required checks cover those.
+- **AI stack review** (slice 8): `/final-review-stack` was posted on #6929.
+  The workflow authorized the stack and then failed in "Verify Mistral tool
+  access" with `provider_payment_required`. This is a provider budget
+  failure, not a verdict. No AI review result exists yet.
+- **Non-required checks that are red.** All findings are in replayed code
+  that staging runs unchanged.
+  - Dependency Review, layer 1: the known `@azure/msal-node` advisory.
+  - CodeQL, layer 1: a file-system race in
+    `packages/audit/test/cli-export.test.ts`.
+  - SonarCloud, layers 1, 2, 4 and 5: see roadmap step 3b.
+- **Chain pull request** (slice 0):
+  [#6931](https://github.com/uzh-bf/klicker-uzh/pull/6931), a draft into
+  `v3` from `rs/retire-v3-audit-sync-pair` in the worktree
+  `trees/retire-v3-audit-sync-pair`.
+- **Runtime.** The devrouter runtime of `trees/reland-audit-foundation` is
+  stopped.
+
+### Open decision
+
+Card 2 allows landing "once the reviews are settled and every layer is
+green". Two parts of that condition are not met as worded, so landing waits
+for the user. The question was put to the user on 2026-11-21 and is
+unanswered.
+
+1. The AI stack review could not run (provider payment required).
+2. Dependency Review, CodeQL and SonarCloud are red. None is a required
+   check.
+
+The user also has to accept or reject one departure from this plan: #6204 is
+replayed directly after #5320 (see "Layer boundaries"). `v3-audit-merge`
+cannot be force-pushed, so the commit order is permanent once landed.
+
+Options offered:
+
+- **Land as is** (recommended). The stack stays a faithful replay, and the
+  findings go into the follow-up pull requests of roadmap step 3.
+- **Wait for the AI review.** After the provider budget is restored, post
+  `/final-review-stack` on #6929 again and settle its findings first.
+- **Restack first.** Move #6204 back to its historical position, which pulls
+  #6066 and #6084 into the logging layer, or merge layers 2 and 3 into one
+  pull request. Each costs a rebuild, new executor pins and a full CI cycle.
+
+### Remaining roadmap
+
+Steps run in this order. "Authority" names what is already approved.
+
+1. **Land the stack on `v3-audit-merge`.** Authority: Card 2, after the user
+   answers the open decision.
+   - Before: fetch, then read the five head SHAs and the base. All five pull
+     requests are open and ready, the eight required checks pass on the exact
+     heads, and the base still is `v3-audit-merge`.
+   - Call: one asynchronous merge of the top pull request with the reviewed
+     head pinned, then read its status until it finishes.
+
+     ```bash
+     gh api -X PUT repos/uzh-bf/klicker-uzh/pulls/6929/merge-async \
+       -f merge_method=merge -f sha=<head SHA of #6929>
+     gh api repos/uzh-bf/klicker-uzh/pulls/6929/merge-async/<returned id>
+     ```
+
+   - Never merge a lower layer first, never squash, and never use "Update
+     branch".
+   - After: all five pull requests are merged. Every commit that an executor
+     caller pins (`…-execution.yml@<sha>` in `test-graphql.yml` and
+     `check.yml`) is an ancestor of `origin/v3-audit-merge`. The tree of
+     `origin/v3-audit-merge` equals the tree of the reviewed top head. Push
+     CI on the merge commit is green.
+   - Record that commit as the equivalence checkpoint and re-run equivalence
+     checks 1, 2 and 5 against it.
+2. **Open the draft final pull request** from `v3-audit-merge` into `v3-ai`.
+   Authority: Card 2. Merging it is withheld.
+   - Write the description with `$rs-mr-description-writer`.
+   - Evidence to collect: the eight required checks on the exact head and a
+     clean `sync-ancestry` result.
+   - The scanner findings of roadmap step 3b appear on this pull request too,
+     because the whole audit line is new code against `v3-ai`.
+3. **Follow-up draft pull requests into `v3-audit-merge`.** Authority: Card 3
+   for opening drafts. Merging them is withheld. Branch each from the landed
+   `v3-audit-merge`; these are ordinary pull requests, not a stack.
+   - **3a. Restore the retrieval chip.** #5320 dropped behaviour that `v3-ai`
+     had added in #5887 from `apps/chat/src/components/tool-fallback.tsx`:
+     the document count logic (`countDocQueryDocuments`,
+     `parseDocQueryPayload`), the optional `toolName` and the
+     `data-tool-kind` marker. `playwright/retained/retained-citations.spec.ts`
+     still selects that marker. The fix is the `v3-ai` version of the file
+     with one change that #5320 intended: import
+     `STUDENT_PRACTICE_QUIZ_TOOL_NAME` from
+     `@/src/services/studentPracticeToolName`. Verify with the chat
+     `tool-fallback` unit test and the retained citations spec. The chip
+     state is visible UI, so the pull request needs browser screenshots.
+     Staging has the same regression.
+   - **3b. Scanner findings.** Decide each with the frozen list under
+     "Simplification" in mind.
+
+     | Finding | Where | Note |
+     | --- | --- | --- |
+     | `.sort()` without a compare function (S2871) | `packages/audit/src/azure/table-reader.ts`, `packages/audit/src/baseline/media-references.ts`, `assessmentAuditProducers.ts`, `assessmentAuditRollout.ts`, `elements.ts` in `packages/graphql/src/services`, `util/check-server-console.mjs` | Where the order feeds canonical or hashed output, keep code-unit order with an explicit comparator. `localeCompare` would change hashes. |
+     | `md5` (S4790) | `apps/hatchet-worker-response-processor/src/processors/assessmentAggregation.ts` | Groups identical response values; not a security use. Changing it changes aggregation keys. Marking it safe in SonarCloud is the user's action. |
+     | Unawaited promises (S9383) | `packages/hatchet/src/logging.ts` | Small fix. |
+     | `PATH` in child processes (S4036) | `.github/scripts/stg-image-reuse-ancestry.cjs`, `util/check-assessment-audit-rollout-render.mjs` | CI helpers; minor. |
+     | Duplicated lines above the gate | layer 1 | Reduced by the simplification candidates. |
+     | File-system race (CodeQL) | `packages/audit/test/cli-export.test.ts` | Test code. |
+
+   - **3c. Small cleanups.** Remove the duplicate
+     `COPY … doc-query-client/dist` line that #5994 leaves in
+     `apps/backend-docker/Dockerfile`. Decide whether to fix the five tests in
+     `packages/hatchet/test/logging.test.ts` that fail against Hatchet SDK
+     1.22.0; no CI workflow runs that suite.
+   - **3d. Simplification package.** Start with the simplifier pass over the
+     areas the first scan missed, then deliver the candidates listed under
+     "Simplification", each with its protecting test named.
+4. **Readiness report** (batch terminal, slice 12). It states the final pull
+   request and follow-up states, the gated actions under "Later" in order,
+   the `deploy/` promotion to `v3`, the options for #5098 and the production
+   consequences.
+5. **Chain pull request #6931.** It stays a draft until the user wants it.
+   It should merge into `v3` before the final merge into `v3-ai`. After the
+   user merges it:
+   - run the documented controller dry run and report the result;
+   - close the stale sync pull request #6676 with a linking comment
+     (Card 4);
+   - tell the user that `sync-ancestry` stays required on `v3-audit` and no
+     longer reports there, which needs an admin ruleset change.
+
+Everything under "Later (not in this batch)" stays withheld: merging the
+follow-ups, catch-up merges, the staging merge, the final merge into `v3-ai`,
+releases and production enablement.
+
+### Rules that are easy to break
+
+- **Executor pins.** `test-graphql.yml` (layers 1, 2 and 4) and `check.yml`
+  (layer 5) pin their executor to a commit of this stack. Any new commit on a
+  layer below the top changes the SHAs above it and breaks those pins. Before
+  landing, add commits to layer 5 only. A restack means: regenerate the
+  executor with `node .github/scripts/priority-ci-workflows.cjs --write`,
+  keep only the semantically changed executor files, commit, then pin the
+  caller to that commit in a separate commit and confirm that
+  `node .github/scripts/priority-ci-workflows.cjs` exits cleanly.
+- **Merge commits only.** A squash or rebase drops the original authors and
+  the pinned SHAs. This holds for the stack and for the final pull request.
+- **Every layer runs full CI on its own.** Before pushing a changed layer,
+  check out its tip and run the node-only steps of `check.yml`, `check:all`
+  in the container, and the affected suites. `check.yml` stops at its first
+  failing step and hides the later ones.
+- **Rebuild by diff, not by tree.** After the first publication the scratch
+  replay scripts no longer match the stack. Rebuild with `git cherry-pick` of
+  the published commits and compare each tip tree with the previous
+  publication.
+- **Commits and hooks.** The pre-commit hook runs `check:all` in the
+  worktree's devrouter container, and the pre-push hook builds there. Start
+  the runtime with `devrouter ensure` on the worktree, run
+  `pnpm install --frozen-lockfile` in the container at the tip being
+  committed or pushed, and stop the runtime afterwards. Push the stack with
+  `gh stack push`, which is atomic and uses `--force-with-lease`.
+- **Tests.** Reset the disposable test database
+  (`prisma:reset:raw -f` in `packages/prisma`) before each full GraphQL run.
+  Playwright runs from the host only.
+- **Watching CI.** `final-ai-review` stays pending on a draft, so a watcher
+  must ignore it. Marking a pull request ready starts a new full run plus
+  SonarCloud and CodeQL. A shard that fails while downloading its plan
+  artifact is a runner network error; rerun the failed job once.
+- **Review.** Never add human reviewers. A failed final-review workflow is a
+  verdict only when its log shows a completed review.
+- **Public repository.** No secrets, real personal data or production-derived
+  facts in commits, pull request text or this plan.
+
+### Layer boundaries
+
+The audit line itself was red in two stretches, and a layer that ends inside
+one fails CI on its own. The first publication on 2026-11-20 showed this on
+three layers, and the stack was rebuilt once.
+
+- **Layer 1.** `v3-ai` requires every first-party chart image to prefer the
+  optional global image tag. The audit worker template gets that form only in
+  #5917, so the layer 1 integration commit takes that one line early and
+  counts the template in the contract test. The #5917 pick then stops on the
+  test file and takes its own version.
+- **Layer 2.** Two GraphQL suites fail once the producers exist and pass
+  again with #5917 and #5937. The boundary between layers 2 and 3 moved from
+  after #5369 to after #5937, within the historical order. Layer 3 keeps the
+  three submission fixes that follow. Merging layers 2 and 3 into one pull
+  request would be cleaner, but it closes a pull request and is the user's
+  decision.
+- **Layer 4.** #5320 adds a proxy test that the auth proxy satisfies only
+  with #6204. #6204 is replayed directly after #5320, two positions earlier
+  than on the audit line. It changes one file that no commit in between
+  touches, so every pick's diff and the tip tree stay the same. This is the
+  one departure from the historical order, and it awaits the user's ruling.
+
+### Picks shorter than their source
+
+Equivalence check 7 expects each pick's diff to equal its source outside the
+files listed under `Conflicts:`. Four files are exceptions, because an
+integration commit below already applied the same lines:
+
+- #5369 in `packages/audit/src/contract/payloads/assessment.ts`: the zod 4
+  form of `accessChangePayloadSchema`, applied in the layer 1 integration
+  commit.
+- #5917 in `docs/domain-model.md` (Prettier formatting, layer 1 integration
+  commit) and in `deployment-audit-workers.yaml` (the image line, see
+  "Layer boundaries").
+- #5378 in one row of
+  `.agents/skills/klicker-testing-verification/SKILL.md`, applied in the
+  first integration commit of layer 2.
+
+Two planning documents keep the `v3-ai` text instead of the audit line's
+wording edits: `project/2026-09-18-staging-image-consolidation-plan.md` and
+`project/plans_wip/2026-09-03-scientific-visuals-plan.md`.
+
+### Evidence so far
+
+- **Equivalence.** The first build ended on a tree equal to `S`
+  (`add7aa4e72`). The tip differs from `S` by exactly these adaptations,
+  which the staging branch carries outside the audit line:
   - the versioned element id in `liveQuizLifecycle.test.ts` (staging #6793),
-    without which the GraphQL suite fails from layer 2 on;
+    without which the GraphQL suite fails once the producers exist;
   - the regenerated priority executors `test-graphql-execution.yml` and
     `check-execution.yml` with their caller pins, without which the CI
-    contract test `ci-event-gates.test.cjs` fails from layer 1 on;
+    contract test `ci-event-gates.test.cjs` fails;
   - the image-scan exception for `@azure/msal-node` (staging #6744), picked
     as the last commit of the sealing work. The audit package brings that
     dependency into the backend image, and the scan gates image builds on
-    push.
-- Executor pins name commits of this stack. They stay valid only while those
-  commits keep their SHAs, so the stack and the final pull request must land
-  with merge commits, and a restack of a lower layer needs new pins above it.
-- Checks at the tip, run locally: every `check:all` task, the CI contract
-  tests (916 tests), the Helm, replica ownership, KB ingestion and audit
-  rollout render checks, and the audit, response API, response processor and
-  GraphQL suites against a database migrated to the tip. Each integration and
-  pin commit went through the full pre-commit hook.
-- Known failures, not caused by this work: five tests in
+    push. The exception expires on 2027-01-31.
+- **Rebuild.** All 35 picks kept author, date and diff; only #5917 differs,
+  by the line that layer 1 now carries. The tip trees of layers 3 and 5 equal
+  the first publication apart from pin lines and this plan.
+- **Local checks.** The node-only steps of `check.yml` at all five tips;
+  `check:all` through the pre-commit hook at each integration, pin and plan
+  commit; the audit, response API, response processor, backend and GraphQL
+  suites at the layer 2 tip against a freshly reset test database; the proxy
+  correlation test at the layer 4 tip.
+- **Independent final review.** Conflict resolutions keep today's `v3-ai`
+  behaviour. The three migrations are byte-identical to staging and the
+  analytics schema copies are in sync. Audit stays disabled outside the
+  staging values. The secret scan over all commits found nothing.
+- **Known failures, not caused by this work.** Five tests in
   `packages/hatchet/test/logging.test.ts` fail against Hatchet SDK 1.22.0.
   The staging branch has the same source, test and SDK version, and no CI
   workflow runs that suite. `packages/prisma-data/test/seedMCPServers.test.ts`
   reports no test suite, as on `v3-ai`.
-- Not run locally: Playwright, the OLAT API suite, production i18n and image
-  builds. CI on the bottom layer is the gate for them.
-- Commit hooks (history contract, item 6), ruled by the user on 2026-11-20:
-  16 picks were concluded without the full hook, because Git runs it only for
-  picks that stop. These are #5311, #5356, #5367, #5369, #5378, #5893, #5897,
-  #5917, #5965, #5316, #5319, #5320, #6066, #6084, #6561 and #6657. The
-  secret scan and the identity guard ran by hand on each. In the rebuild,
-  picks were carried over from the first publication with `git cherry-pick`;
-  only #5917 stopped again and was concluded the same way.
-- Changed against the approved plan: #5944 is dropped as superseded and
+- **Commit hooks** (history contract, item 6), ruled by the user on
+  2026-11-20: 16 picks were concluded without the full hook, because Git runs
+  it only for picks that stop. These are #5311, #5356, #5367, #5369, #5378,
+  #5893, #5897, #5917, #5965, #5316, #5319, #5320, #6066, #6084, #6561 and
+  #6657. The secret scan and the identity guard ran by hand on each. In the
+  rebuild, picks were carried over with `git cherry-pick`; only #5917 stopped
+  again and was concluded the same way.
+- **Changed against the approved plan.** #5944 is dropped as superseded and
   #6744 is added. Fifteen files that `v3-ai` gained after the audit line's
   last sync take their logging adoption from adaptive-learning, in the
-  logging layer's integration commit.
-- Working files: `project/_local/reland-v3-audit/` (gitignored) holds the
-  scripts (`build-s.sh`, `derive.py`, `forward.py`, `faithful.py`,
-  `linecheck.py`, `replay.py`), the hand-built states (`resolved/`,
-  `layers/`, `picks/`) and their ledgers.
-- Root outcome: the audit-line content on `v3-ai` without `v3-audit` ancestry,
-  with the original authors' commits kept, per the user's requests on
-  2026-11-20. Batch terminal: the stack landed on `v3-audit-merge`, the draft
-  final pull request, the simplification drafts, the readiness report and the
-  chain PR as a draft.
-- Worktree: `trees/reland-audit-foundation`, holding all five layer branches.
-- Next action: confirm CI per layer on the rebuilt stack, then review and
-  landing per Cards 1 and 2. Slice 0 (the chain pull request) is open as a
-  draft into `v3`.
-- Assumption most likely to be wrong: the rebuilt layer 2 tip is green in
-  the suites that only CI runs (Playwright, OLAT API, production i18n, image
-  builds), since that tree was never tested as a tip before.
+  logging layer's integration commit. The layer boundaries changed as
+  described above.
+
+### Working context
+
+- **Worktrees.** `trees/reland-audit-foundation` holds all five layer
+  branches and the `gh stack` metadata. `trees/retire-v3-audit-sync-pair`
+  holds the chain pull request.
+- **Working files.** `project/_local/reland-v3-audit/` in the stack worktree
+  (gitignored) holds the scratch replay scripts and hand-built states. Its
+  `session2/` folder holds the helpers used for the rebuild
+  (`regen.sh`, `pin.sh`, `hoststeps.cjs`), the commit messages (`msg/`) and
+  the pull request texts (`pr/`). `project/_local/suite.sh` runs the GraphQL
+  test workflow's suites inside the container.
+- **Local backups.** The branches `backup-reland/layer1..5` (before the
+  first restack) and `backup2-reland/layer1..5` (first publication) exist
+  only locally. Deleting them, the worktrees or leftover devrouter runtimes
+  needs the user's approval.
+- **Root outcome.** The audit-line content on `v3-ai` without `v3-audit`
+  ancestry, with the original authors' commits kept, per the user's requests
+  on 2026-11-20. Batch terminal: the stack landed on `v3-audit-merge`, the
+  draft final pull request, the follow-up drafts, the readiness report and
+  the chain pull request as a draft.
+- **Next action.** Obtain the user's answer to the open decision, then
+  roadmap step 1.
+- **Assumption most likely to be wrong.** That the stack lands as five merge
+  commits through one asynchronous merge of the top pull request. The repository
+  allows merge commits and the `v3-audit-merge` rules do not restrict the
+  merge method, but the call has not been made on this branch yet.
