@@ -3,7 +3,7 @@ Show the student an interactive step-by-step explanation: a diagram that stays i
 The input is one complete explainer/1 content object with format "explainer/1", locale "de" or "en" (the reply language) and a built-in diagram in content.diagram:
 - causal: persistent nodes and arrows with contrasting scenarios, e.g. how a policy rate change reaches inflation. At most 9 nodes.
 - accounts: balance sheets that change step by step and stay balanced, e.g. a bank loan or a repo. At most 2 entities and 4 rows per side.
-- parts: components that add up to a total, optionally per year, e.g. interest on savings.
+- parts: components that add up to a total, optionally per year, e.g. interest on savings. With "layout": "lanes" (no series) each component gets its own row and the total becomes a net row; use it for effects that offset each other, e.g. a currency loss and the hedge that cancels it.
 
 Keep it small: at most 6 steps per track, 10 glossary entries and 4 presets. Words per item: lead 35, overview text 35, path description 18, step title 10, step text 70. Write each step as: what changes, why, and what to notice. Mark illustrative numbers as illustrative and never invent sources.
 
