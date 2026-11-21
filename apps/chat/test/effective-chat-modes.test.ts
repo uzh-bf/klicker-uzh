@@ -714,25 +714,23 @@ describe('Writing Coach availability', () => {
     ).toEqual(['writing-coach'])
   })
 
-  test('keeps required-tool eligibility on the exact writing mode', () => {
+  test("stays offered without inheriting another mode's required binding", () => {
+    // Attaching a knowledge base stores required doc_query bindings for Tutor
+    // and Explainer only; Writing Coach must remain available and tool-free.
     const requiredBinding = {
       chatMode: 'tutor',
       isEnabled: true,
-      parameters: { required: true },
+      parameters: { required: true, toolAlias: 'doc_query' },
       mcpServerId: 'synthetic-server',
     }
     expect(
-      resolveEffectiveChatModeOptions(null, [requiredBinding], config)
-    ).toEqual({})
-    expect(
       Object.keys(
-        resolveEffectiveChatModeOptions(
-          null,
-          [{ ...requiredBinding, chatMode: 'writing-coach' }],
-          config
-        )
+        resolveEffectiveChatModeOptions(null, [requiredBinding], config)
       )
     ).toEqual(['writing-coach'])
+    expect(
+      resolveEffectiveMCPConfigurations([requiredBinding], 'writing-coach')
+    ).toEqual([])
   })
 
   test('requires the typed opt-in even when stored guidance uses the same key', () => {
