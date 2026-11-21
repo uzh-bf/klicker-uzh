@@ -137,6 +137,21 @@ would cover local commits, pushing this task branch and a draft pull request to
   these controls share one slim row with the credits, which would otherwise
   sit underneath them. Fullscreen and standalone keep the full header with the
   chatbot name, because there the title identifies the chat.
+- **Consistent controls (added 2026-11-21 at the user's request).** The mode
+  menu moves from a hand-built Radix pill to the design-system `Select` used by
+  the settings panel. Chrome icon buttons share one square ghost-button class.
+  Assistant-ui's message actions and composer buttons keep their own
+  families, aligned in size. The embedded toolbar's native selects stay.
+- **Design review (2026-11-21, user-requested Gemini 4 Neon on AGY).** Twelve
+  findings, each checked against source and captures. Applied: the
+  `fine-pointer` cascade fix, a right gutter so the floating controls no
+  longer cover the first message, the mode menu in the narrow control row,
+  the duplicate `main-content` id, a flex header row, the bot avatar in
+  replies, matching settings and credits rows, 16-pixel message and compact
+  composer icons, the scroll-to-bottom tooltip, sidebar header padding and a
+  muted timestamp. Left for a follow-up: a denser empty welcome when framed,
+  the narrow history trigger overlapping a scrolled message, and coarse-pointer
+  targets in thread rows and the sources disclosure, all pre-existing.
 - **Dropped from the earlier proposal.** Collapsing the sidebar by default and
   a credits chip in the header: the user wants more history visible, which a
   default-closed sidebar works against. Collapsing tool-call groups: they are

@@ -1001,6 +1001,22 @@ Below `md`, the same controls and the credits share one slim row in the flow.
 Fullscreen and standalone keep the full header with the name, because there
 the title identifies the chat.
 
+Chrome controls share two primitives. Selects, including the mode menu, use
+the design-system `Select`; the mode menu shows each mode's icon and
+description in its options and only the short label in the trigger, and a
+hidden `<label>` gives the combobox its `Chat mode: <mode>` name. Icon buttons
+in the header, sidebar header, floating framed controls and embedded toolbar
+use `toolbarIconButtonClassName` (a square ghost button, 44 pixels on touch and
+32 on fine pointers; the embedded toolbar stays at 32). Message actions keep
+`actionBarButtonClassName`, and the composer keeps its round attach and send
+buttons. The embedded toolbar keeps native selects for its compact height.
+
+The `fine-pointer` variant in `globals.css` wraps its rules in `:root &`. The
+design-system stylesheet loads after the chat stylesheet and emits the same
+base utilities (`size-11`, `h-11`, `min-h-11`) at equal specificity, so a plain
+media-query variant silently loses and every control stays at its touch size
+on desktop. Keep the raised specificity when editing the variant.
+
 `FullscreenToggle` lets a framed chat take over the screen with the Fullscreen
 API on the document element, so portalled dialogs and tooltips stay visible.
 The host decides: a cross-origin frame may enter fullscreen only when its
