@@ -27,12 +27,12 @@ WORKDIR /app
 
 # Install runs @prisma/engines postinstall → downloads the schema (migration) engine.
 #
-# Prisma 7.8.0 depends on mysql2 3.15.3 and @prisma/config on deepmerge-ts 7.1.5,
-# both below their published advisory fixes, and no Prisma release carries the
-# fixed versions yet. npm overrides pin them for this standalone install, so the
-# overrides file is written before the install runs.
+# Prisma 7.8.0 depends on mysql2 3.15.3 and @prisma/config on deepmerge-ts 7.1.5
+# and effect 3.20.0, all below their published advisory fixes, and no Prisma
+# release carries the fixed versions yet. npm overrides pin them for this
+# standalone install, so the overrides file is written before the install runs.
 RUN printf '%s\n' \
-      '{"private":true,"overrides":{"mysql2":"3.22.0","deepmerge-ts":"8.0.0"}}' \
+      '{"private":true,"overrides":{"mysql2":"3.22.0","deepmerge-ts":"8.0.0","effect":"3.22.1"}}' \
       > package.json
 
 # The pin stays on its own `RUN npm install prisma@` line because
