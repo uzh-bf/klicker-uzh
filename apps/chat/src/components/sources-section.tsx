@@ -260,20 +260,28 @@ export function SourcesSection() {
       data-cy="chat-sources-section"
       className="border-border animate-in fade-in mt-3 min-w-0 border-t border-dashed pt-3 duration-300 motion-reduce:animate-none"
     >
-      <h3
-        ref={headingRef}
-        id={headingId}
-        className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"
-      >
-        <BookOpenIcon aria-hidden="true" className="size-3.5" />
-        {t('chat.sources.title')} · {sources.length}
-      </h3>
+      {/* One row for the section heading and the cited-list label. The
+          heading itself stays unchanged: it names the section and anchors the
+          reveal scroll above. */}
+      <div className="text-muted-foreground mb-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-semibold uppercase tracking-wide">
+        <h3
+          ref={headingRef}
+          id={headingId}
+          className="flex items-center gap-1.5"
+        >
+          <BookOpenIcon aria-hidden="true" className="size-3.5" />
+          {t('chat.sources.title')} · {sources.length}
+        </h3>
+        {previewSources.length > 0 && (
+          <span className="font-medium normal-case tracking-normal">
+            <span aria-hidden="true">· </span>
+            {t('chat.sources.cited')}
+          </span>
+        )}
+      </div>
 
       {previewSources.length > 0 && (
         <>
-          <h4 className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
-            {t('chat.sources.cited')}
-          </h4>
           {/* All source types share one responsive grid. Equal-width tracks keep
               mixed document/media results aligned, while min(230px, 100%) prevents
               horizontal overflow in mobile and embedded containers. */}

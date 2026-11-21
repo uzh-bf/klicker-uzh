@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl'
 import type * as React from 'react'
 import { useChatStore } from '@/src/stores/chatStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
+import { useChatUi } from './chat-ui-context'
 import { CreditsFooter } from './credits-footer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
@@ -30,6 +31,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { createThread, participationRequired } = useChatStore()
   const authMode = useSettingsStore((s) => s.authMode)
   const { setOpenMobile } = useSidebar()
+  const { compact } = useChatUi()
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -107,39 +109,71 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="p-0">
         <SettingsPanel />
         <CreditsFooter />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link
-                href="https://www.klicker.uzh.ch"
-                target="_blank"
-                className="flex items-center justify-center"
-              >
-                <Image
-                  src="/KlickerLogo.png"
-                  alt={t('chat.sidebar.logoAlt')}
-                  width={120}
-                  height={60}
-                  unoptimized
-                  className="h-6 w-auto object-contain md:h-8"
-                />
-                {/* The link leaves the app in a new tab; nothing but the
-                    accessible name can carry that hint here. */}
-                <span className="sr-only">
-                  {t('chat.common.opensInNewTab')}
-                </span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        {/* Legal line of the standalone chat view, which renders no footer
-            band of its own; embedded mode shows neither this sidebar nor a
-            footer. */}
-        <p className="text-muted-foreground px-3 pb-2 text-center text-xs">
-          {t('chat.sidebar.copyright', {
-            year: String(new Date().getFullYear()),
-          })}
-        </p>
+        {compact ? (
+          // A framed chat is short, so the sidebar's height goes to the
+          // conversation history: logo and legal line share one small row.
+          <div
+            data-cy="chat-sidebar-legal"
+            className="flex items-center gap-2 border-t px-3 py-1"
+          >
+            <Link
+              href="https://www.klicker.uzh.ch"
+              target="_blank"
+              className="focus-visible:ring-ring inline-flex h-6 shrink-0 items-center rounded-sm focus-visible:outline-none focus-visible:ring-1"
+            >
+              <Image
+                src="/KlickerLogo.png"
+                alt={t('chat.sidebar.logoAlt')}
+                width={120}
+                height={60}
+                unoptimized
+                className="h-4 w-auto object-contain"
+              />
+              <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
+            </Link>
+            <p className="text-muted-foreground min-w-0 text-[10px] leading-tight">
+              {t('chat.sidebar.copyright', {
+                year: String(new Date().getFullYear()),
+              })}
+            </p>
+          </div>
+        ) : (
+          <>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" asChild>
+                  <Link
+                    href="https://www.klicker.uzh.ch"
+                    target="_blank"
+                    className="flex items-center justify-center"
+                  >
+                    <Image
+                      src="/KlickerLogo.png"
+                      alt={t('chat.sidebar.logoAlt')}
+                      width={120}
+                      height={60}
+                      unoptimized
+                      className="h-6 w-auto object-contain md:h-8"
+                    />
+                    {/* The link leaves the app in a new tab; nothing but the
+                        accessible name can carry that hint here. */}
+                    <span className="sr-only">
+                      {t('chat.common.opensInNewTab')}
+                    </span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            {/* Legal line of the standalone chat view, which renders no footer
+                band of its own; embedded mode shows neither this sidebar nor a
+                footer. */}
+            <p className="text-muted-foreground px-3 pb-2 text-center text-xs">
+              {t('chat.sidebar.copyright', {
+                year: String(new Date().getFullYear()),
+              })}
+            </p>
+          </>
+        )}
       </SidebarFooter>
     </Sidebar>
   )
