@@ -116,6 +116,8 @@ export async function getMicroLearningData(
       ...microLearning,
       isOwner,
       stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
+      // escape rooms mask locked stacks, so the total is reported separately
+      numOfStacks: orderedStacks.length,
     }
   }
 

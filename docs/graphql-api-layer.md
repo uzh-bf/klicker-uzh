@@ -103,12 +103,6 @@ succeed or partially succeed even if the other fails. The UI must preserve and
 present both result sets; there is no transaction spanning the batch edit and
 batch sharing calls.
 
-Rolling deployments also require keeping the persisted hashes used by the
-previous frontend. When an existing operation needs new fields or variables,
-add a newly named operation for the updated client and leave the original
-operation document unchanged. Removing its old hash from `server.json` breaks
-already-open clients because arbitrary GraphQL operations are disabled outside
-development and test.
 The `userElements` and `userActivities` list fields accept optional
 `numEntries` and `offset` arguments. Finite page sizes pass both values;
 omitting both returns the current filtered result without a pagination limit.

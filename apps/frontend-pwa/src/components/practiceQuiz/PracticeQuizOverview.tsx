@@ -15,6 +15,7 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { EscapeRoomStages } from '@lib/escapeRoomStages'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -31,6 +32,7 @@ interface PracticeQuizOverviewProps {
   setCurrentIx: (ix: number) => void
   previewOnly: boolean
   isEscapeRoom?: boolean
+  escapeStages?: EscapeRoomStages
 }
 
 function PracticeQuizOverview({
@@ -45,6 +47,7 @@ function PracticeQuizOverview({
   setCurrentIx,
   previewOnly,
   isEscapeRoom = false,
+  escapeStages,
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -99,10 +102,15 @@ function PracticeQuizOverview({
         <div className="flex-1 space-y-2">
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
-            <div>
-              {t('pwa.microLearning.numOfQuestionSets', {
-                number: numOfStacks ?? 0,
-              })}
+            <div data-cy="practice-quiz-stage-count">
+              {isEscapeRoom && escapeStages
+                ? t('pwa.practiceQuiz.escapeRoomStageCount', {
+                    required: escapeStages.requiredCount,
+                    bonus: escapeStages.bonusCount,
+                  })
+                : t('pwa.microLearning.numOfQuestionSets', {
+                    number: numOfStacks ?? 0,
+                  })}
             </div>
           </div>
           {isEscapeRoom ? (

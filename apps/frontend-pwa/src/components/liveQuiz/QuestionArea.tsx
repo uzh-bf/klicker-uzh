@@ -61,8 +61,11 @@ interface QuestionAreaProps {
   escapeRoomConfig?: {
     timeLimit: number
     hintPenalty: number
+    hintPenalties: number[]
+    lockoutSeconds: number
     introText?: string | null
   } | null
+  title?: string
   initialEscapeRoomAttempt?: LiveQuizEscapeRoomAttempt | null
   escapeRoomTotalInstances?: number | null
   escapeRoomClearedInstances?: number | null
@@ -80,6 +83,7 @@ function QuestionArea({
   execution,
   blockId,
   escapeRoomConfig,
+  title,
   initialEscapeRoomAttempt,
   escapeRoomTotalInstances,
   escapeRoomClearedInstances,
@@ -208,7 +212,8 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    if (escapeRoom.lockoutRemaining > 0) return
+    // the time-up ending can be dismissed; the server rejects later answers
+    if (escapeRoom.lockoutRemaining > 0 || escapeRoom.isExpired) return
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -294,6 +299,10 @@ function QuestionArea({
   }
 
   function showStatusCodeToast(statusCode: number, responseStatus?: string) {
+    // with a lockout the incorrect notice and countdown render inline
+    if (responseStatus === 'incorrect' && escapeRoomConfig?.lockoutSeconds) {
+      return
+    }
     if (responseStatus === 'incorrect') {
       toast({
         message: t('pwa.practiceQuiz.escapeRoomIncorrectToast'),
@@ -601,6 +610,7 @@ function QuestionArea({
     <LiveQuizEscapeRoomOverlay
       controller={escapeRoom}
       config={escapeRoomConfig}
+      title={title}
       clearedInstances={
         escapeRoomClearedInstances ??
         instances.length - (remainingQuestions?.length ?? 0)
@@ -672,7 +682,8 @@ function QuestionArea({
           canSubmit={
             !!studentResponse.valid &&
             !submitting &&
-            escapeRoom.lockoutRemaining === 0
+            escapeRoom.lockoutRemaining === 0 &&
+            !escapeRoom.isExpired
           }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
