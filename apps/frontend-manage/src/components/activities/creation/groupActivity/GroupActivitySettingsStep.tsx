@@ -1,3 +1,4 @@
+import EscapeRoomSettingsFields from '@components/activities/creation/EscapeRoomSettingsFields'
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -47,7 +48,14 @@ function GroupActivitySettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, setTouched, setValues }) => (
+      {({
+        values,
+        isValid,
+        isSubmitting,
+        setTouched,
+        setValues,
+        setFieldValue,
+      }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -140,6 +148,10 @@ function GroupActivitySettingsStep({
                     dataNextMonth={{ cy: 'select-end-date-next-month' }}
                     dataHours={{ cy: 'select-end-date-hours' }}
                     dataMinutes={{ cy: 'select-end-date-minutes' }}
+                  />
+                  <EscapeRoomSettingsFields
+                    isEscapeRoom={!!values.isEscapeRoom}
+                    onToggle={(next) => setFieldValue('isEscapeRoom', next)}
                   />
                 </div>
               </div>

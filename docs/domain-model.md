@@ -95,7 +95,7 @@ Invitation creation normalizes emails and matriculation numbers, reports invalid
 
 The print contract (`packages/graphql/src/services/elements.ts:getQrScanPrintData`) creates up to 20 distinct decoys in memory for each request; decoys are never persisted or included in participant APIs. The manage print view randomizes real/decoy card order with the browser CSPRNG, gives every printed card a neutral station label, and keeps the answer legend screen-only.
 
-QR Scan questions can be placed only in Escape Room Practice Quizzes and Microlearnings. Participants scan through the browser's native `BarcodeDetector`/camera APIs when available or enter the printed code manually; both paths require the canonical 12-character URL-safe format. Grading compares the submitted value with the private source-element code on the backend. Well-formed decoys are ordinary incorrect answers and trigger the normal lockout; malformed values fail before grading. Group Activity, Live Quiz, and live-quiz template inputs continue to reject QR placement until their runtime layers land.
+QR Scan questions can be placed only in Escape Room Practice Quizzes, Microlearnings, and Group Activities. Participants scan through the browser's native `BarcodeDetector`/camera APIs when available or enter the printed code manually; both paths require the canonical 12-character URL-safe format. Grading compares the submitted value with the private source-element code on the backend. Well-formed decoys are ordinary incorrect answers and trigger the normal lockout; malformed values fail before grading. Live Quiz and live-quiz template inputs continue to reject QR placement until their runtime layer lands.
 
 ## Course chatbots
 
@@ -154,11 +154,13 @@ This is separate from activity `PublicationStatus` and the activity
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
-## Individual Escape Room mode
+## Escape Room modes
 
 Practice Quizzes and Microlearnings can be configured as Escape Rooms. `EscapeRoomConfig` stores the time limit, hint penalty, incorrect-answer lockout, and optional introduction. `EscapeRoomAttempt` stores server-owned participant progress, start and completion times, accumulated penalties, used hint instance IDs, lockout expiry, and the `IN_PROGRESS | COMPLETED | EXPIRED` status.
 
-The Prisma model also contains dormant Group Activity and Live Quiz block relations so later stacked layers can reuse the same migration. Those modes are not exposed by the GraphQL, authoring, or participant surfaces in this layer.
+The Prisma model also contains a dormant Live Quiz block relation so its later stacked layer can reuse the same migration. Live Quiz Escape Rooms are not exposed by the GraphQL, authoring, or participant surfaces in this layer.
+
+### Individual Practice Quiz and Microlearning
 
 Participants must explicitly start one unique attempt per activity. The backend masks future stacks, validates that submissions target the current stage, claims concurrent submissions through Redis, grades exact response sets, applies lockouts, and completes the attempt only after every stack is cleared. Participant payloads never contain QR answer codes or unused hint text.
 
@@ -167,6 +169,16 @@ Hints are authorized against the current unlocked stack. The first reveal record
 Countdowns start from server-calculated `remainingSeconds` and `expiresInSeconds` snapshots and animate with the browser monotonic clock. Refetches after start, answers, hints, and lockout errors resynchronize those snapshots, while the server remains authoritative for expiry.
 
 The lecturer progress dashboard is roster-based: every enrolled participant appears, including a `NOT_STARTED` row when no attempt exists. Reset requires WRITE access and is rejected while a response lifecycle claim is active. The prune job marks finished attempts before applying retention; response and instance statistics remain owned by the normal submission path.
+
+### Group Activity
+
+A Group Activity Escape Room has one shared attempt per `(groupId, groupActivityId)`, not one attempt per participant. Start and hint requests carry the group ID from the routed participant page; the server verifies that the activity belongs to the same course and that the authenticated participant belongs to that exact group before using it as the lifecycle actor. This remains deterministic when one participant belongs to multiple groups in a course, while concurrent starts by members of the same routed group converge on one attempt (`packages/graphql/src/services/escapeRooms.ts:startEscapeRoomAttempt`).
+
+Each answerable instance of the stack, in element order, is one stage. The team clears stages in turn: `packages/graphql/src/services/groupEscapeRoomSubmissions.ts:submitEscapeRoomGroupActivityDecisions` accepts exactly one response for the current stage, rejects any other stage with `ESCAPE_ROOM_GATED`, validates the response shape and sample solution, and grades it in one serializable transaction. A correct answer appends the sanitized response to `EscapeRoomAttempt.stageResponses`; a wrong answer sets the shared lockout and clears nothing. Clearing the last stage completes the attempt and writes the collected responses as the instance decisions. Concurrent answers by two members to the same stage clear it once. Content and flashcards may be displayed but are never stages. QR values are graded against the private source code and cleared before they are stored.
+
+Participant details mask stages after the current one; cleared stages are returned with the team's answer through `EscapeRoomAttempt.stageDecisions`, and the participant page polls while the attempt is in progress so teammates see newly unlocked stages. Progress counts stages rather than stacks.
+
+Hints and penalties are shared across every member and restored after reload. A hint can be revealed only for the current stage. Lecturer progress is group-roster based, including `NOT_STARTED` groups; resetting deletes both the shared attempt and its `GroupActivityInstance` so the group can restart cleanly.
 
 ## Course deletion
 
