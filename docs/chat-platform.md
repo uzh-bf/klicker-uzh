@@ -1406,8 +1406,9 @@ The Writing Coach prompt uses generic criteria for purpose, reasoning, organizat
 and tone. It asks for evidence-based feedback and revision strategies adapted to the excerpt,
 without replacement wording, translations or completions. Optional Notes are ordinary Markdown
 within a response; they add no separate storage or learning record. The mode uses only its exact
-MCP bindings and follows existing required-tool eligibility. It inherits no Tutor tools.
-Authoring explains a missing required binding even when the mode flag is enabled. Neither the
+MCP bindings and inherits no Tutor tools. Like every mode under ADR 0050, it stays offered when
+another mode declares a required binding, so a chatbot with an attached knowledge base can still
+offer it, tool-free. Neither the
 prompt nor source tests alone establish the quality of its feedback or adherence to its boundary.
 
 A custom-mode persona holds at most 10,000 characters. The `chatbot-long-custom-prompts` flag

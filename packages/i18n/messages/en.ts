@@ -5347,12 +5347,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Course-tool requirements still apply to every mode; Quizzer additionally needs course-material retrieval.',
+        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Quizzer needs course-material retrieval.',
       chatbotModeWritingCoach: 'Writing Coach',
       chatbotModeWritingCoachDescription:
         'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
-      chatbotWritingCoachRequiredTool:
-        'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Guides students with questions, hints and feedback.',

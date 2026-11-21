@@ -486,7 +486,6 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
-  writingCoachUnavailableReason?: string | null
   customModeConfig?: ChatbotCustomModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
@@ -641,10 +640,14 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
-    writingCoachUnavailableReason: t.exposeString(
-      'writingCoachUnavailableReason',
-      { nullable: true }
-    ),
+    // Kept for clients built before Writing Coach stopped depending on other
+    // modes' tool bindings; it always resolves to null.
+    writingCoachUnavailableReason: t.string({
+      nullable: true,
+      deprecationReason:
+        'Writing Coach availability no longer depends on tool bindings.',
+      resolve: () => null,
+    }),
     standardModeConfig: t.field({
       type: ChatbotStandardModeConfigRef,
       nullable: true,
