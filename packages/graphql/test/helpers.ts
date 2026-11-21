@@ -1128,7 +1128,7 @@ export async function seedGroupActivity(
 // Synthetic test participants must satisfy the persisted account data-use
 // gate. A recorded refusal of both optional purposes is a valid, complete
 // state; only the metadata marks the account as already onboarded.
-const acknowledgedParticipantDataUse = {
+export const acknowledgedParticipantDataUse = {
   researchConsent: false,
   learningAnalyticsConsent: false,
   researchConsentChoiceAt: new Date(),

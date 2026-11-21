@@ -1,4 +1,4 @@
-import { FetchResult, useLazyQuery, useMutation } from '@apollo/client'
+import { type FetchResult, useLazyQuery, useMutation } from '@apollo/client'
 import {
   LoginParticipantDocument,
   SelfDocument,
@@ -6,10 +6,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/forms/LoginForm'
@@ -118,6 +118,11 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
       const result = await sendMagicLink({
         variables: {
           usernameOrEmail: values.usernameOrEmail.trim(),
+          // Carry the validated return target (e.g. a course join page)
+          // through the magic link so the enrollment step survives login.
+          // Cross-origin targets (chat) stay on the password path, where
+          // full browser navigation handles them.
+          redirectTo: redirectPath.startsWith('/') ? redirectPath : undefined,
         },
       })
 
