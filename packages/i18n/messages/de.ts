@@ -25,6 +25,9 @@ export default {
       close: 'Wissensgraph schliessen',
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
+      resize: 'Grösse des Wissensgraphen ändern',
+      resizeHint:
+        'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
@@ -123,6 +126,10 @@ export default {
     },
     embedded: {
       close: 'Chat schliessen',
+    },
+    fullscreen: {
+      enter: 'Vollbild',
+      exit: 'Vollbild beenden',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -618,7 +625,6 @@ export default {
     },
     sources: {
       title: 'Quellen',
-      cited: 'In dieser Antwort zitiert',
       otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
@@ -5472,12 +5478,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Kurswerkzeug-Vorgaben gelten weiterhin für jeden Modus; der Quizzer benötigt zusätzlich Zugriff auf Kursmaterialien.',
+        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Der Quizzer benötigt Zugriff auf Kursmaterialien.',
       chatbotModeWritingCoach: 'Schreibcoach',
       chatbotModeWritingCoachDescription:
         'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
-      chatbotWritingCoachRequiredTool:
-        'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Führt Studierende mit Fragen, Hinweisen und Rückmeldungen.',

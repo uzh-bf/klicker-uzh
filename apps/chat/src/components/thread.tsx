@@ -326,7 +326,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   // caption as a dangling "— 5 minutes ago".
   return (
     <div
-      className="text-foreground mt-1 text-xs"
+      className="text-muted-foreground mt-1 text-xs"
       title={hasCustomMetadata ? fullParts.join(' — ') : undefined}
     >
       {hasCustomMetadata && (
@@ -358,7 +358,7 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact, headerless } = useChatUi()
   const resolvedSuggestions =
     suggestions ??
     getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
@@ -376,7 +376,8 @@ export const Thread: FC<ThreadProps> = ({
   return (
     <ThreadPrimitive.Root
       data-cy="chat-thread"
-      className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
+      data-compact={compact}
+      className="group/thread bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: embedded
           ? 'min(100%, 48rem)'
@@ -410,7 +411,14 @@ export const Thread: FC<ThreadProps> = ({
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-2 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
-                showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
+                showHistoryRail && 'pt-14 md:pl-10 md:pt-8',
+                // Below `md` the history rail sits above the messages and
+                // needs the default top padding for its trigger; from `md` it
+                // moves to the left gutter.
+                compact && (showHistoryRail ? 'pb-2 md:pt-3' : 'pb-2 sm:pt-3'),
+                // Without a header bar the first message must clear the
+                // floating corner controls.
+                headerless && 'md:pr-12 md:pt-12'
               )
         )}
       >
@@ -455,7 +463,10 @@ export const Thread: FC<ThreadProps> = ({
           'z-10 flex w-full flex-col items-center justify-end',
           embedded
             ? 'relative shrink-0 px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]'
-            : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
+            : twMerge(
+                'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4',
+                compact && 'pb-[max(0.375rem,env(safe-area-inset-bottom))]'
+              )
         )}
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
@@ -609,11 +620,12 @@ const ThreadScrollToBottom: FC = () => {
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
           <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9">
-            <ArrowDownIcon />
+            <ArrowDownIcon aria-hidden="true" className="size-4" />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
         </ThreadPrimitive.ScrollToBottom>
       </TooltipTrigger>
+      <TooltipContent>{t('chat.thread.scrollToBottom')}</TooltipContent>
     </Tooltip>
   )
 }
@@ -946,7 +958,7 @@ const Composer: FC<{
   allowDocumentAttachments: boolean
 }> = ({ maxImageAttachments, allowDocumentAttachments }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const { clearError: clearDictationError } = useDictationContext()
@@ -1013,7 +1025,8 @@ const Composer: FC<{
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-1.5 text-sm leading-6' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-1.5 text-sm leading-6' : 'max-h-40 py-4',
+              compact && 'max-h-32 py-2'
             )}
           />
           <DictationButton />
@@ -1030,8 +1043,15 @@ const Composer: FC<{
 // from input/output tokens, so the figure varies by model and exchange length —
 // which is exactly what `chat.credits.costHint` already says, in the credits
 // surfaces that can also show the balance it applies to.
+//
+// A framed chat has little height, so there the caveat is shown while the
+// thread is empty and yields its line to the conversation afterwards.
 const ComposerHint: FC = () => {
   const t = useTranslations()
+  const { compact } = useChatUi()
+  const threadIsEmpty = useAuiState((s) => s.thread.isEmpty)
+
+  if (compact && !threadIsEmpty) return null
 
   return (
     <p
@@ -1721,7 +1741,7 @@ const ComposerAttachButton: FC<{
   dataCy,
 }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const aui = useAui()
   const composerImageCount = useAuiState(
     (s) => s.composer.attachments.filter(isImageAttachment).length
@@ -1820,7 +1840,8 @@ const ComposerAttachButton: FC<{
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md touch-manipulation',
           embedded
             ? 'size-11 fine-pointer:size-8'
-            : 'size-11 fine-pointer:size-9'
+            : 'size-11 fine-pointer:size-9',
+          compact && 'fine-pointer:size-8'
         )}
         aria-label={t(
           allowDocumentAttachments
@@ -1828,7 +1849,7 @@ const ComposerAttachButton: FC<{
             : 'chat.composer.attachImage'
         )}
       >
-        <PaperclipIcon className={embedded ? 'size-4' : 'size-5'} />
+        <PaperclipIcon className={embedded || compact ? 'size-4' : 'size-5'} />
       </button>
     </>
   )
@@ -1836,7 +1857,7 @@ const ComposerAttachButton: FC<{
 
 const ComposerAction: FC = () => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   // M6: a single persistent circular shell — both buttons always mount and
   // stack in the same slot, so there is no layout jump between send and stop.
   // `Send`/`Cancel` already self-disable via their own hooks (disabled when
@@ -1883,7 +1904,7 @@ const ComposerAction: FC = () => {
       ?.focus()
   }, [isRunning])
 
-  const iconSize = embedded ? 'size-4' : 'size-5'
+  const iconSize = embedded || compact ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
   // focus ring is lost when swapping to a plain <button> (see Send note below),
   // so restore an equivalent `focus-visible` ring here.
@@ -1899,7 +1920,8 @@ const ComposerAction: FC = () => {
         'relative shrink-0',
         embedded
           ? 'm-1 size-11 fine-pointer:size-8'
-          : 'm-2 size-11 fine-pointer:size-9'
+          : 'm-2 size-11 fine-pointer:size-9',
+        compact && 'm-1 fine-pointer:size-8'
       )}
     >
       <ComposerPrimitive.Send asChild>
@@ -1979,7 +2001,7 @@ function getEditTooltip(
 
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const attachments = getMessageAttachments(message)
   const documents = getMessageDocuments(message)
 
@@ -1990,7 +2012,8 @@ const UserMessage: FC = () => {
       tabIndex={-1}
       className={twMerge(
         'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
-        embedded && 'py-1 sm:py-1.5'
+        embedded && 'py-1 sm:py-1.5',
+        compact && 'py-1 sm:py-1'
       )}
     >
       <div
@@ -2411,7 +2434,7 @@ const AssistantMessage: FC<{
 }> = ({ chatbotAvatar: explicitAvatar, chatbotFallbackIcon }) => {
   const contextAvatar = useContext(ChatbotAvatarContext)
   const chatbotAvatar = explicitAvatar || contextAvatar
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const messageId = useAuiState((s) => s.message.id)
   // True only for the synthetic empty assistant message the runtime injects
   // while a response is pending (before the first streamed part arrives).
@@ -2443,7 +2466,8 @@ const AssistantMessage: FC<{
         'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
         embedded
           ? 'grid-cols-[auto_1fr] gap-x-2 py-1 sm:py-1.5'
-          : 'grid-cols-[auto_auto_1fr]'
+          : 'grid-cols-[auto_auto_1fr]',
+        compact && 'py-1 sm:py-1'
       )}
     >
       {embedded ? (
@@ -2458,36 +2482,15 @@ const AssistantMessage: FC<{
           />
         </div>
       ) : (
-        <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start pr-1 sm:mr-3 sm:mt-3 sm:pr-2">
-          <Image
-            src={
-              chatbotAvatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '/user-solid.svg'
-            }
-            alt=""
-            width={chatbotAvatar ? '35' : '32'}
-            height="35"
-            unoptimized
-            className={twMerge(
-              'hidden rounded-full bg-white sm:block',
-              chatbotAvatar ? '' : 'p-1'
-            )}
-          />
-          <Image
-            src={
-              chatbotAvatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '/user-solid.svg'
-            }
-            alt=""
-            width="24"
-            height="24"
-            unoptimized
-            className={twMerge(
-              'rounded-full bg-white sm:hidden',
-              chatbotAvatar ? '' : 'p-1'
-            )}
+        // Same avatar component as the welcome screen and the embedded
+        // widget, so a chatbot without its own avatar shows the bot icon
+        // instead of a generic person silhouette.
+        <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start sm:mr-3 sm:mt-2.5">
+          <ChatbotAvatar
+            avatar={chatbotAvatar}
+            fallbackIcon={chatbotFallbackIcon}
+            className="text-uzh-blue ring-border size-6 bg-white ring-1 sm:size-8"
+            iconClassName="size-3.5 sm:size-4"
           />
         </div>
       )}
@@ -2533,7 +2536,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   return (
     <div
       className={twMerge(
-        'row-start-2 min-h-11 fine-pointer:min-h-8',
+        'row-start-2 min-h-11 fine-pointer:min-h-8 fine-pointer:group-data-[compact=true]/thread:min-h-7',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >

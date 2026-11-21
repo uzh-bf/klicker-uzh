@@ -8,7 +8,9 @@ import { Maximize2, Minimize2, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
+  type CSSProperties,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -19,6 +21,31 @@ import { twMerge } from 'tailwind-merge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { ChatGraphConceptContext } from './ChatGraphConcepts'
 import { ChatKnowledgeGraphWorkspace } from './ChatKnowledgeGraphWorkspace'
+
+const PANEL_WIDTH_STORAGE_KEY = 'klicker-chat-graph-panel-width'
+const PANEL_MIN_WIDTH = 320
+// The conversation keeps at least this width beside a resized graph.
+const CONVERSATION_MIN_WIDTH = 360
+const PANEL_KEYBOARD_STEP = 32
+
+function readStoredPanelWidth(): number | undefined {
+  try {
+    const value = Number(window.localStorage.getItem(PANEL_WIDTH_STORAGE_KEY))
+    return Number.isFinite(value) && value >= PANEL_MIN_WIDTH
+      ? value
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function storePanelWidth(width: number) {
+  try {
+    window.localStorage.setItem(PANEL_WIDTH_STORAGE_KEY, String(width))
+  } catch {
+    // Storage can be unavailable; the width then lasts for this page only.
+  }
+}
 
 export function useChatGraphPanel(chatbotId: string, enabled: boolean) {
   const pathname = usePathname()
@@ -69,6 +96,8 @@ export function ChatKnowledgeGraphPanel({
   const t = useTranslations('chat.graphPanel')
   const aui = useAui()
   const [fullscreen, setFullscreen] = useState(false)
+  const [panelWidth, setPanelWidth] = useState<number>()
+  const layoutRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const expandRef = useRef<HTMLButtonElement>(null)
   const focusComposerRef = useRef(false)
@@ -122,6 +151,47 @@ export function ChatKnowledgeGraphPanel({
       ?.focus()
   }, [fullscreen, open])
 
+  useEffect(() => {
+    setPanelWidth(readStoredPanelWidth())
+  }, [])
+
+  function clampPanelWidth(width: number) {
+    const available = layoutRef.current?.clientWidth ?? width
+    return Math.round(
+      Math.min(
+        Math.max(width, PANEL_MIN_WIDTH),
+        Math.max(PANEL_MIN_WIDTH, available - CONVERSATION_MIN_WIDTH)
+      )
+    )
+  }
+
+  function resizePanel(width: number) {
+    const next = clampPanelWidth(width)
+    setPanelWidth(next)
+    storePanelWidth(next)
+  }
+
+  function startResize(event: ReactPointerEvent<HTMLDivElement>) {
+    const layout = layoutRef.current
+    if (layout === null) return
+    event.preventDefault()
+    const handle = event.currentTarget
+    handle.setPointerCapture(event.pointerId)
+    const right = layout.getBoundingClientRect().right
+    const onMove = (moveEvent: PointerEvent) => {
+      setPanelWidth(clampPanelWidth(right - moveEvent.clientX))
+    }
+    const onUp = (upEvent: PointerEvent) => {
+      handle.removeEventListener('pointermove', onMove)
+      handle.removeEventListener('pointerup', onUp)
+      handle.removeEventListener('pointercancel', onUp)
+      resizePanel(right - upEvent.clientX)
+    }
+    handle.addEventListener('pointermove', onMove)
+    handle.addEventListener('pointerup', onUp)
+    handle.addEventListener('pointercancel', onUp)
+  }
+
   const conceptContext = useMemo(
     () =>
       onFocusConcept === undefined
@@ -155,6 +225,7 @@ export function ChatKnowledgeGraphPanel({
 
   return (
     <div
+      ref={layoutRef}
       className="relative flex min-h-0 flex-1 flex-col lg:flex-row"
       data-cy="chat-graph-layout"
     >
@@ -205,9 +276,57 @@ export function ChatKnowledgeGraphPanel({
             'bg-background flex min-h-0 min-w-0 flex-col',
             fullscreen
               ? 'fixed inset-0 z-50'
-              : 'order-first h-[45%] min-h-60 shrink-0 border-b lg:order-last lg:h-auto lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem] lg:border-b-0 lg:border-l'
+              : twMerge(
+                  'relative order-first h-[45%] min-h-60 shrink-0 border-b lg:order-last lg:h-auto lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem] lg:border-b-0 lg:border-l',
+                  panelWidth !== undefined &&
+                    'lg:w-[var(--chat-graph-panel-width)] lg:min-w-0 lg:max-w-none'
+                )
           )}
+          style={
+            panelWidth === undefined || fullscreen
+              ? undefined
+              : ({
+                  '--chat-graph-panel-width': `${panelWidth}px`,
+                } as CSSProperties)
+          }
         >
+          {fullscreen ? null : (
+            // biome-ignore lint/a11y/useSemanticElements: A focusable separator is the ARIA pattern for a resizable split; <hr> cannot be focused or dragged.
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('resize')}
+              aria-valuenow={panelWidth}
+              aria-valuemin={PANEL_MIN_WIDTH}
+              title={t('resizeHint')}
+              tabIndex={0}
+              onPointerDown={startResize}
+              onDoubleClick={() => {
+                setPanelWidth(undefined)
+                try {
+                  window.localStorage.removeItem(PANEL_WIDTH_STORAGE_KEY)
+                } catch {
+                  // Nothing stored to reset.
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')
+                  return
+                event.preventDefault()
+                const current =
+                  panelRef.current?.getBoundingClientRect().width ??
+                  PANEL_MIN_WIDTH
+                resizePanel(
+                  current +
+                    (event.key === 'ArrowLeft'
+                      ? PANEL_KEYBOARD_STEP
+                      : -PANEL_KEYBOARD_STEP)
+                )
+              }}
+              className="hover:bg-primary/30 focus-visible:bg-primary/40 absolute inset-y-0 -left-1 z-40 hidden w-2 cursor-col-resize touch-none focus-visible:outline-none lg:block"
+              data-cy="knowledge-graph-resize"
+            />
+          )}
           <div className="flex shrink-0 items-center gap-1 border-b px-3 py-1">
             <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
               {t('title')}

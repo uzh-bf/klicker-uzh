@@ -45,7 +45,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.92
+        tag: v3.4.0-alpha.96
       resources:
         # Near the per-pod CPU of a busy lecture, so a crowded node does not
         # throttle this tier first. Usage above the request is still allowed.
@@ -88,7 +88,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.92
+        tag: v3.4.0-alpha.96
       resources:
         requests:
           cpu: 25m
@@ -129,7 +129,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.92
+        tag: v3.4.0-alpha.96
       resources:
         requests:
           cpu: 50m
@@ -196,7 +196,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   ingress:
     annotations:
@@ -358,7 +358,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   ingress:
     annotations:
@@ -426,7 +426,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   strategy:
     type: RollingUpdate
@@ -476,7 +476,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   strategy:
     type: RollingUpdate
@@ -542,7 +542,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   ingress:
     className: haproxy
@@ -602,7 +602,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   ingress:
     className: haproxy
@@ -640,7 +640,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   affinity:
     podAntiAffinity:
@@ -742,7 +742,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -797,7 +797,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
 
   affinity:
     podAntiAffinity:
@@ -867,7 +867,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.93
+    tag: v3.4.0-alpha.96
 
   ingress:
     className: haproxy
@@ -899,7 +899,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.92
+    tag: v3.4.0-alpha.96
     pullPolicy: IfNotPresent
 
   affinity:
@@ -989,7 +989,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.92
+      tag: v3.4.0-alpha.96
 
     ingress:
       className: haproxy
@@ -1084,7 +1084,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.92
+      tag: v3.4.0-alpha.96
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1160,7 +1160,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.92
+      tag: v3.4.0-alpha.96
 
     ingress:
       className: haproxy
