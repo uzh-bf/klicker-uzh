@@ -59,13 +59,48 @@ function QuestionArea({
 
   const [showConfetti, setShowConfetti] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [submissionUnconfirmed, setSubmissionUnconfirmed] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
 
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
+  const [previouslySubmitted, setPreviouslySubmitted] = useState(false)
+  const [expired, setExpired] = useState(false)
+  const [allSubmitted, setAllSubmitted] = useState(false)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+
+  useEffect(() => {
+    let cancelled = false
+    setAllSubmitted(false)
+    if (remainingQuestions?.length === 0 && isBlockActive && !expired) {
+      void Promise.all(
+        instances.map((instance) =>
+          localforage.getItem<{
+            responseTimestamp?: number
+            previouslySubmitted?: boolean
+          }>(`lq-${quizId}-ex-${execution}-i-${instance.id}`)
+        )
+      )
+        .then((responses) => {
+          if (!cancelled)
+            setAllSubmitted(
+              responses.every(
+                (response) =>
+                  typeof response?.responseTimestamp === 'number' ||
+                  response?.previouslySubmitted === true
+              )
+            )
+        })
+        .catch(() => {
+          console.warn('[LiveQuiz] could not read stored submissions')
+        })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [quizId, execution, instances, remainingQuestions, isBlockActive, expired])
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -75,9 +110,23 @@ function QuestionArea({
       valid: false,
     })
 
+  // Refreshing signed quiz metadata must not reset an in-progress answer.
+  const [responseInstance, setResponseInstance] = useState({
+    quizId,
+    execution,
+    instance: currentInstance,
+  })
+  if (
+    responseInstance.quizId !== quizId ||
+    responseInstance.execution !== execution ||
+    responseInstance.instance?.id !== currentInstance?.id
+  ) {
+    setResponseInstance({ quizId, execution, instance: currentInstance })
+  }
+
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
-    instance: currentInstance,
+    instance: responseInstance.instance,
     setStudentResponse,
   })
 
@@ -99,13 +148,20 @@ function QuestionArea({
 
     // reset submittedAt when switching instances; will be set again if stored exists
     setSubmittedAt(null)
+    setPreviouslySubmitted(false)
+    setSubmissionUnconfirmed(false)
 
     loadStoredResponse({
       quizId,
       execution,
       currentInstance,
       setStudentResponse: safeSetStudentResponse,
-      setSubmittedAt,
+      setSubmittedAt: (value) => {
+        if (!cancelled) setSubmittedAt(value)
+      },
+      setPreviouslySubmitted: (value) => {
+        if (!cancelled) setPreviouslySubmitted(value)
+      },
     })
 
     return () => {
@@ -166,16 +222,32 @@ function QuestionArea({
       correlationKey,
     } = instances[activeInstance]
 
-    // if the question has been answered, add a response
-    const success = await answerQuestion({
-      instanceId,
-      type: elementType,
-      input: studentResponse,
-      correlationKey,
-    })
-
-    // relese the submission lock on the submission button
-    setSubmitting(false)
+    // Save the draft before the request, including when its acknowledgement is lost.
+    const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    let success = false
+    try {
+      // A storage failure must not block the submission; the draft stays in memory.
+      await localforage
+        .setItem(`${storageKey}-temp`, studentResponse.response)
+        .catch(() => {
+          console.warn('[LiveQuiz] could not store the draft')
+        })
+      success = await answerQuestion({
+        instanceId,
+        type: elementType,
+        input: studentResponse,
+        correlationKey,
+      })
+    } catch {
+      console.warn('[LiveQuiz] submission handling failed')
+      toast({
+        type: 'error',
+        message: t('pwa.assessment.submissionGeneralError'),
+      })
+    } finally {
+      // Release the submission lock even when local storage or the request fails.
+      setSubmitting(false)
+    }
 
     // if the submission was not successful, do not block another submission attempt
     if (!success) return
@@ -199,6 +271,7 @@ function QuestionArea({
   }
 
   const onExpire = async (): Promise<void> => {
+    setExpired(true)
     const {
       id: instanceId,
       elementType,
@@ -233,8 +306,10 @@ function QuestionArea({
   }
 
   function showStatusCodeToast(statusCode: number) {
+    if (statusCode >= 400 && statusCode < 500) setSubmissionUnconfirmed(false)
     // status code 200 (regular and assessment responses) -> successful submission
     if (statusCode === 200) {
+      setSubmissionUnconfirmed(false)
       toast({
         message: t('pwa.assessment.submissionSuccessful'),
         type: 'success',
@@ -242,6 +317,7 @@ function QuestionArea({
     }
     // status code 208 (assessment responses) -> already recorded
     else if (statusCode === 208) {
+      setSubmissionUnconfirmed(false)
       toast({
         message: t('pwa.assessment.submissionAlreadyRecorded'),
         type: 'success',
@@ -268,10 +344,11 @@ function QuestionArea({
         type: 'error',
       })
     }
-    // status code 500 (regular responses) -> server error
-    else if (statusCode === 500) {
+    // A transport or dispatch failure cannot confirm whether the answer was received.
+    else if (statusCode === 1 || statusCode === 0 || statusCode >= 500) {
+      setSubmissionUnconfirmed(true)
       toast({
-        message: t('pwa.assessment.submissionServerError'),
+        message: t('pwa.assessment.submissionUnconfirmed'),
         type: 'error',
       })
     }
@@ -291,6 +368,27 @@ function QuestionArea({
     correlationKey?: string | null
   }): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+
+    async function recordPreviousSubmission() {
+      await localforage.setItem(storageKey, { previouslySubmitted: true })
+      // The earlier answer is final, so the unsent draft can no longer be used.
+      await localforage.removeItem(`${storageKey}-temp`)
+      setSubmittedAt(null)
+      setPreviouslySubmitted(true)
+      setStudentResponse({
+        type,
+        response: [
+          ElementType.Sc,
+          ElementType.Mc,
+          ElementType.Kprim,
+          ElementType.CaseStudy,
+        ].includes(type)
+          ? {}
+          : undefined,
+        valid: false,
+      } as InstanceStackStudentResponseType)
+      return true
+    }
 
     if (!input.valid) {
       toast({
@@ -320,6 +418,7 @@ function QuestionArea({
       showStatusCodeToast(result.statusCode)
 
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
+      if (result.statusCode === 208) return recordPreviousSubmission()
       if (result.statusCode >= 200 && result.statusCode < 300) {
         // store the submitted answer locally to be shown and remove any temporary saved response
         await localforage.setItem(storageKey, {
@@ -349,6 +448,7 @@ function QuestionArea({
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode)
 
+      if (result.statusCode === 208) return recordPreviousSubmission()
       if (result.statusCode >= 200 && result.statusCode < 300) {
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -377,6 +477,7 @@ function QuestionArea({
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode)
 
+      if (result.statusCode === 208) return recordPreviousSubmission()
       if (result.statusCode >= 200 && result.statusCode < 300) {
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -407,6 +508,7 @@ function QuestionArea({
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode)
 
+      if (result.statusCode === 208) return recordPreviousSubmission()
       if (result.statusCode >= 200 && result.statusCode < 300) {
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -435,6 +537,7 @@ function QuestionArea({
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode)
 
+      if (result.statusCode === 208) return recordPreviousSubmission()
       if (result.statusCode >= 200 && result.statusCode < 300) {
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -459,6 +562,7 @@ function QuestionArea({
       // --> show toast based on status code
       showStatusCodeToast(result.statusCode)
 
+      if (result.statusCode === 208) return recordPreviousSubmission()
       if (result.statusCode >= 200 && result.statusCode < 300) {
         await localforage.setItem(storageKey, {
           response: input.response,
@@ -504,13 +608,37 @@ function QuestionArea({
       </div>
 
       <div className="flex w-full flex-col">
-        {remainingQuestions.length === 0 && (
+        {!isBlockActive ||
+        expired ||
+        (expiresAt && new Date(expiresAt).getTime() <= Date.now()) ? (
+          <UserNotification
+            type="info"
+            data={{ cy: 'live-quiz-block-closed' }}
+            className={{ root: 'mt-1.5 md:text-base' }}
+            message={t('pwa.liveQuiz.blockClosed')}
+          />
+        ) : allSubmitted ? (
           <UserNotification
             type="success"
+            data={{ cy: 'live-quiz-block-submitted' }}
             className={{ root: 'mt-1.5 md:text-base' }}
-            message={t('pwa.liveQuiz.allQuestionsAnswered')}
+            message={t('pwa.liveQuiz.allQuestionsSubmitted')}
           />
-        )}
+        ) : null}
+        {submissionUnconfirmed ? (
+          <UserNotification
+            type="warning"
+            data={{ cy: 'live-quiz-submission-unconfirmed' }}
+            message={t('pwa.assessment.submissionUnconfirmed')}
+          />
+        ) : null}
+        {previouslySubmitted ? (
+          <UserNotification
+            type="info"
+            data={{ cy: 'live-quiz-previous-answer' }}
+            message={t('pwa.assessment.submissionAlreadyRecorded')}
+          />
+        ) : null}
         {showConfetti ? (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
             <ConfettiExplosion duration={2000} />
