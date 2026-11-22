@@ -81,6 +81,20 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
       'target-arrow-shape': 'triangle',
       'curve-style': 'bezier',
       'overlay-opacity': 0,
+      label: 'data(displayLabel)',
+      'font-family': 'Source Sans 3, Source Sans Pro, sans-serif',
+      'font-size': 10,
+      color: '#4C4C4C',
+      'text-rotation': 'autorotate',
+      'text-wrap': 'ellipsis',
+      'text-max-width': '110px',
+      'text-background-color': '#FFFFFF',
+      'text-background-opacity': 0.85,
+      'text-background-padding': '1px',
+      'text-background-shape': 'roundrectangle',
+      // Relation labels drop out when zoomed far out, where they would only
+      // add clutter at an unreadable size.
+      'min-zoomed-font-size': 8,
     },
   },
   {
@@ -90,6 +104,14 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
     ).join(', '),
     style: {
       'target-arrow-shape': 'none',
+    },
+  },
+  {
+    // Relations with no recorded source are dashed, so the map does not look
+    // more certain than its sources are.
+    selector: 'edge[!hasSource]',
+    style: {
+      'line-style': 'dashed',
     },
   },
   {
@@ -137,7 +159,8 @@ export function nodeDefinition(
 }
 
 export function edgeDefinition(
-  edge: KnowledgeGraphEdge
+  edge: KnowledgeGraphEdge,
+  displayLabel: string
 ): cytoscape.EdgeDefinition {
   return {
     group: 'edges',
@@ -147,6 +170,8 @@ export function edgeDefinition(
       source: cytoscapeNodeId(edge.source),
       target: cytoscapeNodeId(edge.target),
       label: edge.label,
+      displayLabel,
+      hasSource: edge.sourceReferences.length > 0,
       type: edge.type,
       relationType: edge.relationType,
     },

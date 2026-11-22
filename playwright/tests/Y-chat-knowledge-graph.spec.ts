@@ -576,7 +576,9 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     if (await accept.isVisible()) await accept.click()
     await expect(search).toBeVisible()
     const input = page.getByTestId('chat-composer-input')
-    await expect(input).toBeVisible()
+    // On a phone the open map replaces the conversation instead of stacking.
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(input).toBeHidden()
     const sent: string[] = []
     page.on('request', (request) => {
       if (request.method() === 'POST' && request.url().endsWith('/chat'))

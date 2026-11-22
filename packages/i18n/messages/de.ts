@@ -23,6 +23,11 @@ const baseMessages = {
     },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
+      aiGenerated: 'KI-generiert',
+      aiGeneratedHint:
+        'Diese Karte wurde von KI aus Ihren Kursmaterialien erstellt. Sie kann Fehler enthalten; prüfen Sie die Quellen.',
+      aiGeneratedNote:
+        'KI-generiert aus den Kursmaterialien. Prüfen Sie die Quellen.',
       title: 'Wissensgraph',
       open: 'Wissensgraph öffnen',
       close: 'Wissensgraph schliessen',
@@ -34,6 +39,22 @@ const baseMessages = {
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
+      nodePromptTutor:
+        'Hilf mir mit Leitfragen, den Begriff «{topic}» selbst zu erarbeiten.',
+      nodePromptExplainer:
+        'Erkläre den Begriff «{topic}» an einem einfachen Beispiel.',
+      edgePromptTutor:
+        'Hilf mir mit Leitfragen herauszufinden, wie «{source}» und «{target}» zusammenhängen («{relationship}»).',
+      edgePromptExplainer:
+        'Erkläre an einem einfachen Beispiel, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      quiz: 'Teste mich dazu',
+      allConnectionsShown: 'Alle Verbindungen angezeigt',
+      quizNodePrompt: 'Teste mich zum Begriff «{topic}».',
+      quizEdgePrompt:
+        'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      inferredRelation:
+        'Abgeleitet: Für diese Beziehung ist keine belegende Quelle erfasst.',
+      inferredRelationLegend: 'Gestrichelt: abgeleitet, ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },
@@ -425,6 +446,16 @@ const baseMessages = {
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
+      explanation: {
+        preparing: 'Interaktive Erklärung wird vorbereitet...',
+        rejected: 'Entwurf der interaktiven Erklärung abgelehnt',
+        unavailable: 'Interaktive Erklärung nicht verfügbar',
+        fallbackTitle: 'Interaktive Erklärung',
+        header: 'Interaktive Erklärung · KI-generierter Entwurf, nicht geprüft',
+        openLarge: 'Gross öffnen',
+        close: 'Schliessen',
+        loading: 'Wird geladen...',
+      },
       learningContext: {
         refreshUnavailable:
           'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',
