@@ -23,6 +23,10 @@ const SIDEBAR_LAYOUT_CLASSES =
 const CONTAINED_LAYOUT_CLASSES =
   'absolute inset-x-0 bottom-0 z-30 max-h-[55%] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]'
 
+// Compact pills sized to their label; full-width buttons crowded the sheet.
+const ACTION_CLASSES =
+  'min-h-9 rounded-full border px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2'
+
 type KnowledgeGraphDetailsProps = {
   node?: KnowledgeGraphNode
   edge?: KnowledgeGraphEdge
@@ -194,7 +198,7 @@ export function KnowledgeGraphDetails({
         className="mx-auto mt-2 h-1 w-12 rounded-full bg-[#A3A3A3] md:hidden"
       />
       <div className={layout === 'contained' ? 'p-3' : 'p-5'}>
-        <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#4C4C4C]">
               {node === undefined ? labels.relationship : labels.concept}
@@ -216,37 +220,48 @@ export function KnowledgeGraphDetails({
             data-cy="knowledge-graph-close"
             aria-label={labels.closeAriaLabel}
             onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#E9E9E9] bg-white text-xl text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#E9E9E9] bg-white text-lg text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
           >
             <span aria-hidden="true">×</span>
           </button>
         </div>
 
-        {onAsk === undefined || askSelection === undefined ? null : (
-          <button
-            type="button"
-            data-cy="knowledge-graph-ask"
-            onClick={() => onAsk(askSelection)}
-            className="mb-5 min-h-11 w-full rounded-full border border-[#0028A5] bg-white px-4 py-2 text-sm font-semibold text-[#0028A5] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
-          >
-            {labels.ask}
-          </button>
-        )}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {onAsk === undefined || askSelection === undefined ? null : (
+            <button
+              type="button"
+              data-cy="knowledge-graph-ask"
+              onClick={() => onAsk(askSelection)}
+              className={`${ACTION_CLASSES} border-[#0028A5] bg-white text-[#0028A5] hover:bg-[#F5F5FB]`}
+            >
+              {labels.ask}
+            </button>
+          )}
+          {node === undefined ? null : (
+            <button
+              type="button"
+              onClick={() => onExpand(node.id)}
+              disabled={isExpanding || allConnectionsShown}
+              className={`${ACTION_CLASSES} border-[#0028A5] bg-[#0028A5] text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60`}
+              data-cy="knowledge-graph-expand"
+            >
+              {isExpanding
+                ? labels.loadingConnections
+                : allConnectionsShown
+                  ? labels.allConnectionsShown
+                  : labels.expandConnections}
+            </button>
+          )}
+        </div>
 
         {node === undefined ? null : (
-          <div className="space-y-5">
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="font-semibold text-[#4C4C4C]">{labels.type}</dt>
-                <dd className="mt-0.5 text-[#121212]">{node.kind}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold text-[#4C4C4C]">
-                  {labels.connections}
-                </dt>
-                <dd className="mt-0.5 text-[#121212]">{node.degree}</dd>
-              </div>
-            </dl>
+          <div className="space-y-4">
+            <p className="text-xs text-[#4C4C4C]">
+              {labels.type}: <span className="text-[#121212]">{node.kind}</span>
+              {' · '}
+              {labels.connections}:{' '}
+              <span className="text-[#121212]">{node.degree}</span>
+            </p>
 
             {node.summary === undefined ||
             node.summary === definition ? null : (
@@ -285,19 +300,6 @@ export function KnowledgeGraphDetails({
               pages={labels.pages}
             />
 
-            <button
-              type="button"
-              onClick={() => onExpand(node.id)}
-              disabled={isExpanding || allConnectionsShown}
-              className="min-h-11 w-full rounded-full border border-[#0028A5] bg-[#0028A5] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-60"
-              data-cy="knowledge-graph-expand"
-            >
-              {isExpanding
-                ? labels.loadingConnections
-                : allConnectionsShown
-                  ? labels.allConnectionsShown
-                  : labels.expandConnections}
-            </button>
           </div>
         )}
 
@@ -337,6 +339,12 @@ export function KnowledgeGraphDetails({
             />
           </div>
         )}
+        <p
+          className="mt-4 text-xs text-[#4C4C4C]"
+          data-cy="knowledge-graph-ai-note"
+        >
+          {labels.aiGeneratedNote}
+        </p>
       </div>
     </aside>
   )

@@ -20,6 +20,10 @@ export default {
     },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
+      aiGenerated: 'KI-generiert',
+      aiGeneratedHint:
+        'Diese Karte wurde von KI aus Ihren Kursmaterialien erstellt. Sie kann Fehler enthalten; prüfen Sie die Quellen.',
+      aiGeneratedNote: 'KI-generiert aus den Kursmaterialien. Prüfen Sie die Quellen.',
       title: 'Wissensgraph',
       open: 'Wissensgraph öffnen',
       close: 'Wissensgraph schliessen',

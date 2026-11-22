@@ -41,7 +41,11 @@ export function ChatKnowledgeGraphViewer({
       onAsk={onAsk}
       focusRequest={focusRequest}
       labels={{
-        details: { ask: t('ask'), missingEndpoint: t('missingEndpoint') },
+        details: {
+          ask: t('ask'),
+          missingEndpoint: t('missingEndpoint'),
+          aiGeneratedNote: t('aiGeneratedNote'),
+        },
       }}
       detailsLayout="contained"
       preserveViewportOnResize

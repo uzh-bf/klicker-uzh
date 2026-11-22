@@ -17,6 +17,7 @@ export type KnowledgeGraphDetailsLabels = {
   loadingConnections: string
   expandConnections: string
   allConnectionsShown: string
+  aiGeneratedNote: string
   from: string
   to: string
   concepts: string
@@ -160,6 +161,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     loadingConnections: 'Loading connections…',
     expandConnections: 'Expand connections',
     allConnectionsShown: 'All connections shown',
+    aiGeneratedNote: 'AI-generated from course materials. Check the sources.',
     from: 'From',
     to: 'To',
     concepts: 'Concepts',
