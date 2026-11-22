@@ -97,6 +97,19 @@ Expected answer must never be projected.
   })
 })
 
+test('writing-coach frontmatter keeps a multi-paragraph quoted question', () => {
+  const metadata = parseGroundTruthFrontmatter(
+    '---\nquestion: "Check this.\\n\\nOur analysis show «dass» it works."\nmode: writing-coach\n---\nExpected behavior.\n',
+    'writing.md'
+  )
+
+  assert.equal(metadata.mode, 'writing-coach')
+  assert.equal(
+    metadata.question,
+    'Check this.\n\nOur analysis show «dass» it works.'
+  )
+})
+
 test('ground-truth index rejects duplicate questions', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'klicker-evaluation-'))
   try {

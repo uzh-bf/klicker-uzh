@@ -29,3 +29,5 @@ The hosted Chat unit suite loads unbuilt workspace source. Resolve the imported 
 The target added a lecturer-controlled setting for new interactive explanations. Both routes use its shared eligibility policy, with the saved chatbot setting and a fresh owner rollout check. Continue rendering explanations already saved in the thread when the setting is off. The local browser proof exercises both states against the same synthetic chatbot.
 
 The target also added structured feedback cards. Preserve the legacy tool and renderer and use one text projection for saved feedback in the browser and eLearning history validation. Keep the feedback prompt beside the shared host templates. Use the production-build Playwright launcher to verify both signed launch routes. Test-owned guest cleanup follows the unique fixture course across development and production test builds.
+
+Keep the target's collapsed trace for rejected drafts and its calculator availability in Explainer through the shared calculator implementation. Verify the rejected trace and the usable explanation separately. Close the test page before deleting its synthetic course and accounts.

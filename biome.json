@@ -19,7 +19,8 @@
       "!packages/markdown/components.css",
       "!packages/markdown/utilities.css",
       "!**/public/**",
-      "!**/static/**"
+      "!**/static/**",
+      "!evaluation/framework/**"
     ]
   },
   "formatter": {

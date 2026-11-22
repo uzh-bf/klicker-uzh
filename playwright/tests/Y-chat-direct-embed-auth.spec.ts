@@ -336,20 +336,25 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
         await tab.close()
       }
     } finally {
-      await prisma.$transaction(async (tx) => {
-        const owned = await tx.participantAccount.findMany({
-          where: guestAccounts,
-          select: { participantId: true },
+      try {
+        // Stop further credit refetches before removing the course fixtures.
+        await page.close()
+      } finally {
+        await prisma.$transaction(async (tx) => {
+          const owned = await tx.participantAccount.findMany({
+            where: guestAccounts,
+            select: { participantId: true },
+          })
+          await tx.participant.deleteMany({
+            where: {
+              id: { in: owned.map(({ participantId }) => participantId) },
+            },
+          })
+          await tx.participant.delete({ where: { id: participantId } })
+          // The temporary owner owns only this course and chatbot.
+          await tx.user.delete({ where: { id: ownerId } })
         })
-        await tx.participant.deleteMany({
-          where: {
-            id: { in: owned.map(({ participantId }) => participantId) },
-          },
-        })
-        await tx.participant.delete({ where: { id: participantId } })
-        // The temporary owner owns only this course and chatbot.
-        await tx.user.delete({ where: { id: ownerId } })
-      })
+      }
     }
   })
 }

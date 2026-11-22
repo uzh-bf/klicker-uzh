@@ -134,6 +134,10 @@ function yamlScalar(value) {
   return trimmed
 }
 
+// Writing Coach is tool-free, so only the canary keeps the Tutor and Explainer
+// restriction that its retrieval-tool check needs.
+const GROUND_TRUTH_MODES = ['tutor', 'explainer', 'writing-coach']
+
 export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   const normalized = text.replaceAll('\r\n', '\n')
   if (!normalized.startsWith('---\n')) {
@@ -169,7 +173,7 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   if (!question || !mode) {
     throw evaluationError(`ground_truth_fields_missing:${basename(filePath)}`)
   }
-  if (!['tutor', 'explainer'].includes(mode)) {
+  if (!GROUND_TRUTH_MODES.includes(mode)) {
     throw evaluationError(`ground_truth_mode_invalid:${basename(filePath)}`)
   }
 
