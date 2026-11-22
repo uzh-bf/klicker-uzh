@@ -145,3 +145,21 @@ export function feedbackPartText(
     ? feedbackToText(parsed.content, labels)
     : null
 }
+
+/**
+ * The content of a message in the model's conversation history: its text
+ * parts plus the text of any valid feedback card, which carries the substance
+ * of its turn so later turns can refer back to it. The client builds the
+ * history with this and the server checks stored history against it, so both
+ * must use this one projection.
+ */
+export function historyTextFromParts(parts: readonly unknown[]): string {
+  return parts
+    .map((part) => {
+      const card = feedbackPartText(part, FEEDBACK_HISTORY_LABELS)
+      if (card !== null) return `\n[Feedback card shown]\n${card}\n`
+      const { type, text } = (part ?? {}) as { type?: unknown; text?: unknown }
+      return type === 'text' && typeof text === 'string' ? text : ''
+    })
+    .join('')
+}

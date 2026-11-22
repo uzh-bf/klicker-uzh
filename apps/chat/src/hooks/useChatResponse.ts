@@ -12,7 +12,7 @@ import {
 } from '../lib/attachments/documentText'
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
-import { FEEDBACK_HISTORY_LABELS, feedbackPartText } from '../lib/feedback'
+import { historyTextFromParts } from '../lib/feedback'
 import { readHandoffSource } from '../lib/handoff'
 import {
   hasMeaningfulAssistantContent,
@@ -160,22 +160,7 @@ export function useChatResponse(
             return String(message.content ?? '')
           }
 
-          // A feedback card carries the substance of its turn, so the model
-          // sees it in later turns, for example to compare a revision.
-          return message.content
-            .map((part) => {
-              const card = feedbackPartText(part, FEEDBACK_HISTORY_LABELS)
-              if (card !== null) return `\n[Feedback card shown]\n${card}\n`
-              return typeof part === 'object' &&
-                part !== null &&
-                'type' in part &&
-                part.type === 'text' &&
-                'text' in part &&
-                typeof part.text === 'string'
-                ? part.text
-                : ''
-            })
-            .join('')
+          return historyTextFromParts(message.content)
         }
 
         // Pages that will not be sent must not stay announced as reviewed.
@@ -566,8 +551,10 @@ export function useChatResponse(
                       type: 'text',
                       text: currentTextContent,
                     })
-                    currentTextContent = ''
                   }
+                  // Text after the tool starts a new part, so it must not
+                  // repeat the text before it.
+                  currentTextContent = ''
 
                   // create tool call object and track by ID
                   const toolCall = {
