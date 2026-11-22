@@ -565,6 +565,16 @@ FineCo quality evidence. Keep the FineCo run parked unless the expected
 `EXPERT_df_fineco_expert` binding is reachable through an authorized synthetic
 environment with a finite response bound.
 
+The adapter also accepts `mode: writing-coach` frontmatter. The synthetic
+`data/ground_truth/writing_coach/` cases pair with
+`data/metrics/klicker_writing_coach.yaml` (authorship, focus and per-case
+expectations). Run them with `--eval-mode ground-truth` against a chatbot that
+has Writing Coach enabled and whose model allow-list resolves to the guarded
+`KLICKER_EVAL_MODEL_ID`. The local MCP fixture chatbot stores `["auto"]`, which
+selects the ADVANCED Auto entry and is refused for its BASE-tier owner, so pin
+its allow-list to the guarded model for the run. Pass an evidence directory
+that does not exist yet, or one with mode `0700`.
+
 For a human developer, use the standard Infisical CLI and a narrow approved
 scope. Automated agent execution must use the existing restricted
 rs-infisical-operator path. Both paths keep values in the child process and out
