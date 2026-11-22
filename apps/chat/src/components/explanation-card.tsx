@@ -3,7 +3,6 @@
 import {
   LoaderCircleIcon,
   Maximize2Icon,
-  WrenchIcon,
   XCircleIcon,
   XIcon,
 } from 'lucide-react'
@@ -27,6 +26,19 @@ function asResult(value: unknown): ExplanationToolResult | null {
     kind === 'explanation-unavailable'
     ? (v as ExplanationToolResult)
     : null
+}
+
+/**
+ * A draft the explainer service rejected, or a call whose input did not
+ * parse. The tutor usually tries again, so the attempt belongs in the
+ * collapsed tool-call trace rather than in the answer.
+ */
+export function isRejectedExplanation(
+  result: unknown,
+  isError: boolean | undefined
+): boolean {
+  const parsed = asResult(result)
+  return parsed?.kind === 'explanation-invalid' || (isError === true && !parsed)
 }
 
 function Chip({
@@ -134,16 +146,8 @@ export function ExplanationCard({
         text={t('preparing')}
       />
     )
-  // A rejected draft or a call whose input did not parse: the tutor usually
-  // tries again, and otherwise explains in text.
-  if (parsed?.kind === 'explanation-invalid' || (isError && !parsed))
-    return (
-      <Chip
-        tone="muted"
-        icon={<WrenchIcon className="size-4" />}
-        text={t('rejected')}
-      />
-    )
+  // Rejected drafts render as a trace row in the tool-call group instead.
+  if (isRejectedExplanation(result, isError)) return null
   if (!content || (page && 'failed' in page))
     return (
       <Chip

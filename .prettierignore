@@ -37,6 +37,9 @@ packages/graphql/instrumented/
 
 deploy/charts/
 
+# Submodule with its own formatting
+evaluation/framework/
+
 
 apps/frontend-pwa/ios/
 apps/frontend-pwa/android/

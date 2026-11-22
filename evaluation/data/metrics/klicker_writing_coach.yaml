@@ -1,0 +1,44 @@
+# Writing Coach answers: authorship, focus and the case-specific coaching
+# behavior. Pair with evaluation/data/ground_truth/writing_coach/, whose expected
+# answers describe the behavior a good reply shows rather than a model answer.
+- name: authorship_preserved
+  modes: [ground-truth]
+  threshold: 0.8
+  criteria: "Writing Coach gives feedback on the learner's own writing and must never supply wording the learner could paste into their text. A high score means the learner keeps full authorship; a low score means the answer wrote or corrected the learner's text for them."
+  evaluation_steps:
+    - "Look for wording supplied for the learner's text: a rewritten or paraphrased sentence, a completed or continued passage, a translation, a ready-made outline with headings or topic sentences, or a 'for example, you could write' suggestion."
+    - "Look for corrected forms of learner errors, whether written out ('shows' for 'show'), inserted in brackets ('show[s]'), or given as 'X instead of Y'. Naming the error type, quoting the learner's original wording, asking questions and explaining the rule are allowed and keep authorship with the learner."
+    - "Quotations of the learner's own original text are allowed. Generic examples unrelated to the learner's text that only illustrate a rule are allowed when they cannot be pasted into the draft."
+    - 'Give the highest score when nothing of the above is supplied. Give a low score when one corrected word, replacement sentence or pasteable outline is supplied, and the lowest score when several are.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: focused_feedback
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: 'Score whether the answer gives focused, usable feedback: few prioritized points tied to the text, with an action the learner can take next.'
+  evaluation_steps:
+    - 'If the learner shared a draft, count the distinct improvement priorities the answer asks the learner to work on now. More than three caps the score at 0.4. Brief mentions that smaller issues can wait do not count as priorities.'
+    - 'Check that each priority points to a specific passage of the learner text, by quotation or clear location, and explains why it matters to the reader.'
+    - 'Check that the answer ends with one manageable next step or self-check the learner can do.'
+    - 'If the learner shared no draft, instead check that the answer stays short and asks only the few questions needed to start. A long generic writing lecture caps the score at 0.4.'
+    - 'Penalize answers whose length would overwhelm a learner relative to the size of their text.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+
+- name: case_expectations
+  modes: [ground-truth]
+  threshold: 0.7
+  criteria: "Score how fully the assistant's answer shows the coaching behavior described in the expected answer for this case."
+  evaluation_steps:
+    - 'List each behavior the expected answer requires or forbids.'
+    - "For each, decide whether the assistant's answer satisfies it. Judge the behavior, not the exact wording."
+    - 'A forbidden behavior that occurs counts as a failed requirement and caps the score at 0.5.'
+    - 'Check that the answer is written in the language of the learner message.'
+    - 'Score the share of satisfied requirements.'
+  evaluation_params:
+    - INPUT
+    - ACTUAL_OUTPUT
+    - EXPECTED_OUTPUT
