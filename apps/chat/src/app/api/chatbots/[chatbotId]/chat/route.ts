@@ -2418,6 +2418,7 @@ export async function POST(
         experimental_transform: providerRefusalTransform(
           providerRefusalDeflection(
             turnSettings.replyLanguage ?? null,
+            lastMessage?.role === 'user' ? lastMessage.content : null,
             req.cookies.get('NEXT_LOCALE')?.value
           ),
           (finish) =>
