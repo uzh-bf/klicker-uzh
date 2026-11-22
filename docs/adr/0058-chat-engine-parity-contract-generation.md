@@ -1,4 +1,4 @@
-# 56. Full participant parity uses an explicit chat-engine contract generation
+# 58. Full participant parity uses an explicit chat-engine contract generation
 
 Status: Accepted; implementation and conformance qualification pending
 
