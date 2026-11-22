@@ -1029,7 +1029,8 @@ token is not single-use because Chat has no shared store across replicas; its
 short lifetime and its own scope, which no session check accepts, limit a
 leaked URL. Hosts that sandbox their frame need `allow-popups` and
 `allow-popups-to-escape-sandbox`; upstream OpenOlat does not sandbox its LTI
-frames.
+frames. The `?embed=1` layout shows no button, because its hosts (the PWA
+drawer, for example) already link to the full chat.
 
 ## Lecturer authoring and publication contract
 

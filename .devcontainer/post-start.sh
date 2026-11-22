@@ -158,7 +158,7 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export APP_ORIGIN_CHAT=https://chat.klicker.${WORKSPACE}.localhost
   export BLOB_STORAGE_ACCOUNT_URL=https://blob.klicker.${WORKSPACE}.localhost/klickerdev
   export BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://${WORKSPACE}-azurite:10000/klickerdev
-  export KB_GRAPH_BLOB_ACCOUNT_URL=http://127.0.0.1:${KB_GRAPH_BLOB_HOST_PORT:-10003}/klickerdev/
+  export KB_GRAPH_BLOB_ACCOUNT_URL=https://blob.klicker.${WORKSPACE}.localhost/klickerdev/
   export KB_INGESTION_API_URL=http://host.docker.internal:${KB_INGESTION_LOCAL_PORT:-18081}
   export KB_SOURCE_GATEWAY_URL=https://api.klicker.${WORKSPACE}.localhost
   OIDC_ISSUER="https://oidc.klicker.${WORKSPACE}.localhost/default"
