@@ -109,6 +109,7 @@ import {
   type HostToolInput,
   type HostToolSession,
   type HostToolSet,
+  ToolSessionCapacityError,
   prepareHostTools,
   projectHistoricalToolResults,
 } from './runtime/mcp.js'
@@ -654,13 +655,15 @@ export function createChatApiApp(
             chatbot?.customModeConfig,
             message.chatMode
           )
+          const content =
+            message.role === 'assistant' && Array.isArray(message.content)
+              ? withEmptyResponseError(message.content)
+              : message.content
           return {
             id: message.id,
             threadId: message.threadId,
             role: message.role,
-            content: showReasoning
-              ? message.content
-              : withoutReasoningParts(message.content),
+            content: showReasoning ? content : withoutReasoningParts(content),
             chatMode: message.chatMode ?? null,
             modelId: message.modelId ?? null,
             reasoningEffort: message.reasoningEffort ?? null,
@@ -1188,45 +1191,53 @@ export function createChatApiApp(
             isElearningThread: thread.origin === 'elearning',
             supportsImageAttachments: model.supportsImageAttachments,
           })
-          hostToolSession = await toolDispatcher.register({
-            tools: hostTools,
-            signal: engineAbort.signal,
-            python: pythonAuthorization,
-            executePython: async (body, token, signal) => {
-              const endpoint = process.env.CHAT_CODEAPI_EXECUTION_URL
-              if (!endpoint)
-                throw new Error('Python execution is not configured')
-              const url = new URL(endpoint)
-              if (
-                !['http:', 'https:'].includes(url.protocol) ||
-                url.username ||
-                url.password ||
-                url.search ||
-                url.hash
-              )
-                throw new Error('Python execution destination is invalid')
-              const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                  'content-type': 'application/json',
-                  authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  serverId: body.serverId,
-                  toolName: body.toolName,
-                  input: body.input,
-                }),
-                redirect: 'error',
-                signal,
-              })
-              if (!response.ok) throw new Error('Python execution failed')
-              return response.json()
-            },
-          })
-        } catch {
+          if (
+            Object.keys(hostTools.tools).length ||
+            pythonAuthorization?.tools.length
+          ) {
+            hostToolSession = await toolDispatcher.register({
+              tools: hostTools,
+              signal: engineAbort.signal,
+              python: pythonAuthorization,
+              executePython: async (body, token, signal) => {
+                const endpoint = process.env.CHAT_CODEAPI_EXECUTION_URL
+                if (!endpoint)
+                  throw new Error('Python execution is not configured')
+                const url = new URL(endpoint)
+                if (
+                  !['http:', 'https:'].includes(url.protocol) ||
+                  url.username ||
+                  url.password ||
+                  url.search ||
+                  url.hash
+                )
+                  throw new Error('Python execution destination is invalid')
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    'content-type': 'application/json',
+                    authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    serverId: body.serverId,
+                    toolName: body.toolName,
+                    input: body.input,
+                  }),
+                  redirect: 'error',
+                  signal,
+                })
+                if (!response.ok) throw new Error('Python execution failed')
+                return response.json()
+              },
+            })
+          }
+        } catch (error) {
+          if (error instanceof ToolSessionCapacityError) {
+            return c.json({ code: 'CHAT_CAPACITY_EXHAUSTED' }, 503)
+          }
           return c.json({ code: 'REQUIRED_MCP_UNAVAILABLE' }, 503)
         }
-        const tools = hostToolSession.tools
+        const tools = hostToolSession?.tools ?? []
         if (
           (images.length > 0 && !engineReady.features?.images) ||
           (tools.length > 0 && !engineReady.features?.tools)
@@ -1472,7 +1483,7 @@ export function createChatApiApp(
         try {
           engineResponse = await dependencies.engine.chat(engineRequest, {
             providerAuthorization: credential.providerAuthorization,
-            mcpExecutionToken: hostToolSession.executionToken,
+            mcpExecutionToken: hostToolSession?.executionToken,
             traceContext,
             signal: engineAbort.signal,
           })
@@ -1583,7 +1594,8 @@ export function createChatApiApp(
                 finalPersistenceStatus: 'not-persisted',
               }
             } finally {
-              await hostToolSession?.close()
+              if (hostToolSession) await hostToolSession.close()
+              else await hostTools?.close()
             }
           },
         })

@@ -14,12 +14,12 @@ tags:
 > **Framework status (2026-08-10):** the AI-SDK route-handler layer described
 > here **is** still the current production path — the AI SDK 7 / assistant-ui
 > 0.15 upgrade shipped with this branch ([ADR 0003](./adr/0003-chat-framework-upgrade.md)).
-> Slice 2 of the public chat split now adds an unconnected Hono tracer at
-> `apps/chat-api`: it authenticates the participant cookie, requires an existing
-> owned thread, validates the versioned engine manifest and stream, and keeps
-> Prisma persistence and credit charging on the public side. The frontend still
-> calls the Next route until the later conversation-surface and frontend-cutover
-> slices are complete; do not treat the tracer as a production cutover.
+>
+> The standalone Chat API shares participant policy, conversation persistence
+> and credit accounting with the Next route. Next remains the default. An
+> operator can enable direct browser routing by setting
+> `CHAT_DIRECT_API_ENABLED` and `CHAT_PUBLIC_API_URL`, and listing the Chat origin
+> in `CHAT_BROWSER_ALLOWED_ORIGINS` on the API.
 
 **This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers; LTI account login and Manage proposals call persisted backend GraphQL operations, uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
@@ -30,17 +30,17 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 ## Structure
 
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
-- `apps/chat-api/src/` — the Slice 2 Hono tracer and engine adapter; generation is
+- `apps/chat-api/src/` — the standalone host and engine adapter; generation is
   degraded when `CHAT_ENGINE_URL` is unavailable or its manifest is incompatible.
 - Request-scoped provider credentials are fail-closed. Their base URL origin
   must be listed exactly in `CHAT_PROVIDER_ALLOWED_ORIGINS` at the public host
   and in `CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS` at the public default engine.
   Entries are comma-separated HTTP(S) origins with no path. An empty list
   disables request-scoped mode; deployment-owned provider mode still works.
-- The tracer does not depend on the unfinished `v3-ai` roll-up. Generalized MCP
-  servers and embedded assistants integrate later. Until that work supplies an
-  approved tool set and a matching short-lived execution token together, the
-  tracer sends no tools.
+- The host selects course tools and supplies their descriptors and a turn-scoped
+  capability to the selected engine. The host dispatches approved calls and
+  prepares model-only projections. Python has a separate capability and is
+  disabled by default.
 - `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
 - `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.

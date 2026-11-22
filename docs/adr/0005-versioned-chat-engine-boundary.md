@@ -3,7 +3,7 @@
 Status: Accepted
 
 The generation transition and initial rollout restriction are superseded by
-[ADR 0056](./0056-chat-engine-parity-contract-generation.md). The remaining
+[ADR 0058](./0058-chat-engine-parity-contract-generation.md). The remaining
 host/engine ownership and credential decisions remain in force.
 
 `chat-api` must remain the single platform boundary for participant

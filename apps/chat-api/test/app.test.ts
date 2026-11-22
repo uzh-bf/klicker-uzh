@@ -672,8 +672,11 @@ describe('chat-api Slice 2 tracer', () => {
       expect.objectContaining({
         tools: [expect.objectContaining({ name: 'doc_query' })],
       }),
-      expect.objectContaining({ mcpExecutionToken: 'scoped-token' })
+      expect.objectContaining({ mcpExecutionToken: expect.any(String) })
     )
+    expect(
+      vi.mocked(dependencies.engine.chat).mock.calls[0]?.[1]?.mcpExecutionToken
+    ).not.toBe('scoped-token')
   })
 })
 
@@ -1074,7 +1077,21 @@ test.each([
   }
 })
 
-test('reloads only the participant message DTO and applies current reasoning visibility', async () => {
+test.each([
+  {
+    textParts: [{ type: 'text', text: 'test-answer-1' }],
+    visibleContent: [{ type: 'text', text: 'test-answer-1' }],
+  },
+  {
+    textParts: [],
+    visibleContent: [
+      { type: 'data', name: 'chat-error', data: { code: 'EMPTY_RESPONSE' } },
+    ],
+  },
+])('reloads the participant message DTO and recovers old empty replies: $visibleContent', async ({
+  textParts,
+  visibleContent,
+}) => {
   const dependencies = baseDependencies(async () => engineSse([]))
   const now = new Date('2026-01-01T00:00:00Z')
   const learningContext = { kind: 'synthetic-context' }
@@ -1086,7 +1103,7 @@ test('reloads only the participant message DTO and applies current reasoning vis
         threadId: 'thread-1',
         role: 'assistant',
         content: [
-          { type: 'text', text: 'test-answer-1' },
+          ...textParts,
           { type: 'reasoning', text: 'test-private-reasoning-1' },
         ],
         chatMode: 'cm_removed',
@@ -1111,7 +1128,7 @@ test('reloads only the participant message DTO and applies current reasoning vis
     expect(response.status).toBe(200)
     const messages = (await response.json()) as Array<Record<string, unknown>>
     expect(messages[0]).toMatchObject({
-      content: [{ type: 'text', text: 'test-answer-1' }],
+      content: visibleContent,
       reasoningContent: null,
       learningContext,
       parentId: 'user-1',

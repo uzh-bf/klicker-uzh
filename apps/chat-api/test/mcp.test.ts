@@ -1196,11 +1196,13 @@ describe('admitted-turn host tool capabilities', () => {
   })
 
   test('forwards only admitted Python fields through the fixed callback and deduplicates it', async () => {
-    const dispatcher = createHostToolDispatcher()
+    let now = 1
+    const dispatcher = createHostToolDispatcher(() => now)
     const executePython = vi.fn(async () => ({ stdout: 'synthetic' }))
+    const { prepared, execute } = fixture()
     const session = await register(dispatcher, {
       signal: signal(),
-      tools: { ...fixture().prepared, tools: {} },
+      tools: prepared,
       python: {
         executionToken: 'synthetic-python-capability',
         tools: [
@@ -1242,6 +1244,22 @@ describe('admitted-turn host tool capabilities', () => {
         signal()
       )
     ).rejects.toThrow()
+    expect(executePython).toHaveBeenCalledTimes(1)
+    expect(session.executionToken).not.toBe('synthetic-python-capability')
+    now += 120_000
+    await expect(
+      dispatcher.execute(
+        session.executionToken,
+        { ...body, toolCallId: 'late-python' },
+        signal()
+      )
+    ).rejects.toThrow()
+    await dispatcher.execute(
+      session.executionToken,
+      request('late-search', { query: 'synthetic' }),
+      signal()
+    )
+    expect(execute).toHaveBeenCalledTimes(1)
     expect(executePython).toHaveBeenCalledTimes(1)
   })
 })
