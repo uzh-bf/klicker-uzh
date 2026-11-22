@@ -235,7 +235,7 @@ export function SourcesSection() {
               <details data-cy="chat-other-sources" className="mt-0.5">
                 <summary
                   data-cy="chat-other-sources-toggle"
-                  className="text-muted-foreground cursor-pointer list-none select-none text-[11px] font-semibold uppercase tracking-wide outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="text-muted-foreground flex min-h-11 cursor-pointer list-none select-none items-center fine-pointer:min-h-0 text-[11px] font-semibold uppercase tracking-wide outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   {t('chat.sources.otherRetrieved', {
                     count: uncitedSources.length,
@@ -299,7 +299,7 @@ export function SourcesSection() {
         <details data-cy="chat-other-sources" className="group/other mt-1.5">
           <summary
             data-cy="chat-other-sources-toggle"
-            className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer list-none items-center gap-1 rounded-sm text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
+            className="text-muted-foreground hover:text-foreground inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-sm text-xs fine-pointer:min-h-0 outline-none focus-visible:ring-1 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
           >
             <ChevronRightIcon
               aria-hidden="true"
