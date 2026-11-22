@@ -4,7 +4,8 @@ This authored development corpus measures how the Tutor supports a student
 working on a task: whether it holds back the result until the student has
 attempted it, how it reacts to a wrong attempt, whether it escalates instead
 of repeating itself when the student stays stuck, and when it reveals the full
-solution. It also covers self-declared graded work in Tutor and Explainer mode.
+solution. It also covers self-declared graded work in Tutor and Explainer mode
+and whether the Explainer states computed numbers exactly.
 It uses the existing version-1 Klicker trajectory format; there is no new
 scorer or judge configuration.
 
@@ -20,6 +21,7 @@ fields:
 | `graded-`    |     2 | Self-declared graded task: method or parallel example, never that task's answer    |
 | `correct-`   |     1 | Correct own answer: confirm briefly and move forward, no near-identical question   |
 | `hint-only-` |     1 | Explicit hint request: one hint, no result                                         |
+| `numeric-`   |     2 | Explainer worked example or answer check: every stated number is exact             |
 
 All cases use `group: development` and supply only synthetic finance tasks.
 None needs retrieved course material to be assessable. Each rubric names the
@@ -52,7 +54,9 @@ node evaluation/run-tutor-trajectories.mjs \
 ```
 
 Repeat with `--arm candidate` after restarting the app on v2. One repeat
-submits 15 turns per arm. Run it once with GPT-6 Luna and once with Auto, since
+submits 17 turns per arm. The `numeric-` cases run in Explainer mode, so the
+Tutor contract does not change them; they check that the Explainer computes
+its numbers with the `calculate` tool. Run it once with GPT-6 Luna and once with Auto, since
 course chatbots use either. A paid capture still needs its own approval and
 spend cap.
 
