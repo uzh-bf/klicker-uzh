@@ -22,7 +22,13 @@ module.exports = {
       // 'tutorials/activity_templates',
       'tutorials/activity_batch_operations',
       'tutorials/element_updates_activities',
+    ],
+    'Lecturer - AI': [
       'tutorials/chatbot',
+      'tutorials/knowledge_bases',
+      'tutorials/question_generation',
+      'tutorials/ai_assistant',
+      'tutorials/course_ai_tutor',
     ],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
