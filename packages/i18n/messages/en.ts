@@ -44,11 +44,12 @@ export default {
       edgePromptExplainer:
         'Explain with a simple example how “{source}” relates to “{target}” (“{relationship}”).',
       quiz: 'Quiz me on this',
+      allConnectionsShown: 'All connections shown',
       quizNodePrompt: 'Quiz me on the concept “{topic}”.',
       quizEdgePrompt:
         'Quiz me on how “{source}” relates to “{target}” (“{relationship}”).',
       inferredRelation:
-        'Inferred: no passage in the course materials supports this relationship.',
+        'Inferred: no supporting source is recorded for this relationship.',
       inferredRelationLegend: 'Dashed: inferred, no source',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',

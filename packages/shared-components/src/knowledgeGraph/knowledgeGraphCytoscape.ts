@@ -107,8 +107,8 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
     },
   },
   {
-    // Relations without a supporting passage are inferred; dashing them keeps
-    // the map from looking more certain than its sources are.
+    // Relations with no recorded source are dashed, so the map does not look
+    // more certain than its sources are.
     selector: 'edge[!hasSource]',
     style: {
       'line-style': 'dashed',

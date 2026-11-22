@@ -45,11 +45,12 @@ export default {
       edgePromptExplainer:
         'Erkläre an einem einfachen Beispiel, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
       quiz: 'Teste mich dazu',
+      allConnectionsShown: 'Alle Verbindungen angezeigt',
       quizNodePrompt: 'Teste mich zum Begriff «{topic}».',
       quizEdgePrompt:
         'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
       inferredRelation:
-        'Abgeleitet: Keine Stelle in den Kursmaterialien belegt diese Beziehung.',
+        'Abgeleitet: Für diese Beziehung ist keine belegende Quelle erfasst.',
       inferredRelationLegend: 'Gestrichelt: abgeleitet, ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',

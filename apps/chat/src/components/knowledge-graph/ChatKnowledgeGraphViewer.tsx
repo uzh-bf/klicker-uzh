@@ -47,6 +47,7 @@ export function ChatKnowledgeGraphViewer({
         inferredRelationLegend: t('inferredRelationLegend'),
         details: {
           quiz: t('quiz'),
+          allConnectionsShown: t('allConnectionsShown'),
           inferredRelation: t('inferredRelation'),
           ask: t('ask'),
           missingEndpoint: t('missingEndpoint'),

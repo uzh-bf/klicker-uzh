@@ -168,7 +168,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     aiGeneratedNote: 'AI-generated from course materials. Check the sources.',
     quiz: 'Quiz me on this',
     inferredRelation:
-      'Inferred: no passage in the course materials supports this relationship.',
+      'Inferred: no supporting source is recorded for this relationship.',
     from: 'From',
     to: 'To',
     concepts: 'Concepts',
