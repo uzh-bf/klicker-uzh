@@ -78,6 +78,8 @@ type KnowledgeGraphViewerProps = {
   preserveViewportOnResize?: boolean
   /** Focuses a concept the host already resolved; a new nonce repeats it. */
   focusRequest?: KnowledgeGraphFocusRequest
+  /** Lists raw relationship properties; learner hosts show only the description. */
+  showEdgeProperties?: boolean
 }
 
 export type KnowledgeGraphFocusRequest = {
@@ -246,6 +248,7 @@ export function KnowledgeGraphViewer({
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
   focusRequest,
+  showEdgeProperties = true,
 }: KnowledgeGraphViewerProps) {
   const searchFirst = initialView === 'search'
   const initialViewRef = useRef(initialView)
@@ -1710,6 +1713,7 @@ export function KnowledgeGraphViewer({
         onAsk={onAsk}
         onQuiz={onQuiz}
         askSelection={askSelection}
+        showEdgeProperties={showEdgeProperties}
       />
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">

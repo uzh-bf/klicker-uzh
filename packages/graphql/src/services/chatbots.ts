@@ -445,6 +445,7 @@ const chatbotOwnerSelect = {
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
   answerPreferencesEnabled: true,
+  interactiveExplanationsEnabled: true,
   knowledgeGraphVisible: true,
   knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
@@ -477,6 +478,7 @@ type ChatbotWithOwnerCourse = {
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
   answerPreferencesEnabled: boolean
+  interactiveExplanationsEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -636,6 +638,7 @@ function cloneJson(value: unknown): unknown {
 type ChatbotRevisionLiveFlags = Pick<
   DB.Chatbot,
   | 'answerPreferencesEnabled'
+  | 'interactiveExplanationsEnabled'
   | 'knowledgeGraphVisible'
   | 'knowledgeGraphRetrievalEnabled'
 >
@@ -751,6 +754,12 @@ function parseStoredRevision(
     return null
   }
   if (
+    value.interactiveExplanationsEnabled !== undefined &&
+    typeof value.interactiveExplanationsEnabled !== 'boolean'
+  ) {
+    return null
+  }
+  if (
     value.knowledgeGraphRetrievalEnabled !== undefined &&
     typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
   ) {
@@ -778,6 +787,10 @@ function parseStoredRevision(
       value.answerPreferencesEnabled === undefined
         ? live.answerPreferencesEnabled
         : value.answerPreferencesEnabled,
+    interactiveExplanationsEnabled:
+      value.interactiveExplanationsEnabled === undefined
+        ? live.interactiveExplanationsEnabled
+        : value.interactiveExplanationsEnabled,
     creditInitialCredits: value.creditInitialCredits as number,
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
@@ -825,6 +838,7 @@ function buildRevisionFromLive(
       chatbot.allowedReasoningEffortsByModel
     ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
     answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
+    interactiveExplanationsEnabled: chatbot.interactiveExplanationsEnabled,
     creditInitialCredits: chatbot.creditInitialCredits,
     creditResetPeriod: chatbot.creditResetPeriod,
     creditResetAmount: chatbot.creditResetAmount,
@@ -1006,6 +1020,7 @@ function revisionLiveData(
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
     answerPreferencesEnabled: revision.answerPreferencesEnabled,
+    interactiveExplanationsEnabled: revision.interactiveExplanationsEnabled,
     knowledgeGraphVisible: revision.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
@@ -1203,6 +1218,7 @@ type RevisionModelPolicyInput = {
   modelSelection: boolean
   allowedModelIds: string[]
   answerPreferencesEnabled?: boolean | null
+  interactiveExplanationsEnabled?: boolean | null
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
     efforts: string[]
@@ -1427,6 +1443,18 @@ export async function saveChatbotRevision(
       current.knowledgeGraphRetrievalEnabled,
       next.knowledgeGraphRetrievalEnabled
     )
+    // Only turning the setting on needs the flag; an unrelated save that
+    // carries an already-enabled value stays allowed.
+    if (
+      next.interactiveExplanationsEnabled &&
+      !current.interactiveExplanationsEnabled &&
+      !(await isFeatureFlagEnabled(ctx, 'interactive-explanations'))
+    ) {
+      throw chatbotError(
+        'Interactive explanations are not available',
+        'FORBIDDEN'
+      )
+    }
     await assertModelPolicyEntitled(
       tx,
       chatbot.ownerId,
@@ -1602,6 +1630,9 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
   return {
     ...(typeof args.answerPreferencesEnabled === 'boolean'
       ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
+      : {}),
+    ...(typeof args.interactiveExplanationsEnabled === 'boolean'
+      ? { interactiveExplanationsEnabled: args.interactiveExplanationsEnabled }
       : {}),
     modelSelection: args.modelSelection,
     allowedModelIds,
