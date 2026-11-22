@@ -456,6 +456,22 @@ export default {
         close: 'Schliessen',
         loading: 'Wird geladen...',
       },
+      feedback: {
+        preparing: 'Feedback wird vorbereitet...',
+        rejected: 'Feedback-Entwurf abgelehnt',
+        fallbackTitle: 'Feedback',
+        strengths: 'Was bereits gut ist',
+        criteria: 'Geprüfte Kriterien',
+        points: 'Woran du arbeiten kannst',
+        nextStep: 'Nächster Schritt',
+        copy: 'Feedback kopieren',
+        copied: 'Kopiert',
+        status: {
+          met: 'erfüllt',
+          partial: 'teilweise erfüllt',
+          missing: 'fehlt',
+        },
+      },
       learningContext: {
         refreshUnavailable:
           'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',

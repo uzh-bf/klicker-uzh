@@ -20,10 +20,12 @@ import {
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/lib/toolOutput'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
 import { ExplanationCard } from './explanation-card'
+import { FeedbackCard } from './feedback-card'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -199,6 +201,10 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
 
   if (toolName === SHOW_EXPLANATION_TOOL_NAME) {
     return <ExplanationCard result={result} status={status} isError={isError} />
+  }
+
+  if (toolName === SHOW_FEEDBACK_TOOL_NAME) {
+    return <FeedbackCard result={result} status={status} isError={isError} />
   }
 
   const manageProposalResult = getManageProposalResult(result)

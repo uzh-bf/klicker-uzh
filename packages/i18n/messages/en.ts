@@ -447,6 +447,18 @@ export default {
         close: 'Close',
         loading: 'Loading...',
       },
+      feedback: {
+        preparing: 'Preparing feedback...',
+        rejected: 'Feedback draft rejected',
+        fallbackTitle: 'Feedback',
+        strengths: 'What already works',
+        criteria: 'Criteria checked',
+        points: 'Points to work on',
+        nextStep: 'Next step',
+        copy: 'Copy feedback',
+        copied: 'Copied',
+        status: { met: 'met', partial: 'partly met', missing: 'missing' },
+      },
       learningContext: {
         refreshUnavailable:
           'Page context could not be refreshed for this question. Answers can use retrieved course materials.',

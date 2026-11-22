@@ -60,6 +60,10 @@ export type KnowledgeGraphViewerLabels = {
   shapeDiamond: string
   shapeRoundedSquare: string
   shapeHexagon: string
+  shapeTriangle: string
+  shapePentagon: string
+  shapeStar: string
+  shapeOctagon: string
   loading: string
   searchFirstPrompt: string
   unavailableTitle: string
@@ -126,6 +130,10 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   shapeDiamond: 'diamond',
   shapeRoundedSquare: 'rounded square',
   shapeHexagon: 'hexagon',
+  shapeTriangle: 'triangle',
+  shapePentagon: 'pentagon',
+  shapeStar: 'star',
+  shapeOctagon: 'octagon',
   loading: 'Loading knowledge graph…',
   searchFirstPrompt: 'Search for a concept to explore the knowledge graph.',
   unavailableTitle: 'Knowledge graph unavailable',
