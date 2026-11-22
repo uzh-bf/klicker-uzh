@@ -10,7 +10,6 @@ import {
   type CircleIcon,
   CopyIcon,
   LoaderCircleIcon,
-  WrenchIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
@@ -61,6 +60,19 @@ function FeedbackText({ text }: Readonly<{ text: string }>) {
   )
 }
 
+/**
+ * A draft the server rejected, or a call whose input did not parse. The model
+ * usually tries again, so the attempt belongs in the collapsed tool-call trace
+ * rather than in the answer.
+ */
+export function isRejectedFeedback(
+  result: unknown,
+  isError: boolean | undefined
+): boolean {
+  const parsed = asFeedbackResult(result)
+  return parsed?.kind === 'feedback-invalid' || (isError === true && !parsed)
+}
+
 interface FeedbackCardProps {
   result?: unknown
   status: { type: string }
@@ -83,14 +95,8 @@ export const FeedbackCard: FC<FeedbackCardProps> = ({
         <span>{t('preparing')}</span>
       </div>
     )
-  // A rejected draft: the model usually repairs it, otherwise answers in text.
-  if (parsed?.kind !== 'feedback' || isError)
-    return (
-      <div className="my-2 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
-        <WrenchIcon className="size-4" aria-hidden />
-        <span>{t('rejected')}</span>
-      </div>
-    )
+  // Rejected drafts render as a trace row in the tool-call group instead.
+  if (parsed?.kind !== 'feedback' || isError) return null
 
   const content = parsed.content
   const { criteria, improvements } = content
