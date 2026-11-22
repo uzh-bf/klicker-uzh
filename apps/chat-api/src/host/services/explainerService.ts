@@ -1,5 +1,6 @@
 import {
   type ExplanationToolResult,
+  MAX_EXPLANATION_ATTEMPTS,
   SHOW_EXPLANATION_TOOL_NAME,
 } from '@klicker-uzh/chat-engine-contract'
 import { jsonSchema, type Tool, tool } from 'ai'
@@ -130,6 +131,7 @@ export async function createShowExplanationTool(
   description = renderPromptTemplate('explanation-tool', {})
 ): Promise<Tool<unknown, ExplanationToolResult>> {
   const schema = await getExplanationSchema()
+  let availableAttempts = MAX_EXPLANATION_ATTEMPTS
   return tool({
     description,
     // Catalyst checks the draft against the schema and returns repair feedback.
@@ -137,10 +139,17 @@ export async function createShowExplanationTool(
     inputSchema: jsonSchema<unknown>(schema, {
       validate: (value) => ({ success: true, value }),
     }),
-    execute: async (content): Promise<ExplanationToolResult> =>
-      validateExplanation(content).catch(() => ({
+    execute: async (content): Promise<ExplanationToolResult> => {
+      // Concurrent calls reserve a possible failure before contacting Catalyst.
+      // Successful validation returns its reservation to the current turn.
+      if (availableAttempts === 0) return { kind: 'explanation-unavailable' }
+      availableAttempts--
+      const result = await validateExplanation(content).catch(() => ({
         kind: 'explanation-unavailable' as const,
-      })),
+      }))
+      if (result.kind === 'explanation') availableAttempts++
+      return result
+    },
     toModelOutput: ({ output }) => ({
       type: 'text' as const,
       value:

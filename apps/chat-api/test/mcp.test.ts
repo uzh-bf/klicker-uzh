@@ -357,6 +357,26 @@ describe('admitted-turn host tool capabilities', () => {
       expect(completed?.output).toEqual({ kind: 'explanation', content })
       expect(completed?.modelOutput).toMatchObject({ type: 'text' })
       expect(fetchExplainer).toHaveBeenCalledTimes(3)
+
+      const burst = await Promise.all(
+        Array.from({ length: 6 }, (_, index) =>
+          dispatcher.execute(
+            capability.executionToken,
+            request(`burst-${index}`, { label: 'synthetic' }, name),
+            signal()
+          )
+        )
+      )
+      expect(burst.map((result) => result?.output)).toEqual([
+        ...Array.from({ length: 2 }, () => ({
+          kind: 'explanation-invalid',
+          errors: ['synthetic missing field'],
+        })),
+        ...Array.from({ length: 4 }, () => ({
+          kind: 'explanation-unavailable',
+        })),
+      ])
+      expect(fetchExplainer).toHaveBeenCalledTimes(5)
     } finally {
       vi.unstubAllEnvs()
       vi.unstubAllGlobals()
