@@ -381,6 +381,17 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
         user: t('chat.threadList.exportUserLabel'),
         assistant: t('chat.threadList.exportAssistantLabel'),
         sources: t('chat.threadList.exportSourcesLabel'),
+        feedback: {
+          strengths: t('chat.thread.feedback.strengths'),
+          criteria: t('chat.thread.feedback.criteria'),
+          improvements: t('chat.thread.feedback.points'),
+          nextStep: t('chat.thread.feedback.nextStep'),
+          status: {
+            met: t('chat.thread.feedback.status.met'),
+            partial: t('chat.thread.feedback.status.partial'),
+            missing: t('chat.thread.feedback.status.missing'),
+          },
+        },
       },
     })
     const blob = new Blob([markdown], { type: 'text/markdown' })
