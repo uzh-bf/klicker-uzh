@@ -71,6 +71,7 @@ type KnowledgeGraphViewerProps = {
   overviewNavigation?: boolean
   /** Emits the bounded ask payload for the selected concept or relationship. */
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   /** 'contained' overlays the details pane inside the graph. */
   detailsLayout?: 'sidebar' | 'contained'
   /** Keeps the current zoom and pan when the canvas container resizes. */
@@ -156,6 +157,33 @@ function fitGraphElements(cy: cytoscape.Core) {
   }
 }
 
+/**
+ * Centers a node in the part of the canvas a bottom details sheet leaves
+ * visible, so the selected concept never sits behind its own details.
+ */
+function centerInVisibleArea(
+  cy: cytoscape.Core,
+  node: cytoscape.CollectionReturnValue,
+  container: HTMLElement | null
+) {
+  if (node.empty()) return
+  cy.center(node)
+  const details = container
+    ?.closest('[data-cy="knowledge-graph-viewer"]')
+    ?.querySelector('[data-cy="knowledge-graph-details"]')
+  if (container == null || details == null) return
+  const canvas = container.getBoundingClientRect()
+  const sheet = details.getBoundingClientRect()
+  // Side panels do not cover the canvas; only a bottom sheet across it does.
+  if (
+    sheet.width < canvas.width * 0.8 ||
+    sheet.top <= canvas.top ||
+    sheet.top >= canvas.bottom
+  )
+    return
+  cy.panBy({ x: 0, y: -(canvas.bottom - sheet.top) / 2 })
+}
+
 function isUnavailableError(error: unknown): boolean {
   if (error instanceof KnowledgeGraphUnavailableError) {
     return true
@@ -214,6 +242,7 @@ export function KnowledgeGraphViewer({
   searchSuggestions = false,
   overviewNavigation = false,
   onAsk,
+  onQuiz,
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
   focusRequest,
@@ -235,6 +264,10 @@ export function KnowledgeGraphViewer({
     initialKnowledgeGraphState
   )
   const [searchQuery, setSearchQuery] = useState('')
+  const [legendOpen, setLegendOpen] = useState(false)
+  // The canvas sync reads relation names without re-running on label changes.
+  const relationTypeLabelsRef = useRef(labels.details.relationTypes)
+  relationTypeLabelsRef.current = labels.details.relationTypes
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<cytoscape.Core | null>(null)
@@ -707,15 +740,27 @@ export function KnowledgeGraphViewer({
       }
     }
 
+    // A refit after loading concepts must keep the selected concept in view.
+    const centerSelectedNode = (core: cytoscape.Core) => {
+      const selectedId = stateRef.current.selectedNodeId
+      if (selectedId === null) return
+      centerInVisibleArea(
+        core,
+        core.getElementById(cytoscapeNodeId(selectedId)),
+        containerRef.current
+      )
+    }
+    const edgeLabel = (edge: (typeof state.edges)[number]) =>
+      relationshipDisplayLabel(edge, relationTypeLabelsRef.current)
     for (const edge of state.edges) {
       const existing = cy.getElementById(cytoscapeEdgeId(edge.id))
       const endpointsExist =
         !cy.getElementById(cytoscapeNodeId(edge.source)).empty() &&
         !cy.getElementById(cytoscapeNodeId(edge.target)).empty()
       if (existing.empty() && endpointsExist) {
-        cy.add(edgeDefinition(edge))
+        cy.add(edgeDefinition(edge, edgeLabel(edge)))
       } else if (!existing.empty()) {
-        existing.data(edgeDefinition(edge).data)
+        existing.data(edgeDefinition(edge, edgeLabel(edge)).data)
       }
     }
 
@@ -760,6 +805,7 @@ export function KnowledgeGraphViewer({
         positionsRef.current.set(String(node.data('graphId')), node.position())
       })
       fitGraphElements(cy)
+      centerSelectedNode(cy)
       expansionOriginRef.current = null
       return
     }
@@ -783,6 +829,7 @@ export function KnowledgeGraphViewer({
       })
       if (isInitialLayout) {
         fitGraphReadably(cy)
+        centerSelectedNode(cy)
       }
     })
     layout.run()
@@ -815,7 +862,7 @@ export function KnowledgeGraphViewer({
         cytoscapeNodeId(state.focusedNodeId)
       )
       if (!focusedNode.empty()) {
-        cy.center(focusedNode)
+        centerInVisibleArea(cy, focusedNode, containerRef.current)
         pendingFocusRef.current = null
       }
     }
@@ -1368,10 +1415,28 @@ export function KnowledgeGraphViewer({
           {legendEntries.length === 0 ? null : (
             <div
               aria-label={labels.legendAriaLabel}
-              className={`absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '@2xl:block' : 'sm:block md:bottom-auto md:top-3'}`}
+              className={`absolute bottom-3 left-3 max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '@2xl:left-auto @2xl:right-3 @2xl:p-3' : 'sm:left-auto sm:right-3 sm:p-3 md:bottom-auto md:top-3'}`}
+              data-cy="knowledge-graph-legend"
             >
-              <p className="mb-2 font-semibold">{labels.conceptTypes}</p>
-              <ul className="space-y-1.5">
+              {/* Narrow maps keep the legend one tap away instead of
+                  covering the graph; wide maps show it expanded. */}
+              <button
+                type="button"
+                aria-expanded={legendOpen}
+                onClick={() => setLegendOpen((value) => !value)}
+                className={`min-h-11 px-3 py-2 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] ${detailsLayout === 'contained' ? '@2xl:hidden' : 'sm:hidden'}`}
+                data-cy="knowledge-graph-legend-toggle"
+              >
+                {labels.conceptTypes}
+              </button>
+              <p
+                className={`mb-2 hidden font-semibold ${detailsLayout === 'contained' ? '@2xl:block' : 'sm:block'}`}
+              >
+                {labels.conceptTypes}
+              </p>
+              <ul
+                className={`space-y-1.5 ${legendOpen ? 'px-3 pb-3' : 'hidden'} ${detailsLayout === 'contained' ? '@2xl:block @2xl:p-0' : 'sm:block sm:p-0'}`}
+              >
                 {legendEntries.map(([kind, style]) => (
                   <li key={kind} className="flex items-center gap-2">
                     <span
@@ -1391,6 +1456,19 @@ export function KnowledgeGraphViewer({
                     </span>
                   </li>
                 ))}
+                {state.edges.some(
+                  (edge) => edge.sourceReferences.length === 0
+                ) ? (
+                  <li className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="h-0 w-3.5 shrink-0 border-t-2 border-dashed border-[#A3A3A3]"
+                    />
+                    <span className="min-w-0">
+                      {labels.inferredRelationLegend}
+                    </span>
+                  </li>
+                ) : null}
               </ul>
             </div>
           )}
@@ -1613,6 +1691,13 @@ export function KnowledgeGraphViewer({
         edge={selectedEdge}
         edgeEndpoints={selectedEdgeEndpoints}
         isExpanding={isExpanding}
+        allConnectionsShown={
+          selectedNode !== undefined &&
+          state.edges.filter(
+            (edge) =>
+              edge.source === selectedNode.id || edge.target === selectedNode.id
+          ).length >= selectedNode.degree
+        }
         labels={labels.details}
         layout={detailsLayout}
         onClose={() =>
@@ -1623,6 +1708,7 @@ export function KnowledgeGraphViewer({
         }
         onExpand={(nodeId) => expandNodeRef.current(nodeId)}
         onAsk={onAsk}
+        onQuiz={onQuiz}
         askSelection={askSelection}
       />
 
