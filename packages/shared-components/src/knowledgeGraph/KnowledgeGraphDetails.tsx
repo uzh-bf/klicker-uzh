@@ -189,6 +189,9 @@ export function KnowledgeGraphDetails({
   const definition = node === undefined ? undefined : conceptDefinition(node)
   const layoutClasses =
     layout === 'contained' ? CONTAINED_LAYOUT_CLASSES : SIDEBAR_LAYOUT_CLASSES
+  let expandLabel = labels.expandConnections
+  if (isExpanding) expandLabel = labels.loadingConnections
+  else if (allConnectionsShown) expandLabel = labels.allConnectionsShown
 
   return (
     <aside
@@ -258,11 +261,7 @@ export function KnowledgeGraphDetails({
               className={`${ACTION_CLASSES} border-[#0028A5] bg-[#0028A5] text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60`}
               data-cy="knowledge-graph-expand"
             >
-              {isExpanding
-                ? labels.loadingConnections
-                : allConnectionsShown
-                  ? labels.allConnectionsShown
-                  : labels.expandConnections}
+              {expandLabel}
             </button>
           )}
         </div>
