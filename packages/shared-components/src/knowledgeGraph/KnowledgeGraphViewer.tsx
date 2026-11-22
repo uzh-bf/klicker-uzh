@@ -71,6 +71,7 @@ type KnowledgeGraphViewerProps = {
   overviewNavigation?: boolean
   /** Emits the bounded ask payload for the selected concept or relationship. */
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   /** 'contained' overlays the details pane inside the graph. */
   detailsLayout?: 'sidebar' | 'contained'
   /** Keeps the current zoom and pan when the canvas container resizes. */
@@ -85,6 +86,67 @@ export type KnowledgeGraphFocusRequest = {
   nonce: number
 }
 
+/**
+ * In a narrow docked panel the keyboard-accessible concept and relationship
+ * lists would leave the canvas only a thin strip, so they start collapsed and
+ * open by themselves when a search returns results.
+ */
+function ContainedListsDisclosure({
+  contained,
+  hasSearchResults,
+  summary,
+  children,
+}: {
+  contained: boolean
+  hasSearchResults: boolean
+  summary: string
+  children: React.ReactNode
+}) {
+  if (!contained) {
+    return children
+  }
+  return (
+    <details
+      key={hasSearchResults ? 'results' : 'browse'}
+      open={hasSearchResults}
+      className="shrink-0 border-t border-[#E9E9E9] bg-white"
+      data-cy="knowledge-graph-lists"
+    >
+      <summary className="min-h-11 cursor-pointer px-3 py-2 text-xs font-medium text-[#4C4C4C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]">
+        {summary}
+      </summary>
+      {children}
+    </details>
+  )
+}
+
+// Labels are wider than nodes, so the layout spaces nodes by their label box;
+// otherwise neighboring labels overlap and the map becomes unreadable.
+const COSE_SPACING = {
+  nodeDimensionsIncludeLabels: true,
+  nodeRepulsion: 40_000,
+  idealEdgeLength: 120,
+  componentSpacing: 80,
+} as const
+
+// Below this zoom the 13px labels shrink under about 9px and stop being legible.
+const READABLE_ZOOM = 0.7
+
+/**
+ * Fits a freshly laid out view, but never below a legible zoom: a large map
+ * then opens on its best-connected concept and the rest is reached by panning
+ * or the fit control.
+ */
+function fitGraphReadably(cy: cytoscape.Core) {
+  fitGraphElements(cy)
+  if (cy.elements().empty() || cy.zoom() >= READABLE_ZOOM) return
+  const hub = cy
+    .nodes()
+    .max((node) => Number(node.data('degree') ?? node.degree(false))).ele
+  cy.zoom(READABLE_ZOOM)
+  cy.center(hub)
+}
+
 function fitGraphElements(cy: cytoscape.Core) {
   if (cy.elements().empty()) return
   cy.fit(cy.elements(), 40)
@@ -93,6 +155,33 @@ function fitGraphElements(cy: cytoscape.Core) {
     cy.zoom(1)
     cy.center()
   }
+}
+
+/**
+ * Centers a node in the part of the canvas a bottom details sheet leaves
+ * visible, so the selected concept never sits behind its own details.
+ */
+function centerInVisibleArea(
+  cy: cytoscape.Core,
+  node: cytoscape.CollectionReturnValue,
+  container: HTMLElement | null
+) {
+  if (node.empty()) return
+  cy.center(node)
+  const details = container
+    ?.closest('[data-cy="knowledge-graph-viewer"]')
+    ?.querySelector('[data-cy="knowledge-graph-details"]')
+  if (container == null || details == null) return
+  const canvas = container.getBoundingClientRect()
+  const sheet = details.getBoundingClientRect()
+  // Side panels do not cover the canvas; only a bottom sheet across it does.
+  if (
+    sheet.width < canvas.width * 0.8 ||
+    sheet.top <= canvas.top ||
+    sheet.top >= canvas.bottom
+  )
+    return
+  cy.panBy({ x: 0, y: -(canvas.bottom - sheet.top) / 2 })
 }
 
 function isUnavailableError(error: unknown): boolean {
@@ -153,6 +242,7 @@ export function KnowledgeGraphViewer({
   searchSuggestions = false,
   overviewNavigation = false,
   onAsk,
+  onQuiz,
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
   focusRequest,
@@ -174,6 +264,10 @@ export function KnowledgeGraphViewer({
     initialKnowledgeGraphState
   )
   const [searchQuery, setSearchQuery] = useState('')
+  const [legendOpen, setLegendOpen] = useState(false)
+  // The canvas sync reads relation names without re-running on label changes.
+  const relationTypeLabelsRef = useRef(labels.details.relationTypes)
+  relationTypeLabelsRef.current = labels.details.relationTypes
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<cytoscape.Core | null>(null)
@@ -531,6 +625,12 @@ export function KnowledgeGraphViewer({
     }
     const cy = cytoscape(options)
     cyRef.current = cy
+    // The canvas cannot resolve the app's CSS font variables, so it would fall
+    // back to a default face. Use the font the page actually renders.
+    const pageFont = window.getComputedStyle(container).fontFamily
+    if (pageFont) {
+      cy.style().selector('node').style('font-family', pageFont).update()
+    }
 
     const onNodeTap: cytoscape.EventHandler = (event) => {
       const nodeId = String(event.target.data('graphId'))
@@ -640,15 +740,27 @@ export function KnowledgeGraphViewer({
       }
     }
 
+    // A refit after loading concepts must keep the selected concept in view.
+    const centerSelectedNode = (core: cytoscape.Core) => {
+      const selectedId = stateRef.current.selectedNodeId
+      if (selectedId === null) return
+      centerInVisibleArea(
+        core,
+        core.getElementById(cytoscapeNodeId(selectedId)),
+        containerRef.current
+      )
+    }
+    const edgeLabel = (edge: (typeof state.edges)[number]) =>
+      relationshipDisplayLabel(edge, relationTypeLabelsRef.current)
     for (const edge of state.edges) {
       const existing = cy.getElementById(cytoscapeEdgeId(edge.id))
       const endpointsExist =
         !cy.getElementById(cytoscapeNodeId(edge.source)).empty() &&
         !cy.getElementById(cytoscapeNodeId(edge.target)).empty()
       if (existing.empty() && endpointsExist) {
-        cy.add(edgeDefinition(edge))
+        cy.add(edgeDefinition(edge, edgeLabel(edge)))
       } else if (!existing.empty()) {
-        existing.data(edgeDefinition(edge).data)
+        existing.data(edgeDefinition(edge, edgeLabel(edge)).data)
       }
     }
 
@@ -673,15 +785,19 @@ export function KnowledgeGraphViewer({
           y: (viewportExtent.y1 + viewportExtent.y2) / 2,
         }
       : origin.position()
+    // Each label needs about 150px of the ring, or neighbors overlap.
+    const ringRadius = Math.max(140, (newNodes.length * 150) / (2 * Math.PI))
     newNodes.forEach((node, index) => {
       const angle = (index / Math.max(newNodes.length, 1)) * Math.PI * 2
       node.position({
-        x: originPosition.x + Math.cos(angle) * 100,
-        y: originPosition.y + Math.sin(angle) * 100,
+        x: originPosition.x + Math.cos(angle) * ringRadius,
+        y: originPosition.y + Math.sin(angle) * ringRadius,
       })
     })
 
-    const isInitialLayout = buildChanged
+    // A search focus or overview reset replaces the view, so it gets a full
+    // layout; only a neighbor expansion keeps the concepts already on screen.
+    const isInitialLayout = buildChanged || origin.empty()
     if (!isInitialLayout) {
       // Keep added neighbors around their origin. An isolated subset layout
       // recenters them at zero and can overlap already positioned concepts.
@@ -689,6 +805,7 @@ export function KnowledgeGraphViewer({
         positionsRef.current.set(String(node.data('graphId')), node.position())
       })
       fitGraphElements(cy)
+      centerSelectedNode(cy)
       expansionOriginRef.current = null
       return
     }
@@ -698,8 +815,7 @@ export function KnowledgeGraphViewer({
       randomize: isInitialLayout,
       fit: false,
       padding: 30,
-      nodeRepulsion: 6_000,
-      idealEdgeLength: 90,
+      ...COSE_SPACING,
     })
     const layoutToken = layoutTokenRef.current
     activeLayoutRef.current = layout
@@ -712,7 +828,8 @@ export function KnowledgeGraphViewer({
         positionsRef.current.set(String(node.data('graphId')), node.position())
       })
       if (isInitialLayout) {
-        fitGraphElements(cy)
+        fitGraphReadably(cy)
+        centerSelectedNode(cy)
       }
     })
     layout.run()
@@ -745,7 +862,7 @@ export function KnowledgeGraphViewer({
         cytoscapeNodeId(state.focusedNodeId)
       )
       if (!focusedNode.empty()) {
-        cy.center(focusedNode)
+        centerInVisibleArea(cy, focusedNode, containerRef.current)
         pendingFocusRef.current = null
       }
     }
@@ -1032,8 +1149,7 @@ export function KnowledgeGraphViewer({
       randomize: true,
       fit: false,
       padding: 30,
-      nodeRepulsion: 6_000,
-      idealEdgeLength: 90,
+      ...COSE_SPACING,
     })
     layout.run()
   }
@@ -1051,6 +1167,8 @@ export function KnowledgeGraphViewer({
       : undefined
   const showOverviewControl = overviewNavigation && state.view === 'focused'
 
+  const graphControlClassName = `rounded-full border border-[#E9E9E9] bg-white text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] ${detailsLayout === 'contained' ? 'size-10' : 'min-h-11 px-4'}`
+
   const sectionMinHeight =
     detailsLayout === 'contained' ? 'min-h-0' : 'min-h-[32rem]'
   const canvasMinHeight = detailsLayout === 'contained' ? 'min-h-0' : 'min-h-80'
@@ -1058,12 +1176,14 @@ export function KnowledgeGraphViewer({
   return (
     <section
       aria-label={labels.explorerAriaLabel}
-      className={`relative flex h-full w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${sectionMinHeight} ${className}`}
+      className={`@container relative flex h-full w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${sectionMinHeight} ${className}`}
       data-cy="knowledge-graph-viewer"
     >
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="border-b border-[#E9E9E9] bg-white p-3 md:p-4">
-          {showOverviewControl ? (
+        <div
+          className={`border-b border-[#E9E9E9] bg-white ${detailsLayout === 'contained' ? 'p-2' : 'p-3 md:p-4'}`}
+        >
+          {showOverviewControl && detailsLayout !== 'contained' ? (
             <div className="mb-2 flex">
               <button
                 type="button"
@@ -1082,6 +1202,18 @@ export function KnowledgeGraphViewer({
             onSubmit={(event) => void handleSearch(event)}
             className="flex gap-2"
           >
+            {showOverviewControl && detailsLayout === 'contained' ? (
+              <button
+                type="button"
+                onClick={resetToOverview}
+                aria-label={labels.backToOverview}
+                title={labels.backToOverview}
+                className="size-11 shrink-0 rounded-full border border-[#E9E9E9] bg-white text-base font-semibold text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
+                data-cy="knowledge-graph-back-to-overview"
+              >
+                ←
+              </button>
+            ) : null}
             <label htmlFor="knowledge-graph-search" className="sr-only">
               {labels.searchLabel}
             </label>
@@ -1188,7 +1320,10 @@ export function KnowledgeGraphViewer({
           </form>
 
           {state.truncated ? (
-            <p className="mt-2 text-sm text-[#4C4C4C]" role="note">
+            <p
+              className={`mt-2 text-[#4C4C4C] ${detailsLayout === 'contained' ? 'text-xs' : 'text-sm'}`}
+              role="note"
+            >
               {labels.truncatedNotice}
             </p>
           ) : null}
@@ -1231,12 +1366,16 @@ export function KnowledgeGraphViewer({
           />
 
           <div
-            className={`absolute left-3 right-3 top-3 flex flex-wrap gap-2 ${detailsLayout === 'contained' ? '' : 'md:right-auto'}`}
+            className={
+              detailsLayout === 'contained'
+                ? 'absolute right-2 top-2 flex flex-col gap-1.5'
+                : 'absolute left-3 right-3 top-3 flex flex-wrap gap-2 md:right-auto'
+            }
           >
             <button
               type="button"
               onClick={() => changeZoom(1.25)}
-              className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
+              className={graphControlClassName}
               aria-label={labels.zoomInAriaLabel}
               data-cy="knowledge-graph-zoom-in"
             >
@@ -1245,7 +1384,7 @@ export function KnowledgeGraphViewer({
             <button
               type="button"
               onClick={() => changeZoom(0.8)}
-              className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
+              className={graphControlClassName}
               aria-label={labels.zoomOutAriaLabel}
               data-cy="knowledge-graph-zoom-out"
             >
@@ -1256,7 +1395,7 @@ export function KnowledgeGraphViewer({
               onClick={fitGraph}
               aria-label={labels.fitView}
               title={labels.fitView}
-              className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
+              className={graphControlClassName}
               data-cy="knowledge-graph-fit"
             >
               {detailsLayout === 'contained' ? '↗' : labels.fitView}
@@ -1266,7 +1405,7 @@ export function KnowledgeGraphViewer({
               onClick={resetLayout}
               aria-label={labels.resetLayout}
               title={labels.resetLayout}
-              className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
+              className={graphControlClassName}
               data-cy="knowledge-graph-reset"
             >
               {detailsLayout === 'contained' ? '↺' : labels.resetLayout}
@@ -1276,10 +1415,28 @@ export function KnowledgeGraphViewer({
           {legendEntries.length === 0 ? null : (
             <div
               aria-label={labels.legendAriaLabel}
-              className={`absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '' : 'sm:block md:bottom-auto md:top-3'}`}
+              className={`absolute bottom-3 left-3 max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '@2xl:left-auto @2xl:right-3 @2xl:p-3' : 'sm:left-auto sm:right-3 sm:p-3 md:bottom-auto md:top-3'}`}
+              data-cy="knowledge-graph-legend"
             >
-              <p className="mb-2 font-semibold">{labels.conceptTypes}</p>
-              <ul className="space-y-1.5">
+              {/* Narrow maps keep the legend one tap away instead of
+                  covering the graph; wide maps show it expanded. */}
+              <button
+                type="button"
+                aria-expanded={legendOpen}
+                onClick={() => setLegendOpen((value) => !value)}
+                className={`min-h-11 px-3 py-2 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] ${detailsLayout === 'contained' ? '@2xl:hidden' : 'sm:hidden'}`}
+                data-cy="knowledge-graph-legend-toggle"
+              >
+                {labels.conceptTypes}
+              </button>
+              <p
+                className={`mb-2 hidden font-semibold ${detailsLayout === 'contained' ? '@2xl:block' : 'sm:block'}`}
+              >
+                {labels.conceptTypes}
+              </p>
+              <ul
+                className={`space-y-1.5 ${legendOpen ? 'px-3 pb-3' : 'hidden'} ${detailsLayout === 'contained' ? '@2xl:block @2xl:p-0' : 'sm:block sm:p-0'}`}
+              >
                 {legendEntries.map(([kind, style]) => (
                   <li key={kind} className="flex items-center gap-2">
                     <span
@@ -1299,6 +1456,19 @@ export function KnowledgeGraphViewer({
                     </span>
                   </li>
                 ))}
+                {state.edges.some(
+                  (edge) => edge.sourceReferences.length === 0
+                ) ? (
+                  <li className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="h-0 w-3.5 shrink-0 border-t-2 border-dashed border-[#A3A3A3]"
+                    />
+                    <span className="min-w-0">
+                      {labels.inferredRelationLegend}
+                    </span>
+                  </li>
+                ) : null}
               </ul>
             </div>
           )}
@@ -1371,135 +1541,149 @@ export function KnowledgeGraphViewer({
           ) : null}
         </div>
 
-        <div
-          className={`grid shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white ${detailsLayout === 'contained' ? 'max-h-24 lg:max-h-44 lg:h-44' : 'max-h-64 md:h-56 md:overflow-hidden'} ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}
+        <ContainedListsDisclosure
+          contained={detailsLayout === 'contained'}
+          hasSearchResults={state.searchResults.length > 0}
+          summary={labels.showAsList}
         >
-          {state.searchResults.length === 0 ? null : (
-            <section
-              aria-labelledby="knowledge-graph-search-results-heading"
-              className="max-h-44 overflow-y-auto border-b border-[#E9E9E9] p-3 md:max-h-none md:border-b-0 md:border-r"
-            >
-              <h2
-                id="knowledge-graph-search-results-heading"
-                className="mb-2 text-sm font-semibold text-[#121212]"
+          <div
+            className={`grid shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white ${detailsLayout === 'contained' ? `max-h-48 ${state.searchResults.length === 0 ? '@xl:grid-cols-2' : '@3xl:grid-cols-3'}` : `max-h-64 md:h-56 md:overflow-hidden ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}`}
+          >
+            {state.searchResults.length === 0 ? null : (
+              <section
+                aria-labelledby="knowledge-graph-search-results-heading"
+                className="max-h-44 overflow-y-auto border-b border-[#E9E9E9] p-3 md:max-h-none md:border-b-0 md:border-r"
               >
-                {labels.searchResults}
-              </h2>
-              <ul className="space-y-1">
-                {state.searchResults.map((node) => (
-                  <li key={node.id}>
-                    <button
-                      type="button"
-                      data-cy="knowledge-graph-search-result"
-                      onClick={() => focusNode(node.id)}
-                      className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
-                    >
-                      <span className="font-semibold">{node.displayLabel}</span>
-                      <span className="block text-[#4C4C4C]">{node.kind}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section
-            aria-labelledby="knowledge-graph-loaded-nodes-heading"
-            className="max-h-44 overflow-y-auto border-b border-[#E9E9E9] p-3 [content-visibility:auto] md:max-h-none md:border-b-0 md:border-r"
-            data-cy="knowledge-graph-loaded-nodes"
-          >
-            <h2
-              id="knowledge-graph-loaded-nodes-heading"
-              className="mb-2 text-sm font-semibold text-[#121212]"
-            >
-              {labels.loadedConcepts(state.nodes.length)}
-            </h2>
-            {state.nodes.length === 0 ? (
-              <p className="text-sm text-[#4C4C4C]">
-                {labels.noConceptsLoaded}
-              </p>
-            ) : (
-              <ul className="grid grid-cols-1 gap-1">
-                {state.nodes.map((node) => (
-                  <li key={node.id}>
-                    <button
-                      type="button"
-                      data-cy="knowledge-graph-loaded-node"
-                      aria-pressed={state.selectedNodeId === node.id}
-                      onClick={() => focusNode(node.id)}
-                      className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
-                    >
-                      <span className="font-semibold">{node.displayLabel}</span>
-                      <span className="block text-[#4C4C4C]">{node.kind}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section
-            aria-labelledby="knowledge-graph-loaded-relationships-heading"
-            className="max-h-44 overflow-y-auto p-3 [content-visibility:auto] md:max-h-none"
-            data-cy="knowledge-graph-loaded-relationships"
-          >
-            <h2
-              id="knowledge-graph-loaded-relationships-heading"
-              className="mb-2 text-sm font-semibold text-[#121212]"
-            >
-              {labels.loadedRelationships(relationshipEntries.length)}
-            </h2>
-            {relationshipEntries.length === 0 ? (
-              <p className="text-sm text-[#4C4C4C]">
-                {labels.noRelationshipsLoaded}
-              </p>
-            ) : (
-              <ul className="space-y-1">
-                {relationshipEntries.map(({ edge, source, target }) => {
-                  const relationshipLabel = relationshipDisplayLabel(
-                    edge,
-                    labels.details.relationTypes
-                  )
-                  return (
-                    <li key={edge.id}>
+                <h2
+                  id="knowledge-graph-search-results-heading"
+                  className="mb-2 text-sm font-semibold text-[#121212]"
+                >
+                  {labels.searchResults}
+                </h2>
+                <ul className="space-y-1">
+                  {state.searchResults.map((node) => (
+                    <li key={node.id}>
                       <button
                         type="button"
-                        data-cy="knowledge-graph-loaded-relationship"
-                        aria-label={labels.selectRelationshipAriaLabel(
-                          source,
-                          target,
-                          relationshipLabel,
-                          isSymmetricRelationType(edge.relationType)
-                        )}
-                        aria-pressed={state.selectedEdgeId === edge.id}
-                        onClick={() =>
-                          dispatch({
-                            type: 'select-edge',
-                            edgeId: edge.id,
-                            announcement:
-                              labels.selectedRelationshipAnnouncement,
-                          })
-                        }
-                        className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
+                        data-cy="knowledge-graph-search-result"
+                        onClick={() => focusNode(node.id)}
+                        className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
                       >
-                        <span className="block font-semibold">
-                          {source}{' '}
-                          {isSymmetricRelationType(edge.relationType)
-                            ? '–'
-                            : '→'}{' '}
-                          {target}
+                        <span className="font-semibold">
+                          {node.displayLabel}
                         </span>
                         <span className="block text-[#4C4C4C]">
-                          {relationshipLabel}
+                          {node.kind}
                         </span>
                       </button>
                     </li>
-                  )
-                })}
-              </ul>
+                  ))}
+                </ul>
+              </section>
             )}
-          </section>
-        </div>
+
+            <section
+              aria-labelledby="knowledge-graph-loaded-nodes-heading"
+              className="max-h-44 overflow-y-auto border-b border-[#E9E9E9] p-3 [content-visibility:auto] md:max-h-none md:border-b-0 md:border-r"
+              data-cy="knowledge-graph-loaded-nodes"
+            >
+              <h2
+                id="knowledge-graph-loaded-nodes-heading"
+                className="mb-2 text-sm font-semibold text-[#121212]"
+              >
+                {labels.loadedConcepts(state.nodes.length)}
+              </h2>
+              {state.nodes.length === 0 ? (
+                <p className="text-sm text-[#4C4C4C]">
+                  {labels.noConceptsLoaded}
+                </p>
+              ) : (
+                <ul className="grid grid-cols-1 gap-1">
+                  {state.nodes.map((node) => (
+                    <li key={node.id}>
+                      <button
+                        type="button"
+                        data-cy="knowledge-graph-loaded-node"
+                        aria-pressed={state.selectedNodeId === node.id}
+                        onClick={() => focusNode(node.id)}
+                        className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
+                      >
+                        <span className="font-semibold">
+                          {node.displayLabel}
+                        </span>
+                        <span className="block text-[#4C4C4C]">
+                          {node.kind}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section
+              aria-labelledby="knowledge-graph-loaded-relationships-heading"
+              className="max-h-44 overflow-y-auto p-3 [content-visibility:auto] md:max-h-none"
+              data-cy="knowledge-graph-loaded-relationships"
+            >
+              <h2
+                id="knowledge-graph-loaded-relationships-heading"
+                className="mb-2 text-sm font-semibold text-[#121212]"
+              >
+                {labels.loadedRelationships(relationshipEntries.length)}
+              </h2>
+              {relationshipEntries.length === 0 ? (
+                <p className="text-sm text-[#4C4C4C]">
+                  {labels.noRelationshipsLoaded}
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {relationshipEntries.map(({ edge, source, target }) => {
+                    const relationshipLabel = relationshipDisplayLabel(
+                      edge,
+                      labels.details.relationTypes
+                    )
+                    return (
+                      <li key={edge.id}>
+                        <button
+                          type="button"
+                          data-cy="knowledge-graph-loaded-relationship"
+                          aria-label={labels.selectRelationshipAriaLabel(
+                            source,
+                            target,
+                            relationshipLabel,
+                            isSymmetricRelationType(edge.relationType)
+                          )}
+                          aria-pressed={state.selectedEdgeId === edge.id}
+                          onClick={() =>
+                            dispatch({
+                              type: 'select-edge',
+                              edgeId: edge.id,
+                              announcement:
+                                labels.selectedRelationshipAnnouncement,
+                            })
+                          }
+                          className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
+                        >
+                          <span className="block font-semibold">
+                            {source}{' '}
+                            {isSymmetricRelationType(edge.relationType)
+                              ? '–'
+                              : '→'}{' '}
+                            {target}
+                          </span>
+                          <span className="block text-[#4C4C4C]">
+                            {relationshipLabel}
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
+        </ContainedListsDisclosure>
       </div>
 
       <KnowledgeGraphDetails
@@ -1507,6 +1691,13 @@ export function KnowledgeGraphViewer({
         edge={selectedEdge}
         edgeEndpoints={selectedEdgeEndpoints}
         isExpanding={isExpanding}
+        allConnectionsShown={
+          selectedNode !== undefined &&
+          state.edges.filter(
+            (edge) =>
+              edge.source === selectedNode.id || edge.target === selectedNode.id
+          ).length >= selectedNode.degree
+        }
         labels={labels.details}
         layout={detailsLayout}
         onClose={() =>
@@ -1517,6 +1708,7 @@ export function KnowledgeGraphViewer({
         }
         onExpand={(nodeId) => expandNodeRef.current(nodeId)}
         onAsk={onAsk}
+        onQuiz={onQuiz}
         askSelection={askSelection}
       />
 

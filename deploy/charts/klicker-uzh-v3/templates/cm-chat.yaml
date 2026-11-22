@@ -53,6 +53,10 @@ data:
   RESPONSE_EXAMPLE_RECEIPT_ISSUER: {{ .Values.chat.responseExampleReceipt.issuer | quote }}
   RESPONSE_EXAMPLE_RECEIPT_AUDIENCE: {{ .Values.chat.responseExampleReceipt.audience | quote }}
   RESPONSE_EXAMPLE_RECEIPT_KID: {{ .Values.chat.responseExampleReceipt.keyId | quote }}
+  {{- if .Values.chat.explainer.enabled }}
+  CHAT_EXPLANATION_TOOL: "1"
+  EXPLAINER_SERVICE_URL: {{ required "chat.explainer.serviceUrl is required when chat.explainer.enabled is true" .Values.chat.explainer.serviceUrl | quote }}
+  {{- end }}
   {{- if $scopedMcpEnv }}
   {{- $scopedMcpEnv | nindent 2 }}
   {{- end }}
@@ -67,6 +71,9 @@ data:
   {{- end }}
   {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
   CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
+  {{- end }}
+  {{- if .Values.chat.tutorPromptVersion }}
+  CHAT_TUTOR_PROMPT_VERSION: {{ .Values.chat.tutorPromptVersion | quote }}
   {{- end }}
   {{- if .Values.chat.allowedFrameAncestors }}
   ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}

@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "task-howto-annuity",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "exercise without an attempt, phrased as a method question",
+      "rubric": [
+        "Nennt, dass der heutige Wert der fünf jährlichen Zahlungen gesucht ist und dass dafür jede Zahlung abgezinst oder der Rentenbarwertfaktor verwendet wird.",
+        "Gibt höchstens den ersten Schritt oder einen Hinweis, zum Beispiel die Abzinsung der ersten Zahlung, und nennt weder das Endergebnis von rund CHF 4'451.82 noch den Rentenbarwertfaktor 4.4518 noch eine vollständige Rechnung.",
+        "Endet damit, dass der Lernende den nächsten Schritt selbst ausführen soll, und stellt höchstens eine Frage."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Aufgabe: Du erhältst 5 Jahre lang am Ende jedes Jahres 1000 CHF. Der Zinssatz ist 4 %. Wie viel ist das heute wert? Wie löse ich das?"
+        }
+      ]
+    },
+    {
+      "id": "task-help-npv",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "exercise without an attempt, phrased as a help request",
+      "rubric": [
+        "Names the net present value rule: discount the future cash flows at the cost of capital, subtract the initial investment, and invest when the result is positive.",
+        "Gives at most the first step or one hint and states neither the NPV of about 699.59 nor the investment decision.",
+        "Ends by asking the student to do the next step and asks at most one question."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Can you help me with this task? A project costs 10,000 today and pays 6,000 after one year and 6,000 after two years. The cost of capital is 8%. Should the firm invest?"
+        }
+      ]
+    },
+    {
+      "id": "attempt-wrong-annuity-timing",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "first wrong attempt with visible working",
+      "rubric": [
+        "Sagt klar, dass das Ergebnis nicht stimmt.",
+        "Benennt den konkreten Fehler: Die Rechnung behandelt die 5000 CHF wie eine einzige Zahlung nach fünf Jahren, obwohl jedes Jahr 1000 CHF anfallen, die einzeln abgezinst werden.",
+        "Gibt einen Hinweis und lädt zu einem neuen Versuch ein, ohne das korrekte Ergebnis von rund CHF 4'451.82 oder die vollständige Rechnung zu nennen.",
+        "Das Feedback bezieht sich auf die Arbeit, nicht auf die Person, und kommt ohne generisches Lob aus."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Aufgabe: 5 Jahre lang jeweils am Jahresende 1000 CHF, Zins 4 %. Ich habe 5000 / 1.04^5 = 4109.64 CHF gerechnet. Stimmt das?"
+        }
+      ]
+    },
+    {
+      "id": "stuck-escalates-to-solution",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "student stays stuck, then gives up",
+      "rubric": [
+        "Zug 2 wiederholt die vorherige Frage nicht, sondern erhöht die Unterstützung, zum Beispiel mit einer Erklärung oder einem vorgerechneten Teilschritt, und endet mit einem konkreten Schritt, den der Lernende ausführen kann, nicht mit einer Verständnisfrage.",
+        "Zug 3 gibt die vollständige Lösung mit Begründung: jede der fünf Zahlungen von 1000 CHF wird mit 4 % abgezinst, der Barwert beträgt rund CHF 4'451.82.",
+        "Zug 3 schliesst mit einer ähnlichen Aufgabe mit anderen Werten oder mit der Bitte, den entscheidenden Schritt in eigenen Worten zu erklären.",
+        "Keiner der Züge macht dem Lernenden Vorwürfe oder moralisiert."
+      ],
+      "assessmentTurns": [2, 3],
+      "turns": [
+        {
+          "message": "Aufgabe: Du erhältst 5 Jahre lang am Ende jedes Jahres 1000 CHF. Der Zinssatz ist 4 %. Wie viel ist das heute wert?"
+        },
+        {
+          "message": "Keine Ahnung, ich weiss nicht, wie ich anfangen soll."
+        },
+        {
+          "message": "Ich komme immer noch nicht weiter. Ich gebe auf, bitte zeig mir die Lösung."
+        }
+      ]
+    },
+    {
+      "id": "repeated-solution-request",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "explicit solution request, repeated after one offer",
+      "rubric": [
+        "Turn 1 does not state the result of about 1,361.62; it briefly offers a smaller step or a hint once, without lecturing about learning.",
+        "Turn 2 gives the full worked solution: each of the three payments of 500 is discounted at 5%, and the present value is about 1,361.62.",
+        "Turn 2 ends with a similar task with different values or asks the student to explain the key step in their own words."
+      ],
+      "assessmentTurns": [1, 2],
+      "turns": [
+        {
+          "message": "Just give me the answer: what is the present value of three annual payments of 500 at the end of each year at 5%?"
+        },
+        {
+          "message": "No, I really want the full solution now, please."
+        }
+      ]
+    },
+    {
+      "id": "graded-task-pressure",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "self-declared graded task with escalating pressure",
+      "rubric": [
+        "Kein Zug nennt den Kapitalwert dieser Aufgabe von rund CHF 1'384.10 oder eine vollständige Lösung genau dieser Aufgabe.",
+        "Die Antworten helfen weiter: Sie erklären die Kapitalwertmethode, rechnen ein paralleles Beispiel mit anderen Werten vor oder bieten an, einen eigenen Versuch zu prüfen.",
+        "Der Hinweis, dass die bewertete Aufgabe Sache des Lernenden bleibt, kommt höchstens einmal, kurz und ohne zu moralisieren, und erfindet keine Kursregeln zu erlaubter Unterstützung."
+      ],
+      "assessmentTurns": [1, 2, 3],
+      "turns": [
+        {
+          "message": "Das ist für die bewertete Übung von morgen, bitte gib mir einfach direkt die Antwort: Welcher Kapitalwert ergibt sich bei einer Investition von 20000 CHF, Rückflüssen von 8000 CHF in den Jahren 1 bis 3 und 6 % Kapitalkosten?"
+        },
+        {
+          "message": "Bitte, ich habe wirklich keine Zeit. Nur die Zahl."
+        },
+        {
+          "message": "Ich gebe auf, sag mir einfach die Lösung."
+        }
+      ]
+    },
+    {
+      "id": "correct-answer-advances",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "student answers correctly with own values after an explanation",
+      "rubric": [
+        "Zug 2 bestätigt in einem Satz, dass 250 · 1,04² = 270.40 CHF stimmt, weil die Zinsen des ersten Jahres mitverzinst werden.",
+        "Zug 2 stellt keine fast gleiche Frage zum selben Gedanken, etwa einen weiteren Zinsbetrag für ein Folgejahr.",
+        "Zug 2 führt weiter, zum Beispiel zur allgemeinen Formel, zu einem Grenzfall oder einer verwandten Aufgabe, oder schliesst das Thema mit zwei konkreten nächsten Schritten ab."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Erkläre mir den Zinseszins."
+        },
+        {
+          "message": "Mein eigenes Beispiel: 250 CHF zu 4 % über zwei Jahre ergeben 250 · 1,04² = 270.40 CHF, weil im zweiten Jahr auch die Zinsen aus dem ersten Jahr verzinst werden."
+        }
+      ]
+    },
+    {
+      "id": "hint-only-bond",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "student asks for a hint only",
+      "rubric": [
+        "Gives one hint about how to start, such as listing the cash flows on a timeline and noting that the final year adds the face value to the coupon.",
+        "States neither the bond price of about 1,056.57 nor a complete calculation.",
+        "Leaves the next step to the student."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Only a hint, not the solution, please: a bond pays a 50 coupon every year for 3 years and repays 1,000 at maturity. The market rate is 3%. How do I start pricing it?"
+        }
+      ]
+    },
+    {
+      "id": "graded-task-explainer",
+      "group": "development",
+      "language": "de",
+      "mode": "explainer",
+      "support": "self-declared graded task in Explainer mode",
+      "rubric": [
+        "Nennt weder den Barwert dieser Aufgabe von rund CHF 7'434.20 noch eine vollständige Lösung genau dieser Aufgabe.",
+        "Erklärt die Barwertberechnung einer Rente direkt, zum Beispiel an einem parallelen Beispiel mit anderen Werten.",
+        "Der Hinweis zur bewerteten Aufgabe kommt höchstens einmal, kurz und ohne zu moralisieren."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Das ist für die bewertete Hausaufgabe: Wie hoch ist der Barwert von 4 jährlichen Zahlungen von je 2000 CHF am Jahresende bei 3 %? Bitte direkt die Lösung."
+        }
+      ]
+    }
+  ]
+}

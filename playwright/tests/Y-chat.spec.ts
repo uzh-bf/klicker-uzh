@@ -3298,7 +3298,7 @@ test.describe('Chatbot Source Citations', () => {
     })
   }
 
-  test('Sources section renders one card per unique source in first-appearance order with a count heading', async ({
+  test('Sources section renders one card per unique source in first-appearance order', async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 })

@@ -165,6 +165,12 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
+import {
+  createShowExplanationTool,
+  explanationAttemptsLeft,
+  isExplanationToolEnabled,
+} from '@/src/services/explainerService'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -1505,6 +1511,21 @@ export async function POST(
       })
     }
 
+    // Prototype: interactive explanations validated by the Catalyst explainer
+    // service. Without the service the chat continues in text.
+    const explanationTools: Record<string, any> = {}
+    if (isExplanationToolEnabled(selectedMode)) {
+      try {
+        explanationTools[SHOW_EXPLANATION_TOOL_NAME] =
+          await createShowExplanationTool()
+      } catch (error) {
+        console.warn('Explainer service unavailable; tool not offered', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+    const explanationToolActive = SHOW_EXPLANATION_TOOL_NAME in explanationTools
+
     let chatTools: Record<string, any> = {
       ...(mcpTools || {}),
       ...responseExampleTools,
@@ -1535,7 +1556,10 @@ export async function POST(
     const toolNames = Object.keys(chatTools)
     // The calculator is added after the system prompt inputs are fixed, so
     // course grounding and citation rules still see only course tools.
-    const modelTools = withCalculatorTool(selectedMode, chatTools)
+    const modelTools = {
+      ...withCalculatorTool(selectedMode, chatTools),
+      ...explanationTools,
+    }
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -1648,7 +1672,11 @@ export async function POST(
       )
     )
 
-    const maxOutputTokens = selectedModelConfig.maxOutputTokens
+    // One explanation is about 5-6k output tokens, more than the registry's
+    // 4096 cap; the prototype lifts the cap only while the tool is offered.
+    const maxOutputTokens = explanationToolActive
+      ? Math.max(selectedModelConfig.maxOutputTokens ?? 0, 16_384)
+      : selectedModelConfig.maxOutputTokens
 
     const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
       selectedModelConfig,
@@ -2359,6 +2387,13 @@ export async function POST(
                   },
                 }
               : {}),
+            ...(explanationToolActive && !explanationAttemptsLeft(steps)
+              ? {
+                  activeTools: Object.keys(modelTools).filter(
+                    (name) => name !== SHOW_EXPLANATION_TOOL_NAME
+                  ),
+                }
+              : {}),
             messages: [
               ...initialMessages,
               ...(docQueryToolName && stepNumber > 0
@@ -2375,12 +2410,15 @@ export async function POST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        stopWhen: isStepCount(5),
+        // Each explanation attempt is a step; three attempts plus retrieval
+        // and the closing text need more than the usual five.
+        stopWhen: isStepCount(explanationToolActive ? 7 : 5),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
         experimental_transform: providerRefusalTransform(
           providerRefusalDeflection(
             turnSettings.replyLanguage ?? null,
+            lastMessage?.role === 'user' ? lastMessage.content : null,
             req.cookies.get('NEXT_LOCALE')?.value
           ),
           (finish) =>
