@@ -488,6 +488,60 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
+  it('requires the interactive-explanations flag to turn the setting on', async () => {
+    const bot = await seed()
+    expect(bot.interactiveExplanationsEnabled).toBe(false)
+    const input = {
+      modelPolicy: {
+        modelSelection: false,
+        allowedModelIds: ['auto'],
+        interactiveExplanationsEnabled: true,
+      },
+    }
+
+    await expect(
+      service.saveChatbotRevision(
+        { chatbotId: bot.id, expectedRevisionVersion: 0, input },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    expect((await read(bot.id)).draftConfig).toBeNull()
+
+    const flagged: ContextWithUser = {
+      ...owner,
+      featureFlags: {
+        ...owner.featureFlags,
+        isEnabled: (key: string) =>
+          key === 'ai-beta' || key === 'interactive-explanations',
+      } as NonNullable<ContextWithUser['featureFlags']>,
+    }
+    const staged = await service.saveChatbotRevision(
+      { chatbotId: bot.id, expectedRevisionVersion: 0, input },
+      flagged
+    )
+    expect(staged?.authoringRevision).toMatchObject({
+      interactiveExplanationsEnabled: true,
+    })
+
+    // Turning it off never needs the flag.
+    const disabled = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: {
+          modelPolicy: {
+            ...input.modelPolicy,
+            interactiveExplanationsEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+    expect(disabled?.authoringRevision).toMatchObject({
+      interactiveExplanationsEnabled: false,
+    })
+  })
+
   it('serializes competing saves and freezes pending content', async () => {
     const bot = await seed()
     const results = await Promise.allSettled(

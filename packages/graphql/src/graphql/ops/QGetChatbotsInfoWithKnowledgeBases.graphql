@@ -39,6 +39,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     }
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     knowledgeGraphVisible
     knowledgeGraphRetrievalEnabled
     allowedModelIds
