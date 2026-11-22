@@ -1,7 +1,7 @@
 /**
  * Shared styling for the icon buttons in the chat's chrome: header, sidebar
  * header, floating framed controls and the embedded toolbar (new chat, sidebar
- * toggle, fullscreen, knowledge graph, close). One square ghost button keeps
+ * toggle, open in new tab, knowledge graph, close). One square ghost button keeps
  * these controls visually identical wherever they appear. Touch keeps the
  * 44px target; mouse users get the compact 32px size.
  *
