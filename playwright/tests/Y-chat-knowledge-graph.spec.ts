@@ -565,7 +565,16 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       })
     )
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph?embed=true`)
+    // The graph panel is only enabled outside embed mode (showSidebar is
+    // false when embedded), so the mobile flow runs on the regular route.
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph`)
+    // A fresh context always meets the chatbot's disclaimer gate; accept it
+    // like openSuggestionGraph does, or the workspace never loads the graph.
+    const accept = page.getByTestId('chat-disclaimer-accept')
+    const search = page.getByTestId('knowledge-graph-search')
+    await expect(search.or(accept)).toBeVisible()
+    if (await accept.isVisible()) await accept.click()
+    await expect(search).toBeVisible()
     const input = page.getByTestId('chat-composer-input')
     // On a phone the open map replaces the conversation instead of stacking.
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
@@ -587,7 +596,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     for (const node of nodes) expect(draft).toContain(node.displayLabel)
     expect(draft).toContain('connects')
     expect(sent).toEqual([])
-    expect(page.url()).toContain('?embed=true')
+    expect(page.url()).toContain('/graph')
   })
 
   test('closing the panel cancels its debounce and drops late suggestions', async ({

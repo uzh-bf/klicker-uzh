@@ -6,13 +6,6 @@ import type {
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import {
-  canonicalElementGenerationJson,
-  elementGenerationArtifactPayload,
-  elementGenerationOutputBlobName,
-  loadReadyElementGenerationGraph,
-  normalizeElementGenerationIdempotencyKey,
-} from './elementGenerationProvider.js'
-import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
   isFlashcardRetrySpend,
@@ -25,6 +18,13 @@ import {
   acquireElementGenerationLease,
   releaseElementGenerationLease,
 } from './elementGenerationLease.js'
+import {
+  canonicalElementGenerationJson,
+  elementGenerationArtifactPayload,
+  elementGenerationOutputBlobName,
+  loadReadyElementGenerationGraph,
+  normalizeElementGenerationIdempotencyKey,
+} from './elementGenerationProvider.js'
 import {
   parseFlashcardGenerationResult,
   parseTerminalFlashcardGenerationBank,
@@ -40,14 +40,14 @@ import {
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
 import {
+  isFlashcardGenerationRuntime,
+  requireFlashcardGenerationRuntime,
+} from './flashcardGenerationRuntime.js'
+import {
   claimIncompleteFlashcardPublication,
   correlateFlashcardPublication,
   recoverUndispatchedFlashcardPublication,
 } from './flashcardPublicationLifecycle.js'
-import {
-  isFlashcardGenerationRuntime,
-  requireFlashcardGenerationRuntime,
-} from './flashcardGenerationRuntime.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -749,7 +749,10 @@ async function synchronizeLeasedBuild(
               'ARTIFACT_INVALID',
               'Flashcard-generation output could not be validated'
             )
-    console.error('[element-generation] Flashcard synchronization failed')
+    ctx.log.error(
+      { event: 'flashcard_generation.sync.failed' },
+      '[element-generation] Flashcard synchronization failed'
+    )
     await ctx.prisma.elementGenerationBuild.updateMany({
       where: { id: build.id, syncLeaseOwner: leaseOwner },
       data: {
@@ -865,5 +868,5 @@ export async function getFlashcardGenerationCapabilities(ctx: ContextWithUser) {
   }
 }
 
-export { setGeneratedFlashcardDecision, updateGeneratedFlashcardDraft }
 export { saveGeneratedFlashcards } from './flashcardGenerationPersistence.js'
+export { setGeneratedFlashcardDecision, updateGeneratedFlashcardDraft }

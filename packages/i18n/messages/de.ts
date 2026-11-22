@@ -1,4 +1,7 @@
-export default {
+import adaptive from '@klicker-uzh/adaptive-i18n/messages/de'
+import { mergeAdaptiveMessages } from '#merge-adaptive-messages'
+
+const baseMessages = {
   chat: {
     courseImages: {
       pixelsProvided: 'Bildpixel an das Modell übermittelt',
@@ -6801,3 +6804,5 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
   },
 }
+
+export default mergeAdaptiveMessages(baseMessages, adaptive)
