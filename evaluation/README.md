@@ -183,7 +183,9 @@ legacy `max_tokens`, hosted tools, multimodal input, multiple completions,
 provider price overrides and redirects fail closed. Function tools execute in
 the application; their separate paid egress must be qualified independently.
 The guard accepts only the exact two true `cache` bypass flags emitted by the
-application, then removes this proxy-only field before forwarding. A nonblank
+application, then removes this proxy-only field before forwarding. It likewise
+accepts the default route's `metadata` only as a single nonblank `session_id`
+of at most 64 characters and removes it before forwarding. A nonblank
 native `prompt_cache_key` of at most 64 characters is preserved. Other cache
 objects and unknown request fields remain unqualified.
 
