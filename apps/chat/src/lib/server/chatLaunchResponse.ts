@@ -38,8 +38,9 @@ export function chatLaunchResponse(
   transport?: LaunchTransport
 ) {
   const path = destination.pathname + destination.search
+  // Escape script-tag delimiters before embedding JSON in the HTML response.
   const scriptValue = (value: string) =>
-    JSON.stringify(value).replaceAll('<', '\\u003c')
+    JSON.stringify(value).replace(/</g, '\\u003c')
   const guestKey = scriptValue(CHAT_GUEST_SESSION_STORAGE_KEY)
   const embedKey = scriptValue(PWA_CHAT_EMBED_SESSION_STORAGE_KEY)
   const store = transport
