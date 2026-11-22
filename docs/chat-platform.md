@@ -1370,8 +1370,8 @@ this order:
    [Student answer style and tone](#student-answer-style-and-tone));
 6. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-7. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
-   integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+7. fixed course-scope, evidence, tool/conversation privacy, assessed-work, safety, non-disclosure,
+   and epistemic integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
 8. fixed Markdown, inline/display mathematics, chemistry and biology notation, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
 9. the conditional citation policy when a `doc_query`-style tool is available; and

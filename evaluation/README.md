@@ -85,8 +85,9 @@ real-provider qualification, permission to transmit source material or a paid ru
 
 The app owns the trajectory-capture importer and the synthetic
 [Explainer compression regression and control](data/explainer-compression/README.md),
-the [Explainer closing-check corpus](data/explainer-check/README.md)
-and the [Tutor first-turn explanation-check corpus](data/tutor-first-turn-explain-check/README.md).
+the [Explainer closing-check corpus](data/explainer-check/README.md),
+the [Tutor first-turn explanation-check corpus](data/tutor-first-turn-explain-check/README.md)
+and the [Tutor task-support corpus](data/tutor-task-support/README.md).
 These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
