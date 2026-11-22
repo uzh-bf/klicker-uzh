@@ -500,8 +500,10 @@ async function createChatbot(tx) {
       creditResetPeriod: 'WEEKLY',
       creditResetAmount: 50,
       creditMaxCredits: LOCAL_CREDIT_BALANCE,
-      modelSelection: false,
-      allowedModelIds: ['auto'],
+      // Auto stays the default; direct GPT-6 Luna isolates the router and is
+      // the BASE model that guarded evaluations select.
+      modelSelection: true,
+      allowedModelIds: ['auto', 'gpt-6-luna'],
       status: 'PUBLISHED',
       publishedAt: new Date(),
     },
