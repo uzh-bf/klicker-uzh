@@ -360,6 +360,9 @@ describe('chat-api Slice 2 tracer', () => {
     expect(text).toContain('"type":"finish"')
     expect(text).toContain('"creditsUsed":0.0000052')
     expect(dependencies.engine.chat).toHaveBeenCalledTimes(1)
+    expect(
+      vi.mocked(dependencies.engine.chat).mock.calls[0]?.[1]?.mcpExecutionToken
+    ).toBeUndefined()
     expect(dependencies.finalizeAssistantTurn).toHaveBeenCalledTimes(1)
   })
 

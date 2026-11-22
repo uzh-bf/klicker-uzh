@@ -153,10 +153,9 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       )
 
     if (mode === 'direct') expect(api.hostname).not.toBe(origin.hostname)
-    if (guest)
-      expect(
-        await prisma.participantAccount.count({ where: { ssoId: guestSsoId } })
-      ).toBe(0)
+    expect(
+      await prisma.participantAccount.count({ where: { ssoId: guestSsoId } })
+    ).toBe(0)
     const passwordHash = await bcrypt.hash(randomUUID(), 10)
     const now = Date.now()
     await prisma.$transaction(async (tx) => {
@@ -198,7 +197,25 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       })
     })
     try {
-      if (guest) await setLtiProbeCookie(page)
+      await setLtiProbeCookie(page)
+      if (!guest) {
+        const guestUrl = await launchUrl('LTI guest', {
+          chatbotId,
+          courseId,
+          participantId,
+          subject,
+        })
+        const [priorGuestThreads] = await Promise.all([
+          apiResponse('/threads', 'GET'),
+          openLaunch(page, guestUrl),
+        ])
+        await assertTransport(priorGuestThreads, origin, api)
+        expect(
+          (await page.context().cookies(origin.origin)).some(
+            ({ name }) => name === 'chat_participant_token'
+          )
+        ).toBe(true)
+      }
       const url = await launchUrl(launch, {
         chatbotId,
         courseId,
@@ -228,6 +245,13 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       )
       expect(cookie?.domain).toBe(origin.hostname)
       expect(cookie?.httpOnly).toBe(true)
+      if (!guest) {
+        expect(
+          (await page.context().cookies(origin.origin)).some(
+            ({ name }) => name === 'chat_participant_token'
+          )
+        ).toBe(false)
+      }
 
       const button = page.locator(
         launch === 'LTI guest'
@@ -266,13 +290,12 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       )
     } finally {
       await prisma.$transaction(async (tx) => {
-        if (guest) {
-          const owned = await tx.participantAccount.findUnique({
-            where: { ssoId: guestSsoId },
-            select: { participantId: true },
-          })
-          if (owned)
-            await tx.participant.delete({ where: { id: owned.participantId } })
+        const owned = await tx.participantAccount.findUnique({
+          where: { ssoId: guestSsoId },
+          select: { participantId: true },
+        })
+        if (owned) {
+          await tx.participant.delete({ where: { id: owned.participantId } })
         }
         await tx.participant.delete({ where: { id: participantId } })
         // The temporary owner owns only this course and chatbot.

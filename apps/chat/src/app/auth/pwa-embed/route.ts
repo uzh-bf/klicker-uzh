@@ -132,6 +132,12 @@ export async function GET(req: NextRequest) {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1'
 
+  response.cookies.set('chat_participant_token', '', {
+    httpOnly: true,
+    ...cookieSecurityOptions({ isProduction }),
+    path: '/',
+    maxAge: 0,
+  })
   response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, sessionToken, {
     httpOnly: true,
     ...cookieSecurityOptions({ isProduction }),
