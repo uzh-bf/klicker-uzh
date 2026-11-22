@@ -28,6 +28,8 @@ type KnowledgeGraphDetailsProps = {
   edge?: KnowledgeGraphEdge
   edgeEndpoints?: { source: string; target: string }
   isExpanding: boolean
+  /** Every connection of the selected concept is already on the canvas. */
+  allConnectionsShown?: boolean
   onClose: () => void
   onExpand: (nodeId: string) => void
   labels: KnowledgeGraphDetailsLabels
@@ -159,6 +161,7 @@ export function KnowledgeGraphDetails({
   edge,
   edgeEndpoints,
   isExpanding,
+  allConnectionsShown = false,
   onClose,
   onExpand,
   labels,
@@ -285,13 +288,15 @@ export function KnowledgeGraphDetails({
             <button
               type="button"
               onClick={() => onExpand(node.id)}
-              disabled={isExpanding}
-              className="min-h-11 w-full rounded-full border border-[#0028A5] bg-[#0028A5] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+              disabled={isExpanding || allConnectionsShown}
+              className="min-h-11 w-full rounded-full border border-[#0028A5] bg-[#0028A5] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-60"
               data-cy="knowledge-graph-expand"
             >
               {isExpanding
                 ? labels.loadingConnections
-                : labels.expandConnections}
+                : allConnectionsShown
+                  ? labels.allConnectionsShown
+                  : labels.expandConnections}
             </button>
           </div>
         )}

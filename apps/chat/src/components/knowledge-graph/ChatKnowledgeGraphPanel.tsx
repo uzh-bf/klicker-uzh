@@ -230,7 +230,12 @@ export function ChatKnowledgeGraphPanel({
       data-cy="chat-graph-layout"
     >
       <div
-        className="relative flex min-h-0 min-w-0 flex-1 flex-col"
+        className={twMerge(
+          'relative flex min-h-0 min-w-0 flex-1 flex-col',
+          // Below the split breakpoint the graph replaces the conversation:
+          // a stacked graph and chat leave neither usable.
+          open && 'hidden lg:flex'
+        )}
         data-cy="chat-conversation-pane"
       >
         <ChatGraphConceptContext.Provider value={conceptContext}>
@@ -277,7 +282,7 @@ export function ChatKnowledgeGraphPanel({
             fullscreen
               ? 'fixed inset-0 z-50'
               : twMerge(
-                  'relative order-first h-[45%] min-h-60 shrink-0 border-b lg:order-last lg:h-auto lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem] lg:border-b-0 lg:border-l',
+                  'relative flex-1 lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem] lg:flex-none lg:shrink-0 lg:border-l',
                   panelWidth !== undefined &&
                     'lg:w-[var(--chat-graph-panel-width)] lg:min-w-0 lg:max-w-none'
                 )
