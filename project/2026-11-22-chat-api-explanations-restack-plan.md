@@ -31,3 +31,5 @@ The target added a lecturer-controlled setting for new interactive explanations.
 The target also added structured feedback cards. Preserve the legacy tool and renderer and use one text projection for saved feedback in the browser and eLearning history validation. Keep the feedback prompt beside the shared host templates. Use the production-build Playwright launcher to verify both signed launch routes. Test-owned guest cleanup follows the unique fixture course across development and production test builds.
 
 Keep the target's collapsed trace for rejected drafts and its calculator availability in Explainer through the shared calculator implementation. Verify the rejected trace and the usable explanation separately. Close the test page before deleting its synthetic course and accounts.
+
+Preserve the target's status-only calculator label in the shared Chat renderer and keep the updated course policy in the shared prompt assets. Verify that a calculator call succeeds while the label exposes no arguments or result in either browser route after reload.

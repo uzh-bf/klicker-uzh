@@ -12,16 +12,17 @@ scorer or judge configuration.
 The case `id` prefix encodes the arm, because the corpus format rejects extra
 fields:
 
-| Prefix       | Cases | Expected behavior                                                                  |
-| ------------ | ----: | ---------------------------------------------------------------------------------- |
-| `task-`      |     2 | Task without an attempt: method and first step, no final result                    |
-| `attempt-`   |     1 | Wrong attempt: name the error, one hint, invite a retry, no correct result yet     |
-| `stuck-`     |     1 | Still stuck: raise support instead of repeating; reveal the solution on a give-up  |
-| `repeated-`  |     1 | Explicit solution request: one smaller-step offer, then the solution on repetition |
-| `graded-`    |     2 | Self-declared graded task: method or parallel example, never that task's answer    |
-| `correct-`   |     1 | Correct own answer: confirm briefly and move forward, no near-identical question   |
-| `hint-only-` |     1 | Explicit hint request: one hint, no result                                         |
-| `numeric-`   |     2 | Explainer worked example or answer check: every stated number is exact             |
+| Prefix           | Cases | Expected behavior                                                                  |
+| ---------------- | ----: | ---------------------------------------------------------------------------------- |
+| `task-`          |     2 | Task without an attempt: method and first step, no final result                    |
+| `attempt-`       |     1 | Wrong attempt: name the error, one hint, invite a retry, no correct result yet     |
+| `stuck-`         |     1 | Still stuck: raise support instead of repeating; reveal the solution on a give-up  |
+| `repeated-`      |     1 | Explicit solution request: one smaller-step offer, then the solution on repetition |
+| `graded-`        |     2 | Self-declared graded task: method or parallel example, never that task's answer    |
+| `correct-`       |     1 | Correct own answer: confirm briefly and move forward, no near-identical question   |
+| `hint-only-`     |     1 | Explicit hint request: one hint, no result                                         |
+| `numeric-`       |     2 | Explainer worked example or answer check: every stated number is exact             |
+| `exam-practice-` |     2 | Exam preparation is not assessed work: the Explainer gives the full result         |
 
 All cases use `group: development` and supply only synthetic finance tasks.
 None needs retrieved course material to be assessable. Each rubric names the
@@ -54,9 +55,10 @@ node evaluation/run-tutor-trajectories.mjs \
 ```
 
 Repeat with `--arm candidate` after restarting the app on v2. One repeat
-submits 17 turns per arm. The `numeric-` cases run in Explainer mode, so the
-Tutor contract does not change them; they check that the Explainer computes
-its numbers with the `calculate` tool. Run it once with GPT-6 Luna and once with Auto, since
+submits 19 turns per arm. The `numeric-` and `exam-practice-` cases run in
+Explainer mode, so the Tutor contract does not change them; they check that
+the Explainer computes its numbers with the `calculate` tool and does not
+treat exam preparation as graded work. Run it once with GPT-6 Luna and once with Auto, since
 course chatbots use either. A paid capture still needs its own approval and
 spend cap.
 

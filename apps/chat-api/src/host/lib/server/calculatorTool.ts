@@ -1,11 +1,12 @@
 import { jsonSchema, type ToolSet, tool } from 'ai'
+import { CALCULATOR_TOOL_NAME } from '../calculator.js'
 import {
   REPLY_LANGUAGE_REMINDER,
   type ReplyLanguageReminder,
 } from './languageInstructions.js'
 import { renderPromptTemplate } from './promptTemplates.js'
 
-export const CALCULATOR_TOOL_NAME = 'calculate'
+export { CALCULATOR_TOOL_NAME }
 
 const MAX_EXPRESSION_LENGTH = 500
 const MAX_EXPRESSIONS = 20
