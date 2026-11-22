@@ -35,9 +35,13 @@ an ordinary practice task does reach its solution.
 
 ## Before/after comparison
 
-Capture the `baseline` arm from a chat app running the base branch and the
-`candidate` arm from a chat app running the change, against the same model,
-with one shared version-2 budget file:
+Both arms run on the same build. Capture the `baseline` arm from a chat app
+started with `CHAT_TUTOR_PROMPT_VERSION=v1` (the earlier Tutor contract) and
+the `candidate` arm after restarting it without that variable (Tutor v2),
+against the same model, with one shared version-2 budget file. The assessed-work
+rule in the shared course policy applies to both arms, so the comparison
+isolates the Tutor contract; the Explainer case checks that shared rule in
+both arms.
 
 ```bash
 node evaluation/run-tutor-trajectories.mjs \
@@ -47,7 +51,7 @@ node evaluation/run-tutor-trajectories.mjs \
   --budget-file "$KLICKER_EVAL_BUDGET_FILE"
 ```
 
-Repeat with `--arm candidate` after switching the running app. One repeat
+Repeat with `--arm candidate` after restarting the app on v2. One repeat
 submits 15 turns per arm. Run it once with GPT-6 Luna and once with Auto, since
 course chatbots use either. A paid capture still needs its own approval and
 spend cap.
