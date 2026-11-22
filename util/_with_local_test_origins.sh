@@ -16,6 +16,16 @@ export API_DOMAIN="$COOKIE_DOMAIN"
 export CHAT_GUEST_SEED='playwright-chat-guest-seed'
 export APP_CHAT_GUEST_SECRET='playwright-chat-guest-secret'
 
+# Production test builds require the eLearning verifier to receive an explicit
+# secret. Match the grant issued with the local test app's signing seed.
+if [ -z "${ELEARNING_CHAT_HANDOFF_SECRET:-}" ] && [ -n "${APP_SECRET:-}" ]; then
+	ELEARNING_CHAT_HANDOFF_SECRET="$(node -e '
+		const { createHmac } = require("node:crypto")
+		process.stdout.write(createHmac("sha256", process.env.APP_SECRET).update("elearning-chat-handoff").digest("hex"))
+	')"
+	export ELEARNING_CHAT_HANDOFF_SECRET
+fi
+
 export APP_ORIGIN_API='http://127.0.0.1:3000'
 export APP_ORIGIN_PWA='http://127.0.0.1:3001'
 export APP_ORIGIN_MANAGE='http://127.0.0.1:3002'

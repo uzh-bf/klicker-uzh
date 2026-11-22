@@ -63,7 +63,10 @@ async function launchUrl(
       .setIssuedAt()
       .setExpirationTime('120s')
       .sign(
-        new TextEncoder().encode(deriveSecret(secret, 'elearning-chat-handoff'))
+        new TextEncoder().encode(
+          process.env.ELEARNING_CHAT_HANDOFF_SECRET ||
+            deriveSecret(secret, 'elearning-chat-handoff')
+        )
       )
     const url = new URL('/auth/elearning', chatUrl())
     url.search = new URLSearchParams({
@@ -134,15 +137,10 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
     const participantId = randomUUID()
     const ownerId = randomUUID()
     const subject = randomUUID()
-    const guestSeed = deriveSecret(
-      process.env.APP_SECRET ?? APP_SECRET,
-      'chat-guest-seed'
-    )
-    const guestSsoId =
-      'chat-guest:' +
-      createHmac('sha256', guestSeed)
-        .update(`${subject}:${courseId}`)
-        .digest('base64url')
+    const guestAccounts = {
+      type: 'lti_guest',
+      participant: { participations: { some: { courseId, isActive: false } } },
+    }
     const guest = launch !== 'PWA embed'
     const chatbotApiPath = `/api/chatbots/${chatbotId}`
     const apiResponse = (
@@ -156,9 +154,6 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       )
 
     if (mode === 'direct') expect(api.hostname).not.toBe(origin.hostname)
-    expect(
-      await prisma.participantAccount.count({ where: { ssoId: guestSsoId } })
-    ).toBe(0)
     const passwordHash = await bcrypt.hash(randomUUID(), 10)
     const now = Date.now()
     await prisma.$transaction(async (tx) => {
@@ -200,6 +195,9 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       })
     })
     try {
+      expect(
+        await prisma.participantAccount.count({ where: guestAccounts })
+      ).toBe(0)
       await setLtiProbeCookie(page)
       if (!guest) {
         const guestUrl = await launchUrl('LTI guest', {
@@ -267,18 +265,21 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       ])
       await assertTransport(response, origin, api)
       const { id: threadId } = await response.json()
-      const owner = guest
-        ? await prisma.participantAccount.findUnique({
-            where: { ssoId: guestSsoId },
+      const owners = guest
+        ? await prisma.participantAccount.findMany({
+            where: guestAccounts,
             select: { participantId: true },
           })
-        : { participantId }
-      expect(Boolean(owner?.participantId)).toBe(true)
+        : [{ participantId }]
+      expect(owners).toHaveLength(1)
       const thread = await prisma.chatThread.findUnique({
         where: { id: threadId },
         select: { participantId: true, chatbotId: true },
       })
-      expect(thread).toEqual({ participantId: owner?.participantId, chatbotId })
+      expect(thread).toEqual({
+        participantId: owners[0]?.participantId,
+        chatbotId,
+      })
 
       await expect(page).toHaveURL((url) =>
         url.pathname.endsWith(`/threads/${threadId}`)
@@ -336,13 +337,15 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       }
     } finally {
       await prisma.$transaction(async (tx) => {
-        const owned = await tx.participantAccount.findUnique({
-          where: { ssoId: guestSsoId },
+        const owned = await tx.participantAccount.findMany({
+          where: guestAccounts,
           select: { participantId: true },
         })
-        if (owned) {
-          await tx.participant.delete({ where: { id: owned.participantId } })
-        }
+        await tx.participant.deleteMany({
+          where: {
+            id: { in: owned.map(({ participantId }) => participantId) },
+          },
+        })
         await tx.participant.delete({ where: { id: participantId } })
         // The temporary owner owns only this course and chatbot.
         await tx.user.delete({ where: { id: ownerId } })
