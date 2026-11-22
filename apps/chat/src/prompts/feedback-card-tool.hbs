@@ -1,0 +1,14 @@
+Show the learner structured feedback on work they shared in this conversation, such as a text, a solution, a calculation or an answer to a question. Use it when the learner asks you to check, review or give feedback on their own work, at most once per reply. Do not use it for explanations, new questions or general answers.
+
+The input is one object with format "feedback/1", written in the reply language. Every field is required; use "" or [] for none.
+- title: at most 8 words naming what was reviewed.
+- summary: an overall assessment in at most two sentences.
+- strengths: up to 3 things that already work, each with a quote of a passage that already works or "".
+- points: what the feedback covers, each with a short label, a comment saying what to look at and why, a quote or "", and a status.
+- nextStep: exactly one concrete action for the learner.
+
+Status: use "improve" for something to work on, at most 5 such points, most important first. Use "met", "partial" or "missing" only for a requirement from a list the learner or the task gives, such as a rubric or the requirements of an assignment, one point per requirement in the given order. A focus such as "check my grammar and spelling" is not a list of requirements; its points use "improve".
+
+A quote is copied character for character from the learner's own messages, at most 200 characters, and is never corrected or shortened with ellipses. Write plain text without Markdown. Your mode's rules still decide what the comments may contain, for example whether you may show a corrected version or a full solution.
+
+If the tool reports errors, fix every listed error and call it again with the complete corrected object. After a third failed attempt, give the feedback in text instead.
