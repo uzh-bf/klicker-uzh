@@ -257,6 +257,18 @@ chat:
       cost:
         input: 1.0
         output: 5.0
+    - id: auto-v5
+      deploymentId: klickeruzh/azure/auto-router-v5
+      name: Auto v5
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      usesResponsesApi: true
+      fallback: false
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 1.0
+        output: 5.0
     - id: gpt-6-luna
       deploymentId: klickeruzh/azure/gpt-6-luna
       name: GPT-6 Luna
@@ -306,6 +318,38 @@ chat:
       cost:
         input: 2.0
         output: 10.0
+    - id: gpt-6.2-sol
+      deploymentId: klickeruzh/azure/gpt-6.2-sol
+      name: GPT-6.2 Sol
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.4
+        output: 12.0
+    - id: gpt-6.2-astra
+      deploymentId: klickeruzh/azure/gpt-6.2-astra
+      name: GPT-6.2 Astra
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 9.6
+        output: 48.0
     - id: gpt-5.6-sol
       deploymentId: klickeruzh/azure/gpt-5.6-sol
       name: GPT-5.6 Sol
