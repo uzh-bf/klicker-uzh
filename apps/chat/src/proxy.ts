@@ -183,6 +183,9 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/auth/lti') ||
     pathname.startsWith('/auth/pwa-embed') ||
+    // The new-tab handoff verifies its own signed token; the new tab has no
+    // chat session until the route sets one.
+    pathname.startsWith('/auth/handoff') ||
     // The eLearning handoff is an unauthenticated entrypoint: the route
     // verifies its own signed grant, and the arriving iframe carries no chat
     // session yet, so the identity gate must not divert it to /noLogin.

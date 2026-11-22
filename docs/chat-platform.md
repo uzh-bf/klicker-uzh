@@ -1029,6 +1029,21 @@ its LTI frames. iPhone Safari has no element fullscreen, so the control is
 absent there. While fullscreen is active the browser consumes Escape to leave
 it, so an open dialog does not receive that key press.
 
+`OpenInNewTabButton` opens the framed chatbot and its active thread in a new
+browser tab. A plain link would open logged out, because the frame's session
+lives in cookies partitioned to the host site (or in sessionStorage). The
+button opens the tab inside the click, then asks
+`POST /api/chatbots/:id/handoff` for a URL carrying a 60-second
+`CHAT_TAB_HANDOFF` token, minted from the caller's resolved identity.
+`/auth/handoff` re-runs `authorizeIdentityForChatbot` and sets a first-party
+session for the new tab: a guest gets a new guest token, and an account gets
+a session scoped to that chatbot, never the full `participant_token`. The
+token is not single-use because Chat has no shared store across replicas; its
+short lifetime and its own scope, which no session check accepts, limit a
+leaked URL. Hosts that sandbox their frame need `allow-popups` and
+`allow-popups-to-escape-sandbox`; upstream OpenOlat does not sandbox its LTI
+frames.
+
 ## Lecturer authoring and publication contract
 
 Administrators review pending publication requests in Manage's `/admin` panel.

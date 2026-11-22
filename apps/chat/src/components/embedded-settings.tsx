@@ -18,6 +18,7 @@ import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 import { FullscreenToggle } from './fullscreen-toggle'
+import { OpenInNewTabButton } from './open-in-new-tab-button'
 import { formatCreditPercent } from './thread-credits-format'
 import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
@@ -369,6 +370,7 @@ export function EmbeddedToolbar() {
         <EmbeddedAnswerPreferences className="order-last w-full sm:order-none sm:w-auto" />
       ) : null}
       <EmbeddedNewConversation className="ml-auto" />
+      <OpenInNewTabButton className="size-8" />
       <FullscreenToggle className="size-8" />
       <EmbeddedCloseButton />
     </div>

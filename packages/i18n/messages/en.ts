@@ -150,6 +150,10 @@ export default {
       enter: 'Fullscreen',
       exit: 'Exit fullscreen',
     },
+    openInNewTab: {
+      label: 'Open in new tab',
+      failed: 'Could not open a new tab. Allow pop-ups and try again.',
+    },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
       participationRequiredDefaultMessage:
