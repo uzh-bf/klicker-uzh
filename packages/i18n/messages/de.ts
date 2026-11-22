@@ -35,6 +35,21 @@ export default {
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
+      nodePromptTutor:
+        'Hilf mir mit Leitfragen, den Begriff «{topic}» selbst zu erarbeiten.',
+      nodePromptExplainer:
+        'Erkläre den Begriff «{topic}» an einem einfachen Beispiel.',
+      edgePromptTutor:
+        'Hilf mir mit Leitfragen herauszufinden, wie «{source}» und «{target}» zusammenhängen («{relationship}»).',
+      edgePromptExplainer:
+        'Erkläre an einem einfachen Beispiel, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      quiz: 'Teste mich dazu',
+      quizNodePrompt: 'Teste mich zum Begriff «{topic}».',
+      quizEdgePrompt:
+        'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      inferredRelation:
+        'Abgeleitet: Keine Stelle in den Kursmaterialien belegt diese Beziehung.',
+      inferredRelationLegend: 'Gestrichelt: abgeleitet, ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },

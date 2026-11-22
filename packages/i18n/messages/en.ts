@@ -35,6 +35,21 @@ export default {
       ask: 'Ask about this',
       showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
+      nodePromptTutor:
+        'Help me work out the concept “{topic}” myself with guiding questions.',
+      nodePromptExplainer:
+        'Explain the concept “{topic}” with a simple example.',
+      edgePromptTutor:
+        'Help me work out how “{source}” and “{target}” are related (“{relationship}”) with guiding questions.',
+      edgePromptExplainer:
+        'Explain with a simple example how “{source}” relates to “{target}” (“{relationship}”).',
+      quiz: 'Quiz me on this',
+      quizNodePrompt: 'Quiz me on the concept “{topic}”.',
+      quizEdgePrompt:
+        'Quiz me on how “{source}” relates to “{target}” (“{relationship}”).',
+      inferredRelation:
+        'Inferred: no passage in the course materials supports this relationship.',
+      inferredRelationLegend: 'Dashed: inferred, no source',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
     },

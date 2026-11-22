@@ -18,6 +18,8 @@ export type KnowledgeGraphDetailsLabels = {
   expandConnections: string
   allConnectionsShown: string
   aiGeneratedNote: string
+  quiz: string
+  inferredRelation: string
   from: string
   to: string
   concepts: string
@@ -53,6 +55,7 @@ export type KnowledgeGraphViewerLabels = {
   resetLayout: string
   legendAriaLabel: string
   conceptTypes: string
+  inferredRelationLegend: string
   shapeCircle: string
   shapeDiamond: string
   shapeRoundedSquare: string
@@ -118,6 +121,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   resetLayout: 'Reset layout',
   legendAriaLabel: 'Concept type legend',
   conceptTypes: 'Concept types',
+  inferredRelationLegend: 'Dashed: inferred, no source',
   shapeCircle: 'circle',
   shapeDiamond: 'diamond',
   shapeRoundedSquare: 'rounded square',
@@ -162,6 +166,9 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     expandConnections: 'Expand connections',
     allConnectionsShown: 'All connections shown',
     aiGeneratedNote: 'AI-generated from course materials. Check the sources.',
+    quiz: 'Quiz me on this',
+    inferredRelation:
+      'Inferred: no passage in the course materials supports this relationship.',
     from: 'From',
     to: 'To',
     concepts: 'Concepts',

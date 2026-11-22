@@ -71,6 +71,7 @@ type KnowledgeGraphViewerProps = {
   overviewNavigation?: boolean
   /** Emits the bounded ask payload for the selected concept or relationship. */
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   /** 'contained' overlays the details pane inside the graph. */
   detailsLayout?: 'sidebar' | 'contained'
   /** Keeps the current zoom and pan when the canvas container resizes. */
@@ -241,6 +242,7 @@ export function KnowledgeGraphViewer({
   searchSuggestions = false,
   overviewNavigation = false,
   onAsk,
+  onQuiz,
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
   focusRequest,
@@ -1455,6 +1457,19 @@ export function KnowledgeGraphViewer({
                     </span>
                   </li>
                 ))}
+                {state.edges.some(
+                  (edge) => edge.sourceReferences.length === 0
+                ) ? (
+                  <li className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="h-0 w-3.5 shrink-0 border-t-2 border-dashed border-[#A3A3A3]"
+                    />
+                    <span className="min-w-0">
+                      {labels.inferredRelationLegend}
+                    </span>
+                  </li>
+                ) : null}
               </ul>
             </div>
           )}
@@ -1694,6 +1709,7 @@ export function KnowledgeGraphViewer({
         }
         onExpand={(nodeId) => expandNodeRef.current(nodeId)}
         onAsk={onAsk}
+        onQuiz={onQuiz}
         askSelection={askSelection}
       />
 

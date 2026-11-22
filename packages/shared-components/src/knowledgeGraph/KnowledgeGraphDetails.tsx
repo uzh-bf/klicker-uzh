@@ -36,6 +36,8 @@ type KnowledgeGraphDetailsProps = {
   allConnectionsShown?: boolean
   onClose: () => void
   onExpand: (nodeId: string) => void
+  /** Starts practice on the selection; absent when the host has no quiz. */
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   labels: KnowledgeGraphDetailsLabels
   /** Emits the bounded ask payload; the control renders only when provided. */
   askSelection?: KnowledgeGraphAskSelection
@@ -171,6 +173,7 @@ export function KnowledgeGraphDetails({
   labels,
   askSelection,
   onAsk,
+  onQuiz,
   layout = 'sidebar',
 }: KnowledgeGraphDetailsProps) {
   if (node === undefined && edge === undefined) {
@@ -235,6 +238,16 @@ export function KnowledgeGraphDetails({
               className={`${ACTION_CLASSES} border-[#0028A5] bg-white text-[#0028A5] hover:bg-[#F5F5FB]`}
             >
               {labels.ask}
+            </button>
+          )}
+          {onQuiz === undefined || askSelection === undefined ? null : (
+            <button
+              type="button"
+              data-cy="knowledge-graph-quiz"
+              onClick={() => onQuiz(askSelection)}
+              className={`${ACTION_CLASSES} border-[#0028A5] bg-white text-[#0028A5] hover:bg-[#F5F5FB]`}
+            >
+              {labels.quiz}
             </button>
           )}
           {node === undefined ? null : (
@@ -304,7 +317,38 @@ export function KnowledgeGraphDetails({
         )}
 
         {edge === undefined ? null : (
-          <div className="space-y-5">
+          <div className="space-y-4">
+            {edgeEndpoints === undefined ? null : (
+              // The relation read as one proposition, so it can be checked
+              // against its sources at a glance.
+              <p
+                className="text-sm leading-6 text-[#121212]"
+                data-cy="knowledge-graph-relation-sentence"
+              >
+                <strong>{edgeEndpoints.source}</strong>
+                {isSymmetricRelationType(edge.relationType) ? (
+                  <>
+                    {' ↔ '}
+                    <strong>{edgeEndpoints.target}</strong> (<em>{heading}</em>)
+                  </>
+                ) : (
+                  <>
+                    {' — '}
+                    <em>{heading}</em>
+                    {' → '}
+                    <strong>{edgeEndpoints.target}</strong>
+                  </>
+                )}
+              </p>
+            )}
+            {edge.sourceReferences.length > 0 ? null : (
+              <p
+                className="rounded-md border border-dashed border-[#A3A3A3] px-2 py-1 text-xs text-[#4C4C4C]"
+                data-cy="knowledge-graph-inferred-relation"
+              >
+                {labels.inferredRelation}
+              </p>
+            )}
             <dl className="grid grid-cols-1 gap-3 text-sm">
               {edgeEndpoints === undefined ? null : (
                 <EdgeEndpoints

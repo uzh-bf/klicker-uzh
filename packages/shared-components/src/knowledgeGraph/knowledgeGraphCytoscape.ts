@@ -107,6 +107,14 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
     },
   },
   {
+    // Relations without a supporting passage are inferred; dashing them keeps
+    // the map from looking more certain than its sources are.
+    selector: 'edge[!hasSource]',
+    style: {
+      'line-style': 'dashed',
+    },
+  },
+  {
     selector: 'edge:selected',
     style: {
       width: 3,
@@ -163,6 +171,7 @@ export function edgeDefinition(
       target: cytoscapeNodeId(edge.target),
       label: edge.label,
       displayLabel,
+      hasSource: edge.sourceReferences.length > 0,
       type: edge.type,
       relationType: edge.relationType,
     },

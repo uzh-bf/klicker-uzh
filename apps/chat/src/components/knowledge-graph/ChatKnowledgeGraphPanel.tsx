@@ -18,6 +18,8 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { resolveSelectedMode } from '@/src/lib/config/modes'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { ChatGraphConceptContext } from './ChatGraphConcepts'
 import { ChatKnowledgeGraphWorkspace } from './ChatKnowledgeGraphWorkspace'
@@ -27,6 +29,7 @@ const PANEL_MIN_WIDTH = 320
 // The conversation keeps at least this width beside a resized graph.
 const CONVERSATION_MIN_WIDTH = 360
 const PANEL_KEYBOARD_STEP = 32
+const QUIZ_MODE = 'quizzer'
 
 function readStoredPanelWidth(): number | undefined {
   try {
@@ -192,6 +195,12 @@ export function ChatKnowledgeGraphPanel({
     handle.addEventListener('pointercancel', onUp)
   }
 
+  const modeOptions = useSettingsStore((state) => state.modeOptions)
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const canQuiz = QUIZ_MODE in modeOptions
+
   const conceptContext = useMemo(
     () =>
       onFocusConcept === undefined
@@ -200,15 +209,43 @@ export function ChatKnowledgeGraphPanel({
     [chatbotId, onFocusConcept]
   )
 
-  function ask(selection: KnowledgeGraphAskSelection) {
-    const prompt =
+  // Each mode gets the wording it is built to answer, so the drafted
+  // question starts the kind of work that mode supports.
+  function askPrompt(selection: KnowledgeGraphAskSelection) {
+    if (selection.kind === 'node') {
+      const values = { topic: selection.label }
+      if (activeMode === 'tutor') return t('nodePromptTutor', values)
+      if (activeMode === 'explainer') return t('nodePromptExplainer', values)
+      return t('nodePrompt', values)
+    }
+    const values = {
+      source: selection.source,
+      target: selection.target,
+      relationship: selection.label,
+    }
+    if (activeMode === 'tutor') return t('edgePromptTutor', values)
+    if (activeMode === 'explainer') return t('edgePromptExplainer', values)
+    return t('edgePrompt', values)
+  }
+
+  function quiz(selection: KnowledgeGraphAskSelection) {
+    setSelectedMode(QUIZ_MODE)
+    draft(
       selection.kind === 'node'
-        ? t('nodePrompt', { topic: selection.label })
-        : t('edgePrompt', {
+        ? t('quizNodePrompt', { topic: selection.label })
+        : t('quizEdgePrompt', {
             source: selection.source,
             target: selection.target,
             relationship: selection.label,
           })
+    )
+  }
+
+  function ask(selection: KnowledgeGraphAskSelection) {
+    draft(askPrompt(selection))
+  }
+
+  function draft(prompt: string) {
     const text = aui.composer.getState().text
     aui.composer.setText(text.trim() ? `${text}\n\n${prompt}` : prompt)
     focusComposerRef.current = true
@@ -391,6 +428,7 @@ export function ChatKnowledgeGraphPanel({
           <ChatKnowledgeGraphWorkspace
             chatbotId={chatbotId}
             onAsk={ask}
+            onQuiz={canQuiz ? quiz : undefined}
             focusRequest={focusRequest}
           />
         </div>
