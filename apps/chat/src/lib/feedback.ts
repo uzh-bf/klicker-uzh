@@ -5,27 +5,25 @@ export const FEEDBACK_FORMAT = 'feedback/1'
 /** Attempts per turn, counting the first call and two repairs. */
 export const MAX_FEEDBACK_ATTEMPTS = 3
 
-/**
- * `improve` marks something to work on; the others report a requirement the
- * learner or the task listed, such as a rubric item.
- */
-export const FEEDBACK_STATUSES = [
-  'improve',
-  'met',
-  'partial',
-  'missing',
-] as const
-export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number]
-export type CriterionStatus = Exclude<FeedbackStatus, 'improve'>
+export const CRITERION_STATUSES = ['met', 'partial', 'missing'] as const
+export type CriterionStatus = (typeof CRITERION_STATUSES)[number]
 
 /** An empty quote means none. */
 export type FeedbackStrength = { text: string; quote: string }
 
-export type FeedbackPoint = {
+/** A requirement from a list the learner or the task gives, such as a rubric. */
+export type FeedbackCriterion = {
+  label: string
+  status: CriterionStatus
+  comment: string
+  quote: string
+}
+
+/** Something to work on, most important first. */
+export type FeedbackImprovement = {
   label: string
   comment: string
   quote: string
-  status: FeedbackStatus
 }
 
 /**
@@ -40,18 +38,9 @@ export type FeedbackContent = {
   title: string
   summary: string
   strengths: FeedbackStrength[]
-  points: FeedbackPoint[]
+  criteria: FeedbackCriterion[]
+  improvements: FeedbackImprovement[]
   nextStep: string
-}
-
-export function splitFeedbackPoints(points: FeedbackPoint[]) {
-  return {
-    criteria: points.filter(
-      (point): point is FeedbackPoint & { status: CriterionStatus } =>
-        point.status !== 'improve'
-    ),
-    improvements: points.filter((point) => point.status === 'improve'),
-  }
 }
 
 export type FeedbackToolResult =
@@ -64,28 +53,50 @@ export function asFeedbackResult(value: unknown): FeedbackToolResult | null {
       ? (value as { result: unknown }).result
       : value
   if (!v || typeof v !== 'object' || !('kind' in v)) return null
-  const kind = (v as { kind: unknown }).kind
-  return kind === 'feedback' || kind === 'feedback-invalid'
+  const result = v as {
+    kind: unknown
+    content?: Partial<Record<keyof FeedbackContent, unknown>>
+  }
+  if (result.kind === 'feedback-invalid') return v as FeedbackToolResult
+  // Stored payloads of another shape or format version are not rendered as
+  // this card.
+  const content = result.content
+  return result.kind === 'feedback' &&
+    content?.format === FEEDBACK_FORMAT &&
+    Array.isArray(content.strengths) &&
+    Array.isArray(content.criteria) &&
+    Array.isArray(content.improvements)
     ? (v as FeedbackToolResult)
     : null
 }
 
+export type FeedbackTextLabels = {
+  strengths: string
+  criteria: string
+  improvements: string
+  nextStep: string
+  status: Record<CriterionStatus, string>
+}
+
+/** Labels for the model's own conversation history, which is not localized. */
+export const FEEDBACK_HISTORY_LABELS: FeedbackTextLabels = {
+  strengths: 'What already works',
+  criteria: 'Criteria checked',
+  improvements: 'Points to work on',
+  nextStep: 'Next step',
+  status: { met: 'met', partial: 'partly met', missing: 'missing' },
+}
+
 /**
- * Plain-text rendering of a feedback card for copying and other text
- * consumers, which otherwise see only the short reply around the card.
+ * Plain-text rendering of a feedback card for copying, the Markdown export
+ * and the model's conversation history, which otherwise see only the short
+ * reply around the card.
  */
 export function feedbackToText(
   content: FeedbackContent,
-  labels: {
-    strengths: string
-    criteria: string
-    points: string
-    nextStep: string
-    status: Record<CriterionStatus, string>
-  }
+  labels: FeedbackTextLabels
 ): string {
   const quoted = (quote: string) => (quote ? ` "${quote}"` : '')
-  const { criteria, improvements } = splitFeedbackPoints(content.points)
   const lines: string[] = []
   if (content.title) lines.push(content.title)
   if (content.summary) lines.push(content.summary)
@@ -94,21 +105,43 @@ export function feedbackToText(
     for (const strength of content.strengths)
       lines.push(`- ${strength.text}${quoted(strength.quote)}`)
   }
-  if (criteria.length) {
+  if (content.criteria.length) {
     lines.push('', `${labels.criteria}:`)
-    for (const criterion of criteria)
+    for (const criterion of content.criteria)
       lines.push(
         `- ${criterion.label} (${labels.status[criterion.status]}):${quoted(criterion.quote)} ${criterion.comment}`
       )
   }
-  if (improvements.length) {
-    lines.push('', `${labels.points}:`)
-    improvements.forEach((point, index) => {
+  if (content.improvements.length) {
+    lines.push('', `${labels.improvements}:`)
+    content.improvements.forEach((point, index) => {
       lines.push(
         `${index + 1}. ${point.label}:${quoted(point.quote)} ${point.comment}`
       )
     })
   }
-  lines.push('', `${labels.nextStep}: ${content.nextStep}`)
+  if (content.nextStep)
+    lines.push('', `${labels.nextStep}: ${content.nextStep}`)
   return lines.join('\n').trim()
+}
+
+/**
+ * The text of a valid feedback card in a message part, or null for any other
+ * part. Lets text-only consumers include the card.
+ */
+export function feedbackPartText(
+  part: unknown,
+  labels: FeedbackTextLabels
+): string | null {
+  if (!part || typeof part !== 'object') return null
+  const { type, toolName, result } = part as {
+    type?: unknown
+    toolName?: unknown
+    result?: unknown
+  }
+  if (type !== 'tool-call' || toolName !== SHOW_FEEDBACK_TOOL_NAME) return null
+  const parsed = asFeedbackResult(result)
+  return parsed?.kind === 'feedback'
+    ? feedbackToText(parsed.content, labels)
+    : null
 }

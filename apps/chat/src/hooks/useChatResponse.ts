@@ -12,6 +12,7 @@ import {
 } from '../lib/attachments/documentText'
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
+import { FEEDBACK_HISTORY_LABELS, feedbackPartText } from '../lib/feedback'
 import { readHandoffSource } from '../lib/handoff'
 import {
   hasMeaningfulAssistantContent,
@@ -159,22 +160,21 @@ export function useChatResponse(
             return String(message.content ?? '')
           }
 
+          // A feedback card carries the substance of its turn, so the model
+          // sees it in later turns, for example to compare a revision.
           return message.content
-            .filter(
-              (
-                part
-              ): part is {
-                type: 'text'
-                text: string
-              } =>
-                typeof part === 'object' &&
+            .map((part) => {
+              const card = feedbackPartText(part, FEEDBACK_HISTORY_LABELS)
+              if (card !== null) return `\n[Feedback card shown]\n${card}\n`
+              return typeof part === 'object' &&
                 part !== null &&
                 'type' in part &&
                 part.type === 'text' &&
                 'text' in part &&
                 typeof part.text === 'string'
-            )
-            .map((part) => part.text)
+                ? part.text
+                : ''
+            })
             .join('')
         }
 

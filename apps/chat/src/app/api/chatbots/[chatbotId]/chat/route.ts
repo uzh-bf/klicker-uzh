@@ -1537,7 +1537,9 @@ export async function POST(
     const feedbackTools: Record<string, any> = {}
     if (isFeedbackToolEnabled(selectedMode)) {
       feedbackTools[SHOW_FEEDBACK_TOOL_NAME] = createShowFeedbackTool({
-        learnerText: userPrompt,
+        learnerMessages: messages
+          .filter((message) => message.role === 'user')
+          .map((message) => message.content),
       })
     }
     const feedbackToolActive = SHOW_FEEDBACK_TOOL_NAME in feedbackTools

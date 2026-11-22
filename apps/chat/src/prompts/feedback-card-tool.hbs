@@ -4,11 +4,13 @@ The input is one object with format "feedback/1", written in the reply language.
 - title: at most 8 words naming what was reviewed.
 - summary: an overall assessment in at most two sentences.
 - strengths: up to 3 things that already work, each with a quote of a passage that already works or "".
-- points: what the feedback covers, each with a short label, a comment saying what to look at and why, a quote or "", and a status.
-- nextStep: exactly one concrete action for the learner.
+- criteria: only when the learner or the task gives a list of requirements, such as a rubric or the requirements of an assignment: one entry per requirement in the given order, with a short label, a status ("met", "partial" or "missing"), a comment saying why, and a quote or "". Otherwise []. A focus such as "check my grammar and spelling" is not a list of requirements.
+- improvements: up to 5 things to work on, most important first, each with a short label, a comment saying what to look at and why, and a quote or "". Use [] when nothing needs work.
+- nextStep: exactly one concrete action for the learner, or "" when the work needs nothing more.
+Give at least one strength, criterion or improvement. Do not invent weaknesses: sound work can have only strengths.
 
-Status: use "improve" for something to work on, at most 5 such points, most important first. Use "met", "partial" or "missing" only for a requirement from a list the learner or the task gives, such as a rubric or the requirements of an assignment, one point per requirement in the given order. A focus such as "check my grammar and spelling" is not a list of requirements; its points use "improve".
+A quote is copied character for character from the work you are reviewing, normally its latest version, at most 200 characters. Keep the learner's spelling, including "ß", even where you would write it differently, and never correct or shorten a quote with ellipses. Use "" for work you only saw in an image.
 
-A quote is copied character for character from the learner's own messages, at most 200 characters, and is never corrected or shortened with ellipses. Write plain text without Markdown. Your mode's rules still decide what the comments may contain, for example whether you may show a corrected version or a full solution.
+The summary, strengths, comments and next step follow your mode's formatting rules, including inline citation markers, mathematics and short code. Labels and quotes are plain text. Do not use headings or lists inside a field. Your mode's rules still decide what the comments may contain, for example whether you may show a corrected version or a full solution.
 
 If the tool reports errors, fix every listed error and call it again with the complete corrected object. After a third failed attempt, give the feedback in text instead.
