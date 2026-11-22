@@ -213,10 +213,10 @@ chat:
     environment: 'staging'
 
   # Interactive explanations in the tutor chat, served by the internal
-  # explainer API next to the voice preview.
+  # explainer API (df-cloud and helm-charts app `explainer`).
   explainer:
     enabled: true
-    serviceUrl: 'http://explainer-service.stg-explainer-preview.svc.cluster.local:3018'
+    serviceUrl: 'http://explainer-service.stg-explainer.svc.cluster.local:3018'
 
   # Account usage has two independent switches: lifecycle writes record attempt
   # markers and credit counters, and enforcement rejects a participant request
