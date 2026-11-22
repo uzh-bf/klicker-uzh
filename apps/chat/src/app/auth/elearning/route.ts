@@ -1,3 +1,7 @@
+import {
+  chatLaunchResponse,
+  hasSeparateChatApiHostname,
+} from '@/src/lib/server/chatLaunchResponse'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import {
   deriveElearningLearnerBinding,
@@ -51,21 +55,6 @@ function noLoginRedirect(chatbotId: string | null) {
   response.headers.set('Cache-Control', 'no-store')
   response.headers.set('Referrer-Policy', 'no-referrer')
   return response
-}
-
-// Clear previous Chat transport state before choosing this launch's identity.
-function launchResponse(destination: URL) {
-  const path = `${destination.pathname}${destination.search}`
-  return new NextResponse(
-    `<!doctype html><meta charset="utf-8"><script>try { sessionStorage.removeItem('chat_participant_token'); sessionStorage.removeItem('chat_pwa_embed_token') } catch {} window.location.replace(${JSON.stringify(path).replaceAll('<', '\\u003c')})</script>`,
-    {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store',
-        'Referrer-Policy': 'no-referrer',
-      },
-    }
-  )
 }
 
 function setLocaleCookie(
@@ -276,7 +265,12 @@ export async function GET(req: NextRequest) {
     })
     if (!cookiesAvailable)
       chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, scopedToken)
-    const response = launchResponse(chatbotUrl)
+    const response = chatLaunchResponse(
+      chatbotUrl,
+      cookiesAvailable && hasSeparateChatApiHostname(chatbotUrl.hostname)
+        ? { kind: 'embed', token: scopedToken }
+        : undefined
+    )
     setLocaleCookie(response, locale, isProduction)
     response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
       ...cookieSecurityOptions({ isProduction }),
@@ -324,7 +318,12 @@ export async function GET(req: NextRequest) {
   // sessionStorage fallback for browsers where CHIPS is not yet supported.
   if (!cookiesAvailable) chatbotUrl.searchParams.set('_t', chatGuestToken)
 
-  const response = launchResponse(chatbotUrl)
+  const response = chatLaunchResponse(
+    chatbotUrl,
+    cookiesAvailable && hasSeparateChatApiHostname(chatbotUrl.hostname)
+      ? { kind: 'guest', token: chatGuestToken }
+      : undefined
+  )
   setLocaleCookie(response, locale, isProduction)
   response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
     ...cookieSecurityOptions({ isProduction }),

@@ -277,6 +277,7 @@ export DEV_TURBO_TASK
 if [[ ",${DEVROUTER_PROFILE}," == *,chat-api,* ]]; then
   export CHAT_DIRECT_API_ENABLED=true
   export CHAT_PUBLIC_API_URL="https://chat-api.klicker${WORKSPACE:+.$WORKSPACE}.localhost"
+  export CHAT_BROWSER_ALLOWED_ORIGINS="${CHAT_BROWSER_ALLOWED_ORIGINS:-$APP_ORIGIN_CHAT}"
 else
   export CHAT_DIRECT_API_ENABLED=false
   export CHAT_PUBLIC_API_URL=''

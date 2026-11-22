@@ -47,6 +47,8 @@ it.each([
   '/api/figure',
   '/api/chatbots/b/threads/t/messages/m/frames/frame',
 ])('adds the scoped Bearer token without putting it in the URL: %s', async (src) => {
+  vi.stubGlobal('location', new URL('https://chat.synthetic.localhost/'))
+  vi.stubGlobal('document', { documentElement: { dataset: {} } })
   vi.stubGlobal('sessionStorage', {
     getItem: (key: string) =>
       key === 'chat_participant_token' ? 'synthetic-guest' : null,

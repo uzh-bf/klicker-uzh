@@ -380,7 +380,7 @@ harness's accepted shape: a refusal is a `deny` in both, while an allowed call i
 carrying the same guidance as `additionalContext`, because Codex rejects an
 `allow` decision as unsupported hook output.
 
-the checkout's durable phase is `queued`, `starting`, `verifying`, `recovering`
+The gate waits while the checkout's durable phase is `queued`, `starting`, `verifying`, `recovering`
 or `stopping`, and prints the harness permission decision. The deferral consumes
 no model turns because the harness is blocked on the hook. `--wait-budget-ms`
 bounds the wait (default 30000); a phase that outlasts it returns one `deny` that

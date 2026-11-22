@@ -261,6 +261,8 @@ type Session = {
 }
 
 /** A token names one admitted turn; request input never selects credentials or a destination. */
+export class ToolSessionCapacityError extends Error {}
+
 export function createHostToolDispatcher(now: () => number = Date.now) {
   const sessions = new Map<string, Session>()
   let dispatcherCacheBytes = 0
@@ -278,7 +280,8 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
       for (const session of sessions.values())
         if (session.expiresAt <= now()) await session.close()
       input.signal.throwIfAborted()
-      if (sessions.size >= 128) throw new Error('Tool session capacity reached')
+      if (sessions.size >= 128)
+        throw new ToolSessionCapacityError('Tool session capacity reached')
       const entries = await Promise.all(
         Object.entries(input.tools.tools).map(async ([name, definition]) => {
           const schema = asSchema(definition.inputSchema)
@@ -291,8 +294,7 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
           return { descriptor, definition, schema }
         })
       )
-      const token =
-        input.python?.executionToken ?? randomBytes(32).toString('base64url')
+      const token = randomBytes(32).toString('base64url')
       if (sessions.has(token))
         throw new Error('Tool capability is already active')
       const descriptors = [
@@ -334,7 +336,8 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
           })
       )
       input.signal.throwIfAborted()
-      if (sessions.size >= 128) throw new Error('Tool session capacity reached')
+      if (sessions.size >= 128)
+        throw new ToolSessionCapacityError('Tool session capacity reached')
       const controller = new AbortController()
       const signal = AbortSignal.any([input.signal, controller.signal])
       const calls = new Map<
@@ -349,7 +352,9 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
       let projectionRequests = 0
       let projectionQueue = Promise.resolve()
       let acceptedIds: string[] = []
-      const expiresAt = now() + (input.python ? 120_000 : 300_000)
+      const registeredAt = now()
+      const expiresAt = registeredAt + 300_000
+      const pythonExpiresAt = registeredAt + 120_000
       let closed = false
       let closePromise: Promise<void> | undefined
       let expiryTimer: ReturnType<typeof setTimeout> | undefined
@@ -371,7 +376,7 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
         void close().catch(() => undefined)
       }
       input.signal.addEventListener('abort', closeOnAbort, { once: true })
-      expiryTimer = setTimeout(closeOnAbort, input.python ? 120_000 : 300_000)
+      expiryTimer = setTimeout(closeOnAbort, expiresAt - registeredAt)
       expiryTimer.unref()
       sessions.set(token, {
         close,
@@ -427,6 +432,12 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
             if (!entry) {
               if (!input.python || !input.executePython)
                 throw new Error('Python execution is unavailable')
+              const remaining = pythonExpiresAt - now()
+              if (remaining <= 0) throw new Error('Python capability expired')
+              const pythonSignal = AbortSignal.any([
+                callSignal,
+                AbortSignal.timeout(remaining),
+              ])
               output = await input.executePython(
                 {
                   serverId: body.serverId,
@@ -434,8 +445,9 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
                   input: validatedInput,
                 },
                 input.python.executionToken,
-                callSignal
+                pythonSignal
               )
+              pythonSignal.throwIfAborted()
             } else {
               if (!entry.definition.execute)
                 throw new Error('Tool execution is unavailable')

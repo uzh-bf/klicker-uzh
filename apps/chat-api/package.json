@@ -45,6 +45,7 @@
     "build:ts": "rollup -c",
     "check": "tsc --noEmit",
     "dev": "tsx --watch src/index.ts",
+    "dev:test": "pnpm run dev",
     "start:test": "node dist/index.js",
     "test:run": "vitest run",
     "test:watch": "vitest"

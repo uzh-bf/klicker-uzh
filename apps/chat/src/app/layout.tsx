@@ -1,3 +1,4 @@
+import { configuredChatApiOrigin } from '@/src/lib/server/chatLaunchResponse'
 import { messagesByLocale } from '@/src/types/i18n'
 import { routing } from '@klicker-uzh/i18n'
 import {
@@ -46,20 +47,7 @@ export default async function RootLayout({
   const messages = messagesByLocale[locale]
   const t = await getTranslations()
 
-  let chatApiUrl = ''
-  if (process.env.CHAT_DIRECT_API_ENABLED === 'true') {
-    const origin = new URL(process.env.CHAT_PUBLIC_API_URL ?? '')
-    if (
-      !['https:', 'http:'].includes(origin.protocol) ||
-      origin.username ||
-      origin.password ||
-      origin.pathname !== '/' ||
-      origin.search ||
-      origin.hash
-    )
-      throw new Error('CHAT_PUBLIC_API_URL must be an exact HTTP origin')
-    chatApiUrl = origin.origin
-  }
+  const chatApiUrl = configuredChatApiOrigin()?.origin ?? ''
 
   return (
     <html

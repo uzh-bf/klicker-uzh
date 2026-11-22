@@ -9,6 +9,8 @@ describe('authedFetch', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch
+    vi.stubGlobal('location', new URL('https://chat.synthetic.localhost/'))
+    vi.stubGlobal('document', { documentElement: { dataset: {} } })
     const store = new Map<string, string>()
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,
@@ -24,6 +26,7 @@ describe('authedFetch', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllGlobals()
     globalThis.fetch = originalFetch
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,
@@ -54,6 +57,16 @@ describe('authedFetch', () => {
     const init = fetchMock.mock.calls[0][1] as RequestInit
     const headers = new Headers(init?.headers)
     expect(headers.get('authorization')).toBe('Bearer tkn-1')
+  })
+
+  it('keeps the Chat fallback bearer off unrelated origins', async () => {
+    sessionStorage.setItem(CHAT_GUEST_SESSION_STORAGE_KEY, 'synthetic-guest')
+    const fetchMock = vi.fn().mockResolvedValue(new Response('ok'))
+    vi.stubGlobal('fetch', fetchMock)
+    await authedFetch('https://assets.synthetic.localhost/image.png')
+    expect(
+      new Headers(fetchMock.mock.calls[0][1]?.headers).has('authorization')
+    ).toBe(false)
   })
 
   it('prefers the scoped PWA embed token over stale guest fallback storage', async () => {
