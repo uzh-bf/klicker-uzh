@@ -972,7 +972,7 @@ later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
-## Framed layouts and fullscreen
+## Framed layouts and new tabs
 
 The chat distinguishes two independent facts about where it runs. `useEmbedded`
 reads the explicit `?embed=1` contract, which selects the minimal embedded
@@ -991,15 +991,14 @@ on focus below that size, and touch targets stay at 44 pixels. Standalone and
 embedded layouts are unaffected. Detection is client-only; the provider mounts
 after the client-side disclaimer fetch, so there is no server-render mismatch.
 
-`ChatUiContext.headerless` is true while a compact chat is not in fullscreen.
-It drops the header bar: the chatbot name stays an `sr-only` level-one
+`ChatUiContext.headerless` is true for a compact chat. It drops the header bar: the chatbot name stays an `sr-only` level-one
 heading, and the mode menu moves to the top of the sidebar. From `md` up, the
 sidebar trigger and new-chat button float at the thread's top left while the
-sidebar is closed, and the fullscreen and knowledge-graph controls float at
+sidebar is closed, and the open-in-new-tab and knowledge-graph controls float at
 the top right; the thread and the desktop history rail start below them.
 Below `md`, the same controls and the credits share one slim row in the flow.
-Fullscreen and standalone keep the full header with the name, because there
-the title identifies the chat.
+The standalone chat, including a tab opened from a frame, keeps the full
+header with the name, because there the title identifies the chat.
 
 Chrome controls share two primitives. Selects, including the mode menu, use
 the design-system `Select`; the mode menu shows each mode's icon and
@@ -1017,17 +1016,20 @@ base utilities (`size-11`, `h-11`, `min-h-11`) at equal specificity, so a plain
 media-query variant silently loses and every control stays at its touch size
 on desktop. Keep the raised specificity when editing the variant.
 
-`FullscreenToggle` lets a framed chat take over the screen with the Fullscreen
-API on the document element, so portalled dialogs and tooltips stay visible.
-The host decides: a cross-origin frame may enter fullscreen only when its
-`<iframe>` grants the permission, and the control renders nothing unless the
-chat is framed and `document.fullscreenEnabled` is true. Use `allowfullscreen`
-(or `allow="fullscreen *"`) on host frames: the LTI launch redirects through
-other origins before reaching the chat, and a bare `allow="fullscreen"` grants
-only the frame's initial origin. Upstream OpenOlat sets `allowfullscreen` on
-its LTI frames. iPhone Safari has no element fullscreen, so the control is
-absent there. While fullscreen is active the browser consumes Escape to leave
-it, so an open dialog does not receive that key press.
+`OpenInNewTabButton` opens the framed chatbot and its active thread in a new
+browser tab. A plain link would open logged out, because the frame's session
+lives in cookies partitioned to the host site (or in sessionStorage). The
+button opens the tab inside the click, then asks
+`POST /api/chatbots/:id/handoff` for a URL carrying a 60-second
+`CHAT_TAB_HANDOFF` token, minted from the caller's resolved identity.
+`/auth/handoff` re-runs `authorizeIdentityForChatbot` and sets a first-party
+session for the new tab: a guest gets a new guest token, and an account gets
+a session scoped to that chatbot, never the full `participant_token`. The
+token is not single-use because Chat has no shared store across replicas; its
+short lifetime and its own scope, which no session check accepts, limit a
+leaked URL. Hosts that sandbox their frame need `allow-popups` and
+`allow-popups-to-escape-sandbox`; upstream OpenOlat does not sandbox its LTI
+frames.
 
 ## Lecturer authoring and publication contract
 
