@@ -8,6 +8,9 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { CALCULATOR_TOOL_NAME } from '@/src/lib/calculator'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
 import {
   COURSE_IMAGE_TOOL,
   courseImageModelInput,
@@ -19,8 +22,6 @@ import {
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
-import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
@@ -194,6 +195,35 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isRunning = status.type === 'running'
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
+
+  // The calculator chip only says that a calculation ran. Its expressions
+  // and results stay hidden, because the Tutor and Quizzer compute the
+  // correct result to judge a wrong attempt while they still withhold it.
+  if (toolName === CALCULATOR_TOOL_NAME) {
+    return (
+      <span
+        data-cy="chat-tool-call-label"
+        data-tool-kind="calculator"
+        className="inline-flex min-h-6 items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground"
+      >
+        <span className="size-3 shrink-0" aria-hidden />
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {isRunning && (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          )}
+          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
+        </span>
+        {isFailed
+          ? t('chat.toolFallback.failed', { tool })
+          : isRunning
+            ? t('chat.toolFallback.running', { tool })
+            : t('chat.toolFallback.done', { tool })}
+      </span>
+    )
+  }
 
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />

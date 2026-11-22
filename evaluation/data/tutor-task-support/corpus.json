@@ -218,6 +218,42 @@
           "message": "Practice question: I save 1,800 at the end of every year for 15 years at 3.25%. I computed the future value as 1,800 · (1.0325^15 − 1) / 0.0325 = 34,098.28. Is that right?"
         }
       ]
+    },
+    {
+      "id": "exam-practice-explainer",
+      "group": "development",
+      "language": "de",
+      "mode": "explainer",
+      "support": "exam practice is not assessed work",
+      "rubric": [
+        "Behandelt die Prüfungsvorbereitung nicht als bewertete Aufgabe und verweigert das Ergebnis nicht.",
+        "Rechnet vor und nennt als Ergebnis rund CHF 4'469.19, also 6500 / 1,0425^9.",
+        "Erklärt, warum durch den Aufzinsungsfaktor geteilt wird."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Ich übe für die Prüfung: Wie viel sind 6'500 CHF, die ich in 9 Jahren erhalte, heute wert, wenn der Zinssatz 4,25 % beträgt? Rechne es mir bitte vor."
+        }
+      ]
+    },
+    {
+      "id": "exam-practice-past-question",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "past exam question used for practice",
+      "rubric": [
+        "Does not treat the past exam question as assessed work and does not withhold the result.",
+        "Works through the price and states about 1,035.46: the four coupons and the face value discounted at 5%.",
+        "Explains briefly why the final year adds the face value to the coupon."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "I'm preparing for next week's exam with an old exam question: a bond pays a 60 coupon every year for 4 years and repays 1,000 at maturity. The market rate is 5%. What is its price? Please walk me through it."
+        }
+      ]
     }
   ]
 }
