@@ -44,6 +44,11 @@ type KnowledgeGraphDetailsProps = {
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
   /** 'contained' overlays the pane inside the graph instead of a side column. */
   layout?: 'sidebar' | 'contained'
+  /**
+   * Lists every stored relationship property. Without it, only the
+   * relationship's plain-language description is shown, for learners.
+   */
+  showEdgeProperties?: boolean
 }
 
 function PropertyList({
@@ -175,10 +180,19 @@ export function KnowledgeGraphDetails({
   onAsk,
   onQuiz,
   layout = 'sidebar',
+  showEdgeProperties = true,
 }: KnowledgeGraphDetailsProps) {
   if (node === undefined && edge === undefined) {
     return null
   }
+
+  const rawEdgeDescription = edge?.properties.description
+  const edgeDescription =
+    !showEdgeProperties &&
+    typeof rawEdgeDescription === 'string' &&
+    rawEdgeDescription.trim() !== ''
+      ? readableDescription(rawEdgeDescription)
+      : undefined
 
   const heading =
     node?.displayLabel ??
@@ -339,6 +353,14 @@ export function KnowledgeGraphDetails({
                 )}
               </p>
             )}
+            {edgeDescription === undefined ? null : (
+              <p
+                className="whitespace-pre-wrap text-sm leading-6 text-[#4C4C4C]"
+                data-cy="knowledge-graph-relation-description"
+              >
+                {edgeDescription}
+              </p>
+            )}
             {edge.sourceReferences.length > 0 ? null : (
               <p
                 className="rounded-md border border-dashed border-[#A3A3A3] px-2 py-1 text-xs text-[#4C4C4C]"
@@ -375,10 +397,12 @@ export function KnowledgeGraphDetails({
               heading={labels.sources}
               pages={labels.pages}
             />
-            <PropertyList
-              properties={edge.properties}
-              heading={labels.properties}
-            />
+            {showEdgeProperties ? (
+              <PropertyList
+                properties={edge.properties}
+                heading={labels.properties}
+              />
+            ) : null}
           </div>
         )}
         <p
