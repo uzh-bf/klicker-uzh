@@ -119,7 +119,10 @@ async function openLaunch(page: Page, url: string) {
 }
 
 for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
-  test(`${launch} authenticates and reloads a thread`, async ({ page }) => {
+  test(`${launch} authenticates and reloads a thread`, async ({
+    browser,
+    page,
+  }) => {
     test.setTimeout(120_000)
     const origin = new URL(chatUrl())
     const api = new URL(origin)
@@ -288,6 +291,49 @@ for (const launch of ['LTI guest', 'eLearning', 'PWA embed'] as const) {
       expect(threads.some(({ id }: { id: string }) => id === threadId)).toBe(
         true
       )
+
+      // Mint from the scoped embed session, then exchange in a browser context with
+      // neither its cookies nor its fallback bearer.
+      const handoffPath = await page.evaluate(
+        async ({ chatbotApiPath, expectedCookie, threadId }) => {
+          const token = sessionStorage.getItem(expectedCookie)
+          const response = await fetch(chatbotApiPath + '/handoff', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: 'Bearer ' + token } : {}),
+            },
+            body: JSON.stringify({ threadId }),
+          })
+          if (!response.ok) return null
+          return ((await response.json()) as { url: string }).url
+        },
+        { chatbotApiPath, expectedCookie, threadId }
+      )
+      if (!handoffPath) throw new Error('The synthetic handoff was not minted')
+      const tab = await browser.newPage({ ignoreHTTPSErrors: true })
+      try {
+        const [handedOff] = await Promise.all([
+          tab.waitForResponse(
+            (response) =>
+              new URL(response.url()).pathname ===
+                chatbotApiPath + '/threads' &&
+              response.request().method() === 'GET'
+          ),
+          openLaunch(tab, new URL(handoffPath, origin).toString()),
+        ])
+        await assertTransport(handedOff, origin, api)
+        expect(
+          (await handedOff.json()).some(
+            ({ id }: { id: string }) => id === threadId
+          )
+        ).toBe(true)
+        await expect(tab).toHaveURL(
+          (url) => url.pathname.endsWith('/threads/' + threadId) && !url.search
+        )
+      } finally {
+        await tab.close()
+      }
     } finally {
       await prisma.$transaction(async (tx) => {
         const owned = await tx.participantAccount.findUnique({

@@ -1,11 +1,15 @@
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import { z } from 'zod'
 import {
+  CHAT_TAB_HANDOFF_SCOPE,
   PWA_CHAT_EMBED_EXCHANGE_SCOPE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '../pwaEmbedAuth.js'
 
 const PWA_CHAT_EMBED_SESSION_EXPIRY = '12h'
+// Long enough for the new tab to load, short enough that a leaked URL from
+// history or logs is useless soon after.
+const CHAT_TAB_HANDOFF_EXPIRY = '60s'
 
 const pwaEmbedPayloadSchema = z.object({
   sub: z.string().min(1),
@@ -74,4 +78,51 @@ export async function verifyPwaEmbedSessionToken(
 ): Promise<PwaEmbedSessionPayload> {
   const payload = await verifyJWT(token, getPwaEmbedSecret())
   return pwaEmbedSessionPayloadSchema.parse(payload)
+}
+
+const chatTabHandoffPayloadSchema = z.object({
+  sub: z.string().min(1),
+  scope: z.literal(CHAT_TAB_HANDOFF_SCOPE),
+  // `guest` re-issues the anonymous LTI guest session; `account` issues a
+  // session scoped to this chatbot, never the participant's full account token.
+  kind: z.enum(['guest', 'account']),
+  chatbotId: z.string().guid(),
+  courseId: z.string().guid(),
+  learnerBinding: z.string().min(1).max(128).optional(),
+})
+
+export type ChatTabHandoffPayload = z.infer<typeof chatTabHandoffPayloadSchema>
+
+export async function signChatTabHandoffToken({
+  participantId,
+  kind,
+  chatbotId,
+  courseId,
+  learnerBinding,
+}: {
+  participantId: string
+  kind: ChatTabHandoffPayload['kind']
+  chatbotId: string
+  courseId: string
+  learnerBinding?: string
+}): Promise<string> {
+  return signJWT(
+    {
+      sub: participantId,
+      scope: CHAT_TAB_HANDOFF_SCOPE,
+      kind,
+      chatbotId,
+      courseId,
+      ...(learnerBinding ? { learnerBinding } : {}),
+    },
+    getPwaEmbedSecret(),
+    { algorithm: 'HS256', expiresIn: CHAT_TAB_HANDOFF_EXPIRY }
+  )
+}
+
+export async function verifyChatTabHandoffToken(
+  token: string
+): Promise<ChatTabHandoffPayload> {
+  const payload = await verifyJWT(token, getPwaEmbedSecret())
+  return chatTabHandoffPayloadSchema.parse(payload)
 }

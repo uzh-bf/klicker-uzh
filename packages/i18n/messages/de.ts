@@ -148,9 +148,10 @@ export default {
     embedded: {
       close: 'Chat schliessen',
     },
-    fullscreen: {
-      enter: 'Vollbild',
-      exit: 'Vollbild beenden',
+    openInNewTab: {
+      label: 'In neuem Tab öffnen',
+      failed:
+        'Der neue Tab konnte nicht geöffnet werden. Erlaube Pop-ups und versuche es erneut.',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',

@@ -59,6 +59,15 @@ export default defineConfig({
         ),
       },
       {
+        find: /^@klicker-uzh\/chat-engine-contract$/,
+        replacement: fileURLToPath(
+          new URL(
+            '../../packages/chat-engine-contract/src/index.ts',
+            import.meta.url
+          )
+        ),
+      },
+      {
         find: /^@\//,
         replacement: `${fileURLToPath(new URL('.', import.meta.url))}/`,
       },

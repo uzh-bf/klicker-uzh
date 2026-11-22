@@ -41,6 +41,7 @@ query GetPendingChatbotRevisionReviewsWithPreferences {
         tutorEnabled
         explainerEnabled
         quizzerEnabled
+        writingCoachEnabled
         courseName
         subjectDomain
         languageOfInstruction
