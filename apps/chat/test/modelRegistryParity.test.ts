@@ -63,9 +63,12 @@ const expectedDefaultCosts = {
 
 const expectedDeployedCosts = {
   auto: { input: 1, output: 5 },
+  'auto-v5': { input: 1, output: 5 },
   'gpt-6-luna': { input: 0.1, output: 0.5 },
   'gpt-6-sol': { input: 2, output: 10 },
   'gpt-6.1-sol': { input: 2, output: 10 },
+  'gpt-6.2-sol': { input: 2.4, output: 12 },
+  'gpt-6.2-astra': { input: 9.6, output: 48 },
   'gpt-5.6-sol': { input: 5, output: 30 },
 }
 
@@ -301,7 +304,7 @@ describe('deployed chat model registry parity (values.yaml)', () => {
         expect(backendModel?.maxOutputTokens).toBe(4096)
       }
       expect(chat.find((m) => m.id === 'auto')?.usageClass).toBe('BASE')
-      expect(baseModelIds(chat)).toEqual(['auto', 'gpt-6-luna'])
+      expect(baseModelIds(chat)).toEqual(['auto', 'auto-v5', 'gpt-6-luna'])
       expect(fallbackIds(chat)).toEqual(['gpt-6-luna'])
       expect(costsById(chat)).toEqual(expectedDeployedCosts)
       expect(getNewChatbotModelId(backend)).toBe('gpt-6-luna')
