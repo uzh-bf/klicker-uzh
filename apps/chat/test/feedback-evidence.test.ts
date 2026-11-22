@@ -100,9 +100,11 @@ describe('trailingStepMessage', () => {
     expect(tutor.content).toMatch(/^Feedback check:/)
   })
 
-  test('returns only the language reminder in the explainer mode', () => {
+  test('returns only the language reminder in the writing-coach mode', () => {
     expect(
-      trailingStepMessage('explainer', [{ role: 'user', content: 'Explain.' }])
+      trailingStepMessage('writing-coach', [
+        { role: 'user', content: 'Explain.' },
+      ])
     ).toBe(REPLY_LANGUAGE_REMINDER)
   })
 })
