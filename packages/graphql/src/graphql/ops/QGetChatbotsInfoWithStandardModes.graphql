@@ -21,6 +21,7 @@ query QGetChatbotsInfoWithStandardModes {
     }
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId

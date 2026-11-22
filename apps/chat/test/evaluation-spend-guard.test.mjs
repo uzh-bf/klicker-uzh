@@ -244,9 +244,11 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
       { ...request, prompt_cache_key: 7 },
       { ...request, metadata: {} },
       { ...request, metadata: { session_id: '' } },
-      { ...request, metadata: { session_id: 'x'.repeat(65) } },
-      { ...request, metadata: { session_id: 'synthetic', user: 'extra' } },
-      { ...request, metadata: 'synthetic' },
+      { ...request, metadata: { session_id: 'x'.repeat(129) } },
+      { ...request, metadata: { session_id: 7 } },
+      { ...request, metadata: { session_id: 'trace', user: 'synthetic' } },
+      { ...request, metadata: ['trace'] },
+      { ...request, metadata: null },
       { ...request, store: true },
       { ...request, store: 'true' },
       { ...request, store: 1 },
@@ -370,7 +372,7 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
   })
 })
 
-test('the cache-bypass flags and session metadata are stripped before forwarding and the native prompt cache key is retained', async () => {
+test('the two true cache-bypass flags and the gateway session hint are stripped before forwarding and the native prompt cache key is retained', async () => {
   validatePricingPolicy(policy)
   const hinted = {
     ...request,

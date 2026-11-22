@@ -194,8 +194,18 @@ export function requestReservation(policy, pathname, body) {
   ) {
     throw budgetError('provider_request_unqualified')
   }
-  // The chat default route sends LiteLLM's answer-scoped `metadata.session_id`
-  // routing hint; it is billing-neutral and stripped before the native upstream.
+  if (
+    body.prompt_cache_key !== undefined &&
+    (typeof body.prompt_cache_key !== 'string' ||
+      !body.prompt_cache_key.trim() ||
+      body.prompt_cache_key.length > 64)
+  ) {
+    throw budgetError('provider_request_unqualified')
+  }
+  // Chat's default route sends LiteLLM's `metadata.session_id` so one answer's
+  // tool loop stays on one routed model. It is a gateway-only routing hint with
+  // no cost effect; only that exact shape is accepted, and the guard strips it
+  // before the native upstream call.
   if (
     body.metadata !== undefined &&
     (typeof body.metadata !== 'object' ||
@@ -204,15 +214,7 @@ export function requestReservation(policy, pathname, body) {
       Object.keys(body.metadata).length !== 1 ||
       typeof body.metadata.session_id !== 'string' ||
       !body.metadata.session_id.trim() ||
-      body.metadata.session_id.length > 64)
-  ) {
-    throw budgetError('provider_request_unqualified')
-  }
-  if (
-    body.prompt_cache_key !== undefined &&
-    (typeof body.prompt_cache_key !== 'string' ||
-      !body.prompt_cache_key.trim() ||
-      body.prompt_cache_key.length > 64)
+      body.metadata.session_id.length > 128)
   ) {
     throw budgetError('provider_request_unqualified')
   }
@@ -338,8 +340,9 @@ export async function createSpendGuard({
       const body = await requestBody(request)
       const microUsd = requestReservation(policy, url.pathname, body)
       await reserveProviderSpend(budgetFile, policyHash, microUsd)
-      // The guard consumes the proxy-only `cache` and `metadata` hints; the
-      // native upstream does not need them, so forward the request without them.
+      // The guard consumes the proxy-only `cache` and gateway `metadata`
+      // hints; the native upstream does not use them, so forward the reserved
+      // request without them.
       delete body.cache
       delete body.metadata
       if (policy.fixedRoute) {

@@ -265,6 +265,9 @@ function ChatbotDetails({
 }) {
   const t = useTranslations()
   const graphRetrievalAvailable = useFeatureFlag('ai-beta')
+  const interactiveExplanationsAvailable = useFeatureFlag(
+    'interactive-explanations'
+  )
   const [settingsMode, setSettingsMode] = useAiSettingsMode()
   const advancedSettings = settingsMode === 'advanced'
   const responseExamplesEnabled = useFeatureFlag('chatbot-response-examples')
@@ -304,6 +307,8 @@ function ChatbotDetails({
     useChatbotRevisionReload()
   const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
   const [answerPreferencesEnabled, setAnswerPreferencesEnabled] = useState(true)
+  const [interactiveExplanationsEnabled, setInteractiveExplanationsEnabled] =
+    useState(false)
   const [fixedModelId, setFixedModelId] = useState('')
   const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
   const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
@@ -413,6 +418,9 @@ function ChatbotDetails({
     const revisionValues = getChatbotRevisionValues(chatbot)
     setModelSelectionEnabled(revisionValues.modelSelection)
     setAnswerPreferencesEnabled(revisionValues.answerPreferencesEnabled)
+    setInteractiveExplanationsEnabled(
+      revisionValues.interactiveExplanationsEnabled
+    )
     setFixedModelId(getDefaultFixedModelId(revisionValues, modelRegistry))
     setAllowedModelIds(
       getInitialSelectedModelIds(revisionValues, modelRegistry)
@@ -567,6 +575,8 @@ function ChatbotDetails({
     return (
       modelSelectionEnabled !== revisionValues.modelSelection ||
       answerPreferencesEnabled !== revisionValues.answerPreferencesEnabled ||
+      interactiveExplanationsEnabled !==
+        revisionValues.interactiveExplanationsEnabled ||
       !sameStringSet(currentSelectedModelIds, initialSelectedModelIds) ||
       reasoningConfigIsDirty
     )
@@ -574,6 +584,7 @@ function ChatbotDetails({
     allowedModelIds,
     answerPreferencesEnabled,
     chatbot,
+    interactiveExplanationsEnabled,
     modelRegistry,
     modelSelectionEnabled,
     reasoningConfig,
@@ -707,6 +718,12 @@ function ChatbotDetails({
     setAnswerPreferencesEnabled(checked)
   }
 
+  const handleInteractiveExplanationsChange = (checked: boolean) => {
+    setSaveError(null)
+    clearRevisionConflict()
+    setInteractiveExplanationsEnabled(checked)
+  }
+
   const handleModelSelectionChange = (checked: boolean) => {
     setSaveError(null)
     clearRevisionConflict()
@@ -802,6 +819,7 @@ function ChatbotDetails({
             modelPolicy: {
               modelSelection: modelSelectionEnabled,
               answerPreferencesEnabled,
+              interactiveExplanationsEnabled,
               allowedModelIds: normalizedAllowedModelIds,
               allowedReasoningEffortsByModel: normalizedReasoningConfig,
             },
@@ -1141,6 +1159,40 @@ function ChatbotDetails({
               : t('manage.resources.answerPreferencesDisabledDescription')}
           </div>
         </div>
+
+        {interactiveExplanationsAvailable && (
+          <div className="flex flex-col gap-2 border-t pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <label
+                htmlFor="chatbot-interactive-explanations-switch"
+                className="text-sm font-medium text-gray-700"
+              >
+                {t('manage.resources.interactiveExplanations')}
+              </label>
+              <Switch
+                id="chatbot-interactive-explanations-switch"
+                checked={interactiveExplanationsEnabled}
+                disabled={
+                  isSaving ||
+                  !modelSettingsEditable ||
+                  revisionPending ||
+                  publicationSubmitting
+                }
+                onCheckedChange={handleInteractiveExplanationsChange}
+                data={{ cy: 'chatbot-interactive-explanations-switch' }}
+              />
+            </div>
+            <div className="text-xs text-gray-500">
+              {interactiveExplanationsEnabled
+                ? t(
+                    'manage.resources.interactiveExplanationsEnabledDescription'
+                  )
+                : t(
+                    'manage.resources.interactiveExplanationsDisabledDescription'
+                  )}
+            </div>
+          </div>
+        )}
 
         {!modelSettingsEditable ? (
           <UserNotification>

@@ -38,6 +38,22 @@ export function isExplanationToolEnabled(chatMode: string): boolean {
   )
 }
 
+/**
+ * Offers the tool only when the deployment gate, the chatbot setting and the
+ * owner's rollout all allow it. The flag lookup runs last, only when needed.
+ */
+export async function shouldOfferExplanationTool(params: {
+  chatMode: string
+  chatbotSettingEnabled: boolean
+  isOwnerFlagEnabled: () => Promise<boolean>
+}): Promise<boolean> {
+  return (
+    isExplanationToolEnabled(params.chatMode) &&
+    params.chatbotSettingEnabled &&
+    (await params.isOwnerFlagEnabled())
+  )
+}
+
 async function call<T>(
   path: string,
   init: { method: 'GET' | 'POST'; body?: unknown; timeoutMs?: number }

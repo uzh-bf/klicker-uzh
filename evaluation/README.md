@@ -85,8 +85,9 @@ real-provider qualification, permission to transmit source material or a paid ru
 
 The app owns the trajectory-capture importer and the synthetic
 [Explainer compression regression and control](data/explainer-compression/README.md),
-the [Explainer closing-check corpus](data/explainer-check/README.md)
-and the [Tutor first-turn explanation-check corpus](data/tutor-first-turn-explain-check/README.md).
+the [Explainer closing-check corpus](data/explainer-check/README.md),
+the [Tutor first-turn explanation-check corpus](data/tutor-first-turn-explain-check/README.md)
+and the [Tutor task-support corpus](data/tutor-task-support/README.md).
 These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
@@ -185,7 +186,7 @@ the application; their separate paid egress must be qualified independently.
 The guard accepts only the exact two true `cache` bypass flags emitted by the
 application, then removes this proxy-only field before forwarding. It likewise
 accepts the default route's `metadata` only as a single nonblank `session_id`
-of at most 64 characters and removes it before forwarding. A nonblank
+of at most 128 characters and removes it before forwarding. A nonblank
 native `prompt_cache_key` of at most 64 characters is preserved. Other cache
 objects and unknown request fields remain unqualified.
 

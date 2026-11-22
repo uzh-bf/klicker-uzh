@@ -558,7 +558,10 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
               relationType: 'related',
               relationStatus: 'extracted',
               sourceReferences: [],
-              properties: {},
+              properties: {
+                description: 'Synthetic relation description.',
+                kg_relationship_id: 'rel_synthetic',
+              },
             },
           ],
         }),
@@ -567,7 +570,9 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph?embed=true`)
     const input = page.getByTestId('chat-composer-input')
-    await expect(input).toBeVisible()
+    // On a phone the open map replaces the conversation instead of stacking.
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(input).toBeHidden()
     const sent: string[] = []
     page.on('request', (request) => {
       if (request.method() === 'POST' && request.url().endsWith('/chat'))
@@ -578,6 +583,13 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       .getByTestId('knowledge-graph-loaded-relationship')
       .first()
       .click()
+    // Learners get the relation's description, not the stored property list.
+    await expect(
+      page.getByTestId('knowledge-graph-relation-description')
+    ).toBeVisible()
+    await expect(
+      page.locator('#knowledge-graph-properties-heading')
+    ).toHaveCount(0)
     await page.getByTestId('knowledge-graph-ask').click()
     await expect(input).toBeFocused()
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toHaveCount(0)

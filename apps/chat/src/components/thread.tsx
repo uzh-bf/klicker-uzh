@@ -411,7 +411,10 @@ export const Thread: FC<ThreadProps> = ({
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-2 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
-                showHistoryRail && 'pt-14 md:pl-10 md:pt-8',
+                // `sm:pt-14` keeps the clearance between `sm` and `md`, where
+                // the base `sm:pt-8` would otherwise put the first message
+                // under the trigger.
+                showHistoryRail && 'pt-14 sm:pt-14 md:pl-10 md:pt-8',
                 // Below `md` the history rail sits above the messages and
                 // needs the default top padding for its trigger; from `md` it
                 // moves to the left gutter.
@@ -689,7 +692,7 @@ const ThreadWelcome: FC<{
   initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
-  const { embedded } = useChatUi()
+  const { embedded, compact } = useChatUi()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
@@ -711,7 +714,12 @@ const ThreadWelcome: FC<{
           embedded ? 'px-2' : ''
         )}
       >
-        <div className="aui-thread-welcome-center relative flex w-full flex-none flex-col items-center justify-center py-8 sm:flex-grow sm:py-0">
+        <div
+          className={twMerge(
+            'aui-thread-welcome-center relative flex w-full flex-none flex-col items-center justify-center py-8 sm:flex-grow sm:py-0',
+            compact && 'py-4'
+          )}
+        >
           {/* Faint branded accent behind the greeting — restrained, no new assets. */}
           <div
             aria-hidden
@@ -728,9 +736,10 @@ const ThreadWelcome: FC<{
               fallbackIcon={chatbotFallbackIcon}
               className={twMerge(
                 'text-uzh-blue ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 bg-white ring-1 duration-300 motion-reduce:animate-none',
-                embedded ? 'size-14' : 'size-16'
+                embedded ? 'size-14' : 'size-16',
+                compact && 'mb-3 size-12'
               )}
-              iconClassName={embedded ? 'size-6' : 'size-7'}
+              iconClassName={embedded || compact ? 'size-6' : 'size-7'}
             />
             {welcomeMessage && (
               <div
@@ -757,17 +766,30 @@ const ThreadWelcome: FC<{
             )}
             {!welcomeMessage && !customModeWelcome && !embedded && (
               <>
-                <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
+                <h2
+                  className={twMerge(
+                    'animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl',
+                    compact && 'text-2xl sm:text-2xl'
+                  )}
+                >
                   {t('chat.thread.welcomeTitle')}
                 </h2>
                 <p
                   data-cy="chat-welcome-chatbot"
-                  className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-2 text-lg text-pretty delay-75 duration-300 motion-reduce:animate-none"
+                  className={twMerge(
+                    'text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-2 text-lg text-pretty delay-75 duration-300 motion-reduce:animate-none',
+                    compact && 'mt-1 text-base'
+                  )}
                 >
                   {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
                 </p>
                 {isKnownMode(activeMode) && (
-                  <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
+                  <p
+                    className={twMerge(
+                      'text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none',
+                      compact && 'text-sm'
+                    )}
+                  >
                     {t('chat.thread.welcomeSubtitle')}
                   </p>
                 )}
@@ -776,7 +798,10 @@ const ThreadWelcome: FC<{
             {!welcomeMessage && !embedded && modeLabel && (
               <div
                 data-cy="chat-welcome-mode"
-                className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
+                className={twMerge(
+                  'border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none',
+                  compact && 'mt-3 py-2'
+                )}
               >
                 <p className="font-medium">
                   {t('chat.thread.welcomeMode', { mode: modeLabel })}
@@ -827,6 +852,7 @@ const ThreadWelcomeSuggestions: FC<{
   initialModeOptionsAreFallback?: boolean
 }> = ({ suggestions: customSuggestions }) => {
   const t = useTranslations()
+  const { compact } = useChatUi()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
 
@@ -857,7 +883,7 @@ const ThreadWelcomeSuggestions: FC<{
     <section
       aria-label={t('chat.suggestions.sectionLabel')}
       data-cy="chat-welcome-suggestions"
-      className="mt-4 w-full px-4 sm:px-8"
+      className={twMerge('mt-4 w-full px-4 sm:px-8', compact && 'mt-2')}
     >
       <p
         data-cy="chat-welcome-suggestion-hint"
@@ -865,13 +891,19 @@ const ThreadWelcomeSuggestions: FC<{
       >
         {t('chat.suggestions.editHint')}
       </p>
-      <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+      <div
+        className={twMerge(
+          'grid w-full grid-cols-1 gap-3 sm:grid-cols-2',
+          compact && 'gap-2'
+        )}
+      >
         {items.map((suggestion, index) => (
           <ThreadPrimitive.Suggestion
             key={suggestion.id}
             data-cy="chat-welcome-suggestion"
             className={twMerge(
               'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 whitespace-pre-wrap break-words rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
+              compact && 'px-3 py-2',
               SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
             )}
             prompt={suggestion.prompt}
@@ -2500,7 +2532,7 @@ const AssistantMessage: FC<{
           'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
             ? 'col-start-2 my-0.5 max-w-full text-sm leading-6'
-            : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
+            : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)] has-[[data-explanation-card]]:max-w-none'
         )}
       >
         {isPendingEmpty && <ThinkingDots />}

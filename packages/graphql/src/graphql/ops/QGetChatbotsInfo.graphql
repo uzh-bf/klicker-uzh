@@ -11,6 +11,7 @@ query GetChatbotsInfo {
     publishedAt
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId

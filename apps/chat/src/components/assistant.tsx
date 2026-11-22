@@ -28,7 +28,7 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
-import { FullscreenToggle } from './fullscreen-toggle'
+import { OpenInNewTabButton } from './open-in-new-tab-button'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
@@ -593,7 +593,7 @@ function SidebarMain({
                   onToggle={graphPanel.toggle}
                 />
               ) : null}
-              <FullscreenToggle />
+              <OpenInNewTabButton />
             </div>
           </div>
         </>
@@ -636,7 +636,7 @@ function SidebarMain({
                 onToggle={graphPanel.toggle}
               />
             ) : null}
-            <FullscreenToggle />
+            <OpenInNewTabButton />
           </div>
         </header>
       )}

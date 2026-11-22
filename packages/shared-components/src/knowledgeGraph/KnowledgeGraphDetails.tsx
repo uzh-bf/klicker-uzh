@@ -23,19 +23,32 @@ const SIDEBAR_LAYOUT_CLASSES =
 const CONTAINED_LAYOUT_CLASSES =
   'absolute inset-x-0 bottom-0 z-30 max-h-[55%] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]'
 
+// Compact pills sized to their label; full-width buttons crowded the sheet.
+const ACTION_CLASSES =
+  'min-h-9 rounded-full border px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2'
+
 type KnowledgeGraphDetailsProps = {
   node?: KnowledgeGraphNode
   edge?: KnowledgeGraphEdge
   edgeEndpoints?: { source: string; target: string }
   isExpanding: boolean
+  /** Every connection of the selected concept is already on the canvas. */
+  allConnectionsShown?: boolean
   onClose: () => void
   onExpand: (nodeId: string) => void
+  /** Starts practice on the selection; absent when the host has no quiz. */
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   labels: KnowledgeGraphDetailsLabels
   /** Emits the bounded ask payload; the control renders only when provided. */
   askSelection?: KnowledgeGraphAskSelection
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
   /** 'contained' overlays the pane inside the graph instead of a side column. */
   layout?: 'sidebar' | 'contained'
+  /**
+   * Lists every stored relationship property. Without it, only the
+   * relationship's plain-language description is shown, for learners.
+   */
+  showEdgeProperties?: boolean
 }
 
 function PropertyList({
@@ -159,16 +172,27 @@ export function KnowledgeGraphDetails({
   edge,
   edgeEndpoints,
   isExpanding,
+  allConnectionsShown = false,
   onClose,
   onExpand,
   labels,
   askSelection,
   onAsk,
+  onQuiz,
   layout = 'sidebar',
+  showEdgeProperties = true,
 }: KnowledgeGraphDetailsProps) {
   if (node === undefined && edge === undefined) {
     return null
   }
+
+  const rawEdgeDescription = edge?.properties.description
+  const edgeDescription =
+    !showEdgeProperties &&
+    typeof rawEdgeDescription === 'string' &&
+    rawEdgeDescription.trim() !== ''
+      ? readableDescription(rawEdgeDescription)
+      : undefined
 
   const heading =
     node?.displayLabel ??
@@ -179,6 +203,9 @@ export function KnowledgeGraphDetails({
   const definition = node === undefined ? undefined : conceptDefinition(node)
   const layoutClasses =
     layout === 'contained' ? CONTAINED_LAYOUT_CLASSES : SIDEBAR_LAYOUT_CLASSES
+  let expandLabel = labels.expandConnections
+  if (isExpanding) expandLabel = labels.loadingConnections
+  else if (allConnectionsShown) expandLabel = labels.allConnectionsShown
 
   return (
     <aside
@@ -191,7 +218,7 @@ export function KnowledgeGraphDetails({
         className="mx-auto mt-2 h-1 w-12 rounded-full bg-[#A3A3A3] md:hidden"
       />
       <div className={layout === 'contained' ? 'p-3' : 'p-5'}>
-        <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#4C4C4C]">
               {node === undefined ? labels.relationship : labels.concept}
@@ -213,37 +240,54 @@ export function KnowledgeGraphDetails({
             data-cy="knowledge-graph-close"
             aria-label={labels.closeAriaLabel}
             onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#E9E9E9] bg-white text-xl text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#E9E9E9] bg-white text-lg text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
           >
             <span aria-hidden="true">×</span>
           </button>
         </div>
 
-        {onAsk === undefined || askSelection === undefined ? null : (
-          <button
-            type="button"
-            data-cy="knowledge-graph-ask"
-            onClick={() => onAsk(askSelection)}
-            className="mb-5 min-h-11 w-full rounded-full border border-[#0028A5] bg-white px-4 py-2 text-sm font-semibold text-[#0028A5] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
-          >
-            {labels.ask}
-          </button>
-        )}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {onAsk === undefined || askSelection === undefined ? null : (
+            <button
+              type="button"
+              data-cy="knowledge-graph-ask"
+              onClick={() => onAsk(askSelection)}
+              className={`${ACTION_CLASSES} border-[#0028A5] bg-white text-[#0028A5] hover:bg-[#F5F5FB]`}
+            >
+              {labels.ask}
+            </button>
+          )}
+          {onQuiz === undefined || askSelection === undefined ? null : (
+            <button
+              type="button"
+              data-cy="knowledge-graph-quiz"
+              onClick={() => onQuiz(askSelection)}
+              className={`${ACTION_CLASSES} border-[#0028A5] bg-white text-[#0028A5] hover:bg-[#F5F5FB]`}
+            >
+              {labels.quiz}
+            </button>
+          )}
+          {node === undefined ? null : (
+            <button
+              type="button"
+              onClick={() => onExpand(node.id)}
+              disabled={isExpanding || allConnectionsShown}
+              className={`${ACTION_CLASSES} border-[#0028A5] bg-[#0028A5] text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60`}
+              data-cy="knowledge-graph-expand"
+            >
+              {expandLabel}
+            </button>
+          )}
+        </div>
 
         {node === undefined ? null : (
-          <div className="space-y-5">
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="font-semibold text-[#4C4C4C]">{labels.type}</dt>
-                <dd className="mt-0.5 text-[#121212]">{node.kind}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold text-[#4C4C4C]">
-                  {labels.connections}
-                </dt>
-                <dd className="mt-0.5 text-[#121212]">{node.degree}</dd>
-              </div>
-            </dl>
+          <div className="space-y-4">
+            <p className="text-xs text-[#4C4C4C]">
+              {labels.type}: <span className="text-[#121212]">{node.kind}</span>
+              {' · '}
+              {labels.connections}:{' '}
+              <span className="text-[#121212]">{node.degree}</span>
+            </p>
 
             {node.summary === undefined ||
             node.summary === definition ? null : (
@@ -281,23 +325,50 @@ export function KnowledgeGraphDetails({
               heading={labels.sources}
               pages={labels.pages}
             />
-
-            <button
-              type="button"
-              onClick={() => onExpand(node.id)}
-              disabled={isExpanding}
-              className="min-h-11 w-full rounded-full border border-[#0028A5] bg-[#0028A5] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
-              data-cy="knowledge-graph-expand"
-            >
-              {isExpanding
-                ? labels.loadingConnections
-                : labels.expandConnections}
-            </button>
           </div>
         )}
 
         {edge === undefined ? null : (
-          <div className="space-y-5">
+          <div className="space-y-4">
+            {edgeEndpoints === undefined ? null : (
+              // The relation read as one proposition, so it can be checked
+              // against its sources at a glance.
+              <p
+                className="text-sm leading-6 text-[#121212]"
+                data-cy="knowledge-graph-relation-sentence"
+              >
+                <strong>{edgeEndpoints.source}</strong>
+                {isSymmetricRelationType(edge.relationType) ? (
+                  <>
+                    {' ↔ '}
+                    <strong>{edgeEndpoints.target}</strong> (<em>{heading}</em>)
+                  </>
+                ) : (
+                  <>
+                    {' — '}
+                    <em>{heading}</em>
+                    {' → '}
+                    <strong>{edgeEndpoints.target}</strong>
+                  </>
+                )}
+              </p>
+            )}
+            {edgeDescription === undefined ? null : (
+              <p
+                className="whitespace-pre-wrap text-sm leading-6 text-[#4C4C4C]"
+                data-cy="knowledge-graph-relation-description"
+              >
+                {edgeDescription}
+              </p>
+            )}
+            {edge.sourceReferences.length > 0 ? null : (
+              <p
+                className="rounded-md border border-dashed border-[#A3A3A3] px-2 py-1 text-xs text-[#4C4C4C]"
+                data-cy="knowledge-graph-inferred-relation"
+              >
+                {labels.inferredRelation}
+              </p>
+            )}
             <dl className="grid grid-cols-1 gap-3 text-sm">
               {edgeEndpoints === undefined ? null : (
                 <EdgeEndpoints
@@ -326,12 +397,20 @@ export function KnowledgeGraphDetails({
               heading={labels.sources}
               pages={labels.pages}
             />
-            <PropertyList
-              properties={edge.properties}
-              heading={labels.properties}
-            />
+            {showEdgeProperties ? (
+              <PropertyList
+                properties={edge.properties}
+                heading={labels.properties}
+              />
+            ) : null}
           </div>
         )}
+        <p
+          className="mt-4 text-xs text-[#4C4C4C]"
+          data-cy="knowledge-graph-ai-note"
+        >
+          {labels.aiGeneratedNote}
+        </p>
       </div>
     </aside>
   )
