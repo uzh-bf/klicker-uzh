@@ -25,6 +25,7 @@ query GetPendingChatbotPublications {
       creditMaxCredits
       modelSelection
       answerPreferencesEnabled
+      interactiveExplanationsEnabled
       allowedModelIds
       allowedReasoningEffortsByModel {
         modelId
