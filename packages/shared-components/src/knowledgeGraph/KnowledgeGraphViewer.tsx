@@ -1415,7 +1415,6 @@ export function KnowledgeGraphViewer({
           {legendEntries.length === 0 ? null : (
             <div
               aria-label={labels.legendAriaLabel}
-              role="group"
               className={`absolute bottom-3 left-3 max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '@2xl:left-auto @2xl:right-3 @2xl:p-3' : 'sm:left-auto sm:right-3 sm:p-3 md:bottom-auto md:top-3'}`}
               data-cy="knowledge-graph-legend"
             >

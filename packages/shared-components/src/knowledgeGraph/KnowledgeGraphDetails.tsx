@@ -312,7 +312,6 @@ export function KnowledgeGraphDetails({
               heading={labels.sources}
               pages={labels.pages}
             />
-
           </div>
         )}
 

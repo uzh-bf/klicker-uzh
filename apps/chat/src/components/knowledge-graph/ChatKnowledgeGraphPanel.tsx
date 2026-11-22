@@ -375,14 +375,13 @@ export function ChatKnowledgeGraphPanel({
             </h2>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span
-                  // Focusable so keyboard and touch users reach the disclosure.
-                  tabIndex={0}
-                  className="text-muted-foreground focus-visible:ring-ring shrink-0 rounded-full border px-2 py-0.5 text-xs focus-visible:outline-none focus-visible:ring-2"
+                <button
+                  type="button"
+                  className="text-muted-foreground focus-visible:ring-ring shrink-0 cursor-help rounded-full border px-2 py-0.5 text-xs focus-visible:outline-none focus-visible:ring-2"
                   data-cy="knowledge-graph-ai-generated"
                 >
                   {t('aiGenerated')}
-                </span>
+                </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 {t('aiGeneratedHint')}
