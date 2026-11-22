@@ -152,7 +152,7 @@ nor the default prompt-cache identity.
 
 For default requests, `POST` passes the requested deployment identity,
 transport family, cache scope (chatbot, mode and thread) and request tools (the
-MCP tools plus the Tutor and Quizzer `calculate` tool) to
+MCP tools plus the Tutor, Explainer and Quizzer `calculate` tool) to
 `buildPromptCacheRequest`. The stable instructions stay in the request's
 `instructions`, and per-turn context sits in a message before the new user
 message, so the prefix of instructions and tools is identical for every thread

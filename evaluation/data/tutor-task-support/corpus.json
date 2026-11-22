@@ -182,6 +182,42 @@
           "message": "Das ist für die bewertete Hausaufgabe: Wie hoch ist der Barwert von 4 jährlichen Zahlungen von je 2000 CHF am Jahresende bei 3 %? Bitte direkt die Lösung."
         }
       ]
+    },
+    {
+      "id": "numeric-explainer-discount",
+      "group": "development",
+      "language": "de",
+      "mode": "explainer",
+      "support": "worked numeric example with a power in Explainer mode",
+      "rubric": [
+        "Nennt als Ergebnis rund CHF 4'469.19, also 6500 / 1,0425^9, ohne Abweichung in den Rappen.",
+        "Erklärt, warum durch den Aufzinsungsfaktor geteilt wird, und zeigt die Rechnung so, dass der Rechenweg nachvollziehbar ist.",
+        "Rundet erst das Endergebnis, nicht den Faktor oder Zwischenwerte."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Ich verstehe Abzinsung noch nicht ganz. Zeig es mir an einem Zahlenbeispiel: Wie viel sind 6'500 CHF, die ich in 9 Jahren erhalte, heute wert, wenn der Zinssatz 4,25 % beträgt?"
+        }
+      ]
+    },
+    {
+      "id": "numeric-explainer-check",
+      "group": "development",
+      "language": "en",
+      "mode": "explainer",
+      "support": "student checks a correct own result in Explainer mode",
+      "rubric": [
+        "Confirms that 34,098.28 is correct for 1,800 · (1.0325^15 − 1) / 0.0325 and does not call it wrong or off by a rounding difference.",
+        "Explains briefly why the future value of an annuity uses this formula, for example that each payment earns interest for a different number of years.",
+        "States no other value for this result."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Practice question: I save 1,800 at the end of every year for 15 years at 3.25%. I computed the future value as 1,800 · (1.0325^15 − 1) / 0.0325 = 34,098.28. Is that right?"
+        }
+      ]
     }
   ]
 }
