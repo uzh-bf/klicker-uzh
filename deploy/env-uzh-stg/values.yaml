@@ -212,6 +212,12 @@ chat:
     enabled: true
     environment: 'staging'
 
+  # Interactive explanations in the tutor chat, served by the internal
+  # explainer API next to the voice preview.
+  explainer:
+    enabled: true
+    serviceUrl: 'http://explainer-service.stg-explainer-preview.svc.cluster.local:3018'
+
   # Account usage has two independent switches: lifecycle writes record attempt
   # markers and credit counters, and enforcement rejects a participant request
   # before the provider call when the selected class has no available budget.
