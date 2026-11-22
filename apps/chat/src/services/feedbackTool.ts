@@ -149,7 +149,7 @@ export function createShowFeedbackTool({
     // Not validated by the SDK: `validateFeedback` is the gate and reports
     // errors the model can repair.
     inputSchema: jsonSchema<Record<string, unknown>>(feedbackInputSchema()),
-    execute: async (content): Promise<FeedbackToolResult> =>
+    execute: (content): FeedbackToolResult =>
       validateFeedback(content, learnerMessages),
     toModelOutput: ({ output }) => ({
       type: 'text' as const,

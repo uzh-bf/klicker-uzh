@@ -39,7 +39,7 @@ const STATUS_STYLE: Record<
   },
 }
 
-function Quote({ text }: { text: string }) {
+function Quote({ text }: Readonly<{ text: string }>) {
   return (
     <q className="block border-l-2 border-slate-300 py-0.5 pl-2 text-sm italic text-slate-600 before:content-none after:content-none">
       {text}
@@ -51,7 +51,7 @@ function Quote({ text }: { text: string }) {
  * Model-written card text goes through the message renderer, so citation
  * markers, mathematics and code render as in the reply itself.
  */
-function FeedbackText({ text }: { text: string }) {
+function FeedbackText({ text }: Readonly<{ text: string }>) {
   return (
     <div className="text-sm [&_.aui-md>*:first-child]:mt-0 [&_.aui-md>*:last-child]:mb-0">
       <TextMessagePartProvider text={text}>
