@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.97](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.96...v3.4.0-alpha.97) (2026-11-22)
+
+
+### Features
+
+* **chat:** show interactive explanations in the tutor chat (prototype) ([#6840](https://github.com/uzh-bf/klicker-uzh/issues/6840)) ([7abb744](https://github.com/uzh-bf/klicker-uzh/commit/7abb744e35366d2963064a789a7c7f6eeebe5390))
+
+
+### Bug Fixes
+
+* **chat:** answer safety refusals in the learner's language ([#6954](https://github.com/uzh-bf/klicker-uzh/issues/6954)) ([e4e23d5](https://github.com/uzh-bf/klicker-uzh/commit/e4e23d5586c44cb7a8fd2b5fa6187ff6442ccd0c))
+* **chat:** fullscreen focus, detection and fine-pointer selector ([#6939](https://github.com/uzh-bf/klicker-uzh/issues/6939)) ([68a1344](https://github.com/uzh-bf/klicker-uzh/commit/68a1344e33fc85a43a3a7e6582d18b79ddbbbdf7))
+* **chat:** stop hiding Writing Coach behind other modes' bindings ([#6938](https://github.com/uzh-bf/klicker-uzh/issues/6938)) ([2d26717](https://github.com/uzh-bf/klicker-uzh/commit/2d26717fae992006cec9e1ced5caef39551dc16b))
+* **chat:** tighten framed welcome, clear history trigger and enlarge touch targets ([#6950](https://github.com/uzh-bf/klicker-uzh/issues/6950)) ([0db522a](https://github.com/uzh-bf/klicker-uzh/commit/0db522aec0c8b6273db80023d385389917b2f4f3))
+* **deploy:** restore production CPU requests dropped by a sync merge ([#6905](https://github.com/uzh-bf/klicker-uzh/issues/6905)) ([5dbc688](https://github.com/uzh-bf/klicker-uzh/commit/5dbc68811041d9b3b154787bbcfbd6e2e04dcd34))
+* **deps:** lift effect in the migrator image for CVE-2026-121707 ([#6943](https://github.com/uzh-bf/klicker-uzh/issues/6943)) ([84fc8e4](https://github.com/uzh-bf/klicker-uzh/commit/84fc8e4e0840410b627c0911bcdd5e6c98b27859))
+* **deps:** lift effect to 3.22.1 for CVE-2026-121707 ([#6941](https://github.com/uzh-bf/klicker-uzh/issues/6941)) ([2d35385](https://github.com/uzh-bf/klicker-uzh/commit/2d3538506ea797255e57a26ba09fcee11f3a97cc))
+* **deps:** point fastmcp effect peers at 3.22.1 after sync merge ([cdd8a56](https://github.com/uzh-bf/klicker-uzh/commit/cdd8a56408995cfdfd28b68343f96e3018f70512))
+
+
+### Deployment
+
+* **prd:** promote alpha.96 application images ([#6920](https://github.com/uzh-bf/klicker-uzh/issues/6920)) ([2389250](https://github.com/uzh-bf/klicker-uzh/commit/238925053ed246f67c0af20875850d3a648bfe36))
+
+
+### Enhancements
+
+* **chat:** compact framed layout with fullscreen and consistent controls ([#6936](https://github.com/uzh-bf/klicker-uzh/issues/6936)) ([897986d](https://github.com/uzh-bf/klicker-uzh/commit/897986dbc99f333ab2a738b5d4e38c7ff2d8d205))
+* **chat:** explain then check in Tutor and keep answers grounded ([#6933](https://github.com/uzh-bf/klicker-uzh/issues/6933)) ([7dc232e](https://github.com/uzh-bf/klicker-uzh/commit/7dc232e17aa3dd387feaa03d2ddc1841f884b5e1))
+* **chat:** make the concept map readable in the docked panel ([#6937](https://github.com/uzh-bf/klicker-uzh/issues/6937)) ([ebf492d](https://github.com/uzh-bf/klicker-uzh/commit/ebf492d7dca6f886d4f9c15663b3736e2c40c768))
+* **chat:** make the concept map usable, transparent and practice-oriented ([#6951](https://github.com/uzh-bf/klicker-uzh/issues/6951)) ([ede241f](https://github.com/uzh-bf/klicker-uzh/commit/ede241fa71d903bf0d1e2c2210bff767263b9702))
+* **chat:** make Tutor attempt-first for tasks and protect graded work ([#6949](https://github.com/uzh-bf/klicker-uzh/issues/6949)) ([8e406e5](https://github.com/uzh-bf/klicker-uzh/commit/8e406e5dd22974f21715fa565f25ccad3984751b))
+* **chat:** read course media with workload identity ([#6896](https://github.com/uzh-bf/klicker-uzh/issues/6896)) ([9de3af8](https://github.com/uzh-bf/klicker-uzh/commit/9de3af8bee89a1ef6f82f8ed96f493b36e0e5594))
+* **deploy:** enable question revisions in production ([#6900](https://github.com/uzh-bf/klicker-uzh/issues/6900)) ([9c43593](https://github.com/uzh-bf/klicker-uzh/commit/9c435933751ebda8fbce203f7f8e7265a1a74a9b))
+* **deploy:** raise the knowledge-graph semester quota to CHF 100 ([#6912](https://github.com/uzh-bf/klicker-uzh/issues/6912)) ([ac967b5](https://github.com/uzh-bf/klicker-uzh/commit/ac967b5abb9d0b978dfa2bf20c38eb5705cd1a8a))
+* **deploy:** test GPT-6.1 Terra low for the staging KG High tier ([#6932](https://github.com/uzh-bf/klicker-uzh/issues/6932)) ([0f15ff3](https://github.com/uzh-bf/klicker-uzh/commit/0f15ff36de9ab6666d39402db902c1fe0fc3b3aa))
+* **deploy:** turn on interactive explanations in the staging chat ([#6946](https://github.com/uzh-bf/klicker-uzh/issues/6946)) ([8271fa3](https://github.com/uzh-bf/klicker-uzh/commit/8271fa3f3fc3d4b8d913a04dd0e7f8f2595eaddd))
+
 ## [3.4.0-alpha.96](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.95...v3.4.0-alpha.96) (2026-11-17)
 
 
