@@ -437,6 +437,7 @@ export default {
       welcomeMode: 'Selected mode: {mode}',
       explanation: {
         preparing: 'Preparing an interactive explanation...',
+        rejected: 'Interactive explanation draft rejected',
         unavailable: 'Interactive explanation unavailable',
         fallbackTitle: 'Interactive explanation',
         header: 'Interactive explanation · AI-generated draft, not reviewed',
