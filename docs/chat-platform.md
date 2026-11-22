@@ -1367,7 +1367,8 @@ this order:
 4. the platform-owned Tutor, Explainer, Quizzer, or Writing Coach contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode. Tutor uses `mode-tutor-v2.hbs` (attempt-first task
    support with staged escalation to the worked solution) unless `CHAT_TUTOR_PROMPT_VERSION=v1`
-   selects the earlier `mode-tutor.hbs`; the value is read once at server start;
+   selects the earlier `mode-tutor.hbs`; the value is read once at server start, and the Helm value
+   `chat.tutorPromptVersion` sets it for a deployment;
 5. the student answer preferences, when the student chose a non-default style or tone (see
    [Student answer style and tone](#student-answer-style-and-tone));
 6. fixed image-attachment description handling from
