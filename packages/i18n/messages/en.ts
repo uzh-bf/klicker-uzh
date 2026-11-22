@@ -146,10 +146,6 @@ export default {
     embedded: {
       close: 'Close chat',
     },
-    fullscreen: {
-      enter: 'Fullscreen',
-      exit: 'Exit fullscreen',
-    },
     openInNewTab: {
       label: 'Open in new tab',
       failed: 'Could not open a new tab. Allow pop-ups and try again.',

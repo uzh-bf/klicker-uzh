@@ -148,10 +148,6 @@ export default {
     embedded: {
       close: 'Chat schliessen',
     },
-    fullscreen: {
-      enter: 'Vollbild',
-      exit: 'Vollbild beenden',
-    },
     openInNewTab: {
       label: 'In neuem Tab öffnen',
       failed:
