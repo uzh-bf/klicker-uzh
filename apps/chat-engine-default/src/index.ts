@@ -14,6 +14,7 @@ import {
   type EngineManifest,
   type SupportedEngineMessage as EngineMessage,
   type EngineUsage,
+  EXPLANATION_TURN_MAX_STEPS,
   engineChatRequestSchema,
   engineManifestSchema,
   engineToolExecutionV2RequestSchema,
@@ -22,10 +23,12 @@ import {
   engineToolProjectionV2ResultSchema,
   engineV2ChatRequestSchema,
   engineV2ManifestSchema,
+  explanationAttemptsLeft,
   MCP_EXECUTION_TOKEN_HEADER,
   parseProviderAllowedOrigins,
   providerOriginIsAllowed,
   type ResolvedGeneration,
+  SHOW_EXPLANATION_TOOL_NAME,
   validateProviderCredentialHeaders,
 } from '@klicker-uzh/chat-engine-contract'
 import {
@@ -908,37 +911,60 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
         })
       }
 
+      const stepPolicy =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2
+          ? request.stepPolicy
+          : undefined
+      const explanationToolActive =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2 &&
+        request.tools.some(
+          (tool) =>
+            tool.serverId === 'klicker-host' &&
+            tool.name === SHOW_EXPLANATION_TOOL_NAME
+        )
       const result = streamText({
         model,
         system: request.systemPrompt,
         messages: toModelMessages(request.messages),
-        ...('stepPolicy' in request && request.stepPolicy
+        ...(stepPolicy || explanationToolActive
           ? {
               allowSystemInMessages: true,
               prepareStep: async ({
                 stepNumber,
+                steps,
                 initialMessages,
                 responseMessages,
               }) => {
                 const projectedMessages =
-                  stepNumber > 0 && request.stepPolicy?.projectToolResults
+                  stepNumber > 0 && stepPolicy?.projectToolResults
                     ? await projectToolResults(responseMessages)
                     : responseMessages
                 return {
+                  ...(explanationToolActive && !explanationAttemptsLeft(steps)
+                    ? {
+                        activeTools: Object.keys(tools ?? {}).filter(
+                          (name) => name !== SHOW_EXPLANATION_TOOL_NAME
+                        ),
+                      }
+                    : {}),
                   toolChoice:
-                    stepNumber === 0 && request.stepPolicy?.firstToolName
+                    stepNumber === 0 && stepPolicy?.firstToolName
                       ? {
                           type: 'tool' as const,
-                          toolName: request.stepPolicy.firstToolName,
+                          toolName: stepPolicy.firstToolName,
                         }
                       : ('auto' as const),
                   messages: [
                     ...initialMessages,
                     ...projectedMessages,
-                    {
-                      role: 'system' as const,
-                      content: request.stepPolicy!.trailingSystemMessage,
-                    },
+                    ...(stepPolicy
+                      ? [
+                          {
+                            role: 'system' as const,
+                            content: stepPolicy.trailingSystemMessage,
+                          },
+                        ]
+                      : []),
                   ],
                 }
               },
@@ -949,7 +975,13 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
           : {}),
         providerOptions: providerOptionsForGeneration(request.generation),
         ...(tools
-          ? { tools, toolChoice: 'auto' as const, stopWhen: isStepCount(5) }
+          ? {
+              tools,
+              toolChoice: 'auto' as const,
+              stopWhen: isStepCount(
+                explanationToolActive ? EXPLANATION_TURN_MAX_STEPS : 5
+              ),
+            }
           : {}),
         ...('stepPolicy' in request &&
         request.stepPolicy?.unbilledReplyReplacement !== undefined

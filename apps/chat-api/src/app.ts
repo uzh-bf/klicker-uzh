@@ -4,11 +4,13 @@ import {
   CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
   CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUEST_BYTES,
   type EngineV2ChatRequest,
+  EXPLANATION_TURN_MIN_OUTPUT_TOKENS,
   engineV2ChatRequestSchema,
   type ImageAttachment,
   imageAttachmentSchema,
   parseProviderAllowedOrigins,
   providerOriginIsAllowed,
+  SHOW_EXPLANATION_TOOL_NAME,
 } from '@klicker-uzh/chat-engine-contract'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating, type Prisma } from '@klicker-uzh/prisma/client'
@@ -18,7 +20,6 @@ import { type Context, Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { getCookie } from 'hono/cookie'
 import { z } from 'zod'
-import { withEmptyResponseError } from './host/lib/server/persistedAssistantContent.js'
 import {
   createEngineClient,
   type EngineClient,
@@ -58,7 +59,10 @@ import {
   replyLanguageReminder,
 } from './host/lib/server/languageInstructions.js'
 import { getOpenAIResponsesStore } from './host/lib/server/openaiResponsesOptions.js'
-import { withoutReasoningParts } from './host/lib/server/persistedAssistantContent.js'
+import {
+  withEmptyResponseError,
+  withoutReasoningParts,
+} from './host/lib/server/persistedAssistantContent.js'
 import { providerRefusalDeflection } from './host/lib/server/providerRefusal.js'
 import { isDocQueryToolName } from './host/lib/sources/normalizeSources.js'
 import {
@@ -109,9 +113,9 @@ import {
   type HostToolInput,
   type HostToolSession,
   type HostToolSet,
-  ToolSessionCapacityError,
   prepareHostTools,
   projectHistoricalToolResults,
+  ToolSessionCapacityError,
 } from './runtime/mcp.js'
 
 const MAX_BODY_BYTES = CHAT_ENGINE_MAX_V2_REQUEST_BYTES
@@ -1081,7 +1085,7 @@ export function createChatApiApp(
             503
           )
         }
-        const generation = withReasoning(
+        const modelGeneration = withReasoning(
           credential.generation,
           appliedReasoningEffort
         )
@@ -1238,6 +1242,19 @@ export function createChatApiApp(
           return c.json({ code: 'REQUIRED_MCP_UNAVAILABLE' }, 503)
         }
         const tools = hostToolSession?.tools ?? []
+        const generation = tools.some(
+          (tool) =>
+            tool.serverId === 'klicker-host' &&
+            tool.name === SHOW_EXPLANATION_TOOL_NAME
+        )
+          ? {
+              ...modelGeneration,
+              maxOutputTokens: Math.max(
+                modelGeneration.maxOutputTokens ?? 0,
+                EXPLANATION_TURN_MIN_OUTPUT_TOKENS
+              ),
+            }
+          : modelGeneration
         if (
           (images.length > 0 && !engineReady.features?.images) ||
           (tools.length > 0 && !engineReady.features?.tools)
@@ -1333,6 +1350,7 @@ export function createChatApiApp(
             ),
             unbilledReplyReplacement: providerRefusalDeflection(
               turnSettings.replyLanguage ?? null,
+              lastMessage.content,
               input.locale ?? getCookie(c, 'NEXT_LOCALE')
             ),
           },
@@ -1349,7 +1367,7 @@ export function createChatApiApp(
           maxInputTokens: model.maxInputTokens ?? 128_000,
           systemPrompt: `${engineRequest.systemPrompt}\n\n${stepReminder.content}`,
           tools: engineRequest.tools,
-          maxOutputTokens: model.maxOutputTokens,
+          maxOutputTokens: generation.maxOutputTokens ?? model.maxOutputTokens,
         })
         if (!context) return c.json({ code: 'CONTEXT_LIMIT_EXCEEDED' }, 400)
         engineRequest.messages = context.messages

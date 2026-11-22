@@ -49,7 +49,8 @@ it.skipIf(!port)(
       }
       const started = performance.now()
       const overview = await readKnowledgeGraphOverview(context)
-      expect(overview.nodes).toHaveLength(250)
+      expect(overview.nodes).toHaveLength(50)
+      expect(overview.nodes[0]?.degree).toBe(5000)
       expect(overview.edges.length).toBeLessThanOrEqual(500)
       expect(overview.truncated).toBe(true)
       const hub = (await searchKnowledgeGraph(context, 'Hub')).nodes[0]!

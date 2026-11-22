@@ -8,20 +8,22 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
 import {
   COURSE_IMAGE_TOOL,
   courseImageModelInput,
 } from '@/src/lib/sources/courseImages'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
-import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/lib/toolOutput'
 import {
   countDocQueryDocuments,
   isDocQueryToolName,
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/lib/toolOutput'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
+import { ExplanationCard } from './explanation-card'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -193,6 +195,10 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
 
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />
+  }
+
+  if (toolName === SHOW_EXPLANATION_TOOL_NAME) {
+    return <ExplanationCard result={result} status={status} isError={isError} />
   }
 
   const manageProposalResult = getManageProposalResult(result)

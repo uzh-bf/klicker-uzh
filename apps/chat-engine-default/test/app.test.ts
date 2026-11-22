@@ -1282,6 +1282,69 @@ describe('default chat engine', () => {
   })
 
   test.each([
+    { invalid: true, calls: 3, steps: 4 },
+    { invalid: false, calls: 7, steps: 7 },
+  ])('bounds interactive explanation turns ($invalid)', async ({
+    invalid,
+    calls,
+    steps,
+  }) => {
+    const name = 'show_explanation'
+    const rawOutput = invalid
+      ? { kind: 'explanation-invalid', errors: ['synthetic missing field'] }
+      : { kind: 'explanation', content: { sample: 2 } }
+    const execute = vi.fn(async () => ({
+      output: rawOutput,
+      modelOutput: { type: 'text', value: 'synthetic explainer feedback' },
+    }))
+    let sequence = 0
+    const model = new MockLanguageModelV3({
+      doStream: async ({ tools }) => ({
+        stream: tools?.some((tool) => 'name' in tool && tool.name === name)
+          ? toolStream([
+              {
+                type: 'tool-call',
+                toolCallId: String(++sequence),
+                toolName: name,
+                input: '{}',
+              },
+            ])
+          : mockStream(),
+      }),
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => model,
+      toolExecutor: execute,
+    })
+    const response = await app.request('/v2/chat', {
+      method: 'POST',
+      headers: projectionHeaders,
+      body: JSON.stringify({
+        ...conformanceV2Request,
+        tools: [
+          {
+            serverId: 'klicker-host',
+            name,
+            description: 'Show an interactive explanation.',
+            inputSchema: { type: 'object' },
+          },
+        ],
+      }),
+    })
+    expect(response.ok).toBe(true)
+    const parts = await readParts(response, 'v2')
+    expect(parts.some((part) => part.type === 'error')).toBe(false)
+    expect(execute).toHaveBeenCalledTimes(calls)
+    expect(model.doStreamCalls).toHaveLength(steps)
+    expect(
+      parts.filter((part) => part.type === 'tool-output-available')
+    ).toHaveLength(calls)
+    if (invalid)
+      expect(parts.some((part) => part.type === 'text-delta')).toBe(true)
+  })
+
+  test.each([
     'v1',
     'v2',
   ] as const)('preserves %s execution wire and skips projection without policy', async (version) => {

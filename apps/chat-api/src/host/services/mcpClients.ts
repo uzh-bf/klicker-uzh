@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@klicker-uzh/chat-engine-contract'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   MAX_TOOL_NAME_LENGTH,
@@ -566,7 +567,7 @@ async function loadServerTools(
 
     // Apply tool filtering
     const filteredTools: Record<string, any> = {}
-    const usedNames = new Set<string>()
+    const usedNames = new Set([SHOW_EXPLANATION_TOOL_NAME])
 
     Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
       const allowed = runtimePolicy.required
