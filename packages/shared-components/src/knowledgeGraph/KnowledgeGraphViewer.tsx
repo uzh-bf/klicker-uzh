@@ -799,22 +799,14 @@ export function KnowledgeGraphViewer({
     })
 
     // A search focus or overview reset replaces the view, so it gets a full
-    // layout; only a neighbor expansion keeps the concepts already on screen.
+    // layout. A neighbor expansion starts the layout from the current
+    // positions, with the new neighbors seeded around their origin: concepts
+    // already on screen stay roughly in place but move apart until nothing
+    // overlaps.
     const isInitialLayout = buildChanged || origin.empty()
-    if (!isInitialLayout) {
-      // Keep added neighbors around their origin. An isolated subset layout
-      // recenters them at zero and can overlap already positioned concepts.
-      newNodes.forEach((node) => {
-        positionsRef.current.set(String(node.data('graphId')), node.position())
-      })
-      fitGraphElements(cy)
-      centerSelectedNode(cy)
-      expansionOriginRef.current = null
-      return
-    }
     const layout = cy.elements().layout({
       name: 'cose',
-      animate: false,
+      animate: isInitialLayout ? false : !prefersReducedMotionRef.current,
       randomize: isInitialLayout,
       fit: false,
       padding: 30,
@@ -832,11 +824,13 @@ export function KnowledgeGraphViewer({
       })
       if (isInitialLayout) {
         fitGraphReadably(cy)
-        centerSelectedNode(cy)
+      } else {
+        fitGraphElements(cy)
       }
+      centerSelectedNode(cy)
     })
     layout.run()
-    if (expansionOriginWasLoaded) {
+    if (expansionOriginWasLoaded || !isInitialLayout) {
       expansionOriginRef.current = null
     }
   }, [state.buildId, state.edges, state.nodes])
