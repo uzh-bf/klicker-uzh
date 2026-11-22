@@ -446,7 +446,6 @@ export default {
       welcomeMode: 'Ausgewählter Modus: {mode}',
       explanation: {
         preparing: 'Interaktive Erklärung wird vorbereitet...',
-        rejected: 'Entwurf der interaktiven Erklärung abgelehnt',
         unavailable: 'Interaktive Erklärung nicht verfügbar',
         fallbackTitle: 'Interaktive Erklärung',
         header: 'Interaktive Erklärung · KI-generierter Entwurf, nicht geprüft',

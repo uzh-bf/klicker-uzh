@@ -3,7 +3,6 @@
 import {
   LoaderCircleIcon,
   Maximize2Icon,
-  WrenchIcon,
   XCircleIcon,
   XIcon,
 } from 'lucide-react'
@@ -134,16 +133,10 @@ export function ExplanationCard({
         text={t('preparing')}
       />
     )
-  // A rejected draft or a call whose input did not parse: the tutor usually
-  // tries again, and otherwise explains in text.
+  // A rejected draft or a call whose input did not parse shows nothing: the
+  // tutor usually tries again, and otherwise explains in text.
   if (parsed?.kind === 'explanation-invalid' || (isError && !parsed))
-    return (
-      <Chip
-        tone="muted"
-        icon={<WrenchIcon className="size-4" />}
-        text={t('rejected')}
-      />
-    )
+    return null
   if (!content || (page && 'failed' in page))
     return (
       <Chip
