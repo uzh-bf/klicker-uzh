@@ -9,6 +9,7 @@ import {
   verifyElearningSnapshotEnvelope,
 } from '@klicker-uzh/util'
 import { z } from 'zod'
+import { historyTextFromParts } from '../lib/feedback.js'
 
 const availabilitySchema = z.enum([
   'full-text',
@@ -247,16 +248,7 @@ export function matchesPersistedLearningHistory(
       typeof row.content === 'string'
         ? row.content
         : Array.isArray(row.content)
-          ? row.content
-              .filter(
-                (part) =>
-                  part &&
-                  typeof part === 'object' &&
-                  part.type === 'text' &&
-                  typeof part.text === 'string'
-              )
-              .map((part) => part.text)
-              .join('')
+          ? historyTextFromParts(row.content)
           : ''
     return row.role === message.role && content === message.content
   })
