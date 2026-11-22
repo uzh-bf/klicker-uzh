@@ -16,9 +16,8 @@ interface ChatUiContextValue {
   // frame is usually short, so the thread and sidebar use tighter spacing.
   // `embedded` already has its own compact layout and is excluded.
   compact: boolean
-  // A compact chat that is not in browser fullscreen drops its header bar: the
-  // mode menu lives in the sidebar and the remaining controls float over the
-  // thread. Fullscreen has room for the full header again.
+  // A compact chat drops its header bar: the mode menu lives in the sidebar and
+  // the remaining controls float over the thread.
   headerless: boolean
   showSidebar: boolean
   showMinimalSettings: boolean
@@ -39,38 +38,23 @@ export function ChatUiProvider({
 }) {
   const embedded = useEmbedded()
   const framed = useFramed()
-  const fullscreen = useFullscreenActive()
   const ownerPreview = variant === 'owner-preview'
 
   const value = useMemo<ChatUiContextValue>(
     () => ({
       embedded,
       compact: framed && !embedded && !ownerPreview,
-      headerless: framed && !embedded && !ownerPreview && !fullscreen,
+      headerless: framed && !embedded && !ownerPreview,
       showSidebar: !embedded && !ownerPreview,
       showMinimalSettings: embedded && !ownerPreview,
       showMessageActions: !embedded && !ownerPreview,
       variant,
     }),
-    [embedded, framed, fullscreen, ownerPreview, variant]
+    [embedded, framed, ownerPreview, variant]
   )
 
   return (
     <ChatUiContext.Provider value={value}>{children}</ChatUiContext.Provider>
-  )
-}
-
-function subscribeToFullscreen(onChange: () => void) {
-  document.addEventListener('fullscreenchange', onChange)
-  return () => document.removeEventListener('fullscreenchange', onChange)
-}
-
-/** Whether this document currently shows in browser fullscreen. */
-export function useFullscreenActive() {
-  return useSyncExternalStore(
-    subscribeToFullscreen,
-    () => Boolean(document.fullscreenElement),
-    () => false
   )
 }
 
