@@ -30,6 +30,7 @@ import {
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
 import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
 import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
+import { isRejectedExplanation } from './explanation-card'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ResponseExampleCaptureAction } from './response-example-capture-action'
@@ -249,10 +250,12 @@ const groupByType = groupPartByType({
 })
 
 // An interactive explanation or a feedback card is the answer itself, so it
-// stays visible instead of collapsing into the tool-call group.
+// stays visible instead of collapsing into the tool-call group. A rejected
+// explanation draft is only a trace of an attempt and joins the group.
 const groupAssistantParts: typeof groupByType = (part, context) =>
   part.type === 'tool-call' &&
-  (part.toolName === SHOW_EXPLANATION_TOOL_NAME ||
+  ((part.toolName === SHOW_EXPLANATION_TOOL_NAME &&
+    !isRejectedExplanation(part.result, part.isError)) ||
     part.toolName === SHOW_FEEDBACK_TOOL_NAME)
     ? []
     : groupByType(part, context)
