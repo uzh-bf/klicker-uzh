@@ -47,6 +47,7 @@ FROM base AS runtime
 WORKDIR /app
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=${NODE_ENV}
 
 RUN npm i -g --ignore-scripts pnpm@12.11.2 turbo@2.10.11 \
  && node "$(npm root -g)/pnpm/install.js"
@@ -62,9 +63,9 @@ COPY --from=deps /app/out/pnpm* .
 # vendored dependencies out of the scanned runtime image. Toolchain upgrades
 # need a coordinated trusted-v3 Playwright action rollout: those remote actions
 # and the candidate package.json must agree on pnpm before setup can succeed.
-# npm itself goes last: its vendored undici and brace-expansion carry fixable
-# HIGH advisories that no npm release has picked up yet, and nothing runs npm
-# after this step.
+# npm itself goes last: no published npm release (11.20.0, 12.1.0 included)
+# vendors a patched brace-expansion (>=5.0.11) or undici (>=6.28.1) yet, and the
+# runtime never calls npm or npx, so the scanned image ships without it.
 RUN pnpm i --prod --ignore-scripts \
  && npm rm -g --ignore-scripts pnpm turbo \
  && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm \
@@ -73,15 +74,21 @@ RUN pnpm i --prod --ignore-scripts \
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+COPY --from=builder /app/packages/audit/dist/ /app/packages/audit/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
+COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+# The GraphQL bundle imports these adaptive workspace packages at runtime.
+COPY --from=builder /app/packages/adaptive-contract/dist/ /app/packages/adaptive-contract/dist/
+COPY --from=builder /app/packages/adaptive-client/dist/ /app/packages/adaptive-client/dist/
 COPY --from=builder /app/packages/doc-query-client/dist/ /app/packages/doc-query-client/dist/
 COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
+COPY --from=builder /app/packages/logging/dist/ /app/packages/logging/dist/
 COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs

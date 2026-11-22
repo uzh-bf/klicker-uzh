@@ -1,0 +1,31 @@
+fragment CompetenceTreeSummaryData on CompetenceTreeSummary {
+  id
+  name
+  displayName
+  description
+  maxDepth
+  thetaMin
+  thetaMax
+  defaultDiscrimination
+  levelMappingRule
+  levelCount
+  nodeCount
+  assignmentCount
+  adaptiveQuizCount
+  draftAdaptiveQuizCount
+  publishedAdaptiveQuizCount
+  isArchived
+  isOwner
+  canEdit
+  isStructurallyLocked
+  courseLinkCount
+  courseLinks {
+    id
+    courseId
+    courseName
+    courseDisplayName
+    createdAt
+  }
+  createdAt
+  updatedAt
+}

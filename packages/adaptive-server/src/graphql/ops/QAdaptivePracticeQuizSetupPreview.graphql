@@ -1,0 +1,61 @@
+query AdaptivePracticeQuizSetupPreview(
+  $courseId: String!
+  $input: AdaptivePracticeQuizConfigInput!
+) {
+  adaptivePracticeQuizSetupPreview(courseId: $courseId, input: $input) {
+    competenceTree {
+      id
+      name
+      displayName
+      description
+      maxDepth
+      thetaMin
+      thetaMax
+      levels {
+        id
+        label
+        order
+        theta
+        lowerBound
+        upperBound
+      }
+    }
+    nodes {
+      id
+      parentId
+      kind
+      name
+      depth
+      order
+      enabled
+      overrideEnabled
+      effectiveEnabled
+      weight
+      questionCap
+    }
+    assignments {
+      id
+      elementId
+      elementName
+      elementVersion
+      elementType
+      leafNodeId
+      levelId
+      enabled
+      sourceEnabled
+      overrideEnabled
+      effectiveEnabled
+      overrideDiscrimination
+      available
+      controlledAnswerReady
+      choiceCount
+      enablePercentInput
+      a
+      b
+      c
+    }
+    readiness {
+      ...AdaptivePracticeQuizReadinessData
+    }
+  }
+}

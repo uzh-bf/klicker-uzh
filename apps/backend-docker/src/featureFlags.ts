@@ -1,9 +1,12 @@
+import { logger } from './logger.js'
+
 const INVALID_REFRESH_INTERVAL_MESSAGE =
   '[feature-flags] GROWTHBOOK_REFRESH_INTERVAL_MS must be a positive number; using the default refresh interval.'
 
 export function parseRefreshInterval(
   value: string | undefined,
-  warn: (message: string) => void = (message) => console.warn(message)
+  warn: (message: string) => void = (message) =>
+    logger.warn({ event: 'feature_flags.configuration.invalid' }, message)
 ): number | undefined {
   if (value === undefined) return undefined
 

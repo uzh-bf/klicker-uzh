@@ -1,9 +1,11 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { RESPONSE_EXAMPLE_RECEIPT_MAX_TOKEN_CHARACTERS } from '@klicker-uzh/util/response-example-receipt'
 import { cookies } from 'next/headers'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { readBoundedJson } from '@/src/lib/server/manageChatRequest'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { getRequiredManageOrigin } from '@/src/services/manageProposals'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 import {
@@ -41,9 +43,10 @@ const captureErrorStatus: Record<string, number> = {
   NOT_FOUND: 404,
 }
 
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
   const auth = await withOwnerPreviewAuth(chatbotId)
@@ -83,10 +86,10 @@ export async function POST(
     graphqlEndpoint = getGraphqlEndpoint()
     manageOrigin = getRequiredManageOrigin()
   } catch (error) {
-    console.error('Response-example capture misconfigured:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.error(
+      { event: 'chat.preview.capture.misconfigured' },
+      'Response-example capture misconfigured'
+    )
     return NextResponse.json(
       { error: 'Response-example capture is not configured' },
       { status: 503 }
@@ -111,13 +114,24 @@ export async function POST(
         { status: captureErrorStatus[error.code ?? ''] ?? 502 }
       )
     }
-    console.error('Response-example capture failed:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.error(
+      { event: 'chat.preview.capture.failed' },
+      'Response-example capture failed'
+    )
     return NextResponse.json(
       { error: 'Response-example capture failed' },
       { status: 502 }
     )
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/manage/chatbots/:chatbotId/preview/capture',
+    (log) => handlePOST(req, context, log)
+  )
 }

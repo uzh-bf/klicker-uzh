@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { readCourseImage } from '@/src/lib/server/courseImageStore'
 import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
+import { logger } from '@/src/lib/server/logger'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import { selectedCourseImages } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
@@ -82,7 +83,10 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('Failed to serve authorized course image', error)
+    logger.error(
+      { event: 'chat.course_image.serve_failed', err: error },
+      'Failed to serve authorized course image'
+    )
     return missing()
   }
 }

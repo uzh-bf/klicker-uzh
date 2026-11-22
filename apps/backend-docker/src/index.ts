@@ -14,10 +14,11 @@ import {
   settleKbKnowledgeGraphResult,
 } from '@klicker-uzh/graphql'
 import {
+  createHatchetClient,
   getKBGraphTerminalResult,
-  hatchetClient,
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
@@ -25,7 +26,10 @@ import { Redis } from 'ioredis'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
 import { parseRefreshInterval } from './featureFlags.js'
+import { logger } from './logger.js'
 import { migrate } from './migration.js'
+
+const hatchetClient = createHatchetClient({ logger })
 
 const emitter = new EventEmitter()
 const featureFlags = new NodeFeatureFlagClient({
@@ -104,8 +108,11 @@ let cache: Cache
 if (redisCache) {
   try {
     cache = createRedisCache({ redis: redisCache })
-  } catch (e) {
-    console.error(e)
+  } catch {
+    logger.warn(
+      { event: 'dependency.degraded', dependency: 'redis-cache' },
+      'Redis response cache unavailable; using in-memory cache'
+    )
     cache = createInMemoryCache()
   }
 } else {
@@ -131,25 +138,27 @@ getChatModelRegistry()
 
 try {
   await migrate(prisma)
-} catch (error) {
+} catch {
   // Runtime migrations must not prevent the server from starting: a failed
   // data migration leaves the affected feature degraded but the API usable.
   // The migration record is absent so the next restart retries it.
-  console.error(
-    'Runtime migrations failed; starting server in degraded state:',
-    error
+  logger.error(
+    { event: 'migration.failed' },
+    'Runtime migrations failed; starting server in degraded state'
   )
 }
 
 // Fail-closed feature flag evaluation must be ready before serving.
 const initialized = await featureFlags.initialize()
-const featureFlagStatus = featureFlags.getStatus()
 if (initialized) {
-  console.log('[feature-flags] Backend evaluator ready.', featureFlagStatus)
+  logger.info(
+    { event: 'feature_flags.ready' },
+    'Backend feature flag evaluator ready'
+  )
 } else {
-  console.warn(
-    '[feature-flags] Backend evaluator unavailable; false fallbacks are active.',
-    featureFlagStatus
+  logger.warn(
+    { event: 'feature_flags.unavailable' },
+    'Backend feature flag evaluator unavailable; false fallbacks are active'
   )
 }
 
@@ -176,7 +185,10 @@ const tasks = prepareHatchetTasks({
     ),
 })
 
-console.log('Hatchet tasks initialized.', Object.keys(tasks))
+logger.info(
+  { event: 'hatchet.tasks.initialized', taskCount: Object.keys(tasks).length },
+  'Hatchet tasks initialized'
+)
 // #endregion
 
 const { app, yogaApp } = prepareApp({
@@ -195,12 +207,15 @@ const { app, yogaApp } = prepareApp({
 
 // Validate required environment variables at startup
 if (!process.env.APP_ORIGIN_API) {
-  console.error('APP_ORIGIN_API is required but not defined')
+  logger.fatal(
+    { event: 'configuration.invalid', variable: 'APP_ORIGIN_API' },
+    'Required configuration is missing'
+  )
   process.exit(1)
 }
 
 const server = app.listen(3000, () => {
-  console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+  logger.info({ event: 'service.started', port: 3000 }, 'GraphQL API started')
 
   const wsServer = new WebSocket.WebSocketServer({
     server,
@@ -223,10 +238,22 @@ const server = app.listen(3000, () => {
       execute: (args: any) => args.rootValue.execute(args),
       subscribe: (args: any) => args.rootValue.subscribe(args),
       onSubscribe: async (ctx, msg) => {
+        const request = ctx.extra.request as typeof ctx.extra.request & {
+          locals?: Record<string, unknown>
+        }
+        const requestContext = resolveRequestContext({
+          requestId: request.headers['x-request-id'],
+          correlationId: request.headers['x-correlation-id'],
+        })
+        request.locals = {
+          ...request.locals,
+          requestContext,
+          log: logger.child(requestContext),
+        }
         const { schema, execute, subscribe, contextFactory, parse, validate } =
           yogaApp.getEnveloped({
             ...ctx,
-            req: ctx.extra.request,
+            req: request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })

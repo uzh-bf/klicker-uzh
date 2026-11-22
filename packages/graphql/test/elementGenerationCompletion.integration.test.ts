@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { createLogger } from '@klicker-uzh/logging/node'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
@@ -639,6 +640,7 @@ describe('initial Element completion', () => {
         ...context(),
         user: { sub: ownerId },
         elementGenerationRuntime: runtime,
+        log: createLogger({ service: 'graphql-test', level: 'silent' }),
         featureFlags: {
           getAiBetaDecision: () => 'enabled',
           isEnabled: (key: string) => key === 'question-generation',
