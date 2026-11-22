@@ -19,6 +19,7 @@ type PromptContext = {
   }
   'numeric-precision': Record<string, never>
   'explanation-tool': Record<string, never>
+  'feedback-card-tool': Record<string, never>
   'feedback-check': Record<string, never>
   'quiz-feedback-check': Record<string, never>
   'feedback-evidence': {

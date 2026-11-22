@@ -178,6 +178,12 @@ import {
   shouldOfferExplanationTool,
 } from '@/src/services/explainerService'
 import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
+import {
+  createShowFeedbackTool,
+  feedbackAttemptsLeft,
+  isFeedbackToolEnabled,
+} from '@/src/services/feedbackTool'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -1564,6 +1570,18 @@ async function handlePOST(
     }
     const explanationToolActive = SHOW_EXPLANATION_TOOL_NAME in explanationTools
 
+    // Prototype: structured feedback cards. Quotes are checked against the
+    // learner's own messages in this request.
+    const feedbackTools: Record<string, any> = {}
+    if (isFeedbackToolEnabled(selectedMode)) {
+      feedbackTools[SHOW_FEEDBACK_TOOL_NAME] = createShowFeedbackTool({
+        learnerMessages: messages
+          .filter((message) => message.role === 'user')
+          .map((message) => message.content),
+      })
+    }
+    const feedbackToolActive = SHOW_FEEDBACK_TOOL_NAME in feedbackTools
+
     let chatTools: Record<string, any> = {
       ...(mcpTools || {}),
       ...responseExampleTools,
@@ -1597,6 +1615,7 @@ async function handlePOST(
     const modelTools = {
       ...withCalculatorTool(selectedMode, chatTools),
       ...explanationTools,
+      ...feedbackTools,
     }
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
@@ -2441,10 +2460,17 @@ async function handlePOST(
                   },
                 }
               : {}),
-            ...(explanationToolActive && !explanationAttemptsLeft(steps)
+            ...((explanationToolActive && !explanationAttemptsLeft(steps)) ||
+            (feedbackToolActive && !feedbackAttemptsLeft(steps))
               ? {
                   activeTools: Object.keys(modelTools).filter(
-                    (name) => name !== SHOW_EXPLANATION_TOOL_NAME
+                    (name) =>
+                      !(
+                        (name === SHOW_EXPLANATION_TOOL_NAME &&
+                          !explanationAttemptsLeft(steps)) ||
+                        (name === SHOW_FEEDBACK_TOOL_NAME &&
+                          !feedbackAttemptsLeft(steps))
+                      )
                   ),
                 }
               : {}),
@@ -2464,9 +2490,11 @@ async function handlePOST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        // Each explanation attempt is a step; three attempts plus retrieval
-        // and the closing text need more than the usual five.
-        stopWhen: isStepCount(explanationToolActive ? 7 : 5),
+        // Each explanation or feedback attempt is a step; three attempts plus
+        // retrieval and the closing text need more than the usual five.
+        stopWhen: isStepCount(
+          explanationToolActive || feedbackToolActive ? 7 : 5
+        ),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
         experimental_transform: providerRefusalTransform(
