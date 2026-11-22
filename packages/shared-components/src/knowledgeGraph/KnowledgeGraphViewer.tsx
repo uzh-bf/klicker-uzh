@@ -1442,20 +1442,31 @@ export function KnowledgeGraphViewer({
               >
                 {legendEntries.map(([kind, style]) => (
                   <li key={kind} className="flex items-center gap-2">
-                    <span
+                    <svg
                       aria-hidden="true"
-                      className={`h-3.5 w-3.5 shrink-0 border ${style.legendClassName}`}
-                      style={
-                        style.shape === 'hexagon'
-                          ? {
-                              clipPath:
-                                'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)',
-                            }
-                          : undefined
-                      }
-                    />
+                      viewBox="0 0 16 16"
+                      className="h-4 w-4 shrink-0"
+                      fill={style.color}
+                      stroke={style.borderColor}
+                      strokeWidth={1.5}
+                    >
+                      {'legendPoints' in style ? (
+                        <polygon
+                          points={style.legendPoints}
+                          strokeLinejoin="round"
+                        />
+                      ) : style.shape === 'ellipse' ? (
+                        <circle cx={8} cy={8} r={6.5} />
+                      ) : (
+                        <rect x={1.5} y={1.5} width={13} height={13} rx={3} />
+                      )}
+                    </svg>
                     <span className="min-w-0 truncate">
-                      {kind} ({labels[style.shapeLabelKey]})
+                      {kind}
+                      <span className="sr-only">
+                        {' '}
+                        ({labels[style.shapeLabelKey]})
+                      </span>
                     </span>
                   </li>
                 ))}
