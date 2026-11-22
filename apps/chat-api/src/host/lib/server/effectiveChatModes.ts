@@ -1,7 +1,6 @@
 import type { ChatbotCustomMode } from '@klicker-uzh/types'
 import {
   type ChatModeMCPConfiguration,
-  getWritingCoachUnavailableReason,
   isChatbotCustomModeKey,
   isChatbotStandardModeKey,
   isSafeDocQueryBinding,
@@ -186,13 +185,6 @@ export function resolveEffectiveChatModeOptions(
   for (const mode of candidates) {
     if (mode.trim().length === 0) continue
     if (!isStandardModeEnabled(standardModeConfig, systemPrompts, mode)) {
-      continue
-    }
-
-    if (
-      mode === 'writing-coach' &&
-      getWritingCoachUnavailableReason(mcpConfigurations)
-    ) {
       continue
     }
 

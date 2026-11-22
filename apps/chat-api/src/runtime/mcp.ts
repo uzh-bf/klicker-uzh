@@ -13,10 +13,12 @@ import {
   type EngineToolProjectionV2Result,
   type EngineV2ChatRequest,
   type EngineV2Message,
+  EXPLANATION_TURN_MAX_STEPS,
   engineToolExecutionV2RequestSchema,
   engineToolExecutionV2ResultSchema,
   engineToolProjectionV2RequestSchema,
   engineToolProjectionV2ResultSchema,
+  SHOW_EXPLANATION_TOOL_NAME,
 } from '@klicker-uzh/chat-engine-contract'
 import { prisma } from '@klicker-uzh/prisma'
 import { asSchema, type ModelMessage, type ToolSet, tool } from 'ai'
@@ -26,6 +28,8 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { z } from 'zod'
 import { withCalculatorTool } from '../host/lib/server/calculatorTool.js'
+import type { AuthMode } from '../host/lib/server/chatGuestToken.js'
+import { withModelCitationIndices } from '../host/lib/server/citationInstructions.js'
 import { readCourseImagePreview } from '../host/lib/server/courseImagePreviewStore.js'
 import { courseImageStoreConfigured } from '../host/lib/server/courseImageStore.js'
 import {
@@ -36,13 +40,6 @@ import {
   courseImageVisionEnabled,
   createCourseImageVision,
 } from '../host/lib/server/courseImageVision.js'
-import {
-  readVideoFrame,
-  videoFrameStoreConfigured,
-} from '../host/lib/server/videoFrameStore.js'
-import { withVideoFrameTool } from '../host/lib/server/videoFrameTools.js'
-import type { AuthMode } from '../host/lib/server/chatGuestToken.js'
-import { withModelCitationIndices } from '../host/lib/server/citationInstructions.js'
 import { resolveEffectiveMCPConfigurations } from '../host/lib/server/effectiveChatModes.js'
 import { RequiredMCPUnavailableError } from '../host/lib/server/mcpRuntimePolicy.js'
 import {
@@ -50,6 +47,15 @@ import {
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '../host/lib/server/responseExampleRuntime.js'
+import {
+  readVideoFrame,
+  videoFrameStoreConfigured,
+} from '../host/lib/server/videoFrameStore.js'
+import { withVideoFrameTool } from '../host/lib/server/videoFrameTools.js'
+import {
+  createHostExplanationTool,
+  isExplanationToolEnabled,
+} from '../host/services/explainerService.js'
 import { getAggregatedMCPTools } from '../host/services/mcpClients.js'
 import { resolveMcpScope } from '../host/services/mcpScope.js'
 import {
@@ -228,10 +234,20 @@ export async function prepareHostTools(
         courseImageVision?.hasPixelInput
       )
     }
+    const promptToolNames = Object.keys(tools)
+    if (isExplanationToolEnabled(input.mode)) {
+      try {
+        const { definition, instructions } = await createHostExplanationTool()
+        tools = { ...tools, [SHOW_EXPLANATION_TOOL_NAME]: definition }
+        promptContext.push(instructions)
+      } catch {
+        // A schema outage keeps optional explanations off for this turn.
+      }
+    }
     return {
       courseImageVision,
       tools: withCalculatorTool(input.mode, tools),
-      promptToolNames: Object.keys(tools),
+      promptToolNames,
       promptContext: promptContext.join('\n\n'),
       close: handle.close,
     }
@@ -338,6 +354,12 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
       input.signal.throwIfAborted()
       if (sessions.size >= 128)
         throw new ToolSessionCapacityError('Tool session capacity reached')
+      const maxProjectionRequests = Object.hasOwn(
+        input.tools.tools,
+        SHOW_EXPLANATION_TOOL_NAME
+      )
+        ? EXPLANATION_TURN_MAX_STEPS - 1
+        : CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS
       const controller = new AbortController()
       const signal = AbortSignal.any([input.signal, controller.signal])
       const calls = new Map<
@@ -512,9 +534,7 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
         async project(raw, callerSignal) {
           const callSignal = AbortSignal.any([signal, callerSignal])
           callSignal.throwIfAborted()
-          if (
-            ++projectionRequests > CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS
-          )
+          if (++projectionRequests > maxProjectionRequests)
             throw new Error('Tool projection request limit reached')
           const body = engineToolProjectionV2RequestSchema.parse(raw)
           const previousProjection = projectionQueue

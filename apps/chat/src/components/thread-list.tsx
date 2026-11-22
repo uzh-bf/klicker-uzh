@@ -13,6 +13,7 @@ import {
   threadToMarkdown,
 } from '../lib/thread-markdown'
 import { useChatStore, type Thread } from '../stores/chatStore'
+import { useChatUi } from './chat-ui-context'
 import { useEffectiveModeOptions } from './mode-options-context'
 import {
   filterThreadsByTitle,
@@ -20,6 +21,10 @@ import {
   transitionDeleteConfirm,
   type DeleteConfirmPhase,
 } from './thread-list-state'
+
+// In a framed chat the title filter appears only once the list outgrows the
+// few rows the short sidebar can show.
+const COMPACT_FILTER_MIN_THREADS = 8
 
 export const ThreadList: FC = () => {
   return (
@@ -41,6 +46,7 @@ const ThreadListItems: FC = () => {
   const { setOpenMobile } = useSidebar()
   const [filterQuery, setFilterQuery] = useState('')
   const filterInputRef = useRef<HTMLInputElement>(null)
+  const { compact } = useChatUi()
 
   const newChatTitle = t('chat.threadList.newChatTitle')
   const groupedThreads = useMemo(
@@ -117,50 +123,57 @@ const ThreadListItems: FC = () => {
 
   return (
     <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">
-      <div className="px-1">
-        <label htmlFor="chat-thread-filter" className="sr-only">
-          {t('chat.threadList.filterLabel')}
-        </label>
-        <div className="relative">
-          <input
-            ref={filterInputRef}
-            id="chat-thread-filter"
-            data-cy="chat-thread-filter-input"
-            type="text"
-            autoComplete="off"
-            value={filterQuery}
-            placeholder={t('chat.threadList.filterPlaceholder')}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setFilterQuery('')
-            }}
-            className="bg-background border-input placeholder:text-muted-foreground focus-visible:ring-ring h-8 w-full rounded-md border pl-2 pr-8 text-sm focus-visible:outline-none focus-visible:ring-1"
-          />
-          {filterQuery && (
-            <button
-              type="button"
-              data-cy="chat-thread-filter-clear"
-              onClick={clearFilter}
-              aria-label={t('chat.threadList.filterClear')}
-              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-1 [&>svg]:size-4"
-            >
-              <XIcon />
-            </button>
-          )}
-        </div>
-        {/* Rendered empty rather than conditionally so the live region exists
+      {/* A framed chat keeps its few sidebar rows for the history itself; a
+          short list needs no filter. An active query keeps the input so the
+          filter can always be cleared. */}
+      {(!compact ||
+        threads.length > COMPACT_FILTER_MIN_THREADS ||
+        filterQuery) && (
+        <div className="px-1">
+          <label htmlFor="chat-thread-filter" className="sr-only">
+            {t('chat.threadList.filterLabel')}
+          </label>
+          <div className="relative">
+            <input
+              ref={filterInputRef}
+              id="chat-thread-filter"
+              data-cy="chat-thread-filter-input"
+              type="text"
+              autoComplete="off"
+              value={filterQuery}
+              placeholder={t('chat.threadList.filterPlaceholder')}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setFilterQuery('')
+              }}
+              className="bg-background border-input placeholder:text-muted-foreground focus-visible:ring-ring h-8 w-full rounded-md border pl-2 pr-8 text-sm focus-visible:outline-none focus-visible:ring-1"
+            />
+            {filterQuery && (
+              <button
+                type="button"
+                data-cy="chat-thread-filter-clear"
+                onClick={clearFilter}
+                aria-label={t('chat.threadList.filterClear')}
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-1 [&>svg]:size-4"
+              >
+                <XIcon />
+              </button>
+            )}
+          </div>
+          {/* Rendered empty rather than conditionally so the live region exists
             before a filter first matches nothing. */}
-        <div role="status">
-          {groupedThreads.length === 0 && (
-            <p
-              data-cy="chat-thread-list-no-match"
-              className="text-muted-foreground mt-2 px-1 text-sm"
-            >
-              {t('chat.threadList.filterNoMatch')}
-            </p>
-          )}
+          <div role="status">
+            {groupedThreads.length === 0 && (
+              <p
+                data-cy="chat-thread-list-no-match"
+                className="text-muted-foreground mt-2 px-1 text-sm"
+              >
+                {t('chat.threadList.filterNoMatch')}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {groupedThreads.map(({ key, items }) => (
         <div key={key} className="flex flex-col gap-0.5">
           <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
@@ -434,7 +447,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             // TODO success token: no semantic "success" color exists in the
             // token system yet; hover:text-green-600 stays hardcoded until one
             // is added (D1/S6 — do not invent a token here).
-            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <CheckIcon />
             <span className="sr-only">{t('chat.threadList.save')}</span>
@@ -444,7 +457,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-title-cancel"
             onClick={handleEditCancel}
             aria-label={t('chat.threadList.cancel')}
-            className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <XIcon />
             <span className="sr-only">{t('chat.threadList.cancel')}</span>
@@ -502,7 +515,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
               disabled={thread.isRunning}
               aria-label={t('chat.threadList.exportMarkdown')}
               title={t('chat.threadList.exportMarkdown')}
-              className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+              className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 inline-flex size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
             >
               <Download />
               <span className="sr-only">
@@ -515,7 +528,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-edit-button"
             onClick={handleEditStart}
             aria-label={t('chat.threadList.editName')}
-            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             <EditIcon />
             <span className="sr-only">{t('chat.threadList.editName')}</span>
@@ -536,8 +549,8 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             }
             className={`focus-visible:ring-ring mr-2 shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 ${
               deletePhase === 'confirming'
-                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-6 gap-1 px-2 text-xs font-semibold'
-                : 'text-foreground hover:text-destructive size-6 p-1 [&>svg]:size-4'
+                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-11 fine-pointer:h-6 gap-1 px-2 text-xs font-semibold'
+                : 'text-foreground hover:text-destructive size-11 fine-pointer:size-6 p-1 [&>svg]:size-4'
             } ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             {deletePhase === 'confirming' ? (

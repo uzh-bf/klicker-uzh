@@ -1,8 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { readCourseImage } from '../src/host/lib/server/courseImageStore.js'
-import { createCourseImageVision } from '../src/host/lib/server/courseImageVision.js'
-import { courseImageCandidates } from '../src/host/lib/sources/courseImages.js'
 import {
   CHAT_ENGINE_CONTRACT_V2,
   CHAT_ENGINE_MAX_V2_DISPATCHER_CACHE_BYTES,
@@ -15,11 +12,15 @@ import {
 import { jsonSchema, tool } from 'ai'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
+import { readCourseImage } from '../src/host/lib/server/courseImageStore.js'
+import { createCourseImageVision } from '../src/host/lib/server/courseImageVision.js'
 import { mapAssistantStepContent } from '../src/host/lib/server/persistedAssistantContent.js'
+import { courseImageCandidates } from '../src/host/lib/sources/courseImages.js'
 import {
   normalizeSourcesFromParts,
   sourceCitationIndices,
 } from '../src/host/lib/sources/normalizeSources.js'
+import { createHostExplanationTool } from '../src/host/services/explainerService.js'
 import {
   createHostToolDispatcher,
   type HostToolSession,
@@ -291,6 +292,75 @@ describe('admitted-turn host tool capabilities', () => {
     expect(execute).not.toHaveBeenCalled()
     await session.close()
     expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  test('keeps Catalyst validation and structured explanation output behind the host capability', async () => {
+    const content = { label: 'synthetic', value: 2 }
+    const fetchExplainer = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/schema')) {
+        return Response.json({
+          type: 'object',
+          properties: { value: { type: 'number' } },
+          required: ['value'],
+        })
+      }
+      expect(url).toBe('http://explainer.test/explainer/v1/validate')
+      return Response.json(
+        JSON.parse(String(init?.body)).content.value === 2
+          ? { ok: true, errors: [] }
+          : { ok: false, errors: ['synthetic missing field'] }
+      )
+    })
+    vi.stubEnv('EXPLAINER_SERVICE_URL', 'http://explainer.test')
+    vi.stubEnv('EXPLAINER_SERVICE_TOKEN', 'synthetic')
+    vi.stubGlobal('fetch', fetchExplainer)
+    try {
+      const dispatcher = createHostToolDispatcher()
+      const { prepared } = fixture()
+      const name = 'show_explanation'
+      const capability = await register(dispatcher, {
+        tools: {
+          ...prepared,
+          tools: {
+            ...prepared.tools,
+            [name]: (await createHostExplanationTool()).definition,
+          },
+        },
+        signal: signal(),
+      })
+      await expect(
+        dispatcher.execute(
+          capability.executionToken,
+          { ...request('foreign', content, name), serverId: 'foreign' },
+          signal()
+        )
+      ).rejects.toThrow()
+      expect(fetchExplainer).toHaveBeenCalledTimes(1)
+      expect(
+        await dispatcher.execute(
+          capability.executionToken,
+          request('first', { label: 'synthetic' }, name),
+          signal()
+        )
+      ).toMatchObject({
+        output: {
+          kind: 'explanation-invalid',
+          errors: ['synthetic missing field'],
+        },
+        modelOutput: { type: 'text' },
+      })
+      const completed = await dispatcher.execute(
+        capability.executionToken,
+        request('second', content, name),
+        signal()
+      )
+      expect(completed?.output).toEqual({ kind: 'explanation', content })
+      expect(completed?.modelOutput).toMatchObject({ type: 'text' })
+      expect(fetchExplainer).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.unstubAllEnvs()
+      vi.unstubAllGlobals()
+    }
   })
 
   test('binds names and servers, validates input, and separates model projections from originals', async () => {

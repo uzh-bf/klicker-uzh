@@ -119,14 +119,21 @@ describe('providerRefusalTransform non-text parts', () => {
 })
 
 describe('providerRefusalDeflection', () => {
-  test('prefers the locked language, then the interface locale', () => {
-    expect(providerRefusalDeflection('en', 'de')).toBe(
+  test('prefers the locked language, then the message, then the interface', () => {
+    const german = 'Kannst du meinen Absatz prüfen? Ich bin nicht sicher.'
+    expect(providerRefusalDeflection('en', german, 'de')).toBe(
       PROVIDER_REFUSAL_DEFLECTION.en
     )
-    expect(providerRefusalDeflection(null, 'de')).toBe(
+    expect(providerRefusalDeflection(null, german, 'en')).toBe(
       PROVIDER_REFUSAL_DEFLECTION.de
     )
-    expect(providerRefusalDeflection(null, 'fr')).toBe(
+    expect(
+      providerRefusalDeflection(null, 'Can you check this for me?', 'de')
+    ).toBe(PROVIDER_REFUSAL_DEFLECTION.en)
+    expect(providerRefusalDeflection(null, 'CAPM?', 'de')).toBe(
+      PROVIDER_REFUSAL_DEFLECTION.de
+    )
+    expect(providerRefusalDeflection(null, null, 'fr')).toBe(
       PROVIDER_REFUSAL_DEFLECTION.en
     )
   })
