@@ -5804,6 +5804,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ein: Studierende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
       answerPreferencesDisabledDescription:
         'Aus: Alle Studierenden erhalten dasselbe Antwortformat und denselben Ton.',
+      interactiveExplanations: 'Interaktive Erklärungen',
+      interactiveExplanationsEnabledDescription:
+        'Ein: Im Tutor- und im Erklärmodus kann der Chatbot interaktive, von KI erzeugte Erklärungen in einzelnen Schritten anzeigen.',
+      interactiveExplanationsDisabledDescription:
+        'Aus: Der Chatbot antwortet nur mit Text und zeigt keine interaktiven Erklärungen.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

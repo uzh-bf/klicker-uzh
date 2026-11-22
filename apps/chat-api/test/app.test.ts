@@ -22,6 +22,7 @@ const chatbot = {
   course: { displayName: 'Synthetic course' },
   standardModeConfig: null,
   answerPreferencesEnabled: true,
+  interactiveExplanationsEnabled: false,
   mcpConfigurations: [],
   systemPrompts: null,
   modelSelection: true,

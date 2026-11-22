@@ -60,6 +60,7 @@ export type ChatbotRecord = {
   customModeConfig?: unknown
   knowledgeGraphRetrievalEnabled?: boolean
   answerPreferencesEnabled: boolean
+  interactiveExplanationsEnabled: boolean
   mcpConfigurations: Array<
     ChatModeMCPConfiguration & {
       mcpServer?: Omit<MCPServerConfig, 'authSecret' | 'chatbotIdHeader'> & {
@@ -421,6 +422,7 @@ export async function getChatbot(
       knowledgeGraphRetrievalEnabled: true,
       modelSelection: true,
       answerPreferencesEnabled: true,
+      interactiveExplanationsEnabled: true,
       allowedModelIds: true,
       allowedReasoningEffortsByModel: true,
       openaiApiKey: true,

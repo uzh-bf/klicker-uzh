@@ -156,7 +156,12 @@ export function ExplanationCard({
   const title =
     typeof content.title === 'string' ? content.title : t('fallbackTitle')
   return (
-    <div className="my-3 w-full overflow-hidden rounded-md border border-slate-200 bg-white">
+    // The marker lets the message widen past the text column, so the
+    // visualization gets the full thread width.
+    <div
+      data-explanation-card
+      className="my-3 w-full overflow-hidden rounded-md border border-slate-200 bg-white"
+    >
       <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-1.5 text-xs text-slate-600">
         <span>{t('header')}</span>
         <button

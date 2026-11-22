@@ -41,6 +41,7 @@ import {
   createCourseImageVision,
 } from '../host/lib/server/courseImageVision.js'
 import { resolveEffectiveMCPConfigurations } from '../host/lib/server/effectiveChatModes.js'
+import { isChatbotInteractiveExplanationsEnabled } from '../host/lib/server/featureFlags.js'
 import { RequiredMCPUnavailableError } from '../host/lib/server/mcpRuntimePolicy.js'
 import {
   createResponseExampleSearchTool,
@@ -54,7 +55,7 @@ import {
 import { withVideoFrameTool } from '../host/lib/server/videoFrameTools.js'
 import {
   createHostExplanationTool,
-  isExplanationToolEnabled,
+  shouldOfferExplanationTool,
 } from '../host/services/explainerService.js'
 import { getAggregatedMCPTools } from '../host/services/mcpClients.js'
 import { resolveMcpScope } from '../host/services/mcpScope.js'
@@ -235,7 +236,14 @@ export async function prepareHostTools(
       )
     }
     const promptToolNames = Object.keys(tools)
-    if (isExplanationToolEnabled(input.mode)) {
+    if (
+      await shouldOfferExplanationTool({
+        chatMode: input.mode,
+        chatbotSettingEnabled: input.chatbot.interactiveExplanationsEnabled,
+        isOwnerFlagEnabled: () =>
+          isChatbotInteractiveExplanationsEnabled(input.chatbot.ownerId),
+      })
+    ) {
       try {
         const { definition, instructions } = await createHostExplanationTool()
         tools = { ...tools, [SHOW_EXPLANATION_TOOL_NAME]: definition }

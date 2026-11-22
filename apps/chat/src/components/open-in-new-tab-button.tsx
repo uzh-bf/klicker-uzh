@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useEmbedded } from '../hooks/useEmbedded'
 import { useFramed } from '../hooks/useFramed'
 import { authedFetch } from '../lib/client/authedFetch'
 import { useChatStore } from '../stores/chatStore'
@@ -18,15 +19,19 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
  * The frame's session is partitioned to the host site, so a plain link would
  * open logged out. The control asks the server for a short-lived handoff URL
  * that sets up the same identity as a first-party session in the new tab.
+ *
+ * The `?embed=1` layout gets no control: its hosts, such as the PWA chat
+ * drawer, already offer their own link to the full chat.
  */
 export function OpenInNewTabButton({ className }: { className?: string }) {
   const t = useTranslations()
   const framed = useFramed()
+  const embedded = useEmbedded()
   const { chatbotId } = useParams<{ chatbotId?: string }>()
   const activeThreadId = useChatStore((state) => state.activeThreadId)
   const [failed, setFailed] = useState(false)
 
-  if (!framed || !chatbotId) return null
+  if (!framed || embedded || !chatbotId) return null
 
   const open = async () => {
     setFailed(false)
