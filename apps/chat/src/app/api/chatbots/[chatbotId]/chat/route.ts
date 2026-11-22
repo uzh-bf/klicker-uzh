@@ -74,6 +74,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { isChatbotInteractiveExplanationsEnabled } from '@/src/lib/server/featureFlags'
 import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -168,7 +169,7 @@ import {
 import {
   createShowExplanationTool,
   explanationAttemptsLeft,
-  isExplanationToolEnabled,
+  shouldOfferExplanationTool,
 } from '@/src/services/explainerService'
 import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
 import { ThreadService } from '@/src/services/threads'
@@ -1514,7 +1515,14 @@ export async function POST(
     // Prototype: interactive explanations validated by the Catalyst explainer
     // service. Without the service the chat continues in text.
     const explanationTools: Record<string, any> = {}
-    if (isExplanationToolEnabled(selectedMode)) {
+    if (
+      await shouldOfferExplanationTool({
+        chatMode: selectedMode,
+        chatbotSettingEnabled: chatbot.interactiveExplanationsEnabled,
+        isOwnerFlagEnabled: () =>
+          isChatbotInteractiveExplanationsEnabled(chatbot.ownerId),
+      })
+    ) {
       try {
         explanationTools[SHOW_EXPLANATION_TOOL_NAME] =
           await createShowExplanationTool()
