@@ -23,6 +23,10 @@ export const FEATURE_FLAG_DEFAULTS = {
   // chatbots without question generation. Without it, the generation entry
   // points are hidden and every generation API call is denied.
   'question-generation': false,
+  // Lets lecturers offer interactive step-by-step explanations in Tutor and
+  // Explainer chats per chatbot. Without it the Manage toggle is hidden, saving
+  // the setting as enabled is denied, and chat does not offer the tool.
+  'interactive-explanations': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
