@@ -27,6 +27,7 @@ type PromptContext = {
   }
   'output-format': { customPersona: boolean }
   'mode-tutor': Record<string, never>
+  'mode-tutor-v2': Record<string, never>
   'mode-explainer': Record<string, never>
   'mode-quizzer': Record<string, never>
   'mode-writing-coach': Record<string, never>

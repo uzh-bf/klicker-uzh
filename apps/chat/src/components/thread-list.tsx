@@ -447,7 +447,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             // TODO success token: no semantic "success" color exists in the
             // token system yet; hover:text-green-600 stays hardcoded until one
             // is added (D1/S6 — do not invent a token here).
-            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <CheckIcon />
             <span className="sr-only">{t('chat.threadList.save')}</span>
@@ -457,7 +457,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-title-cancel"
             onClick={handleEditCancel}
             aria-label={t('chat.threadList.cancel')}
-            className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <XIcon />
             <span className="sr-only">{t('chat.threadList.cancel')}</span>
@@ -515,7 +515,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
               disabled={thread.isRunning}
               aria-label={t('chat.threadList.exportMarkdown')}
               title={t('chat.threadList.exportMarkdown')}
-              className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+              className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 inline-flex size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
             >
               <Download />
               <span className="sr-only">
@@ -528,7 +528,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-edit-button"
             onClick={handleEditStart}
             aria-label={t('chat.threadList.editName')}
-            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-11 fine-pointer:size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             <EditIcon />
             <span className="sr-only">{t('chat.threadList.editName')}</span>
@@ -549,8 +549,8 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             }
             className={`focus-visible:ring-ring mr-2 shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 ${
               deletePhase === 'confirming'
-                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-6 gap-1 px-2 text-xs font-semibold'
-                : 'text-foreground hover:text-destructive size-6 p-1 [&>svg]:size-4'
+                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-11 fine-pointer:h-6 gap-1 px-2 text-xs font-semibold'
+                : 'text-foreground hover:text-destructive size-11 fine-pointer:size-6 p-1 [&>svg]:size-4'
             } ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             {deletePhase === 'confirming' ? (
