@@ -69,6 +69,7 @@ function Chip({
 /**
  * The page runs its own scripts in an opaque origin: no same-origin access to
  * the chat, its cookies or storage, and its own policy forbids network requests.
+ * Downloads are allowed so its button can save the diagram as an image.
  */
 function ExplanationFrame({
   html,
@@ -85,7 +86,7 @@ function ExplanationFrame({
     <iframe
       title={title}
       srcDoc={html}
-      sandbox="allow-scripts"
+      sandbox="allow-scripts allow-downloads"
       referrerPolicy="no-referrer"
       className={className}
       style={style}
