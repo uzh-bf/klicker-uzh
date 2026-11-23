@@ -298,6 +298,32 @@ function briefPrompt(brief: ExplanationBrief): string {
 }
 
 /**
+ * What one draft's validation found, without content: the outcome, counts, and
+ * the top-level areas of the content the errors and hints point at.
+ */
+export type ExplanationDraftReport = {
+  outcome: string
+  errors: number
+  hints: number
+  areas: string[]
+}
+
+function draftReport(r: ExplanationDraftResult): ExplanationDraftReport {
+  const errors = r.kind === 'explanation-invalid' ? r.errors : []
+  const hints = 'hints' in r ? r.hints : []
+  return {
+    outcome: r.kind,
+    errors: errors.length,
+    hints: hints.length,
+    areas: [
+      ...new Set(
+        [...errors, ...hints].map((m) => m.split(/[.[:\s]/, 1)[0] ?? '')
+      ),
+    ].filter(Boolean),
+  }
+}
+
+/**
  * Has the writer draft and repair the explanation against the service: errors
  * go back on every draft, quality hints once. Stops at the first accepted
  * draft or after three. A valid draft held back for its hints is still shown
@@ -317,8 +343,12 @@ export async function writeExplanation({
 }): Promise<{
   result: ExplanationToolResult
   drafts: number
+  reports: ExplanationDraftReport[]
+  /** The shown explanation is a draft held back for hints, after its revision failed. */
+  heldBackShown: boolean
 }> {
   const schema = await getExplanationSchema()
+  const reports: ExplanationDraftReport[] = []
   let drafts = 0
   let hintsSent = false
   let last: ExplanationDraftResult | null = null
@@ -336,6 +366,7 @@ export async function writeExplanation({
       }).catch(() => ({ kind: 'explanation-unavailable' as const }))
       if ('hints' in result && result.hints.length) hintsSent = true
       if (result.kind === 'explanation-review') heldBack = content
+      reports.push(draftReport(result))
       last = result
       return result
     },
@@ -384,6 +415,8 @@ export async function writeExplanation({
         ? { kind: 'explanation', content: kept }
         : { kind: 'explanation-unavailable' },
       drafts,
+      reports,
+      heldBackShown: kept !== null,
     }
   }
   const final = last as ExplanationDraftResult | null
@@ -402,7 +435,12 @@ export async function writeExplanation({
                   ? final.errors
                   : ['the writer returned no valid explanation'],
             }
-  return { result, drafts }
+  return {
+    result,
+    drafts,
+    reports,
+    heldBackShown: final?.kind !== 'explanation' && kept !== null,
+  }
 }
 
 type ExplanationPending = { kind: 'explanation-pending' }
@@ -443,16 +481,31 @@ export async function createShowExplanationTool({
         return
       }
       const startedAt = Date.now()
+      const tokens = { inputTokens: 0, outputTokens: 0 }
       const run = writeExplanation({
         brief,
         writer,
         abortSignal,
-        onStepUsage: onUsage,
-      }).then(({ result, drafts }) => {
+        onStepUsage: (usage) => {
+          tokens.inputTokens += usage.inputTokens
+          tokens.outputTokens += usage.outputTokens
+          onUsage(usage)
+        },
+      }).then(({ result, drafts, reports, heldBackShown }) => {
+        // Content-free quality metrics: counts and content areas, never text.
+        const diagram =
+          result.kind === 'explanation'
+            ? (result.content.diagram as { type?: unknown } | undefined)?.type
+            : undefined
         console.info('Explanation written', {
           modelId: writer.modelId,
+          locale: brief.locale,
+          diagram: typeof diagram === 'string' ? diagram : null,
           drafts,
           outcome: result.kind,
+          heldBackShown,
+          reports,
+          ...tokens,
           durationMs: Date.now() - startedAt,
         })
         return result

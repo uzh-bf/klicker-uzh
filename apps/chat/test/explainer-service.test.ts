@@ -138,11 +138,15 @@ describe('explanation writer', () => {
     )
     const model = new MockLanguageModelV4({ doGenerate: [draft(1), draft(2)] })
     const used: number[] = []
-    const { result, drafts } = await writeExplanation({
+    const { result, drafts, reports } = await writeExplanation({
       brief,
       writer: { modelId: 'writer', model },
       onStepUsage: ({ inputTokens }) => used.push(inputTokens),
     })
+    expect(reports).toEqual([
+      { outcome: 'explanation-invalid', errors: 1, hints: 1, areas: ['steps'] },
+      { outcome: 'explanation', errors: 0, hints: 0, areas: [] },
+    ])
     expect(result).toEqual({
       kind: 'explanation',
       content: { format: 'explainer/1', draft: 2 },
