@@ -3790,6 +3790,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  resolveVideoSource(catalogUrl: String!, semester: String, sourceKind: KBVideoSourceKind!, sourceUrl: String!): VideoSourceResolution!
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfAccountDataUse: ParticipantAccountDataUse
@@ -4459,6 +4460,44 @@ type VideoApprovalRequestResult {
   requestId: ID!
   semester: String!
   warnings: [String!]!
+}
+
+type VideoSourceCatalogPreview {
+  recipients: [VideoSourceCatalogRecipient!]!
+  semesterLabel: String!
+  shortName: String!
+  title: String!
+  warnings: [String!]!
+  withoutEmail: [String!]!
+}
+
+type VideoSourceCatalogRecipient {
+  email: String!
+  name: String!
+  roles: [String!]!
+}
+
+type VideoSourceCategoryCandidate {
+  categoryId: String!
+  createdAt: Date!
+  entriesCount: Int!
+  fullName: String!
+  latestRecordingAt: Date
+  latestRecordingName: String
+  name: String!
+  recommended: Boolean!
+  recordingsInSemester: Int!
+  sampleRecordingNames: [String!]!
+}
+
+type VideoSourceResolution {
+  candidates: [VideoSourceCategoryCandidate!]!
+  catalog: VideoSourceCatalogPreview
+  catalogError: String
+  kalturaError: String
+  olatNodeId: String
+  semesterLabel: String!
+  sourceKind: KBVideoSourceKind!
 }
 
 type WeekdayActivityAnalytics {

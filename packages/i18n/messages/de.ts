@@ -2570,6 +2570,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextPage: 'Nächste',
     },
     admin: {
+      videoSources: 'Vorlesungsaufzeichnungen',
+      videoSourceDescription:
+        'Aufzeichnungslink (OLAT-Baustein oder MediaSpace-Kanal) und VVZ-Link einfügen. Klicker ermittelt den Kurs, die Dozierenden, die um Zustimmung gebeten werden, und die passenden Kaltura-Kategorien. Vorschlag prüfen, dann Quelle anlegen und Zustimmungs-E-Mails versenden.',
+      videoSourceKb: 'Wissensbasis (ID oder Manage-Link)',
+      videoSourceKind: 'Art des Aufzeichnungslinks',
+      videoSourceKindOLAT_NODE: 'OLAT-Kursbaustein',
+      videoSourceKindKALTURA_CHANNEL: 'MediaSpace-Kanal',
+      videoSourceUrl: 'Aufzeichnungslink',
+      videoSourceCatalogUrl: 'VVZ-Link (courses.uzh.ch)',
+      videoSourceSemester:
+        'Semester (optional, sonst aus dem VVZ-Link oder heute)',
+      videoSourceResolve: 'Nachschlagen',
+      videoSourceCatalog: 'Vorlesungsverzeichnis, {semester}',
+      videoSourceRecipients: 'Zustimmungs-E-Mails gehen an:',
+      videoSourceWithoutEmail:
+        'Keine E-Mail-Adresse im Verzeichnis für: {names}',
+      videoSourceCategories: 'Kaltura-Kategorie',
+      videoSourceNode:
+        'OLAT-Baustein {node}. Die Baustein-ID wird für jede Durchführung wiederverwendet; prüfen, ob die vorgeschlagene Kategorie die dieses Semesters ist.',
+      videoSourceRecommended: 'Vorschlag',
+      videoSourceCandidateStats:
+        'Erstellt {created} · {entries} Einträge · {inSemester} Aufzeichnungen in diesem Semester',
+      videoSourceLatest: 'Neueste Aufzeichnung: {name} ({date})',
+      videoSourceCategoryId: 'Bestätigte Kaltura-Kategorie-ID',
+      videoSourceConfirmHint:
+        'Beim Anlegen wirst du als Admin erfasst, der diese Kategorie bestätigt hat.',
+      videoSourceName: 'Name der Quelle',
+      videoSourceCutMode: 'Schnittmodus',
+      videoSourceNamePattern:
+        'Namensmuster geschnittener Aufzeichnungen (regulärer Ausdruck)',
+      videoSourceCaptionLanguage: 'Untertitelsprache',
+      videoSourceCreate: 'Quelle anlegen und Zustimmungs-E-Mails senden',
+      videoSourceSent:
+        'Quelle angelegt. Zustimmungs-E-Mails an {count} Empfänger:innen für {semester} versandt.',
       chatbotRejectionReason: 'Grund für die Ablehnung',
       chatbotRejectConsequence:
         'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',

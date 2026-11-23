@@ -33,8 +33,16 @@ Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
 
 ## Flow
 
-1. An admin creates the source (`createVideoSource`) after confirming the
-   resolved category against sample entries. Two links are required: the
+1. An admin opens Admin > Lecture video sources in Manage, pastes the two
+   links and looks them up (`resolveVideoSource`). That query returns the VVZ
+   module with the recipients who will be emailed, and the Kaltura categories
+   behind the link (`kalturaCatalog.ts`): for an OLAT node all categories named
+   `<LTI context id>-<node id>` (one per course run), for a channel the
+   category from the URL. Candidates come newest first with entry counts,
+   recordings in the semester and sample names; the newest with recordings
+   this semester is proposed. The admin then creates the source
+   (`createVideoSource`) after confirming the category against those samples,
+   and the page sends the approval request. Two links are required: the
    recordings' location, either an OLAT course node link
    (`lms.uzh.ch/.../CourseNode/<id>`) or a MediaSpace channel link
    (`<tenant>.mediaspace.cast.switch.ch/channel/<name>/<category id>`), and the
@@ -93,7 +101,11 @@ text hash.
   transactional `update-templates` script for the target environment, or the
   request fails to send (the request row and audit entry still exist and the
   result lists the unsent recipients).
-- The calling service needs egress to `studentservices.uzh.ch`.
+- The calling service needs egress to `studentservices.uzh.ch` and
+  `api.cast.switch.ch`. Kaltura lookups read `KALTURA_APP_TOKEN_ID` and
+  `KALTURA_APP_TOKEN` (optional `KALTURA_SERVICE_URL`, `KALTURA_PARTNER_ID`);
+  without them the page still resolves the VVZ half and the admin enters the
+  category id by hand.
 - Local stacks set `VIDEO_APPROVAL_ALLOW_NON_EDUID=true` because delegated
   logins have no edu-ID. Never set it in staging or production.
 - Changing `VIDEO_APPROVAL_CONSENT_TEXT` requires a new

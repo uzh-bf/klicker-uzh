@@ -168,7 +168,12 @@ import {
   UserLogin,
   UserLoginScope,
 } from './user.js'
-import { KBVideoSourceRef, VideoApprovalLink } from './videoSource.js'
+import {
+  KBVideoSourceKind,
+  KBVideoSourceRef,
+  VideoApprovalLink,
+  VideoSourceResolutionRef,
+} from './videoSource.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -1642,6 +1647,20 @@ export const Query = builder.queryType({
         args: { kbId: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await VideoSourceApprovalService.getVideoSources(args, ctx)
+        },
+      }),
+
+      resolveVideoSource: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: VideoSourceResolutionRef,
+        args: {
+          sourceKind: t.arg({ type: KBVideoSourceKind, required: true }),
+          sourceUrl: t.arg.string({ required: true }),
+          catalogUrl: t.arg.string({ required: true }),
+          semester: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args) => {
+          return await VideoSourceApprovalService.resolveVideoSource(args)
         },
       }),
 

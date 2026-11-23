@@ -1,6 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
-import type { VideoApprovalLinkView } from '../services/videoSourceApproval.js'
+import type {
+  resolveVideoSource,
+  VideoApprovalLinkView,
+} from '../services/videoSourceApproval.js'
 
 export const KBVideoSourceKind = builder.enumType('KBVideoSourceKind', {
   values: Object.values(DB.KBVideoSourceKind),
@@ -228,3 +231,81 @@ export const VideoApprovalRecipientInput = builder.inputType(
     }),
   }
 )
+
+type IResolution = Awaited<ReturnType<typeof resolveVideoSource>>
+type ICandidate = IResolution['candidates'][number]
+type ICatalogPreview = NonNullable<IResolution['catalog']>
+
+const VideoSourceCategoryCandidateRef = builder
+  .objectRef<ICandidate>('VideoSourceCategoryCandidate')
+  .implement({
+    fields: (t) => ({
+      categoryId: t.exposeString('categoryId'),
+      name: t.exposeString('name'),
+      fullName: t.exposeString('fullName'),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      entriesCount: t.exposeInt('entriesCount'),
+      recordingsInSemester: t.exposeInt('recordingsInSemester'),
+      latestRecordingName: t.exposeString('latestRecordingName', {
+        nullable: true,
+      }),
+      latestRecordingAt: t.expose('latestRecordingAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+      sampleRecordingNames: t.exposeStringList('sampleRecordingNames'),
+      recommended: t.exposeBoolean('recommended'),
+    }),
+  })
+
+const VideoSourceCatalogRecipientRef = builder
+  .objectRef<ICatalogPreview['recipients'][number]>(
+    'VideoSourceCatalogRecipient'
+  )
+  .implement({
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      email: t.exposeString('email'),
+      roles: t.exposeStringList('roles'),
+    }),
+  })
+
+const VideoSourceCatalogPreviewRef = builder
+  .objectRef<ICatalogPreview>('VideoSourceCatalogPreview')
+  .implement({
+    fields: (t) => ({
+      title: t.exposeString('title'),
+      shortName: t.exposeString('shortName'),
+      semesterLabel: t.exposeString('semesterLabel'),
+      recipients: t.field({
+        type: [VideoSourceCatalogRecipientRef],
+        resolve: (c) => c.recipients,
+      }),
+      withoutEmail: t.exposeStringList('withoutEmail'),
+      warnings: t.exposeStringList('warnings'),
+    }),
+  })
+
+export const VideoSourceResolutionRef = builder
+  .objectRef<IResolution>('VideoSourceResolution')
+  .implement({
+    fields: (t) => ({
+      sourceKind: t.field({
+        type: KBVideoSourceKind,
+        resolve: (r) => r.sourceKind,
+      }),
+      olatNodeId: t.exposeString('olatNodeId', { nullable: true }),
+      semesterLabel: t.exposeString('semesterLabel'),
+      catalog: t.field({
+        type: VideoSourceCatalogPreviewRef,
+        nullable: true,
+        resolve: (r) => r.catalog,
+      }),
+      catalogError: t.exposeString('catalogError', { nullable: true }),
+      candidates: t.field({
+        type: [VideoSourceCategoryCandidateRef],
+        resolve: (r) => r.candidates,
+      }),
+      kalturaError: t.exposeString('kalturaError', { nullable: true }),
+    }),
+  })

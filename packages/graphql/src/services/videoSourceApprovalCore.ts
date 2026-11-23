@@ -127,6 +127,70 @@ export function semesterEnd(semester: CatalogSemester): Date {
     : new Date(Date.UTC(startYear + 1, 7, 1))
 }
 
+/** Inclusive start of a catalogue semester, matching `semesterEnd`. */
+export function semesterStart(semester: CatalogSemester): Date {
+  const startYear = Number(semester.piqYear)
+  return semester.piqSession === '003'
+    ? new Date(Date.UTC(startYear, 7, 1))
+    : new Date(Date.UTC(startYear + 1, 1, 1))
+}
+
+export interface CategoryCandidateInput {
+  categoryId: string
+  name: string
+  fullName: string
+  createdAt: Date
+  entriesCount: number
+  recordings: Array<{ name: string; createdAt: Date }>
+}
+
+export interface CategoryCandidate extends CategoryCandidateInput {
+  recordingsInSemester: number
+  latestRecordingName: string | null
+  latestRecordingAt: Date | null
+  recommended: boolean
+}
+
+/**
+ * Orders the Kaltura categories found for a source newest first and marks the
+ * one an admin most likely wants: an OLAT node id is reused for every course
+ * run, so prefer the newest category with recordings in the semester, else
+ * the newest category created during it. The admin always confirms.
+ */
+export function rankCategoryCandidates(
+  inputs: CategoryCandidateInput[],
+  semester: CatalogSemester
+): CategoryCandidate[] {
+  const from = semesterStart(semester).getTime()
+  const to = semesterEnd(semester).getTime()
+  const inSemester = (date: Date) =>
+    date.getTime() >= from && date.getTime() < to
+
+  const candidates = inputs
+    .map((input) => {
+      const recordings = [...input.recordings].sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      )
+      const latest = recordings[0] ?? null
+      return {
+        ...input,
+        recordings,
+        recordingsInSemester: recordings.filter((r) => inSemester(r.createdAt))
+          .length,
+        latestRecordingName: latest?.name ?? null,
+        latestRecordingAt: latest?.createdAt ?? null,
+        recommended: false,
+      }
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+  const pick =
+    candidates.find((c) => c.recordingsInSemester > 0) ??
+    candidates.find((c) => inSemester(c.createdAt))
+  if (pick) pick.recommended = true
+  return candidates
+}
+
 /** Whether the gateway may act for a source at `now`. */
 export function isVideoSourceApprovedAt(
   source: {

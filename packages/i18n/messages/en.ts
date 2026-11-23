@@ -2523,6 +2523,39 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      videoSources: 'Lecture video sources',
+      videoSourceDescription:
+        'Paste the recordings link (OLAT node or MediaSpace channel) and the VVZ link. Klicker looks up the course, the lecturers who will be asked for approval, and the matching Kaltura categories. Check the proposal, then create the source and send the approval emails.',
+      videoSourceKb: 'Knowledge base (id or Manage link)',
+      videoSourceKind: 'Recordings link type',
+      videoSourceKindOLAT_NODE: 'OLAT course node',
+      videoSourceKindKALTURA_CHANNEL: 'MediaSpace channel',
+      videoSourceUrl: 'Recordings link',
+      videoSourceCatalogUrl: 'VVZ link (courses.uzh.ch)',
+      videoSourceSemester:
+        'Semester (optional, default from the VVZ link or today)',
+      videoSourceResolve: 'Look up',
+      videoSourceCatalog: 'Course catalogue, {semester}',
+      videoSourceRecipients: 'Approval emails will go to:',
+      videoSourceWithoutEmail: 'No email address in the catalogue for: {names}',
+      videoSourceCategories: 'Kaltura category',
+      videoSourceNode:
+        'OLAT node {node}. The node id is reused for every course run, so check that the proposed category is this semester’s.',
+      videoSourceRecommended: 'proposed',
+      videoSourceCandidateStats:
+        'Created {created} · {entries} entries · {inSemester} recordings this semester',
+      videoSourceLatest: 'Latest recording: {name} ({date})',
+      videoSourceCategoryId: 'Confirmed Kaltura category id',
+      videoSourceConfirmHint:
+        'Creating the source records you as the admin who confirmed this category.',
+      videoSourceName: 'Source name',
+      videoSourceCutMode: 'Cut mode',
+      videoSourceNamePattern:
+        'Name pattern of edited recordings (regular expression)',
+      videoSourceCaptionLanguage: 'Caption language',
+      videoSourceCreate: 'Create source and send approval emails',
+      videoSourceSent:
+        'Source created. Approval emails sent to {count} recipients for {semester}.',
       chatbotRejectionReason: 'Reason for rejection',
       chatbotRejectConsequence:
         'The owner will see this reason and can revise the chatbot before requesting approval again.',

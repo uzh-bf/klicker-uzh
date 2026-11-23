@@ -9,6 +9,12 @@ import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import * as EmailService from './email.js'
 import {
+  createKalturaCatalog,
+  isVisibleRecording,
+  type KalturaCatalog,
+  type KalturaCategory,
+} from './kalturaCatalog.js'
+import {
   type CatalogModuleSnapshot,
   type CatalogSemester,
   createUzhCourseCatalogClient,
@@ -30,6 +36,7 @@ import {
   isWellFormedApprovalToken,
   mintApprovalToken,
   parseVideoSourceLink,
+  rankCategoryCandidates,
   recipientsFromSnapshot,
   semesterEnd,
   snapshotSha256,
@@ -254,6 +261,125 @@ type CatalogClient = Pick<
   ReturnType<typeof createUzhCourseCatalogClient>,
   'getModuleContacts'
 >
+
+const RESOLVE_RECENT_ENTRIES = 30
+const RESOLVE_MAX_CANDIDATES = 8
+
+/**
+ * Gathers everything an admin needs to add a source from its two links: the
+ * VVZ module (title, semester, who will be asked to approve) and the Kaltura
+ * categories behind the OLAT node or channel, ranked with a proposal. Each
+ * half reports its own error so one outage does not hide the other.
+ */
+export async function resolveVideoSource(
+  args: {
+    sourceKind: DB.KBVideoSourceKind
+    sourceUrl: string
+    catalogUrl: string
+    semester?: string | null
+  },
+  deps: {
+    catalog?: CatalogClient
+    kaltura?: KalturaCatalog
+    now?: () => Date
+  } = {}
+) {
+  const now = deps.now?.() ?? new Date()
+  let link: VideoSourceLink
+  try {
+    link = parseVideoSourceLink(args.sourceKind, args.sourceUrl)
+  } catch (error) {
+    throw new GraphQLError(
+      error instanceof VideoSourceLinkError
+        ? error.message
+        : 'The source link is invalid'
+    )
+  }
+  const reference = parseCatalogUrl(args.catalogUrl)
+  const semester: CatalogSemester = args.semester
+    ? parseSemesterLabel(args.semester)
+    : (reference.semester ?? semesterForDate(now))
+
+  const catalogPart = (async () => {
+    try {
+      const catalog = deps.catalog ?? createUzhCourseCatalogClient()
+      const snapshot = await catalog.getModuleContacts({
+        catalogUrl: args.catalogUrl.trim(),
+        semester,
+      })
+      const { recipients, withoutEmail } = recipientsFromSnapshot(snapshot)
+      return {
+        catalog: {
+          title: snapshot.title,
+          shortName: snapshot.shortName,
+          semesterLabel: snapshot.semesterLabel,
+          recipients,
+          withoutEmail,
+          warnings: snapshot.warnings,
+        },
+        catalogError: null,
+      }
+    } catch (error) {
+      return { catalog: null, catalogError: (error as Error).message }
+    }
+  })()
+
+  const kalturaPart = (async () => {
+    try {
+      const kaltura = deps.kaltura ?? createKalturaCatalog()
+      const categories =
+        link.kind === 'KALTURA_CHANNEL'
+          ? [await kaltura.getCategory(link.kalturaCategoryId)].filter(
+              (c): c is KalturaCategory => c !== null
+            )
+          : await kaltura.findCategoriesForOlatNode(link.olatNodeId)
+      const newest = [...categories]
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, RESOLVE_MAX_CANDIDATES)
+      const inputs = await Promise.all(
+        newest.map(async (category) => ({
+          categoryId: category.id,
+          name: category.name,
+          fullName: category.fullName,
+          createdAt: category.createdAt,
+          entriesCount: category.entriesCount,
+          recordings: (
+            await kaltura.listRecentEntries(category.id, RESOLVE_RECENT_ENTRIES)
+          )
+            .filter(isVisibleRecording)
+            .map((entry) => ({ name: entry.name, createdAt: entry.createdAt })),
+        }))
+      )
+      const candidates = rankCategoryCandidates(inputs, semester).map(
+        (candidate) => ({
+          ...candidate,
+          sampleRecordingNames: candidate.recordings
+            .slice(0, 5)
+            .map((r) => r.name),
+        })
+      )
+      return {
+        candidates,
+        kalturaError:
+          candidates.length === 0
+            ? link.kind === 'KALTURA_CHANNEL'
+              ? 'No Kaltura category with the id from the channel link'
+              : 'No Kaltura category found for this OLAT node'
+            : null,
+      }
+    } catch (error) {
+      return { candidates: [], kalturaError: (error as Error).message }
+    }
+  })()
+
+  return {
+    sourceKind: link.kind,
+    olatNodeId: link.kind === 'OLAT_NODE' ? link.olatNodeId : null,
+    semesterLabel: formatSemester(semester),
+    ...(await catalogPart),
+    ...(await kalturaPart),
+  }
+}
 
 export async function requestVideoSourceApproval(
   args: {

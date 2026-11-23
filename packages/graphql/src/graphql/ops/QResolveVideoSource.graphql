@@ -1,0 +1,43 @@
+query ResolveVideoSource(
+  $sourceKind: KBVideoSourceKind!
+  $sourceUrl: String!
+  $catalogUrl: String!
+  $semester: String
+) {
+  resolveVideoSource(
+    sourceKind: $sourceKind
+    sourceUrl: $sourceUrl
+    catalogUrl: $catalogUrl
+    semester: $semester
+  ) {
+    sourceKind
+    olatNodeId
+    semesterLabel
+    catalog {
+      title
+      shortName
+      semesterLabel
+      recipients {
+        name
+        email
+        roles
+      }
+      withoutEmail
+      warnings
+    }
+    catalogError
+    candidates {
+      categoryId
+      name
+      fullName
+      createdAt
+      entriesCount
+      recordingsInSemester
+      latestRecordingName
+      latestRecordingAt
+      sampleRecordingNames
+      recommended
+    }
+    kalturaError
+  }
+}
