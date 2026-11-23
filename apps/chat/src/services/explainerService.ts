@@ -504,7 +504,11 @@ export async function createShowExplanationTool({
           drafts,
           outcome: result.kind,
           heldBackShown,
-          reports,
+          // One flat string per draft (outcome:errors/hints:areas), so log
+          // collectors do not collapse the nested lists.
+          reports: reports.map(
+            (r) => `${r.outcome}:${r.errors}/${r.hints}:${r.areas.join('+')}`
+          ),
           ...tokens,
           durationMs: Date.now() - startedAt,
         })

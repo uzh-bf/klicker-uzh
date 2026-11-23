@@ -16,10 +16,13 @@ import {
 /*
  * Offline quality run of the explanation writer on synthetic briefs. It calls
  * the configured writer model and the explainer service, so it costs model
- * tokens and runs only on request:
+ * tokens and runs only on request. Model calls go through the evaluation spend
+ * guard (evaluation/evaluation-spend-guard.mjs, see evaluation/README.md):
+ * OPENAI_BASE_URL is the guard's /v1 and OPENAI_API_KEY the guard key.
  *
  *   CHAT_EXPLANATION_EVAL=1 EXPLAINER_SERVICE_URL=... EXPLAINER_SERVICE_TOKEN=... \
- *   OPENAI_BASE_URL=... OPENAI_API_KEY=... pnpm vitest run test/explanation-quality.eval.test.ts
+ *   OPENAI_BASE_URL=<guard>/v1 OPENAI_API_KEY=<guard key> \
+ *   pnpm vitest run test/explanation-quality.eval.test.ts
  *
  * Optional: CHAT_EXPLANATION_EVAL_IDS (comma-separated brief IDs),
  * CHAT_EXPLANATION_EVAL_JUDGE_MODEL_ID (a registry model that scores each
