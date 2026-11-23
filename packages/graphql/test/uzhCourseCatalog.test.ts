@@ -347,6 +347,44 @@ describe('getModuleContacts', () => {
     ).rejects.toMatchObject({ code: 'UNAVAILABLE' })
   })
 
+  it('classifies unreadable bodies and exposes a GraphQL error code', async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError('Unexpected token <')
+      },
+    }))
+    const error = await createUzhCourseCatalogClient({ fetch, now })
+      .getModuleContacts({
+        catalogUrl: `https://courses.uzh.ch/#/details/2026/003/SM/${MODULE_ID}`,
+      })
+      .catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(UzhCourseCatalogError)
+    expect(error).toMatchObject({
+      code: 'UNEXPECTED_RESPONSE',
+      extensions: { code: 'UZH_CATALOG_UNEXPECTED_RESPONSE' },
+    })
+  })
+
+  it('does not follow caller mutations of the semester', async () => {
+    const fetch = createFetch()
+    const semester = { piqYear: '2026', piqSession: '003' as const }
+    const pending = createUzhCourseCatalogClient({
+      fetch,
+      now,
+    }).getModuleContacts({
+      catalogUrl: `https://courses.uzh.ch/#/details/SM/${MODULE_ID}`,
+      semester,
+    })
+    ;(semester as { piqSession: string }).piqSession = '004'
+    const snapshot = await pending
+    expect(snapshot.semesterLabel).toBe('HS26')
+    for (const [url] of fetch.mock.calls) {
+      expect(url).toContain("PiqSession='003'")
+    }
+  })
+
   it('keeps contacts and warns when a person lookup fails', async () => {
     const base = createFetch()
     const fetch = vi.fn(async (url: string) =>

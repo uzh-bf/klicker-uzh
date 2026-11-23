@@ -12,6 +12,8 @@
  * it as a dated snapshot next to the approval request and must not log it.
  */
 
+import { GraphQLError } from 'graphql'
+
 export const UZH_CATALOG_ORIGIN = 'https://studentservices.uzh.ch'
 const DATA_SERVICE_PATH = '/sap/opu/odata/uzh/vvz_data_srv/'
 const SAP_CLIENT = '001'
@@ -87,16 +89,18 @@ export interface CatalogModuleSnapshot {
   retrievedAt: string
 }
 
-export class UzhCourseCatalogError extends Error {
+export type UzhCourseCatalogErrorCode =
+  | 'INVALID_URL'
+  | 'NOT_OFFERED'
+  | 'UNAVAILABLE'
+  | 'UNEXPECTED_RESPONSE'
+
+export class UzhCourseCatalogError extends GraphQLError {
   constructor(
     message: string,
-    readonly code:
-      | 'INVALID_URL'
-      | 'NOT_OFFERED'
-      | 'UNAVAILABLE'
-      | 'UNEXPECTED_RESPONSE'
+    readonly code: UzhCourseCatalogErrorCode
   ) {
-    super(message)
+    super(message, { extensions: { code: `UZH_CATALOG_${code}` } })
     this.name = 'UzhCourseCatalogError'
   }
 }
@@ -356,7 +360,15 @@ export function createUzhCourseCatalogClient(
         response.status >= 500 ? 'UNAVAILABLE' : 'UNEXPECTED_RESPONSE'
       )
     }
-    const body = (await response.json()) as { d?: ODataRecord }
+    let body: { d?: ODataRecord } | null
+    try {
+      body = (await response.json()) as { d?: ODataRecord } | null
+    } catch (error) {
+      throw new UzhCourseCatalogError(
+        `Course catalogue answered with an unreadable body: ${(error as Error).message}`,
+        error instanceof SyntaxError ? 'UNEXPECTED_RESPONSE' : 'UNAVAILABLE'
+      )
+    }
     if (!body?.d || typeof body.d !== 'object') {
       throw new UzhCourseCatalogError(
         'Course catalogue answered without an entity',
@@ -440,8 +452,10 @@ export function createUzhCourseCatalogClient(
     semester?: CatalogSemester
   }): Promise<CatalogModuleSnapshot> {
     const reference = parseCatalogUrl(catalogUrl)
-    const targetSemester =
-      semester ?? reference.semester ?? semesterForDate(now())
+    // Copy, so a caller mutating its object mid-request cannot mix semesters.
+    const targetSemester: CatalogSemester = {
+      ...(semester ?? reference.semester ?? semesterForDate(now())),
+    }
     const linkSemester = reference.semester ?? targetSemester
 
     // Event ids change every semester, so map an event link to its module
