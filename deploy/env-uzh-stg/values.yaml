@@ -34,8 +34,10 @@ hatchet:
     workflowName: 'course-kg-ingestion'
     standardGenerationModel: 'klickeruzh/azure/gpt-6-luna'
     standardCleaningModel: 'klickeruzh/azure/gpt-6-luna'
-    highGenerationModel: 'klickeruzh/azure/gpt-6-luna'
-    highCleaningModel: 'klickeruzh/azure/gpt-6-luna'
+    # The High tier tests GPT-6.1 Terra at low reasoning effort. Terra costs
+    # about ten times Luna per token, so the High estimate below follows it.
+    highGenerationModel: 'klickeruzh/azure/gpt-6.1-terra-low'
+    highCleaningModel: 'klickeruzh/azure/gpt-6.1-terra-low'
   workers:
     general:
       replicaCount: 1
@@ -194,6 +196,9 @@ auth:
       memory: 512Mi
 
 chat:
+  mediaWorkloadIdentity:
+    enabled: true
+    serviceAccountName: chat-course-media-reader
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
@@ -206,6 +211,12 @@ chat:
   telemetry:
     enabled: true
     environment: 'staging'
+
+  # Interactive explanations in the tutor chat, served by the internal
+  # explainer API (df-cloud and helm-charts app `explainer`).
+  explainer:
+    enabled: true
+    serviceUrl: 'http://explainer-service.stg-explainer.svc.cluster.local:3018'
 
   # Account usage has two independent switches: lifecycle writes record attempt
   # markers and credit counters, and enforcement rejects a participant request
@@ -243,6 +254,18 @@ chat:
     - id: auto
       deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      usesResponsesApi: true
+      fallback: false
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 1.0
+        output: 5.0
+    - id: auto-v5
+      deploymentId: klickeruzh/azure/auto-router-v5
+      name: Auto v5
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
       usesResponsesApi: true
@@ -301,6 +324,38 @@ chat:
       cost:
         input: 2.0
         output: 10.0
+    - id: gpt-6.2-sol
+      deploymentId: klickeruzh/azure/gpt-6.2-sol
+      name: GPT-6.2 Sol
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.4
+        output: 12.0
+    - id: gpt-6.2-astra
+      deploymentId: klickeruzh/azure/gpt-6.2-astra
+      name: GPT-6.2 Astra
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 9.6
+        output: 48.0
     - id: gpt-5.6-sol
       deploymentId: klickeruzh/azure/gpt-5.6-sol
       name: GPT-5.6 Sol
@@ -692,14 +747,14 @@ backendGraphql:
     cost:
       currency: 'CHF'
       standardEstimateMinorUnits: '100'
-      highEstimateMinorUnits: '200'
-      maxCostMinorUnits: '250'
+      highEstimateMinorUnits: '2000'
+      maxCostMinorUnits: '2500'
       # Staging carries the full domain and language comparison plus element
       # generation, so the 10.00 CHF semester budget does not cover a test
       # cycle. The backend adopts a configured limit at or above an owner's
       # granted ledger limit; a lower configured value never reduces it.
       semesterQuotaMinorUnits: '10000'
-      pricingVersion: 'stg-canary-v1'
+      pricingVersion: 'stg-canary-v2'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
 
