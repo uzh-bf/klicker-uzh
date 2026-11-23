@@ -61,6 +61,7 @@ import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import type { Context } from '../lib/context.js'
+import { computeFsrsResult, type FsrsResult } from '../lib/spacedRepetition.js'
 import type {
   CaseStudyCaseResponse,
   CaseStudyElementOptions,
@@ -432,13 +433,16 @@ function updateFlashcardResults({
 function computeFlashcardResponseContent({
   response,
   existingResponse,
+  elementData,
 }: {
   response: FlashcardCorrectness
   existingResponse: DB.QuestionResponse | null
+  elementData: ElementData
 }): {
   responseCorrectness: DB.ResponseCorrectness
   aggregatedResponses: ElementResultsFlashcard
   resultSpacedRepetition: SpacedRepetitionResult
+  resultFsrs: FsrsResult | null
 } {
   const prevResponses = existingResponse?.aggregatedResponses
   const aggregatedResponses =
@@ -476,6 +480,11 @@ function computeFlashcardResponseContent({
     responseCorrectness,
     aggregatedResponses,
     resultSpacedRepetition,
+    resultFsrs: computeFsrsResult({
+      elementData,
+      existingResponse,
+      correctness,
+    }),
   }
 }
 
@@ -546,6 +555,7 @@ async function upsertFlashcardResponse({
   responseCorrectness,
   aggregatedResponses,
   resultSpacedRepetition,
+  resultFsrs,
 }: {
   prisma: PrismaTransactionClient
   id: number
@@ -558,6 +568,7 @@ async function upsertFlashcardResponse({
   responseCorrectness: DB.ResponseCorrectness
   aggregatedResponses: ElementResultsFlashcard
   resultSpacedRepetition: SpacedRepetitionResult
+  resultFsrs: FsrsResult | null
 }) {
   await prisma.questionResponse.upsert({
     where: {
@@ -626,6 +637,7 @@ async function upsertFlashcardResponse({
       eFactor: resultSpacedRepetition.efactor,
       interval: resultSpacedRepetition.interval,
       nextDueAt: resultSpacedRepetition.nextDueAt,
+      ...resultFsrs,
     },
     update: {
       // RESPONSE
@@ -654,6 +666,7 @@ async function upsertFlashcardResponse({
       eFactor: resultSpacedRepetition.efactor,
       interval: resultSpacedRepetition.interval,
       nextDueAt: resultSpacedRepetition.nextDueAt,
+      ...resultFsrs,
     },
   })
 }
@@ -780,11 +793,16 @@ async function respondToFlashcard(
     })
 
     // compute metrics for the aggregated user-specific response entry
-    const { responseCorrectness, aggregatedResponses, resultSpacedRepetition } =
-      computeFlashcardResponseContent({
-        response,
-        existingResponse,
-      })
+    const {
+      responseCorrectness,
+      aggregatedResponses,
+      resultSpacedRepetition,
+      resultFsrs,
+    } = computeFlashcardResponseContent({
+      response,
+      existingResponse,
+      elementData: existingInstance.elementData,
+    })
 
     // upsert the user-specific response entry
     await upsertFlashcardResponse({
@@ -799,6 +817,7 @@ async function respondToFlashcard(
       responseCorrectness,
       aggregatedResponses,
       resultSpacedRepetition,
+      resultFsrs,
     })
 
     // return the results for evaluation illustration
@@ -2357,6 +2376,7 @@ async function upsertQuestionResponse({
   practiceQuizId,
   microLearningId,
   resultSpacedRepetition,
+  resultFsrs,
 }: {
   prisma: PrismaTransactionClient
   id: number
@@ -2375,6 +2395,7 @@ async function upsertQuestionResponse({
   practiceQuizId?: string
   microLearningId?: string
   resultSpacedRepetition: SpacedRepetitionResult
+  resultFsrs: FsrsResult | null
 }) {
   const responseCorrectness =
     correctness === 1
@@ -2439,6 +2460,7 @@ async function upsertQuestionResponse({
       eFactor: resultSpacedRepetition.efactor,
       nextDueAt: resultSpacedRepetition.nextDueAt,
       interval: resultSpacedRepetition.interval,
+      ...resultFsrs,
     },
     update: {
       lastResponse: response as SingleQuestionResponse,
@@ -2469,6 +2491,7 @@ async function upsertQuestionResponse({
       eFactor: resultSpacedRepetition.efactor,
       nextDueAt: resultSpacedRepetition.nextDueAt,
       interval: resultSpacedRepetition.interval,
+      ...resultFsrs,
     },
   })
 }
@@ -2778,6 +2801,11 @@ export async function respondToQuestion(
         streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
         grade: percentile,
       })
+      const resultFsrs = computeFsrsResult({
+        elementData: existingInstance.elementData,
+        existingResponse,
+        correctness: percentile,
+      })
 
       await createQuestionResponseDetail({
         prisma,
@@ -2816,6 +2844,7 @@ export async function respondToQuestion(
         microLearningId:
           updatedInstance.elementStack?.microLearningId ?? undefined,
         resultSpacedRepetition,
+        resultFsrs,
       })
 
       // increment participant xp
