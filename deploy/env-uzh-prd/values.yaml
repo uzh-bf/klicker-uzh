@@ -237,6 +237,13 @@ chat:
     enabled: false
     environment: 'production'
 
+  # Offers the Tutor and Explainer the interactive-explanation tool. A chatbot
+  # still needs its own setting and the owner's `interactive-explanations`
+  # GrowthBook flag; without both, the tool stays off.
+  explainer:
+    enabled: true
+    serviceUrl: 'http://explainer-service.prd-explainer.svc.cluster.local:3018'
+
   # Account usage stays inert in production: the base-budget backfill has not
   # run there, so turning enforcement on would refuse every unbudgeted account.
   # The lifecycle switch alone records usage without refusing anything. Both
