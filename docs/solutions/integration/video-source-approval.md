@@ -34,7 +34,15 @@ Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
 ## Flow
 
 1. An admin creates the source (`createVideoSource`) after confirming the
-   resolved category against sample entries.
+   resolved category against sample entries. Two links are required: the
+   recordings' location, either an OLAT course node link
+   (`lms.uzh.ch/.../CourseNode/<id>`) or a MediaSpace channel link
+   (`<tenant>.mediaspace.cast.switch.ch/channel/<name>/<category id>`), and the
+   courses.uzh.ch (VVZ) link. A channel link carries the category id, which
+   must equal the confirmed one. An OLAT node id maps to one category per
+   semester run (category name `<LTI context id>-<node id>`), so the admin
+   confirms that run's category; the node id is recorded in the
+   `SOURCE_CONFIGURED` audit event.
 2. `requestVideoSourceApproval` takes a fresh catalogue snapshot for the
    semester (`getModuleContacts`, see
    [uzh-course-catalog-contacts.md](uzh-course-catalog-contacts.md)), stores it

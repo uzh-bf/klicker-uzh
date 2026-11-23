@@ -165,7 +165,8 @@ async function setup() {
       kbId: kb.id,
       name: 'Synthetic lecture recordings',
       sourceKind: 'OLAT_NODE',
-      sourceUrl: 'https://lms.example.org/node/1',
+      sourceUrl:
+        'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001',
       catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
       kalturaCategoryId: '100001',
       cutMode: 'CLIP',
@@ -409,5 +410,37 @@ describe('video source approval', () => {
       admin
     )
     expect(revoked.status).toBe('REVOKED')
+  })
+
+  it('requires a matching source link and a VVZ link', async () => {
+    const { admin, source } = await setup()
+    const base = {
+      kbId: source.kbId,
+      name: 'Synthetic channel',
+      sourceKind: 'KALTURA_CHANNEL' as const,
+      sourceUrl:
+        'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic+Course/100002',
+      catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
+      kalturaCategoryId: '100002',
+      cutMode: 'CLIP' as const,
+      captionLanguage: 'de',
+    }
+    await expect(
+      createVideoSource({ ...base, kalturaCategoryId: '100003' }, admin)
+    ).rejects.toThrow('does not match')
+    await expect(
+      createVideoSource(
+        { ...base, sourceUrl: 'https://lms.example.org/node/1' },
+        admin
+      )
+    ).rejects.toThrow('MediaSpace channel link')
+    await expect(
+      createVideoSource(
+        { ...base, catalogUrl: 'https://www.example.org/course' },
+        admin
+      )
+    ).rejects.toThrow('courses.uzh.ch')
+    const created = await createVideoSource(base, admin)
+    expect(created.kalturaCategoryId).toBe('100002')
   })
 })

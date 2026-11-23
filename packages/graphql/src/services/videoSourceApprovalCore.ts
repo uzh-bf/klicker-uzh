@@ -154,6 +154,64 @@ export interface ApprovalRecipientDraft {
   roles: CatalogContactRole[]
 }
 
+// #region Source links
+//
+// A video source needs two links: where the recordings live (an OLAT course
+// node with the Kaltura building block, or a MediaSpace channel) and the
+// course catalogue (VVZ) entry whose contacts approve it. The Kaltura category
+// itself is resolved by an admin and confirmed against sample entries; for a
+// channel link the category id is part of the URL and must match.
+
+const OLAT_HOSTS = new Set(['lms.uzh.ch'])
+const OLAT_NODE_PATTERN = /\/CourseNode\/(\d+)(?:\/|$)/
+const MEDIASPACE_HOST_SUFFIX = '.mediaspace.cast.switch.ch'
+const MEDIASPACE_CHANNEL_PATTERN = /^\/channel\/[^/]+\/(\d+)\/?$/
+
+export type VideoSourceLink =
+  | { kind: 'OLAT_NODE'; olatNodeId: string }
+  | { kind: 'KALTURA_CHANNEL'; kalturaCategoryId: string }
+
+export class VideoSourceLinkError extends Error {}
+
+export function parseVideoSourceLink(
+  kind: 'OLAT_NODE' | 'KALTURA_CHANNEL',
+  url: string
+): VideoSourceLink {
+  let parsed: URL
+  try {
+    parsed = new URL(url.trim())
+  } catch {
+    throw new VideoSourceLinkError('The source link is not a URL')
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new VideoSourceLinkError('The source link must use https')
+  }
+
+  if (kind === 'OLAT_NODE') {
+    const node = OLAT_HOSTS.has(parsed.hostname)
+      ? OLAT_NODE_PATTERN.exec(parsed.pathname)
+      : null
+    if (!node?.[1]) {
+      throw new VideoSourceLinkError(
+        'The source link must be an OLAT course node link (lms.uzh.ch/.../CourseNode/<id>)'
+      )
+    }
+    return { kind, olatNodeId: node[1] }
+  }
+
+  const channel = parsed.hostname.endsWith(MEDIASPACE_HOST_SUFFIX)
+    ? MEDIASPACE_CHANNEL_PATTERN.exec(parsed.pathname)
+    : null
+  if (!channel?.[1]) {
+    throw new VideoSourceLinkError(
+      'The source link must be a MediaSpace channel link (.../channel/<name>/<category id>)'
+    )
+  }
+  return { kind, kalturaCategoryId: channel[1] }
+}
+
+// #endregion
+
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }

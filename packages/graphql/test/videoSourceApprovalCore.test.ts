@@ -14,6 +14,7 @@ import {
   isVideoSourceApprovedAt,
   isWellFormedApprovalToken,
   mintApprovalToken,
+  parseVideoSourceLink,
   recipientsFromSnapshot,
   semesterEnd,
 } from '../src/services/videoSourceApprovalCore.js'
@@ -253,5 +254,48 @@ describe('email and consent helpers', () => {
   it('hashes the consent text deterministically', () => {
     expect(consentTextSha256('x')).toBe(consentTextSha256('x'))
     expect(consentTextSha256()).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('accepts OLAT node and MediaSpace channel links of the right kind', () => {
+    expect(
+      parseVideoSourceLink(
+        'OLAT_NODE',
+        'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001'
+      )
+    ).toEqual({ kind: 'OLAT_NODE', olatNodeId: '2000001' })
+    expect(
+      parseVideoSourceLink(
+        'KALTURA_CHANNEL',
+        'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic+Course/100001'
+      )
+    ).toEqual({ kind: 'KALTURA_CHANNEL', kalturaCategoryId: '100001' })
+  })
+
+  it('rejects source links of the wrong kind, host or shape', () => {
+    const channel =
+      'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic+Course/100001'
+    const node =
+      'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001'
+    expect(() => parseVideoSourceLink('OLAT_NODE', channel)).toThrow()
+    expect(() => parseVideoSourceLink('KALTURA_CHANNEL', node)).toThrow()
+    expect(() =>
+      parseVideoSourceLink(
+        'OLAT_NODE',
+        'https://lms.example.org/auth/RepositoryEntry/1/CourseNode/2'
+      )
+    ).toThrow()
+    expect(() =>
+      parseVideoSourceLink(
+        'OLAT_NODE',
+        'http://lms.uzh.ch/auth/RepositoryEntry/1/CourseNode/2'
+      )
+    ).toThrow()
+    expect(() =>
+      parseVideoSourceLink(
+        'KALTURA_CHANNEL',
+        'https://uzh.mediaspace.cast.switch.ch/media/x/0_abc'
+      )
+    ).toThrow()
+    expect(() => parseVideoSourceLink('OLAT_NODE', 'not a url')).toThrow()
   })
 })

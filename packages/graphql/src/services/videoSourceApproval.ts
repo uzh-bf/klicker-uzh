@@ -13,6 +13,7 @@ import {
   type CatalogSemester,
   createUzhCourseCatalogClient,
   formatSemester,
+  parseCatalogUrl,
   parseSemesterLabel,
   semesterForDate,
 } from './uzhCourseCatalog.js'
@@ -28,11 +29,14 @@ import {
   identityMatchesRecipient,
   isWellFormedApprovalToken,
   mintApprovalToken,
+  parseVideoSourceLink,
   recipientsFromSnapshot,
   semesterEnd,
   snapshotSha256,
   VIDEO_APPROVAL_CONSENT_TEXT,
   VIDEO_APPROVAL_CONSENT_VERSION,
+  type VideoSourceLink,
+  VideoSourceLinkError,
 } from './videoSourceApprovalCore.js'
 
 type Tx = Omit<
@@ -157,9 +161,31 @@ export async function createVideoSource(
       throw new GraphQLError('The name pattern is not a valid expression')
     }
   }
-  if (!/^\d+$/.test(args.kalturaCategoryId.trim())) {
+  const kalturaCategoryId = args.kalturaCategoryId.trim()
+  if (!/^\d+$/.test(kalturaCategoryId)) {
     throw new GraphQLError('The Kaltura category id must be numeric')
   }
+  // Both links are required: the recordings' location (OLAT node or
+  // MediaSpace channel) and the VVZ entry whose contacts approve the source.
+  let sourceLink: VideoSourceLink
+  try {
+    sourceLink = parseVideoSourceLink(args.sourceKind, args.sourceUrl)
+  } catch (error) {
+    throw new GraphQLError(
+      error instanceof VideoSourceLinkError
+        ? error.message
+        : 'The source link is invalid'
+    )
+  }
+  if (
+    sourceLink.kind === 'KALTURA_CHANNEL' &&
+    sourceLink.kalturaCategoryId !== kalturaCategoryId
+  ) {
+    throw new GraphQLError(
+      'The Kaltura category id does not match the channel link'
+    )
+  }
+  parseCatalogUrl(args.catalogUrl)
 
   return ctx.prisma.$transaction(async (tx) => {
     const kb = await tx.kB.findFirst({
@@ -175,7 +201,7 @@ export async function createVideoSource(
         sourceKind: args.sourceKind,
         sourceUrl: args.sourceUrl.trim(),
         catalogUrl: args.catalogUrl.trim(),
-        kalturaCategoryId: args.kalturaCategoryId.trim(),
+        kalturaCategoryId,
         categoryConfirmedAt: new Date(),
         categoryConfirmedById: ctx.user.sub,
         cutMode: args.cutMode,
@@ -192,6 +218,8 @@ export async function createVideoSource(
         kbId: source.kbId,
         sourceKind: source.sourceKind,
         sourceUrl: source.sourceUrl,
+        olatNodeId:
+          sourceLink.kind === 'OLAT_NODE' ? sourceLink.olatNodeId : null,
         catalogUrl: source.catalogUrl,
         kalturaCategoryId: source.kalturaCategoryId,
         cutMode: source.cutMode,
