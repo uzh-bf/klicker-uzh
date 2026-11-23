@@ -168,7 +168,10 @@ import {
 } from '@/src/services/studentPracticeMcp'
 import {
   createShowExplanationTool,
+  type ExplanationWriter,
   explanationAttemptsLeft,
+  explanationWriterReasoningEffort,
+  resolveExplanationWriterConfig,
   shouldOfferExplanationTool,
 } from '@/src/services/explainerService'
 import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
@@ -1521,6 +1524,10 @@ export async function POST(
     // Prototype: interactive explanations validated by the Catalyst explainer
     // service. Without the service the chat continues in text.
     const explanationTools: Record<string, any> = {}
+    // Set once the turn's model options are known, before the model runs.
+    let explanationWriter: ExplanationWriter | null = null
+    let explanationWriterCost = 0
+    let explanationWriterRate = selectedModelConfig.cost
     if (
       await shouldOfferExplanationTool({
         chatMode: selectedMode,
@@ -1531,7 +1538,16 @@ export async function POST(
     ) {
       try {
         explanationTools[SHOW_EXPLANATION_TOOL_NAME] =
-          await createShowExplanationTool()
+          await createShowExplanationTool({
+            getWriter: () => explanationWriter,
+            onUsage: ({ inputTokens, outputTokens }) => {
+              explanationWriterCost += calcCost(
+                explanationWriterRate,
+                inputTokens,
+                outputTokens
+              )
+            },
+          })
       } catch (error) {
         console.warn('Explainer service unavailable; tool not offered', {
           error: error instanceof Error ? error.message : String(error),
@@ -1699,11 +1715,7 @@ export async function POST(
       )
     )
 
-    // One explanation is about 5-6k output tokens, more than the registry's
-    // 4096 cap; the prototype lifts the cap only while the tool is offered.
-    const maxOutputTokens = explanationToolActive
-      ? Math.max(selectedModelConfig.maxOutputTokens ?? 0, 16_384)
-      : selectedModelConfig.maxOutputTokens
+    const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
     const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
       selectedModelConfig,
@@ -1744,6 +1756,32 @@ export async function POST(
       threadId: owningThread.id,
       routingSource: routing.source,
     })
+
+    if (explanationToolActive) {
+      // A chatbot's own endpoint may not serve the writer model.
+      const writerConfig =
+        routing.source === 'default'
+          ? resolveExplanationWriterConfig(modelRegistry, selectedModelConfig)
+          : selectedModelConfig
+      const writerEffort = explanationWriterReasoningEffort(writerConfig)
+      explanationWriterRate = writerConfig.cost
+      explanationWriter = {
+        modelId: writerConfig.id,
+        model: getChatModel(chatbot, writerConfig).model,
+        providerOptions: {
+          openai: {
+            ...openAIProviderOptions,
+            ...(writerConfig.usesResponsesApi && {
+              store: getOpenAIResponsesStore(),
+            }),
+            ...(writerEffort && {
+              forceReasoning: true,
+              reasoningEffort: writerEffort,
+            }),
+          },
+        },
+      }
+    }
 
     const resolvedImages = await Promise.all(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
@@ -2444,8 +2482,9 @@ export async function POST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        // Each explanation or feedback attempt is a step; three attempts plus
-        // retrieval and the closing text need more than the usual five.
+        // Each feedback attempt is a step; three attempts plus retrieval and
+        // the closing text need more than the usual five. An explanation call
+        // is one step, because its writer repairs drafts inside the tool.
         stopWhen: isStepCount(
           explanationToolActive || feedbackToolActive ? 7 : 5
         ),
@@ -2525,7 +2564,9 @@ export async function POST(
                 selectedModelConfig.cost,
                 result.usage.inputTokens || 0,
                 result.usage.outputTokens || 0
-              ) + imageDescriptionCost
+              ) +
+              imageDescriptionCost +
+              explanationWriterCost
             : null
           const { rawCreditsUsed, creditsUsed } = normalizeCredits(
             computedRawCreditsUsed,
@@ -2618,8 +2659,11 @@ export async function POST(
               }
             }
 
-            if (hasUsage) {
-              rawCreditsUsed = totalCost + imageDescriptionCost
+            // Writer drafts are charged even when the turn stopped before
+            // finishing a step of its own.
+            if (hasUsage || explanationWriterCost > 0) {
+              rawCreditsUsed =
+                totalCost + imageDescriptionCost + explanationWriterCost
             }
           }
           const { rawCreditsUsed: normalizedRawCreditsUsed, creditsUsed } =
@@ -2826,7 +2870,9 @@ export async function POST(
               selectedModelConfig.cost,
               part.totalUsage.inputTokens || 0,
               part.totalUsage.outputTokens || 0
-            ) + imageDescriptionCost
+            ) +
+            imageDescriptionCost +
+            explanationWriterCost
           : null
         const { creditsUsed } = normalizeCredits(
           computedRawCreditsUsed,
