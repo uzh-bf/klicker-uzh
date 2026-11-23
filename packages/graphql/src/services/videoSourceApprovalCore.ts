@@ -260,6 +260,14 @@ export interface AuditEventContent {
   createdAt: Date
 }
 
+// Plain UTF-16 code unit order, independent of locale, so audit hashes are
+// stable across runtimes.
+export function compareCodeUnits(a: string, b: string): number {
+  if (a < b) return -1
+  if (a > b) return 1
+  return 0
+}
+
 export function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value ?? null)
@@ -269,7 +277,7 @@ export function canonicalJson(value: unknown): string {
   const record = value as Record<string, unknown>
   return `{${Object.keys(record)
     .filter((key) => record[key] !== undefined)
-    .sort()
+    .sort(compareCodeUnits)
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
     .join(',')}}`
 }

@@ -17,6 +17,7 @@ import {
   revokeVideoSourceByLink,
 } from '../src/services/videoSourceApproval.js'
 import {
+  compareCodeUnits,
   findAuditChainBreak,
   hashApprovalToken,
 } from '../src/services/videoSourceApprovalCore.js'
@@ -202,8 +203,10 @@ describe('video source approval', () => {
     const stored = await prisma.kBVideoApprovalRecipient.findMany({
       where: { requestId: result.requestId },
     })
-    expect(stored.map((r) => r.tokenSha256).sort()).toEqual(
-      [hashApprovalToken(headToken), hashApprovalToken(lecturerToken)].sort()
+    expect(stored.map((r) => r.tokenSha256).sort(compareCodeUnits)).toEqual(
+      [hashApprovalToken(headToken), hashApprovalToken(lecturerToken)].sort(
+        compareCodeUnits
+      )
     )
     expect(JSON.stringify(stored)).not.toContain(headToken)
 
