@@ -39,6 +39,18 @@ export function isSymmetricRelationType(
 }
 
 /**
+ * A relationship is tentative when the graph build inferred it as a
+ * pedagogical judgement or when no source supports it. Views draw tentative
+ * relationships dashed so the map does not look more certain than its
+ * sources are.
+ */
+export function isTentativeRelation(edge: KnowledgeGraphEdge): boolean {
+  return (
+    edge.relationStatus === 'inferred' || edge.sourceReferences.length === 0
+  )
+}
+
+/**
  * Generated edges carry no label of their own, so their label falls back to
  * the relationship type (`RELATED`). Such edges show their relation type.
  */

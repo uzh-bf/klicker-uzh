@@ -1,6 +1,9 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@klicker-uzh/types'
 import type cytoscape from 'cytoscape'
-import { SYMMETRIC_RELATION_TYPES } from './knowledgeGraphView'
+import {
+  isTentativeRelation,
+  SYMMETRIC_RELATION_TYPES,
+} from './knowledgeGraphView'
 
 // One style per concept type, each with its own shape and colour so types
 // stay apart without relying on colour alone. `legendPoints` draws the same
@@ -146,9 +149,9 @@ export const CYTOSCAPE_STYLE: cytoscape.StylesheetJson = [
     },
   },
   {
-    // Relations with no recorded source are dashed, so the map does not look
+    // Inferred or unsourced relations are dashed, so the map does not look
     // more certain than its sources are.
-    selector: 'edge[!hasSource]',
+    selector: 'edge[?tentative]',
     style: {
       'line-style': 'dashed',
     },
@@ -216,7 +219,7 @@ export function edgeDefinition(
       target: cytoscapeNodeId(edge.target),
       label: edge.label,
       displayLabel,
-      hasSource: edge.sourceReferences.length > 0,
+      tentative: isTentativeRelation(edge),
       type: edge.type,
       relationType: edge.relationType,
     },
