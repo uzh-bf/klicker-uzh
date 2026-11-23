@@ -1,4 +1,11 @@
-import { jsonSchema, tool } from 'ai'
+import {
+  generateText,
+  isStepCount,
+  jsonSchema,
+  type LanguageModel,
+  tool,
+} from 'ai'
+import { z } from 'zod'
 import {
   type ExplanationToolResult,
   MAX_EXPLANATION_ATTEMPTS,
@@ -19,6 +26,8 @@ const SCHEMA_TIMEOUT_MS = 2_000
 const SCHEMA_RETRY_AFTER_MS = 60_000
 /* Errors beyond this many add little for a repair and cost tokens. */
 const MAX_REPORTED_ERRORS = 25
+/* Hints are advice; a long list would crowd out the errors that block the draft. */
+const MAX_REPORTED_HINTS = 8
 
 type ServiceConfig = { url: string; token: string }
 
@@ -100,25 +109,54 @@ export function getExplanationSchema(): Promise<Record<string, unknown>> {
   return schemaPromise
 }
 
+/**
+ * A valid draft held back once, so the writer can act on the service's
+ * quality hints before the student sees it.
+ */
+type ExplanationReview = { kind: 'explanation-review'; hints: string[] }
+type ExplanationDraftResult =
+  | ExplanationToolResult
+  | { kind: 'explanation-invalid'; errors: string[]; hints: string[] }
+  | ExplanationReview
+
+/**
+ * With `withHints`, the service's quality hints come back with the errors, and
+ * a draft without errors but with hints is held back for one revision.
+ */
 export async function validateExplanation(
-  content: unknown
-): Promise<ExplanationToolResult> {
-  const { status, data } = await call<{ ok: boolean; errors: string[] }>(
-    '/explainer/v1/validate',
-    { method: 'POST', body: { content } }
-  )
+  content: unknown,
+  { withHints = false }: { withHints?: boolean } = {}
+): Promise<ExplanationDraftResult> {
+  const { status, data } = await call<{
+    ok: boolean
+    errors: string[]
+    hints?: string[]
+  }>('/explainer/v1/validate', { method: 'POST', body: { content } })
   if (status === 413)
     return {
       kind: 'explanation-invalid',
       errors: ['(root): content is too large; shorten it'],
     }
   if (status !== 200) return { kind: 'explanation-unavailable' }
-  return data.ok
-    ? { kind: 'explanation', content: content as Record<string, unknown> }
-    : {
-        kind: 'explanation-invalid',
-        errors: data.errors.slice(0, MAX_REPORTED_ERRORS),
-      }
+  const hints = withHints ? (data.hints ?? []).slice(0, MAX_REPORTED_HINTS) : []
+  if (!data.ok)
+    return {
+      kind: 'explanation-invalid',
+      errors: data.errors.slice(0, MAX_REPORTED_ERRORS),
+      ...(hints.length ? { hints } : {}),
+    }
+  if (hints.length) return { kind: 'explanation-review', hints }
+  return { kind: 'explanation', content: content as Record<string, unknown> }
+}
+
+function draftFeedback(output: ExplanationDraftResult): string {
+  if (output.kind === 'explanation') return 'Accepted.'
+  if (output.kind === 'explanation-unavailable')
+    return 'The validation service is unavailable. Stop.'
+  if (output.kind === 'explanation-review')
+    return `Review these hints on your draft and fix the ones that apply, then submit the complete object again. If none applies, submit it unchanged:\n${output.hints.join('\n')}`
+  const hints = 'hints' in output ? output.hints.join('\n') : ''
+  return `Fix every error and submit the complete object again:\n${output.errors.join('\n')}${hints ? `\nAlso review these hints and fix the ones that apply:\n${hints}` : ''}`
 }
 
 /** Builds the compact page for a chat frame; the chat has no dark mode, so the theme is light. */
@@ -136,25 +174,256 @@ export async function buildExplanationPage(
   return null
 }
 
-export async function createShowExplanationTool() {
+/*
+ * The tutor writes a short brief and a pinned writer model drafts the
+ * explanation. Auto routing sizes a turn by the student's question, so the
+ * turn's own model is often too weak for a long structured object.
+ */
+const DEFAULT_WRITER_MODEL_ID = 'gpt-6.2-sol'
+const DEFAULT_WRITER_REASONING = 'high'
+/* Drafts per call: the first and two repairs. */
+const MAX_WRITER_DRAFTS = 3
+/* An explanation is about 5-6k output tokens; reasoning tokens count as output. */
+export const WRITER_MAX_OUTPUT_TOKENS = 20_000
+const WRITER_TIMEOUT_MS = 180_000
+/* The ingress closes a response that sends nothing for 60 seconds, so the
+ * tool reports progress while the writer works. */
+const WRITER_HEARTBEAT_MS = 15_000
+
+export type ExplanationWriter = {
+  modelId: string
+  model: LanguageModel
+  providerOptions?: Parameters<typeof generateText>[0]['providerOptions']
+}
+
+export type ExplanationWriterUsage = {
+  inputTokens: number
+  outputTokens: number
+}
+
+/**
+ * The configured writer model, or the turn's model when the writer is not in
+ * the registry or the turn runs on a fallback model (a guest, or a
+ * participant without credits).
+ */
+export function resolveExplanationWriterConfig<
+  T extends { id: string; fallback: boolean },
+>(registry: readonly T[], turnModel: T): T {
+  if (turnModel.fallback) return turnModel
+  const id =
+    process.env.CHAT_EXPLANATION_WRITER_MODEL_ID?.trim() ||
+    DEFAULT_WRITER_MODEL_ID
+  return registry.find((model) => model.id === id) ?? turnModel
+}
+
+/** The configured reasoning effort if the model offers it, else its highest. */
+export function explanationWriterReasoningEffort(model: {
+  supportedReasoningEfforts?: readonly string[]
+}): string | undefined {
+  const supported = model.supportedReasoningEfforts ?? []
+  const wanted =
+    process.env.CHAT_EXPLANATION_WRITER_REASONING?.trim() ||
+    DEFAULT_WRITER_REASONING
+  return supported.includes(wanted) ? wanted : supported.at(-1)
+}
+
+export const explanationBriefSchema = z.object({
+  locale: z.enum(['de', 'en']).describe('The reply language.'),
+  topic: z
+    .string()
+    .min(1)
+    .max(200)
+    .describe('The concept to explain, in a few words.'),
+  brief: z
+    .string()
+    .min(1)
+    .max(4000)
+    .describe(
+      'What the student should understand or got wrong, the key relationships and formulas in the course notation, and the illustrative numbers to use.'
+    ),
+  sources: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        locator: z
+          .string()
+          .max(100)
+          .optional()
+          .describe('Page or section, e.g. "p. 12".'),
+      })
+    )
+    .max(8)
+    .optional()
+    .describe('The course documents the explanation draws on.'),
+})
+export type ExplanationBrief = z.infer<typeof explanationBriefSchema>
+
+function briefPrompt(brief: ExplanationBrief): string {
+  const sources = brief.sources?.length
+    ? brief.sources
+        .map((s) => `- ${s.title}${s.locator ? ` (${s.locator})` : ''}`)
+        .join('\n')
+    : 'none'
+  return `Locale: ${brief.locale}\nTopic: ${brief.topic}\n\nBrief:\n${brief.brief}\n\nSources:\n${sources}`
+}
+
+/**
+ * Has the writer draft and repair the explanation against the service: errors
+ * go back on every draft, quality hints once. Stops at the first accepted
+ * draft or after three. Usage counts every finished step, also on failure.
+ */
+export async function writeExplanation({
+  brief,
+  writer,
+  abortSignal,
+}: {
+  brief: ExplanationBrief
+  writer: ExplanationWriter
+  abortSignal?: AbortSignal
+}): Promise<{
+  result: ExplanationToolResult
+  usage: ExplanationWriterUsage
+  drafts: number
+}> {
   const schema = await getExplanationSchema()
-  return tool({
-    description: renderPromptTemplate('explanation-tool', {}),
+  const usage: ExplanationWriterUsage = { inputTokens: 0, outputTokens: 0 }
+  let drafts = 0
+  let hintsSent = false
+  let last: ExplanationDraftResult | null = null
+  const submit = tool({
+    description: 'Submit the complete explainer/1 content object.',
     // Not validated by the SDK: the service is the gate and reports errors
-    // the model can repair.
+    // the writer can repair.
     inputSchema: jsonSchema<Record<string, unknown>>(schema),
-    execute: async (content): Promise<ExplanationToolResult> =>
-      validateExplanation(content).catch(() => ({
-        kind: 'explanation-unavailable' as const,
-      })),
+    execute: async (content): Promise<ExplanationDraftResult> => {
+      drafts++
+      // The last draft is shown if it is valid, so it gets no hints.
+      const result = await validateExplanation(content, {
+        withHints: !hintsSent && drafts < MAX_WRITER_DRAFTS,
+      }).catch(() => ({ kind: 'explanation-unavailable' as const }))
+      if ('hints' in result && result.hints.length) hintsSent = true
+      last = result
+      return result
+    },
     toModelOutput: ({ output }) => ({
       type: 'text' as const,
-      value:
-        output.kind === 'explanation'
-          ? 'The explanation is shown to the student. Do not repeat its content; add at most two sentences.'
-          : output.kind === 'explanation-invalid'
-            ? `The explanation was not shown. Fix every error and call ${SHOW_EXPLANATION_TOOL_NAME} again with the complete object:\n${output.errors.join('\n')}`
-            : 'The explanation service is unavailable. Answer in text instead.',
+      value: draftFeedback(output),
+    }),
+  })
+  const signals = [AbortSignal.timeout(WRITER_TIMEOUT_MS)]
+  if (abortSignal) signals.push(abortSignal)
+  try {
+    await generateText({
+      model: writer.model,
+      system: renderPromptTemplate('explanation-writer', {}),
+      prompt: briefPrompt(brief),
+      tools: { submit_explanation: submit },
+      toolChoice: 'required',
+      stopWhen: [
+        isStepCount(MAX_WRITER_DRAFTS),
+        () =>
+          (last as ExplanationDraftResult | null)?.kind === 'explanation' ||
+          (last as ExplanationDraftResult | null)?.kind ===
+            'explanation-unavailable',
+      ],
+      maxOutputTokens: WRITER_MAX_OUTPUT_TOKENS,
+      providerOptions: writer.providerOptions,
+      abortSignal: AbortSignal.any(signals),
+      onStepEnd: (step) => {
+        usage.inputTokens += step.usage.inputTokens ?? 0
+        usage.outputTokens += step.usage.outputTokens ?? 0
+      },
+    })
+  } catch (error) {
+    console.warn('Explanation writer failed', {
+      modelId: writer.modelId,
+      drafts,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return { result: { kind: 'explanation-unavailable' }, usage, drafts }
+  }
+  const final = last as ExplanationDraftResult | null
+  const result: ExplanationToolResult =
+    final?.kind === 'explanation' || final?.kind === 'explanation-unavailable'
+      ? final
+      : {
+          kind: 'explanation-invalid',
+          errors:
+            final?.kind === 'explanation-invalid'
+              ? final.errors
+              : ['the writer returned no valid explanation'],
+        }
+  return { result, usage, drafts }
+}
+
+type ExplanationPending = { kind: 'explanation-pending' }
+
+function explanationToolOutput(
+  output: ExplanationToolResult | ExplanationPending
+): string {
+  if (output.kind === 'explanation')
+    return 'The explanation is shown to the student. Do not repeat its content; add at most two sentences.'
+  return 'The explanation could not be built. Answer in text instead.'
+}
+
+/**
+ * The tutor's tool. The writer is resolved when the turn's model options are
+ * known, so it is read at call time; without one the call reports the service
+ * as unavailable. `onUsage` receives the writer's tokens for the turn's cost.
+ */
+export async function createShowExplanationTool({
+  getWriter,
+  onUsage,
+}: {
+  getWriter: () => ExplanationWriter | null
+  onUsage: (usage: ExplanationWriterUsage) => void
+}) {
+  // Offer the tool only when the service answers.
+  await getExplanationSchema()
+  return tool({
+    description: renderPromptTemplate('explanation-tool', {}),
+    inputSchema: explanationBriefSchema,
+    execute: async function* (
+      brief,
+      { abortSignal }
+    ): AsyncGenerator<ExplanationToolResult | ExplanationPending> {
+      const writer = getWriter()
+      if (!writer) {
+        yield { kind: 'explanation-unavailable' }
+        return
+      }
+      const startedAt = Date.now()
+      const run = writeExplanation({ brief, writer, abortSignal }).then(
+        ({ result, usage, drafts }) => {
+          onUsage(usage)
+          console.info('Explanation written', {
+            modelId: writer.modelId,
+            drafts,
+            outcome: result.kind,
+            durationMs: Date.now() - startedAt,
+          })
+          return result
+        }
+      )
+      for (;;) {
+        const result = await Promise.race([
+          run,
+          new Promise<null>((resolve) =>
+            setTimeout(resolve, WRITER_HEARTBEAT_MS, null)
+          ),
+        ])
+        if (result) {
+          yield result
+          return
+        }
+        // A preliminary result keeps the stream alive; the card keeps its
+        // preparing state because the kind is not a final one.
+        yield { kind: 'explanation-pending' }
+      }
+    },
+    toModelOutput: ({ output }) => ({
+      type: 'text' as const,
+      value: explanationToolOutput(output),
     }),
   })
 }
