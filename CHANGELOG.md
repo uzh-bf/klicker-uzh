@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.98](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.97...v3.4.0-alpha.98) (2026-11-22)
+
+
+### Features
+
+* **chat:** prototype structured feedback cards ([#6964](https://github.com/uzh-bf/klicker-uzh/issues/6964)) ([d0f141d](https://github.com/uzh-bf/klicker-uzh/commit/d0f141daffbca2c7dec504cf888b082a667d6c4d))
+
+
+### Bug Fixes
+
+* **chat:** distinct concept type shapes and no overlaps after expanding in the concept map ([#6974](https://github.com/uzh-bf/klicker-uzh/issues/6974)) ([d9bf1d5](https://github.com/uzh-bf/klicker-uzh/commit/d9bf1d5974922409668b3df4f22912ffb486d39a))
+* **chat:** hide raw relationship properties from students in the concept map ([#6968](https://github.com/uzh-bf/klicker-uzh/issues/6968)) ([0819227](https://github.com/uzh-bf/klicker-uzh/commit/0819227f4e38c90134c6ae0393e274ea8b023f98))
+* **chat:** hide the new-tab button in the embedded chat layout ([#6967](https://github.com/uzh-bf/klicker-uzh/issues/6967)) ([2a02f19](https://github.com/uzh-bf/klicker-uzh/commit/2a02f1946cd65591432ccfd419cc2b4c074a7147))
+* **chat:** let guarded evaluations run against local chat ([#6971](https://github.com/uzh-bf/klicker-uzh/issues/6971)) ([cf440c0](https://github.com/uzh-bf/klicker-uzh/commit/cf440c007d59071371558739cafc0c8f9a10857a))
+* **devcontainer:** route graph blob sources through devrouter so worktree stacks stop colliding ([#6969](https://github.com/uzh-bf/klicker-uzh/issues/6969)) ([b392cb7](https://github.com/uzh-bf/klicker-uzh/commit/b392cb7f3ae9f500f782ecae3e76f0064f74f62d))
+* **manage:** show Writing Coach in chatbot approval summary ([#6959](https://github.com/uzh-bf/klicker-uzh/issues/6959)) ([dab67ff](https://github.com/uzh-bf/klicker-uzh/commit/dab67ff18a7d67ad4a95f6d19292788631d344de))
+
+
+### Other
+
+* **chat:** check declared model registry policy ([#6966](https://github.com/uzh-bf/klicker-uzh/issues/6966)) ([8503d60](https://github.com/uzh-bf/klicker-uzh/commit/8503d602c0ed1318bbc420b2ca7ad8766ba00349))
+
+
+### Enhancements
+
+* **chat:** add Sol and Astra 6.2 and Auto v5 ([#6948](https://github.com/uzh-bf/klicker-uzh/issues/6948)) ([14e2b4e](https://github.com/uzh-bf/klicker-uzh/commit/14e2b4ed9a8f8c3ad4906851efcc232194d0c9ca))
+* **chat:** give the Explainer the calculator for stated numbers ([#6979](https://github.com/uzh-bf/klicker-uzh/issues/6979)) ([271e0b0](https://github.com/uzh-bf/klicker-uzh/commit/271e0b0d0dbe107a9e702b3348cf9babec338ca8))
+* **chat:** keep rejected explanation drafts in the collapsed tool-call trace ([#6977](https://github.com/uzh-bf/klicker-uzh/issues/6977)) ([b1cff3b](https://github.com/uzh-bf/klicker-uzh/commit/b1cff3b66709d04bb1c5e114f3b3e27fe4dea500))
+* **chat:** let lecturers turn on interactive explanations per chatbot behind a feature flag ([#6957](https://github.com/uzh-bf/klicker-uzh/issues/6957)) ([310292d](https://github.com/uzh-bf/klicker-uzh/commit/310292d04bf67f599b59f5db92748d69bc7a171c))
+* **chat:** open framed chat in a new tab with a session handoff ([#6958](https://github.com/uzh-bf/klicker-uzh/issues/6958)) ([7e69ecb](https://github.com/uzh-bf/klicker-uzh/commit/7e69ecbb8308fdcd8c5b31876340bd01b02c8e3a))
+* **chat:** tighten the Writing Coach coaching contract ([#6953](https://github.com/uzh-bf/klicker-uzh/issues/6953)) ([23efe76](https://github.com/uzh-bf/klicker-uzh/commit/23efe763b186497e26dd5854f9bf1765a73d0b47))
+
 ## [3.4.0-alpha.97](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.96...v3.4.0-alpha.97) (2026-11-22)
 
 
