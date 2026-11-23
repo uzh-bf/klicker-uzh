@@ -107,7 +107,12 @@ describe('explanation writer', () => {
     usage,
     warnings: [],
   })
-  const brief = { locale: 'en' as const, topic: 'NPV', brief: 'Show NPV.' }
+  const brief = {
+    locale: 'en' as const,
+    topic: 'NPV',
+    brief: 'Show NPV.',
+    misconception: 'Thinks a higher rate raises NPV.',
+  }
   /* Answers the schema request and each validation in turn. */
   const service = (...reports: unknown[]) =>
     vi.fn(async (url: string) => {
@@ -144,6 +149,9 @@ describe('explanation writer', () => {
     })
     expect(drafts).toBe(2)
     expect(used).toEqual([100, 100])
+    const first = JSON.stringify(model.doGenerateCalls[0]!.prompt)
+    expect(first).toContain('Misconception to address')
+    expect(first).not.toContain('Course notation')
     const repair = JSON.stringify(model.doGenerateCalls[1]!.prompt)
     expect(repair).toContain('steps.a: e')
     expect(repair).toContain('steps.b: h')

@@ -239,7 +239,28 @@ export const explanationBriefSchema = z.object({
     .min(1)
     .max(4000)
     .describe(
-      'What the student should understand or got wrong, the key relationships and formulas in the course notation, and the illustrative numbers to use.'
+      'What the student should understand, and the key relationships the explanation walks through.'
+    ),
+  misconception: z
+    .string()
+    .max(600)
+    .optional()
+    .describe(
+      'What the student got wrong or is likely to confuse, if anything.'
+    ),
+  notation: z
+    .string()
+    .max(1000)
+    .optional()
+    .describe(
+      'Symbols, formulas and terms exactly as the course material writes them.'
+    ),
+  numbers: z
+    .string()
+    .max(1000)
+    .optional()
+    .describe(
+      'The numbers to use, each marked as from the course material or illustrative.'
     ),
   sources: z
     .array(
@@ -264,7 +285,16 @@ function briefPrompt(brief: ExplanationBrief): string {
         .map((s) => `- ${s.title}${s.locator ? ` (${s.locator})` : ''}`)
         .join('\n')
     : 'none'
-  return `Locale: ${brief.locale}\nTopic: ${brief.topic}\n\nBrief:\n${brief.brief}\n\nSources:\n${sources}`
+  const parts = [
+    `Locale: ${brief.locale}`,
+    `Topic: ${brief.topic}`,
+    `Brief:\n${brief.brief}`,
+    brief.misconception && `Misconception to address:\n${brief.misconception}`,
+    brief.notation && `Course notation:\n${brief.notation}`,
+    brief.numbers && `Numbers:\n${brief.numbers}`,
+    `Sources:\n${sources}`,
+  ]
+  return parts.filter(Boolean).join('\n\n')
 }
 
 /**
@@ -381,7 +411,7 @@ function explanationToolOutput(
   output: ExplanationToolResult | ExplanationPending
 ): string {
   if (output.kind === 'explanation')
-    return 'The explanation is shown to the student. Do not repeat its content; add at most two sentences.'
+    return 'The explanation is shown to the student. Do not repeat its content. In at most two sentences, say what it shows and ask one question that has the student predict something or try a slider, aimed at their question.'
   return 'The explanation could not be built. Answer in text instead.'
 }
 
