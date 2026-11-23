@@ -1246,11 +1246,11 @@ assessment:
       limits:
         memory: 512Mi
 
-# Migration hook image: only the repo is pinned; the tag auto-tracks the
-# backendGraphql image tag above (see chart job-migrate.yaml).
+# Migration hook image: the tag defaults to the backendGraphql image tag
+# (see chart job-migrate.yaml).
 #
 # Enabled because the pinned production tags have matching migrator images; the
-# tag auto-tracks backendGraphql.image.tag. Keep this true for migrator-bearing
+# tag defaults to backendGraphql.image.tag. Keep this true for migrator-bearing
 # release tags. Rolling back to a pre-hook tag requires setting this back to
 # false and using the manual migration path. See docs/data-and-migrations.md →
 # Recovering a failed hook.
@@ -1259,6 +1259,7 @@ migrator:
   priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    tag: '' # Clear this override when the backend image reaches this version.
     pullPolicy: IfNotPresent
 
 # Modern Klicker KB retrieval authenticates with a fresh five-minute ES256
