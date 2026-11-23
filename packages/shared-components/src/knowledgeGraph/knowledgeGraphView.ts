@@ -115,12 +115,17 @@ export function conceptDefinition(
   return `${window.slice(0, wordEnd > 0 ? wordEnd : undefined).trimEnd()}…`
 }
 
-/** Shows merged graph descriptions as separate paragraphs. */
+/**
+ * Shows merged graph descriptions as separate paragraphs. A graph merge can
+ * store the same fragment more than once; each fragment is shown once.
+ */
 export function readableDescription(text: string): string {
   return text
     .split(MERGED_DESCRIPTION_SEPARATOR)
     .map((part) => part.trim())
-    .filter((part) => part.length > 0)
+    .filter(
+      (part, index, parts) => part.length > 0 && parts.indexOf(part) === index
+    )
     .join('\n\n')
 }
 
