@@ -26,7 +26,7 @@ import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeM
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
 import { ExplanationCard, isRejectedExplanation } from './explanation-card'
-import { FeedbackCard } from './feedback-card'
+import { FeedbackCard, isRejectedFeedback } from './feedback-card'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -236,7 +236,9 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     return <ExplanationCard result={result} status={status} isError={isError} />
   }
 
-  if (toolName === SHOW_FEEDBACK_TOOL_NAME) {
+  const feedbackRejected =
+    toolName === SHOW_FEEDBACK_TOOL_NAME && isRejectedFeedback(result, isError)
+  if (toolName === SHOW_FEEDBACK_TOOL_NAME && !feedbackRejected) {
     return <FeedbackCard result={result} status={status} isError={isError} />
   }
 
@@ -323,11 +325,13 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
             ? docQueryChipLabel(t, docQueryState)
             : explanationRejected
               ? t('chat.thread.explanation.rejected')
-              : isFailed
-                ? t('chat.toolFallback.failed', { tool })
-                : isRunning
-                  ? t('chat.toolFallback.running', { tool })
-                  : t('chat.toolFallback.done', { tool })}
+              : feedbackRejected
+                ? t('chat.thread.feedback.rejected')
+                : isFailed
+                  ? t('chat.toolFallback.failed', { tool })
+                  : isRunning
+                    ? t('chat.toolFallback.running', { tool })
+                    : t('chat.toolFallback.done', { tool })}
         </button>
         {imageInputLabel && (
           <span
