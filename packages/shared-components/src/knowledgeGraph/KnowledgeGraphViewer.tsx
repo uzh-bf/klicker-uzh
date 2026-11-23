@@ -49,6 +49,7 @@ import {
 import {
   edgeAskSelection,
   isSymmetricRelationType,
+  isTentativeRelation,
   KNOWLEDGE_GRAPH_MAX_ZOOM,
   KNOWLEDGE_GRAPH_MIN_ZOOM,
   type KnowledgeGraphAskSelection,
@@ -1464,9 +1465,7 @@ export function KnowledgeGraphViewer({
                     </span>
                   </li>
                 ))}
-                {state.edges.some(
-                  (edge) => edge.sourceReferences.length === 0
-                ) ? (
+                {state.edges.some(isTentativeRelation) ? (
                   <li className="flex items-center gap-2">
                     <span
                       aria-hidden="true"
