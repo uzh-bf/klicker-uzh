@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuiState } from '@assistant-ui/react'
 import {
   LoaderCircleIcon,
   Maximize2Icon,
@@ -105,6 +106,12 @@ export function ExplanationCard({
   const params = useParams<{ chatbotId?: string }>()
   const parsed = asResult(result)
   const content = parsed?.kind === 'explanation' ? parsed.content : null
+  // While the answer streams, the call carries a text placeholder until the
+  // explainer service has validated and rendered the draft. Its part then
+  // already reads as complete, so the streaming message decides instead.
+  const messageRunning = useAuiState(
+    (state) => state.message.status?.type === 'running'
+  )
   const [page, setPage] = useState<{ html: string } | { failed: true } | null>(
     null
   )
@@ -138,7 +145,11 @@ export function ExplanationCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.chatbotId, content === null])
 
-  if (status.type === 'running' && !parsed)
+  if (
+    !parsed &&
+    isError !== true &&
+    (status.type === 'running' || messageRunning)
+  )
     return (
       <Chip
         tone="muted"
