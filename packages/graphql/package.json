@@ -37,6 +37,7 @@
     "remark-math": "6.0.0",
     "remark-parse": "11.0.0",
     "remeda": "2.15.0",
+    "ts-fsrs": "6.0.0",
     "unified": "11.0.5",
     "unique-names-generator": "4.7.1",
     "uuid": "10.0.0",
