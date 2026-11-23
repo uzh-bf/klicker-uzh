@@ -161,6 +161,27 @@ function fitGraphElements(cy: cytoscape.Core) {
 }
 
 /**
+ * Height of the canvas strip a bottom details sheet covers, or 0 when no
+ * sheet covers the canvas.
+ */
+function heightCoveredByDetailsSheet(container: HTMLElement | null): number {
+  const details = container
+    ?.closest('[data-cy="knowledge-graph-viewer"]')
+    ?.querySelector('[data-cy="knowledge-graph-details"]')
+  if (container == null || details == null) return 0
+  const canvas = container.getBoundingClientRect()
+  const sheet = details.getBoundingClientRect()
+  // Side panels do not cover the canvas; only a bottom sheet across it does.
+  if (
+    sheet.width < canvas.width * 0.8 ||
+    sheet.top <= canvas.top ||
+    sheet.top >= canvas.bottom
+  )
+    return 0
+  return canvas.bottom - sheet.top
+}
+
+/**
  * Centers a node in the part of the canvas a bottom details sheet leaves
  * visible, so the selected concept never sits behind its own details.
  */
@@ -171,20 +192,22 @@ function centerInVisibleArea(
 ) {
   if (node.empty()) return
   cy.center(node)
-  const details = container
-    ?.closest('[data-cy="knowledge-graph-viewer"]')
-    ?.querySelector('[data-cy="knowledge-graph-details"]')
-  if (container == null || details == null) return
-  const canvas = container.getBoundingClientRect()
-  const sheet = details.getBoundingClientRect()
-  // Side panels do not cover the canvas; only a bottom sheet across it does.
-  if (
-    sheet.width < canvas.width * 0.8 ||
-    sheet.top <= canvas.top ||
-    sheet.top >= canvas.bottom
+  const covered = heightCoveredByDetailsSheet(container)
+  if (covered > 0) cy.panBy({ x: 0, y: -covered / 2 })
+}
+
+/** True when a bottom details sheet covers the node or its label. */
+function isBehindDetailsSheet(
+  cy: cytoscape.Core,
+  node: cytoscape.CollectionReturnValue,
+  container: HTMLElement | null
+): boolean {
+  if (node.empty()) return false
+  const covered = heightCoveredByDetailsSheet(container)
+  return (
+    covered > 0 &&
+    node.renderedBoundingBox({ includeLabels: true }).y2 > cy.height() - covered
   )
-    return
-  cy.panBy({ x: 0, y: -(canvas.bottom - sheet.top) / 2 })
 }
 
 function isUnavailableError(error: unknown): boolean {
@@ -862,6 +885,15 @@ export function KnowledgeGraphViewer({
       if (!focusedNode.empty()) {
         centerInVisibleArea(cy, focusedNode, containerRef.current)
         pendingFocusRef.current = null
+      }
+    } else if (state.selectedNodeId !== null) {
+      // A concept tapped on the map keeps its place unless the details sheet
+      // that opens for it would hide it.
+      const selectedNode = cy.getElementById(
+        cytoscapeNodeId(state.selectedNodeId)
+      )
+      if (isBehindDetailsSheet(cy, selectedNode, containerRef.current)) {
+        centerInVisibleArea(cy, selectedNode, containerRef.current)
       }
     }
   }, [state.focusedNodeId, state.selectedEdgeId, state.selectedNodeId])
