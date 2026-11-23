@@ -9,6 +9,7 @@ import {
   canRegisterCourseImageTool,
   withCourseImageTool,
 } from '../src/lib/server/courseImageTools'
+import { logger } from '../src/lib/server/logger'
 import {
   COURSE_IMAGE_TOOL,
   courseImageCandidates,
@@ -352,7 +353,7 @@ describe('course image selection', () => {
     ).toMatchObject({ status: 'selected' })
   })
   it('reports missing images without exposing filesystem errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const loggedError = vi.spyOn(logger, 'error').mockImplementation(() => {})
     const tools = withCourseImageTool(
       searchTools(),
       [candidate.kb_id],
@@ -364,11 +365,14 @@ describe('course image selection', () => {
     expect(
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
     ).toEqual({ status: 'unavailable' })
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to read selected course image',
-      expect.any(Error)
+    expect(loggedError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'chat.course_image.read_failed',
+        err: expect.any(Error),
+      }),
+      expect.any(String)
     )
-    consoleError.mockRestore()
+    loggedError.mockRestore()
   })
   it('renders only selected results, including persisted JSON round trips', () => {
     const parts = [
@@ -442,7 +446,7 @@ it.each([
 ] as const)('waits for shared validation when duplicate selections %s', async (outcome) => {
   const pending = Promise.withResolvers<void>()
   const read = vi.fn(() => pending.promise)
-  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const loggedError = vi.spyOn(logger, 'error').mockImplementation(() => {})
   try {
     const tools = withCourseImageTool(searchTools(), [candidate.kb_id], read)
     await call(tools, 'KB_doc_query', { query: 'diagram' })
@@ -477,7 +481,7 @@ it.each([
       expect(read).toHaveBeenCalledTimes(2)
     }
   } finally {
-    consoleError.mockRestore()
+    loggedError.mockRestore()
   }
 })
 

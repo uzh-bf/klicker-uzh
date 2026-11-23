@@ -1,0 +1,12 @@
+query QAdaptivePracticeQuizPreviewWithRuntimeLimits($id: String!) {
+  adaptivePracticeQuizPreview(id: $id) {
+    ...AdaptivePracticeQuizPreviewData
+    config {
+      timeLimitSeconds
+    }
+    competenceTree {
+      defaultTotalQuestionCap
+      defaultTimeLimitSeconds
+    }
+  }
+}

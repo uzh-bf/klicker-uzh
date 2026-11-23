@@ -8,6 +8,8 @@ mutation EditPracticeQuiz(
   $multiplier: Int!
   $order: ElementOrderType!
   $resetTimeDays: Int!
+  $mode: PracticeQuizMode
+  $adaptiveConfig: AdaptivePracticeQuizConfigInput
 ) {
   editPracticeQuiz(
     id: $id
@@ -19,6 +21,8 @@ mutation EditPracticeQuiz(
     multiplier: $multiplier
     order: $order
     resetTimeDays: $resetTimeDays
+    mode: $mode
+    adaptiveConfig: $adaptiveConfig
   ) {
     ...ActivityInfoData
   }

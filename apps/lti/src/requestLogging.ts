@@ -1,5 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { createLogger } from '@klicker-uzh/logging/node'
 import { DefaultLogger, type Logger } from 'ltijs'
+
+const structuredLogger = createLogger({ service: 'lti' }, process.stdout)
 
 const errorCodes = new Set([
   'AUTHCONFIG_NOT_FOUND',
@@ -102,7 +105,7 @@ function requestFields(request: DiagnosticRequest, toolOrigin: string) {
 type RequestContext = ReturnType<typeof requestFields> & { errorCode?: string }
 
 function write(record: Record<string, unknown>) {
-  console.error(JSON.stringify({ ts: new Date().toISOString(), ...record }))
+  structuredLogger.error(record)
 }
 
 export function createRequestLogging(toolOrigin: string) {
