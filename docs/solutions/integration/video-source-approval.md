@@ -25,6 +25,16 @@ approved. A `KBVideoSource` binds one admin-confirmed Kaltura category (with a
 cut mode) and a courses.uzh.ch link to a knowledge base. Nothing is fetched for
 a source until it is approved for the current semester.
 
+The token has two holders. The ingestion gateway uses it for approved
+sources only. The GraphQL backend also uses it, in `kalturaCatalog.ts`, while
+an admin sets up a source and the category is by definition not approved
+yet. That second use is limited: admins only (`resolveVideoSource`), the
+allow-listed metadata actions `category.get`, `category.list`,
+`categoryEntry.list` and `baseEntry.list` plus session start (no flavor,
+caption or download URLs), and a `KALTURA_LOOKUP_REQUESTED` audit event per
+lookup followed by a write-ahead `KALTURA_LOOKUP_CALL` event before every
+request, recording the actor and parameters but never the session or token.
+
 Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
 `videoSourceApprovalCore.ts` (pure rules), `packages/prisma/src/prisma/schema/videoSource.prisma`,
 `apps/frontend-manage/src/pages/video-approval.tsx`, email templates

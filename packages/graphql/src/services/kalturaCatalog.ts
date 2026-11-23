@@ -61,7 +61,43 @@ type FetchLike = (
   }
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>
 
+// The only Kaltura actions this module may call: metadata reads for an admin
+// setting up a source. No flavor, caption or download URLs.
+export const KALTURA_ALLOWED_ACTIONS = new Set([
+  'session.startWidgetSession',
+  'appToken.startSession',
+  'category.get',
+  'category.list',
+  'categoryEntry.list',
+  'baseEntry.list',
+])
+
+export interface KalturaCallRecord {
+  service: string
+  action: string
+  /** Request parameters without session or token material. */
+  params: Record<string, unknown>
+}
+
+const SECRET_PARAMS = new Set(['ks', 'tokenHash', 'id'])
+
+function auditableParams(
+  service: string,
+  params: Record<string, unknown>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).filter(
+      // `id` is the app token id for appToken.startSession, a category id
+      // everywhere else.
+      ([key]) =>
+        !SECRET_PARAMS.has(key) || (key === 'id' && service !== 'appToken')
+    )
+  )
+}
+
 export interface KalturaCatalogOptions {
+  /** Awaited before every request, e.g. to append a write-ahead audit row. */
+  beforeCall?: (call: KalturaCallRecord) => Promise<void>
   serviceUrl?: string
   partnerId?: string
   appTokenId?: string
@@ -149,6 +185,17 @@ export function createKalturaCatalog(
     action: string,
     params: Record<string, unknown>
   ): Promise<KalturaObject> {
+    if (!KALTURA_ALLOWED_ACTIONS.has(`${service}.${action}`)) {
+      throw new KalturaLookupError(
+        `Kaltura ${service}.${action} is not allowed here`,
+        'API_ERROR'
+      )
+    }
+    await options.beforeCall?.({
+      service,
+      action,
+      params: auditableParams(service, params),
+    })
     let response: Awaited<ReturnType<FetchLike>>
     try {
       response = await fetchImpl(

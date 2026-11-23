@@ -1659,8 +1659,8 @@ export const Query = builder.queryType({
           catalogUrl: t.arg.string({ required: true }),
           semester: t.arg.string({ required: false }),
         },
-        resolve: async (_, args) => {
-          return await VideoSourceApprovalService.resolveVideoSource(args)
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.resolveVideoSource(args, ctx)
         },
       }),
 

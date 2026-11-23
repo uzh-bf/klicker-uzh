@@ -278,13 +278,31 @@ export async function resolveVideoSource(
     catalogUrl: string
     semester?: string | null
   },
+  ctx: ContextWithUser,
   deps: {
     catalog?: CatalogClient
     kaltura?: KalturaCatalog
+    audit?: (type: string, payload: Record<string, unknown>) => Promise<void>
     now?: () => Date
   } = {}
 ) {
   const now = deps.now?.() ?? new Date()
+  // The backend holds the broad Kaltura token here too, for categories that
+  // are not approved yet. Admin-only, metadata-only, and every request is
+  // audited before it is sent.
+  let actor: Awaited<ReturnType<typeof loadActor>> | undefined
+  const audit =
+    deps.audit ??
+    ((type: string, payload: Record<string, unknown>) =>
+      ctx.prisma.$transaction(async (tx) => {
+        actor ??= await loadActor(ctx)
+        await appendVideoAuditEvent(tx, {
+          type,
+          actorUserId: actor.id,
+          actorEmail: actor.email,
+          payload,
+        })
+      }))
   let link: VideoSourceLink
   try {
     link = parseVideoSourceLink(args.sourceKind, args.sourceUrl)
@@ -326,7 +344,16 @@ export async function resolveVideoSource(
 
   const kalturaPart = (async () => {
     try {
-      const kaltura = deps.kaltura ?? createKalturaCatalog()
+      await audit('KALTURA_LOOKUP_REQUESTED', {
+        sourceKind: link.kind,
+        sourceUrl: args.sourceUrl.trim(),
+        catalogUrl: args.catalogUrl.trim(),
+      })
+      const kaltura =
+        deps.kaltura ??
+        createKalturaCatalog({
+          beforeCall: (call) => audit('KALTURA_LOOKUP_CALL', { ...call }),
+        })
       const categories =
         link.kind === 'KALTURA_CHANNEL'
           ? [await kaltura.getCategory(link.kalturaCategoryId)].filter(

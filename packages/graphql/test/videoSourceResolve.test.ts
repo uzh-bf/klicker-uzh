@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createKalturaCatalog,
   isOlatNodeCategory,
@@ -128,7 +129,12 @@ describe('createKalturaCatalog', () => {
         ],
       },
     }
+    const audited: Array<{ action: string; params: Record<string, unknown> }> =
+      []
     const kaltura = createKalturaCatalog({
+      beforeCall: async ({ service, action, params }) => {
+        audited.push({ action: `${service}.${action}`, params })
+      },
       serviceUrl: 'https://kaltura.example.org/',
       partnerId: '1',
       appTokenId: 'token-id',
@@ -156,6 +162,18 @@ describe('createKalturaCatalog', () => {
       calls.filter((c) => c.url.includes('startWidgetSession'))
     ).toHaveLength(1)
     expect(calls.at(-1)?.body.ks).toBe('app-ks')
+    // Every request is announced first, without session or token material.
+    expect(audited.map((a) => a.action)).toEqual(
+      calls.map((c) =>
+        c.url.split('/api_v3/service/')[1]?.replace('/action/', '.')
+      )
+    )
+    expect(JSON.stringify(audited)).not.toMatch(
+      /app-ks|widget-ks|tokenHash|token-id/
+    )
+    expect(
+      audited.find((a) => a.action === 'category.list')?.params
+    ).toMatchObject({ filter: { freeText: '2000001' } })
   })
 
   it('reports missing credentials instead of calling Kaltura', async () => {
@@ -242,6 +260,9 @@ describe('resolveVideoSource', () => {
     ],
   }
   const now = () => d('2026-11-23T10:00:00Z')
+  // The audit dependency is faked, so the context is never used.
+  const noCtx = {} as ContextWithUser
+  const audited: Array<{ type: string; payload: Record<string, unknown> }> = []
 
   it('combines the VVZ module and the proposed category of an OLAT node', async () => {
     const result = await resolveVideoSource(
@@ -251,8 +272,17 @@ describe('resolveVideoSource', () => {
           'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001',
         catalogUrl: snapshot.catalogUrl,
       },
-      { catalog, kaltura, now }
+      noCtx,
+      {
+        catalog,
+        kaltura,
+        now,
+        audit: async (type, payload) => {
+          audited.push({ type, payload })
+        },
+      }
     )
+    expect(audited.map((a) => a.type)).toEqual(['KALTURA_LOOKUP_REQUESTED'])
     expect(result.olatNodeId).toBe('2000001')
     expect(result.catalog?.recipients.map((r) => r.email)).toEqual([
       'ada@example.org',
@@ -275,7 +305,8 @@ describe('resolveVideoSource', () => {
           'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic/100002',
         catalogUrl: snapshot.catalogUrl,
       },
-      { catalog, kaltura: failing, now }
+      noCtx,
+      { catalog, kaltura: failing, now, audit: async () => undefined }
     )
     expect(result.catalog?.title).toBe('Synthetic Finance')
     expect(result.candidates).toEqual([])
