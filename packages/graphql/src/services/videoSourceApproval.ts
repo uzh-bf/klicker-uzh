@@ -677,9 +677,11 @@ export async function getVideoApprovalLink(
     })
   }
 
-  const lastRecipientDecision = [...request.decisions]
-    .reverse()
-    .find((d) => d.kind === 'APPROVE' || d.kind === 'REVOKE')
+  const recipientDecisions = request.decisions.filter(
+    (d) => d.kind === 'APPROVE' || d.kind === 'REVOKE'
+  )
+  const lastRecipientDecision =
+    recipientDecisions[recipientDecisions.length - 1]
   const decider = lastRecipientDecision?.recipientId
     ? await ctx.prisma.kBVideoApprovalRecipient.findUnique({
         where: { id: lastRecipientDecision.recipientId },
