@@ -361,12 +361,20 @@ export function KnowledgeGraphDetails({
                 {edgeDescription}
               </p>
             )}
-            {edge.sourceReferences.length > 0 ? null : (
+            {edge.relationStatus === 'inferred' ? (
               <p
                 className="rounded-md border border-dashed border-[#A3A3A3] px-2 py-1 text-xs text-[#4C4C4C]"
                 data-cy="knowledge-graph-inferred-relation"
               >
                 {labels.inferredRelation}
+              </p>
+            ) : null}
+            {edge.sourceReferences.length > 0 ? null : (
+              <p
+                className="rounded-md border border-dashed border-[#A3A3A3] px-2 py-1 text-xs text-[#4C4C4C]"
+                data-cy="knowledge-graph-unsourced-relation"
+              >
+                {labels.unsourcedRelation}
               </p>
             )}
             <dl className="grid grid-cols-1 gap-3 text-sm">

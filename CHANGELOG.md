@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.99](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.98...v3.4.0-alpha.99) (2026-11-23)
+
+
+### Bug Fixes
+
+* **chat:** show the preparing state while an interactive explanation is generated ([#6992](https://github.com/uzh-bf/klicker-uzh/issues/6992)) ([dc62235](https://github.com/uzh-bf/klicker-uzh/commit/dc622352b7bcf990891e4e02c2a7a4fe448b65b5))
+* **chat:** stop treating exam practice as assessed work ([#6982](https://github.com/uzh-bf/klicker-uzh/issues/6982)) ([5e74bdb](https://github.com/uzh-bf/klicker-uzh/commit/5e74bdbe0228acbc9833fbc6b7591bfbe65a86e6))
+
+
+### Enhancements
+
+* **chat:** keep rejected feedback drafts in the collapsed tool-call trace ([#6981](https://github.com/uzh-bf/klicker-uzh/issues/6981)) ([f107c56](https://github.com/uzh-bf/klicker-uzh/commit/f107c5670f2e076e1fd7868f8147214982f50cd0))
+* **chat:** show only that a calculation ran in the calculator chip ([#6983](https://github.com/uzh-bf/klicker-uzh/issues/6983)) ([a619d09](https://github.com/uzh-bf/klicker-uzh/commit/a619d09f4120d82459233aa835e12eef3381fc46))
+
+
+### Other
+
+* **chat:** pin the feedback tool flag off in the chat route tests ([#6987](https://github.com/uzh-bf/klicker-uzh/issues/6987)) ([4fcff15](https://github.com/uzh-bf/klicker-uzh/commit/4fcff15a199556580fb0f81af3e6ee5046d25be6))
+
+
+### Deployment
+
+* **prd:** offer interactive explanations in the chat ([#6989](https://github.com/uzh-bf/klicker-uzh/issues/6989)) ([d3aa58a](https://github.com/uzh-bf/klicker-uzh/commit/d3aa58a8cb36d4efc9eae4356ecf15f72925f829))
+
 ## [3.4.0-alpha.98](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.97...v3.4.0-alpha.98) (2026-11-22)
 
 

@@ -52,8 +52,10 @@ const baseMessages = {
       quizEdgePrompt:
         'Quiz me on how “{source}” relates to “{target}” (“{relationship}”).',
       inferredRelation:
-        'Inferred: no supporting source is recorded for this relationship.',
-      inferredRelationLegend: 'Dashed: inferred, no source',
+        'Inferred: this relationship is drawn from the course materials but not stated in them directly.',
+      unsourcedRelation:
+        'No supporting source is recorded for this relationship.',
+      inferredRelationLegend: 'Dashed: inferred or without a source',
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
     },

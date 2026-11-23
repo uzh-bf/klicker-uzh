@@ -53,8 +53,10 @@ const baseMessages = {
       quizEdgePrompt:
         'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
       inferredRelation:
-        'Abgeleitet: Für diese Beziehung ist keine belegende Quelle erfasst.',
-      inferredRelationLegend: 'Gestrichelt: abgeleitet, ohne Quelle',
+        'Abgeleitet: Diese Beziehung ist aus den Kursunterlagen erschlossen und wird dort nicht direkt genannt.',
+      unsourcedRelation:
+        'Für diese Beziehung ist keine belegende Quelle erfasst.',
+      inferredRelationLegend: 'Gestrichelt: abgeleitet oder ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },
