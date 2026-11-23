@@ -81,6 +81,19 @@ function ApprovalDetails({
         })
       : ''
   const blockedByEduId = link.eduIdRequired && !link.eduIdSignedIn
+
+  // Mutation errors surface through the hooks' error state rendered below, so
+  // the handlers only swallow the rejection and never return a promise.
+  const handleApprove = (): void => {
+    approve({
+      variables: { token, consentVersion: link.consentVersion },
+    }).catch(() => undefined)
+  }
+  const handleRevoke = (): void => {
+    revoke({ variables: { token, reason: reason.trim() || null } })
+      .then(() => setConfirmRevoke(false))
+      .catch(() => undefined)
+  }
   const mutationError = approveError ?? revokeError
 
   const stateText = {
@@ -212,13 +225,7 @@ function ApprovalDetails({
             <Button
               disabled={!consented || blockedByEduId || approving}
               loading={approving}
-              onClick={() =>
-                approve({
-                  variables: { token, consentVersion: link.consentVersion },
-                }).catch(() => {
-                  // The mutation's error state shows the message above.
-                })
-              }
+              onClick={handleApprove}
               className={{ root: 'bg-primary-100 text-white' }}
               data={{ cy: 'video-approval-approve' }}
             >
@@ -258,15 +265,7 @@ function ApprovalDetails({
             <Button
               disabled={revoking || blockedByEduId}
               loading={revoking}
-              onClick={() =>
-                revoke({
-                  variables: { token, reason: reason.trim() || null },
-                })
-                  .then(() => setConfirmRevoke(false))
-                  .catch(() => {
-                    // The mutation's error state shows the message above.
-                  })
-              }
+              onClick={handleRevoke}
               className={{ root: 'bg-red-600 text-white' }}
               data={{ cy: 'video-approval-revoke-confirm' }}
             >
