@@ -258,16 +258,15 @@ function ApprovalDetails({
             <Button
               disabled={revoking || blockedByEduId}
               loading={revoking}
-              onClick={async () => {
-                try {
-                  await revoke({
-                    variables: { token, reason: reason.trim() || null },
+              onClick={() =>
+                revoke({
+                  variables: { token, reason: reason.trim() || null },
+                })
+                  .then(() => setConfirmRevoke(false))
+                  .catch(() => {
+                    // The mutation's error state shows the message above.
                   })
-                  setConfirmRevoke(false)
-                } catch {
-                  // The mutation's error state shows the message above.
-                }
-              }}
+              }
               className={{ root: 'bg-red-600 text-white' }}
               data={{ cy: 'video-approval-revoke-confirm' }}
             >
