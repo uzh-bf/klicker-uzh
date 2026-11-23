@@ -245,7 +245,8 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&(amp|lt|gt|quot|apos);/g, (entity) => NAMED_ENTITIES[entity]!)
 }
 
-const EMAIL_PATTERN = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/
+const EMAIL_PATTERN = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/
+const EMAIL_TOKEN = /[^\s@<>"':]+@[^\s@<>"']+\.[^\s@<>"']+/
 
 /**
  * PDetails.Email is an HTML anchor (`<a href="mailto:x@uzh.ch">x@uzh.ch</a>`),
@@ -254,12 +255,17 @@ const EMAIL_PATTERN = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/
 export function parseCatalogEmail(raw: string | null | undefined) {
   if (!raw) return null
   const decoded = decodeHtmlEntities(raw)
+  // Extract the address instead of stripping markup: the value is HTML and
+  // only a validated address may leave this function.
   const mailto = /mailto:([^"'?>\s]+)/i.exec(decoded)
-  const candidate = (
-    mailto ? decodeURIComponent(mailto[1]!) : decoded.replace(/<[^>]*>/g, '')
-  )
-    .trim()
-    .toLowerCase()
+  let candidate = mailto?.[1] ?? EMAIL_TOKEN.exec(decoded)?.[0]
+  if (!candidate) return null
+  try {
+    candidate = decodeURIComponent(candidate)
+  } catch {
+    return null
+  }
+  candidate = candidate.trim().toLowerCase()
   return EMAIL_PATTERN.test(candidate) ? candidate : null
 }
 
