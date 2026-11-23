@@ -37,6 +37,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0043](./0043-sonar-analysis-credential-and-coverage-input-boundary.md) — Sonar analysis credentials stay out of contributor-controlled execution
 - [0051](./0051-ai-releases-tag-v3-ai-with-deploy-parity.md) — AI releases are tagged on `v3-ai` and rendered from `v3` under deploy parity
 - [0054](./0054-student-answer-style-layer.md) — Students choose how answers read (style and tone), never how much help they get, below every fixed prompt contract
+- [0059](./0059-fsrs-7-orders-spaced-repetition-practice.md) — FSRS-7 orders spaced-repetition practice instead of SM-2
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because
