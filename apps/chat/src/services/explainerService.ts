@@ -270,26 +270,29 @@ function briefPrompt(brief: ExplanationBrief): string {
 /**
  * Has the writer draft and repair the explanation against the service: errors
  * go back on every draft, quality hints once. Stops at the first accepted
- * draft or after three. Usage counts every finished step, also on failure.
+ * draft or after three. A valid draft held back for its hints is still shown
+ * when the revision fails. `onStepUsage` receives each finished step's tokens
+ * at once, so a stopped turn is charged for the drafts already written.
  */
 export async function writeExplanation({
   brief,
   writer,
   abortSignal,
+  onStepUsage,
 }: {
   brief: ExplanationBrief
   writer: ExplanationWriter
   abortSignal?: AbortSignal
+  onStepUsage?: (usage: ExplanationWriterUsage) => void
 }): Promise<{
   result: ExplanationToolResult
-  usage: ExplanationWriterUsage
   drafts: number
 }> {
   const schema = await getExplanationSchema()
-  const usage: ExplanationWriterUsage = { inputTokens: 0, outputTokens: 0 }
   let drafts = 0
   let hintsSent = false
   let last: ExplanationDraftResult | null = null
+  let heldBack: Record<string, unknown> | null = null
   const submit = tool({
     description: 'Submit the complete explainer/1 content object.',
     // Not validated by the SDK: the service is the gate and reports errors
@@ -302,6 +305,7 @@ export async function writeExplanation({
         withHints: !hintsSent && drafts < MAX_WRITER_DRAFTS,
       }).catch(() => ({ kind: 'explanation-unavailable' as const }))
       if ('hints' in result && result.hints.length) hintsSent = true
+      if (result.kind === 'explanation-review') heldBack = content
       last = result
       return result
     },
@@ -329,10 +333,14 @@ export async function writeExplanation({
       maxOutputTokens: WRITER_MAX_OUTPUT_TOKENS,
       providerOptions: writer.providerOptions,
       abortSignal: AbortSignal.any(signals),
-      onStepEnd: (step) => {
-        usage.inputTokens += step.usage.inputTokens ?? 0
-        usage.outputTokens += step.usage.outputTokens ?? 0
-      },
+      // Like the other auxiliary calls: the brief and drafts derive from the
+      // student's question and stay out of traces.
+      telemetry: { isEnabled: false },
+      onStepEnd: (step) =>
+        onStepUsage?.({
+          inputTokens: step.usage.inputTokens ?? 0,
+          outputTokens: step.usage.outputTokens ?? 0,
+        }),
     })
   } catch (error) {
     console.warn('Explanation writer failed', {
@@ -340,20 +348,31 @@ export async function writeExplanation({
       drafts,
       error: error instanceof Error ? error.message : String(error),
     })
-    return { result: { kind: 'explanation-unavailable' }, usage, drafts }
+    const kept = heldBack as Record<string, unknown> | null
+    return {
+      result: kept
+        ? { kind: 'explanation', content: kept }
+        : { kind: 'explanation-unavailable' },
+      drafts,
+    }
   }
   const final = last as ExplanationDraftResult | null
+  const kept = heldBack as Record<string, unknown> | null
   const result: ExplanationToolResult =
-    final?.kind === 'explanation' || final?.kind === 'explanation-unavailable'
+    final?.kind === 'explanation'
       ? final
-      : {
-          kind: 'explanation-invalid',
-          errors:
-            final?.kind === 'explanation-invalid'
-              ? final.errors
-              : ['the writer returned no valid explanation'],
-        }
-  return { result, usage, drafts }
+      : kept
+        ? { kind: 'explanation', content: kept }
+        : final?.kind === 'explanation-unavailable'
+          ? final
+          : {
+              kind: 'explanation-invalid',
+              errors:
+                final?.kind === 'explanation-invalid'
+                  ? final.errors
+                  : ['the writer returned no valid explanation'],
+            }
+  return { result, drafts }
 }
 
 type ExplanationPending = { kind: 'explanation-pending' }
@@ -369,7 +388,8 @@ function explanationToolOutput(
 /**
  * The tutor's tool. The writer is resolved when the turn's model options are
  * known, so it is read at call time; without one the call reports the service
- * as unavailable. `onUsage` receives the writer's tokens for the turn's cost.
+ * as unavailable. `onUsage` receives the writer's tokens per finished step for
+ * the turn's cost.
  */
 export async function createShowExplanationTool({
   getWriter,
@@ -393,18 +413,20 @@ export async function createShowExplanationTool({
         return
       }
       const startedAt = Date.now()
-      const run = writeExplanation({ brief, writer, abortSignal }).then(
-        ({ result, usage, drafts }) => {
-          onUsage(usage)
-          console.info('Explanation written', {
-            modelId: writer.modelId,
-            drafts,
-            outcome: result.kind,
-            durationMs: Date.now() - startedAt,
-          })
-          return result
-        }
-      )
+      const run = writeExplanation({
+        brief,
+        writer,
+        abortSignal,
+        onStepUsage: onUsage,
+      }).then(({ result, drafts }) => {
+        console.info('Explanation written', {
+          modelId: writer.modelId,
+          drafts,
+          outcome: result.kind,
+          durationMs: Date.now() - startedAt,
+        })
+        return result
+      })
       for (;;) {
         const result = await Promise.race([
           run,

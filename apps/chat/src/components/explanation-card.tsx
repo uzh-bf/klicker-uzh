@@ -30,8 +30,8 @@ function asResult(value: unknown): ExplanationToolResult | null {
 }
 
 /**
- * A draft the explainer service rejected, or a call whose input did not
- * parse. The tutor usually tries again, so the attempt belongs in the
+ * A call whose writer could not produce an accepted draft, or whose input did
+ * not parse. The tutor then answers in text, so the attempt belongs in the
  * collapsed tool-call trace rather than in the answer.
  */
 export function isRejectedExplanation(

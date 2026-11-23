@@ -2482,8 +2482,9 @@ export async function POST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        // Each explanation or feedback attempt is a step; three attempts plus
-        // retrieval and the closing text need more than the usual five.
+        // Each feedback attempt is a step; three attempts plus retrieval and
+        // the closing text need more than the usual five. An explanation call
+        // is one step, because its writer repairs drafts inside the tool.
         stopWhen: isStepCount(
           explanationToolActive || feedbackToolActive ? 7 : 5
         ),
@@ -2658,7 +2659,9 @@ export async function POST(
               }
             }
 
-            if (hasUsage) {
+            // Writer drafts are charged even when the turn stopped before
+            // finishing a step of its own.
+            if (hasUsage || explanationWriterCost > 0) {
               rawCreditsUsed =
                 totalCost + imageDescriptionCost + explanationWriterCost
             }

@@ -132,20 +132,18 @@ describe('explanation writer', () => {
       )
     )
     const model = new MockLanguageModelV4({ doGenerate: [draft(1), draft(2)] })
-    const {
-      result,
-      usage: used,
-      drafts,
-    } = await writeExplanation({
+    const used: number[] = []
+    const { result, drafts } = await writeExplanation({
       brief,
       writer: { modelId: 'writer', model },
+      onStepUsage: ({ inputTokens }) => used.push(inputTokens),
     })
     expect(result).toEqual({
       kind: 'explanation',
       content: { format: 'explainer/1', draft: 2 },
     })
     expect(drafts).toBe(2)
-    expect(used).toEqual({ inputTokens: 200, outputTokens: 100 })
+    expect(used).toEqual([100, 100])
     const repair = JSON.stringify(model.doGenerateCalls[1]!.prompt)
     expect(repair).toContain('steps.a: e')
     expect(repair).toContain('steps.b: h')
@@ -169,6 +167,28 @@ describe('explanation writer', () => {
     })
     expect(drafts).toBe(3)
     expect(result).toEqual({ kind: 'explanation-invalid', errors: ['a: 3'] })
+  })
+
+  it('shows a valid draft held back for hints when the revision fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      service(
+        { ok: true, errors: [], hints: ['steps.b: h'] },
+        { ok: false, errors: ['a: 2'] },
+        { ok: false, errors: ['a: 3'] }
+      )
+    )
+    const model = new MockLanguageModelV4({
+      doGenerate: [draft(1), draft(2), draft(3)],
+    })
+    const { result } = await writeExplanation({
+      brief,
+      writer: { modelId: 'writer', model },
+    })
+    expect(result).toEqual({
+      kind: 'explanation',
+      content: { format: 'explainer/1', draft: 1 },
+    })
   })
 
   it('reports the service as unavailable when no writer is set', async () => {
