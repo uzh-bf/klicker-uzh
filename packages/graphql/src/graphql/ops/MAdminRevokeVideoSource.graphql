@@ -1,0 +1,5 @@
+mutation AdminRevokeVideoSource($sourceId: ID!, $reason: String!) {
+  adminRevokeVideoSource(sourceId: $sourceId, reason: $reason) {
+    ...KBVideoSourceData
+  }
+}

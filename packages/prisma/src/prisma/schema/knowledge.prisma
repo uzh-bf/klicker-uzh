@@ -140,6 +140,7 @@ model KB {
   uploadTickets KBUploadTicket[]
   chatbots      KBChatbot[]
   graphBuilds   KBGraphBuild[]
+  videoSources  KBVideoSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

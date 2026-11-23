@@ -33,6 +33,7 @@ import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
+import * as VideoSourceApprovalService from '../services/videoSourceApproval.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
@@ -159,6 +160,14 @@ import {
   UserLogin,
   UserLoginScope,
 } from './user.js'
+import {
+  KBVideoCutMode,
+  KBVideoSourceKind,
+  KBVideoSourceRef,
+  VideoApprovalLink,
+  VideoApprovalRecipientInput,
+  VideoApprovalRequestResultRef,
+} from './videoSource.js'
 
 // shorthand for frequently accessed functions
 const checkAccess = SharingService.checkAccess
@@ -2140,6 +2149,103 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.detachKbFromChatbot(args, ctx)
+        },
+      }),
+
+      createVideoSource: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: KBVideoSourceRef,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          name: t.arg.string({ required: true }),
+          sourceKind: t.arg({ type: KBVideoSourceKind, required: true }),
+          sourceUrl: t.arg.string({ required: true }),
+          catalogUrl: t.arg.string({ required: true }),
+          kalturaCategoryId: t.arg.string({ required: true }),
+          cutMode: t.arg({ type: KBVideoCutMode, required: true }),
+          namePattern: t.arg.string({ required: false }),
+          captionLanguage: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.createVideoSource(args, ctx)
+        },
+      }),
+
+      requestVideoSourceApproval: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: VideoApprovalRequestResultRef,
+        args: {
+          sourceId: t.arg.id({ required: true }),
+          semester: t.arg.string({ required: false }),
+          additionalRecipients: t.arg({
+            type: [VideoApprovalRecipientInput],
+            required: false,
+          }),
+          excludedEmails: t.arg.stringList({ required: false }),
+          reason: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.requestVideoSourceApproval(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      adminApproveVideoSourceRequest: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: KBVideoSourceRef,
+        args: { requestId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.adminApproveVideoSourceRequest(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      adminRevokeVideoSource: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: KBVideoSourceRef,
+        args: {
+          sourceId: t.arg.id({ required: true }),
+          reason: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.adminRevokeVideoSource(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      approveVideoSourceByLink: t.withAuth(asUser).field({
+        nullable: false,
+        type: VideoApprovalLink,
+        args: {
+          token: t.arg.string({ required: true }),
+          consentVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.approveVideoSourceByLink(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      revokeVideoSourceByLink: t.withAuth(asUser).field({
+        nullable: false,
+        type: VideoApprovalLink,
+        args: {
+          token: t.arg.string({ required: true }),
+          reason: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.revokeVideoSourceByLink(
+            args,
+            ctx
+          )
         },
       }),
 

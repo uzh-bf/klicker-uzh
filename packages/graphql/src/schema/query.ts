@@ -28,6 +28,7 @@ import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import * as VideoSourceApprovalService from '../services/videoSourceApproval.js'
 import {
   ActivityDetails,
   CourseActivityList,
@@ -167,6 +168,7 @@ import {
   UserLogin,
   UserLoginScope,
 } from './user.js'
+import { KBVideoSourceRef, VideoApprovalLink } from './videoSource.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -1628,6 +1630,27 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbImportedSourcesConnection(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getVideoSources: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: [KBVideoSourceRef],
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.getVideoSources(args, ctx)
+        },
+      }),
+
+      getVideoApprovalLink: t.withAuth(asUser).field({
+        nullable: false,
+        type: VideoApprovalLink,
+        args: { token: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.getVideoApprovalLink(
             args,
             ctx
           )

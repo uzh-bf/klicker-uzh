@@ -1,0 +1,219 @@
+// #region Lecture video sources and their approval
+//
+// A video source binds one Kaltura category (resolved from an OLAT node or a
+// MediaSpace channel) to a knowledge base. Nothing is fetched from Kaltura for
+// a source until a listed lecturer has approved it through their emailed link
+// and a Klicker admin has given final approval. See
+// docs/solutions/integration/video-source-approval.md.
+
+enum KBVideoSourceKind {
+  OLAT_NODE
+  KALTURA_CHANNEL
+}
+
+// How a course publishes its edited recordings in the channel.
+enum KBVideoCutMode {
+  CLIP // clips (sourceType 35) of the capture; raw captures wait for their cut
+  EDITED // capture entries trimmed and renamed in place; requires namePattern
+  AS_RECORDED // capture entries published uncut, accepted after a settle delay
+}
+
+enum KBVideoSourceStatus {
+  DRAFT // configured, no approval requested yet
+  PENDING_APPROVAL // a request is open, no recipient has approved yet
+  AWAITING_ADMIN // a recipient approved, admin final approval outstanding
+  APPROVED // discovery runs until validUntil
+  PAUSED // validity ended (new semester); needs a new request
+  REVOKED // a recipient or admin revoked; needs a new request
+}
+
+enum KBVideoApprovalRequestStatus {
+  OPEN // links can grant until grantExpiresAt
+  APPROVED // a recipient approved, admin final approval outstanding
+  ACTIVE // admin approved; valid until validUntil
+  SUPERSEDED // replaced by a newer request before it became active
+  REVOKED // revoked by a recipient or an admin
+}
+
+enum KBVideoApprovalDecisionKind {
+  APPROVE
+  REVOKE
+  ADMIN_APPROVE
+  ADMIN_REVOKE
+}
+
+enum KBVideoApprovalRecipientOrigin {
+  CATALOG
+  ADMIN_ADDED
+}
+
+model KBVideoSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  // Shown to approvers, e.g. "Finance I lecture recordings".
+  name       String
+  sourceKind KBVideoSourceKind
+  // The OLAT node or MediaSpace channel URL the admin entered.
+  sourceUrl  String
+  // courses.uzh.ch link; contacts are snapshotted per semester on request.
+  catalogUrl String
+
+  // The resolved category is what the gateway filters on and what approval
+  // binds to. Changing it after approval requires a new request.
+  kalturaCategoryId     String
+  categoryConfirmedAt   DateTime
+  categoryConfirmedById String   @db.Uuid
+
+  cutMode         KBVideoCutMode
+  // Required for EDITED: only entries whose name matches are course videos.
+  namePattern     String?
+  // The language whose READY caption gates processing, e.g. "de".
+  captionLanguage String
+
+  status          KBVideoSourceStatus @default(DRAFT)
+  // Copied from the active request so the gateway check is one row read.
+  activeRequestId String?             @unique @db.Uuid
+  validUntil      DateTime?
+
+  // Discovery bookkeeping (owned by the discovery worker).
+  lastPolledAt      DateTime?
+  lastSeenUpdatedAt DateTime?
+
+  createdById String @db.Uuid
+
+  requests KBVideoApprovalRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId])
+  @@index([status])
+}
+
+model KBVideoApprovalRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  source   KBVideoSource @relation(fields: [sourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sourceId String        @db.Uuid
+
+  // Bound at request time; the approval never extends past this semester.
+  semester          String // e.g. HS26
+  // Kaltura category at request time; approval covers exactly this id.
+  kalturaCategoryId String
+
+  // Who asked. Name and email are copied so the email, the landing page and
+  // the audit trail keep showing the requester even if the account changes.
+  requestedById    String @db.Uuid
+  requestedByName  String
+  requestedByEmail String
+
+  // CatalogModuleSnapshot from the course catalogue client, as sent.
+  catalogSnapshot       Json
+  catalogSnapshotSha256 String
+
+  consentVersion    String
+  consentTextSha256 String
+
+  status         KBVideoApprovalRequestStatus @default(OPEN)
+  // Links can approve until here; they can revoke for as long as the request exists.
+  grantExpiresAt DateTime
+  // Semester end; set on admin approval.
+  validUntil     DateTime?
+
+  approvedAt            DateTime?
+  approvedByRecipientId String?   @db.Uuid
+  adminApprovedAt       DateTime?
+  adminApprovedById     String?   @db.Uuid
+  supersededAt          DateTime?
+  revokedAt             DateTime?
+
+  recipients KBVideoApprovalRecipient[]
+  decisions  KBVideoApprovalDecision[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sourceId, status])
+}
+
+model KBVideoApprovalRecipient {
+  id String @id @default(uuid()) @db.Uuid
+
+  request   KBVideoApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  requestId String                 @db.Uuid
+
+  name   String
+  email  String
+  // CatalogContactRole values (RESPONSIBLE, LECTURER).
+  roles  String[]
+  origin KBVideoApprovalRecipientOrigin @default(CATALOG)
+
+  // SHA-256 of the emailed link token; the token itself is never stored.
+  tokenSha256 String @unique
+
+  sentAt        DateTime?
+  firstOpenedAt DateTime?
+
+  decisions KBVideoApprovalDecision[]
+
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+}
+
+// Append-only record of every approval decision.
+model KBVideoApprovalDecision {
+  id String @id @default(uuid()) @db.Uuid
+
+  request   KBVideoApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  requestId String                 @db.Uuid
+
+  // Set for decisions taken through a recipient's link.
+  recipient   KBVideoApprovalRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  recipientId String?                   @db.Uuid
+
+  kind KBVideoApprovalDecisionKind
+
+  userId          String  @db.Uuid
+  userEmail       String
+  // edu-ID subject of the signed-in account, if it has one.
+  eduIdSubject    String?
+  // Whether the signed-in account's email equals the recipient's email.
+  identityMatched Boolean
+
+  consentVersion    String?
+  consentTextSha256 String?
+  reason            String?
+
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+}
+
+// Append-only, hash-chained audit log for the video pipeline. Each row's hash
+// covers its content and the previous row's hash, so a removed or edited row
+// breaks the chain. Rows are appended under an advisory lock.
+model KBVideoAuditEvent {
+  seq Int @id @default(autoincrement())
+
+  sourceId  String? @db.Uuid
+  requestId String? @db.Uuid
+
+  type        String
+  actorUserId String? @db.Uuid
+  actorEmail  String?
+  payload     Json
+
+  prevHash String?
+  hash     String  @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([sourceId, seq])
+  @@index([requestId])
+}
+
+// #endregion

@@ -1,0 +1,25 @@
+mutation CreateVideoSource(
+  $kbId: ID!
+  $name: String!
+  $sourceKind: KBVideoSourceKind!
+  $sourceUrl: String!
+  $catalogUrl: String!
+  $kalturaCategoryId: String!
+  $cutMode: KBVideoCutMode!
+  $namePattern: String
+  $captionLanguage: String!
+) {
+  createVideoSource(
+    kbId: $kbId
+    name: $name
+    sourceKind: $sourceKind
+    sourceUrl: $sourceUrl
+    catalogUrl: $catalogUrl
+    kalturaCategoryId: $kalturaCategoryId
+    cutMode: $cutMode
+    namePattern: $namePattern
+    captionLanguage: $captionLanguage
+  ) {
+    ...KBVideoSourceData
+  }
+}

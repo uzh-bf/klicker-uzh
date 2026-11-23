@@ -2390,6 +2390,54 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Adding new content to knowledge bases is temporarily disabled.',
   },
   manage: {
+    videoApproval: {
+      pageTitle: 'Lecture recordings for the course chatbot',
+      requestedBy:
+        '{name} ({email}) asked you on {date} to approve the use of these lecture recordings.',
+      sentTo: 'Sent to {name} ({email})',
+      course: 'Course',
+      semester: 'Semester',
+      responsible: 'Module responsible',
+      chatbots: 'Chatbot',
+      source: 'Recordings',
+      channel: 'Kaltura channel',
+      cutMode: 'Which recordings',
+      cutModeCLIP: 'Edited clips published in the channel',
+      cutModeEDITED: 'Edited recordings published in the channel',
+      cutModeAS_RECORDED: 'Recordings as published in the channel',
+      recordingsScope:
+        'All matching recordings of {semester} are processed, including earlier ones. Add the MediaSpace tag ai-skip to a recording to exclude it.',
+      catalogLink: 'Course catalogue',
+      consentTitle: 'What you agree to',
+      consentCheck: 'I have read this and agree.',
+      approve: 'Approve',
+      decline: 'Decline',
+      revoke: 'Revoke approval',
+      revokeConfirmTitle: 'Revoke and remove?',
+      revokeConfirmText:
+        'KlickerUZH stops processing these recordings and removes everything it created from them. This cannot be undone; a new approval needs a new request.',
+      revokeReason: 'Reason (optional)',
+      revokeConfirm: 'Revoke and remove',
+      cancel: 'Cancel',
+      identityMismatch:
+        'This link was sent to {recipient}, and you are signed in as {signedIn}. You can still decide; a KlickerUZH administrator reviews the mismatch.',
+      eduIdRequired:
+        'Please sign out and sign in again with your edu-ID to decide on this request.',
+      stateAWAITING_APPROVAL: 'This link can approve until {date}.',
+      stateGRANT_EXPIRED:
+        'This link could approve until {date}. Ask {requester} for a new request if you want to approve. You can still decline here.',
+      stateSUPERSEDED:
+        'A newer request replaced this one. Please use the link from the most recent email.',
+      stateAWAITING_ADMIN:
+        'Approved by {name} on {date}. A KlickerUZH administrator completes the check before processing starts.',
+      stateACTIVE:
+        'Approved by {name}. Recordings are processed until {date}. You can revoke the approval here at any time.',
+      stateENDED:
+        'The approval for {semester} has ended. Material created from its recordings stays in the chatbot until you revoke it here.',
+      stateREVOKED: 'This approval was revoked. Nothing is processed any more.',
+      invalidLink:
+        'This link is not valid. Please use the link from the email exactly as it was sent.',
+    },
     assistant: {
       open: 'Assistant',
       title: 'KlickerUZH Assistant',

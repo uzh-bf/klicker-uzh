@@ -1,0 +1,31 @@
+fragment VideoApprovalLinkData on VideoApprovalLink {
+  requestId
+  state
+  canApprove
+  canRevoke
+  semester
+  requestedAt
+  requestedByName
+  requestedByEmail
+  grantExpiresAt
+  validUntil
+  recipientName
+  recipientEmail
+  signedInEmail
+  identityMatched
+  eduIdSignedIn
+  eduIdRequired
+  courseTitle
+  courseShortName
+  catalogUrl
+  responsibleNames
+  sourceName
+  sourceUrl
+  kalturaCategoryId
+  cutMode
+  chatbotNames
+  consentVersion
+  consentText
+  decidedByName
+  decidedAt
+}

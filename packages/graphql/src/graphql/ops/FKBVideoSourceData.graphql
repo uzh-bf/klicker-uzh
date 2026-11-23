@@ -1,0 +1,48 @@
+fragment KBVideoSourceData on KBVideoSource {
+  id
+  kbId
+  name
+  sourceKind
+  sourceUrl
+  catalogUrl
+  kalturaCategoryId
+  cutMode
+  namePattern
+  captionLanguage
+  status
+  validUntil
+  requests {
+    id
+    semester
+    status
+    kalturaCategoryId
+    requestedByName
+    requestedByEmail
+    catalogSnapshotSha256
+    consentVersion
+    grantExpiresAt
+    validUntil
+    approvedAt
+    adminApprovedAt
+    revokedAt
+    createdAt
+    recipients {
+      id
+      name
+      email
+      roles
+      sentAt
+      firstOpenedAt
+    }
+    decisions {
+      id
+      kind
+      recipientId
+      userEmail
+      eduIdSignedIn
+      identityMatched
+      reason
+      createdAt
+    }
+  }
+}

@@ -1,0 +1,5 @@
+mutation AdminApproveVideoSourceRequest($requestId: ID!) {
+  adminApproveVideoSourceRequest(requestId: $requestId) {
+    ...KBVideoSourceData
+  }
+}

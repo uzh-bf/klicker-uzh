@@ -1,0 +1,27 @@
+mutation RequestVideoSourceApproval(
+  $sourceId: ID!
+  $semester: String
+  $additionalRecipients: [VideoApprovalRecipientInput!]
+  $excludedEmails: [String!]
+  $reason: String
+) {
+  requestVideoSourceApproval(
+    sourceId: $sourceId
+    semester: $semester
+    additionalRecipients: $additionalRecipients
+    excludedEmails: $excludedEmails
+    reason: $reason
+  ) {
+    requestId
+    semester
+    grantExpiresAt
+    recipients {
+      name
+      email
+      roles
+      sent
+    }
+    contactsWithoutEmail
+    warnings
+  }
+}

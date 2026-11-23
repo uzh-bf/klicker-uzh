@@ -2430,6 +2430,58 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
   manage: {
+    videoApproval: {
+      pageTitle: 'Vorlesungsaufzeichnungen für den Kurs-Chatbot',
+      requestedBy:
+        '{name} ({email}) hat Sie am {date} um Ihre Zustimmung zur Nutzung dieser Vorlesungsaufzeichnungen gebeten.',
+      sentTo: 'Gesendet an {name} ({email})',
+      course: 'Kurs',
+      semester: 'Semester',
+      responsible: 'Modulverantwortliche:r',
+      chatbots: 'Chatbot',
+      source: 'Aufzeichnungen',
+      channel: 'Kaltura-Kanal',
+      cutMode: 'Welche Aufzeichnungen',
+      cutModeCLIP: 'Geschnittene Clips, die im Kanal veröffentlicht sind',
+      cutModeEDITED:
+        'Bearbeitete Aufzeichnungen, die im Kanal veröffentlicht sind',
+      cutModeAS_RECORDED:
+        'Aufzeichnungen, wie sie im Kanal veröffentlicht sind',
+      recordingsScope:
+        'Alle passenden Aufzeichnungen des {semester} werden verarbeitet, auch frühere. Mit dem MediaSpace-Tag ai-skip schliessen Sie eine Aufzeichnung aus.',
+      catalogLink: 'Vorlesungsverzeichnis',
+      consentTitle: 'Dem stimmen Sie zu',
+      consentCheck: 'Ich habe dies gelesen und stimme zu.',
+      approve: 'Zustimmen',
+      decline: 'Ablehnen',
+      revoke: 'Zustimmung widerrufen',
+      revokeConfirmTitle: 'Widerrufen und entfernen?',
+      revokeConfirmText:
+        'KlickerUZH verarbeitet diese Aufzeichnungen nicht mehr und entfernt alles, was daraus erstellt wurde. Dies kann nicht rückgängig gemacht werden; eine neue Zustimmung braucht eine neue Anfrage.',
+      revokeReason: 'Grund (optional)',
+      revokeConfirm: 'Widerrufen und entfernen',
+      cancel: 'Abbrechen',
+      identityMismatch:
+        'Dieser Link wurde an {recipient} gesendet, Sie sind als {signedIn} angemeldet. Sie können trotzdem entscheiden; ein:e KlickerUZH-Administrator:in prüft die Abweichung.',
+      eduIdRequired:
+        'Bitte melden Sie sich ab und mit Ihrer edu-ID wieder an, um über diese Anfrage zu entscheiden.',
+      stateAWAITING_APPROVAL:
+        'Mit diesem Link können Sie bis am {date} zustimmen.',
+      stateGRANT_EXPIRED:
+        'Mit diesem Link konnten Sie bis am {date} zustimmen. Bitten Sie {requester} um eine neue Anfrage, wenn Sie zustimmen möchten. Ablehnen können Sie weiterhin hier.',
+      stateSUPERSEDED:
+        'Eine neuere Anfrage hat diese ersetzt. Bitte verwenden Sie den Link aus der neuesten E-Mail.',
+      stateAWAITING_ADMIN:
+        'Zugestimmt von {name} am {date}. Ein:e KlickerUZH-Administrator:in schliesst die Prüfung ab, bevor die Verarbeitung beginnt.',
+      stateACTIVE:
+        'Zugestimmt von {name}. Aufzeichnungen werden bis am {date} verarbeitet. Sie können die Zustimmung hier jederzeit widerrufen.',
+      stateENDED:
+        'Die Zustimmung für das {semester} ist abgelaufen. Was aus den Aufzeichnungen erstellt wurde, bleibt im Chatbot, bis Sie hier widerrufen.',
+      stateREVOKED:
+        'Diese Zustimmung wurde widerrufen. Es wird nichts mehr verarbeitet.',
+      invalidLink:
+        'Dieser Link ist ungültig. Bitte verwenden Sie den Link aus der E-Mail genau so, wie er gesendet wurde.',
+    },
     assistant: {
       open: 'Assistent',
       title: 'KlickerUZH Assistant',
