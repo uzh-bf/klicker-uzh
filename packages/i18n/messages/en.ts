@@ -2396,7 +2396,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{name} ({email}) asked you on {date} to approve the use of these lecture recordings.',
       sentTo: 'Sent to {name} ({email})',
       course: 'Course',
-      semester: 'Semester',
+      period: 'Period',
       responsible: 'Module responsible',
       chatbots: 'Chatbot',
       source: 'Recordings',
@@ -2406,8 +2406,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       cutModeEDITED: 'Edited recordings published in the channel',
       cutModeAS_RECORDED: 'Recordings as published in the channel',
       recordingsScope:
-        'All matching recordings of {semester} are processed, including earlier ones. Add the MediaSpace tag ai-skip to a recording to exclude it.',
-      catalogLink: 'Course catalogue',
+        'All matching recordings of {period} are processed, including earlier ones. Add the MediaSpace tag ai-skip to a recording to exclude it.',
+      directoryLink: 'Course directory',
       consentTitle: 'What you agree to',
       consentCheck: 'I have read this and agree.',
       approve: 'Approve',
@@ -2433,7 +2433,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       stateACTIVE:
         'Approved by {name}. Recordings are processed until {date}. You can revoke the approval here at any time.',
       stateENDED:
-        'The approval for {semester} has ended. Material created from its recordings stays in the chatbot until you revoke it here.',
+        'The approval for {period} has ended. Material created from its recordings stays in the chatbot until you revoke it here.',
       stateREVOKED: 'This approval was revoked. Nothing is processed any more.',
       invalidLink:
         'This link is not valid. Please use the link from the email exactly as it was sent.',
@@ -2525,25 +2525,28 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     admin: {
       videoSources: 'Lecture video sources',
       videoSourceDescription:
-        'Paste the recordings link (OLAT node or MediaSpace channel) and the VVZ link. Klicker looks up the course, the lecturers who will be asked for approval, and the matching Kaltura categories. Check the proposal, then create the source and send the approval emails.',
+        'Paste the recordings link and the course directory link. The course-sources provider looks up the course, the lecturers who will be asked for approval, and the matching Kaltura categories. Check the proposal, then create the source and send the approval emails.',
+      videoSourceManualMode:
+        'No course-sources provider is configured. Enter the course, the period, the recipients and the Kaltura category id yourself.',
       videoSourceKb: 'Knowledge base (id or Manage link)',
-      videoSourceKind: 'Recordings link type',
-      videoSourceKindOLAT_NODE: 'OLAT course node',
-      videoSourceKindKALTURA_CHANNEL: 'MediaSpace channel',
       videoSourceUrl: 'Recordings link',
-      videoSourceCatalogUrl: 'VVZ link (courses.uzh.ch)',
-      videoSourceSemester:
-        'Semester (optional, default from the VVZ link or today)',
+      videoSourceDirectoryUrl: 'Course directory link',
+      videoSourcePeriod: 'Period (optional with a provider, e.g. HS26)',
       videoSourceResolve: 'Look up',
-      videoSourceCatalog: 'Course catalogue, {semester}',
+      videoSourceDirectory: 'Course directory, {period}',
       videoSourceRecipients: 'Approval emails will go to:',
-      videoSourceWithoutEmail: 'No email address in the catalogue for: {names}',
+      videoSourceWithoutEmail:
+        'No email address in the course directory for: {names}',
+      videoSourceCourseTitle: 'Course title',
+      videoSourceCourseShortName: 'Course short name (optional)',
+      videoSourcePeriodEnd: 'Last day of the period',
+      videoSourceRecipientLines: 'Recipients, one per line: Name <email>',
       videoSourceCategories: 'Kaltura category',
-      videoSourceNode:
-        'OLAT node {node}. The node id is reused for every course run, so check that the proposed category is this semester’s.',
+      videoSourceLinkKind:
+        'Link type {kind}, reference {ref}. Check that the proposed category belongs to this period.',
       videoSourceRecommended: 'proposed',
       videoSourceCandidateStats:
-        'Created {created} · {entries} entries · {inSemester} recordings this semester',
+        'Created {created} · {entries} entries · {inPeriod} recordings in this period',
       videoSourceLatest: 'Latest recording: {name} ({date})',
       videoSourceCategoryId: 'Confirmed Kaltura category id',
       videoSourceConfirmHint:
@@ -2555,7 +2558,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       videoSourceCaptionLanguage: 'Caption language',
       videoSourceCreate: 'Create source and send approval emails',
       videoSourceSent:
-        'Source created. Approval emails sent to {count} recipients for {semester}.',
+        'Source created. Approval emails sent to {count} recipients for {period}.',
       chatbotRejectionReason: 'Reason for rejection',
       chatbotRejectConsequence:
         'The owner will see this reason and can revise the chatbot before requesting approval again.',

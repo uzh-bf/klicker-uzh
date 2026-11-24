@@ -1,19 +1,22 @@
 mutation RequestVideoSourceApproval(
   $sourceId: ID!
-  $semester: String
+  $period: String
+  $manual: VideoApprovalManualDirectoryInput
   $additionalRecipients: [VideoApprovalRecipientInput!]
   $excludedEmails: [String!]
   $reason: String
 ) {
   requestVideoSourceApproval(
     sourceId: $sourceId
-    semester: $semester
+    period: $period
+    manual: $manual
     additionalRecipients: $additionalRecipients
     excludedEmails: $excludedEmails
     reason: $reason
   ) {
     requestId
-    semester
+    periodLabel
+    periodEnd
     grantExpiresAt
     recipients {
       name

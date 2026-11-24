@@ -2436,7 +2436,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{name} ({email}) hat Sie am {date} um Ihre Zustimmung zur Nutzung dieser Vorlesungsaufzeichnungen gebeten.',
       sentTo: 'Gesendet an {name} ({email})',
       course: 'Kurs',
-      semester: 'Semester',
+      period: 'Zeitraum',
       responsible: 'Modulverantwortliche:r',
       chatbots: 'Chatbot',
       source: 'Aufzeichnungen',
@@ -2448,8 +2448,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cutModeAS_RECORDED:
         'Aufzeichnungen, wie sie im Kanal veröffentlicht sind',
       recordingsScope:
-        'Alle passenden Aufzeichnungen des {semester} werden verarbeitet, auch frühere. Mit dem MediaSpace-Tag ai-skip schliessen Sie eine Aufzeichnung aus.',
-      catalogLink: 'Vorlesungsverzeichnis',
+        'Alle passenden Aufzeichnungen aus {period} werden verarbeitet, auch frühere. Mit dem MediaSpace-Tag ai-skip schliessen Sie eine Aufzeichnung aus.',
+      directoryLink: 'Kursverzeichnis',
       consentTitle: 'Dem stimmen Sie zu',
       consentCheck: 'Ich habe dies gelesen und stimme zu.',
       approve: 'Zustimmen',
@@ -2476,7 +2476,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       stateACTIVE:
         'Zugestimmt von {name}. Aufzeichnungen werden bis am {date} verarbeitet. Sie können die Zustimmung hier jederzeit widerrufen.',
       stateENDED:
-        'Die Zustimmung für das {semester} ist abgelaufen. Was aus den Aufzeichnungen erstellt wurde, bleibt im Chatbot, bis Sie hier widerrufen.',
+        'Die Zustimmung für {period} ist abgelaufen. Was aus den Aufzeichnungen erstellt wurde, bleibt im Chatbot, bis Sie hier widerrufen.',
       stateREVOKED:
         'Diese Zustimmung wurde widerrufen. Es wird nichts mehr verarbeitet.',
       invalidLink:
@@ -2572,26 +2572,29 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     admin: {
       videoSources: 'Vorlesungsaufzeichnungen',
       videoSourceDescription:
-        'Aufzeichnungslink (OLAT-Baustein oder MediaSpace-Kanal) und VVZ-Link einfügen. Klicker ermittelt den Kurs, die Dozierenden, die um Zustimmung gebeten werden, und die passenden Kaltura-Kategorien. Vorschlag prüfen, dann Quelle anlegen und Zustimmungs-E-Mails versenden.',
+        'Aufzeichnungslink und Link zum Kursverzeichnis einfügen. Der Kursquellen-Dienst ermittelt den Kurs, die Dozierenden, die um Zustimmung gebeten werden, und die passenden Kaltura-Kategorien. Vorschlag prüfen, dann Quelle anlegen und Zustimmungs-E-Mails versenden.',
+      videoSourceManualMode:
+        'Es ist kein Kursquellen-Dienst konfiguriert. Kurs, Zeitraum, Empfänger:innen und Kaltura-Kategorie-ID bitte selbst eintragen.',
       videoSourceKb: 'Wissensbasis (ID oder Manage-Link)',
-      videoSourceKind: 'Art des Aufzeichnungslinks',
-      videoSourceKindOLAT_NODE: 'OLAT-Kursbaustein',
-      videoSourceKindKALTURA_CHANNEL: 'MediaSpace-Kanal',
       videoSourceUrl: 'Aufzeichnungslink',
-      videoSourceCatalogUrl: 'VVZ-Link (courses.uzh.ch)',
-      videoSourceSemester:
-        'Semester (optional, sonst aus dem VVZ-Link oder heute)',
+      videoSourceDirectoryUrl: 'Link zum Kursverzeichnis',
+      videoSourcePeriod: 'Zeitraum (mit Dienst optional, z. B. HS26)',
       videoSourceResolve: 'Nachschlagen',
-      videoSourceCatalog: 'Vorlesungsverzeichnis, {semester}',
+      videoSourceDirectory: 'Kursverzeichnis, {period}',
       videoSourceRecipients: 'Zustimmungs-E-Mails gehen an:',
       videoSourceWithoutEmail:
-        'Keine E-Mail-Adresse im Verzeichnis für: {names}',
+        'Keine E-Mail-Adresse im Kursverzeichnis für: {names}',
+      videoSourceCourseTitle: 'Kurstitel',
+      videoSourceCourseShortName: 'Kurzname des Kurses (optional)',
+      videoSourcePeriodEnd: 'Letzter Tag des Zeitraums',
+      videoSourceRecipientLines:
+        'Empfänger:innen, eine pro Zeile: Name <E-Mail>',
       videoSourceCategories: 'Kaltura-Kategorie',
-      videoSourceNode:
-        'OLAT-Baustein {node}. Die Baustein-ID wird für jede Durchführung wiederverwendet; prüfen, ob die vorgeschlagene Kategorie die dieses Semesters ist.',
+      videoSourceLinkKind:
+        'Linktyp {kind}, Referenz {ref}. Prüfen, ob die vorgeschlagene Kategorie zu diesem Zeitraum gehört.',
       videoSourceRecommended: 'Vorschlag',
       videoSourceCandidateStats:
-        'Erstellt {created} · {entries} Einträge · {inSemester} Aufzeichnungen in diesem Semester',
+        'Erstellt {created} · {entries} Einträge · {inPeriod} Aufzeichnungen in diesem Zeitraum',
       videoSourceLatest: 'Neueste Aufzeichnung: {name} ({date})',
       videoSourceCategoryId: 'Bestätigte Kaltura-Kategorie-ID',
       videoSourceConfirmHint:
@@ -2603,7 +2606,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       videoSourceCaptionLanguage: 'Untertitelsprache',
       videoSourceCreate: 'Quelle anlegen und Zustimmungs-E-Mails senden',
       videoSourceSent:
-        'Quelle angelegt. Zustimmungs-E-Mails an {count} Empfänger:innen für {semester} versandt.',
+        'Quelle angelegt. Zustimmungs-E-Mails an {count} Empfänger:innen für {period} versandt.',
       chatbotRejectionReason: 'Grund für die Ablehnung',
       chatbotRejectConsequence:
         'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',

@@ -1,7 +1,4 @@
 -- CreateEnum
-CREATE TYPE "KBVideoSourceKind" AS ENUM ('OLAT_NODE', 'KALTURA_CHANNEL');
-
--- CreateEnum
 CREATE TYPE "KBVideoCutMode" AS ENUM ('CLIP', 'EDITED', 'AS_RECORDED');
 
 -- CreateEnum
@@ -14,16 +11,17 @@ CREATE TYPE "KBVideoApprovalRequestStatus" AS ENUM ('OPEN', 'APPROVED', 'ACTIVE'
 CREATE TYPE "KBVideoApprovalDecisionKind" AS ENUM ('APPROVE', 'REVOKE', 'ADMIN_APPROVE', 'ADMIN_REVOKE');
 
 -- CreateEnum
-CREATE TYPE "KBVideoApprovalRecipientOrigin" AS ENUM ('CATALOG', 'ADMIN_ADDED');
+CREATE TYPE "KBVideoApprovalRecipientOrigin" AS ENUM ('DIRECTORY', 'ADMIN_ADDED');
 
 -- CreateTable
 CREATE TABLE "KBVideoSource" (
     "id" UUID NOT NULL,
     "kbId" UUID NOT NULL,
     "name" TEXT NOT NULL,
-    "sourceKind" "KBVideoSourceKind" NOT NULL,
+    "sourceKind" TEXT NOT NULL,
+    "externalRef" TEXT,
     "sourceUrl" TEXT NOT NULL,
-    "catalogUrl" TEXT NOT NULL,
+    "directoryUrl" TEXT NOT NULL,
     "kalturaCategoryId" TEXT NOT NULL,
     "categoryConfirmedAt" TIMESTAMP(3) NOT NULL,
     "categoryConfirmedById" UUID NOT NULL,
@@ -46,13 +44,17 @@ CREATE TABLE "KBVideoSource" (
 CREATE TABLE "KBVideoApprovalRequest" (
     "id" UUID NOT NULL,
     "sourceId" UUID NOT NULL,
-    "semester" TEXT NOT NULL,
+    "periodLabel" TEXT NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
     "kalturaCategoryId" TEXT NOT NULL,
     "requestedById" UUID NOT NULL,
     "requestedByName" TEXT NOT NULL,
     "requestedByEmail" TEXT NOT NULL,
-    "catalogSnapshot" JSONB NOT NULL,
-    "catalogSnapshotSha256" TEXT NOT NULL,
+    "courseTitle" TEXT NOT NULL,
+    "courseShortName" TEXT NOT NULL,
+    "directoryCanonicalUrl" TEXT NOT NULL,
+    "directorySnapshot" JSONB NOT NULL,
+    "directorySnapshotSha256" TEXT NOT NULL,
     "consentVersion" TEXT NOT NULL,
     "consentTextSha256" TEXT NOT NULL,
     "status" "KBVideoApprovalRequestStatus" NOT NULL DEFAULT 'OPEN',
@@ -77,7 +79,7 @@ CREATE TABLE "KBVideoApprovalRecipient" (
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "roles" TEXT[],
-    "origin" "KBVideoApprovalRecipientOrigin" NOT NULL DEFAULT 'CATALOG',
+    "origin" "KBVideoApprovalRecipientOrigin" NOT NULL DEFAULT 'DIRECTORY',
     "tokenSha256" TEXT NOT NULL,
     "sentAt" TIMESTAMP(3),
     "firstOpenedAt" TIMESTAMP(3),

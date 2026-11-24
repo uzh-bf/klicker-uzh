@@ -1,10 +1,10 @@
-import { useLazyQuery, useMutation } from '@apollo/client'
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
 import {
   CreateVideoSourceDocument,
   KbVideoCutMode,
-  KbVideoSourceKind,
   RequestVideoSourceApprovalDocument,
   ResolveVideoSourceDocument,
+  VideoSourceProviderConfiguredDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -21,25 +21,50 @@ function knowledgeBaseId(value: string): string {
   return /knowledgeBases\/([^/?#]+)/.exec(trimmed)?.[1] ?? trimmed
 }
 
+// One recipient per line: "Name <email>" or just the email.
+export function parseRecipientLines(
+  value: string
+): Array<{ name: string; email: string }> {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = /^(.*?)\s*<([^>]+)>$/.exec(line)
+      const email = (match?.[2] ?? line).trim()
+      return { name: match?.[1]?.trim() || email, email }
+    })
+}
+
 // Admin flow for adding a lecture video source: paste the recordings link and
-// the VVZ link, check what was resolved, pick the proposed Kaltura category,
-// then create the source and email the lecturers their approval links.
+// the course directory link, check what the course-sources provider resolved,
+// pick the proposed collection, then create the source and email the
+// lecturers their approval links. Without a provider the admin enters the
+// course, the period, the recipients and the category id by hand.
 function VideoSourceSetup() {
   const t = useTranslations()
   const format = useFormatter()
 
-  const [kb, setKb] = useState('')
-  const [sourceKind, setSourceKind] = useState<KbVideoSourceKind>(
-    KbVideoSourceKind.OlatNode
+  const { data: providerData, loading: providerLoading } = useQuery(
+    VideoSourceProviderConfiguredDocument
   )
+  const manualMode =
+    !providerLoading && providerData?.videoSourceProviderConfigured === false
+
+  const [kb, setKb] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
-  const [catalogUrl, setCatalogUrl] = useState('')
-  const [semester, setSemester] = useState('')
+  const [directoryUrl, setDirectoryUrl] = useState('')
+  const [period, setPeriod] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [name, setName] = useState('')
   const [cutMode, setCutMode] = useState<KbVideoCutMode>(KbVideoCutMode.Clip)
   const [namePattern, setNamePattern] = useState('')
   const [captionLanguage, setCaptionLanguage] = useState('de')
+  // Manual mode only.
+  const [courseTitle, setCourseTitle] = useState('')
+  const [courseShortName, setCourseShortName] = useState('')
+  const [periodEnd, setPeriodEnd] = useState('')
+  const [recipientLines, setRecipientLines] = useState('')
 
   const [resolve, { data, loading: resolving, error: resolveError }] =
     useLazyQuery(ResolveVideoSourceDocument, { fetchPolicy: 'network-only' })
@@ -62,33 +87,37 @@ function VideoSourceSetup() {
   const lookUp = () => {
     resolve({
       variables: {
-        sourceKind,
         sourceUrl: sourceUrl.trim(),
-        catalogUrl: catalogUrl.trim(),
-        semester: semester.trim() || null,
+        directoryUrl: directoryUrl.trim(),
+        period: period.trim() || null,
       },
     })
       .then(({ data: result }) => {
         const res = result?.resolveVideoSource
         const proposed =
-          res?.candidates.find((c) => c.recommended) ??
-          (res?.candidates.length === 1 ? res.candidates[0] : undefined)
-        setCategoryId(proposed?.categoryId ?? '')
-        if (res?.catalog && !name.trim()) {
-          setName(`${res.catalog.shortName} ${res.catalog.title}`.trim())
+          res?.collections.find((c) => c.recommended) ??
+          (res?.collections.length === 1 ? res.collections[0] : undefined)
+        setCategoryId(res?.fixedCollectionId ?? proposed?.id ?? '')
+        if (res?.directory && !name.trim()) {
+          setName(`${res.directory.shortName} ${res.directory.title}`.trim())
         }
       })
       .catch(() => undefined)
   }
+
+  const manualRecipients = parseRecipientLines(recipientLines)
+  // A date input yields midnight UTC of that day; the period ends after it.
+  const manualPeriodEnd = periodEnd
+    ? new Date(new Date(`${periodEnd}T00:00:00Z`).getTime() + 86_400_000)
+    : null
 
   const createAndSend = () => {
     createSource({
       variables: {
         kbId: knowledgeBaseId(kb),
         name: name.trim(),
-        sourceKind,
         sourceUrl: sourceUrl.trim(),
-        catalogUrl: catalogUrl.trim(),
+        directoryUrl: directoryUrl.trim(),
         kalturaCategoryId: categoryId.trim(),
         cutMode,
         namePattern:
@@ -100,32 +129,55 @@ function VideoSourceSetup() {
         const sourceId = created?.createVideoSource?.id
         if (!sourceId) return
         return requestApproval({
-          variables: {
-            sourceId,
-            semester: resolution?.semesterLabel ?? null,
-          },
+          variables: manualMode
+            ? {
+                sourceId,
+                manual: {
+                  courseTitle: courseTitle.trim(),
+                  courseShortName: courseShortName.trim() || null,
+                  periodLabel: period.trim(),
+                  periodEnd: manualPeriodEnd,
+                },
+                additionalRecipients: manualRecipients,
+              }
+            : { sourceId, period: resolution?.periodLabel ?? null },
         })
       })
       .catch(() => undefined)
   }
 
-  const canLookUp = Boolean(sourceUrl.trim() && catalogUrl.trim())
+  const canLookUp = Boolean(sourceUrl.trim() && directoryUrl.trim())
+  const ready = manualMode
+    ? Boolean(
+        canLookUp &&
+          courseTitle.trim() &&
+          period.trim() &&
+          manualPeriodEnd &&
+          manualRecipients.length > 0
+      )
+    : Boolean(resolution?.directory)
   const canCreate =
+    ready &&
     Boolean(
-      resolution?.catalog &&
-        knowledgeBaseId(kb) &&
+      knowledgeBaseId(kb) &&
         name.trim() &&
         /^\d+$/.test(categoryId.trim()) &&
         captionLanguage.trim()
     ) &&
     (cutMode !== KbVideoCutMode.Edited || Boolean(namePattern.trim()))
   const mutationError = createError ?? sendError
+  const showDetails = manualMode || Boolean(resolution)
 
   return (
     <div className="flex flex-col gap-4" data-cy="video-source-setup">
       <p className="text-sm text-gray-600">
         {t('manage.admin.videoSourceDescription')}
       </p>
+      {manualMode && (
+        <UserNotification type="info" data={{ cy: 'video-source-manual' }}>
+          {t('manage.admin.videoSourceManualMode')}
+        </UserNotification>
+      )}
 
       <div className="flex flex-col gap-2">
         <TextField
@@ -134,96 +186,122 @@ function VideoSourceSetup() {
           onChange={(value: string) => setKb(value)}
           data={{ cy: 'video-source-kb' }}
         />
-        <SelectField
-          label={t('manage.admin.videoSourceKind')}
-          value={sourceKind}
-          onChange={(value) => setSourceKind(value as KbVideoSourceKind)}
-          items={[
-            {
-              value: KbVideoSourceKind.OlatNode,
-              label: t('manage.admin.videoSourceKindOLAT_NODE'),
-            },
-            {
-              value: KbVideoSourceKind.KalturaChannel,
-              label: t('manage.admin.videoSourceKindKALTURA_CHANNEL'),
-            },
-          ]}
-        />
         <TextField
           label={t('manage.admin.videoSourceUrl')}
-          placeholder={
-            sourceKind === KbVideoSourceKind.OlatNode
-              ? 'https://lms.uzh.ch/auth/RepositoryEntry/…/CourseNode/…'
-              : 'https://uzh.mediaspace.cast.switch.ch/channel/…/…'
-          }
+          placeholder="https://…"
           value={sourceUrl}
           onChange={(value: string) => setSourceUrl(value)}
           data={{ cy: 'video-source-url' }}
         />
         <TextField
-          label={t('manage.admin.videoSourceCatalogUrl')}
-          placeholder="https://courses.uzh.ch/#/details/…"
-          value={catalogUrl}
-          onChange={(value: string) => setCatalogUrl(value)}
-          data={{ cy: 'video-source-catalog-url' }}
+          label={t('manage.admin.videoSourceDirectoryUrl')}
+          placeholder="https://…"
+          value={directoryUrl}
+          onChange={(value: string) => setDirectoryUrl(value)}
+          data={{ cy: 'video-source-directory-url' }}
         />
         <TextField
-          label={t('manage.admin.videoSourceSemester')}
+          label={t('manage.admin.videoSourcePeriod')}
           placeholder="HS26"
-          value={semester}
-          onChange={(value: string) => setSemester(value)}
+          value={period}
+          onChange={(value: string) => setPeriod(value)}
+          data={{ cy: 'video-source-period' }}
         />
-        <div>
-          <Button
-            disabled={!canLookUp || resolving}
-            loading={resolving}
-            onClick={lookUp}
-            data={{ cy: 'video-source-resolve' }}
-          >
-            {t('manage.admin.videoSourceResolve')}
-          </Button>
-        </div>
+        {!manualMode && (
+          <div>
+            <Button
+              disabled={!canLookUp || resolving || providerLoading}
+              loading={resolving}
+              onClick={lookUp}
+              data={{ cy: 'video-source-resolve' }}
+            >
+              {t('manage.admin.videoSourceResolve')}
+            </Button>
+          </div>
+        )}
       </div>
 
       {resolveError && (
         <UserNotification type="error">{resolveError.message}</UserNotification>
       )}
 
+      {manualMode && (
+        <section className="flex flex-col gap-2 rounded border p-3">
+          <TextField
+            label={t('manage.admin.videoSourceCourseTitle')}
+            value={courseTitle}
+            onChange={(value: string) => setCourseTitle(value)}
+            data={{ cy: 'video-source-course-title' }}
+          />
+          <TextField
+            label={t('manage.admin.videoSourceCourseShortName')}
+            value={courseShortName}
+            onChange={(value: string) => setCourseShortName(value)}
+          />
+          <label className="flex flex-col gap-1 text-sm font-bold">
+            {t('manage.admin.videoSourcePeriodEnd')}
+            <input
+              type="date"
+              className="rounded border px-2 py-1 font-normal"
+              value={periodEnd}
+              onChange={(e) => setPeriodEnd(e.target.value)}
+              data-cy="video-source-period-end"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-bold">
+            {t('manage.admin.videoSourceRecipientLines')}
+            <textarea
+              className="min-h-24 rounded border px-2 py-1 font-normal"
+              placeholder="Ada Example <ada@example.org>"
+              value={recipientLines}
+              onChange={(e) => setRecipientLines(e.target.value)}
+              data-cy="video-source-recipients"
+            />
+          </label>
+          <TextField
+            label={t('manage.admin.videoSourceCategoryId')}
+            value={categoryId}
+            onChange={(value: string) => setCategoryId(value)}
+            data={{ cy: 'video-source-category-id' }}
+          />
+        </section>
+      )}
+
       {resolution && (
         <section className="flex flex-col gap-2 rounded border p-3">
           <h3 className="font-bold">
-            {t('manage.admin.videoSourceCatalog', {
-              semester: resolution.semesterLabel,
+            {t('manage.admin.videoSourceDirectory', {
+              period: resolution.periodLabel,
             })}
           </h3>
-          {resolution.catalogError && (
+          {resolution.directoryError && (
             <UserNotification type="error">
-              {resolution.catalogError}
+              {resolution.directoryError}
             </UserNotification>
           )}
-          {resolution.catalog && (
+          {resolution.directory && (
             <>
               <div>
-                {resolution.catalog.title} ({resolution.catalog.shortName})
+                {resolution.directory.title} ({resolution.directory.shortName})
               </div>
               <div className="text-sm">
                 {t('manage.admin.videoSourceRecipients')}
               </div>
               <ul className="list-disc pl-5 text-sm">
-                {resolution.catalog.recipients.map((r) => (
+                {resolution.directory.recipients.map((r) => (
                   <li key={r.email}>
                     {r.name} &lt;{r.email}&gt; · {r.roles.join(', ')}
                   </li>
                 ))}
               </ul>
-              {resolution.catalog.withoutEmail.length > 0 && (
+              {resolution.directory.withoutEmail.length > 0 && (
                 <UserNotification type="warning">
                   {t('manage.admin.videoSourceWithoutEmail', {
-                    names: resolution.catalog.withoutEmail.join(', '),
+                    names: resolution.directory.withoutEmail.join(', '),
                   })}
                 </UserNotification>
               )}
-              {resolution.catalog.warnings.map((w) => (
+              {resolution.directory.warnings.map((w) => (
                 <UserNotification key={w} type="warning">
                   {w}
                 </UserNotification>
@@ -238,33 +316,34 @@ function VideoSourceSetup() {
           <h3 className="font-bold">
             {t('manage.admin.videoSourceCategories')}
           </h3>
-          {resolution.olatNodeId && (
+          {resolution.externalRef && (
             <div className="text-sm text-gray-600">
-              {t('manage.admin.videoSourceNode', {
-                node: resolution.olatNodeId,
+              {t('manage.admin.videoSourceLinkKind', {
+                kind: resolution.sourceKind,
+                ref: resolution.externalRef,
               })}
             </div>
           )}
-          {resolution.kalturaError && (
+          {resolution.collectionsError && (
             <UserNotification type="warning">
-              {resolution.kalturaError}
+              {resolution.collectionsError}
             </UserNotification>
           )}
-          {resolution.candidates.map((c) => (
+          {resolution.collections.map((c) => (
             <label
-              key={c.categoryId}
+              key={c.id}
               className="flex cursor-pointer gap-3 rounded border p-2 has-[:checked]:border-primary-100"
-              data-cy={`video-source-candidate-${c.categoryId}`}
+              data-cy={`video-source-candidate-${c.id}`}
             >
               <input
                 type="radio"
                 name="video-source-category"
-                checked={categoryId === c.categoryId}
-                onChange={() => setCategoryId(c.categoryId)}
+                checked={categoryId === c.id}
+                onChange={() => setCategoryId(c.id)}
               />
               <div className="flex flex-col text-sm">
                 <span className="font-bold">
-                  {c.name} · {c.categoryId}
+                  {c.name} · {c.id}
                   {c.recommended &&
                     ` · ${t('manage.admin.videoSourceRecommended')}`}
                 </span>
@@ -272,7 +351,7 @@ function VideoSourceSetup() {
                   {t('manage.admin.videoSourceCandidateStats', {
                     created: date(c.createdAt),
                     entries: c.entriesCount,
-                    inSemester: c.recordingsInSemester,
+                    inPeriod: c.recordingsInPeriod,
                   })}
                 </span>
                 <span>
@@ -292,6 +371,7 @@ function VideoSourceSetup() {
           <TextField
             label={t('manage.admin.videoSourceCategoryId')}
             value={categoryId}
+            disabled={Boolean(resolution.fixedCollectionId)}
             onChange={(value: string) => setCategoryId(value)}
             data={{ cy: 'video-source-category-id' }}
           />
@@ -301,12 +381,13 @@ function VideoSourceSetup() {
         </section>
       )}
 
-      {resolution && (
+      {showDetails && (
         <section className="flex flex-col gap-2 rounded border p-3">
           <TextField
             label={t('manage.admin.videoSourceName')}
             value={name}
             onChange={(value: string) => setName(value)}
+            data={{ cy: 'video-source-name' }}
           />
           <SelectField
             label={t('manage.admin.videoSourceCutMode')}
@@ -345,7 +426,7 @@ function VideoSourceSetup() {
                 count: sent.requestVideoSourceApproval.recipients.filter(
                   (r) => r.sent
                 ).length,
-                semester: sent.requestVideoSourceApproval.semester,
+                period: sent.requestVideoSourceApproval.periodLabel,
               })}
             </UserNotification>
           ) : (

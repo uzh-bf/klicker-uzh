@@ -1,15 +1,10 @@
 // Pure rules of the lecture video approval flow: link tokens, what a link
-// may do at a given time, recipients from a catalogue snapshot, the consent
-// text, and the audit hash chain. Database access lives in
-// videoSourceApproval.ts.
+// may do at a given time, recipient deduplication, the consent text, and the
+// audit hash chain. Institution-specific rules (link formats, semesters,
+// catalogue parsing, collection ranking) belong to the course-sources
+// provider. Database access lives in videoSourceApproval.ts.
 
 import { createHash, randomBytes } from 'node:crypto'
-import type {
-  CatalogContact,
-  CatalogContactRole,
-  CatalogModuleSnapshot,
-  CatalogSemester,
-} from './uzhCourseCatalog.js'
 
 /** A link can approve for this long after the request was sent. */
 export const APPROVAL_GRANT_WINDOW_DAYS = 14
@@ -116,81 +111,6 @@ export function grantExpiryFor(sentAt: Date): Date {
   return new Date(sentAt.getTime() + APPROVAL_GRANT_WINDOW_DAYS * DAY_MS)
 }
 
-/**
- * Exclusive end of a catalogue semester: fall semesters (003) end before
- * 1 February, spring semesters (004) before 1 August (UTC).
- */
-export function semesterEnd(semester: CatalogSemester): Date {
-  const startYear = Number(semester.piqYear)
-  return semester.piqSession === '003'
-    ? new Date(Date.UTC(startYear + 1, 1, 1))
-    : new Date(Date.UTC(startYear + 1, 7, 1))
-}
-
-/** Inclusive start of a catalogue semester, matching `semesterEnd`. */
-export function semesterStart(semester: CatalogSemester): Date {
-  const startYear = Number(semester.piqYear)
-  return semester.piqSession === '003'
-    ? new Date(Date.UTC(startYear, 7, 1))
-    : new Date(Date.UTC(startYear + 1, 1, 1))
-}
-
-export interface CategoryCandidateInput {
-  categoryId: string
-  name: string
-  fullName: string
-  createdAt: Date
-  entriesCount: number
-  recordings: Array<{ name: string; createdAt: Date }>
-}
-
-export interface CategoryCandidate extends CategoryCandidateInput {
-  recordingsInSemester: number
-  latestRecordingName: string | null
-  latestRecordingAt: Date | null
-  recommended: boolean
-}
-
-/**
- * Orders the Kaltura categories found for a source newest first and marks the
- * one an admin most likely wants: an OLAT node id is reused for every course
- * run, so prefer the newest category with recordings in the semester, else
- * the newest category created during it. The admin always confirms.
- */
-export function rankCategoryCandidates(
-  inputs: CategoryCandidateInput[],
-  semester: CatalogSemester
-): CategoryCandidate[] {
-  const from = semesterStart(semester).getTime()
-  const to = semesterEnd(semester).getTime()
-  const inSemester = (date: Date) =>
-    date.getTime() >= from && date.getTime() < to
-
-  const candidates = inputs
-    .map((input) => {
-      const recordings = [...input.recordings].sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-      )
-      const latest = recordings[0] ?? null
-      return {
-        ...input,
-        recordings,
-        recordingsInSemester: recordings.filter((r) => inSemester(r.createdAt))
-          .length,
-        latestRecordingName: latest?.name ?? null,
-        latestRecordingAt: latest?.createdAt ?? null,
-        recommended: false,
-      }
-    })
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-
-  const pick =
-    candidates.find((c) => c.recordingsInSemester > 0) ??
-    candidates.find((c) => inSemester(c.createdAt))
-  if (pick) pick.recommended = true
-  return candidates
-}
-
 /** Whether the gateway may act for a source at `now`. */
 export function isVideoSourceApprovedAt(
   source: {
@@ -215,123 +135,18 @@ export function isVideoSourceApprovedAt(
 export interface ApprovalRecipientDraft {
   name: string
   email: string
-  roles: CatalogContactRole[]
+  roles: string[]
 }
-
-// #region Source links
-//
-// A video source needs two links: where the recordings live (an OLAT course
-// node with the Kaltura building block, or a MediaSpace channel) and the
-// course catalogue (VVZ) entry whose contacts approve it. The Kaltura category
-// itself is resolved by an admin and confirmed against sample entries; for a
-// channel link the category id is part of the URL and must match.
-
-const OLAT_HOSTS = new Set(['lms.uzh.ch'])
-const OLAT_NODE_PATTERN = /\/CourseNode\/(\d+)(?:\/|$)/
-const MEDIASPACE_HOST_SUFFIX = '.mediaspace.cast.switch.ch'
-const MEDIASPACE_CHANNEL_PATTERN = /^\/channel\/[^/]+\/(\d+)\/?$/
-
-export type VideoSourceLink =
-  | { kind: 'OLAT_NODE'; olatNodeId: string }
-  | { kind: 'KALTURA_CHANNEL'; kalturaCategoryId: string }
-
-export class VideoSourceLinkError extends Error {}
-
-export function parseVideoSourceLink(
-  kind: 'OLAT_NODE' | 'KALTURA_CHANNEL',
-  url: string
-): VideoSourceLink {
-  let parsed: URL
-  try {
-    parsed = new URL(url.trim())
-  } catch {
-    throw new VideoSourceLinkError('The source link is not a URL')
-  }
-  if (parsed.protocol !== 'https:') {
-    throw new VideoSourceLinkError('The source link must use https')
-  }
-
-  if (kind === 'OLAT_NODE') {
-    const node = OLAT_HOSTS.has(parsed.hostname)
-      ? OLAT_NODE_PATTERN.exec(parsed.pathname)
-      : null
-    if (!node?.[1]) {
-      throw new VideoSourceLinkError(
-        'The source link must be an OLAT course node link (lms.uzh.ch/.../CourseNode/<id>)'
-      )
-    }
-    return { kind, olatNodeId: node[1] }
-  }
-
-  const channel = parsed.hostname.endsWith(MEDIASPACE_HOST_SUFFIX)
-    ? MEDIASPACE_CHANNEL_PATTERN.exec(parsed.pathname)
-    : null
-  if (!channel?.[1]) {
-    throw new VideoSourceLinkError(
-      'The source link must be a MediaSpace channel link (.../channel/<name>/<category id>)'
-    )
-  }
-  return { kind, kalturaCategoryId: channel[1] }
-}
-
-// #endregion
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
-export function contactDisplayName(contact: CatalogContact): string {
-  return [contact.title, contact.firstName, contact.lastName]
-    .filter((part): part is string => Boolean(part?.trim()))
-    .join(' ')
-}
-
-/**
- * One recipient per distinct email among the module's responsible persons and
- * lecturers. Contacts without a public email cannot receive a link and are
- * returned separately so the admin sees who is missing.
- */
-export function recipientsFromSnapshot(snapshot: CatalogModuleSnapshot): {
-  recipients: ApprovalRecipientDraft[]
-  withoutEmail: string[]
-} {
-  const byEmail = new Map<string, ApprovalRecipientDraft>()
-  const withoutEmail: string[] = []
-
-  for (const contact of snapshot.contacts) {
-    if (!contact.email) {
-      withoutEmail.push(contactDisplayName(contact))
-      continue
-    }
-    const key = normalizeEmail(contact.email)
-    const existing = byEmail.get(key)
-    if (existing) {
-      for (const role of contact.roles) {
-        if (!existing.roles.includes(role)) existing.roles.push(role)
-      }
-      continue
-    }
-    byEmail.set(key, {
-      name: contactDisplayName(contact),
-      email: contact.email.trim(),
-      roles: [...contact.roles],
-    })
-  }
-
-  // Responsible persons first: they are named first in the email.
-  const recipients = [...byEmail.values()].sort(
-    (a, b) =>
-      Number(b.roles.includes('RESPONSIBLE')) -
-      Number(a.roles.includes('RESPONSIBLE'))
-  )
-  return { recipients, withoutEmail }
-}
-
 /**
  * Whether a signed-in account is the person the link was sent to. edu-ID
- * accounts often carry a private address while the catalogue lists the UZH
- * address, so a mismatch is recorded and shown to the admin rather than
- * blocking the decision.
+ * accounts often carry a private address while the directory lists the
+ * institutional one, so a mismatch is recorded and shown to the admin
+ * rather than blocking the decision.
  */
 export function identityMatchesRecipient(
   recipientEmail: string,
@@ -364,7 +179,7 @@ export function consentTextSha256(text = VIDEO_APPROVAL_CONSENT_TEXT): string {
   return createHash('sha256').update(text, 'utf8').digest('hex')
 }
 
-export function snapshotSha256(snapshot: CatalogModuleSnapshot): string {
+export function snapshotSha256(snapshot: unknown): string {
   return createHash('sha256').update(canonicalJson(snapshot)).digest('hex')
 }
 

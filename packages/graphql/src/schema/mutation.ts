@@ -162,9 +162,9 @@ import {
 } from './user.js'
 import {
   KBVideoCutMode,
-  KBVideoSourceKind,
   KBVideoSourceRef,
   VideoApprovalLink,
+  VideoApprovalManualDirectoryInput,
   VideoApprovalRecipientInput,
   VideoApprovalRequestResultRef,
 } from './videoSource.js'
@@ -2158,9 +2158,8 @@ export const Mutation = builder.mutationType({
         args: {
           kbId: t.arg.id({ required: true }),
           name: t.arg.string({ required: true }),
-          sourceKind: t.arg({ type: KBVideoSourceKind, required: true }),
           sourceUrl: t.arg.string({ required: true }),
-          catalogUrl: t.arg.string({ required: true }),
+          directoryUrl: t.arg.string({ required: true }),
           kalturaCategoryId: t.arg.string({ required: true }),
           cutMode: t.arg({ type: KBVideoCutMode, required: true }),
           namePattern: t.arg.string({ required: false }),
@@ -2176,7 +2175,11 @@ export const Mutation = builder.mutationType({
         type: VideoApprovalRequestResultRef,
         args: {
           sourceId: t.arg.id({ required: true }),
-          semester: t.arg.string({ required: false }),
+          period: t.arg.string({ required: false }),
+          manual: t.arg({
+            type: VideoApprovalManualDirectoryInput,
+            required: false,
+          }),
           additionalRecipients: t.arg({
             type: [VideoApprovalRecipientInput],
             required: false,

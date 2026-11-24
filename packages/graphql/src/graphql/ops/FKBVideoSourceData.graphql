@@ -3,8 +3,9 @@ fragment KBVideoSourceData on KBVideoSource {
   kbId
   name
   sourceKind
+  externalRef
   sourceUrl
-  catalogUrl
+  directoryUrl
   kalturaCategoryId
   cutMode
   namePattern
@@ -13,12 +14,14 @@ fragment KBVideoSourceData on KBVideoSource {
   validUntil
   requests {
     id
-    semester
+    periodLabel
+    periodEnd
+    courseTitle
     status
     kalturaCategoryId
     requestedByName
     requestedByEmail
-    catalogSnapshotSha256
+    directorySnapshotSha256
     consentVersion
     grantExpiresAt
     validUntil

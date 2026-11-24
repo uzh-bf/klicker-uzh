@@ -1,9 +1,9 @@
 ---
 type: Solution
 title: Lecturer approval links for lecture video sources
-description: How a lecture video source gets approved per semester through emailed per-recipient links that grant for 14 days and revoke forever, with edu-ID identity, admin final approval and a hash-chained audit log.
+description: How a lecture video source gets approved per teaching period through emailed per-recipient links that grant for 14 days and revoke forever, with edu-ID identity, admin final approval and a hash-chained audit log.
 module: graphql
-date: 2026-11-23
+date: 2026-11-24
 problem_type: integration
 severity: high
 tags:
@@ -19,63 +19,66 @@ tags:
 ## Context
 
 Lecture recordings reach course chatbots from SWITCH Kaltura through a token
-that can read every UZH recording. Kaltura does not limit it to approved
-courses, so Klicker must prove that each processed recording was in scope and
-approved. A `KBVideoSource` binds one admin-confirmed Kaltura category (with a
-cut mode) and a courses.uzh.ch link to a knowledge base. Nothing is fetched for
-a source until it is approved for the current semester.
+that can read every recording of the institution. Kaltura does not limit it
+to approved courses, so Klicker must prove that each processed recording was
+in scope and approved. A `KBVideoSource` binds one admin-confirmed Kaltura
+category (with a cut mode), the recordings link and a course directory link
+to a knowledge base. Nothing is fetched for a source until it is approved for
+a period.
 
-Klicker never holds the Kaltura token; the ingestion gateway is its only
-holder. When an admin sets up a source, `resolveVideoSource` (admins only)
-asks the gateway's metadata lookup endpoints through `kalturaCatalog.ts`
-(`POST /v1/lookup/olat-node`, `/v1/lookup/category`, `/v1/lookup/entries`,
-each carrying the acting admin). The gateway allow-lists the Kaltura actions
-behind them (category and entry metadata only, no flavor, caption or
-download URLs) and writes its own write-ahead audit record per Kaltura call.
-Klicker appends `KALTURA_LOOKUP_REQUESTED` with the actor and the links.
+Klicker is institution-neutral. Everything institution-specific (which links
+are valid, what kind they are, the course directory, the periods, who
+approves, which recording collection belongs to a course run) comes from a
+course-sources provider over HTTP. The contract is
+`packages/graphql/src/services/courseSources.CONTRACT.md`; the client is
+`courseSources.ts` (`COURSE_SOURCES_URL`, bearer `COURSE_SOURCES_TOKEN`). The
+UZH provider runs outside this repository. Klicker never holds the Kaltura
+token and never calls the ingestion gateway for lookups: the provider does,
+and the gateway audits each Kaltura call. Klicker appends
+`KALTURA_LOOKUP_REQUESTED` with the actor and the links before every
+`resolve`.
+
+Without a configured provider the flow still works by hand: the source kind
+is `MANUAL`, and the admin enters the course title, the period label and end,
+the recipients and the category id.
 
 Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
-`videoSourceApprovalCore.ts` (pure rules), `packages/prisma/src/prisma/schema/videoSource.prisma`,
+`videoSourceApprovalCore.ts` (pure rules), `courseSources.ts` (provider
+client), `packages/prisma/src/prisma/schema/videoSource.prisma`,
+`apps/frontend-manage/src/components/admin/VideoSourceSetup.tsx`,
 `apps/frontend-manage/src/pages/video-approval.tsx`, email templates
 `VideoSourceApprovalRequested` and `VideoSourceApprovalGranted` in
 `packages/transactional`.
 
 ## Flow
 
-1. An admin opens Admin > Lecture video sources in Manage, pastes the two
-   links and looks them up (`resolveVideoSource`). That query returns the VVZ
-   module with the recipients who will be emailed, and the Kaltura categories
-   behind the link (`kalturaCatalog.ts`): for an OLAT node all categories named
-   `<LTI context id>-<node id>` (one per course run), for a channel the
-   category from the URL. Candidates come newest first with entry counts,
-   recordings in the semester and sample names; the newest with recordings
-   this semester is proposed. The admin then creates the source
-   (`createVideoSource`) after confirming the category against those samples,
-   and the page sends the approval request. Two links are required: the
-   recordings' location, either an OLAT course node link
-   (`lms.uzh.ch/.../CourseNode/<id>`) or a MediaSpace channel link
-   (`<tenant>.mediaspace.cast.switch.ch/channel/<name>/<category id>`), and the
-   courses.uzh.ch (VVZ) link. A channel link carries the category id, which
-   must equal the confirmed one. An OLAT node id maps to one category per
-   semester run (category name `<LTI context id>-<node id>`), so the admin
-   confirms that run's category; the node id is recorded in the
-   `SOURCE_CONFIGURED` audit event.
-2. `requestVideoSourceApproval` takes a fresh catalogue snapshot for the
-   semester (`getModuleContacts`, see
-   [uzh-course-catalog-contacts.md](uzh-course-catalog-contacts.md)), stores it
-   with its SHA-256, and emails every RESPONSIBLE or LECTURER contact with an
-   address their own link. The requester's name and email are copied onto the
-   request and shown in the email and on the page.
+1. An admin opens Admin > Lecture video sources in Manage and pastes the
+   recordings link and the course directory link. With a provider, Look up
+   calls `resolveVideoSource`, which asks the provider's `resolve`: the link
+   kind, the period, the directory entry with the recipients who will be
+   emailed, and the candidate collections with entry counts, recordings in
+   the period, sample names and one proposal. Each half carries its own error.
+   The admin confirms a category against the samples and creates the source
+   (`createVideoSource`). That calls the provider's `source-link`, stores the
+   returned kind and reference, and rejects a category id that differs from a
+   non-null `fixedCollectionId` (a channel link names its category).
+2. `requestVideoSourceApproval` calls the provider's `directory` at request
+   time, stores the snapshot with its SHA-256 plus the course title, short
+   name, canonical link, period label and period end on the request, and
+   emails every listed recipient their own link. Excluding or adding
+   recipients needs a reason. Without a provider the admin's recipients are
+   the list. The requester's name and email are copied onto the request and
+   shown in the email and on the page.
 3. The link opens `/video-approval?token=…` in Manage. The lecturer signs in;
    approving and revoking need an edu-ID account (`Account.provider` equal to
    `NEXT_PUBLIC_EDUID_ID`). A signed-in email that differs from the
-   recipient's catalogue email is recorded as `identityMatched = false`, not
+   recipient's directory email is recorded as `identityMatched = false`, not
    blocked, because edu-ID often carries a private address.
 4. The first approval moves the request to `APPROVED`; other recipients get a
    notice and their links can no longer approve.
 5. `adminApproveVideoSourceRequest` makes the request `ACTIVE` and sets the
-   source to `APPROVED` with `validUntil` = semester end. The gateway may act
-   only while `isVideoSourceApprovedAt(source, now)` holds.
+   source to `APPROVED` with `validUntil` = the request's period end. The
+   gateway may act only while `isVideoSourceApprovedAt(source, now)` holds.
 
 ## Link semantics
 
@@ -85,7 +88,7 @@ Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
 - Grant window: 14 days from sending (`grantExpiresAt`). After it, the link
   can still decline.
 - Revoke: possible while the request is `OPEN`, `APPROVED` or `ACTIVE`,
-  including after the grant window and after the semester ended. Revoking is
+  including after the grant window and after the period ended. Revoking is
   final; a new approval needs a new request.
 - A new request supersedes `OPEN` and `APPROVED` requests of the source. A
   superseded link forwards to the same person's place in the newest request,
@@ -110,11 +113,10 @@ text hash.
   transactional `update-templates` script for the target environment, or the
   request fails to send (the request row and audit entry still exist and the
   result lists the unsent recipients).
-- The calling service needs egress to `studentservices.uzh.ch` and to the
-  ingestion gateway (`KALTURA_GATEWAY_URL`, service credential
-  `KALTURA_GATEWAY_TOKEN`), never to Kaltura itself. Without the gateway the
-  page still resolves the VVZ half and the admin enters the category id by
-  hand.
+- The backend needs egress to the course-sources provider only
+  (`COURSE_SOURCES_URL`, `COURSE_SOURCES_TOKEN`). Provider errors with HTTP
+  422 are shown to the admin as written; other failures show a generic
+  message. Without the two variables the admin page switches to manual entry.
 - Local stacks set `VIDEO_APPROVAL_ALLOW_NON_EDUID=true` because delegated
   logins have no edu-ID. Never set it in staging or production.
 - Changing `VIDEO_APPROVAL_CONSENT_TEXT` requires a new

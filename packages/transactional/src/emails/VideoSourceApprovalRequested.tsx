@@ -8,7 +8,7 @@ export function VideoSourceApprovalRequested({
   requesterName = '[REQUESTER_NAME]',
   requesterEmail = '[REQUESTER_EMAIL]',
   course = '[COURSE]',
-  semester = '[SEMESTER]',
+  period = '[PERIOD]',
   source = '[SOURCE]',
   chatbots = '[CHATBOTS]',
   grantExpires = '[GRANT_EXPIRES]',
@@ -18,7 +18,7 @@ export function VideoSourceApprovalRequested({
   requesterName?: string
   requesterEmail?: string
   course?: string
-  semester?: string
+  period?: string
   source?: string
   chatbots?: string
   grantExpires?: string
@@ -37,7 +37,7 @@ export function VideoSourceApprovalRequested({
         <Text className="text-base">
           <strong>{requesterName}</strong> (
           <Link href={`mailto:${requesterEmail}`}>{requesterEmail}</Link>) asks
-          you, as a lecturer of <strong>{course}</strong> in {semester}, to
+          you, as a lecturer of <strong>{course}</strong> in {period}, to
           approve that KlickerUZH processes the edited lecture recordings of
           this course ({source}) for {chatbots}.
         </Text>

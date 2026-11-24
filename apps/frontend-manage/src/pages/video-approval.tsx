@@ -113,7 +113,7 @@ function ApprovalDetails({
       name: link.decidedByName ?? '',
       date: date(link.validUntil),
     }),
-    ENDED: t('manage.videoApproval.stateENDED', { semester: link.semester }),
+    ENDED: t('manage.videoApproval.stateENDED', { period: link.periodLabel }),
     REVOKED: t('manage.videoApproval.stateREVOKED'),
   }[link.state]
 
@@ -122,15 +122,17 @@ function ApprovalDetails({
       t('manage.videoApproval.course'),
       <a
         key="course"
-        href={link.catalogUrl}
+        href={link.directoryUrl}
         target="_blank"
         rel="noreferrer noopener"
         className="text-primary-100 underline"
       >
-        {link.courseTitle} ({link.courseShortName})
+        {link.courseShortName
+          ? `${link.courseTitle} (${link.courseShortName})`
+          : link.courseTitle}
       </a>,
     ],
-    [t('manage.videoApproval.semester'), link.semester],
+    [t('manage.videoApproval.period'), link.periodLabel],
     [
       t('manage.videoApproval.responsible'),
       link.responsibleNames.join(', ') || '–',
@@ -175,7 +177,7 @@ function ApprovalDetails({
       </dl>
       <p className="text-sm text-gray-600">
         {t('manage.videoApproval.recordingsScope', {
-          semester: link.semester,
+          period: link.periodLabel,
         })}
       </p>
 

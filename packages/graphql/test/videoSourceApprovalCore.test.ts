@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { CatalogModuleSnapshot } from '../src/services/uzhCourseCatalog.js'
 import {
   APPROVAL_GRANT_WINDOW_DAYS,
   auditEventHash,
@@ -14,49 +13,8 @@ import {
   isVideoSourceApprovedAt,
   isWellFormedApprovalToken,
   mintApprovalToken,
-  parseVideoSourceLink,
-  recipientsFromSnapshot,
-  semesterEnd,
+  snapshotSha256,
 } from '../src/services/videoSourceApprovalCore.js'
-
-// Synthetic people only.
-function snapshot(
-  contacts: CatalogModuleSnapshot['contacts']
-): CatalogModuleSnapshot {
-  return {
-    catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
-    moduleId: '51000001',
-    semester: { piqYear: '2026', piqSession: '003' },
-    semesterLabel: 'HS26',
-    title: 'Synthetic Finance',
-    shortName: 'SF',
-    offeringOrganization: null,
-    offerPattern: null,
-    events: [],
-    contacts,
-    warnings: [],
-    retrievedAt: '2026-11-23T10:00:00.000Z',
-  }
-}
-
-function contact(
-  personId: string,
-  lastName: string,
-  email: string | null,
-  roles: Array<'RESPONSIBLE' | 'LECTURER'>
-) {
-  return {
-    personId,
-    roles,
-    title: 'Prof. Dr.',
-    firstName: 'Alex',
-    lastName,
-    email,
-    function: null,
-    organization: null,
-    eventIds: [],
-  }
-}
 
 describe('approval tokens', () => {
   it('mints 256-bit url-safe tokens and stores only their hash', () => {
@@ -135,16 +93,7 @@ describe('evaluateApprovalLink', () => {
   })
 })
 
-describe('semesters', () => {
-  it('ends fall semesters before February and spring before August', () => {
-    expect(
-      semesterEnd({ piqYear: '2026', piqSession: '003' }).toISOString()
-    ).toBe('2027-02-01T00:00:00.000Z')
-    expect(
-      semesterEnd({ piqYear: '2026', piqSession: '004' }).toISOString()
-    ).toBe('2027-08-01T00:00:00.000Z')
-  })
-
+describe('isVideoSourceApprovedAt', () => {
   it('lets the gateway act only on an approved, unexpired source', () => {
     const now = new Date('2026-12-01T00:00:00Z')
     const approved = {
@@ -162,32 +111,6 @@ describe('semesters', () => {
     expect(
       isVideoSourceApprovedAt({ ...approved, activeRequestId: null }, now)
     ).toBe(false)
-  })
-})
-
-describe('recipientsFromSnapshot', () => {
-  it('asks every contact with an email once, responsible persons first', () => {
-    const { recipients, withoutEmail } = recipientsFromSnapshot(
-      snapshot([
-        contact('1', 'Lecturer', 'lecturer@example.org', ['LECTURER']),
-        contact('2', 'Head', 'Head@Example.org', ['RESPONSIBLE']),
-        contact('3', 'Head', 'head@example.org', ['LECTURER']),
-        contact('4', 'Guest', null, ['LECTURER']),
-      ])
-    )
-    expect(recipients).toEqual([
-      {
-        name: 'Prof. Dr. Alex Head',
-        email: 'Head@Example.org',
-        roles: ['RESPONSIBLE', 'LECTURER'],
-      },
-      {
-        name: 'Prof. Dr. Alex Lecturer',
-        email: 'lecturer@example.org',
-        roles: ['LECTURER'],
-      },
-    ])
-    expect(withoutEmail).toEqual(['Prof. Dr. Alex Guest'])
   })
 })
 
@@ -245,7 +168,7 @@ describe('audit hash chain', () => {
 })
 
 describe('email and consent helpers', () => {
-  it('escapes catalogue and user text before it enters HTML', () => {
+  it('escapes directory and user text before it enters HTML', () => {
     expect(escapeHtml('<b>"A" & \'B\'</b>')).toBe(
       '&lt;b&gt;&quot;A&quot; &amp; &#39;B&#39;&lt;/b&gt;'
     )
@@ -256,46 +179,9 @@ describe('email and consent helpers', () => {
     expect(consentTextSha256()).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  it('accepts OLAT node and MediaSpace channel links of the right kind', () => {
-    expect(
-      parseVideoSourceLink(
-        'OLAT_NODE',
-        'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001'
-      )
-    ).toEqual({ kind: 'OLAT_NODE', olatNodeId: '2000001' })
-    expect(
-      parseVideoSourceLink(
-        'KALTURA_CHANNEL',
-        'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic+Course/100001'
-      )
-    ).toEqual({ kind: 'KALTURA_CHANNEL', kalturaCategoryId: '100001' })
-  })
-
-  it('rejects source links of the wrong kind, host or shape', () => {
-    const channel =
-      'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic+Course/100001'
-    const node =
-      'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001'
-    expect(() => parseVideoSourceLink('OLAT_NODE', channel)).toThrow()
-    expect(() => parseVideoSourceLink('KALTURA_CHANNEL', node)).toThrow()
-    expect(() =>
-      parseVideoSourceLink(
-        'OLAT_NODE',
-        'https://lms.example.org/auth/RepositoryEntry/1/CourseNode/2'
-      )
-    ).toThrow()
-    expect(() =>
-      parseVideoSourceLink(
-        'OLAT_NODE',
-        'http://lms.uzh.ch/auth/RepositoryEntry/1/CourseNode/2'
-      )
-    ).toThrow()
-    expect(() =>
-      parseVideoSourceLink(
-        'KALTURA_CHANNEL',
-        'https://uzh.mediaspace.cast.switch.ch/media/x/0_abc'
-      )
-    ).toThrow()
-    expect(() => parseVideoSourceLink('OLAT_NODE', 'not a url')).toThrow()
+  it('hashes a provider snapshot independent of key order', () => {
+    expect(snapshotSha256({ b: 1, a: [2, { d: 3, c: 4 }] })).toBe(
+      snapshotSha256({ a: [2, { c: 4, d: 3 }], b: 1 })
+    )
   })
 })

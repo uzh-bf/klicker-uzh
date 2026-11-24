@@ -169,7 +169,6 @@ import {
   UserLoginScope,
 } from './user.js'
 import {
-  KBVideoSourceKind,
   KBVideoSourceRef,
   VideoApprovalLink,
   VideoSourceResolutionRef,
@@ -1654,14 +1653,19 @@ export const Query = builder.queryType({
         nullable: false,
         type: VideoSourceResolutionRef,
         args: {
-          sourceKind: t.arg({ type: KBVideoSourceKind, required: true }),
           sourceUrl: t.arg.string({ required: true }),
-          catalogUrl: t.arg.string({ required: true }),
-          semester: t.arg.string({ required: false }),
+          directoryUrl: t.arg.string({ required: true }),
+          period: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await VideoSourceApprovalService.resolveVideoSource(args, ctx)
         },
+      }),
+
+      videoSourceProviderConfigured: t.withAuth(asAdmin).boolean({
+        nullable: false,
+        resolve: () =>
+          VideoSourceApprovalService.videoSourceProviderConfigured(),
       }),
 
       getVideoApprovalLink: t.withAuth(asUser).field({

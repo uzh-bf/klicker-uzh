@@ -1,5 +1,5 @@
 // Lecturer approval of lecture video sources: an admin requests approval for
-// one source and semester, every listed catalogue contact gets a personal
+// one source and period, every listed directory contact gets a personal
 // link, one recipient approves through it (edu-ID sign-in), and an admin gives
 // final approval. The same link can revoke the approval for as long as it
 // exists. Every step is written to the hash-chained KBVideoAuditEvent log.
@@ -7,24 +7,16 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  CourseSourcesError,
+  type CourseSourcesProvider,
+  courseSourcesConfigured,
+  createCourseSourcesClient,
+} from './courseSources.js'
 import * as EmailService from './email.js'
 import {
-  createKalturaCatalog,
-  isVisibleRecording,
-  type KalturaCatalog,
-  type KalturaCategory,
-} from './kalturaCatalog.js'
-import {
-  type CatalogModuleSnapshot,
-  type CatalogSemester,
-  createUzhCourseCatalogClient,
-  formatSemester,
-  parseCatalogUrl,
-  parseSemesterLabel,
-  semesterForDate,
-} from './uzhCourseCatalog.js'
-import {
   type ApprovalLinkCapabilities,
+  type ApprovalRecipientDraft,
   auditEventHash,
   consentTextSha256,
   escapeHtml,
@@ -35,15 +27,10 @@ import {
   identityMatchesRecipient,
   isWellFormedApprovalToken,
   mintApprovalToken,
-  parseVideoSourceLink,
-  rankCategoryCandidates,
-  recipientsFromSnapshot,
-  semesterEnd,
+  normalizeEmail,
   snapshotSha256,
   VIDEO_APPROVAL_CONSENT_TEXT,
   VIDEO_APPROVAL_CONSENT_VERSION,
-  type VideoSourceLink,
-  VideoSourceLinkError,
 } from './videoSourceApprovalCore.js'
 
 type Tx = Omit<
@@ -144,19 +131,36 @@ async function loadActor(ctx: ContextWithUser) {
 
 // #region Admin: sources and requests
 
+/** The configured provider, or null when admins enter the details by hand. */
+function defaultProvider(): CourseSourcesProvider | null {
+  return courseSourcesConfigured() ? createCourseSourcesClient() : null
+}
+
+function assertHttpUrl(value: string, label: string) {
+  let url: URL
+  try {
+    url = new URL(value.trim())
+  } catch {
+    throw new GraphQLError(`The ${label} is not a valid link`)
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new GraphQLError(`The ${label} is not a valid link`)
+  }
+}
+
 export async function createVideoSource(
   args: {
     kbId: string
     name: string
-    sourceKind: DB.KBVideoSourceKind
     sourceUrl: string
-    catalogUrl: string
+    directoryUrl: string
     kalturaCategoryId: string
     cutMode: DB.KBVideoCutMode
     namePattern?: string | null
     captionLanguage: string
   },
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  deps: { provider?: CourseSourcesProvider | null } = {}
 ) {
   if (args.cutMode === 'EDITED' && !args.namePattern?.trim()) {
     throw new GraphQLError('Cut mode EDITED requires a name pattern')
@@ -172,27 +176,25 @@ export async function createVideoSource(
   if (!/^\d+$/.test(kalturaCategoryId)) {
     throw new GraphQLError('The Kaltura category id must be numeric')
   }
-  // Both links are required: the recordings' location (OLAT node or
-  // MediaSpace channel) and the VVZ entry whose contacts approve the source.
-  let sourceLink: VideoSourceLink
-  try {
-    sourceLink = parseVideoSourceLink(args.sourceKind, args.sourceUrl)
-  } catch (error) {
-    throw new GraphQLError(
-      error instanceof VideoSourceLinkError
-        ? error.message
-        : 'The source link is invalid'
-    )
-  }
+  assertHttpUrl(args.sourceUrl, 'source link')
+  assertHttpUrl(args.directoryUrl, 'course directory link')
+
+  // Both links are required: where the recordings are published and the
+  // course directory entry whose contacts approve the source. The provider
+  // decides what kind of link the source link is.
+  const provider =
+    deps.provider === undefined ? defaultProvider() : deps.provider
+  const link = provider
+    ? await provider.sourceLink({ sourceUrl: args.sourceUrl.trim() })
+    : { kind: 'MANUAL', externalRef: '', fixedCollectionId: null }
   if (
-    sourceLink.kind === 'KALTURA_CHANNEL' &&
-    sourceLink.kalturaCategoryId !== kalturaCategoryId
+    link.fixedCollectionId !== null &&
+    link.fixedCollectionId !== kalturaCategoryId
   ) {
     throw new GraphQLError(
-      'The Kaltura category id does not match the channel link'
+      'The Kaltura category id does not match the source link'
     )
   }
-  parseCatalogUrl(args.catalogUrl)
 
   return ctx.prisma.$transaction(async (tx) => {
     const kb = await tx.kB.findFirst({
@@ -205,9 +207,10 @@ export async function createVideoSource(
       data: {
         kbId: args.kbId,
         name: args.name.trim(),
-        sourceKind: args.sourceKind,
+        sourceKind: link.kind,
+        externalRef: link.externalRef || null,
         sourceUrl: args.sourceUrl.trim(),
-        catalogUrl: args.catalogUrl.trim(),
+        directoryUrl: args.directoryUrl.trim(),
         kalturaCategoryId,
         categoryConfirmedAt: new Date(),
         categoryConfirmedById: ctx.user.sub,
@@ -224,10 +227,9 @@ export async function createVideoSource(
       payload: {
         kbId: source.kbId,
         sourceKind: source.sourceKind,
+        externalRef: source.externalRef,
         sourceUrl: source.sourceUrl,
-        olatNodeId:
-          sourceLink.kind === 'OLAT_NODE' ? sourceLink.olatNodeId : null,
-        catalogUrl: source.catalogUrl,
+        directoryUrl: source.directoryUrl,
         kalturaCategoryId: source.kalturaCategoryId,
         cutMode: source.cutMode,
         namePattern: source.namePattern,
@@ -257,49 +259,45 @@ export async function getVideoSources(
   })
 }
 
-type CatalogClient = Pick<
-  ReturnType<typeof createUzhCourseCatalogClient>,
-  'getModuleContacts'
->
-
-const RESOLVE_RECENT_ENTRIES = 30
-const RESOLVE_MAX_CANDIDATES = 8
+export function videoSourceProviderConfigured() {
+  return courseSourcesConfigured()
+}
 
 /**
- * Gathers everything an admin needs to add a source from its two links: the
- * VVZ module (title, semester, who will be asked to approve) and the Kaltura
- * categories behind the OLAT node or channel, ranked with a proposal. Each
- * half reports its own error so one outage does not hide the other.
+ * Everything an admin needs to add a source from its two links, as the
+ * provider resolves it: the link kind, the course directory entry (title,
+ * period, who will be asked to approve) and the proposed recording
+ * collections. Each half reports its own error so one outage does not hide
+ * the other. The provider looks up the recording platform through the
+ * ingestion gateway, which audits each call; Klicker records that an admin
+ * asked and for which links.
  */
 export async function resolveVideoSource(
-  args: {
-    sourceKind: DB.KBVideoSourceKind
-    sourceUrl: string
-    catalogUrl: string
-    semester?: string | null
-  },
+  args: { sourceUrl: string; directoryUrl: string; period?: string | null },
   ctx: ContextWithUser,
   deps: {
-    catalog?: CatalogClient
-    kaltura?: KalturaCatalog
-    audit?: (type: string, payload: Record<string, unknown>) => Promise<void>
-    now?: () => Date
+    provider?: CourseSourcesProvider | null
+    audit?: (
+      type: string,
+      payload: Record<string, unknown>,
+      actor: { id: string; email: string }
+    ) => Promise<void>
   } = {}
 ) {
-  const now = deps.now?.() ?? new Date()
-  // Klicker holds no Kaltura token: lookups go through the ingestion gateway,
-  // which audits every Kaltura call itself. Klicker records that an admin
-  // asked for a lookup and for which links.
-  let actor: Awaited<ReturnType<typeof loadActor>> | undefined
-  const loadLookupActor = async () => {
-    actor ??= await loadActor(ctx)
-    return actor
+  const provider =
+    deps.provider === undefined ? defaultProvider() : deps.provider
+  if (!provider) {
+    throw new CourseSourcesError(
+      'No course sources provider is configured; enter the details by hand',
+      'NOT_CONFIGURED',
+      null
+    )
   }
+  const actor = await loadActor(ctx)
   const audit =
     deps.audit ??
-    ((type: string, payload: Record<string, unknown>) =>
+    ((type, payload, who) =>
       ctx.prisma.$transaction(async (tx) => {
-        const who = await loadLookupActor()
         await appendVideoAuditEvent(tx, {
           type,
           actorUserId: who.id,
@@ -307,128 +305,72 @@ export async function resolveVideoSource(
           payload,
         })
       }))
-  let link: VideoSourceLink
-  try {
-    link = parseVideoSourceLink(args.sourceKind, args.sourceUrl)
-  } catch (error) {
-    throw new GraphQLError(
-      error instanceof VideoSourceLinkError
-        ? error.message
-        : 'The source link is invalid'
-    )
-  }
-  const reference = parseCatalogUrl(args.catalogUrl)
-  const semester: CatalogSemester = args.semester
-    ? parseSemesterLabel(args.semester)
-    : (reference.semester ?? semesterForDate(now))
-
-  const catalogPart = (async () => {
-    try {
-      const catalog = deps.catalog ?? createUzhCourseCatalogClient()
-      const snapshot = await catalog.getModuleContacts({
-        catalogUrl: args.catalogUrl.trim(),
-        semester,
-      })
-      const { recipients, withoutEmail } = recipientsFromSnapshot(snapshot)
-      return {
-        catalog: {
-          title: snapshot.title,
-          shortName: snapshot.shortName,
-          semesterLabel: snapshot.semesterLabel,
-          recipients,
-          withoutEmail,
-          warnings: snapshot.warnings,
-        },
-        catalogError: null,
-      }
-    } catch (error) {
-      return { catalog: null, catalogError: (error as Error).message }
-    }
-  })()
-
-  const kalturaPart = (async () => {
-    try {
-      await audit('KALTURA_LOOKUP_REQUESTED', {
-        sourceKind: link.kind,
-        sourceUrl: args.sourceUrl.trim(),
-        catalogUrl: args.catalogUrl.trim(),
-      })
-      const kaltura =
-        deps.kaltura ??
-        createKalturaCatalog({
-          actor: await loadLookupActor().then((a) => ({
-            userId: a.id,
-            email: a.email,
-          })),
-        })
-      const categories =
-        link.kind === 'KALTURA_CHANNEL'
-          ? [await kaltura.getCategory(link.kalturaCategoryId)].filter(
-              (c): c is KalturaCategory => c !== null
-            )
-          : await kaltura.findCategoriesForOlatNode(link.olatNodeId)
-      const newest = [...categories]
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        .slice(0, RESOLVE_MAX_CANDIDATES)
-      const inputs = await Promise.all(
-        newest.map(async (category) => ({
-          categoryId: category.id,
-          name: category.name,
-          fullName: category.fullName,
-          createdAt: category.createdAt,
-          entriesCount: category.entriesCount,
-          recordings: (
-            await kaltura.listRecentEntries(category.id, RESOLVE_RECENT_ENTRIES)
-          )
-            .filter(isVisibleRecording)
-            .map((entry) => ({ name: entry.name, createdAt: entry.createdAt })),
-        }))
-      )
-      const candidates = rankCategoryCandidates(inputs, semester).map(
-        (candidate) => ({
-          ...candidate,
-          sampleRecordingNames: candidate.recordings
-            .slice(0, 5)
-            .map((r) => r.name),
-        })
-      )
-      return {
-        candidates,
-        kalturaError:
-          candidates.length === 0
-            ? link.kind === 'KALTURA_CHANNEL'
-              ? 'No Kaltura category with the id from the channel link'
-              : 'No Kaltura category found for this OLAT node'
-            : null,
-      }
-    } catch (error) {
-      return { candidates: [], kalturaError: (error as Error).message }
-    }
-  })()
-
+  await audit(
+    'KALTURA_LOOKUP_REQUESTED',
+    {
+      sourceUrl: args.sourceUrl.trim(),
+      directoryUrl: args.directoryUrl.trim(),
+      period: args.period?.trim() || null,
+    },
+    actor
+  )
+  const result = await provider.resolve({
+    sourceUrl: args.sourceUrl.trim(),
+    directoryUrl: args.directoryUrl.trim(),
+    period: args.period?.trim() || null,
+    actor: { userId: actor.id, email: actor.email },
+  })
   return {
-    sourceKind: link.kind,
-    olatNodeId: link.kind === 'OLAT_NODE' ? link.olatNodeId : null,
-    semesterLabel: formatSemester(semester),
-    ...(await catalogPart),
-    ...(await kalturaPart),
+    sourceKind: result.source.kind,
+    externalRef: result.source.externalRef || null,
+    fixedCollectionId: result.source.fixedCollectionId,
+    periodLabel: result.period.label,
+    periodStart: result.period.start,
+    periodEnd: result.period.end,
+    directory: result.directory
+      ? {
+          canonicalUrl: result.directory.canonicalUrl,
+          title: result.directory.title,
+          shortName: result.directory.shortName,
+          recipients: result.directory.recipients,
+          withoutEmail: result.directory.withoutEmail,
+          warnings: result.directory.warnings,
+        }
+      : null,
+    directoryError: result.directoryError,
+    collections: result.collections,
+    collectionsError: result.collectionsError,
   }
+}
+
+/** What an admin enters when no provider is configured. */
+export interface ManualDirectoryInput {
+  courseTitle: string
+  courseShortName?: string | null
+  periodLabel: string
+  periodEnd: Date
 }
 
 export async function requestVideoSourceApproval(
   args: {
     sourceId: string
-    semester?: string | null
-    // Added on top of the catalogue contacts, e.g. a co-lecturer missing there.
+    // Provider period label; the provider picks the current one when omitted.
+    period?: string | null
+    // Required without a provider; ignored with one.
+    manual?: ManualDirectoryInput | null
+    // Added on top of the directory contacts, e.g. a co-lecturer missing
+    // there. Without a provider these are the only recipients.
     additionalRecipients?: Array<{ name: string; email: string }> | null
     excludedEmails?: string[] | null
     reason?: string | null
   },
   ctx: ContextWithUser,
-  deps: { catalog?: CatalogClient; now?: () => Date } = {}
+  deps: { provider?: CourseSourcesProvider | null; now?: () => Date } = {}
 ) {
   const now = deps.now?.() ?? new Date()
   const actor = await loadActor(ctx)
+  const provider =
+    deps.provider === undefined ? defaultProvider() : deps.provider
 
   const source = await ctx.prisma.kBVideoSource.findUnique({
     where: { id: args.sourceId },
@@ -436,39 +378,87 @@ export async function requestVideoSourceApproval(
   })
   if (!source) throw new GraphQLError('Video source not found')
 
-  const semester: CatalogSemester = args.semester
-    ? parseSemesterLabel(args.semester)
-    : semesterForDate(now)
-  const semesterLabel = formatSemester(semester)
-  if (semesterEnd(semester).getTime() <= now.getTime()) {
-    throw new GraphQLError(`Semester ${semesterLabel} is already over`)
+  let directory: {
+    periodLabel: string
+    periodEnd: Date
+    courseTitle: string
+    courseShortName: string
+    canonicalUrl: string
+    recipients: ApprovalRecipientDraft[]
+    withoutEmail: string[]
+    warnings: string[]
+    snapshot: Record<string, unknown>
+  }
+  if (provider) {
+    const resolved = await provider.directory({
+      directoryUrl: source.directoryUrl,
+      period: args.period?.trim() || null,
+    })
+    directory = {
+      periodLabel: resolved.period.label,
+      periodEnd: resolved.period.end,
+      courseTitle: resolved.directory.title,
+      courseShortName: resolved.directory.shortName,
+      canonicalUrl: resolved.directory.canonicalUrl || source.directoryUrl,
+      recipients: resolved.directory.recipients,
+      withoutEmail: resolved.directory.withoutEmail,
+      warnings: resolved.directory.warnings,
+      snapshot: resolved.directory.snapshot,
+    }
+  } else {
+    const manual = args.manual
+    if (!manual?.courseTitle.trim() || !manual.periodLabel.trim()) {
+      throw new GraphQLError(
+        'Without a course sources provider, enter the course title, the period and its end'
+      )
+    }
+    if (Number.isNaN(manual.periodEnd.getTime())) {
+      throw new GraphQLError('The period end is not a valid date')
+    }
+    directory = {
+      periodLabel: manual.periodLabel.trim(),
+      periodEnd: manual.periodEnd,
+      courseTitle: manual.courseTitle.trim(),
+      courseShortName: manual.courseShortName?.trim() ?? '',
+      canonicalUrl: source.directoryUrl,
+      recipients: [],
+      withoutEmail: [],
+      warnings: [],
+      snapshot: {
+        manual: true,
+        courseTitle: manual.courseTitle.trim(),
+        courseShortName: manual.courseShortName?.trim() ?? '',
+        periodLabel: manual.periodLabel.trim(),
+        periodEnd: manual.periodEnd.toISOString(),
+      },
+    }
+  }
+  const { periodLabel, periodEnd } = directory
+  if (periodEnd.getTime() <= now.getTime()) {
+    throw new GraphQLError(`Period ${periodLabel} is already over`)
   }
 
-  const catalog = deps.catalog ?? createUzhCourseCatalogClient()
-  const snapshot: CatalogModuleSnapshot = await catalog.getModuleContacts({
-    catalogUrl: source.catalogUrl,
-    semester,
-  })
-
-  const excluded = new Set(
-    (args.excludedEmails ?? []).map((email) => email.trim().toLowerCase())
+  const excluded = new Set((args.excludedEmails ?? []).map(normalizeEmail))
+  const directoryEmails = new Set(
+    directory.recipients.map((r) => normalizeEmail(r.email))
   )
-  const { recipients: catalogRecipients, withoutEmail } =
-    recipientsFromSnapshot(snapshot)
+  const added = new Set<string>()
   const recipients = [
-    ...catalogRecipients
-      .filter((r) => !excluded.has(r.email.toLowerCase()))
+    ...directory.recipients
+      .filter((r) => !excluded.has(normalizeEmail(r.email)))
       .map((r) => ({
         ...r,
-        origin: DB.KBVideoApprovalRecipientOrigin.CATALOG,
+        origin: DB.KBVideoApprovalRecipientOrigin.DIRECTORY,
       })),
     ...(args.additionalRecipients ?? [])
-      .filter(
-        (r) =>
-          !catalogRecipients.some(
-            (c) => c.email.toLowerCase() === r.email.trim().toLowerCase()
-          )
-      )
+      .filter((r) => {
+        const email = normalizeEmail(r.email)
+        if (!email || directoryEmails.has(email) || added.has(email)) {
+          return false
+        }
+        added.add(email)
+        return true
+      })
       .map((r) => ({
         name: r.name.trim(),
         email: r.email.trim(),
@@ -478,11 +468,16 @@ export async function requestVideoSourceApproval(
   ]
   if (recipients.length === 0) {
     throw new GraphQLError(
-      'Nobody to ask: the catalogue lists no contact with an email address'
+      provider
+        ? 'Nobody to ask: the course directory lists no contact with an email address'
+        : 'Nobody to ask: add at least one recipient'
     )
   }
+  // Overriding the directory needs a reason; without a provider the admin's
+  // list is the directory.
   if (
-    (excluded.size > 0 || (args.additionalRecipients?.length ?? 0) > 0) &&
+    provider &&
+    (excluded.size > 0 || added.size > 0) &&
     !args.reason?.trim()
   ) {
     throw new GraphQLError('Changing the recipients requires a reason')
@@ -498,7 +493,7 @@ export async function requestVideoSourceApproval(
     const current = await tx.kBVideoApprovalRequest.findFirst({
       where: {
         sourceId: source.id,
-        semester: semesterLabel,
+        periodLabel,
         status: 'ACTIVE',
         validUntil: { gt: now },
       },
@@ -506,7 +501,7 @@ export async function requestVideoSourceApproval(
     })
     if (current) {
       throw new GraphQLError(
-        `This source is already approved for ${semesterLabel}; revoke it first to ask again`
+        `This source is already approved for ${periodLabel}; revoke it first to ask again`
       )
     }
 
@@ -524,13 +519,17 @@ export async function requestVideoSourceApproval(
     const created = await tx.kBVideoApprovalRequest.create({
       data: {
         sourceId: source.id,
-        semester: semesterLabel,
+        periodLabel,
+        periodEnd,
         kalturaCategoryId: source.kalturaCategoryId,
         requestedById: actor.id,
         requestedByName: actor.displayName,
         requestedByEmail: actor.email,
-        catalogSnapshot: snapshot as unknown as DB.Prisma.InputJsonValue,
-        catalogSnapshotSha256: snapshotSha256(snapshot),
+        courseTitle: directory.courseTitle,
+        courseShortName: directory.courseShortName,
+        directoryCanonicalUrl: directory.canonicalUrl,
+        directorySnapshot: directory.snapshot as DB.Prisma.InputJsonValue,
+        directorySnapshotSha256: snapshotSha256(directory.snapshot),
         consentVersion: VIDEO_APPROVAL_CONSENT_VERSION,
         consentTextSha256: consentTextSha256(),
         grantExpiresAt,
@@ -563,10 +562,11 @@ export async function requestVideoSourceApproval(
       actorUserId: actor.id,
       actorEmail: actor.email,
       payload: {
-        semester: semesterLabel,
+        periodLabel,
+        periodEnd: periodEnd.toISOString(),
         kalturaCategoryId: source.kalturaCategoryId,
-        catalogSnapshotSha256: created.catalogSnapshotSha256,
-        catalogRetrievedAt: snapshot.retrievedAt,
+        directorySource: provider ? 'PROVIDER' : 'MANUAL',
+        directorySnapshotSha256: created.directorySnapshotSha256,
         consentVersion: created.consentVersion,
         consentTextSha256: created.consentTextSha256,
         grantExpiresAt: grantExpiresAt.toISOString(),
@@ -576,7 +576,7 @@ export async function requestVideoSourceApproval(
           roles: r.roles,
           origin: r.origin,
         })),
-        contactsWithoutEmail: withoutEmail,
+        contactsWithoutEmail: directory.withoutEmail,
         supersededRequestIds: superseded.map((r) => r.id),
         reason: args.reason?.trim() || null,
       },
@@ -594,8 +594,8 @@ export async function requestVideoSourceApproval(
       recipientName: recipient.name,
       requesterName: actor.displayName,
       requesterEmail: actor.email,
-      courseTitle: snapshot.title,
-      semesterLabel,
+      courseTitle: directory.courseTitle,
+      periodLabel,
       sourceName: source.name,
       chatbotNames,
       grantExpiresAt,
@@ -626,7 +626,8 @@ export async function requestVideoSourceApproval(
 
   return {
     requestId: request.id,
-    semester: semesterLabel,
+    periodLabel,
+    periodEnd,
     grantExpiresAt,
     recipients: request.recipients.map((r) => ({
       name: r.name,
@@ -634,8 +635,8 @@ export async function requestVideoSourceApproval(
       roles: r.roles,
       sent: sent.includes(r.email),
     })),
-    contactsWithoutEmail: withoutEmail,
-    warnings: snapshot.warnings,
+    contactsWithoutEmail: directory.withoutEmail,
+    warnings: directory.warnings,
   }
 }
 
@@ -663,9 +664,9 @@ export async function adminApproveVideoSourceRequest(
         'The source category changed after the request; request approval again'
       )
     }
-    const validUntil = semesterEnd(parseSemesterLabel(request.semester))
+    const validUntil = request.periodEnd
     if (validUntil.getTime() <= now.getTime()) {
-      throw new GraphQLError(`Semester ${request.semester} is already over`)
+      throw new GraphQLError(`Period ${request.periodLabel} is already over`)
     }
 
     const updated = await tx.kBVideoApprovalRequest.updateMany({
@@ -701,7 +702,7 @@ export async function adminApproveVideoSourceRequest(
       actorUserId: actor.id,
       actorEmail: actor.email,
       payload: {
-        semester: request.semester,
+        periodLabel: request.periodLabel,
         kalturaCategoryId: request.kalturaCategoryId,
         validUntil: validUntil.toISOString(),
       },
@@ -808,7 +809,7 @@ function linkCapabilities(
 
 export interface VideoApprovalLinkView extends ApprovalLinkCapabilities {
   requestId: string
-  semester: string
+  periodLabel: string
   requestedAt: Date
   requestedByName: string
   requestedByEmail: string
@@ -822,7 +823,7 @@ export interface VideoApprovalLinkView extends ApprovalLinkCapabilities {
   eduIdRequired: boolean
   courseTitle: string
   courseShortName: string
-  catalogUrl: string
+  directoryUrl: string
   responsibleNames: string[]
   sourceName: string
   sourceUrl: string
@@ -844,8 +845,6 @@ export async function getVideoApprovalLink(
   const recipient = await resolveLink(token, ctx)
   const actor = await loadActor(ctx)
   const { request } = recipient
-  const snapshot = request.catalogSnapshot as unknown as CatalogModuleSnapshot
-
   if (!recipient.firstOpenedAt) {
     await ctx.prisma.$transaction(async (tx) => {
       const marked = await tx.kBVideoApprovalRecipient.updateMany({
@@ -880,7 +879,7 @@ export async function getVideoApprovalLink(
   return {
     ...linkCapabilities(recipient, now),
     requestId: request.id,
-    semester: request.semester,
+    periodLabel: request.periodLabel,
     requestedAt: request.createdAt,
     requestedByName: request.requestedByName,
     requestedByEmail: request.requestedByEmail,
@@ -892,9 +891,9 @@ export async function getVideoApprovalLink(
     identityMatched: identityMatchesRecipient(recipient.email, [actor.email]),
     eduIdSignedIn: actor.eduIdSubject !== null,
     eduIdRequired: requiresEduId(),
-    courseTitle: snapshot.title,
-    courseShortName: snapshot.shortName,
-    catalogUrl: snapshot.catalogUrl,
+    courseTitle: request.courseTitle,
+    courseShortName: request.courseShortName,
+    directoryUrl: request.directoryCanonicalUrl,
     responsibleNames: request.recipients
       .filter((r) => r.roles.includes('RESPONSIBLE'))
       .map((r) => r.name),
@@ -1002,9 +1001,8 @@ export async function approveVideoSourceByLink(
       to: other.email,
       recipientName: other.name,
       approverName: recipient.name,
-      courseTitle: (request.catalogSnapshot as unknown as CatalogModuleSnapshot)
-        .title,
-      semesterLabel: request.semester,
+      courseTitle: request.courseTitle,
+      periodLabel: request.periodLabel,
       sourceName: request.source.name,
       ctx,
     })
@@ -1142,7 +1140,7 @@ async function sendApprovalRequestEmail(args: {
   requesterName: string
   requesterEmail: string
   courseTitle: string
-  semesterLabel: string
+  periodLabel: string
   sourceName: string
   chatbotNames: string[]
   grantExpiresAt: Date
@@ -1156,7 +1154,7 @@ async function sendApprovalRequestEmail(args: {
     REQUESTER_NAME: args.requesterName,
     REQUESTER_EMAIL: args.requesterEmail,
     COURSE: args.courseTitle,
-    SEMESTER: args.semesterLabel,
+    PERIOD: args.periodLabel,
     SOURCE: args.sourceName,
     CHATBOTS: chatbots,
     GRANT_EXPIRES: expires,
@@ -1178,10 +1176,10 @@ async function sendApprovalRequestEmail(args: {
   return EmailService.sendEmail({
     to: args.to,
     replyTo: args.requesterEmail,
-    subject: `Approval requested: lecture recordings of ${args.courseTitle} (${args.semesterLabel}) for KlickerUZH`,
+    subject: `Approval requested: lecture recordings of ${args.courseTitle} (${args.periodLabel}) for KlickerUZH`,
     text: [
       `Dear ${args.recipientName}`,
-      `${args.requesterName} (${args.requesterEmail}) asks you to approve that KlickerUZH processes the edited lecture recordings of ${args.courseTitle} in ${args.semesterLabel} (${args.sourceName}) for ${chatbots}.`,
+      `${args.requesterName} (${args.requesterEmail}) asks you to approve that KlickerUZH processes the edited lecture recordings of ${args.courseTitle} in ${args.periodLabel} (${args.sourceName}) for ${chatbots}.`,
       `Review and decide here (sign in with edu-ID): ${args.link}`,
       `The link can approve until ${expires}. It can revoke the approval at any time, also after that date.`,
     ].join('\n\n'),
@@ -1194,7 +1192,7 @@ async function sendApprovalGrantedNotice(args: {
   recipientName: string
   approverName: string
   courseTitle: string
-  semesterLabel: string
+  periodLabel: string
   sourceName: string
   ctx: ContextWithUser
 }) {
@@ -1202,7 +1200,7 @@ async function sendApprovalGrantedNotice(args: {
     RECIPIENT_NAME: args.recipientName,
     APPROVER_NAME: args.approverName,
     COURSE: args.courseTitle,
-    SEMESTER: args.semesterLabel,
+    PERIOD: args.periodLabel,
     SOURCE: args.sourceName,
   }
   const html = await EmailService.hydrateTemplate(
@@ -1217,10 +1215,10 @@ async function sendApprovalGrantedNotice(args: {
   if (!html) return false
   return EmailService.sendEmail({
     to: args.to,
-    subject: `Approved: lecture recordings of ${args.courseTitle} (${args.semesterLabel}) for KlickerUZH`,
+    subject: `Approved: lecture recordings of ${args.courseTitle} (${args.periodLabel}) for KlickerUZH`,
     text: [
       `Dear ${args.recipientName}`,
-      `${args.approverName} approved that KlickerUZH processes the edited lecture recordings of ${args.courseTitle} in ${args.semesterLabel} (${args.sourceName}).`,
+      `${args.approverName} approved that KlickerUZH processes the edited lecture recordings of ${args.courseTitle} in ${args.periodLabel} (${args.sourceName}).`,
       'You can still revoke this approval with the link from the original email.',
     ].join('\n\n'),
     html,

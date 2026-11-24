@@ -5,9 +5,6 @@ import type {
   VideoApprovalLinkView,
 } from '../services/videoSourceApproval.js'
 
-export const KBVideoSourceKind = builder.enumType('KBVideoSourceKind', {
-  values: Object.values(DB.KBVideoSourceKind),
-})
 export const KBVideoCutMode = builder.enumType('KBVideoCutMode', {
   values: Object.values(DB.KBVideoCutMode),
 })
@@ -45,7 +42,7 @@ export const VideoApprovalLink = VideoApprovalLinkRef.implement({
     state: t.field({ type: VideoApprovalLinkState, resolve: (v) => v.state }),
     canApprove: t.exposeBoolean('canApprove'),
     canRevoke: t.exposeBoolean('canRevoke'),
-    semester: t.exposeString('semester'),
+    periodLabel: t.exposeString('periodLabel'),
     requestedAt: t.expose('requestedAt', { type: 'Date' }),
     requestedByName: t.exposeString('requestedByName'),
     requestedByEmail: t.exposeString('requestedByEmail'),
@@ -59,7 +56,7 @@ export const VideoApprovalLink = VideoApprovalLinkRef.implement({
     eduIdRequired: t.exposeBoolean('eduIdRequired'),
     courseTitle: t.exposeString('courseTitle'),
     courseShortName: t.exposeString('courseShortName'),
-    catalogUrl: t.exposeString('catalogUrl'),
+    directoryUrl: t.exposeString('directoryUrl'),
     responsibleNames: t.exposeStringList('responsibleNames'),
     sourceName: t.exposeString('sourceName'),
     sourceUrl: t.exposeString('sourceUrl'),
@@ -120,7 +117,9 @@ export const KBVideoApprovalRequestRef = builder
   .implement({
     fields: (t) => ({
       id: t.exposeID('id'),
-      semester: t.exposeString('semester'),
+      periodLabel: t.exposeString('periodLabel'),
+      periodEnd: t.expose('periodEnd', { type: 'Date' }),
+      courseTitle: t.exposeString('courseTitle'),
       status: t.field({
         type: KBVideoApprovalRequestStatus,
         resolve: (r) => r.status,
@@ -128,7 +127,7 @@ export const KBVideoApprovalRequestRef = builder
       kalturaCategoryId: t.exposeString('kalturaCategoryId'),
       requestedByName: t.exposeString('requestedByName'),
       requestedByEmail: t.exposeString('requestedByEmail'),
-      catalogSnapshotSha256: t.exposeString('catalogSnapshotSha256'),
+      directorySnapshotSha256: t.exposeString('directorySnapshotSha256'),
       consentVersion: t.exposeString('consentVersion'),
       grantExpiresAt: t.expose('grantExpiresAt', { type: 'Date' }),
       validUntil: t.expose('validUntil', { type: 'Date', nullable: true }),
@@ -157,12 +156,10 @@ export const KBVideoSourceRef = builder
       id: t.exposeID('id'),
       kbId: t.exposeID('kbId'),
       name: t.exposeString('name'),
-      sourceKind: t.field({
-        type: KBVideoSourceKind,
-        resolve: (s) => s.sourceKind,
-      }),
+      sourceKind: t.exposeString('sourceKind'),
+      externalRef: t.exposeString('externalRef', { nullable: true }),
       sourceUrl: t.exposeString('sourceUrl'),
-      catalogUrl: t.exposeString('catalogUrl'),
+      directoryUrl: t.exposeString('directoryUrl'),
       kalturaCategoryId: t.exposeString('kalturaCategoryId'),
       cutMode: t.field({ type: KBVideoCutMode, resolve: (s) => s.cutMode }),
       namePattern: t.exposeString('namePattern', { nullable: true }),
@@ -181,7 +178,8 @@ export const KBVideoSourceRef = builder
 
 interface IRequestResult {
   requestId: string
-  semester: string
+  periodLabel: string
+  periodEnd: Date
   grantExpiresAt: Date
   recipients: Array<{
     name: string
@@ -211,7 +209,8 @@ export const VideoApprovalRequestResultRef = builder
   .implement({
     fields: (t) => ({
       requestId: t.exposeID('requestId'),
-      semester: t.exposeString('semester'),
+      periodLabel: t.exposeString('periodLabel'),
+      periodEnd: t.expose('periodEnd', { type: 'Date' }),
       grantExpiresAt: t.expose('grantExpiresAt', { type: 'Date' }),
       recipients: t.field({
         type: [VideoApprovalRequestRecipientRef],
@@ -232,20 +231,32 @@ export const VideoApprovalRecipientInput = builder.inputType(
   }
 )
 
-type IResolution = Awaited<ReturnType<typeof resolveVideoSource>>
-type ICandidate = IResolution['candidates'][number]
-type ICatalogPreview = NonNullable<IResolution['catalog']>
+export const VideoApprovalManualDirectoryInput = builder.inputType(
+  'VideoApprovalManualDirectoryInput',
+  {
+    fields: (t) => ({
+      courseTitle: t.string({ required: true }),
+      courseShortName: t.string({ required: false }),
+      periodLabel: t.string({ required: true }),
+      periodEnd: t.field({ type: 'Date', required: true }),
+    }),
+  }
+)
 
-const VideoSourceCategoryCandidateRef = builder
-  .objectRef<ICandidate>('VideoSourceCategoryCandidate')
+type IResolution = Awaited<ReturnType<typeof resolveVideoSource>>
+type ICollection = IResolution['collections'][number]
+type IDirectoryPreview = NonNullable<IResolution['directory']>
+
+const VideoSourceCollectionCandidateRef = builder
+  .objectRef<ICollection>('VideoSourceCollectionCandidate')
   .implement({
     fields: (t) => ({
-      categoryId: t.exposeString('categoryId'),
+      id: t.exposeString('id'),
       name: t.exposeString('name'),
       fullName: t.exposeString('fullName'),
       createdAt: t.expose('createdAt', { type: 'Date' }),
       entriesCount: t.exposeInt('entriesCount'),
-      recordingsInSemester: t.exposeInt('recordingsInSemester'),
+      recordingsInPeriod: t.exposeInt('recordingsInPeriod'),
       latestRecordingName: t.exposeString('latestRecordingName', {
         nullable: true,
       }),
@@ -258,9 +269,9 @@ const VideoSourceCategoryCandidateRef = builder
     }),
   })
 
-const VideoSourceCatalogRecipientRef = builder
-  .objectRef<ICatalogPreview['recipients'][number]>(
-    'VideoSourceCatalogRecipient'
+const VideoSourceDirectoryRecipientRef = builder
+  .objectRef<IDirectoryPreview['recipients'][number]>(
+    'VideoSourceDirectoryRecipient'
   )
   .implement({
     fields: (t) => ({
@@ -270,16 +281,16 @@ const VideoSourceCatalogRecipientRef = builder
     }),
   })
 
-const VideoSourceCatalogPreviewRef = builder
-  .objectRef<ICatalogPreview>('VideoSourceCatalogPreview')
+const VideoSourceDirectoryPreviewRef = builder
+  .objectRef<IDirectoryPreview>('VideoSourceDirectoryPreview')
   .implement({
     fields: (t) => ({
+      canonicalUrl: t.exposeString('canonicalUrl'),
       title: t.exposeString('title'),
       shortName: t.exposeString('shortName'),
-      semesterLabel: t.exposeString('semesterLabel'),
       recipients: t.field({
-        type: [VideoSourceCatalogRecipientRef],
-        resolve: (c) => c.recipients,
+        type: [VideoSourceDirectoryRecipientRef],
+        resolve: (d) => d.recipients,
       }),
       withoutEmail: t.exposeStringList('withoutEmail'),
       warnings: t.exposeStringList('warnings'),
@@ -290,22 +301,24 @@ export const VideoSourceResolutionRef = builder
   .objectRef<IResolution>('VideoSourceResolution')
   .implement({
     fields: (t) => ({
-      sourceKind: t.field({
-        type: KBVideoSourceKind,
-        resolve: (r) => r.sourceKind,
-      }),
-      olatNodeId: t.exposeString('olatNodeId', { nullable: true }),
-      semesterLabel: t.exposeString('semesterLabel'),
-      catalog: t.field({
-        type: VideoSourceCatalogPreviewRef,
+      sourceKind: t.exposeString('sourceKind'),
+      externalRef: t.exposeString('externalRef', { nullable: true }),
+      fixedCollectionId: t.exposeString('fixedCollectionId', {
         nullable: true,
-        resolve: (r) => r.catalog,
       }),
-      catalogError: t.exposeString('catalogError', { nullable: true }),
-      candidates: t.field({
-        type: [VideoSourceCategoryCandidateRef],
-        resolve: (r) => r.candidates,
+      periodLabel: t.exposeString('periodLabel'),
+      periodStart: t.expose('periodStart', { type: 'Date' }),
+      periodEnd: t.expose('periodEnd', { type: 'Date' }),
+      directory: t.field({
+        type: VideoSourceDirectoryPreviewRef,
+        nullable: true,
+        resolve: (r) => r.directory,
       }),
-      kalturaError: t.exposeString('kalturaError', { nullable: true }),
+      directoryError: t.exposeString('directoryError', { nullable: true }),
+      collections: t.field({
+        type: [VideoSourceCollectionCandidateRef],
+        resolve: (r) => r.collections,
+      }),
+      collectionsError: t.exposeString('collectionsError', { nullable: true }),
     }),
   })

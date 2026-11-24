@@ -7,13 +7,13 @@ export function VideoSourceApprovalGranted({
   recipientName = '[RECIPIENT_NAME]',
   approverName = '[APPROVER_NAME]',
   course = '[COURSE]',
-  semester = '[SEMESTER]',
+  period = '[PERIOD]',
   source = '[SOURCE]',
 }: {
   recipientName?: string
   approverName?: string
   course?: string
-  semester?: string
+  period?: string
   source?: string
 }) {
   return (
@@ -28,7 +28,7 @@ export function VideoSourceApprovalGranted({
         <Text className="text-base">Dear {recipientName}</Text>
         <Text className="text-base">
           <strong>{approverName}</strong> approved that KlickerUZH processes the
-          edited lecture recordings of <strong>{course}</strong> in {semester} (
+          edited lecture recordings of <strong>{course}</strong> in {period} (
           {source}) for the course chatbot.
         </Text>
         <Text className="text-base">

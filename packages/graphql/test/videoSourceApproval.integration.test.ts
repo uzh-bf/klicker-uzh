@@ -6,7 +6,10 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
-import type { CatalogModuleSnapshot } from '../src/services/uzhCourseCatalog.js'
+import {
+  CourseSourcesError,
+  type CourseSourcesProvider,
+} from '../src/services/courseSources.js'
 import {
   adminApproveVideoSourceRequest,
   adminRevokeVideoSource,
@@ -43,46 +46,63 @@ vi.mock('../src/services/email.js', () => ({
 const HEAD_EMAIL = 'head@example.org'
 const LECTURER_EMAIL = 'lecturer@example.org'
 
-function catalogSnapshot(): CatalogModuleSnapshot {
-  return {
-    catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
-    moduleId: '51000001',
-    semester: { piqYear: '2026', piqSession: '003' },
-    semesterLabel: 'HS26',
-    title: 'Synthetic <Finance>',
-    shortName: 'SF',
-    offeringOrganization: null,
-    offerPattern: null,
-    events: [],
-    contacts: [
-      {
-        personId: '1',
-        roles: ['RESPONSIBLE'],
-        title: 'Prof. Dr.',
-        firstName: 'Alex',
-        lastName: 'Head',
-        email: HEAD_EMAIL,
-        function: null,
-        organization: null,
-        eventIds: [],
-      },
-      {
-        personId: '2',
-        roles: ['LECTURER'],
-        title: null,
-        firstName: 'Sam',
-        lastName: 'Lecturer',
-        email: LECTURER_EMAIL,
-        function: null,
-        organization: null,
-        eventIds: [],
-      },
-    ],
-    warnings: [],
-    retrievedAt: '2026-11-23T10:00:00.000Z',
-  }
+const PERIOD = {
+  label: 'HS26',
+  start: new Date('2026-08-01T00:00:00Z'),
+  end: new Date('2027-02-01T00:00:00Z'),
 }
-const catalog = { getModuleContacts: async () => catalogSnapshot() }
+const DIRECTORY_URL = 'https://directory.example.org/courses/51000001'
+
+// Stands in for the course-sources provider (see courseSources.CONTRACT.md).
+const provider: CourseSourcesProvider = {
+  async sourceLink({ sourceUrl }) {
+    const channel = sourceUrl.match(/\/channel\/[^/]+\/(\d+)$/)
+    if (channel) {
+      return {
+        kind: 'KALTURA_CHANNEL',
+        externalRef: channel[1]!,
+        fixedCollectionId: channel[1]!,
+      }
+    }
+    const node = sourceUrl.match(/\/CourseNode\/(\d+)$/)
+    if (node) {
+      return {
+        kind: 'OLAT_NODE',
+        externalRef: node[1]!,
+        fixedCollectionId: null,
+      }
+    }
+    throw new CourseSourcesError(
+      'Not a recordings link this provider knows',
+      'INVALID_SOURCE_URL',
+      422
+    )
+  },
+  async directory() {
+    return {
+      period: PERIOD,
+      directory: {
+        canonicalUrl: DIRECTORY_URL,
+        title: 'Synthetic <Finance>',
+        shortName: 'SF',
+        recipients: [
+          {
+            name: 'Prof. Dr. Alex Head',
+            email: HEAD_EMAIL,
+            roles: ['RESPONSIBLE'],
+          },
+          { name: 'Sam Lecturer', email: LECTURER_EMAIL, roles: ['LECTURER'] },
+        ],
+        withoutEmail: [],
+        warnings: [],
+        snapshot: { moduleId: '51000001', retrievedAt: '2026-11-23T10:00Z' },
+      },
+    }
+  },
+  async resolve() {
+    throw new Error('not used here')
+  },
+}
 
 let prisma: DB.PrismaClient
 const userIds: string[] = []
@@ -115,7 +135,7 @@ async function user(
   await prisma.user.create({
     data: {
       id,
-      // Never one of the catalogue emails: edu-ID accounts often differ.
+      // Never one of the directory emails: edu-ID accounts often differ.
       email: `${id}@example.org`,
       name: `Synthetic ${label}`,
       shortname: id.slice(0, 8),
@@ -164,15 +184,15 @@ async function setup() {
     {
       kbId: kb.id,
       name: 'Synthetic lecture recordings',
-      sourceKind: 'OLAT_NODE',
       sourceUrl:
-        'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001',
-      catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
+        'https://lms.example.org/auth/RepositoryEntry/1000001/CourseNode/2000001',
+      directoryUrl: DIRECTORY_URL,
       kalturaCategoryId: '100001',
       cutMode: 'CLIP',
       captionLanguage: 'de',
     },
-    admin
+    admin,
+    { provider }
   )
   return { admin, source }
 }
@@ -185,9 +205,9 @@ describe('video source approval', () => {
     const head = await user('head')
 
     const result = await requestVideoSourceApproval(
-      { sourceId: source.id, semester: 'HS26' },
+      { sourceId: source.id, period: 'HS26' },
       admin,
-      { catalog, now: at('2026-11-23T10:00:00Z') }
+      { provider, now: at('2026-11-23T10:00:00Z') }
     )
     expect(result.recipients.map((r) => r.email)).toEqual([
       HEAD_EMAIL,
@@ -316,7 +336,7 @@ describe('video source approval', () => {
   it('requires edu-ID and an open grant window to approve', async () => {
     const { admin, source } = await setup()
     await requestVideoSourceApproval({ sourceId: source.id }, admin, {
-      catalog,
+      provider,
       now: at('2026-11-23T10:00:00Z'),
     })
     const token = tokenFor(LECTURER_EMAIL)
@@ -356,14 +376,14 @@ describe('video source approval', () => {
   it('forwards a superseded link to the newer request for revoking only', async () => {
     const { admin, source } = await setup()
     await requestVideoSourceApproval({ sourceId: source.id }, admin, {
-      catalog,
+      provider,
       now: at('2026-11-23T10:00:00Z'),
     })
     const oldToken = tokenFor(HEAD_EMAIL)
     const second = await requestVideoSourceApproval(
       { sourceId: source.id },
       admin,
-      { catalog, now: at('2026-12-10T10:00:00Z') }
+      { provider, now: at('2026-12-10T10:00:00Z') }
     )
     const newToken = tokenFor(HEAD_EMAIL)
     expect(newToken).not.toBe(oldToken)
@@ -399,7 +419,7 @@ describe('video source approval', () => {
   it('lets an admin revoke a source with a reason', async () => {
     const { admin, source } = await setup()
     await requestVideoSourceApproval({ sourceId: source.id }, admin, {
-      catalog,
+      provider,
       now: at('2026-11-23T10:00:00Z'),
     })
     await expect(
@@ -412,35 +432,110 @@ describe('video source approval', () => {
     expect(revoked.status).toBe('REVOKED')
   })
 
-  it('requires a matching source link and a VVZ link', async () => {
+  it('takes the link kind from the provider and checks a fixed collection', async () => {
     const { admin, source } = await setup()
+    expect(source).toMatchObject({
+      sourceKind: 'OLAT_NODE',
+      externalRef: '2000001',
+    })
     const base = {
       kbId: source.kbId,
       name: 'Synthetic channel',
-      sourceKind: 'KALTURA_CHANNEL' as const,
-      sourceUrl:
-        'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic+Course/100002',
-      catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
+      sourceUrl: 'https://media.example.org/channel/Synthetic+Course/100002',
+      directoryUrl: DIRECTORY_URL,
       kalturaCategoryId: '100002',
       cutMode: 'CLIP' as const,
       captionLanguage: 'de',
     }
     await expect(
-      createVideoSource({ ...base, kalturaCategoryId: '100003' }, admin)
+      createVideoSource({ ...base, kalturaCategoryId: '100003' }, admin, {
+        provider,
+      })
     ).rejects.toThrow('does not match')
     await expect(
       createVideoSource(
         { ...base, sourceUrl: 'https://lms.example.org/node/1' },
-        admin
+        admin,
+        { provider }
       )
-    ).rejects.toThrow('MediaSpace channel link')
+    ).rejects.toThrow('provider knows')
     await expect(
-      createVideoSource(
-        { ...base, catalogUrl: 'https://www.example.org/course' },
-        admin
+      createVideoSource({ ...base, directoryUrl: 'not a link' }, admin, {
+        provider,
+      })
+    ).rejects.toThrow('course directory link')
+    const created = await createVideoSource(base, admin, { provider })
+    expect(created).toMatchObject({
+      sourceKind: 'KALTURA_CHANNEL',
+      kalturaCategoryId: '100002',
+    })
+  })
+
+  it('works without a provider from what the admin enters', async () => {
+    const { admin, source: configured } = await setup()
+    const source = await createVideoSource(
+      {
+        kbId: configured.kbId,
+        name: 'Synthetic manual source',
+        sourceUrl: 'https://media.example.org/anything/42',
+        directoryUrl: DIRECTORY_URL,
+        kalturaCategoryId: '100004',
+        cutMode: 'CLIP',
+        captionLanguage: 'de',
+      },
+      admin,
+      { provider: null }
+    )
+    expect(source).toMatchObject({ sourceKind: 'MANUAL', externalRef: null })
+
+    const manual = {
+      courseTitle: 'Synthetic Manual Course',
+      periodLabel: 'Fall 2026',
+      periodEnd: new Date('2027-01-31T23:00:00Z'),
+    }
+    await expect(
+      requestVideoSourceApproval({ sourceId: source.id, manual }, admin, {
+        provider: null,
+        now: at('2026-11-23T10:00:00Z'),
+      })
+    ).rejects.toThrow('add at least one recipient')
+    await expect(
+      requestVideoSourceApproval(
+        {
+          sourceId: source.id,
+          additionalRecipients: [{ name: 'Sam', email: LECTURER_EMAIL }],
+        },
+        admin,
+        { provider: null, now: at('2026-11-23T10:00:00Z') }
       )
-    ).rejects.toThrow('courses.uzh.ch')
-    const created = await createVideoSource(base, admin)
-    expect(created.kalturaCategoryId).toBe('100002')
+    ).rejects.toThrow('enter the course title')
+
+    const result = await requestVideoSourceApproval(
+      {
+        sourceId: source.id,
+        manual,
+        additionalRecipients: [
+          { name: 'Sam Lecturer', email: LECTURER_EMAIL },
+          { name: 'Sam again', email: ' Lecturer@Example.org ' },
+        ],
+      },
+      admin,
+      { provider: null, now: at('2026-11-23T10:00:00Z') }
+    )
+    expect(result).toMatchObject({ periodLabel: 'Fall 2026' })
+    expect(result.recipients.map((r) => r.email)).toEqual([LECTURER_EMAIL])
+
+    const lecturer = await user('recipient')
+    await approveVideoSourceByLink(
+      { token: tokenFor(LECTURER_EMAIL), consentVersion: '2026-11-v1' },
+      lecturer,
+      { now: at('2026-11-24T10:00:00Z') }
+    )
+    const approved = await adminApproveVideoSourceRequest(
+      { requestId: result.requestId },
+      admin,
+      { now: at('2026-11-25T10:00:00Z') }
+    )
+    expect(approved.validUntil?.toISOString()).toBe('2027-01-31T23:00:00.000Z')
   })
 })

@@ -2718,18 +2718,20 @@ type KBVideoApprovalRecipient {
 type KBVideoApprovalRequest {
   adminApprovedAt: Date
   approvedAt: Date
-  catalogSnapshotSha256: String!
   consentVersion: String!
+  courseTitle: String!
   createdAt: Date!
   decisions: [KBVideoApprovalDecision!]!
+  directorySnapshotSha256: String!
   grantExpiresAt: Date!
   id: ID!
   kalturaCategoryId: String!
+  periodEnd: Date!
+  periodLabel: String!
   recipients: [KBVideoApprovalRecipient!]!
   requestedByEmail: String!
   requestedByName: String!
   revokedAt: Date
-  semester: String!
   status: KBVideoApprovalRequestStatus!
   validUntil: Date
 }
@@ -2750,23 +2752,19 @@ enum KBVideoCutMode {
 
 type KBVideoSource {
   captionLanguage: String!
-  catalogUrl: String!
   cutMode: KBVideoCutMode!
+  directoryUrl: String!
+  externalRef: String
   id: ID!
   kalturaCategoryId: String!
   kbId: ID!
   name: String!
   namePattern: String
   requests: [KBVideoApprovalRequest!]!
-  sourceKind: KBVideoSourceKind!
+  sourceKind: String!
   sourceUrl: String!
   status: KBVideoSourceStatus!
   validUntil: Date
-}
-
-enum KBVideoSourceKind {
-  KALTURA_CHANNEL
-  OLAT_NODE
 }
 
 enum KBVideoSourceStatus {
@@ -3039,7 +3037,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
-  createVideoSource(captionLanguage: String!, catalogUrl: String!, cutMode: KBVideoCutMode!, kalturaCategoryId: String!, kbId: ID!, name: String!, namePattern: String, sourceKind: KBVideoSourceKind!, sourceUrl: String!): KBVideoSource!
+  createVideoSource(captionLanguage: String!, cutMode: KBVideoCutMode!, directoryUrl: String!, kalturaCategoryId: String!, kbId: ID!, name: String!, namePattern: String, sourceUrl: String!): KBVideoSource!
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
   deleteActivityMessage(id: Int!): Boolean!
@@ -3142,7 +3140,7 @@ type Mutation {
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
   requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
-  requestVideoSourceApproval(additionalRecipients: [VideoApprovalRecipientInput!], excludedEmails: [String!], reason: String, semester: String, sourceId: ID!): VideoApprovalRequestResult!
+  requestVideoSourceApproval(additionalRecipients: [VideoApprovalRecipientInput!], excludedEmails: [String!], manual: VideoApprovalManualDirectoryInput, period: String, reason: String, sourceId: ID!): VideoApprovalRequestResult!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
@@ -3790,7 +3788,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
-  resolveVideoSource(catalogUrl: String!, semester: String, sourceKind: KBVideoSourceKind!, sourceUrl: String!): VideoSourceResolution!
+  resolveVideoSource(directoryUrl: String!, period: String, sourceUrl: String!): VideoSourceResolution!
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfAccountDataUse: ParticipantAccountDataUse
@@ -3811,6 +3809,7 @@ type Query {
   userScope: UserLoginScope
   userTags: [Tag!]
   validateAvailableLiveQuiz(courseId: String!, quizId: String!): Boolean
+  videoSourceProviderConfigured: Boolean!
 }
 
 type QuestionFeedback {
@@ -4402,7 +4401,6 @@ enum UserRole {
 type VideoApprovalLink {
   canApprove: Boolean!
   canRevoke: Boolean!
-  catalogUrl: String!
   chatbotNames: [String!]!
   consentText: String!
   consentVersion: String!
@@ -4411,11 +4409,13 @@ type VideoApprovalLink {
   cutMode: KBVideoCutMode!
   decidedAt: Date
   decidedByName: String
+  directoryUrl: String!
   eduIdRequired: Boolean!
   eduIdSignedIn: Boolean!
   grantExpiresAt: Date!
   identityMatched: Boolean!
   kalturaCategoryId: String!
+  periodLabel: String!
   recipientEmail: String!
   recipientName: String!
   requestId: ID!
@@ -4423,7 +4423,6 @@ type VideoApprovalLink {
   requestedByEmail: String!
   requestedByName: String!
   responsibleNames: [String!]!
-  semester: String!
   signedInEmail: String!
   sourceName: String!
   sourceUrl: String!
@@ -4441,6 +4440,13 @@ enum VideoApprovalLinkState {
   SUPERSEDED
 }
 
+input VideoApprovalManualDirectoryInput {
+  courseShortName: String
+  courseTitle: String!
+  periodEnd: Date!
+  periodLabel: String!
+}
+
 input VideoApprovalRecipientInput {
   email: String!
   name: String!
@@ -4456,48 +4462,52 @@ type VideoApprovalRequestRecipient {
 type VideoApprovalRequestResult {
   contactsWithoutEmail: [String!]!
   grantExpiresAt: Date!
+  periodEnd: Date!
+  periodLabel: String!
   recipients: [VideoApprovalRequestRecipient!]!
   requestId: ID!
-  semester: String!
   warnings: [String!]!
 }
 
-type VideoSourceCatalogPreview {
-  recipients: [VideoSourceCatalogRecipient!]!
-  semesterLabel: String!
+type VideoSourceCollectionCandidate {
+  createdAt: Date!
+  entriesCount: Int!
+  fullName: String!
+  id: String!
+  latestRecordingAt: Date
+  latestRecordingName: String
+  name: String!
+  recommended: Boolean!
+  recordingsInPeriod: Int!
+  sampleRecordingNames: [String!]!
+}
+
+type VideoSourceDirectoryPreview {
+  canonicalUrl: String!
+  recipients: [VideoSourceDirectoryRecipient!]!
   shortName: String!
   title: String!
   warnings: [String!]!
   withoutEmail: [String!]!
 }
 
-type VideoSourceCatalogRecipient {
+type VideoSourceDirectoryRecipient {
   email: String!
   name: String!
   roles: [String!]!
 }
 
-type VideoSourceCategoryCandidate {
-  categoryId: String!
-  createdAt: Date!
-  entriesCount: Int!
-  fullName: String!
-  latestRecordingAt: Date
-  latestRecordingName: String
-  name: String!
-  recommended: Boolean!
-  recordingsInSemester: Int!
-  sampleRecordingNames: [String!]!
-}
-
 type VideoSourceResolution {
-  candidates: [VideoSourceCategoryCandidate!]!
-  catalog: VideoSourceCatalogPreview
-  catalogError: String
-  kalturaError: String
-  olatNodeId: String
-  semesterLabel: String!
-  sourceKind: KBVideoSourceKind!
+  collections: [VideoSourceCollectionCandidate!]!
+  collectionsError: String
+  directory: VideoSourceDirectoryPreview
+  directoryError: String
+  externalRef: String
+  fixedCollectionId: String
+  periodEnd: Date!
+  periodLabel: String!
+  periodStart: Date!
+  sourceKind: String!
 }
 
 type WeekdayActivityAnalytics {

@@ -1,15 +1,12 @@
 // #region Lecture video sources and their approval
 //
-// A video source binds one Kaltura category (resolved from an OLAT node or a
-// MediaSpace channel) to a knowledge base. Nothing is fetched from Kaltura for
-// a source until a listed lecturer has approved it through their emailed link
-// and a Klicker admin has given final approval. See
+// A video source binds one Kaltura category to a knowledge base. Links and
+// course directories are interpreted by an institution's course-sources
+// provider (packages/graphql/src/services/courseSources.CONTRACT.md).
+// Nothing is fetched from Kaltura for a source until a listed lecturer has
+// approved it through their emailed link and a Klicker admin has given final
+// approval. See
 // docs/solutions/integration/video-source-approval.md.
-
-enum KBVideoSourceKind {
-  OLAT_NODE
-  KALTURA_CHANNEL
-}
 
 // How a course publishes its edited recordings in the channel.
 enum KBVideoCutMode {
@@ -23,7 +20,7 @@ enum KBVideoSourceStatus {
   PENDING_APPROVAL // a request is open, no recipient has approved yet
   AWAITING_ADMIN // a recipient approved, admin final approval outstanding
   APPROVED // discovery runs until validUntil
-  PAUSED // validity ended (new semester); needs a new request
+  PAUSED // validity ended (period over); needs a new request
   REVOKED // a recipient or admin revoked; needs a new request
 }
 
@@ -43,7 +40,7 @@ enum KBVideoApprovalDecisionKind {
 }
 
 enum KBVideoApprovalRecipientOrigin {
-  CATALOG
+  DIRECTORY
   ADMIN_ADDED
 }
 
@@ -54,12 +51,14 @@ model KBVideoSource {
   kbId String @db.Uuid
 
   // Shown to approvers, e.g. "Finance I lecture recordings".
-  name       String
-  sourceKind KBVideoSourceKind
-  // The OLAT node or MediaSpace channel URL the admin entered.
-  sourceUrl  String
-  // courses.uzh.ch link; contacts are snapshotted per semester on request.
-  catalogUrl String
+  name         String
+  // Provider-defined link kind and the id the link names (empty for manual).
+  sourceKind   String
+  externalRef  String?
+  // The recordings link the admin entered.
+  sourceUrl    String
+  // Course directory link; recipients are snapshotted per period on request.
+  directoryUrl String
 
   // The resolved category is what the gateway filters on and what approval
   // binds to. Changing it after approval requires a new request.
@@ -99,8 +98,9 @@ model KBVideoApprovalRequest {
   source   KBVideoSource @relation(fields: [sourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sourceId String        @db.Uuid
 
-  // Bound at request time; the approval never extends past this semester.
-  semester          String // e.g. HS26
+  // Bound at request time; the approval never extends past this period.
+  periodLabel       String // e.g. HS26
+  periodEnd         DateTime // exclusive; validUntil on admin approval
   // Kaltura category at request time; approval covers exactly this id.
   kalturaCategoryId String
 
@@ -110,9 +110,14 @@ model KBVideoApprovalRequest {
   requestedByName  String
   requestedByEmail String
 
-  // CatalogModuleSnapshot from the course catalogue client, as sent.
-  catalogSnapshot       Json
-  catalogSnapshotSha256 String
+  // Shown in emails and on the approval page.
+  courseTitle           String
+  courseShortName       String
+  directoryCanonicalUrl String
+
+  // Provider directory snapshot as sent (or the admin's manual entry).
+  directorySnapshot       Json
+  directorySnapshotSha256 String
 
   consentVersion    String
   consentTextSha256 String
@@ -120,7 +125,7 @@ model KBVideoApprovalRequest {
   status         KBVideoApprovalRequestStatus @default(OPEN)
   // Links can approve until here; they can revoke for as long as the request exists.
   grantExpiresAt DateTime
-  // Semester end; set on admin approval.
+  // Period end; set on admin approval.
   validUntil     DateTime?
 
   approvedAt            DateTime?
@@ -147,9 +152,9 @@ model KBVideoApprovalRecipient {
 
   name   String
   email  String
-  // CatalogContactRole values (RESPONSIBLE, LECTURER).
+  // Provider roles, e.g. RESPONSIBLE, LECTURER.
   roles  String[]
-  origin KBVideoApprovalRecipientOrigin @default(CATALOG)
+  origin KBVideoApprovalRecipientOrigin @default(DIRECTORY)
 
   // SHA-256 of the emailed link token; the token itself is never stored.
   tokenSha256 String @unique

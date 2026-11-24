@@ -1,297 +1,290 @@
 import { describe, expect, it } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
-  createKalturaCatalog,
-  isOlatNodeCategory,
-  type KalturaCatalog,
-} from '../src/services/kalturaCatalog.js'
-import type { CatalogModuleSnapshot } from '../src/services/uzhCourseCatalog.js'
+  type CourseSourcesProvider,
+  createCourseSourcesClient,
+} from '../src/services/courseSources.js'
 import { resolveVideoSource } from '../src/services/videoSourceApproval.js'
-import { rankCategoryCandidates } from '../src/services/videoSourceApprovalCore.js'
 
 // Synthetic ids, names and addresses only.
-const HS26 = { piqYear: '2026', piqSession: '003' as const }
-const d = (iso: string) => new Date(iso)
+const actor = { userId: 'admin-1', email: 'admin@example.org' }
 
-describe('rankCategoryCandidates', () => {
-  it('sorts newest first and proposes the run with recordings this semester', () => {
-    const ranked = rankCategoryCandidates(
-      [
-        {
-          categoryId: '1',
-          name: 'ctx-a-2000001',
-          fullName: 'x>ctx-a-2000001',
-          createdAt: d('2025-09-01T00:00:00Z'),
-          entriesCount: 20,
-          recordings: [{ name: 'Old', createdAt: d('2025-10-01T00:00:00Z') }],
-        },
-        {
-          categoryId: '3',
-          name: 'ctx-c-2000001',
-          fullName: 'x>ctx-c-2000001',
-          createdAt: d('2026-10-01T00:00:00Z'),
-          entriesCount: 0,
-          recordings: [],
-        },
-        {
-          categoryId: '2',
-          name: 'ctx-b-2000001',
-          fullName: 'x>ctx-b-2000001',
-          createdAt: d('2026-08-20T00:00:00Z'),
-          entriesCount: 8,
-          recordings: [
-            { name: 'Week 1', createdAt: d('2026-09-15T00:00:00Z') },
-            { name: 'Week 2', createdAt: d('2026-09-22T00:00:00Z') },
-          ],
-        },
-      ],
-      HS26
-    )
-    expect(ranked.map((c) => c.categoryId)).toEqual(['3', '2', '1'])
-    expect(ranked.find((c) => c.recommended)?.categoryId).toBe('2')
-    expect(ranked[1]?.latestRecordingName).toBe('Week 2')
-    expect(ranked[1]?.recordingsInSemester).toBe(2)
-  })
+type Call = {
+  url: string
+  headers: Record<string, string>
+  body: Record<string, unknown>
+}
 
-  it('falls back to a category created in the semester, else proposes none', () => {
-    const empty = {
-      name: 'ctx-2000001',
-      fullName: 'ctx-2000001',
-      entriesCount: 0,
-      recordings: [],
+function fakeFetch(
+  answer: (path: string) => { status: number; body: unknown },
+  calls: Call[] = []
+) {
+  return async (
+    url: string,
+    init: { headers: Record<string, string>; body: string }
+  ) => {
+    calls.push({ url, headers: init.headers, body: JSON.parse(init.body) })
+    const { status, body } = answer(url.split('/course-sources/v1/')[1] ?? '')
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => body,
     }
-    expect(
-      rankCategoryCandidates(
-        [{ ...empty, categoryId: '9', createdAt: d('2026-09-01T00:00:00Z') }],
-        HS26
-      )[0]?.recommended
-    ).toBe(true)
-    expect(
-      rankCategoryCandidates(
-        [{ ...empty, categoryId: '9', createdAt: d('2024-09-01T00:00:00Z') }],
-        HS26
-      )[0]?.recommended
-    ).toBe(false)
-  })
+  }
+}
 
-  it('matches OLAT node categories by name suffix', () => {
-    expect(isOlatNodeCategory('ctx-1-2000001', '2000001')).toBe(true)
-    expect(isOlatNodeCategory('ctx-1-12000001', '2000001')).toBe(false)
-  })
-})
+const period = {
+  label: 'HS26',
+  start: '2026-08-01T00:00:00Z',
+  end: '2027-02-01T00:00:00Z',
+}
+const directory = {
+  canonicalUrl: 'https://directory.example.org/courses/51000001',
+  title: 'Synthetic Finance',
+  shortName: 'SYN101',
+  recipients: [
+    { name: 'Ada Example', email: 'ada@example.org', roles: ['RESPONSIBLE'] },
+    { name: 'No Mail', email: '', roles: ['LECTURER'] },
+  ],
+  withoutEmail: ['No Mail'],
+  warnings: [],
+  snapshot: { moduleId: '51000001' },
+}
 
-describe('createKalturaCatalog (gateway client)', () => {
-  const actor = { userId: 'admin-1', email: 'admin@example.org' }
-
-  it('asks the gateway, never Kaltura, and identifies the admin', async () => {
-    const calls: Array<{
-      url: string
-      headers: Record<string, string>
-      body: Record<string, unknown>
-    }> = []
-    const responses: Record<string, unknown> = {
-      'olat-node': {
-        categories: [
-          {
-            id: 11,
-            name: 'ctx-2000001',
-            fullName: 'a>ctx-2000001',
-            createdAt: '2026-08-01T00:00:00Z',
-            entriesCount: 4,
-          },
-          {
-            id: 12,
-            name: 'ctx-92000001',
-            fullName: 'a>ctx-92000001',
-            createdAt: '2026-08-01T00:00:00Z',
-            entriesCount: 1,
-          },
-        ],
-      },
-      entries: {
-        entries: [
-          {
-            id: '0_a',
-            name: 'Lecture',
-            mediaType: 1,
-            status: 2,
-            createdAt: '2026-09-01T00:00:00Z',
-          },
-          {
-            id: '0_b',
-            name: 'Camera',
-            mediaType: 1,
-            status: 2,
-            parentEntryId: '0_a',
-            createdAt: '2026-09-01T00:00:00Z',
-          },
-        ],
-      },
-      category: { category: null },
-    }
-    const kaltura = createKalturaCatalog({
-      actor,
-      gatewayUrl: 'https://gateway.example.org/',
-      gatewayToken: 'fake-gateway-credential',
-      fetch: async (url, init) => {
-        calls.push({ url, headers: init.headers, body: JSON.parse(init.body) })
-        const key = url.split('/v1/lookup/')[1] ?? ''
-        return { ok: true, status: 200, json: async () => responses[key] }
-      },
+describe('createCourseSourcesClient', () => {
+  it('posts each call with the bearer token and parses the contract', async () => {
+    const calls: Call[] = []
+    const client = createCourseSourcesClient({
+      url: 'https://sources.example.org/',
+      token: 'fake-provider-credential',
+      fetch: fakeFetch(
+        (path) => ({
+          status: 200,
+          body:
+            path === 'source-link'
+              ? {
+                  source: {
+                    kind: 'KALTURA_CHANNEL',
+                    externalRef: '100001',
+                    fixedCollectionId: 100001,
+                  },
+                }
+              : path === 'directory'
+                ? { period, directory }
+                : {
+                    source: {
+                      kind: 'OLAT_NODE',
+                      externalRef: '2000001',
+                      fixedCollectionId: null,
+                    },
+                    period,
+                    directory: null,
+                    directoryError: 'Directory unavailable',
+                    collections: [
+                      {
+                        id: '7',
+                        name: 'ctx-2000001',
+                        fullName: 'a>ctx-2000001',
+                        createdAt: '2026-08-10T00:00:00Z',
+                        entriesCount: 3,
+                        recordingsInPeriod: 2,
+                        latestRecordingName: 'Week 2',
+                        latestRecordingAt: '2026-09-22T00:00:00Z',
+                        sampleRecordingNames: ['Week 2', 'Week 1'],
+                        recommended: true,
+                      },
+                    ],
+                    collectionsError: null,
+                  },
+        }),
+        calls
+      ),
     })
 
-    const categories = await kaltura.findCategoriesForOlatNode('2000001')
-    expect(categories.map((c) => c.id)).toEqual(['11'])
-    const entries = await kaltura.listRecentEntries('11', 10)
-    expect(entries.map((e) => e.parentEntryId)).toEqual([null, '0_a'])
-    expect(await kaltura.getCategory('999')).toBeNull()
+    expect(
+      await client.sourceLink({ sourceUrl: 'https://media.example.org/c/1' })
+    ).toEqual({
+      kind: 'KALTURA_CHANNEL',
+      externalRef: '100001',
+      fixedCollectionId: '100001',
+    })
+    const dir = await client.directory({
+      directoryUrl: directory.canonicalUrl,
+    })
+    expect(dir.period.end.toISOString()).toBe('2027-02-01T00:00:00.000Z')
+    // Entries without an address are not recipients.
+    expect(dir.directory.recipients.map((r) => r.email)).toEqual([
+      'ada@example.org',
+    ])
+    const resolved = await client.resolve({
+      sourceUrl: 'https://lms.example.org/node/2000001',
+      directoryUrl: directory.canonicalUrl,
+      period: 'HS26',
+      actor,
+    })
+    expect(resolved.directory).toBeNull()
+    expect(resolved.directoryError).toBe('Directory unavailable')
+    expect(resolved.collections[0]?.latestRecordingAt?.toISOString()).toBe(
+      '2026-09-22T00:00:00.000Z'
+    )
 
     expect(calls.map((c) => c.url)).toEqual([
-      'https://gateway.example.org/v1/lookup/olat-node',
-      'https://gateway.example.org/v1/lookup/entries',
-      'https://gateway.example.org/v1/lookup/category',
+      'https://sources.example.org/course-sources/v1/source-link',
+      'https://sources.example.org/course-sources/v1/directory',
+      'https://sources.example.org/course-sources/v1/resolve',
     ])
     for (const call of calls) {
-      expect(call.body.actor).toEqual(actor)
-      expect(call.headers.Authorization).toBe('Bearer fake-gateway-credential')
+      expect(call.headers.Authorization).toBe('Bearer fake-provider-credential')
     }
+    expect(calls[1]?.body).toEqual({
+      directoryUrl: directory.canonicalUrl,
+      period: null,
+    })
+    expect(calls[2]?.body.actor).toEqual(actor)
   })
 
-  it('reports a missing gateway instead of calling anything', async () => {
-    const kaltura = createKalturaCatalog({
-      actor,
-      gatewayUrl: '',
-      gatewayToken: '',
+  it('passes 422 messages through and keeps other failures generic', async () => {
+    const client = (status: number, body: unknown) =>
+      createCourseSourcesClient({
+        url: 'https://sources.example.org',
+        token: 'fake-provider-credential',
+        fetch: fakeFetch(() => ({ status, body })),
+      })
+    await expect(
+      client(422, {
+        code: 'NOT_OFFERED',
+        message: 'The course is not offered in HS26',
+      }).directory({ directoryUrl: 'https://directory.example.org/x' })
+    ).rejects.toMatchObject({
+      message: 'The course is not offered in HS26',
+      code: 'NOT_OFFERED',
+      status: 422,
+    })
+    await expect(
+      client(503, {
+        code: 'UNAVAILABLE',
+        message: 'upstream detail that stays inside',
+      }).sourceLink({ sourceUrl: 'https://x.example.org' })
+    ).rejects.toMatchObject({
+      message: 'Course sources provider answered HTTP 503',
+      code: 'UNAVAILABLE',
+    })
+    await expect(
+      client(200, {
+        period: { label: 'HS26', start: 'x', end: 'y' },
+      }).directory({ directoryUrl: 'https://directory.example.org/x' })
+    ).rejects.toMatchObject({ code: 'UNEXPECTED_RESPONSE' })
+  })
+
+  it('reports a missing provider instead of calling anything', async () => {
+    const client = createCourseSourcesClient({
+      url: '',
+      token: '',
       fetch: async () => {
         throw new Error('must not be called')
       },
     })
-    await expect(kaltura.findCategoriesForOlatNode('1')).rejects.toThrow(
-      'not available yet'
-    )
+    await expect(
+      client.sourceLink({ sourceUrl: 'https://x.example.org' })
+    ).rejects.toMatchObject({ code: 'NOT_CONFIGURED' })
   })
 })
 
 describe('resolveVideoSource', () => {
-  const snapshot: CatalogModuleSnapshot = {
-    catalogUrl: 'https://courses.uzh.ch/#/details/2026/003/SM/51000001',
-    moduleId: '51000001',
-    semester: HS26,
-    semesterLabel: 'HS26',
-    title: 'Synthetic Finance',
-    shortName: 'SYN101',
-    offeringOrganization: null,
-    offerPattern: null,
-    events: [],
-    contacts: [
-      {
-        personId: 'p1',
-        roles: ['RESPONSIBLE'],
-        title: null,
-        firstName: 'Ada',
-        lastName: 'Example',
-        email: 'ada@example.org',
-        function: null,
-        organization: null,
-        eventIds: [],
+  const ctx = {
+    user: { sub: 'admin-1' },
+    prisma: {
+      user: {
+        findUnique: async () => ({
+          id: 'admin-1',
+          email: 'admin@example.org',
+          name: 'Synthetic admin',
+          shortname: 'admin',
+          accounts: [],
+        }),
       },
-    ],
-    warnings: [],
-    retrievedAt: '2026-11-23T00:00:00Z',
-  }
-  const catalog = { getModuleContacts: async () => snapshot }
-  const kaltura: KalturaCatalog = {
-    getCategory: async (id) =>
-      id === '100001'
-        ? {
-            id,
-            name: 'Channel',
-            fullName: 'a>Channel',
-            createdAt: d('2026-08-01T00:00:00Z'),
-            entriesCount: 3,
-          }
-        : null,
-    findCategoriesForOlatNode: async () => [
-      {
-        id: '7',
-        name: 'ctx-2000001',
-        fullName: 'a>ctx-2000001',
-        createdAt: d('2026-08-10T00:00:00Z'),
-        entriesCount: 3,
-      },
-    ],
-    listRecentEntries: async () => [
-      {
-        id: '0_a',
-        name: 'Week 1',
-        mediaType: 1,
-        sourceType: '35',
-        parentEntryId: null,
-        status: 2,
-        createdAt: d('2026-09-20T00:00:00Z'),
-      },
-      {
-        id: '0_b',
-        name: 'Camera',
-        mediaType: 1,
-        sourceType: null,
-        parentEntryId: '0_a',
-        status: 2,
-        createdAt: d('2026-09-20T00:00:00Z'),
-      },
-    ],
-  }
-  const now = () => d('2026-11-23T10:00:00Z')
-  // The audit dependency is faked, so the context is never used.
-  const noCtx = {} as ContextWithUser
-  const audited: Array<{ type: string; payload: Record<string, unknown> }> = []
+    },
+  } as unknown as ContextWithUser
 
-  it('combines the VVZ module and the proposed category of an OLAT node', async () => {
+  it('audits the lookup, identifies the admin and returns the preview', async () => {
+    const audited: Array<{ type: string; payload: Record<string, unknown> }> =
+      []
+    let seenActor: unknown
+    const provider: CourseSourcesProvider = {
+      sourceLink: async () => {
+        throw new Error('not used')
+      },
+      directory: async () => {
+        throw new Error('not used')
+      },
+      resolve: async (args) => {
+        seenActor = args.actor
+        return {
+          source: {
+            kind: 'OLAT_NODE',
+            externalRef: '2000001',
+            fixedCollectionId: null,
+          },
+          period: {
+            label: 'HS26',
+            start: new Date(period.start),
+            end: new Date(period.end),
+          },
+          directory: {
+            ...directory,
+            recipients: directory.recipients.slice(0, 1),
+          },
+          directoryError: null,
+          collections: [],
+          collectionsError: 'No collection found for this link',
+        }
+      },
+    }
     const result = await resolveVideoSource(
       {
-        sourceKind: 'OLAT_NODE',
-        sourceUrl:
-          'https://lms.uzh.ch/auth/RepositoryEntry/1000001/CourseNode/2000001',
-        catalogUrl: snapshot.catalogUrl,
+        sourceUrl: ' https://lms.example.org/node/2000001 ',
+        directoryUrl: directory.canonicalUrl,
       },
-      noCtx,
+      ctx,
       {
-        catalog,
-        kaltura,
-        now,
+        provider,
         audit: async (type, payload) => {
           audited.push({ type, payload })
         },
       }
     )
-    expect(audited.map((a) => a.type)).toEqual(['KALTURA_LOOKUP_REQUESTED'])
-    expect(result.olatNodeId).toBe('2000001')
-    expect(result.catalog?.recipients.map((r) => r.email)).toEqual([
+    expect(audited).toEqual([
+      {
+        type: 'KALTURA_LOOKUP_REQUESTED',
+        payload: {
+          sourceUrl: 'https://lms.example.org/node/2000001',
+          directoryUrl: directory.canonicalUrl,
+          period: null,
+        },
+      },
+    ])
+    expect(seenActor).toEqual(actor)
+    expect(result).toMatchObject({
+      sourceKind: 'OLAT_NODE',
+      externalRef: '2000001',
+      periodLabel: 'HS26',
+      collections: [],
+      collectionsError: 'No collection found for this link',
+    })
+    expect(result.directory?.recipients.map((r) => r.email)).toEqual([
       'ada@example.org',
     ])
-    expect(result.candidates).toHaveLength(1)
-    expect(result.candidates[0]?.recommended).toBe(true)
-    expect(result.candidates[0]?.sampleRecordingNames).toEqual(['Week 1'])
-    expect(result.kalturaError).toBeNull()
+    // The snapshot holds personal data and stays out of the preview.
+    expect(result.directory).not.toHaveProperty('snapshot')
   })
 
-  it('keeps the VVZ half when Kaltura fails, and reports an unknown channel', async () => {
-    const failing: KalturaCatalog = {
-      ...kaltura,
-      getCategory: async () => null,
-    }
-    const result = await resolveVideoSource(
-      {
-        sourceKind: 'KALTURA_CHANNEL',
-        sourceUrl:
-          'https://uzh.mediaspace.cast.switch.ch/channel/Synthetic/100002',
-        catalogUrl: snapshot.catalogUrl,
-      },
-      noCtx,
-      { catalog, kaltura: failing, now, audit: async () => undefined }
-    )
-    expect(result.catalog?.title).toBe('Synthetic Finance')
-    expect(result.candidates).toEqual([])
-    expect(result.kalturaError).toContain('channel link')
+  it('needs a provider', async () => {
+    await expect(
+      resolveVideoSource(
+        { sourceUrl: 'https://x.example.org', directoryUrl: 'https://y' },
+        ctx,
+        { provider: null }
+      )
+    ).rejects.toMatchObject({ code: 'NOT_CONFIGURED' })
   })
 })

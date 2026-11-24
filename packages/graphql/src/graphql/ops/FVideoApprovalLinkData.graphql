@@ -3,7 +3,7 @@ fragment VideoApprovalLinkData on VideoApprovalLink {
   state
   canApprove
   canRevoke
-  semester
+  periodLabel
   requestedAt
   requestedByName
   requestedByEmail
@@ -17,7 +17,7 @@ fragment VideoApprovalLinkData on VideoApprovalLink {
   eduIdRequired
   courseTitle
   courseShortName
-  catalogUrl
+  directoryUrl
   responsibleNames
   sourceName
   sourceUrl
