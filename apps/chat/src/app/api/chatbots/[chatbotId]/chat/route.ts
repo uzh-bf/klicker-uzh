@@ -951,7 +951,10 @@ export async function POST(
     selectedModelConfig = guestFallback
   }
 
-  if (!selectedModelConfig.fallback) {
+  // The exam chat keeps every turn on the exam model. Credits are still
+  // charged, but running out never switches a student to another model mid-exam;
+  // the chatbot's budget is sized before the exam instead.
+  if (!assessment && !selectedModelConfig.fallback) {
     const creditPreview = await CreditsService.previewUserCredits(
       participantId,
       chatbotId
@@ -999,7 +1002,7 @@ export async function POST(
     }
   }
 
-  if (!selectedModelConfig.fallback) {
+  if (!assessment && !selectedModelConfig.fallback) {
     const userCredits = await CreditsService.getUserCredits(
       participantId,
       chatbotId

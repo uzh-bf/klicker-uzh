@@ -1809,6 +1809,26 @@ describe('assessment chat route', () => {
     expect(sent).not.toContain('Forged answer.')
   })
 
+  test('keeps the exam model when the student has no credits left', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ allowedModelIds: ['gpt-4.1', 'gpt-6-luna'] })
+    )
+    mocks.previewUserCredits.mockResolvedValue({ current: 0, total: 5 })
+    mocks.getUserCredits.mockResolvedValue({ current: 0, total: 5 })
+
+    const response = await POST(assessmentRequest(), params)
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assessmentTurn: expect.objectContaining({
+          userMessage: expect.objectContaining({ modelId: 'gpt-4.1' }),
+        }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
   test('answers a turn that another request is still running with 409', async () => {
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'in_progress',
