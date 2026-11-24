@@ -53,12 +53,12 @@ model KBVideoSource {
   kbId String @db.Uuid
 
   // Shown to approvers, e.g. "Finance I lecture recordings".
-  name         String
+  name              String
   // Provider-defined link kind and the id the link names (empty for manual).
-  sourceKind   String
-  externalRef  String?
+  sourceKind        String
+  externalRef       String?
   // The recordings link the admin entered.
-  sourceUrl    String
+  sourceUrl         String
   // Course directory link; recipients are snapshotted per period on request.
   directoryUrl      String
   // Set when the provider says the link itself names the category.
