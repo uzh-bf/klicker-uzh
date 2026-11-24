@@ -32,7 +32,7 @@ approves, which recording collection belongs to a course run) comes from a
 course-sources provider over HTTP. The contract is
 `packages/graphql/src/services/courseSources.CONTRACT.md`; the client is
 `courseSources.ts` (`COURSE_SOURCES_URL`, bearer `COURSE_SOURCES_TOKEN`). The
-UZH provider runs outside this repository. Klicker never holds the Kaltura
+UZH provider is the Catalyst Kaltura gateway. Klicker never holds the Kaltura
 token and never calls the Kaltura gateway (a Catalyst service) for lookups: the provider does,
 and the gateway audits each Kaltura call. Klicker appends
 `KALTURA_LOOKUP_REQUESTED` with the actor and the links before every
