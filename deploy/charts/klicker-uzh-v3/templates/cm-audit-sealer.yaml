@@ -15,7 +15,6 @@ data:
   ASSESSMENT_AUDIT_WORKER_ROLE: sealer
   ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
   ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}
-  ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
   ASSESSMENT_AUDIT_TABLE_ENDPOINT: {{ required "assessmentAudit.tableEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.tableEndpoint | quote }}
   ASSESSMENT_AUDIT_BLOB_ENDPOINT: {{ required "assessmentAudit.blobEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.blobEndpoint | quote }}
   AZURE_TOKEN_CREDENTIALS: WorkloadIdentityCredential

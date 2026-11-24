@@ -22,7 +22,7 @@ that historical design. The delivery order lives in the
 ## Current implementation boundary
 
 Staging audit configuration lives in `deploy/env-uzh-stg/values.yaml` under
-`assessmentAudit`. The chart renders the endpoint, rollout, pilot quiz IDs,
+`assessmentAudit`. The chart renders the endpoint, rollout,
 environment, and dedicated worker role/metrics settings into ConfigMaps; these
 settings do not require duplicate Infisical entries or ExternalSecret mappings.
 Existing worker Secrets still supply database, Redis, and Hatchet credentials.
@@ -30,7 +30,7 @@ The dispatcher uses the `stg-audit-dispatcher` service account in `stg-klicker`.
 The backend no longer requires an audit Blob identity, and the media-policy
 deployment is removed. Previously provisioned Blob identities and retained
 blobs are not deleted by this application change.
-Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
+Staging uses `rollout: all`: once audit is enabled,
 all assessment live quizzes are eligible for coverage activation.
 The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
 Staging sets `enabled: true` for assessment testing. Before syncing this revision,
@@ -346,8 +346,7 @@ Baseline parts are independently hashed, and the root commits to each part key
 and full canonical-part hash. Snapshot comparison uses that incremental root
 aggregate rather than canonicalizing the complete assessment as one object.
 
-Rollout modes are `disabled`, `pilot`, and `all`. Pilot mode requires one
-configured LiveQuiz UUID. A scan receives an operator-supplied stable scan ID,
+Rollout modes are `disabled` and `all`. A scan receives an operator-supplied stable scan ID,
 creates `PENDING` inventory before activation work, records terminal quizzes as
 excluded, and records every success or stable failure. Rerunning the same scan
 resumes pending entries and preserves already-recorded failures instead of
@@ -568,14 +567,14 @@ The staged rollout command is:
 pnpm --filter @klicker-uzh/graphql script:stg -- \
   src/scripts/activateAssessmentAudit.ts --dry-run
 
-# activate the configured pilot/all selection and make the scan resumable
+# activate the configured all selection and make the scan resumable
 pnpm --filter @klicker-uzh/graphql script:stg -- \
   src/scripts/activateAssessmentAudit.ts --scan-id <stable-operator-uuid>
 ```
 
 Explicit `--quiz-id <uuid>` flags override configuration for a bounded repair.
 The operator must archive the scan output, verify that no entry remains pending
-or failed, export and independently verify the pilot evidence, and check both
+or failed, export and independently verify the evidence, and check both
 worker metric sets before expanding rollout. Empty or pre-instrumentation
 results retain the explicit limitations documented above.
 

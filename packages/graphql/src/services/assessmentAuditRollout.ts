@@ -491,7 +491,7 @@ export async function assessmentAuditReadiness(input: {
   liveQuizId: string
 }): Promise<'NOT_SELECTED' | 'COVERED' | 'UNCOVERED'> {
   const config = readAssessmentAuditRolloutConfig()
-  if (!assessmentIsSelectedForAuditActivation(input.liveQuizId, config)) {
+  if (!assessmentIsSelectedForAuditActivation(config)) {
     return 'NOT_SELECTED'
   }
   const latest = await input.client.assessmentAuditScope.findFirst({

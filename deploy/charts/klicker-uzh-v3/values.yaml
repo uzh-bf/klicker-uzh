@@ -196,7 +196,6 @@ assessmentAudit:
   enabled: false
   environment: ''
   rollout: disabled
-  pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
   sealer:

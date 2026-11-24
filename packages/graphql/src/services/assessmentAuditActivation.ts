@@ -558,54 +558,22 @@ export async function persistPreparedAssessmentAuditActivation(input: {
   }
 }
 
-export type AssessmentAuditRolloutConfig =
-  | { mode: 'disabled'; pilotLiveQuizIds: ReadonlySet<string> }
-  | { mode: 'pilot'; pilotLiveQuizIds: ReadonlySet<string> }
-  | { mode: 'all'; pilotLiveQuizIds: ReadonlySet<string> }
+export type AssessmentAuditRolloutConfig = { mode: 'disabled' | 'all' }
 
 export function readAssessmentAuditRolloutConfig(
   environment: NodeJS.ProcessEnv = process.env
 ): AssessmentAuditRolloutConfig {
   const value = environment.ASSESSMENT_AUDIT_ROLLOUT?.trim() || 'disabled'
-  if (!['disabled', 'pilot', 'all'].includes(value)) {
-    throw new TypeError(
-      'ASSESSMENT_AUDIT_ROLLOUT must be disabled, pilot, or all'
-    )
+  if (value !== 'disabled' && value !== 'all') {
+    throw new TypeError('ASSESSMENT_AUDIT_ROLLOUT must be disabled or all')
   }
-  const pilotLiveQuizIds = new Set(
-    (environment.ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS ?? '')
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean)
-  )
-  for (const id of pilotLiveQuizIds) {
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        id
-      )
-    ) {
-      throw new TypeError('Assessment audit pilot LiveQuiz ID is invalid')
-    }
-  }
-  if (value === 'pilot' && pilotLiveQuizIds.size === 0) {
-    throw new Error(
-      'ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS is required in pilot mode'
-    )
-  }
-  return {
-    mode: value as AssessmentAuditRolloutConfig['mode'],
-    pilotLiveQuizIds,
-  }
+  return { mode: value }
 }
 
 export function assessmentIsSelectedForAuditActivation(
-  liveQuizId: string,
   config: AssessmentAuditRolloutConfig
 ): boolean {
-  return (
-    config.mode === 'all' ||
-    (config.mode === 'pilot' && config.pilotLiveQuizIds.has(liveQuizId))
-  )
+  return config.mode === 'all'
 }
 
 export async function activateAssessmentAudit(input: {

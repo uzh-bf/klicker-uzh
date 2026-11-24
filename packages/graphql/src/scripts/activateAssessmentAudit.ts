@@ -32,16 +32,9 @@ async function main() {
     validateUuid(id, '--quiz-id')
   )
   const config = readAssessmentAuditRolloutConfig()
-  const requestedIds =
-    explicitIds.length > 0
-      ? explicitIds
-      : config.mode === 'pilot'
-        ? [...config.pilotLiveQuizIds]
-        : undefined
+  const requestedIds = explicitIds.length > 0 ? explicitIds : undefined
   if (explicitIds.length === 0 && config.mode === 'disabled') {
-    throw new Error(
-      'Rollout is disabled; pass --quiz-id or configure pilot/all mode'
-    )
+    throw new Error('Rollout is disabled; pass --quiz-id or configure all mode')
   }
 
   const discovered = await discoverAssessmentAuditRolloutCandidates({

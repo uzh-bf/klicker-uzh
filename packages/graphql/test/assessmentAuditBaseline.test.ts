@@ -217,28 +217,23 @@ describe('assessment audit baseline snapshot mapping', () => {
 })
 
 describe('assessment audit rollout configuration', () => {
-  it('defaults to disabled and requires an explicit pilot allowlist', () => {
+  it('defaults to disabled and rejects the retired pilot mode', () => {
     expect(readAssessmentAuditRolloutConfig({})).toMatchObject({
       mode: 'disabled',
     })
     expect(() =>
       readAssessmentAuditRolloutConfig({ ASSESSMENT_AUDIT_ROLLOUT: 'pilot' })
-    ).toThrow('ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS is required')
+    ).toThrow(TypeError)
   })
 
-  it('selects only the pilot allowlist while all selects every quiz', () => {
-    const selectedId = randomUUID()
-    const otherId = randomUUID()
-    const pilot = readAssessmentAuditRolloutConfig({
-      ASSESSMENT_AUDIT_ROLLOUT: 'pilot',
-      ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: selectedId,
-    })
-
-    expect(assessmentIsSelectedForAuditActivation(selectedId, pilot)).toBe(true)
-    expect(assessmentIsSelectedForAuditActivation(otherId, pilot)).toBe(false)
+  it('selects every quiz only in all mode', () => {
     expect(
       assessmentIsSelectedForAuditActivation(
-        otherId,
+        readAssessmentAuditRolloutConfig({})
+      )
+    ).toBe(false)
+    expect(
+      assessmentIsSelectedForAuditActivation(
         readAssessmentAuditRolloutConfig({
           ASSESSMENT_AUDIT_ROLLOUT: 'all',
         })

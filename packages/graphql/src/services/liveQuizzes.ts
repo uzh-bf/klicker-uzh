@@ -3674,10 +3674,7 @@ export async function resetAssessmentLiveQuiz(
   ])
   const auditSelected =
     existingCoveredAuditScope !== null ||
-    assessmentIsSelectedForAuditActivation(
-      liveQuiz.id,
-      readAssessmentAuditRolloutConfig()
-    )
+    assessmentIsSelectedForAuditActivation(readAssessmentAuditRolloutConfig())
   let preparedAuditReopening: PreparedAssessmentAuditActivation | null = null
   if (auditSelected) {
     try {
