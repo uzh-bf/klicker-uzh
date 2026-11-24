@@ -277,13 +277,12 @@ describe('canonical audit envelope', () => {
     ).toThrow()
   })
 
-  it('requires Hatchet identity and trusted transport chronology', () => {
+  it('requires trusted transport chronology for Hatchet-materialized events', () => {
     const draft = {
       eventType: 'SUBMISSION_SERVER_ACCEPTED' as const,
       producerOperationId: `${correlationId}:hatchet`,
       scope: { participantId },
       submissionId,
-      hatchetEventId: 'hatchet-event-1',
       payload: {
         submissionId,
         stage: 'SERVER_ACCEPTED' as const,

@@ -1,3 +1,4 @@
+import { NonRetryableError } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   type AuditEventDraft,
   type AuditTransactionClient,
@@ -187,17 +188,12 @@ export async function findCoveredAssessmentScope(
   })
 }
 
-function producerOperationId(
-  message: SubmissionCommand,
-  hatchetEventId: string,
-  suffix: string
-) {
-  return `assessment-submission:${message.submissionId}:${hatchetEventId}:${suffix}`
+function producerOperationId(message: SubmissionCommand, suffix: string) {
+  return `assessment-submission:${message.submissionId}:${suffix}`
 }
 
 export function submissionDraft(
   message: SubmissionCommand,
-  hatchetEventId: string,
   draft: Omit<
     SubmissionDraft,
     'producerOperationId' | 'submissionId' | 'hatchetEventId'
@@ -208,13 +204,8 @@ export function submissionDraft(
   const { operationSuffix, ...event } = draft
   return {
     ...event,
-    producerOperationId: producerOperationId(
-      message,
-      hatchetEventId,
-      operationSuffix
-    ),
+    producerOperationId: producerOperationId(message, operationSuffix),
     submissionId: message.submissionId,
-    hatchetEventId,
     scope: {
       participantId: message.participantId,
       elementInstanceId: Number(message.instanceId),
@@ -239,7 +230,6 @@ function assertExistingEventMatches(
   input: {
     message: SubmissionCommand
     scope: CoveredAssessmentScope
-    hatchetEventId: string
     draft: SubmissionDraft
   }
 ) {
@@ -256,7 +246,6 @@ function assertExistingEventMatches(
     row.participantId !== input.message.participantId ||
     row.correlationId !== input.message.submissionId ||
     envelope.submissionId !== input.message.submissionId ||
-    envelope.hatchetEventId !== input.hatchetEventId ||
     row.payloadHash !== hashCanonicalValue(input.draft.payload)
   ) {
     throw new Error(`Audit idempotency conflict for ${row.eventId}`)
@@ -268,7 +257,6 @@ export async function emitSubmissionAuditEvents(input: {
   auditTx: AuditTransactionClient
   message: SubmissionCommand
   scope: CoveredAssessmentScope
-  hatchetEventId: string
   courseId?: string
   recordedAt: Date
   drafts: readonly SubmissionDraft[]
@@ -303,7 +291,6 @@ export async function emitSubmissionAuditEvents(input: {
     assertExistingEventMatches(row, {
       message: input.message,
       scope: input.scope,
-      hatchetEventId: input.hatchetEventId,
       draft,
     })
     return []
@@ -344,32 +331,36 @@ export async function emitSubmissionAuditEvents(input: {
   return emitAuditEvents(input.auditTx, context, missing)
 }
 
+async function findSubmissionEventTypes(
+  tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>,
+  message: SubmissionCommand,
+  eventTypes: readonly string[]
+) {
+  const rows = await tx.assessmentAuditOutboxEvent.findMany({
+    where: {
+      liveQuizId: message.liveQuizId,
+      correlationId: message.submissionId,
+      eventType: { in: [...eventTypes] },
+    },
+    select: { eventType: true },
+  })
+  return rows.map((row) => row.eventType)
+}
+
 export async function assertTerminalStageAvailable(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
-  hatchetEventId: string
   intendedEventType: (typeof TERMINAL_EVENT_TYPES)[number]
 }) {
-  const terminalRows = await input.tx.assessmentAuditOutboxEvent.findMany({
-    where: {
-      liveQuizId: input.message.liveQuizId,
-      correlationId: input.message.submissionId,
-      eventType: { in: [...TERMINAL_EVENT_TYPES] },
-    },
-    select: { eventType: true, canonicalEnvelope: true },
-  })
-  const forCommand = terminalRows.filter((row) => {
-    try {
-      const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: string
-      }
-      return envelope.hatchetEventId === input.hatchetEventId
-    } catch {
-      throw new Error('Stored terminal submission evidence is not valid JSON')
-    }
-  })
-  if (forCommand.some((row) => row.eventType !== input.intendedEventType)) {
-    throw new Error(
+  const stages = await findSubmissionEventTypes(
+    input.tx,
+    input.message,
+    TERMINAL_EVENT_TYPES
+  )
+  if (stages.some((stage) => stage !== input.intendedEventType)) {
+    // A resend of an already decided submission must not retry into failure
+    // evidence for an outcome that is already recorded.
+    throw new NonRetryableError(
       'Submission command already has a conflicting terminal stage'
     )
   }
@@ -378,28 +369,12 @@ export async function assertTerminalStageAvailable(input: {
 export async function getTerminalStageForCommand(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
-  hatchetEventId: string
 }) {
-  const terminalRows = await input.tx.assessmentAuditOutboxEvent.findMany({
-    where: {
-      liveQuizId: input.message.liveQuizId,
-      correlationId: input.message.submissionId,
-      eventType: { in: [...TERMINAL_EVENT_TYPES] },
-    },
-    select: { eventType: true, canonicalEnvelope: true },
-  })
-  const stages = terminalRows.flatMap((row) => {
-    try {
-      const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: string
-      }
-      return envelope.hatchetEventId === input.hatchetEventId
-        ? [row.eventType]
-        : []
-    } catch {
-      throw new Error('Stored terminal submission evidence is not valid JSON')
-    }
-  })
+  const stages = await findSubmissionEventTypes(
+    input.tx,
+    input.message,
+    TERMINAL_EVENT_TYPES
+  )
   if (stages.length > 1) {
     throw new Error('Submission command has multiple terminal stages')
   }
@@ -409,30 +384,14 @@ export async function getTerminalStageForCommand(input: {
 export async function commandHasRecordedFailure(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
-  hatchetEventId: string
 }) {
-  const failures = await input.tx.assessmentAuditOutboxEvent.findMany({
-    where: {
-      liveQuizId: input.message.liveQuizId,
-      correlationId: input.message.submissionId,
-      eventType: 'SUBMISSION_PROCESSING_FAILED',
-    },
-    select: { canonicalEnvelope: true },
-  })
-  return failures.some((row) => {
-    try {
-      const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: string
-      }
-      return envelope.hatchetEventId === input.hatchetEventId
-    } catch {
-      throw new Error('Stored submission failure evidence is not valid JSON')
-    }
-  })
+  const failures = await findSubmissionEventTypes(input.tx, input.message, [
+    'SUBMISSION_PROCESSING_FAILED',
+  ])
+  return failures.length > 0
 }
 
 export type AcceptedSubmissionBinding = {
-  hatchetEventId: string
   elementBlockExecution: number
   answerStateHash: string
   participantId: string | null
@@ -459,7 +418,6 @@ export async function findAcceptedSubmissionBindings(input: {
   return accepted.flatMap((row): AcceptedSubmissionBinding[] => {
     try {
       const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: unknown
         payload?: { answerStateHash?: unknown; elementBlockExecution?: unknown }
         scope?: { elementInstanceId?: unknown }
       }
@@ -467,8 +425,6 @@ export async function findAcceptedSubmissionBindings(input: {
       const elementBlockExecution = envelope.payload?.elementBlockExecution
       if (
         typeof answerStateHash !== 'string' ||
-        typeof envelope.hatchetEventId !== 'string' ||
-        !envelope.hatchetEventId ||
         typeof elementBlockExecution !== 'number' ||
         !Number.isSafeInteger(elementBlockExecution) ||
         elementBlockExecution < 0
@@ -477,7 +433,6 @@ export async function findAcceptedSubmissionBindings(input: {
       const elementInstanceId = envelope.scope?.elementInstanceId
       return [
         {
-          hatchetEventId: envelope.hatchetEventId,
           elementBlockExecution,
           answerStateHash,
           participantId: row.participantId,

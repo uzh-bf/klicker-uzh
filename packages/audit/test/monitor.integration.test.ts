@@ -11,15 +11,11 @@ type EventInput = {
   correlationId: string
   eventType: string
   recordedAt: Date
-  hatchetEventId?: string
 }
 
 async function createOutboxEvent(input: EventInput, index: number) {
   const token = randomUUID().replaceAll('-', '').repeat(2)
-  const canonicalEnvelope = JSON.stringify({
-    fixture: index,
-    hatchetEventId: input.hatchetEventId ?? input.correlationId,
-  })
+  const canonicalEnvelope = JSON.stringify({ fixture: index })
   return prisma.assessmentAuditOutboxEvent.create({
     data: {
       eventId: randomUUID(),
@@ -71,7 +67,7 @@ afterAll(async () => {
 })
 
 describe('assessment audit monitor PostgreSQL queries', () => {
-  it('counts exact covered submission gaps by quiz, epoch, correlation, and Hatchet command', async () => {
+  it('counts exact covered submission gaps by quiz, epoch, and correlation', async () => {
     const ids = Array.from({ length: 8 }, () => randomUUID())
     const [q1, q2, q3, q4, q5, q6, q7, q8] = ids
     const correlations = Array.from({ length: 6 }, () => randomUUID())
@@ -125,8 +121,8 @@ describe('assessment audit monitor PostgreSQL queries', () => {
         3
       )
 
-      // q3 has two Hatchet commands for one submission. A terminal for the
-      // first command must not hide the second command's missing outcome.
+      // q3 has two acceptance rows for one submission, as legacy evidence
+      // keyed per Hatchet command can. One terminal outcome closes it.
       await createScope(q3!, 1, 'COVERED')
       await createOutboxEvent(
         {
@@ -145,7 +141,6 @@ describe('assessment audit monitor PostgreSQL queries', () => {
           correlationId: correlations[2]!,
           eventType: 'SUBMISSION_SERVER_ACCEPTED',
           recordedAt: new Date('2026-08-11T08:04:01.000Z'),
-          hatchetEventId: 'second-command',
         },
         5
       )
@@ -224,7 +219,7 @@ describe('assessment audit monitor PostgreSQL queries', () => {
       const counts: AuditMonitorCounts = await repository.readCounts()
 
       expect(counts.activationFailureCount).toBe(3)
-      expect(counts.coveredSubmissionWithoutTerminalCount).toBe(4)
+      expect(counts.coveredSubmissionWithoutTerminalCount).toBe(3)
       expect(counts.oldestCoveredSubmissionWithoutTerminalAt).toEqual(
         new Date('2026-08-11T08:00:00.000Z')
       )
@@ -245,8 +240,7 @@ describe('assessment audit monitor PostgreSQL queries', () => {
       liveQuizId: string,
       eventType: string,
       minute: number,
-      index: number,
-      hatchetEventId?: string
+      index: number
     ) =>
       createOutboxEvent(
         {
@@ -255,38 +249,19 @@ describe('assessment audit monitor PostgreSQL queries', () => {
           correlationId: liveQuizId,
           eventType,
           recordedAt: new Date(`2026-08-11T09:0${minute}:00.000Z`),
-          hatchetEventId,
         },
         index
       )
 
     try {
       for (const liveQuizId of ids) await createScope(liveQuizId!, 1, 'COVERED')
-      // The Hatchet event never resolved: only fallback failure evidence.
-      await event(
-        failedOnly!,
-        'SUBMISSION_PROCESSING_FAILED',
-        1,
-        0,
-        'unresolved-run:1'
-      )
+      // Processing failed before acceptance: only failure evidence.
+      await event(failedOnly!, 'SUBMISSION_PROCESSING_FAILED', 1, 0)
       // Accepted after an earlier failure: counted once, by the accepted gap.
-      await event(
-        failedAccepted!,
-        'SUBMISSION_PROCESSING_FAILED',
-        2,
-        1,
-        'unresolved-run:2'
-      )
+      await event(failedAccepted!, 'SUBMISSION_PROCESSING_FAILED', 2, 1)
       await event(failedAccepted!, 'SUBMISSION_SERVER_ACCEPTED', 3, 2)
       // A later retry persisted the submission: no gap.
-      await event(
-        failedPersisted!,
-        'SUBMISSION_PROCESSING_FAILED',
-        4,
-        3,
-        'unresolved-run:3'
-      )
+      await event(failedPersisted!, 'SUBMISSION_PROCESSING_FAILED', 4, 3)
       await event(failedPersisted!, 'SUBMISSION_SERVER_ACCEPTED', 5, 4)
       await event(failedPersisted!, 'SUBMISSION_PERSISTED', 6, 5)
 

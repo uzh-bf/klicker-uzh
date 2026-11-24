@@ -348,7 +348,7 @@ function assertTrustedChronology(
     }
   }
   if (
-    registration.requiresHatchetEventId &&
+    registration.requiresTransportAttempt &&
     value.transportAttemptedAt === undefined
   ) {
     throw new Error(
@@ -410,12 +410,6 @@ function assertEventInvariants(
 
   if (registration.requiresSubmissionId && value.submissionId === undefined) {
     throw new Error(`Audit event ${value.eventType} requires submissionId`)
-  }
-  if (
-    registration.requiresHatchetEventId &&
-    value.hatchetEventId === undefined
-  ) {
-    throw new Error(`Audit event ${value.eventType} requires hatchetEventId`)
   }
   if (
     registration.requiresClientProvenance &&

@@ -48,65 +48,6 @@ type AssessmentProcessorDependencies = {
   client: typeof prisma
   redis: Pick<ReturnType<typeof getAssessmentRedis>, 'hgetall' | 'hsetnx'>
   now: () => Date
-  resolveHatchetEventId: (
-    message: AssessmentCommand,
-    ctx: AssessmentContext
-  ) => Promise<string>
-}
-
-const sleep = (milliseconds: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
-
-// Hatchet indexes a pushed event shortly after it triggers the run. Back off
-// for about three seconds before this attempt fails and Hatchet retries it.
-const EVENT_RESOLUTION_BACKOFF_MS = [100, 200, 400, 800, 1600]
-
-export async function resolveTriggeringHatchetEventId(
-  message: AssessmentCommand,
-  ctx: AssessmentContext
-) {
-  const metadata = ctx.additionalMetadata()
-  if (metadata.submissionId !== message.submissionId) {
-    throw new NonRetryableError('SUBMISSION_METADATA_MISMATCH')
-  }
-  const workflowRunId = ctx.workflowRunId()
-  for (
-    let attempt = 0;
-    attempt <= EVENT_RESOLUTION_BACKOFF_MS.length;
-    attempt++
-  ) {
-    const candidateIds = new Set<string>()
-    const pageSize = 100
-    for (let offset = 0; ; offset += pageSize) {
-      // Hatchet's workflowIds filters definitions, not workflow run IDs.
-      // Resends share submission metadata, so still match the exact run below.
-      const events = await ctx.v1.events.list({
-        limit: pageSize,
-        offset,
-        additionalMetadata: [`submissionId:${message.submissionId}`],
-      })
-      const rows = events.rows ?? []
-      for (const event of rows) {
-        if (
-          event.triggeredRuns?.some(
-            (run) => run.workflowRunId === workflowRunId
-          ) &&
-          typeof event.metadata.id === 'string' &&
-          event.metadata.id !== ''
-        ) {
-          candidateIds.add(event.metadata.id)
-        }
-      }
-      if (candidateIds.size > 1) {
-        throw new Error('Hatchet workflow run has multiple triggering events')
-      }
-      if (rows.length < pageSize) break
-    }
-    if (candidateIds.size === 1) return [...candidateIds][0]!
-    const delay = EVENT_RESOLUTION_BACKOFF_MS[attempt]
-    if (delay !== undefined) await sleep(delay)
-  }
-  throw new Error('Hatchet triggering event is not yet available')
 }
 
 function defaultDependencies(): AssessmentProcessorDependencies {
@@ -114,7 +55,6 @@ function defaultDependencies(): AssessmentProcessorDependencies {
     client: prisma,
     redis: getAssessmentRedis(),
     now: () => new Date(),
-    resolveHatchetEventId: resolveTriggeringHatchetEventId,
   }
 }
 
@@ -139,18 +79,9 @@ export async function processAssessmentResponse(
   }
 
   let coveredScope: CoveredAssessmentScope | null = null
-  let hatchetEventId: string | null = null
   let courseId: string | undefined
 
-  const requireHatchetEventId = () => {
-    if (hatchetEventId === null) {
-      throw new Error('Covered submission has no Hatchet event ID')
-    }
-    return hatchetEventId
-  }
-
   const emitStandalone = async (
-    commandId: string,
     drafts: Parameters<typeof emitSubmissionAuditEvents>[0]['drafts']
   ) => {
     const scope = coveredScope
@@ -161,7 +92,6 @@ export async function processAssessmentResponse(
         auditTx,
         message,
         scope,
-        hatchetEventId: commandId,
         courseId,
         recordedAt: dependencies.now(),
         drafts,
@@ -170,7 +100,7 @@ export async function processAssessmentResponse(
   }
 
   const rejectionDraft = (reasonCode: string) =>
-    submissionDraft(message, requireHatchetEventId(), {
+    submissionDraft(message, {
       eventType: 'SUBMISSION_REJECTED',
       operationSuffix: 'rejected',
       outcome: reasonCode,
@@ -182,7 +112,7 @@ export async function processAssessmentResponse(
     })
 
   const recoveryDraft = () =>
-    submissionDraft(message, requireHatchetEventId(), {
+    submissionDraft(message, {
       eventType: 'SUBMISSION_PROCESSING_RECOVERED',
       operationSuffix: 'processing-recovered',
       payload: {
@@ -198,20 +128,17 @@ export async function processAssessmentResponse(
         await assertTerminalStageAvailable({
           tx,
           message,
-          hatchetEventId: requireHatchetEventId(),
           intendedEventType: 'SUBMISSION_REJECTED',
         })
         const recovered = await commandHasRecordedFailure({
           tx,
           message,
-          hatchetEventId: requireHatchetEventId(),
         })
         await emitSubmissionAuditEvents({
           tx,
           auditTx,
           message,
           scope,
-          hatchetEventId: requireHatchetEventId(),
           courseId,
           recordedAt: dependencies.now(),
           drafts: [
@@ -235,19 +162,47 @@ export async function processAssessmentResponse(
       (await commandHasRecordedFailure({
         tx: input.tx,
         message,
-        hatchetEventId: requireHatchetEventId(),
       }))
     ) {
       await emitSubmissionAuditEvents({
         ...input,
         message,
         scope: coveredScope,
-        hatchetEventId: requireHatchetEventId(),
         courseId,
         recordedAt: dependencies.now(),
         drafts: [recoveryDraft()],
       })
     }
+  }
+
+  // A command that disagrees with its Hatchet metadata or with the evidence
+  // already bound to its submissionId must not record an outcome under that
+  // shared identity.
+  const quarantine = async (reasonCode: string): Promise<never> => {
+    const scope = coveredScope
+    if (scope !== null) {
+      try {
+        await recordSubmissionMetadataQuarantine({
+          client: dependencies.client,
+          message,
+          scope,
+          reasonCode,
+          recordedAt: dependencies.now(),
+        })
+      } catch (quarantineError) {
+        ctx.logger.error(
+          'Assessment submission metadata quarantine was not recorded',
+          {
+            extra: {
+              submissionId: message.submissionId,
+              reasonCode,
+              quarantineError,
+            },
+          }
+        )
+      }
+    }
+    throw new NonRetryableError(reasonCode)
   }
 
   try {
@@ -265,32 +220,8 @@ export async function processAssessmentResponse(
         )) ?? latestScope
     }
     if (coveredScope !== null) {
-      try {
-        hatchetEventId = await dependencies.resolveHatchetEventId(message, ctx)
-      } catch (error) {
-        if (error instanceof NonRetryableError) {
-          try {
-            await recordSubmissionMetadataQuarantine({
-              client: dependencies.client,
-              message,
-              scope: coveredScope,
-              reasonCode: error.message,
-              recordedAt: dependencies.now(),
-            })
-          } catch (quarantineError) {
-            ctx.logger.error(
-              'Assessment submission metadata quarantine was not recorded',
-              {
-                extra: {
-                  submissionId: message.submissionId,
-                  reasonCode: error.message,
-                  quarantineError,
-                },
-              }
-            )
-          }
-        }
-        throw error
+      if (ctx.additionalMetadata().submissionId !== message.submissionId) {
+        await quarantine('SUBMISSION_METADATA_MISMATCH')
       }
       if (
         !Number.isSafeInteger(message.blockExecution) ||
@@ -309,12 +240,7 @@ export async function processAssessmentResponse(
           tx,
           message,
         })
-        const commandBindings = previousBindings.filter(
-          (binding) => binding.hatchetEventId === requireHatchetEventId()
-        )
-        if (commandBindings.length > 1)
-          throw new Error('Submission command has multiple acceptance bindings')
-        const commandBinding = commandBindings[0]
+        const commandBinding = previousBindings[0]
         if (commandBinding !== undefined) {
           scope = { lifecycleEpoch: commandBinding.lifecycleEpoch }
           coveredScope = scope
@@ -340,10 +266,9 @@ export async function processAssessmentResponse(
             auditTx,
             message,
             scope,
-            hatchetEventId: requireHatchetEventId(),
             recordedAt: dependencies.now(),
             drafts: [
-              submissionDraft(message, requireHatchetEventId(), {
+              submissionDraft(message, {
                 eventType: 'SUBMISSION_SERVER_ACCEPTED',
                 operationSuffix: 'server-accepted',
                 payload: {
@@ -358,7 +283,7 @@ export async function processAssessmentResponse(
         }
       })
       if (submissionReuseReasonCode !== undefined) {
-        await reject(submissionReuseReasonCode)
+        await quarantine(submissionReuseReasonCode)
       }
       if (
         scope.lifecycleEpoch !== latestScope?.lifecycleEpoch ||
@@ -369,7 +294,6 @@ export async function processAssessmentResponse(
         const terminal = await getTerminalStageForCommand({
           tx: dependencies.client,
           message,
-          hatchetEventId: requireHatchetEventId(),
         })
         if (terminal === 'SUBMISSION_REJECTED')
           throw new NonRetryableError('SUBMISSION_PREVIOUSLY_REJECTED')
@@ -470,8 +394,8 @@ export async function processAssessmentResponse(
           : undefined,
     })
     if (coveredScope !== null) {
-      await emitStandalone(requireHatchetEventId(), [
-        submissionDraft(message, requireHatchetEventId(), {
+      await emitStandalone([
+        submissionDraft(message, {
           eventType: 'SUBMISSION_VALIDATED',
           operationSuffix: 'validated',
           payload: {
@@ -620,7 +544,6 @@ export async function processAssessmentResponse(
           const terminal = await getTerminalStageForCommand({
             tx,
             message,
-            hatchetEventId: requireHatchetEventId(),
           })
           if (terminal === 'SUBMISSION_REJECTED')
             return {
@@ -676,20 +599,17 @@ export async function processAssessmentResponse(
             await assertTerminalStageAvailable({
               tx,
               message,
-              hatchetEventId: requireHatchetEventId(),
               intendedEventType: 'SUBMISSION_REJECTED',
             })
             const recovered = await commandHasRecordedFailure({
               tx,
               message,
-              hatchetEventId: requireHatchetEventId(),
             })
             await emitSubmissionAuditEvents({
               tx,
               auditTx,
               message,
               scope: coveredScope,
-              hatchetEventId: requireHatchetEventId(),
               courseId,
               recordedAt: dependencies.now(),
               drafts: [
@@ -730,20 +650,17 @@ export async function processAssessmentResponse(
             await assertTerminalStageAvailable({
               tx,
               message,
-              hatchetEventId: requireHatchetEventId(),
               intendedEventType: 'SUBMISSION_REJECTED',
             })
             const recovered = await commandHasRecordedFailure({
               tx,
               message,
-              hatchetEventId: requireHatchetEventId(),
             })
             await emitSubmissionAuditEvents({
               tx,
               auditTx,
               message,
               scope: coveredScope,
-              hatchetEventId: requireHatchetEventId(),
               courseId,
               recordedAt: dependencies.now(),
               drafts: [
@@ -764,7 +681,6 @@ export async function processAssessmentResponse(
               : await getTerminalStageForCommand({
                   tx,
                   message,
-                  hatchetEventId: requireHatchetEventId(),
                 })
           if (
             existingResponse.submissionId === message.submissionId &&
@@ -776,7 +692,6 @@ export async function processAssessmentResponse(
               const recovered = await commandHasRecordedFailure({
                 tx,
                 message,
-                hatchetEventId: requireHatchetEventId(),
               })
               if (recovered) {
                 await emitSubmissionAuditEvents({
@@ -784,7 +699,6 @@ export async function processAssessmentResponse(
                   auditTx,
                   message,
                   scope: coveredScope,
-                  hatchetEventId: requireHatchetEventId(),
                   courseId,
                   recordedAt: dependencies.now(),
                   drafts: [recoveryDraft()],
@@ -803,24 +717,21 @@ export async function processAssessmentResponse(
             await assertTerminalStageAvailable({
               tx,
               message,
-              hatchetEventId: requireHatchetEventId(),
               intendedEventType: 'SUBMISSION_DUPLICATE',
             })
             const recovered = await commandHasRecordedFailure({
               tx,
               message,
-              hatchetEventId: requireHatchetEventId(),
             })
             await emitSubmissionAuditEvents({
               tx,
               auditTx,
               message,
               scope: coveredScope,
-              hatchetEventId: requireHatchetEventId(),
               courseId,
               recordedAt: dependencies.now(),
               drafts: [
-                submissionDraft(message, requireHatchetEventId(), {
+                submissionDraft(message, {
                   eventType: 'SUBMISSION_DUPLICATE',
                   operationSuffix: 'duplicate',
                   payload: {
@@ -859,24 +770,21 @@ export async function processAssessmentResponse(
           await assertTerminalStageAvailable({
             tx,
             message,
-            hatchetEventId: requireHatchetEventId(),
             intendedEventType: 'SUBMISSION_PERSISTED',
           })
           const recovered = await commandHasRecordedFailure({
             tx,
             message,
-            hatchetEventId: requireHatchetEventId(),
           })
           await emitSubmissionAuditEvents({
             tx,
             auditTx,
             message,
             scope: coveredScope,
-            hatchetEventId: requireHatchetEventId(),
             courseId,
             recordedAt: dependencies.now(),
             drafts: [
-              submissionDraft(message, requireHatchetEventId(), {
+              submissionDraft(message, {
                 eventType: 'SUBMISSION_PERSISTED',
                 operationSuffix: 'persisted',
                 payload: {
@@ -886,7 +794,7 @@ export async function processAssessmentResponse(
                   answer: normalizedAnswer,
                 },
               }),
-              submissionDraft(message, requireHatchetEventId(), {
+              submissionDraft(message, {
                 eventType: 'SUBMISSION_SCORED',
                 operationSuffix: 'scored',
                 payload: {
@@ -948,17 +856,10 @@ export async function processAssessmentResponse(
   } catch (error) {
     if (error instanceof NonRetryableError) throw error
     if (coveredScope !== null) {
-      // Without a resolved Hatchet event the command is still identified by
-      // its workflow run, so the receipt never lacks failure evidence.
-      const commandId =
-        hatchetEventId ?? `unresolved-run:${ctx.workflowRunId()}`
-      const reasonCode =
-        hatchetEventId === null
-          ? 'HATCHET_EVENT_UNRESOLVED'
-          : 'TRANSIENT_PROCESSING_FAILURE'
+      const reasonCode = 'TRANSIENT_PROCESSING_FAILURE'
       try {
-        await emitStandalone(commandId, [
-          submissionDraft(message, commandId, {
+        await emitStandalone([
+          submissionDraft(message, {
             eventType: 'SUBMISSION_PROCESSING_FAILED',
             operationSuffix: `processing-failed:${ctx.retryCount()}`,
             outcome: reasonCode,

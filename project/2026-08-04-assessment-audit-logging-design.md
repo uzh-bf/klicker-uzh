@@ -62,7 +62,8 @@ the blobs preserve media and detect later evidence mutation or deletion.
 Decisions 1–16 were confirmed through the design review and grilling session
 completed on 2026-08-06. Decisions 17–26 were confirmed through the
 finalization grilling session on 2026-08-10; where they refine an earlier
-decision, the later decision governs.
+decision, the later decision governs. Decision 27 was confirmed by the
+maintainer on 2026-11-24.
 
 | # | Decision |
 | --- | --- |
@@ -92,6 +93,7 @@ decision, the later decision governs.
 | 24 | Retention uses semester-batch deletion with fixed calendar semesters (HS: September 1 – January 31; FS: February 1 – August 31). A batch runs one month after each semester start and deletes only evidence whose completion anchor is at least twelve months old, yielding at least twelve and at most about nineteen months of effective retention (one inter-batch interval beyond the floor). Investigation holds still pause deletion per assessment. This replaces the rolling per-assessment deletion of decision 10; the one-year floor stands. |
 | 25 | PRs #4872 and #4946 are quarry: mining them for reusable pieces plus a coverage mapping is the first work item of the Stack 1 implementation plan. The closure decision follows Stack 1 plan approval. |
 | 26 | The design merges with implementation, not as a documentation-only PR: this document travels with the first stack layer. The platform engineer writes the Stack 1 implementation plan (one planning-gate review), the layer-1 contract package receives a full review, and subsequent layers proceed independently with standard per-layer PR review under a single topology owner. |
+| 27 | Supersedes the Hatchet-event-ID part of decision 6 (2026-11-24). Submission evidence is keyed on `submissionId` alone: operation IDs, terminal-stage, duplicate and failure lookups, and recovery use no Hatchet event ID. The processor no longer looks up the triggering Hatchet event, and new envelopes omit `hatchetEventId`; the optional field remains so stored events still verify. Correlation rests on `submissionId` together with the server receive time, participant, and element instance. A command whose answer or scope disagrees with evidence already bound to its `submissionId` is quarantined instead of recording a second outcome. |
 
 ## Goals
 
@@ -313,7 +315,7 @@ the contract and export:
 | --- | --- | --- |
 | Lane 1, authoritative mutation | Business state and canonical outbox records commit or roll back in one PostgreSQL transaction. | `receivedAt` is when the trusted API/worker received or initiated the action; `recordedAt` is when the canonical event was constructed in the transaction. |
 | Lane 1, standalone observation | The ingestion endpoint acknowledges acceptance only after the standalone outbox transaction commits. The browser interaction itself remains non-blocking. | `receivedAt` is when the trusted endpoint accepted the observation; `recordedAt` is when it constructed the canonical outbox event. |
-| Lane 2, submission transport | The response API acknowledges only after Hatchet accepts the existing submission command and returns an event ID. The response processor does not complete the Hatchet task until terminal outcome evidence is committed to the outbox. | `receivedAt` is when the response API received the submission; `transportAttemptedAt` is stamped immediately before the Hatchet push; the returned `hatchetEventId` proves acknowledgement; `recordedAt` is when the response processor materialized the canonical event. |
+| Lane 2, submission transport | The response API acknowledges only after Hatchet accepts the existing submission command and returns an event ID. The response processor does not complete the Hatchet task until terminal outcome evidence is committed to the outbox. | `receivedAt` is when the response API received the submission; `transportAttemptedAt` is stamped immediately before the Hatchet push; `recordedAt` is when the response processor materialized the canonical event. The returned Hatchet event ID is part of the browser receipt only and is not stored in the envelope (decision 27). |
 | Independent client ingress | A client event is staged after its IndexedDB transaction commits. The ingress returns a per-event acknowledgement only after Azure Storage Queue durably accepts that event or all of its parts; acknowledged local records are then deleted. Pending records are eligible to replay for seven days and are purged on the next cleanup after expiry. | `clientOccurredAt` is untrusted browser context; `receivedAt` is ingress receipt; `transportAcceptedAt` is the Queue service's returned insertion time; `recordedAt` is queue-drainer materialization time. |
 | Owner CLI exception | The CLI reports success only after the control record, locator, and retention-index registration exist. | `receivedAt` and `recordedAt` are trusted CLI times associated with the authenticated Azure principal. |
 
@@ -322,7 +324,7 @@ accepted-time value that can travel with the durable record. The Azure Queue
 adapter normalizes its returned insertion time; provider SDK types do not enter
 the canonical contract. Hatchet currently returns an event ID but no server-side
 acceptance time, so the contract preserves the pre-push `transportAttemptedAt`
-and `hatchetEventId` rather than inventing a post-acknowledgement timestamp that
+rather than inventing a post-acknowledgement timestamp that
 the response processor cannot recover. Exports preserve all applicable times
 instead of collapsing transport attempt, acceptance, and later materialization.
 
@@ -715,7 +717,7 @@ device or their subjective intent.
 | `correlationId` | Connects one action across API, Hatchet, worker, and persistence stages. |
 | `causationId` | Optional preceding event that caused this event. |
 | `submissionId` | Stable client-created submission idempotency key where applicable. |
-| `hatchetEventId` | Hatchet receipt identifier where applicable. |
+| `hatchetEventId` | Optional legacy Hatchet receipt identifier. Events recorded before decision 27 carry it; new events omit it. |
 | `ingressReceiptId` | Non-secret independent-ingress receipt identifier where applicable; Azure deletion credentials are never canonical evidence. |
 | `captureTokenId` | Non-secret identifier of the scoped token that the ingress validated when accepting the batch; a token used only during earlier local staging is not trusted provenance. |
 | `scopeValidation` | Queue-drainer result for assessment/content references: matched, mismatched, or unavailable, with a stable reason. |
@@ -911,7 +913,8 @@ activation baseline, and unrelated personal data.
   retain only `submissionId` and scope until a definitive response outcome or
   seven-day expiry.
 - The response API includes `submissionId` in the Hatchet event and returns it
-  with `hatchetEventId` after successful push.
+  with the Hatchet event ID after successful push. Audit evidence is keyed on
+  `submissionId` alone (decision 27).
 - A failed Hatchet push returns an error; the client performs bounded retry with
   the same `submissionId`.
 - Replaying client audit evidence never creates or changes an authoritative
@@ -921,8 +924,8 @@ activation baseline, and unrelated personal data.
   duplicate authority. Redis remains only a cache and may not create an
   evidence-free success response.
 - `SUBMISSION_SERVER_ACCEPTED` preserves the response API receipt time, its
-  pre-push transport-attempt time, the returned Hatchet event ID, and the later
-  canonical materialization time. It does not invent a Hatchet acceptance time
+  pre-push transport-attempt time and the later canonical materialization
+  time. It does not invent a Hatchet acceptance time
   that the current transport receipt does not provide.
 - `SUBMISSION_PERSISTED` commits with the response. Rejection and duplicate
   outcomes preserve stable reason codes and the last durable stage.
