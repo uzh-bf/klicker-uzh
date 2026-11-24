@@ -320,6 +320,7 @@ export const ChatbotRevisionModelPolicyInput =
       modelSelection: t.boolean({ required: true }),
       allowedModelIds: t.stringList({ required: true }),
       answerPreferencesEnabled: t.boolean({ required: false }),
+      interactiveExplanationsEnabled: t.boolean({ required: false }),
       allowedReasoningEffortsByModel: t.field({
         type: [ChatbotReasoningConfigInputRef],
         required: false,
@@ -425,6 +426,9 @@ export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
+    interactiveExplanationsEnabled: t.exposeBoolean(
+      'interactiveExplanationsEnabled'
+    ),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (revision) =>
@@ -486,12 +490,12 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
-  writingCoachUnavailableReason?: string | null
   customModeConfig?: ChatbotCustomModeConfigShape | null
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
   answerPreferencesEnabled: boolean
+  interactiveExplanationsEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -641,10 +645,14 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
-    writingCoachUnavailableReason: t.exposeString(
-      'writingCoachUnavailableReason',
-      { nullable: true }
-    ),
+    // Kept for clients built before Writing Coach stopped depending on other
+    // modes' tool bindings; it always resolves to null.
+    writingCoachUnavailableReason: t.string({
+      nullable: true,
+      deprecationReason:
+        'Writing Coach availability no longer depends on tool bindings.',
+      resolve: () => null,
+    }),
     standardModeConfig: t.field({
       type: ChatbotStandardModeConfigRef,
       nullable: true,
@@ -658,6 +666,9 @@ export const Chatbot = ChatbotRef.implement({
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
+    interactiveExplanationsEnabled: t.exposeBoolean(
+      'interactiveExplanationsEnabled'
+    ),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

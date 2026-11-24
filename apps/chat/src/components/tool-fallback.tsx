@@ -8,6 +8,9 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { CALCULATOR_TOOL_NAME } from '@/src/lib/calculator'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
 import {
   COURSE_IMAGE_TOOL,
   courseImageModelInput,
@@ -18,6 +21,8 @@ import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeToolName'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
+import { ExplanationCard, isRejectedExplanation } from './explanation-card'
+import { FeedbackCard, isRejectedFeedback } from './feedback-card'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -178,8 +183,50 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
 
+  // The calculator chip only says that a calculation ran. Its expressions
+  // and results stay hidden, because the Tutor and Quizzer compute the
+  // correct result to judge a wrong attempt while they still withhold it.
+  if (toolName === CALCULATOR_TOOL_NAME) {
+    return (
+      <span
+        data-cy="chat-tool-call-label"
+        data-tool-kind="calculator"
+        className="inline-flex min-h-6 items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground"
+      >
+        <span className="size-3 shrink-0" aria-hidden />
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {isRunning && (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          )}
+          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
+        </span>
+        {isFailed
+          ? t('chat.toolFallback.failed', { tool })
+          : isRunning
+            ? t('chat.toolFallback.running', { tool })
+            : t('chat.toolFallback.done', { tool })}
+      </span>
+    )
+  }
+
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />
+  }
+
+  const explanationRejected =
+    toolName === SHOW_EXPLANATION_TOOL_NAME &&
+    isRejectedExplanation(result, isError)
+  if (toolName === SHOW_EXPLANATION_TOOL_NAME && !explanationRejected) {
+    return <ExplanationCard result={result} status={status} isError={isError} />
+  }
+
+  const feedbackRejected =
+    toolName === SHOW_FEEDBACK_TOOL_NAME && isRejectedFeedback(result, isError)
+  if (toolName === SHOW_FEEDBACK_TOOL_NAME && !feedbackRejected) {
+    return <FeedbackCard result={result} status={status} isError={isError} />
   }
 
   const manageProposalResult = getManageProposalResult(result)
@@ -256,11 +303,15 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           </span>
           {docQueryState
             ? docQueryChipLabel(t, docQueryState)
-            : isFailed
-              ? t('chat.toolFallback.failed', { tool })
-              : isRunning
-                ? t('chat.toolFallback.running', { tool })
-                : t('chat.toolFallback.done', { tool })}
+            : explanationRejected
+              ? t('chat.thread.explanation.rejected')
+              : feedbackRejected
+                ? t('chat.thread.feedback.rejected')
+                : isFailed
+                  ? t('chat.toolFallback.failed', { tool })
+                  : isRunning
+                    ? t('chat.toolFallback.running', { tool })
+                    : t('chat.toolFallback.done', { tool })}
         </button>
         {imageInputLabel && (
           <span

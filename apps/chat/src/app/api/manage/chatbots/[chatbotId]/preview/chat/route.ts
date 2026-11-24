@@ -51,6 +51,7 @@ import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
+  latestUserText,
   providerRefusalDeflection,
   providerRefusalTransform,
 } from '@/src/lib/server/providerRefusal'
@@ -514,6 +515,7 @@ async function handlePOST(
       experimental_transform: providerRefusalTransform(
         providerRefusalDeflection(
           turnSettings.replyLanguage ?? null,
+          latestUserText(parsed.messages),
           req.cookies.get('NEXT_LOCALE')?.value
         ),
         () =>
