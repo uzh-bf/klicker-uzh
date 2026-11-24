@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { isAssessmentMode } from '@/src/lib/assessmentMode'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { signChatTabHandoffToken } from '@/src/lib/server/pwaEmbed'
 
@@ -17,6 +18,12 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
+  // The exam chat is opened full-page and accepts only the assessment
+  // session, so a new-tab handoff has nothing to carry over.
+  if (isAssessmentMode()) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const { chatbotId } = await params
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
