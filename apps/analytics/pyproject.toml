@@ -27,6 +27,12 @@ dev = [
 package = false
 exclude-newer = "14d"
 
+# prisma-client-python installs Node through nodeenv, which otherwise resolves
+# the newest nodejs.org release, including pre-releases whose version string
+# nodeenv cannot parse. Pin the repository's Node version instead.
+[tool.prisma]
+nodeenv_extra_args = ["--node=24.21.0"]
+
 [tool.pyright]
 typeCheckingMode = "strict"
 

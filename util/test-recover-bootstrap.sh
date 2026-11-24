@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECOVERY_SCRIPT="$REPO_ROOT/.devcontainer/recover-bootstrap.sh"
 RECOVERY_RUNTIME_SCRIPT="$REPO_ROOT/.devcontainer/recover-runtime.sh"
+POST_CREATE_SCRIPT="$REPO_ROOT/.devcontainer/post-create.sh"
 TEST_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
@@ -87,6 +88,7 @@ cp "$REPO_ROOT/util/dev-runtime.sh" "$ROOT/util-dev-runtime.sh"
 mkdir -p "$ROOT/util"
 mv "$ROOT/util-dev-runtime.sh" "$ROOT/util/dev-runtime.sh"
 cp "$RECOVERY_SCRIPT" "$ROOT/.devcontainer/recover-bootstrap.sh"
+cp "$POST_CREATE_SCRIPT" "$ROOT/.devcontainer/post-create.sh"
 write_file "$TOKEN_FILE" 'synthetic-hatchet-token'
 
 cat >"$FAKE_BIN/pnpm" <<'FAKE_PNPM'
@@ -122,9 +124,13 @@ case "${1:-}" in
         ;;
       tsx)
         [ "${3:-}" = '-e' ] || exit 40
-        if [ "${KLICKER_RECOVERY_IDENTITY_ONLY:-}" = 1 ]; then
+        if [ "${KLICKER_RECOVERY_CHECK_MODE:-}" = initialize ]; then
           echo identity >>"$KLICKER_TEST_COMMAND_LOG"
           [ "${KLICKER_TEST_FAIL_IDENTITY:-}" != 1 ] || exit 43
+          for database in main shadow; do
+            echo "empty-$database" >>"$KLICKER_TEST_COMMAND_LOG"
+            [ "${KLICKER_TEST_POPULATED_DATABASE:-}" != "$database" ] || exit 44
+          done
           exit 0
         fi
         case "${KLICKER_TEST_SCHEMA_STATE:-missing}" in
@@ -223,6 +229,8 @@ assert_log_before "$RUNTIME_DOCKER_LOG" \
 assert_log_before "$RUNTIME_DOCKER_LOG" \
   'sha256sum /workspaces/klicker-uzh/util/dev-runtime.sh' \
   'bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap'
+assert_equal "$(tail -n 1 "$RUNTIME_DOCKER_LOG")" \
+  "exec $APP_CONTAINER_ID bash /workspaces/klicker-uzh/.devcontainer/recover-bootstrap.sh"
 
 for pinned_source in \
   .devcontainer/recover-bootstrap.sh \
@@ -306,11 +314,73 @@ fi
 
 : >"$COMMAND_LOG"
 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1
-assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity push seed verify-push-compatible '
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity empty-main empty-shadow push seed verify-push-compatible '
 : >"$COMMAND_LOG"
 if KLICKER_TEST_FAIL_IDENTITY=1 KLICKER_TEST_SCHEMA_STATE=push-compatible bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
   fail 'initialization continued with failed identity'
 fi
 assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build identity '
 assert_absent "$MARKER_DIR/bootstrap-complete"
+for database in main shadow; do
+  : >"$COMMAND_LOG"
+  if KLICKER_TEST_POPULATED_DATABASE="$database" KLICKER_TEST_SCHEMA_STATE=push-compatible \
+    bash "$ROOT/.devcontainer/recover-bootstrap.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1; then
+    fail "initialization accepted a populated $database database"
+  fi
+  assert_absent "$MARKER_DIR/bootstrap-complete"
+  if grep -E '^(push|seed)$' "$COMMAND_LOG" >/dev/null; then
+    fail 'initialization wrote before both empty-database checks passed'
+  fi
+done
+
+# Exercise the provider's actual entry point, including a relative workspace.
+: >"$COMMAND_LOG"
+(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT=repo KLICKER_TEST_SCHEMA_STATE=push-compatible \
+    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1
+)
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" 'install build verify-push-compatible '
+bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null
+
+if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
+  bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
+  fail 'post-create accepted a missing configured root'
+fi
+assert_absent "$MARKER_DIR/bootstrap-complete"
+
+for failure_stage in install build schema; do
+  : >"$COMMAND_LOG"
+  write_file "$MARKER_DIR/bootstrap-complete" 'klicker-devcontainer-bootstrap-v1'
+  schema_state=push-compatible
+  [ "$failure_stage" != schema ] || schema_state=missing
+  if KLICKER_TEST_FAIL_AT="$failure_stage" KLICKER_TEST_SCHEMA_STATE="$schema_state" \
+    KLICKER_RECOVERY_IDENTITY_ONLY=1 KLICKER_RECOVERY_CHECK_MODE=initialize \
+    bash "$ROOT/.devcontainer/post-create.sh" >"$OUTPUT_LOG" 2>&1; then
+    fail "post-create succeeded after $failure_stage failed"
+  fi
+  if bash "$ROOT/util/dev-runtime.sh" require-bootstrap >/dev/null 2>&1; then
+    fail 'post-create failure admitted application startup'
+  fi
+  if grep -E '^(reset|push|seed|migrate)$' "$COMMAND_LOG" >/dev/null; then
+    fail 'post-create failure performed a database mutation'
+  fi
+done
+
+: >"$COMMAND_LOG"
+KLICKER_TEST_SCHEMA_STATE=push-compatible \
+  bash "$ROOT/.devcontainer/post-create.sh" --initialize-new-disposable >"$OUTPUT_LOG" 2>&1
+assert_equal "$(tr '\n' ' ' <"$COMMAND_LOG")" \
+  'install build identity empty-main empty-shadow push seed verify-push-compatible '
+
+for arguments in '--unexpected' '--initialize-new-disposable extra'; do
+  : >"$COMMAND_LOG"
+  # Deliberate splitting exercises malformed literal argument sequences.
+  if bash "$ROOT/.devcontainer/post-create.sh" $arguments >"$OUTPUT_LOG" 2>&1; then
+    fail 'post-create accepted unsupported initialization arguments'
+  fi
+  assert_absent "$MARKER_DIR/bootstrap-complete"
+  assert_equal "$(cat "$COMMAND_LOG")" ''
+done
+
 echo '[test-recover-bootstrap] PASS'

@@ -71,8 +71,8 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       path.join(directory, 'draft-ai-review-adapter-diagnostics.jsonl'),
       JSON.stringify({
         ...receipt,
-        provider: 'mistral-flash',
-        model: 'zai-glm-5-3-flash',
+        provider: 'mistral-deepseek',
+        model: 'deepseek-v4-1-flash-1017',
       })
     )
     fs.writeFileSync(
@@ -297,9 +297,9 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       )
     assert.ok(totals)
     for (const [index, expected] of [
-      [1, 1.005],
-      [2, 2.04],
-      [3, 1.035],
+      [1, 1.09525],
+      [2, 2.26],
+      [3, 1.16475],
     ])
       assert.ok(Math.abs(Number(totals[index]) - expected) < 0.000051)
     fs.writeFileSync(
@@ -327,8 +327,8 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       advisorPath,
       JSON.stringify({
         ...receipt,
-        provider: 'mistral-flash',
-        model: 'zai-glm-5-3-flash',
+        provider: 'mistral-deepseek',
+        model: 'deepseek-v4-1-flash-1017',
       })
     )
     assert.match(
@@ -343,7 +343,7 @@ test('combined cost estimates use both provider rates and withhold totals for mi
     assert.equal(draftOnly.status, 0, draftOnly.stderr)
     assert.match(
       draftOnly.stdout,
-      /^OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=0\.1100 estimated_without_cache_usd=0\.2000 estimated_savings_usd=0\.0900 /m
+      /^OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=0\.2002 estimated_without_cache_usd=0\.4200 estimated_savings_usd=0\.2198 /m
     )
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
@@ -429,6 +429,67 @@ test('publication binds coverage to the exact head and retains complete results 
   }
 })
 
+test('publication accepts a skipped review with empty coverage but still refuses failed or nonempty skips', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-publication-skipped-')
+  )
+  const head = '1'.repeat(40)
+  const run = () =>
+    spawnSync(process.execPath, [RUNNER, 'validate'], {
+      env: { RUNNER_TEMP: directory, HEAD_SHA: head },
+      encoding: 'utf8',
+    })
+  const file = path.join(directory, 'draft-ai-review-result.json')
+  const publication = path.join(directory, 'draft-ai-review-publication.json')
+  const skipped = () => ({
+    status: 'skipped',
+    message: 'Review skipped: no items were selected.',
+    comments: [],
+    manifest: {
+      terminal_state: 'skipped',
+      input: { resolved_head: head },
+      coverage: {
+        selected: [],
+        completed: [],
+        failed: [],
+        reused: [],
+        waived: [],
+      },
+    },
+  })
+  try {
+    fs.writeFileSync(file, JSON.stringify(skipped()))
+    assert.equal(run().status, 0)
+    assert.deepEqual(JSON.parse(fs.readFileSync(publication)), skipped())
+    for (const change of [
+      (result) => {
+        result.manifest.run_failure = { classification: 'provider' }
+      },
+      (result) => {
+        result.manifest.coverage.selected = ['a']
+      },
+      (result) => {
+        result.manifest.coverage.waived = null
+      },
+      (result) => {
+        result.manifest.terminal_state = 'complete'
+      },
+      (result) => {
+        result.manifest.input.resolved_head = '2'.repeat(40)
+      },
+    ]) {
+      fs.rmSync(publication, { force: true })
+      const result = skipped()
+      change(result)
+      fs.writeFileSync(file, JSON.stringify(result))
+      assert.equal(run().status, 1)
+      assert.equal(fs.existsSync(publication), false)
+    }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('draft runner streams only bounded progress, retains private results, and isolates its child', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-draft-test-'))
   const executable = path.join(directory, 'ocr.cjs')
@@ -477,7 +538,7 @@ process.exitCode=7
     assert.equal(child.env.CONTEXT7_API_KEY, undefined)
     assert.equal(child.env.OCR_NO_UPDATE, '1')
     assert.equal(child.env.OCR_LLM_TIMEOUT, '480')
-    assert.equal(child.env.OCR_LLM_MODEL, 'zai-glm-5-3-flash')
+    assert.equal(child.env.OCR_LLM_MODEL, 'deepseek-v4-1-flash-1017')
     assert.deepEqual(child.args.slice(0, 9), [
       'review',
       '--from',
@@ -790,7 +851,7 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
         return new Response(
           JSON.stringify({
             id: `synthetic-${calls}`,
-            model: 'zai-glm-5-3-flash',
+            model: 'deepseek-v4-1-flash-1017',
             choices: [
               {
                 index: 0,
@@ -957,7 +1018,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
       )
       if (!names.includes('task_done'))
         return response(
-          'zai-glm-5-3-flash',
+          'deepseek-v4-1-flash-1017',
           {
             role: 'assistant',
             content: JSON.stringify([{ label: 'source', files: [0] }]),
@@ -992,7 +1053,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
                 }
               : { state: 'DONE' }
       return response(
-        'zai-glm-5-3-flash',
+        'deepseek-v4-1-flash-1017',
         {
           role: 'assistant',
           content: [

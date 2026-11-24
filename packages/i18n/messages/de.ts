@@ -3211,7 +3211,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
       NROneValueRequired:
         'Bei einem Lösungsbereich muss mindestens ein Wert angegeben werden.',
-      NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
+      NRPrecision:
+        'Die Anzahl Nachkommastellen muss eine ganze Zahl von 0 bis 100 sein.',
       chooseSolutionType:
         'Bitte wählen Sie einen Lösungstyp für Ihre numerische Frage aus oder deaktivieren Sie die Musterlösung.',
       solutionRangeRequired:
