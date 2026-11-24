@@ -186,7 +186,6 @@ export function ExplanationCard({
   // The large frame is mounted only while the dialog is open, so each
   // explanation runs once.
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [inlineFrame, setInlineFrame] = useState(0)
 
   useEffect(() => {
     if (!content || !params.chatbotId) return
@@ -311,10 +310,12 @@ export function ExplanationCard({
           </span>
           <span className="shrink-0 text-slate-500">· {t('shownInPanel')}</span>
         </div>
+      ) : dialogOpen ? (
+        // The large view runs the only live copy; the card keeps its height
+        // and gets a new frame at the reached place when the view closes.
+        <div style={{ height: FRAME_HEIGHT }} />
       ) : html !== null ? (
         <ExplanationFrame
-          // A new frame after the large view closes picks up the place reached there.
-          key={inlineFrame}
           html={html}
           title={title}
           placeId={id}
@@ -335,10 +336,7 @@ export function ExplanationCard({
           ref={dialogRef}
           className="m-auto h-[90vh] w-[min(1200px,95vw)] max-w-none rounded-md p-0 backdrop:bg-black/40"
           aria-label={title}
-          onClose={() => {
-            setDialogOpen(false)
-            setInlineFrame((n) => n + 1)
-          }}
+          onClose={() => setDialogOpen(false)}
         >
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-end border-b border-slate-200 px-2 py-1">
