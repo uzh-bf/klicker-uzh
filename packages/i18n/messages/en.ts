@@ -18,6 +18,9 @@ export default {
       unavailable: 'This course image is currently unavailable.',
       retry: 'Retry image',
     },
+    workspace: {
+      toolbar: 'Panel controls',
+    },
     graphPanel: {
       missingEndpoint: 'Unknown concept',
       aiGenerated: 'AI-generated',
@@ -32,6 +35,8 @@ export default {
       resize: 'Resize knowledge graph',
       resizeHint:
         'Drag to resize. The arrow keys also resize the knowledge graph.',
+      enlarge: 'Enlarge graph beside the chat',
+      shrink: 'Return graph to its narrow width',
       ask: 'Ask about this',
       showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
@@ -446,6 +451,21 @@ export default {
         openLarge: 'Open large',
         close: 'Close',
         loading: 'Loading...',
+        openInPanel: 'Open beside the chat',
+        closePanel: 'Close explanation panel',
+        shownInPanel: 'shown beside the chat',
+        aiDraft: 'AI-generated draft',
+        previous: 'Previous explanation',
+        next: 'Next explanation',
+        position: '{current} of {total}',
+        reload: 'Restart explanation',
+        enlarge: 'Enlarge explanation beside the chat',
+        shrink: 'Show explanation narrower',
+        fullscreen: 'Show explanation in fullscreen',
+        restore: 'Show the chat beside the explanation again',
+        resize: 'Resize explanation',
+        resizeHint:
+          'Drag to resize. The arrow keys also resize the explanation.',
       },
       feedback: {
         preparing: 'Preparing feedback...',

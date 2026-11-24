@@ -18,6 +18,9 @@ export default {
       unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
       retry: 'Bild erneut laden',
     },
+    workspace: {
+      toolbar: 'Bedienelemente des Bereichs',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       aiGenerated: 'KI-generiert',
@@ -33,6 +36,8 @@ export default {
       resize: 'Grösse des Wissensgraphen ändern',
       resizeHint:
         'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      enlarge: 'Graph neben dem Chat vergrössern',
+      shrink: 'Graph wieder schmal anzeigen',
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
@@ -455,6 +460,21 @@ export default {
         openLarge: 'Gross öffnen',
         close: 'Schliessen',
         loading: 'Wird geladen...',
+        openInPanel: 'Neben dem Chat öffnen',
+        closePanel: 'Erklärungsbereich schliessen',
+        shownInPanel: 'wird neben dem Chat angezeigt',
+        aiDraft: 'KI-generierter Entwurf',
+        previous: 'Vorherige Erklärung',
+        next: 'Nächste Erklärung',
+        position: '{current} von {total}',
+        reload: 'Erklärung neu starten',
+        enlarge: 'Erklärung neben dem Chat vergrössern',
+        shrink: 'Erklärung schmaler anzeigen',
+        fullscreen: 'Erklärung im Vollbild anzeigen',
+        restore: 'Chat wieder neben der Erklärung anzeigen',
+        resize: 'Grösse der Erklärung ändern',
+        resizeHint:
+          'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
       },
       feedback: {
         preparing: 'Feedback wird vorbereitet...',
