@@ -28,6 +28,7 @@ import {
   findAcceptedSubmissionBindings,
   findCoveredAssessmentScope,
   getTerminalStageForCommand,
+  lockSubmissionOutcome,
   normalizeAssessmentAnswer,
   recordSubmissionMetadataQuarantine,
   submissionDraft,
@@ -125,6 +126,12 @@ export async function processAssessmentResponse(
     const scope = coveredScope
     if (scope !== null) {
       await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
+        await lockSubmissionOutcome(tx, message)
+        if (
+          (await getTerminalStageForCommand({ tx, message })) ===
+          'SUBMISSION_REJECTED'
+        )
+          throw new NonRetryableError('SUBMISSION_PREVIOUSLY_REJECTED')
         await assertTerminalStageAvailable({
           tx,
           message,
@@ -528,6 +535,7 @@ export async function processAssessmentResponse(
     const transactionResult = await runInAuditTransaction(
       dependencies.client,
       async (tx, auditTx) => {
+        await lockSubmissionOutcome(tx, message)
         // Shared locks permit concurrent submissions but serialize them with
         // quiz reset/reopening, which updates this row before deleting answers.
         await tx.$queryRaw(
@@ -596,6 +604,14 @@ export async function processAssessmentResponse(
           rejectionReason = 'SUBMISSION_AFTER_BLOCK_CLOSE'
         if (rejectionReason !== undefined) {
           if (coveredScope !== null) {
+            if (
+              (await getTerminalStageForCommand({ tx, message })) ===
+              'SUBMISSION_REJECTED'
+            )
+              return {
+                kind: 'rejected' as const,
+                reasonCode: 'SUBMISSION_PREVIOUSLY_REJECTED',
+              }
             await assertTerminalStageAvailable({
               tx,
               message,
@@ -647,6 +663,14 @@ export async function processAssessmentResponse(
               hashCanonicalValue(message.response))
         ) {
           if (coveredScope !== null) {
+            if (
+              (await getTerminalStageForCommand({ tx, message })) ===
+              'SUBMISSION_REJECTED'
+            )
+              return {
+                kind: 'rejected' as const,
+                reasonCode: 'SUBMISSION_PREVIOUSLY_REJECTED',
+              }
             await assertTerminalStageAvailable({
               tx,
               message,

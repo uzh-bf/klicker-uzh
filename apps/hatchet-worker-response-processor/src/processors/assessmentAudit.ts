@@ -9,8 +9,7 @@ import {
   hashCanonicalValue,
   recordStandaloneAuditEvents,
 } from '@klicker-uzh/audit'
-import type { Prisma } from '@klicker-uzh/prisma/client'
-import { ElementType } from '@klicker-uzh/prisma/client'
+import { ElementType, Prisma } from '@klicker-uzh/prisma/client'
 import type {
   AssessmentResponseCommand,
   LiveQuizResponseInput,
@@ -331,20 +330,62 @@ export async function emitSubmissionAuditEvents(input: {
   return emitAuditEvents(input.auditTx, context, missing)
 }
 
-async function findSubmissionEventTypes(
+// Rejections that depend on when this delivery was received. A resend of the
+// same submission can receive a time-based rejection that an earlier, on-time
+// receipt of that submission would not.
+const TIME_BASED_REJECTION_REASONS: ReadonlySet<string> = new Set([
+  'SUBMISSION_AFTER_BLOCK_CLOSE',
+  'SUBMISSION_BLOCK_EXECUTION_CHANGED',
+  'SUBMISSION_LIFECYCLE_CHANGED',
+])
+
+// Serializes every transaction that checks and records a terminal outcome for
+// one submissionId. It must run before the first terminal read so READ
+// COMMITTED reads see the outcome a concurrent delivery committed.
+export async function lockSubmissionOutcome(
+  tx: Pick<Prisma.TransactionClient, '$executeRaw'>,
+  message: SubmissionCommand
+) {
+  await tx.$executeRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${message.submissionId}::text, 0))`
+  )
+}
+
+async function findSubmissionEvents(
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>,
   message: SubmissionCommand,
   eventTypes: readonly string[]
 ) {
-  const rows = await tx.assessmentAuditOutboxEvent.findMany({
+  return tx.assessmentAuditOutboxEvent.findMany({
     where: {
       liveQuizId: message.liveQuizId,
       correlationId: message.submissionId,
       eventType: { in: [...eventTypes] },
     },
-    select: { eventType: true },
+    select: { eventType: true, canonicalEnvelope: true },
   })
-  return rows.map((row) => row.eventType)
+}
+
+// A time-based rejection recorded for a later receipt does not block an
+// earlier receipt of the same submission that was on time.
+function isSupersededByEarlierReceipt(
+  row: { eventType: string; canonicalEnvelope: string },
+  message: SubmissionCommand
+) {
+  if (row.eventType !== 'SUBMISSION_REJECTED') return false
+  let envelope: { receivedAt?: unknown; payload?: { reasonCode?: unknown } }
+  try {
+    envelope = JSON.parse(row.canonicalEnvelope)
+  } catch {
+    throw new Error('Stored terminal submission evidence is not valid JSON')
+  }
+  const reasonCode = envelope.payload?.reasonCode
+  return (
+    typeof reasonCode === 'string' &&
+    TIME_BASED_REJECTION_REASONS.has(reasonCode) &&
+    typeof envelope.receivedAt === 'string' &&
+    Date.parse(envelope.receivedAt) > Date.parse(message.receivedAt)
+  )
 }
 
 export async function assertTerminalStageAvailable(input: {
@@ -352,12 +393,20 @@ export async function assertTerminalStageAvailable(input: {
   message: SubmissionCommand
   intendedEventType: (typeof TERMINAL_EVENT_TYPES)[number]
 }) {
-  const stages = await findSubmissionEventTypes(
+  const rows = await findSubmissionEvents(
     input.tx,
     input.message,
     TERMINAL_EVENT_TYPES
   )
-  if (stages.some((stage) => stage !== input.intendedEventType)) {
+  const conflicting = rows.filter(
+    (row) =>
+      row.eventType !== input.intendedEventType &&
+      !(
+        input.intendedEventType === 'SUBMISSION_PERSISTED' &&
+        isSupersededByEarlierReceipt(row, input.message)
+      )
+  )
+  if (conflicting.length > 0) {
     // A resend of an already decided submission must not retry into failure
     // evidence for an outcome that is already recorded.
     throw new NonRetryableError(
@@ -370,22 +419,27 @@ export async function getTerminalStageForCommand(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
 }) {
-  const stages = await findSubmissionEventTypes(
+  const rows = await findSubmissionEvents(
     input.tx,
     input.message,
     TERMINAL_EVENT_TYPES
   )
-  if (stages.length > 1) {
+  const stages = new Set(rows.map((row) => row.eventType))
+  // PERSISTED wins: an on-time earlier receipt may persist after a later
+  // receipt was rejected for timing, and older evidence can pair PERSISTED
+  // with DUPLICATE for one submission.
+  if (stages.has('SUBMISSION_PERSISTED')) return 'SUBMISSION_PERSISTED'
+  if (stages.size > 1) {
     throw new Error('Submission command has multiple terminal stages')
   }
-  return stages[0]
+  return [...stages][0]
 }
 
 export async function commandHasRecordedFailure(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
 }) {
-  const failures = await findSubmissionEventTypes(input.tx, input.message, [
+  const failures = await findSubmissionEvents(input.tx, input.message, [
     'SUBMISSION_PROCESSING_FAILED',
   ])
   return failures.length > 0

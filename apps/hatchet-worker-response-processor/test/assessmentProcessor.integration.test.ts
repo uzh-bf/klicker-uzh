@@ -20,6 +20,7 @@ import {
   it,
   vi,
 } from 'vitest'
+import { getTerminalStageForCommand } from '../src/processors/assessmentAudit.js'
 import { processAssessmentResponse } from '../src/processors/assessmentProcessor.js'
 
 const USER_ID = '10000000-0000-4000-8000-000000000001'
@@ -866,6 +867,57 @@ describe.runIf(runDatabaseTests)(
         })
       expect(rejection.canonicalEnvelope).toContain(
         'SUBMISSION_AFTER_BLOCK_CLOSE'
+      )
+    })
+
+    it('persists an on-time original after its late resend was rejected first', async () => {
+      await prisma.elementBlock.update({
+        where: { id: blockId },
+        data: { closedAt: new Date('2026-08-12T12:00:00.250Z') },
+      })
+      const testHarness = harness()
+      const resend = command({
+        responseTimestamp: Date.parse('2026-08-12T12:00:00.500Z'),
+        receivedAt: '2026-08-12T12:00:00.500Z',
+        transportAttemptedAt: '2026-08-12T12:00:00.600Z',
+      })
+      await expect(
+        processAssessmentResponse(
+          resend,
+          testHarness.context,
+          testHarness.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_AFTER_BLOCK_CLOSE')
+
+      const original = command()
+      for (let delivery = 0; delivery < 2; delivery++) {
+        // The second delivery is a Hatchet retry of the persisted original.
+        const result = await processAssessmentResponse(
+          original,
+          testHarness.context,
+          testHarness.dependencies
+        )
+        expect(result.status).toBe(200)
+      }
+
+      expect(
+        await prisma.liveQuizResponse.count({
+          where: { submissionId: SUBMISSION_ID },
+        })
+      ).toBe(1)
+      expect(
+        await getTerminalStageForCommand({ tx: prisma, message: original })
+      ).toBe('SUBMISSION_PERSISTED')
+      const persisted =
+        await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            eventType: 'SUBMISSION_PERSISTED',
+          },
+          select: { canonicalEnvelope: true },
+        })
+      expect(JSON.parse(persisted.canonicalEnvelope).receivedAt).toBe(
+        original.receivedAt
       )
     })
 

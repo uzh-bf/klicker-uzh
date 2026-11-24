@@ -164,6 +164,21 @@ or `SUBMISSION_ID_SCOPE_MISMATCH` instead of a second outcome. When no evidence
 is bound yet but a stored response with that ID differs, the command receives
 the terminal rejection `SUBMISSION_ID_SCOPE_MISMATCH`.
 
+Every transaction that checks and records a terminal outcome first takes a
+PostgreSQL transaction advisory lock on the `submissionId`, so concurrent
+deliveries of one submission decide their outcomes one at a time. A delivery
+that finds a recorded `SUBMISSION_REJECTED` fails with
+`SUBMISSION_PREVIOUSLY_REJECTED` and records nothing more. One exception keeps
+an on-time answer: when a later-received resend was rejected first for a
+time-based reason (`SUBMISSION_AFTER_BLOCK_CLOSE`,
+`SUBMISSION_BLOCK_EXECUTION_CHANGED`, or `SUBMISSION_LIFECYCLE_CHANGED`), an
+earlier-received delivery of the same submission may still persist. That applies only when every recorded terminal is
+such a time-based rejection with a later envelope `receivedAt`. The trail then
+holds both events, and `SUBMISSION_PERSISTED` is the outcome. Its envelope
+`receivedAt` shows the on-time receipt; acceptance and validation evidence may
+carry the resend's later receipt because they are recorded once per submission.
+The rule covers only the direction where the earlier receipt is the valid one.
+
 ## Contract and identity
 
 Owner exports cross-check the retention index against the independent locator
