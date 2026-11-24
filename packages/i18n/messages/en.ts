@@ -2160,6 +2160,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     addDocument: 'Document',
     addDocumentDescription: 'Upload a PDF, TXT or Markdown file.',
     addVideo: 'Video',
+    addVideoDescription:
+      'Lecture recordings from an OLAT course node or a MediaSpace channel.',
+    videoDescription:
+      'Paste the link to the recordings (OLAT course node or MediaSpace channel) and the link to the course in the course directory.',
+    videoNameLabel: 'Name',
+    videoNamePlaceholder: 'e.g. Lecture recordings',
+    videoSourceUrlLabel: 'Recordings link',
+    videoDirectoryUrlLabel: 'Course directory link',
+    videoNextSteps:
+      'An administrator checks that the recordings belong to this course. Then the lecturers listed in the course directory receive an email asking for their approval. Recordings are processed only after one of them approved.',
+    videoSubmit: 'Submit for review',
+    videoSubmitted: 'Submitted. An administrator will check the links.',
+    videoSubmitError: 'The links could not be submitted.',
+    videoSourcesTitle: 'Lecture recordings',
+    videoStatusSUBMITTED: 'Waiting for an administrator to check the links',
+    videoStatusREJECTED: 'Not accepted: {reason}',
+    videoStatusVERIFIED: 'Links checked, approval request not sent yet',
+    videoStatusPENDING_APPROVAL:
+      'Waiting for approval by the lecturers ({count, plural, one {# person} other {# people}} asked)',
+    videoStatusAWAITING_ADMIN:
+      'Approved by a lecturer, waiting for final approval by an administrator',
+    videoStatusAPPROVED: 'Approved until {date}',
+    videoStatusPAUSED: 'Approval period ended; a new request is needed',
+    videoStatusREVOKED: 'Approval revoked',
     comingSoon: 'Coming soon',
     configure: 'Configure',
     backToResourceTypes: 'Back',
@@ -2525,10 +2549,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     admin: {
       videoSources: 'Lecture video sources',
       videoSourceDescription:
-        'Paste the recordings link and the course directory link. The course-sources provider looks up the course, the lecturers who will be asked for approval, and the matching Kaltura categories. Check the proposal, then create the source and send the approval emails.',
+        'Lecture video sources submitted by knowledge base owners. Check that the recordings link belongs to the course in the course directory, confirm the Kaltura category and send the approval emails, or reject the submission with a reason.',
       videoSourceManualMode:
         'No course-sources provider is configured. Enter the course, the period, the recipients and the Kaltura category id yourself.',
-      videoSourceKb: 'Knowledge base (id or Manage link)',
+      videoSourceKb: 'Knowledge base',
       videoSourceUrl: 'Recordings link',
       videoSourceDirectoryUrl: 'Course directory link',
       videoSourcePeriod: 'Period (optional with a provider, e.g. HS26)',
@@ -2551,12 +2575,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       videoSourceCategoryId: 'Confirmed Kaltura category id',
       videoSourceConfirmHint:
         'Creating the source records you as the admin who confirmed this category.',
-      videoSourceName: 'Source name',
       videoSourceCutMode: 'Cut mode',
       videoSourceNamePattern:
         'Name pattern of edited recordings (regular expression)',
       videoSourceCaptionLanguage: 'Caption language',
-      videoSourceCreate: 'Create source and send approval emails',
+      videoSourceShowAll: 'Show all sources, not only open ones',
+      videoSourceQueueEmpty: 'Nothing to review.',
+      videoSourceSubmitted: 'Submitted',
+      videoSourceStatusSUBMITTED: 'Submitted, not verified',
+      videoSourceStatusREJECTED: 'Rejected',
+      videoSourceStatusVERIFIED: 'Verified, approval request not sent',
+      videoSourceStatusPENDING_APPROVAL: 'Waiting for a lecturer',
+      videoSourceStatusAWAITING_ADMIN:
+        'Approved by a lecturer, final approval due',
+      videoSourceStatusAPPROVED: 'Approved',
+      videoSourceStatusPAUSED: 'Period ended',
+      videoSourceStatusREVOKED: 'Revoked',
+      videoSourceAwaitingFinal:
+        'A lecturer approved {course} for {period}. Give the final approval to start processing.',
+      videoSourceIdentityMismatch:
+        'Approved while signed in as {email}, which is not the address the request was sent to.',
+      videoSourceFinalApprove: 'Give final approval',
+      videoSourceVerify: 'Verify and send approval emails',
+      videoSourceRejectReason:
+        'Reason for rejecting (shown to the knowledge base owner)',
+      videoSourceReject: 'Reject submission',
       videoSourceSent:
         'Source created. Approval emails sent to {count} recipients for {period}.',
       chatbotRejectionReason: 'Reason for rejection',

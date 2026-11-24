@@ -1,5 +1,0 @@
-query GetVideoSources($kbId: ID!) {
-  getVideoSources(kbId: $kbId) {
-    ...KBVideoSourceData
-  }
-}

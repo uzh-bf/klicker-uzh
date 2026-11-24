@@ -14,11 +14,14 @@ import {
   adminApproveVideoSourceRequest,
   adminRevokeVideoSource,
   approveVideoSourceByLink,
-  createVideoSource,
+  getKbVideoSources,
   getVideoApprovalLink,
   handleVideoSourceScope,
+  rejectVideoSource,
   requestVideoSourceApproval,
   revokeVideoSourceByLink,
+  submitVideoSource,
+  verifyVideoSource,
 } from '../src/services/videoSourceApproval.js'
 import {
   compareCodeUnits,
@@ -111,6 +114,7 @@ const kbIds: string[] = []
 
 beforeAll(async () => {
   process.env.NEXT_PUBLIC_MANAGE_URL = 'https://manage.example.org'
+  process.env.VIDEO_SOURCES_ENABLED = 'true'
   prisma = await createDisposableTestPrismaClient(process.env.DATABASE_URL!)
 })
 
@@ -173,29 +177,49 @@ function tokenFor(email: string) {
   return token
 }
 
-async function setup() {
+// A KB owner submits the two links; an admin verifies them later.
+async function setup({
+  sourceUrl = 'https://lms.example.org/auth/RepositoryEntry/1000001/CourseNode/2000001',
+  sourceProvider = provider as CourseSourcesProvider | null,
+} = {}) {
   const admin = await user('admin', {
     role: DB.UserRole.ADMIN,
   })
+  const owner = await user('owner')
   const kb = await prisma.kB.create({
-    data: { name: 'Synthetic KB', ownerId: admin.user.sub },
+    data: { name: 'Synthetic KB', ownerId: owner.user.sub },
   })
   kbIds.push(kb.id)
-  const source = await createVideoSource(
+  const source = await submitVideoSource(
     {
       kbId: kb.id,
       name: 'Synthetic lecture recordings',
-      sourceUrl:
-        'https://lms.example.org/auth/RepositoryEntry/1000001/CourseNode/2000001',
+      sourceUrl,
       directoryUrl: DIRECTORY_URL,
+    },
+    owner,
+    { provider: sourceProvider }
+  )
+  return { admin, owner, source }
+}
+
+function verify(
+  args: Partial<Parameters<typeof verifyVideoSource>[0]> & {
+    sourceId: string
+  },
+  ctx: ContextWithUser,
+  deps: Parameters<typeof verifyVideoSource>[2]
+) {
+  return verifyVideoSource(
+    {
       kalturaCategoryId: '100001',
       cutMode: 'CLIP',
       captionLanguage: 'de',
+      ...args,
     },
-    admin,
-    { provider }
+    ctx,
+    deps
   )
-  return { admin, source }
 }
 
 const at = (iso: string) => () => new Date(iso)
@@ -205,7 +229,7 @@ describe('video source approval', () => {
     const { admin, source } = await setup()
     const head = await user('head')
 
-    const result = await requestVideoSourceApproval(
+    const result = await verify(
       { sourceId: source.id, period: 'HS26' },
       admin,
       { provider, now: at('2026-11-23T10:00:00Z') }
@@ -295,7 +319,8 @@ describe('video source approval', () => {
       orderBy: { seq: 'asc' },
     })
     expect(events.map((e) => e.type)).toEqual([
-      'SOURCE_CONFIGURED',
+      'SOURCE_SUBMITTED',
+      'SOURCE_VERIFIED',
       'APPROVAL_REQUESTED',
       'APPROVAL_EMAILS_SENT',
       'APPROVAL_LINK_OPENED',
@@ -336,7 +361,7 @@ describe('video source approval', () => {
 
   it('requires edu-ID and an open grant window to approve', async () => {
     const { admin, source } = await setup()
-    await requestVideoSourceApproval({ sourceId: source.id }, admin, {
+    await verify({ sourceId: source.id }, admin, {
       provider,
       now: at('2026-11-23T10:00:00Z'),
     })
@@ -376,7 +401,7 @@ describe('video source approval', () => {
 
   it('forwards a superseded link to the newer request for revoking only', async () => {
     const { admin, source } = await setup()
-    await requestVideoSourceApproval({ sourceId: source.id }, admin, {
+    await verify({ sourceId: source.id }, admin, {
       provider,
       now: at('2026-11-23T10:00:00Z'),
     })
@@ -419,7 +444,7 @@ describe('video source approval', () => {
 
   it('lets an admin revoke a source with a reason', async () => {
     const { admin, source } = await setup()
-    await requestVideoSourceApproval({ sourceId: source.id }, admin, {
+    await verify({ sourceId: source.id }, admin, {
       provider,
       now: at('2026-11-23T10:00:00Z'),
     })
@@ -433,60 +458,84 @@ describe('video source approval', () => {
     expect(revoked.status).toBe('REVOKED')
   })
 
-  it('takes the link kind from the provider and checks a fixed collection', async () => {
-    const { admin, source } = await setup()
+  it('lets only the KB owner submit, with links the provider knows', async () => {
+    const { admin, owner, source } = await setup()
     expect(source).toMatchObject({
+      status: 'SUBMITTED',
       sourceKind: 'OLAT_NODE',
       externalRef: '2000001',
+      kalturaCategoryId: null,
     })
     const base = {
       kbId: source.kbId,
       name: 'Synthetic channel',
       sourceUrl: 'https://media.example.org/channel/Synthetic+Course/100002',
       directoryUrl: DIRECTORY_URL,
-      kalturaCategoryId: '100002',
-      cutMode: 'CLIP' as const,
-      captionLanguage: 'de',
     }
+    await expect(submitVideoSource(base, admin, { provider })).rejects.toThrow(
+      'KB not found'
+    )
     await expect(
-      createVideoSource({ ...base, kalturaCategoryId: '100003' }, admin, {
-        provider,
-      })
-    ).rejects.toThrow('does not match')
-    await expect(
-      createVideoSource(
+      submitVideoSource(
         { ...base, sourceUrl: 'https://lms.example.org/node/1' },
-        admin,
+        owner,
         { provider }
       )
     ).rejects.toThrow('provider knows')
     await expect(
-      createVideoSource({ ...base, directoryUrl: 'not a link' }, admin, {
+      submitVideoSource({ ...base, directoryUrl: 'not a link' }, owner, {
         provider,
       })
     ).rejects.toThrow('course directory link')
-    const created = await createVideoSource(base, admin, { provider })
-    expect(created).toMatchObject({
+    process.env.VIDEO_SOURCES_ENABLED = 'false'
+    await expect(submitVideoSource(base, owner, { provider })).rejects.toThrow(
+      'not available yet'
+    )
+    process.env.VIDEO_SOURCES_ENABLED = 'true'
+
+    // Nothing can be requested before an admin verified the links.
+    await expect(
+      requestVideoSourceApproval({ sourceId: source.id }, admin, { provider })
+    ).rejects.toThrow('Verify the source')
+
+    const channel = await submitVideoSource(base, owner, { provider })
+    expect(channel).toMatchObject({
       sourceKind: 'KALTURA_CHANNEL',
-      kalturaCategoryId: '100002',
+      fixedCollectionId: '100002',
     })
+    await expect(
+      verify({ sourceId: channel.id, kalturaCategoryId: '100003' }, admin, {
+        provider,
+      })
+    ).rejects.toThrow('does not match')
+  })
+
+  it('lets an admin reject a submission with a reason', async () => {
+    const { admin, owner, source } = await setup()
+    await expect(
+      rejectVideoSource({ sourceId: source.id, reason: ' ' }, admin)
+    ).rejects.toThrow('reason')
+    const rejected = await rejectVideoSource(
+      { sourceId: source.id, reason: 'Channel belongs to another course' },
+      admin
+    )
+    expect(rejected).toMatchObject({
+      status: 'REJECTED',
+      rejectionReason: 'Channel belongs to another course',
+    })
+    await expect(
+      verify({ sourceId: source.id }, admin, { provider })
+    ).rejects.toThrow('Only a submitted source')
+    const listed = await getKbVideoSources({ kbId: source.kbId }, owner)
+    expect(listed.map((s) => s.status)).toEqual(['REJECTED'])
+    expect(await getKbVideoSources({ kbId: source.kbId }, admin)).toEqual([])
   })
 
   it('works without a provider from what the admin enters', async () => {
-    const { admin, source: configured } = await setup()
-    const source = await createVideoSource(
-      {
-        kbId: configured.kbId,
-        name: 'Synthetic manual source',
-        sourceUrl: 'https://media.example.org/anything/42',
-        directoryUrl: DIRECTORY_URL,
-        kalturaCategoryId: '100004',
-        cutMode: 'CLIP',
-        captionLanguage: 'de',
-      },
-      admin,
-      { provider: null }
-    )
+    const { admin, source } = await setup({
+      sourceUrl: 'https://media.example.org/anything/42',
+      sourceProvider: null,
+    })
     expect(source).toMatchObject({ sourceKind: 'MANUAL', externalRef: null })
 
     const manual = {
@@ -495,11 +544,12 @@ describe('video source approval', () => {
       periodEnd: new Date('2027-01-31T23:00:00Z'),
     }
     await expect(
-      requestVideoSourceApproval({ sourceId: source.id, manual }, admin, {
+      verify({ sourceId: source.id, manual }, admin, {
         provider: null,
         now: at('2026-11-23T10:00:00Z'),
       })
     ).rejects.toThrow('add at least one recipient')
+    // The verification itself stays; sending can be retried.
     await expect(
       requestVideoSourceApproval(
         {
@@ -580,14 +630,13 @@ describe('gateway scope check', () => {
     })
     expect(pending).toMatchObject({
       statusCode: 200,
-      body: { source: { status: 'DRAFT', approved: false } },
+      body: { source: { status: 'SUBMITTED', approved: false } },
     })
 
-    const result = await requestVideoSourceApproval(
-      { sourceId: source.id },
-      admin,
-      { provider, now: at('2026-11-23T10:00:00Z') }
-    )
+    const result = await verify({ sourceId: source.id }, admin, {
+      provider,
+      now: at('2026-11-23T10:00:00Z'),
+    })
     await approveVideoSourceByLink(
       { token: tokenFor(HEAD_EMAIL), consentVersion: '2026-11-v1' },
       await user('recipient'),

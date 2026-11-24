@@ -2189,6 +2189,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     addDocument: 'Dokument',
     addDocumentDescription: 'Eine PDF-, TXT- oder Markdown-Datei hochladen.',
     addVideo: 'Video',
+    addVideoDescription:
+      'Vorlesungsaufzeichnungen aus einem OLAT-Kursbaustein oder einem MediaSpace-Kanal.',
+    videoDescription:
+      'Fügen Sie den Link zu den Aufzeichnungen (OLAT-Kursbaustein oder MediaSpace-Kanal) und den Link zum Kurs im Vorlesungsverzeichnis ein.',
+    videoNameLabel: 'Name',
+    videoNamePlaceholder: 'z. B. Vorlesungsaufzeichnungen',
+    videoSourceUrlLabel: 'Link zu den Aufzeichnungen',
+    videoDirectoryUrlLabel: 'Link zum Vorlesungsverzeichnis',
+    videoNextSteps:
+      'Eine Administratorin oder ein Administrator prüft, ob die Aufzeichnungen zu diesem Kurs gehören. Danach erhalten die im Vorlesungsverzeichnis aufgeführten Dozierenden eine E-Mail mit der Bitte um Zustimmung. Verarbeitet wird erst, wenn eine Person zugestimmt hat.',
+    videoSubmit: 'Zur Prüfung einreichen',
+    videoSubmitted: 'Eingereicht. Die Links werden nun geprüft.',
+    videoSubmitError: 'Die Links konnten nicht eingereicht werden.',
+    videoSourcesTitle: 'Vorlesungsaufzeichnungen',
+    videoStatusSUBMITTED: 'Wartet auf die Prüfung der Links',
+    videoStatusREJECTED: 'Nicht angenommen: {reason}',
+    videoStatusVERIFIED:
+      'Links geprüft, Zustimmungsanfrage noch nicht versandt',
+    videoStatusPENDING_APPROVAL:
+      'Wartet auf die Zustimmung der Dozierenden ({count, plural, one {# Person} other {# Personen}} angefragt)',
+    videoStatusAWAITING_ADMIN:
+      'Von Dozierenden freigegeben, wartet auf die abschliessende Freigabe',
+    videoStatusAPPROVED: 'Freigegeben bis {date}',
+    videoStatusPAUSED: 'Zeitraum abgelaufen; eine neue Anfrage ist nötig',
+    videoStatusREVOKED: 'Zustimmung widerrufen',
     comingSoon: 'Demnächst verfügbar',
     configure: 'Konfigurieren',
     backToResourceTypes: 'Zurück',
@@ -2572,10 +2597,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     admin: {
       videoSources: 'Vorlesungsaufzeichnungen',
       videoSourceDescription:
-        'Aufzeichnungslink und Link zum Kursverzeichnis einfügen. Der Kursquellen-Dienst ermittelt den Kurs, die Dozierenden, die um Zustimmung gebeten werden, und die passenden Kaltura-Kategorien. Vorschlag prüfen, dann Quelle anlegen und Zustimmungs-E-Mails versenden.',
+        'Von Wissensbasis-Besitzer:innen eingereichte Vorlesungsaufzeichnungen. Prüfen, ob der Aufzeichnungslink zum Kurs im Kursverzeichnis gehört, Kaltura-Kategorie bestätigen und Zustimmungs-E-Mails senden oder die Einreichung mit Begründung ablehnen.',
       videoSourceManualMode:
         'Es ist kein Kursquellen-Dienst konfiguriert. Kurs, Zeitraum, Empfänger:innen und Kaltura-Kategorie-ID bitte selbst eintragen.',
-      videoSourceKb: 'Wissensbasis (ID oder Manage-Link)',
+      videoSourceKb: 'Wissensbasis',
       videoSourceUrl: 'Aufzeichnungslink',
       videoSourceDirectoryUrl: 'Link zum Kursverzeichnis',
       videoSourcePeriod: 'Zeitraum (mit Dienst optional, z. B. HS26)',
@@ -2599,12 +2624,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       videoSourceCategoryId: 'Bestätigte Kaltura-Kategorie-ID',
       videoSourceConfirmHint:
         'Beim Anlegen wirst du als Admin erfasst, der diese Kategorie bestätigt hat.',
-      videoSourceName: 'Name der Quelle',
       videoSourceCutMode: 'Schnittmodus',
       videoSourceNamePattern:
         'Namensmuster geschnittener Aufzeichnungen (regulärer Ausdruck)',
       videoSourceCaptionLanguage: 'Untertitelsprache',
-      videoSourceCreate: 'Quelle anlegen und Zustimmungs-E-Mails senden',
+      videoSourceShowAll: 'Alle Quellen anzeigen, nicht nur offene',
+      videoSourceQueueEmpty: 'Nichts zu prüfen.',
+      videoSourceSubmitted: 'Eingereicht',
+      videoSourceStatusSUBMITTED: 'Eingereicht, nicht geprüft',
+      videoSourceStatusREJECTED: 'Abgelehnt',
+      videoSourceStatusVERIFIED: 'Geprüft, Zustimmungsanfrage nicht versandt',
+      videoSourceStatusPENDING_APPROVAL: 'Wartet auf Dozierende',
+      videoSourceStatusAWAITING_ADMIN:
+        'Von Dozierenden freigegeben, abschliessende Freigabe offen',
+      videoSourceStatusAPPROVED: 'Freigegeben',
+      videoSourceStatusPAUSED: 'Zeitraum abgelaufen',
+      videoSourceStatusREVOKED: 'Widerrufen',
+      videoSourceAwaitingFinal:
+        'Eine dozierende Person hat {course} für {period} freigegeben. Mit der abschliessenden Freigabe startet die Verarbeitung.',
+      videoSourceIdentityMismatch:
+        'Freigegeben mit dem Konto {email}, nicht mit der Adresse, an die die Anfrage ging.',
+      videoSourceFinalApprove: 'Abschliessend freigeben',
+      videoSourceVerify: 'Prüfen und Zustimmungs-E-Mails senden',
+      videoSourceRejectReason:
+        'Grund für die Ablehnung (sieht die Besitzerin oder der Besitzer der Wissensbasis)',
+      videoSourceReject: 'Einreichung ablehnen',
       videoSourceSent:
         'Quelle angelegt. Zustimmungs-E-Mails an {count} Empfänger:innen für {period} versandt.',
       chatbotRejectionReason: 'Grund für die Ablehnung',

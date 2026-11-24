@@ -40,43 +40,58 @@ and the gateway audits each Kaltura call. Klicker appends
 
 Without a configured provider the flow still works by hand: the source kind
 is `MANUAL`, and the admin enters the course title, the period label and end,
-the recipients and the category id.
+the recipients and the category id when verifying.
 
 Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
 `videoSourceApprovalCore.ts` (pure rules), `courseSources.ts` (provider
 client), `packages/prisma/src/prisma/schema/videoSource.prisma`,
-`apps/frontend-manage/src/components/admin/VideoSourceSetup.tsx`,
+`apps/frontend-manage/src/components/admin/VideoSourceReview.tsx`,
+`packages/kb-management/src/components/KnowledgeBaseVideoSourceForm.tsx`,
 `apps/frontend-manage/src/pages/video-approval.tsx`, email templates
 `VideoSourceApprovalRequested` and `VideoSourceApprovalGranted` in
 `packages/transactional`.
 
 ## Flow
 
-1. An admin opens Admin > Lecture video sources in Manage and pastes the
-   recordings link and the course directory link. With a provider, Look up
-   calls `resolveVideoSource`, which asks the provider's `resolve`: the link
-   kind, the period, the directory entry with the recipients who will be
-   emailed, and the candidate collections with entry counts, recordings in
-   the period, sample names and one proposal. Each half carries its own error.
-   The admin confirms a category against the samples and creates the source
-   (`createVideoSource`). That calls the provider's `source-link`, stores the
-   returned kind and reference, and rejects a category id that differs from a
-   non-null `fixedCollectionId` (a channel link names its category).
-2. `requestVideoSourceApproval` calls the provider's `directory` at request
+1. A knowledge base owner adds a lecture video source in the knowledge base's
+   Add resource dialog (`submitVideoSource`, only while
+   `VIDEO_SOURCES_ENABLED=true`): a name, the recordings link (OLAT course
+   node or MediaSpace channel) and the course directory link. With a provider
+   configured, its `source-link` call validates the link, and its message is
+   shown to the owner if it does not know the link. The source is stored as
+   `SUBMITTED` with the provider's kind, reference and `fixedCollectionId`; no
+   category, cut mode or caption language yet, and nobody is emailed. The
+   owner sees the status on the knowledge base page (`getKbVideoSources`).
+2. An admin reviews it under Admin > Lecture video sources
+   (`getVideoSourcesForReview`). Look up calls `resolveVideoSource` with the
+   stored links, which asks the provider's `resolve`: the period, the
+   directory entry with the recipients who will be emailed, and candidate
+   collections with entry counts, recordings in the period, sample names and
+   one proposal. Each half carries its own error. The admin either rejects
+   the submission with a reason the owner sees (`rejectVideoSource`,
+   `REJECTED`) or verifies it (`verifyVideoSource`): confirms the category
+   (which must equal a non-null `fixedCollectionId`), the cut mode, the name
+   pattern and the caption language. Verification sets `VERIFIED`, records
+   the admin as `categoryConfirmedById`, and sends the approval request in
+   the same call. If sending fails, the source stays `VERIFIED` and
+   `requestVideoSourceApproval` can be retried.
+3. `requestVideoSourceApproval` calls the provider's `directory` at request
    time, stores the snapshot with its SHA-256 plus the course title, short
    name, canonical link, period label and period end on the request, and
    emails every listed recipient their own link. Excluding or adding
    recipients needs a reason. Without a provider the admin's recipients are
    the list. The requester's name and email are copied onto the request and
    shown in the email and on the page.
-3. The link opens `/video-approval?token=…` in Manage. The lecturer signs in;
+4. The link opens `/video-approval?token=…` in Manage. The lecturer signs in;
    approving and revoking need an edu-ID account (`Account.provider` equal to
    `NEXT_PUBLIC_EDUID_ID`). A signed-in email that differs from the
    recipient's directory email is recorded as `identityMatched = false`, not
    blocked, because edu-ID often carries a private address.
-4. The first approval moves the request to `APPROVED`; other recipients get a
+5. The first approval moves the request to `APPROVED`; other recipients get a
    notice and their links can no longer approve.
-5. `adminApproveVideoSourceRequest` makes the request `ACTIVE` and sets the
+6. `adminApproveVideoSourceRequest` (the review list's Give final approval,
+   which also flags decisions taken from an account whose email differs from
+   the recipient's) makes the request `ACTIVE` and sets the
    source to `APPROVED` with `validUntil` = the request's period end. The
    gateway may act only while `isVideoSourceApprovedAt(source, now)` holds.
 

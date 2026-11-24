@@ -1,0 +1,38 @@
+mutation VerifyVideoSource(
+  $sourceId: ID!
+  $kalturaCategoryId: String!
+  $cutMode: KBVideoCutMode!
+  $namePattern: String
+  $captionLanguage: String!
+  $period: String
+  $manual: VideoApprovalManualDirectoryInput
+  $additionalRecipients: [VideoApprovalRecipientInput!]
+  $excludedEmails: [String!]
+  $reason: String
+) {
+  verifyVideoSource(
+    sourceId: $sourceId
+    kalturaCategoryId: $kalturaCategoryId
+    cutMode: $cutMode
+    namePattern: $namePattern
+    captionLanguage: $captionLanguage
+    period: $period
+    manual: $manual
+    additionalRecipients: $additionalRecipients
+    excludedEmails: $excludedEmails
+    reason: $reason
+  ) {
+    requestId
+    periodLabel
+    periodEnd
+    grantExpiresAt
+    recipients {
+      name
+      email
+      roles
+      sent
+    }
+    contactsWithoutEmail
+    warnings
+  }
+}

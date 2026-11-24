@@ -2,7 +2,7 @@
 CREATE TYPE "KBVideoCutMode" AS ENUM ('CLIP', 'EDITED', 'AS_RECORDED');
 
 -- CreateEnum
-CREATE TYPE "KBVideoSourceStatus" AS ENUM ('DRAFT', 'PENDING_APPROVAL', 'AWAITING_ADMIN', 'APPROVED', 'PAUSED', 'REVOKED');
+CREATE TYPE "KBVideoSourceStatus" AS ENUM ('SUBMITTED', 'REJECTED', 'VERIFIED', 'PENDING_APPROVAL', 'AWAITING_ADMIN', 'APPROVED', 'PAUSED', 'REVOKED');
 
 -- CreateEnum
 CREATE TYPE "KBVideoApprovalRequestStatus" AS ENUM ('OPEN', 'APPROVED', 'ACTIVE', 'SUPERSEDED', 'REVOKED');
@@ -22,13 +22,17 @@ CREATE TABLE "KBVideoSource" (
     "externalRef" TEXT,
     "sourceUrl" TEXT NOT NULL,
     "directoryUrl" TEXT NOT NULL,
-    "kalturaCategoryId" TEXT NOT NULL,
-    "categoryConfirmedAt" TIMESTAMP(3) NOT NULL,
-    "categoryConfirmedById" UUID NOT NULL,
-    "cutMode" "KBVideoCutMode" NOT NULL,
+    "fixedCollectionId" TEXT,
+    "kalturaCategoryId" TEXT,
+    "categoryConfirmedAt" TIMESTAMP(3),
+    "categoryConfirmedById" UUID,
+    "cutMode" "KBVideoCutMode",
     "namePattern" TEXT,
-    "captionLanguage" TEXT NOT NULL,
-    "status" "KBVideoSourceStatus" NOT NULL DEFAULT 'DRAFT',
+    "captionLanguage" TEXT,
+    "rejectedAt" TIMESTAMP(3),
+    "rejectedById" UUID,
+    "rejectionReason" TEXT,
+    "status" "KBVideoSourceStatus" NOT NULL DEFAULT 'SUBMITTED',
     "activeRequestId" UUID,
     "validUntil" TIMESTAMP(3),
     "lastPolledAt" TIMESTAMP(3),

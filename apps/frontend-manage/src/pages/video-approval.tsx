@@ -153,7 +153,7 @@ function ApprovalDetails({
     [t('manage.videoApproval.channel'), link.kalturaCategoryId],
     [
       t('manage.videoApproval.cutMode'),
-      t(`manage.videoApproval.cutMode${link.cutMode}`),
+      link.cutMode ? t(`manage.videoApproval.cutMode${link.cutMode}`) : '–',
     ],
   ]
 

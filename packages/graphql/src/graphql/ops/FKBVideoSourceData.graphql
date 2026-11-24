@@ -6,11 +6,15 @@ fragment KBVideoSourceData on KBVideoSource {
   externalRef
   sourceUrl
   directoryUrl
+  fixedCollectionId
   kalturaCategoryId
   cutMode
   namePattern
   captionLanguage
   status
+  rejectionReason
+  rejectedAt
+  createdAt
   validUntil
   requests {
     id

@@ -1,0 +1,5 @@
+query GetKbVideoSources($kbId: ID!) {
+  getKbVideoSources(kbId: $kbId) {
+    ...KBVideoSourceData
+  }
+}

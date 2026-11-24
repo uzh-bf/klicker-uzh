@@ -61,7 +61,11 @@ export const VideoApprovalLink = VideoApprovalLinkRef.implement({
     sourceName: t.exposeString('sourceName'),
     sourceUrl: t.exposeString('sourceUrl'),
     kalturaCategoryId: t.exposeString('kalturaCategoryId'),
-    cutMode: t.field({ type: KBVideoCutMode, resolve: (v) => v.cutMode }),
+    cutMode: t.field({
+      type: KBVideoCutMode,
+      nullable: true,
+      resolve: (v) => v.cutMode,
+    }),
     chatbotNames: t.exposeStringList('chatbotNames'),
     consentVersion: t.exposeString('consentVersion'),
     consentText: t.exposeString('consentText'),
@@ -76,7 +80,10 @@ type IRequest = DB.KBVideoApprovalRequest & {
   recipients: IRecipient[]
   decisions: IDecision[]
 }
-type ISource = DB.KBVideoSource & { requests?: IRequest[] }
+type ISource = DB.KBVideoSource & {
+  requests?: IRequest[]
+  kb?: { name: string; owner: { email: string } }
+}
 
 export const KBVideoApprovalRecipientRef = builder
   .objectRef<IRecipient>('KBVideoApprovalRecipient')
@@ -160,13 +167,31 @@ export const KBVideoSourceRef = builder
       externalRef: t.exposeString('externalRef', { nullable: true }),
       sourceUrl: t.exposeString('sourceUrl'),
       directoryUrl: t.exposeString('directoryUrl'),
-      kalturaCategoryId: t.exposeString('kalturaCategoryId'),
-      cutMode: t.field({ type: KBVideoCutMode, resolve: (s) => s.cutMode }),
+      fixedCollectionId: t.exposeString('fixedCollectionId', {
+        nullable: true,
+      }),
+      kalturaCategoryId: t.exposeString('kalturaCategoryId', {
+        nullable: true,
+      }),
+      cutMode: t.field({
+        type: KBVideoCutMode,
+        nullable: true,
+        resolve: (s) => s.cutMode,
+      }),
       namePattern: t.exposeString('namePattern', { nullable: true }),
-      captionLanguage: t.exposeString('captionLanguage'),
+      captionLanguage: t.exposeString('captionLanguage', { nullable: true }),
       status: t.field({
         type: KBVideoSourceStatus,
         resolve: (s) => s.status,
+      }),
+      rejectionReason: t.exposeString('rejectionReason', { nullable: true }),
+      rejectedAt: t.expose('rejectedAt', { type: 'Date', nullable: true }),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      // Admin review list only; null where the KB is not loaded.
+      kbName: t.string({ nullable: true, resolve: (s) => s.kb?.name ?? null }),
+      kbOwnerEmail: t.string({
+        nullable: true,
+        resolve: (s) => s.kb?.owner.email ?? null,
       }),
       validUntil: t.expose('validUntil', { type: 'Date', nullable: true }),
       requests: t.field({

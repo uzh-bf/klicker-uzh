@@ -2152,7 +2152,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createVideoSource: t.withAuth(asAdmin).field({
+      submitVideoSource: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBVideoSourceRef,
         args: {
@@ -2160,13 +2160,47 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
           sourceUrl: t.arg.string({ required: true }),
           directoryUrl: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.submitVideoSource(args, ctx)
+        },
+      }),
+
+      verifyVideoSource: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: VideoApprovalRequestResultRef,
+        args: {
+          sourceId: t.arg.id({ required: true }),
           kalturaCategoryId: t.arg.string({ required: true }),
           cutMode: t.arg({ type: KBVideoCutMode, required: true }),
           namePattern: t.arg.string({ required: false }),
           captionLanguage: t.arg.string({ required: true }),
+          period: t.arg.string({ required: false }),
+          manual: t.arg({
+            type: VideoApprovalManualDirectoryInput,
+            required: false,
+          }),
+          additionalRecipients: t.arg({
+            type: [VideoApprovalRecipientInput],
+            required: false,
+          }),
+          excludedEmails: t.arg.stringList({ required: false }),
+          reason: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          return await VideoSourceApprovalService.createVideoSource(args, ctx)
+          return await VideoSourceApprovalService.verifyVideoSource(args, ctx)
+        },
+      }),
+
+      rejectVideoSource: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: KBVideoSourceRef,
+        args: {
+          sourceId: t.arg.id({ required: true }),
+          reason: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.rejectVideoSource(args, ctx)
         },
       }),
 

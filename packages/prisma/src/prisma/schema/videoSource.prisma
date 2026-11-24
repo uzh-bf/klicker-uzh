@@ -16,7 +16,9 @@ enum KBVideoCutMode {
 }
 
 enum KBVideoSourceStatus {
-  DRAFT // configured, no approval requested yet
+  SUBMITTED // added by a KB owner; an admin has not verified the links yet
+  REJECTED // an admin found the links do not belong together
+  VERIFIED // an admin confirmed the category; no approval requested yet
   PENDING_APPROVAL // a request is open, no recipient has approved yet
   AWAITING_ADMIN // a recipient approved, admin final approval outstanding
   APPROVED // discovery runs until validUntil
@@ -51,28 +53,35 @@ model KBVideoSource {
   kbId String @db.Uuid
 
   // Shown to approvers, e.g. "Finance I lecture recordings".
-  name         String
+  name              String
   // Provider-defined link kind and the id the link names (empty for manual).
-  sourceKind   String
-  externalRef  String?
+  sourceKind        String
+  externalRef       String?
   // The recordings link the admin entered.
-  sourceUrl    String
+  sourceUrl         String
   // Course directory link; recipients are snapshotted per period on request.
-  directoryUrl String
+  directoryUrl      String
+  // Set when the provider says the link itself names the category.
+  fixedCollectionId String?
 
-  // The resolved category is what the gateway filters on and what approval
-  // binds to. Changing it after approval requires a new request.
-  kalturaCategoryId     String
-  categoryConfirmedAt   DateTime
-  categoryConfirmedById String   @db.Uuid
+  // Set by the admin who verifies that the links belong together. The
+  // category is what the gateway filters on and what approval binds to.
+  // Changing it after approval requires a new request.
+  kalturaCategoryId     String?
+  categoryConfirmedAt   DateTime?
+  categoryConfirmedById String?   @db.Uuid
 
-  cutMode         KBVideoCutMode
+  cutMode         KBVideoCutMode?
   // Required for EDITED: only entries whose name matches are course videos.
   namePattern     String?
   // The language whose READY caption gates processing, e.g. "de".
-  captionLanguage String
+  captionLanguage String?
 
-  status          KBVideoSourceStatus @default(DRAFT)
+  rejectedAt      DateTime?
+  rejectedById    String?   @db.Uuid
+  rejectionReason String?
+
+  status          KBVideoSourceStatus @default(SUBMITTED)
   // Copied from the active request so the gateway check is one row read.
   activeRequestId String?             @unique @db.Uuid
   validUntil      DateTime?
@@ -81,6 +90,7 @@ model KBVideoSource {
   lastPolledAt      DateTime?
   lastSeenUpdatedAt DateTime?
 
+  // The KB owner who submitted the source.
   createdById String @db.Uuid
 
   requests KBVideoApprovalRequest[]

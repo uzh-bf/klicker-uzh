@@ -26,7 +26,7 @@ import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import ChatbotPublicationQueue from '../components/admin/ChatbotPublicationQueue'
-import VideoSourceSetup from '../components/admin/VideoSourceSetup'
+import VideoSourceReview from '../components/admin/VideoSourceReview'
 import Layout from '../components/Layout'
 
 function AdminPanel() {
@@ -135,7 +135,7 @@ function AdminPanel() {
               {t('manage.admin.videoSources')}
             </AccordionTrigger>
             <AccordionContent className="px-1">
-              <VideoSourceSetup />
+              <VideoSourceReview />
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="metadata">

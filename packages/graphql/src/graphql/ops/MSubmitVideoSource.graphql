@@ -1,0 +1,15 @@
+mutation SubmitVideoSource(
+  $kbId: ID!
+  $name: String!
+  $sourceUrl: String!
+  $directoryUrl: String!
+) {
+  submitVideoSource(
+    kbId: $kbId
+    name: $name
+    sourceUrl: $sourceUrl
+    directoryUrl: $directoryUrl
+  ) {
+    ...KBVideoSourceData
+  }
+}

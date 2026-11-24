@@ -170,6 +170,7 @@ import {
 } from './user.js'
 import {
   KBVideoSourceRef,
+  KBVideoSourceStatus,
   VideoApprovalLink,
   VideoSourceResolutionRef,
 } from './videoSource.js'
@@ -1640,13 +1641,33 @@ export const Query = builder.queryType({
         },
       }),
 
-      getVideoSources: t.withAuth(asAdmin).field({
+      getVideoSourcesForReview: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: [KBVideoSourceRef],
+        args: {
+          statuses: t.arg({ type: [KBVideoSourceStatus], required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.getVideoSourcesForReview(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getKbVideoSources: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: [KBVideoSourceRef],
         args: { kbId: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
-          return await VideoSourceApprovalService.getVideoSources(args, ctx)
+          return await VideoSourceApprovalService.getKbVideoSources(args, ctx)
         },
+      }),
+
+      videoSourceSubmissionEnabled: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        resolve: () =>
+          VideoSourceApprovalService.videoSourceSubmissionEnabled(),
       }),
 
       resolveVideoSource: t.withAuth(asAdmin).field({

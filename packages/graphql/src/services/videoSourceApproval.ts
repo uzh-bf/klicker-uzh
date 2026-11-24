@@ -150,19 +150,139 @@ function assertHttpUrl(value: string, label: string) {
   }
 }
 
-export async function createVideoSource(
+/** Whether KB owners may submit lecture video sources on this deployment. */
+export function videoSourceSubmissionEnabled(env = process.env) {
+  return env.VIDEO_SOURCES_ENABLED === 'true'
+}
+
+const SOURCE_INCLUDE = {
+  requests: {
+    orderBy: { createdAt: 'desc' as const },
+    include: {
+      recipients: { orderBy: { createdAt: 'asc' as const } },
+      decisions: { orderBy: { createdAt: 'asc' as const } },
+    },
+  },
+} satisfies DB.Prisma.KBVideoSourceInclude
+
+/**
+ * A KB owner adds the recordings link (OLAT node or MediaSpace channel, as
+ * the provider understands it) and the course directory link. Nothing is
+ * looked up in Kaltura and nobody is emailed until an admin has verified
+ * that the two links belong together.
+ */
+export async function submitVideoSource(
+  args: { kbId: string; name: string; sourceUrl: string; directoryUrl: string },
+  ctx: ContextWithUser,
+  deps: { provider?: CourseSourcesProvider | null } = {}
+) {
+  if (!videoSourceSubmissionEnabled()) {
+    throw new GraphQLError('Lecture video sources are not available yet', {
+      extensions: { code: 'VIDEO_SOURCES_DISABLED' },
+    })
+  }
+  const name = args.name.trim()
+  if (!name) throw new GraphQLError('Give the source a name')
+  assertHttpUrl(args.sourceUrl, 'recordings link')
+  assertHttpUrl(args.directoryUrl, 'course directory link')
+
+  const kb = await ctx.prisma.kB.findFirst({
+    where: { id: args.kbId, ownerId: ctx.user.sub, deletedAt: null },
+    select: { id: true },
+  })
+  if (!kb) throw new GraphQLError('KB not found')
+
+  // The provider rejects links it does not know with a message written for
+  // the person who entered them.
+  const provider =
+    deps.provider === undefined ? defaultProvider() : deps.provider
+  const link = provider
+    ? await provider.sourceLink({ sourceUrl: args.sourceUrl.trim() })
+    : { kind: 'MANUAL', externalRef: '', fixedCollectionId: null }
+
+  return ctx.prisma.$transaction(async (tx) => {
+    const source = await tx.kBVideoSource.create({
+      data: {
+        kbId: kb.id,
+        name,
+        sourceKind: link.kind,
+        externalRef: link.externalRef || null,
+        fixedCollectionId: link.fixedCollectionId,
+        sourceUrl: args.sourceUrl.trim(),
+        directoryUrl: args.directoryUrl.trim(),
+        createdById: ctx.user.sub,
+      },
+      include: SOURCE_INCLUDE,
+    })
+    await appendVideoAuditEvent(tx, {
+      type: 'SOURCE_SUBMITTED',
+      sourceId: source.id,
+      actorUserId: ctx.user.sub,
+      payload: {
+        kbId: source.kbId,
+        name: source.name,
+        sourceKind: source.sourceKind,
+        externalRef: source.externalRef,
+        fixedCollectionId: source.fixedCollectionId,
+        sourceUrl: source.sourceUrl,
+        directoryUrl: source.directoryUrl,
+      },
+    })
+    return source
+  })
+}
+
+/** The sources of one of the caller's knowledge bases. */
+export async function getKbVideoSources(
+  { kbId }: { kbId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.kBVideoSource.findMany({
+    where: { kbId, kb: { ownerId: ctx.user.sub, deletedAt: null } },
+    orderBy: { createdAt: 'desc' },
+    include: SOURCE_INCLUDE,
+  })
+}
+
+/** Admin review list: sources waiting for verification first. */
+export async function getVideoSourcesForReview(
+  { statuses }: { statuses?: DB.KBVideoSourceStatus[] | null },
+  ctx: ContextWithUser
+) {
+  const sources = await ctx.prisma.kBVideoSource.findMany({
+    where: statuses?.length ? { status: { in: statuses } } : {},
+    orderBy: { createdAt: 'desc' },
+    take: 200,
+    include: {
+      ...SOURCE_INCLUDE,
+      kb: { select: { name: true, owner: { select: { email: true } } } },
+    },
+  })
+  const rank = (s: DB.KBVideoSourceStatus) =>
+    s === 'SUBMITTED' ? 0 : s === 'AWAITING_ADMIN' ? 1 : 2
+  return sources.sort((a, b) => rank(a.status) - rank(b.status))
+}
+
+/**
+ * An admin confirms that the recordings link and the course directory link
+ * belong together, picks the Kaltura category and the processing settings,
+ * and sends the approval request in the same step.
+ */
+export async function verifyVideoSource(
   args: {
-    kbId: string
-    name: string
-    sourceUrl: string
-    directoryUrl: string
+    sourceId: string
     kalturaCategoryId: string
     cutMode: DB.KBVideoCutMode
     namePattern?: string | null
     captionLanguage: string
+    period?: string | null
+    manual?: ManualDirectoryInput | null
+    additionalRecipients?: Array<{ name: string; email: string }> | null
+    excludedEmails?: string[] | null
+    reason?: string | null
   },
   ctx: ContextWithUser,
-  deps: { provider?: CourseSourcesProvider | null } = {}
+  deps: { provider?: CourseSourcesProvider | null; now?: () => Date } = {}
 ) {
   if (args.cutMode === 'EDITED' && !args.namePattern?.trim()) {
     throw new GraphQLError('Cut mode EDITED requires a name pattern')
@@ -178,86 +298,102 @@ export async function createVideoSource(
   if (!/^\d+$/.test(kalturaCategoryId)) {
     throw new GraphQLError('The Kaltura category id must be numeric')
   }
-  assertHttpUrl(args.sourceUrl, 'source link')
-  assertHttpUrl(args.directoryUrl, 'course directory link')
-
-  // Both links are required: where the recordings are published and the
-  // course directory entry whose contacts approve the source. The provider
-  // decides what kind of link the source link is.
-  const provider =
-    deps.provider === undefined ? defaultProvider() : deps.provider
-  const link = provider
-    ? await provider.sourceLink({ sourceUrl: args.sourceUrl.trim() })
-    : { kind: 'MANUAL', externalRef: '', fixedCollectionId: null }
-  if (
-    link.fixedCollectionId !== null &&
-    link.fixedCollectionId !== kalturaCategoryId
-  ) {
-    throw new GraphQLError(
-      'The Kaltura category id does not match the source link'
-    )
+  if (!args.captionLanguage.trim()) {
+    throw new GraphQLError('Enter the caption language')
   }
 
-  return ctx.prisma.$transaction(async (tx) => {
-    const kb = await tx.kB.findFirst({
-      where: { id: args.kbId, deletedAt: null },
-      select: { id: true },
+  await ctx.prisma.$transaction(async (tx) => {
+    const source = await tx.kBVideoSource.findUnique({
+      where: { id: args.sourceId },
     })
-    if (!kb) throw new GraphQLError('Knowledge base not found')
-
-    const source = await tx.kBVideoSource.create({
+    if (!source) throw new GraphQLError('Video source not found')
+    if (!['SUBMITTED', 'VERIFIED'].includes(source.status)) {
+      throw new GraphQLError(
+        'Only a submitted source that has no approval request yet can be verified'
+      )
+    }
+    if (
+      source.fixedCollectionId !== null &&
+      source.fixedCollectionId !== kalturaCategoryId
+    ) {
+      throw new GraphQLError(
+        'The Kaltura category id does not match the source link'
+      )
+    }
+    const verified = await tx.kBVideoSource.update({
+      where: { id: source.id },
       data: {
-        kbId: args.kbId,
-        name: args.name.trim(),
-        sourceKind: link.kind,
-        externalRef: link.externalRef || null,
-        sourceUrl: args.sourceUrl.trim(),
-        directoryUrl: args.directoryUrl.trim(),
+        status: 'VERIFIED',
         kalturaCategoryId,
         categoryConfirmedAt: new Date(),
         categoryConfirmedById: ctx.user.sub,
         cutMode: args.cutMode,
         namePattern: args.namePattern?.trim() || null,
         captionLanguage: args.captionLanguage.trim(),
-        createdById: ctx.user.sub,
       },
     })
     await appendVideoAuditEvent(tx, {
-      type: 'SOURCE_CONFIGURED',
+      type: 'SOURCE_VERIFIED',
       sourceId: source.id,
       actorUserId: ctx.user.sub,
       payload: {
-        kbId: source.kbId,
-        sourceKind: source.sourceKind,
-        externalRef: source.externalRef,
-        sourceUrl: source.sourceUrl,
-        directoryUrl: source.directoryUrl,
-        kalturaCategoryId: source.kalturaCategoryId,
-        cutMode: source.cutMode,
-        namePattern: source.namePattern,
-        captionLanguage: source.captionLanguage,
+        kalturaCategoryId: verified.kalturaCategoryId,
+        cutMode: verified.cutMode,
+        namePattern: verified.namePattern,
+        captionLanguage: verified.captionLanguage,
       },
     })
-    return source
   })
+
+  // A failure here (directory unavailable, nobody to ask) leaves the source
+  // VERIFIED; the admin can send the request again.
+  return requestVideoSourceApproval(
+    {
+      sourceId: args.sourceId,
+      period: args.period,
+      manual: args.manual,
+      additionalRecipients: args.additionalRecipients,
+      excludedEmails: args.excludedEmails,
+      reason: args.reason,
+    },
+    ctx,
+    deps
+  )
 }
 
-export async function getVideoSources(
-  { kbId }: { kbId: string },
+/** An admin declines a submission whose links do not belong together. */
+export async function rejectVideoSource(
+  { sourceId, reason }: { sourceId: string; reason: string },
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.kBVideoSource.findMany({
-    where: { kbId },
-    orderBy: { createdAt: 'asc' },
-    include: {
-      requests: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          recipients: { orderBy: { createdAt: 'asc' } },
-          decisions: { orderBy: { createdAt: 'asc' } },
-        },
+  if (!reason.trim()) throw new GraphQLError('Rejecting requires a reason')
+  return ctx.prisma.$transaction(async (tx) => {
+    const source = await tx.kBVideoSource.findUnique({
+      where: { id: sourceId },
+    })
+    if (!source) throw new GraphQLError('Video source not found')
+    if (!['SUBMITTED', 'VERIFIED'].includes(source.status)) {
+      throw new GraphQLError(
+        'This source already has an approval request; revoke it instead'
+      )
+    }
+    const rejected = await tx.kBVideoSource.update({
+      where: { id: sourceId },
+      data: {
+        status: 'REJECTED',
+        rejectedAt: new Date(),
+        rejectedById: ctx.user.sub,
+        rejectionReason: reason.trim(),
       },
-    },
+      include: SOURCE_INCLUDE,
+    })
+    await appendVideoAuditEvent(tx, {
+      type: 'SOURCE_REJECTED',
+      sourceId,
+      actorUserId: ctx.user.sub,
+      payload: { reason: reason.trim() },
+    })
+    return rejected
   })
 }
 
@@ -379,6 +515,14 @@ export async function requestVideoSourceApproval(
     include: { kb: { include: { chatbots: { include: { chatbot: true } } } } },
   })
   if (!source) throw new GraphQLError('Video source not found')
+  const kalturaCategoryId = source.kalturaCategoryId
+  if (
+    !kalturaCategoryId ||
+    source.status === 'SUBMITTED' ||
+    source.status === 'REJECTED'
+  ) {
+    throw new GraphQLError('Verify the source before requesting approval')
+  }
 
   let directory: {
     periodLabel: string
@@ -523,7 +667,7 @@ export async function requestVideoSourceApproval(
         sourceId: source.id,
         periodLabel,
         periodEnd,
-        kalturaCategoryId: source.kalturaCategoryId,
+        kalturaCategoryId,
         requestedById: actor.id,
         requestedByName: actor.displayName,
         requestedByEmail: actor.email,
@@ -566,7 +710,7 @@ export async function requestVideoSourceApproval(
       payload: {
         periodLabel,
         periodEnd: periodEnd.toISOString(),
-        kalturaCategoryId: source.kalturaCategoryId,
+        kalturaCategoryId,
         directorySource: provider ? 'PROVIDER' : 'MANUAL',
         directorySnapshotSha256: created.directorySnapshotSha256,
         consentVersion: created.consentVersion,
@@ -830,7 +974,7 @@ export interface VideoApprovalLinkView extends ApprovalLinkCapabilities {
   sourceName: string
   sourceUrl: string
   kalturaCategoryId: string
-  cutMode: DB.KBVideoCutMode
+  cutMode: DB.KBVideoCutMode | null
   chatbotNames: string[]
   consentVersion: string
   consentText: string
@@ -1253,10 +1397,10 @@ export type VideoSourceScopeResult =
           status: DB.KBVideoSourceStatus
           activeRequestId: string | null
           validUntil: string | null
-          kalturaCategoryId: string
-          cutMode: DB.KBVideoCutMode
+          kalturaCategoryId: string | null
+          cutMode: DB.KBVideoCutMode | null
           namePattern: string | null
-          captionLanguage: string
+          captionLanguage: string | null
           approved: boolean
         }
       }

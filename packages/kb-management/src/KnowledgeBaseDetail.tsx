@@ -10,6 +10,7 @@ import KnowledgeBaseDomainSettings from './components/KnowledgeBaseDomainSetting
 import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
 import KnowledgeBaseQuestionReadiness from './components/KnowledgeBaseQuestionReadiness'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
+import KnowledgeBaseVideoSources from './components/KnowledgeBaseVideoSources'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
@@ -32,6 +33,7 @@ function KnowledgeBaseDetail({
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
+  const [videoRefreshKey, setVideoRefreshKey] = useState(0)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
@@ -243,6 +245,7 @@ function KnowledgeBaseDetail({
           setAddResourceOpen(true)
         }}
       />
+      <KnowledgeBaseVideoSources kbId={kbId} refreshKey={videoRefreshKey} />
       {advanced ? <KnowledgeBaseImportedSourceList kbId={kbId} /> : null}
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
       {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
@@ -252,6 +255,9 @@ function KnowledgeBaseDetail({
           triggerRef={addResourceTriggerRef}
           onClose={() => setAddResourceOpen(false)}
           onResourceCreated={handleResourceCreated}
+          onVideoSourceSubmitted={async () => {
+            setVideoRefreshKey((key) => key + 1)
+          }}
         />
       ) : null}
     </main>
