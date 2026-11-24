@@ -27,6 +27,7 @@ const COMMON_FIELDS = [
   'parallel_tool_calls',
   'cache',
   'prompt_cache_key',
+  'metadata',
 ]
 const REQUEST_FIELDS = {
   '/v1/responses': [
@@ -201,6 +202,22 @@ export function requestReservation(policy, pathname, body) {
   ) {
     throw budgetError('provider_request_unqualified')
   }
+  // Chat's default route sends LiteLLM's `metadata.session_id` so one answer's
+  // tool loop stays on one routed model. It is a gateway-only routing hint with
+  // no cost effect; only that exact shape is accepted, and the guard strips it
+  // before the native upstream call.
+  if (
+    body.metadata !== undefined &&
+    (typeof body.metadata !== 'object' ||
+      body.metadata === null ||
+      Array.isArray(body.metadata) ||
+      Object.keys(body.metadata).length !== 1 ||
+      typeof body.metadata.session_id !== 'string' ||
+      !body.metadata.session_id.trim() ||
+      body.metadata.session_id.length > 128)
+  ) {
+    throw budgetError('provider_request_unqualified')
+  }
   const input = pathname === '/v1/responses' ? body.input : body.messages
   if (!(typeof input === 'string' || Array.isArray(input)))
     throw budgetError('provider_input_invalid')
@@ -323,9 +340,11 @@ export async function createSpendGuard({
       const body = await requestBody(request)
       const microUsd = requestReservation(policy, url.pathname, body)
       await reserveProviderSpend(budgetFile, policyHash, microUsd)
-      // The guard consumes the proxy-only `cache` hint; the native upstream
-      // does not support it, so forward the reserved request without it.
+      // The guard consumes the proxy-only `cache` and gateway `metadata`
+      // hints; the native upstream does not use them, so forward the reserved
+      // request without them.
       delete body.cache
+      delete body.metadata
       if (policy.fixedRoute) {
         const model = policy.models[body.model]
         body.service_tier = 'default'

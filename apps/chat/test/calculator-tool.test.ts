@@ -34,12 +34,15 @@ describe('evaluateExpression', () => {
 })
 
 describe('withCalculatorTool', () => {
-  test('adds the calculator only in tutor and quizzer modes', () => {
+  test('adds the calculator only in tutor, explainer and quizzer modes', () => {
     expect(withCalculatorTool('tutor', {})).toHaveProperty(CALCULATOR_TOOL_NAME)
+    expect(withCalculatorTool('explainer', {})).toHaveProperty(
+      CALCULATOR_TOOL_NAME
+    )
     expect(withCalculatorTool('quizzer', {})).toHaveProperty(
       CALCULATOR_TOOL_NAME
     )
-    expect(withCalculatorTool('explainer', {})).toEqual({})
+    expect(withCalculatorTool('writing-coach', {})).toEqual({})
   })
 })
 
@@ -74,6 +77,6 @@ describe('stepReminder', () => {
   })
 
   test('keeps only the language reminder in other modes', () => {
-    expect(stepReminder('explainer')).toBe(REPLY_LANGUAGE_REMINDER)
+    expect(stepReminder('writing-coach')).toBe(REPLY_LANGUAGE_REMINDER)
   })
 })

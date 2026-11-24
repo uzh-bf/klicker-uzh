@@ -28,6 +28,7 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
+import { OpenInNewTabButton } from './open-in-new-tab-button'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
@@ -37,6 +38,7 @@ import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 
 interface ChatbotDisclaimer {
   id: string
@@ -516,6 +518,7 @@ function SidebarMain({
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
+  const { headerless } = useChatUi()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const createThread = useChatStore((state) => state.createThread)
@@ -534,66 +537,112 @@ function SidebarMain({
     }
   }
 
+  const newChatButton = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleNewThread}
+          disabled={participationRequired}
+          className={twMerge(toolbarIconButtonClassName, open && 'md:hidden')}
+        >
+          <Plus aria-hidden="true" className="size-4" />
+          <span className="sr-only">{t('chat.sidebar.newChat')}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
+    </Tooltip>
+  )
+
   return (
-    <SidebarInset id="main-content" tabIndex={-1} className="min-w-0">
-      <header
-        data-cy="chat-header"
-        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b px-2 py-1.5"
-      >
-        {/* Only visible when the sidebar is closed — once it's open, the
-            sidebar's own trigger closes it, so this stays the single toggle
-            on screen at any given time. The dedicated grid column keeps the
-            title, mode menu, and new-chat action from overlapping at narrow
-            widths. */}
-        <SidebarTrigger
-          className={twMerge(
-            'size-11 touch-manipulation fine-pointer:size-8',
-            open && 'md:hidden'
-          )}
-          aria-label={t('chat.sidebar.openSidebar')}
-        />
-        {/* Persistent header identity (V3): name (+ avatar) stays visible
-            here regardless of sidebar open/closed state, so the sidebar's own
-            header no longer repeats it (see app-sidebar.tsx). */}
-        <div className="flex min-w-0 items-center gap-2">
-          {chatbot.avatar && (
-            <Image
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
-              alt=""
-              width={24}
-              height={24}
-              unoptimized
-              className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
-            />
-          )}
-          <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
-        </div>
-        <ModeSwitcher />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={handleNewThread}
-              disabled={participationRequired}
+    <SidebarInset className="relative min-w-0">
+      {headerless ? (
+        // A framed chat keeps its height for the conversation: no header bar.
+        // The page heading stays for assistive tech and the mode menu moves
+        // into the sidebar. From md up the remaining controls float over the
+        // thread corners; below md they share one slim row with the credits,
+        // which would otherwise sit underneath them.
+        <>
+          <h1 className="sr-only">{chatbot.name}</h1>
+          <div
+            data-cy="chat-overlay-controls"
+            className="flex shrink-0 items-center gap-1 border-b px-1 py-0.5 md:contents"
+          >
+            <div
+              data-cy="chat-overlay-controls-start"
               className={twMerge(
-                'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
+                'flex shrink-0 items-center gap-1 md:bg-background/85 md:absolute md:left-1 md:top-1 md:z-20 md:rounded-lg md:border md:shadow-sm md:backdrop-blur-sm',
                 open && 'md:hidden'
               )}
             >
-              <Plus aria-hidden="true" className="size-4" />
-              <span className="sr-only">{t('chat.sidebar.newChat')}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
-        </Tooltip>
-        {knowledgeGraphVisible ? (
-          <ChatGraphModeSwitch
-            open={graphPanel.open}
-            onToggle={graphPanel.toggle}
+              <SidebarTrigger
+                className={toolbarIconButtonClassName}
+                aria-label={t('chat.sidebar.openSidebar')}
+              />
+              {newChatButton}
+            </div>
+            {/* Below md the sidebar is a drawer, so the mode stays reachable
+                here. */}
+            <ModeSwitcher className="md:hidden" testIdPrefix="chat-row-mode" />
+            <MobileCreditsBar inline />
+            <div
+              data-cy="chat-overlay-controls-end"
+              className="ml-auto flex shrink-0 items-center gap-1 empty:hidden md:bg-background/85 md:absolute md:right-1 md:top-1 md:z-20 md:rounded-lg md:border md:shadow-sm md:backdrop-blur-sm"
+            >
+              {knowledgeGraphVisible ? (
+                <ChatGraphModeSwitch
+                  open={graphPanel.open}
+                  onToggle={graphPanel.toggle}
+                />
+              ) : null}
+              <OpenInNewTabButton />
+            </div>
+          </div>
+        </>
+      ) : (
+        <header
+          data-cy="chat-header"
+          className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5"
+        >
+          {/* Only visible when the sidebar is closed — once it's open, the
+            sidebar's own trigger closes it, so this stays the single toggle
+            on screen at any given time. A flex row (not a fixed grid) keeps
+            the title truncating in the remaining width when this trigger and
+            the new-chat action are hidden. */}
+          <SidebarTrigger
+            className={twMerge(toolbarIconButtonClassName, open && 'md:hidden')}
+            aria-label={t('chat.sidebar.openSidebar')}
           />
-        ) : null}
-      </header>
-      <MobileCreditsBar />
+          {/* Persistent header identity (V3): name (+ avatar) stays visible
+            here regardless of sidebar open/closed state, so the sidebar's own
+            header no longer repeats it (see app-sidebar.tsx). */}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {chatbot.avatar && (
+              <Image
+                src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
+                alt=""
+                width={24}
+                height={24}
+                unoptimized
+                className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
+              />
+            )}
+            <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
+          </div>
+          <ModeSwitcher />
+          {newChatButton}
+          <div className="flex items-center gap-2">
+            {knowledgeGraphVisible ? (
+              <ChatGraphModeSwitch
+                open={graphPanel.open}
+                onToggle={graphPanel.toggle}
+              />
+            ) : null}
+            <OpenInNewTabButton />
+          </div>
+        </header>
+      )}
+      {headerless ? null : <MobileCreditsBar />}
       <main
         id="main-content"
         tabIndex={-1}

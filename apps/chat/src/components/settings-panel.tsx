@@ -81,11 +81,11 @@ export function SettingsPanel() {
         type="button"
         data-cy="chat-settings-toggle"
         aria-expanded={open}
-        className="hover:bg-accent focus-visible:ring-ring flex w-full items-center gap-2 border-t px-3 py-2 text-start transition-colors focus-visible:outline-none focus-visible:ring-1"
+        className="hover:bg-accent focus-visible:ring-ring flex min-h-11 w-full items-center gap-2 border-t px-3 py-1.5 text-start transition-colors focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-9"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
-        <span className="text-base font-medium">
+        <span className="text-sm font-medium">
           {t('chat.settingsPanel.title')}
         </span>
         {/* Chevron points down while closed (more to reveal) and flips up

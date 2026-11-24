@@ -9,7 +9,6 @@ query QGetChatbotsInfoWithStandardModes {
     expectedStudentCount
     reviewComment
     publishedAt
-    writingCoachUnavailableReason
     standardModeConfig {
       tutorEnabled
       explainerEnabled
@@ -22,6 +21,7 @@ query QGetChatbotsInfoWithStandardModes {
     }
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId

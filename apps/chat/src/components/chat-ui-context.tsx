@@ -8,9 +8,17 @@ import {
   useSyncExternalStore,
 } from 'react'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { useFramed } from '../hooks/useFramed'
 
 interface ChatUiContextValue {
   embedded: boolean
+  // A host page frames the full participant layout (an LMS LTI launch). The
+  // frame is usually short, so the thread and sidebar use tighter spacing.
+  // `embedded` already has its own compact layout and is excluded.
+  compact: boolean
+  // A compact chat drops its header bar: the mode menu lives in the sidebar and
+  // the remaining controls float over the thread.
+  headerless: boolean
   showSidebar: boolean
   showMinimalSettings: boolean
   showMessageActions: boolean
@@ -29,17 +37,20 @@ export function ChatUiProvider({
   variant?: ChatUiVariant
 }) {
   const embedded = useEmbedded()
+  const framed = useFramed()
   const ownerPreview = variant === 'owner-preview'
 
   const value = useMemo<ChatUiContextValue>(
     () => ({
       embedded,
+      compact: framed && !embedded && !ownerPreview,
+      headerless: framed && !embedded && !ownerPreview,
       showSidebar: !embedded && !ownerPreview,
       showMinimalSettings: embedded && !ownerPreview,
       showMessageActions: !embedded && !ownerPreview,
       variant,
     }),
-    [embedded, ownerPreview, variant]
+    [embedded, framed, ownerPreview, variant]
   )
 
   return (

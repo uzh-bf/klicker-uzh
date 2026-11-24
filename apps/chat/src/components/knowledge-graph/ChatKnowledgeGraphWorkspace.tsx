@@ -300,10 +300,12 @@ export function createChatKnowledgeGraphDataSource(
 export function ChatKnowledgeGraphWorkspace({
   chatbotId,
   onAsk,
+  onQuiz,
   focusRequest,
 }: {
   chatbotId: string
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   focusRequest?: KnowledgeGraphFocusRequest
 }) {
   const t = useTranslations('pwa.chatbot')
@@ -375,6 +377,7 @@ export function ChatKnowledgeGraphWorkspace({
           key={`${chatbotId}:${kbId ?? ''}`}
           dataSource={dataSource}
           onAsk={onAsk}
+          onQuiz={onQuiz}
           focusRequest={focusRequest}
         />
       ) : null}

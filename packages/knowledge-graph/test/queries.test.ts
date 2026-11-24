@@ -12,7 +12,9 @@ describe('fixed knowledge graph queries', () => {
     const nodes = getOverviewNodesQuery()
     const edges = getEdgesForNodeIdsQuery(['1', '2'], 'overview')
 
-    expect(nodes.cypher).toContain('LIMIT 251')
+    expect(nodes.cypher).toContain('LIMIT 51')
+    expect(nodes.cypher).toContain('ORDER BY degree DESC')
+    expect(nodes.cypher).toContain('WHERE degree > 0')
     expect(edges.cypher).toContain('LIMIT 501')
     expect(edges.params).toEqual({ nodeIds: ['1', '2'] })
   })

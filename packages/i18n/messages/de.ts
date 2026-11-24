@@ -20,14 +20,40 @@ export default {
     },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
+      aiGenerated: 'KI-generiert',
+      aiGeneratedHint:
+        'Diese Karte wurde von KI aus Ihren Kursmaterialien erstellt. Sie kann Fehler enthalten; prüfen Sie die Quellen.',
+      aiGeneratedNote:
+        'KI-generiert aus den Kursmaterialien. Prüfen Sie die Quellen.',
       title: 'Wissensgraph',
       open: 'Wissensgraph öffnen',
       close: 'Wissensgraph schliessen',
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
+      resize: 'Grösse des Wissensgraphen ändern',
+      resizeHint:
+        'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
+      nodePromptTutor:
+        'Hilf mir mit Leitfragen, den Begriff «{topic}» selbst zu erarbeiten.',
+      nodePromptExplainer:
+        'Erkläre den Begriff «{topic}» an einem einfachen Beispiel.',
+      edgePromptTutor:
+        'Hilf mir mit Leitfragen herauszufinden, wie «{source}» und «{target}» zusammenhängen («{relationship}»).',
+      edgePromptExplainer:
+        'Erkläre an einem einfachen Beispiel, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      quiz: 'Teste mich dazu',
+      allConnectionsShown: 'Alle Verbindungen angezeigt',
+      quizNodePrompt: 'Teste mich zum Begriff «{topic}».',
+      quizEdgePrompt:
+        'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      inferredRelation:
+        'Abgeleitet: Diese Beziehung ist aus den Kursunterlagen erschlossen und wird dort nicht direkt genannt.',
+      unsourcedRelation:
+        'Für diese Beziehung ist keine belegende Quelle erfasst.',
+      inferredRelationLegend: 'Gestrichelt: abgeleitet oder ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },
@@ -123,6 +149,11 @@ export default {
     },
     embedded: {
       close: 'Chat schliessen',
+    },
+    openInNewTab: {
+      label: 'In neuem Tab öffnen',
+      failed:
+        'Der neue Tab konnte nicht geöffnet werden. Erlaube Pop-ups und versuche es erneut.',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -415,6 +446,32 @@ export default {
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
+      explanation: {
+        preparing: 'Interaktive Erklärung wird vorbereitet...',
+        rejected: 'Entwurf der interaktiven Erklärung abgelehnt',
+        unavailable: 'Interaktive Erklärung nicht verfügbar',
+        fallbackTitle: 'Interaktive Erklärung',
+        header: 'Interaktive Erklärung · KI-generierter Entwurf, nicht geprüft',
+        openLarge: 'Gross öffnen',
+        close: 'Schliessen',
+        loading: 'Wird geladen...',
+      },
+      feedback: {
+        preparing: 'Feedback wird vorbereitet...',
+        rejected: 'Feedback-Entwurf abgelehnt',
+        fallbackTitle: 'Feedback',
+        strengths: 'Was bereits gut ist',
+        criteria: 'Geprüfte Kriterien',
+        points: 'Woran du arbeiten kannst',
+        nextStep: 'Nächster Schritt',
+        copy: 'Feedback kopieren',
+        copied: 'Kopiert',
+        status: {
+          met: 'erfüllt',
+          partial: 'teilweise erfüllt',
+          missing: 'fehlt',
+        },
+      },
       learningContext: {
         refreshUnavailable:
           'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',
@@ -608,7 +665,6 @@ export default {
     },
     sources: {
       title: 'Quellen',
-      cited: 'In dieser Antwort zitiert',
       otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
@@ -5465,12 +5521,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Kurswerkzeug-Vorgaben gelten weiterhin für jeden Modus; der Quizzer benötigt zusätzlich Zugriff auf Kursmaterialien.',
+        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Der Quizzer benötigt Zugriff auf Kursmaterialien.',
       chatbotModeWritingCoach: 'Schreibcoach',
       chatbotModeWritingCoachDescription:
         'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
-      chatbotWritingCoachRequiredTool:
-        'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Führt Studierende mit Fragen, Hinweisen und Rückmeldungen.',
@@ -5767,6 +5821,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ein: Studierende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
       answerPreferencesDisabledDescription:
         'Aus: Alle Studierenden erhalten dasselbe Antwortformat und denselben Ton.',
+      interactiveExplanations: 'Interaktive Erklärungen',
+      interactiveExplanationsEnabledDescription:
+        'Ein: Im Tutor- und im Erklärmodus kann der Chatbot interaktive, von KI erzeugte Erklärungen in einzelnen Schritten anzeigen.',
+      interactiveExplanationsDisabledDescription:
+        'Aus: Der Chatbot antwortet nur mit Text und zeigt keine interaktiven Erklärungen.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

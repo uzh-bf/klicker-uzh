@@ -4,6 +4,10 @@ import {
 } from '@klicker-uzh/types'
 import { signJWT, verifyElearningChatGrant } from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  historyTextFromParts,
+  SHOW_FEEDBACK_TOOL_NAME,
+} from '@/src/lib/feedback'
 
 import {
   formatElearningSnapshotContext,
@@ -420,5 +424,34 @@ describe('persisted learning history', () => {
     expect(matchesPersistedLearningHistory(messages.slice(0, 2), history)).toBe(
       false
     )
+  })
+  it('accepts a stored feedback card in the form the client sends it', () => {
+    const content = {
+      format: 'feedback/1',
+      title: '',
+      summary: '',
+      strengths: [{ text: 'Clear claim.', quote: '' }],
+      criteria: [],
+      improvements: [],
+      nextStep: '',
+    }
+    const parts = [
+      { type: 'text', text: 'Here is my feedback.' },
+      {
+        type: 'tool-call',
+        toolCallId: 'call-1',
+        toolName: SHOW_FEEDBACK_TOOL_NAME,
+        args: content,
+        result: { kind: 'feedback', content },
+      },
+    ]
+    const stored = [history[0], { id: 'a1', role: 'assistant', content: parts }]
+    const sent = [
+      messages[0],
+      { ...messages[1], content: historyTextFromParts(parts) },
+      messages[2],
+    ]
+    expect(sent[1].content).toContain('Clear claim.')
+    expect(matchesPersistedLearningHistory(sent, stored)).toBe(true)
   })
 })
