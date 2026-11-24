@@ -846,8 +846,10 @@ export async function seedCourse(
       name: uuidv4(),
       displayName: uuidv4(),
       description: uuidv4(),
+      // Nine digits like the pins of created courses: pin codes are unique, and
+      // four-digit draws collided with courses from earlier tests.
       pinCode: !isAssessmentEnabled
-        ? Math.floor(Math.random() * 9000 + 1000)
+        ? Math.floor(Math.random() * 900000000 + 100000000)
         : null,
       startDate: startDate ?? defaultStartDate,
       endDate: endDate ?? defaultEndDate,

@@ -56,6 +56,7 @@ const APPROVED_PULL_REQUEST_TYPES = Object.freeze([
   'synchronize',
   'reopened',
   'ready_for_review',
+  'labeled',
 ])
 const ARM_RUNNER = 'ubuntu-24.04-arm'
 const AMD_RUNNER = 'ubuntu-latest'
@@ -342,6 +343,17 @@ function validateFingerprintReuse(block, path, jobId) {
 // A matrix leg must run only after the plan, name its check run after the
 // target, build from the plan's matrix, publish under the full-SHA guard, and
 // hand its digest to the scan leg.
+function runnerMatches(block, hosted, output) {
+  const match = /^[ ]{4}runs-on:[ ]*(.+?)[ ]*$/m.exec(block)
+  return (
+    match &&
+    [
+      hosted,
+      '${{ needs.priority-route.outputs.' + output + " || '" + hosted + "' }}",
+    ].includes(match[1])
+  )
+}
+
 function validateArmBuildJob(block, path, jobId) {
   if (!jobNeeds(block).includes(STAGING_PLAN_JOB_ID)) {
     fail(path, jobId, 'does not depend on the plan job')
@@ -373,9 +385,7 @@ function validateArmBuildJob(block, path, jobId) {
   ) {
     fail(path, jobId, 'does not build the plan matrix')
   }
-  if (
-    !new RegExp('^[ ]{4}runs-on:[ ]*' + ARM_RUNNER + '[ ]*$', 'm').test(block)
-  ) {
+  if (!runnerMatches(block, ARM_RUNNER, 'runner_arm')) {
     fail(path, jobId, 'is not pinned to the ARM runner')
   }
   // Draft pull requests must still defer their builds.
@@ -447,9 +457,7 @@ function validateArmBuildJob(block, path, jobId) {
 }
 
 function validateAmdJob(block, path, jobId) {
-  if (
-    !new RegExp('^[ ]{4}runs-on:[ ]*' + AMD_RUNNER + '[ ]*$', 'm').test(block)
-  ) {
+  if (!runnerMatches(block, AMD_RUNNER, 'runner_build')) {
     fail(path, jobId, 'is not pinned to the native AMD64 runner')
   }
   if (!/platforms:[ ]*linux.amd64/.test(block)) {
@@ -492,7 +500,18 @@ function validateScanJob(block, path, jobId) {
 }
 
 function validateStatusJob(block, path, jobId) {
-  if (!/^[ ]{4}if:[ ]*always[(][)][ ]*$/m.test(block)) {
+  const condition =
+    /^[ ]{4}if:[ ]*(always\(\)[^\n]*|>-[^\n]*\n[\s\S]*?)(?=\n[ ]{4}\S)/m
+      .exec(block)?.[1]
+      ?.trim()
+      .replace(/^>-\s*/, '')
+      .replace(/\s+/g, ' ')
+  if (
+    ![
+      'always()',
+      "always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true')",
+    ].includes(condition)
+  ) {
     fail(path, jobId, 'must report for every outcome')
   }
   const declared = new Set(jobNeeds(block))
@@ -555,13 +574,47 @@ function validateStagingWorkflow({
   }
   // ready_for_review is where a draft pull request's deferred builds are
   // restored.
-  const approvedTypes = [...APPROVED_PULL_REQUEST_TYPES].sort()
-  if (prTypes.slice().sort().join(',') !== approvedTypes.join(',')) {
+  // Candidate branches that have not yet synced the priority router still list
+  // the types without 'labeled'. That narrower set starts no label-triggered
+  // builds, so it stays acceptable until every candidate branch has synced.
+  const approvedTypes = [
+    APPROVED_PULL_REQUEST_TYPES,
+    APPROVED_PULL_REQUEST_TYPES.filter((type) => type !== 'labeled'),
+  ].map((types) => [...types].sort().join(','))
+  if (!approvedTypes.includes(prTypes.slice().sort().join(','))) {
     throw new Error(
       workflowPath + ' does not use the approved pull-request triggers'
     )
   }
   const jobs = jobBlocks(content, workflowPath)
+  for (const [id, block] of jobs) {
+    jobs.set(
+      id,
+      block.replace(
+        /^[ ]{4}if: >-\n[ ]{6}!\(vars\.PRIORITY_CI_ENABLED[^\n]+\) &&\n[ ]{6}\(([^\n]+)\)\n/m,
+        '    if: $1\n'
+      )
+    )
+  }
+  const route = jobs.get('priority-route')
+  if (route) {
+    const expected =
+      "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority')"
+    const condition = /^[ ]{4}if: ([^\n]+)/m.exec(route)?.[1]?.trim()
+    if (
+      condition !== expected ||
+      !route.includes('ref: v3') ||
+      !route.includes('repository: uzh-bf/klicker-uzh') ||
+      !route.includes('persist-credentials: false') ||
+      !route.includes('uses: ./.ci-priority/.github/actions/priority-ci-route')
+    ) {
+      fail(
+        workflowPath,
+        'priority-route',
+        'does not preserve the trusted PR-only priority router'
+      )
+    }
+  }
   for (const jobId of STAGING_REQUIRED_JOB_IDS) {
     requireJob(jobs, workflowPath, jobId)
   }

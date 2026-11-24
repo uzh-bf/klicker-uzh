@@ -27,7 +27,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_ADAPTER_PROVIDER: mistral-deepseek
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" verify-release
 
     - name: Checkout trusted review policy
@@ -55,7 +55,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_ADAPTER_PROVIDER: mistral-deepseek
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" prepare
 
@@ -83,7 +83,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_ADAPTER_PROVIDER: mistral-deepseek
         OCR_PROVIDER_PAUSED: ${{ inputs['provider-paused'] }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" run
 
@@ -96,7 +96,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_ADAPTER_PROVIDER: mistral-deepseek
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" validate
 
     - name: Publish draft findings
@@ -145,5 +145,5 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-flash
+        OCR_ADAPTER_PROVIDER: mistral-deepseek
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" summary

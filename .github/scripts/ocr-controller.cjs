@@ -76,7 +76,7 @@ function verifyRelease(root = ROOT) {
   )
   if (
     !isDeepStrictEqual(manifest.draft.profile, runner.DRAFT_PROFILE) ||
-    manifest.draft.model !== adapter.MISTRAL_FLASH_MODEL ||
+    manifest.draft.model !== adapter.MISTRAL_DEEPSEEK_MODEL ||
     manifest.draft.advisor_model !== adapter.MISTRAL_MODEL ||
     manifest.draft.package !== '@alibaba-group/open-code-review@1.13.0' ||
     manifest.draft.publisher.repository !== 'alibaba/open-code-review' ||
@@ -443,7 +443,7 @@ function checkCaller(workflow, options) {
       (name) => !['OCR_NO_UPDATE', 'OCR_ADAPTER_PROVIDER'].includes(name)
     ) ||
     (job?.env?.OCR_ADAPTER_PROVIDER !== undefined &&
-      job.env.OCR_ADAPTER_PROVIDER !== 'mistral-flash') ||
+      job.env.OCR_ADAPTER_PROVIDER !== 'mistral-deepseek') ||
     !Array.isArray(steps) ||
     steps.length !== 1 ||
     steps[0].uses !==
