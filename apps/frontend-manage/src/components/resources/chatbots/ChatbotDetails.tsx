@@ -1495,6 +1495,9 @@ function ChatbotDetails({
       ? t('manage.resources.chatbotModeExplainer')
       : null,
     savedModes.quizzerEnabled ? t('manage.resources.chatbotModeQuizzer') : null,
+    savedModes.writingCoachEnabled
+      ? t('manage.resources.chatbotModeWritingCoach')
+      : null,
   ].filter((name): name is string => name !== null)
   const modesSummary = [
     enabledModeNames.length > 0
