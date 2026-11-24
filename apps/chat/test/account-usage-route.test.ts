@@ -286,6 +286,8 @@ describe('account usage chat route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // The devcontainer turns the feedback tool on; these tests assume it off.
+    vi.stubEnv('CHAT_FEEDBACK_TOOL', '')
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null

@@ -8,7 +8,9 @@ import { Maximize2, Minimize2, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
+  type CSSProperties,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -16,9 +18,37 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { resolveSelectedMode } from '@/src/lib/config/modes'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { ChatGraphConceptContext } from './ChatGraphConcepts'
 import { ChatKnowledgeGraphWorkspace } from './ChatKnowledgeGraphWorkspace'
+
+const PANEL_WIDTH_STORAGE_KEY = 'klicker-chat-graph-panel-width'
+const PANEL_MIN_WIDTH = 320
+// The conversation keeps at least this width beside a resized graph.
+const CONVERSATION_MIN_WIDTH = 360
+const PANEL_KEYBOARD_STEP = 32
+const QUIZ_MODE = 'quizzer'
+
+function readStoredPanelWidth(): number | undefined {
+  try {
+    const value = Number(window.localStorage.getItem(PANEL_WIDTH_STORAGE_KEY))
+    return Number.isFinite(value) && value >= PANEL_MIN_WIDTH
+      ? value
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function storePanelWidth(width: number) {
+  try {
+    window.localStorage.setItem(PANEL_WIDTH_STORAGE_KEY, String(width))
+  } catch {
+    // Storage can be unavailable; the width then lasts for this page only.
+  }
+}
 
 export function useChatGraphPanel(chatbotId: string, enabled: boolean) {
   const pathname = usePathname()
@@ -69,6 +99,8 @@ export function ChatKnowledgeGraphPanel({
   const t = useTranslations('chat.graphPanel')
   const aui = useAui()
   const [fullscreen, setFullscreen] = useState(false)
+  const [panelWidth, setPanelWidth] = useState<number>()
+  const layoutRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const expandRef = useRef<HTMLButtonElement>(null)
   const focusComposerRef = useRef(false)
@@ -122,6 +154,53 @@ export function ChatKnowledgeGraphPanel({
       ?.focus()
   }, [fullscreen, open])
 
+  useEffect(() => {
+    setPanelWidth(readStoredPanelWidth())
+  }, [])
+
+  function clampPanelWidth(width: number) {
+    const available = layoutRef.current?.clientWidth ?? width
+    return Math.round(
+      Math.min(
+        Math.max(width, PANEL_MIN_WIDTH),
+        Math.max(PANEL_MIN_WIDTH, available - CONVERSATION_MIN_WIDTH)
+      )
+    )
+  }
+
+  function resizePanel(width: number) {
+    const next = clampPanelWidth(width)
+    setPanelWidth(next)
+    storePanelWidth(next)
+  }
+
+  function startResize(event: ReactPointerEvent<HTMLDivElement>) {
+    const layout = layoutRef.current
+    if (layout === null) return
+    event.preventDefault()
+    const handle = event.currentTarget
+    handle.setPointerCapture(event.pointerId)
+    const right = layout.getBoundingClientRect().right
+    const onMove = (moveEvent: PointerEvent) => {
+      setPanelWidth(clampPanelWidth(right - moveEvent.clientX))
+    }
+    const onUp = (upEvent: PointerEvent) => {
+      handle.removeEventListener('pointermove', onMove)
+      handle.removeEventListener('pointerup', onUp)
+      handle.removeEventListener('pointercancel', onUp)
+      resizePanel(right - upEvent.clientX)
+    }
+    handle.addEventListener('pointermove', onMove)
+    handle.addEventListener('pointerup', onUp)
+    handle.addEventListener('pointercancel', onUp)
+  }
+
+  const modeOptions = useSettingsStore((state) => state.modeOptions)
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const canQuiz = QUIZ_MODE in modeOptions
+
   const conceptContext = useMemo(
     () =>
       onFocusConcept === undefined
@@ -130,15 +209,43 @@ export function ChatKnowledgeGraphPanel({
     [chatbotId, onFocusConcept]
   )
 
-  function ask(selection: KnowledgeGraphAskSelection) {
-    const prompt =
+  // Each mode gets the wording it is built to answer, so the drafted
+  // question starts the kind of work that mode supports.
+  function askPrompt(selection: KnowledgeGraphAskSelection) {
+    if (selection.kind === 'node') {
+      const values = { topic: selection.label }
+      if (activeMode === 'tutor') return t('nodePromptTutor', values)
+      if (activeMode === 'explainer') return t('nodePromptExplainer', values)
+      return t('nodePrompt', values)
+    }
+    const values = {
+      source: selection.source,
+      target: selection.target,
+      relationship: selection.label,
+    }
+    if (activeMode === 'tutor') return t('edgePromptTutor', values)
+    if (activeMode === 'explainer') return t('edgePromptExplainer', values)
+    return t('edgePrompt', values)
+  }
+
+  function quiz(selection: KnowledgeGraphAskSelection) {
+    setSelectedMode(QUIZ_MODE)
+    draft(
       selection.kind === 'node'
-        ? t('nodePrompt', { topic: selection.label })
-        : t('edgePrompt', {
+        ? t('quizNodePrompt', { topic: selection.label })
+        : t('quizEdgePrompt', {
             source: selection.source,
             target: selection.target,
             relationship: selection.label,
           })
+    )
+  }
+
+  function ask(selection: KnowledgeGraphAskSelection) {
+    draft(askPrompt(selection))
+  }
+
+  function draft(prompt: string) {
     const text = aui.composer.getState().text
     aui.composer.setText(text.trim() ? `${text}\n\n${prompt}` : prompt)
     focusComposerRef.current = true
@@ -155,11 +262,17 @@ export function ChatKnowledgeGraphPanel({
 
   return (
     <div
+      ref={layoutRef}
       className="relative flex min-h-0 flex-1 flex-col lg:flex-row"
       data-cy="chat-graph-layout"
     >
       <div
-        className="relative flex min-h-0 min-w-0 flex-1 flex-col"
+        className={twMerge(
+          'relative flex min-h-0 min-w-0 flex-1 flex-col',
+          // Below the split breakpoint the graph replaces the conversation:
+          // a stacked graph and chat leave neither usable.
+          open && 'hidden lg:flex'
+        )}
         data-cy="chat-conversation-pane"
       >
         <ChatGraphConceptContext.Provider value={conceptContext}>
@@ -205,13 +318,76 @@ export function ChatKnowledgeGraphPanel({
             'bg-background flex min-h-0 min-w-0 flex-col',
             fullscreen
               ? 'fixed inset-0 z-50'
-              : 'order-first h-[45%] min-h-60 shrink-0 border-b lg:order-last lg:h-auto lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem] lg:border-b-0 lg:border-l'
+              : twMerge(
+                  'relative flex-1 lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem] lg:flex-none lg:shrink-0 lg:border-l',
+                  panelWidth !== undefined &&
+                    'lg:w-[var(--chat-graph-panel-width)] lg:min-w-0 lg:max-w-none'
+                )
           )}
+          style={
+            panelWidth === undefined || fullscreen
+              ? undefined
+              : ({
+                  '--chat-graph-panel-width': `${panelWidth}px`,
+                } as CSSProperties)
+          }
         >
+          {fullscreen ? null : (
+            // biome-ignore lint/a11y/useSemanticElements: A focusable separator is the ARIA pattern for a resizable split; <hr> cannot be focused or dragged.
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('resize')}
+              aria-valuenow={panelWidth}
+              aria-valuemin={PANEL_MIN_WIDTH}
+              title={t('resizeHint')}
+              tabIndex={0}
+              onPointerDown={startResize}
+              onDoubleClick={() => {
+                setPanelWidth(undefined)
+                try {
+                  window.localStorage.removeItem(PANEL_WIDTH_STORAGE_KEY)
+                } catch {
+                  // Nothing stored to reset.
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')
+                  return
+                event.preventDefault()
+                const current =
+                  panelRef.current?.getBoundingClientRect().width ??
+                  PANEL_MIN_WIDTH
+                resizePanel(
+                  current +
+                    (event.key === 'ArrowLeft'
+                      ? PANEL_KEYBOARD_STEP
+                      : -PANEL_KEYBOARD_STEP)
+                )
+              }}
+              className="hover:bg-primary/30 focus-visible:bg-primary/40 absolute inset-y-0 -left-1 z-40 hidden w-2 cursor-col-resize touch-none focus-visible:outline-none lg:block"
+              data-cy="knowledge-graph-resize"
+            />
+          )}
           <div className="flex shrink-0 items-center gap-1 border-b px-3 py-1">
-            <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
+            <h2 className="min-w-0 truncate text-sm font-medium">
               {t('title')}
             </h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground focus-visible:ring-ring shrink-0 cursor-help rounded-full border px-2 py-0.5 text-xs focus-visible:outline-none focus-visible:ring-2"
+                  data-cy="knowledge-graph-ai-generated"
+                >
+                  {t('aiGenerated')}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                {t('aiGeneratedHint')}
+              </TooltipContent>
+            </Tooltip>
+            <span className="flex-1" />
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -251,6 +427,7 @@ export function ChatKnowledgeGraphPanel({
           <ChatKnowledgeGraphWorkspace
             chatbotId={chatbotId}
             onAsk={ask}
+            onQuiz={canQuiz ? quiz : undefined}
             focusRequest={focusRequest}
           />
         </div>

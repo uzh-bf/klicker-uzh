@@ -56,6 +56,44 @@ describe('video frame selection', () => {
         BLOB_STORAGE_ACCOUNT_NAME: 'storage',
       })
     ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+      })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(true)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        BLOB_STORAGE_ACCOUNT_NAME: 'storage',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCOUNT_NAME: 'Invalid-Account',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(false)
+    expect(
+      videoFrameStoreConfigured({
+        CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+        CHAT_VIDEO_FRAME_STORE_PATH: root,
+        CHAT_VIDEO_BLOB_CONTAINER: 'course-media',
+        BLOB_STORAGE_ACCESS_KEY: 'secret',
+      })
+    ).toBe(false)
   })
 
   it('preserves the representative frame and retrieved time range', () => {

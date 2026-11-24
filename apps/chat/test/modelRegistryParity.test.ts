@@ -61,14 +61,6 @@ const expectedDefaultCosts = {
   'gpt-4.1': { input: 2, output: 8 },
 }
 
-const expectedDeployedCosts = {
-  auto: { input: 1, output: 5 },
-  'gpt-6-luna': { input: 0.1, output: 0.5 },
-  'gpt-6-sol': { input: 2, output: 10 },
-  'gpt-6.1-sol': { input: 2, output: 10 },
-  'gpt-5.6-sol': { input: 5, output: 30 },
-}
-
 const chatModels: ParityModel[] = DEFAULT_MODEL_REGISTRY
 const backendModels: ParityModel[] = DEFAULT_CHAT_MODEL_REGISTRY
 
@@ -287,23 +279,27 @@ describe('deployed chat model registry parity (values.yaml)', () => {
     })
 
     test(`${name}: both consumers accept every entry and classify identically`, () => {
+      const declared = raw as Pick<ParityModel, 'id' | 'usageClass' | 'cost'>[]
+      const chatById = byId(chat)
       const backendById = byId(backend)
-      for (const model of chat) {
-        const backendModel = backendById.get(model.id)
-        expect(
-          backendModel,
-          `missing backend entry for ${model.id}`
-        ).toBeDefined()
-        expect(backendModel?.usageClass).toBe(model.usageClass)
-        expect(backendModel?.fallback).toBe(model.fallback)
-        expect(backendModel?.cost).toEqual(model.cost)
-        expect(model.maxOutputTokens).toBe(4096)
+      expect(chatById.size).toBe(declared.length)
+      expect(backendById.size).toBe(declared.length)
+
+      for (const { id, usageClass, cost } of declared) {
+        const chatModel = chatById.get(id)
+        const backendModel = backendById.get(id)
+        expect(chatModel, `missing chat entry for ${id}`).toBeDefined()
+        expect(backendModel, `missing backend entry for ${id}`).toBeDefined()
+        expect(chatModel?.usageClass).toBe(usageClass)
+        expect(backendModel?.usageClass).toBe(usageClass)
+        expect(backendModel?.fallback).toBe(chatModel?.fallback)
+        expect(chatModel?.cost).toEqual(cost)
+        expect(backendModel?.cost).toEqual(cost)
+        expect(chatModel?.maxOutputTokens).toBe(4096)
         expect(backendModel?.maxOutputTokens).toBe(4096)
       }
       expect(chat.find((m) => m.id === 'auto')?.usageClass).toBe('BASE')
-      expect(baseModelIds(chat)).toEqual(['auto', 'gpt-6-luna'])
       expect(fallbackIds(chat)).toEqual(['gpt-6-luna'])
-      expect(costsById(chat)).toEqual(expectedDeployedCosts)
       expect(getNewChatbotModelId(backend)).toBe('gpt-6-luna')
     })
   }

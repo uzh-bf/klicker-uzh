@@ -40,25 +40,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function getWritingCoachUnavailableReason(
-  mcpConfigurations: readonly {
-    chatMode: string
-    isEnabled?: boolean
-    parameters?: unknown
-  }[] = []
-): 'REQUIRED_TOOL_BINDING' | null {
-  const requiredBindings = mcpConfigurations.filter(
-    (config) =>
-      config.isEnabled !== false &&
-      isRecord(config.parameters) &&
-      config.parameters.required === true
-  )
-  return requiredBindings.length > 0 &&
-    !requiredBindings.some((config) => config.chatMode === 'writing-coach')
-    ? 'REQUIRED_TOOL_BINDING'
-    : null
-}
-
 function isLegacyModeEnabled(systemPrompts: unknown, mode: string): boolean {
   const prompts = isRecord(systemPrompts) ? systemPrompts : null
   const modeConfig = isRecord(prompts?.[mode]) ? prompts[mode] : null

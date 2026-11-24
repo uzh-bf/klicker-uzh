@@ -28,10 +28,12 @@ const DynamicKnowledgeGraphViewer = dynamic(
 export function ChatKnowledgeGraphViewer({
   dataSource,
   onAsk,
+  onQuiz,
   focusRequest,
 }: {
   dataSource: KnowledgeGraphDataSource
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  onQuiz?: (selection: KnowledgeGraphAskSelection) => void
   focusRequest?: KnowledgeGraphFocusRequest
 }) {
   const t = useTranslations('chat.graphPanel')
@@ -39,11 +41,22 @@ export function ChatKnowledgeGraphViewer({
     <DynamicKnowledgeGraphViewer
       dataSource={dataSource}
       onAsk={onAsk}
+      onQuiz={onQuiz}
       focusRequest={focusRequest}
       labels={{
-        details: { ask: t('ask'), missingEndpoint: t('missingEndpoint') },
+        inferredRelationLegend: t('inferredRelationLegend'),
+        details: {
+          quiz: t('quiz'),
+          allConnectionsShown: t('allConnectionsShown'),
+          inferredRelation: t('inferredRelation'),
+          unsourcedRelation: t('unsourcedRelation'),
+          ask: t('ask'),
+          missingEndpoint: t('missingEndpoint'),
+          aiGeneratedNote: t('aiGeneratedNote'),
+        },
       }}
       detailsLayout="contained"
+      showEdgeProperties={false}
       preserveViewportOnResize
       initialView="overview"
       searchSuggestions

@@ -152,7 +152,7 @@ nor the default prompt-cache identity.
 
 For default requests, `POST` passes the requested deployment identity,
 transport family, cache scope (chatbot, mode and thread) and request tools (the
-MCP tools plus the Tutor and Quizzer `calculate` tool) to
+MCP tools plus the Tutor, Explainer and Quizzer `calculate` tool) to
 `buildPromptCacheRequest`. The stable instructions stay in the request's
 `instructions`, and per-turn context sits in a message before the new user
 message, so the prefix of instructions and tools is identical for every thread
@@ -972,6 +972,66 @@ later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
+## Framed layouts and new tabs
+
+The chat distinguishes two independent facts about where it runs. `useEmbedded`
+reads the explicit `?embed=1` contract, which selects the minimal embedded
+layout (PWA drawer, Manage assistant dock, eLearning `embed=1`). `useFramed`
+reports whether the document runs inside any host frame at all. An LMS LTI
+launch and the eLearning `embed=0` launch frame the full participant layout
+without the embed marker, usually at a fraction of a window's height.
+
+`ChatUiContext.compact` is true for the participant variant when the chat is
+framed and not embedded. It tightens the thread (top and bottom padding,
+message spacing, composer padding, 28-pixel message actions on fine pointers)
+and the sidebar (logo and legal line on one small row, title filter only past
+eight threads). The accuracy caveat under the composer is shown only while the
+thread is empty. The composer keeps its 16-pixel font because iOS Safari zooms
+on focus below that size, and touch targets stay at 44 pixels. Standalone and
+embedded layouts are unaffected. Detection is client-only; the provider mounts
+after the client-side disclaimer fetch, so there is no server-render mismatch.
+
+`ChatUiContext.headerless` is true for a compact chat. It drops the header bar: the chatbot name stays an `sr-only` level-one
+heading, and the mode menu moves to the top of the sidebar. From `md` up, the
+sidebar trigger and new-chat button float at the thread's top left while the
+sidebar is closed, and the open-in-new-tab and knowledge-graph controls float at
+the top right; the thread and the desktop history rail start below them.
+Below `md`, the same controls and the credits share one slim row in the flow.
+The standalone chat, including a tab opened from a frame, keeps the full
+header with the name, because there the title identifies the chat.
+
+Chrome controls share two primitives. Selects, including the mode menu, use
+the design-system `Select`; the mode menu shows each mode's icon and
+description in its options and only the short label in the trigger, and a
+hidden `<label>` gives the combobox its `Chat mode: <mode>` name. Icon buttons
+in the header, sidebar header, floating framed controls and embedded toolbar
+use `toolbarIconButtonClassName` (a square ghost button, 44 pixels on touch and
+32 on fine pointers; the embedded toolbar stays at 32). Message actions keep
+`actionBarButtonClassName`, and the composer keeps its round attach and send
+buttons. The embedded toolbar keeps native selects for its compact height.
+
+The `fine-pointer` variant in `globals.css` wraps its rules in `&:is(:root *)`. The
+design-system stylesheet loads after the chat stylesheet and emits the same
+base utilities (`size-11`, `h-11`, `min-h-11`) at equal specificity, so a plain
+media-query variant silently loses and every control stays at its touch size
+on desktop. Keep the raised specificity when editing the variant.
+
+`OpenInNewTabButton` opens the framed chatbot and its active thread in a new
+browser tab. A plain link would open logged out, because the frame's session
+lives in cookies partitioned to the host site (or in sessionStorage). The
+button opens the tab inside the click, then asks
+`POST /api/chatbots/:id/handoff` for a URL carrying a 60-second
+`CHAT_TAB_HANDOFF` token, minted from the caller's resolved identity.
+`/auth/handoff` re-runs `authorizeIdentityForChatbot` and sets a first-party
+session for the new tab: a guest gets a new guest token, and an account gets
+a session scoped to that chatbot, never the full `participant_token`. The
+token is not single-use because Chat has no shared store across replicas; its
+short lifetime and its own scope, which no session check accepts, limit a
+leaked URL. Hosts that sandbox their frame need `allow-popups` and
+`allow-popups-to-escape-sandbox`; upstream OpenOlat does not sandbox its LTI
+frames. The `?embed=1` layout shows no button, because its hosts (the PWA
+drawer, for example) already link to the full chat.
+
 ## Lecturer authoring and publication contract
 
 Administrators review pending publication requests in Manage's `/admin` panel.
@@ -1308,13 +1368,16 @@ this order:
 3. one JSON-serialized typed lecturer context section for Tutor, Explainer, or Writing Coach, or a scope-note-only
    section for Quizzer, when valid and present;
 4. the platform-owned Tutor, Explainer, Quizzer, or Writing Coach contract from `DEFAULT_PROMPT`, or instead the
-   lecturer-defined persona for a custom mode;
+   lecturer-defined persona for a custom mode. Tutor uses `mode-tutor-v2.hbs` (attempt-first task
+   support with staged escalation to the worked solution) unless `CHAT_TUTOR_PROMPT_VERSION=v1`
+   selects the earlier `mode-tutor.hbs`; the value is read once at server start, and the Helm value
+   `chat.tutorPromptVersion` sets it for a deployment;
 5. the student answer preferences, when the student chose a non-default style or tone (see
    [Student answer style and tone](#student-answer-style-and-tone));
 6. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-7. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
-   integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+7. fixed course-scope, evidence, tool/conversation privacy, assessed-work, safety, non-disclosure,
+   and epistemic integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
 8. fixed Markdown, inline/display mathematics, chemistry and biology notation, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
 9. the conditional citation policy when a `doc_query`-style tool is available; and
@@ -1349,8 +1412,9 @@ The Writing Coach prompt uses generic criteria for purpose, reasoning, organizat
 and tone. It asks for evidence-based feedback and revision strategies adapted to the excerpt,
 without replacement wording, translations or completions. Optional Notes are ordinary Markdown
 within a response; they add no separate storage or learning record. The mode uses only its exact
-MCP bindings and follows existing required-tool eligibility. It inherits no Tutor tools.
-Authoring explains a missing required binding even when the mode flag is enabled. Neither the
+MCP bindings and inherits no Tutor tools. Like every mode under ADR 0050, it stays offered when
+another mode declares a required binding, so a chatbot with an attached knowledge base can still
+offer it, tool-free. Neither the
 prompt nor source tests alone establish the quality of its feedback or adherence to its boundary.
 
 A custom-mode persona holds at most 10,000 characters. The `chatbot-long-custom-prompts` flag
@@ -1678,7 +1742,7 @@ fixture reads are not cached. Ownership, current scope, recording/occurrence bin
 integrity checks still run on each request. The source-video digest identifies the frame's recording; it does not
 require a stored recording object. A representative frame may lie outside the cited transcript
 chunk's time range. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for development fixtures.
-A deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
+With shared-key authentication, a deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
 `BLOB_STORAGE_ACCESS_KEY` for the producer's frame container. In the active v3 Helm
 chart, set `chat.videoBlob.accountName`, `chat.videoBlob.container`, and
 `chat.videoBlob.existingSecret`; the existing Secret must contain the access key
@@ -1686,6 +1750,7 @@ under `chat.videoBlob.accessKeyKey` (default `BLOB_STORAGE_ACCESS_KEY`). The cha
 references that Secret without storing credentials in values. Empty defaults leave
 frame storage disabled; partial configuration fails template validation. This
 configuration stores and serves only frame JPEGs and manifests, not recordings.
+For keyless access, use the dedicated [Chat media workload identity](course-image-retrieval.md).
 Inline frames, zoomed frames, and source hover previews use the same authenticated
 image loader as document images, including Bearer-token fallback in embedded chats.
 
