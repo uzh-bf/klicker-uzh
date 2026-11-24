@@ -304,6 +304,22 @@ describe('cooperative lecturer deletion on marked disposable PostgreSQL', () => 
         (b) => b.reason === 'non-private-parent' && b.id === String(instance.id)
       )
     ).toBe(true)
+    await prisma.liveQuiz.update({
+      where: { id: quiz.id },
+      data: { ownerId: target.id },
+    })
+    await prisma.elementInstance.update({
+      where: { id: instance.id },
+      data: { anonymousResults: { total: 1, CORRECT: 1 } },
+    })
+    const retained = await previewLecturerDeletion(prisma, target)
+    const reasons = retained.blockers
+      .filter(
+        (b) => b.table === 'ElementInstance' && b.id === String(instance.id)
+      )
+      .map((b) => b.reason)
+    expect(reasons).toContain('instance-results')
+    expect(reasons).not.toContain('orphan-instance')
   })
 
   it('fails closed for new User relationships before any cascade is possible', async () => {

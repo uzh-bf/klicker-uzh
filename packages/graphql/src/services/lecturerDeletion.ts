@@ -834,7 +834,8 @@ async function inspectDirectUserRelations(
         )
       } else if (
         edge.table === 'ElementInstance' &&
-        !privateRows.has(rowKey(edge.table, id))
+        !privateRows.has(rowKey(edge.table, id)) &&
+        !blockers.some((entry) => entry.table === edge.table && entry.id === id)
       ) {
         blockers.push(blocker(edge.table, id, 'unsupported', 'orphan-instance'))
       }
