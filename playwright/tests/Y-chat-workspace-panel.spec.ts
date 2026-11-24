@@ -19,7 +19,7 @@ function explanationPage(title: string) {
 
 function explanationCall(toolCallId: string, title: string) {
   return {
-    type: 'tool-call',
+    type: 'tool-call' as const,
     toolCallId,
     toolName: 'show_explanation',
     args: {},
