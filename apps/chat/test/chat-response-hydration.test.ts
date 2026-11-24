@@ -959,6 +959,62 @@ describe('useChatResponse attachment hydration', () => {
 
   describe('empty completed responses', () => {
     test.each([
+      false,
+      true,
+    ])('classifies tool output by receipt, completed=%s', async (completed) => {
+      const events = [
+        { type: 'tool-input-start', toolCallId: 'call-1', toolName: 'search' },
+        { type: 'tool-input-available', toolCallId: 'call-1', input: {} },
+        ...(completed
+          ? [
+              {
+                type: 'tool-output-available',
+                toolCallId: 'call-1',
+                output: [],
+              },
+            ]
+          : []),
+        { type: 'finish', messageMetadata: { finishReason: 'length' } },
+      ]
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            createStreamingResponse(
+              events.map((event) => `data: ${JSON.stringify(event)}`)
+            )
+          )
+      )
+      const { generateChatResponse } = useChatResponse(
+        'auto',
+        'explainer',
+        'none'
+      )
+      await generateChatResponse(
+        [
+          {
+            id: 'question',
+            role: 'user',
+            content: [{ type: 'text', text: 'Synthetic request' }],
+          },
+        ] as any,
+        'thread-1'
+      )
+      const content = storeState.threads[0]?.messages.at(-1)?.content
+      expect(
+        content.some(
+          (part: any) => part.type === 'data' && part.name === 'chat-error'
+        )
+      ).toBe(!completed)
+      expect((storeState.threads[0] as any).lastRunOutcome).toBe(
+        completed ? 'completed' : 'error'
+      )
+      if (completed) expect(content[0].result).toEqual([])
+      else expect(content.some((part: any) => part.type === 'text')).toBe(false)
+    })
+
+    test.each([
       'stop',
       'length',
     ])('retains retry state for reasoning-only %s finish', async (finishReason) => {

@@ -4,6 +4,7 @@ import type {
   StreamTextTransform,
   TextStreamPart,
   ToolSet,
+  UIMessage,
 } from 'ai'
 
 // Platform-owned replacement for a canned provider refusal. It neither
@@ -17,15 +18,102 @@ export const PROVIDER_REFUSAL_DEFLECTION: Record<Locale, string> = {
 // so a genuine answer only waits for its first few words.
 const MAX_HELD_TEXT_LENGTH = 120
 
+// Short function words that rarely occur in the other language. The learner's
+// message decides only when its markers clearly lean one way.
+const GERMAN_MARKERS = new Set([
+  'auch',
+  'auf',
+  'bitte',
+  'das',
+  'dass',
+  'dem',
+  'den',
+  'der',
+  'die',
+  'du',
+  'ein',
+  'eine',
+  'ich',
+  'ist',
+  'kannst',
+  'mein',
+  'meine',
+  'mit',
+  'nicht',
+  'oder',
+  'sich',
+  'sie',
+  'und',
+  'von',
+  'wie',
+  'wir',
+  'zu',
+])
+const ENGLISH_MARKERS = new Set([
+  'also',
+  'and',
+  'can',
+  'for',
+  'how',
+  'is',
+  'it',
+  'my',
+  'not',
+  'of',
+  'or',
+  'please',
+  'that',
+  'the',
+  'this',
+  'to',
+  'we',
+  'what',
+  'with',
+  'you',
+])
+
+/**
+ * German or English when the text's function words clearly lean that way,
+ * otherwise null. German letters count as one German marker.
+ */
+export function inferMessageLanguage(
+  text: string | null | undefined
+): Locale | null {
+  if (!text) return null
+  const words = text.toLowerCase().match(/[a-zäöüß]+/g) ?? []
+  let german = /[äöüß]/i.test(text) ? 1 : 0
+  let english = 0
+  for (const word of words) {
+    if (GERMAN_MARKERS.has(word)) german += 1
+    if (ENGLISH_MARKERS.has(word)) english += 1
+  }
+  if (german >= 2 && german > english) return 'de'
+  if (english >= 2 && english > german) return 'en'
+  return null
+}
+
+/** Text of the latest message when the learner sent it, otherwise null. */
+export function latestUserText(messages: readonly UIMessage[]): string | null {
+  const latest = messages.at(-1)
+  if (latest?.role !== 'user') return null
+  return latest.parts
+    .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+    .join(' ')
+}
+
 /**
  * The deflection in the mode's locked reply language, otherwise in the
- * participant's interface language, otherwise in English.
+ * language of the learner's latest message, otherwise in the participant's
+ * interface language, otherwise in English.
  */
 export function providerRefusalDeflection(
   lockedLanguage: Locale | null,
+  latestUserText: string | null,
   interfaceLocale: string | undefined
 ): string {
   if (lockedLanguage) return PROVIDER_REFUSAL_DEFLECTION[lockedLanguage]
+  const messageLanguage = inferMessageLanguage(latestUserText)
+  if (messageLanguage) return PROVIDER_REFUSAL_DEFLECTION[messageLanguage]
   return interfaceLocale === 'de'
     ? PROVIDER_REFUSAL_DEFLECTION.de
     : PROVIDER_REFUSAL_DEFLECTION.en

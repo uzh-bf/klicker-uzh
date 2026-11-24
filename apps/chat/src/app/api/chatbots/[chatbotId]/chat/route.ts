@@ -74,6 +74,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { isChatbotInteractiveExplanationsEnabled } from '@/src/lib/server/featureFlags'
 import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -165,6 +166,21 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
+import {
+  createShowExplanationTool,
+  type ExplanationWriter,
+  explanationAttemptsLeft,
+  explanationWriterReasoningEffort,
+  resolveExplanationWriterConfig,
+  shouldOfferExplanationTool,
+} from '@/src/services/explainerService'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
+import {
+  createShowFeedbackTool,
+  feedbackAttemptsLeft,
+  isFeedbackToolEnabled,
+} from '@/src/services/feedbackTool'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -1505,6 +1521,53 @@ export async function POST(
       })
     }
 
+    // Prototype: interactive explanations validated by the Catalyst explainer
+    // service. Without the service the chat continues in text.
+    const explanationTools: Record<string, any> = {}
+    // Set once the turn's model options are known, before the model runs.
+    let explanationWriter: ExplanationWriter | null = null
+    let explanationWriterCost = 0
+    let explanationWriterRate = selectedModelConfig.cost
+    if (
+      await shouldOfferExplanationTool({
+        chatMode: selectedMode,
+        chatbotSettingEnabled: chatbot.interactiveExplanationsEnabled,
+        isOwnerFlagEnabled: () =>
+          isChatbotInteractiveExplanationsEnabled(chatbot.ownerId),
+      })
+    ) {
+      try {
+        explanationTools[SHOW_EXPLANATION_TOOL_NAME] =
+          await createShowExplanationTool({
+            getWriter: () => explanationWriter,
+            onUsage: ({ inputTokens, outputTokens }) => {
+              explanationWriterCost += calcCost(
+                explanationWriterRate,
+                inputTokens,
+                outputTokens
+              )
+            },
+          })
+      } catch (error) {
+        console.warn('Explainer service unavailable; tool not offered', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+    const explanationToolActive = SHOW_EXPLANATION_TOOL_NAME in explanationTools
+
+    // Prototype: structured feedback cards. Quotes are checked against the
+    // learner's own messages in this request.
+    const feedbackTools: Record<string, any> = {}
+    if (isFeedbackToolEnabled(selectedMode)) {
+      feedbackTools[SHOW_FEEDBACK_TOOL_NAME] = createShowFeedbackTool({
+        learnerMessages: messages
+          .filter((message) => message.role === 'user')
+          .map((message) => message.content),
+      })
+    }
+    const feedbackToolActive = SHOW_FEEDBACK_TOOL_NAME in feedbackTools
+
     let chatTools: Record<string, any> = {
       ...(mcpTools || {}),
       ...responseExampleTools,
@@ -1535,7 +1598,11 @@ export async function POST(
     const toolNames = Object.keys(chatTools)
     // The calculator is added after the system prompt inputs are fixed, so
     // course grounding and citation rules still see only course tools.
-    const modelTools = withCalculatorTool(selectedMode, chatTools)
+    const modelTools = {
+      ...withCalculatorTool(selectedMode, chatTools),
+      ...explanationTools,
+      ...feedbackTools,
+    }
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
@@ -1689,6 +1756,32 @@ export async function POST(
       threadId: owningThread.id,
       routingSource: routing.source,
     })
+
+    if (explanationToolActive) {
+      // A chatbot's own endpoint may not serve the writer model.
+      const writerConfig =
+        routing.source === 'default'
+          ? resolveExplanationWriterConfig(modelRegistry, selectedModelConfig)
+          : selectedModelConfig
+      const writerEffort = explanationWriterReasoningEffort(writerConfig)
+      explanationWriterRate = writerConfig.cost
+      explanationWriter = {
+        modelId: writerConfig.id,
+        model: getChatModel(chatbot, writerConfig).model,
+        providerOptions: {
+          openai: {
+            ...openAIProviderOptions,
+            ...(writerConfig.usesResponsesApi && {
+              store: getOpenAIResponsesStore(),
+            }),
+            ...(writerEffort && {
+              forceReasoning: true,
+              reasoningEffort: writerEffort,
+            }),
+          },
+        },
+      }
+    }
 
     const resolvedImages = await Promise.all(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
@@ -2359,6 +2452,20 @@ export async function POST(
                   },
                 }
               : {}),
+            ...((explanationToolActive && !explanationAttemptsLeft(steps)) ||
+            (feedbackToolActive && !feedbackAttemptsLeft(steps))
+              ? {
+                  activeTools: Object.keys(modelTools).filter(
+                    (name) =>
+                      !(
+                        (name === SHOW_EXPLANATION_TOOL_NAME &&
+                          !explanationAttemptsLeft(steps)) ||
+                        (name === SHOW_FEEDBACK_TOOL_NAME &&
+                          !feedbackAttemptsLeft(steps))
+                      )
+                  ),
+                }
+              : {}),
             messages: [
               ...initialMessages,
               ...(docQueryToolName && stepNumber > 0
@@ -2375,12 +2482,18 @@ export async function POST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        stopWhen: isStepCount(5),
+        // Each feedback attempt is a step; three attempts plus retrieval and
+        // the closing text need more than the usual five. An explanation call
+        // is one step, because its writer repairs drafts inside the tool.
+        stopWhen: isStepCount(
+          explanationToolActive || feedbackToolActive ? 7 : 5
+        ),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
         experimental_transform: providerRefusalTransform(
           providerRefusalDeflection(
             turnSettings.replyLanguage ?? null,
+            lastMessage?.role === 'user' ? lastMessage.content : null,
             req.cookies.get('NEXT_LOCALE')?.value
           ),
           (finish) =>
@@ -2451,7 +2564,9 @@ export async function POST(
                 selectedModelConfig.cost,
                 result.usage.inputTokens || 0,
                 result.usage.outputTokens || 0
-              ) + imageDescriptionCost
+              ) +
+              imageDescriptionCost +
+              explanationWriterCost
             : null
           const { rawCreditsUsed, creditsUsed } = normalizeCredits(
             computedRawCreditsUsed,
@@ -2544,8 +2659,11 @@ export async function POST(
               }
             }
 
-            if (hasUsage) {
-              rawCreditsUsed = totalCost + imageDescriptionCost
+            // Writer drafts are charged even when the turn stopped before
+            // finishing a step of its own.
+            if (hasUsage || explanationWriterCost > 0) {
+              rawCreditsUsed =
+                totalCost + imageDescriptionCost + explanationWriterCost
             }
           }
           const { rawCreditsUsed: normalizedRawCreditsUsed, creditsUsed } =
@@ -2752,7 +2870,9 @@ export async function POST(
               selectedModelConfig.cost,
               part.totalUsage.inputTokens || 0,
               part.totalUsage.outputTokens || 0
-            ) + imageDescriptionCost
+            ) +
+            imageDescriptionCost +
+            explanationWriterCost
           : null
         const { creditsUsed } = normalizeCredits(
           computedRawCreditsUsed,
