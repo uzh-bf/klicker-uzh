@@ -19,6 +19,10 @@ export {
   createQuestionGenerationRuntimeFromEnv as createElementGenerationRuntimeFromEnv,
   type QuestionGenerationRuntime as ElementGenerationRuntime,
 } from './services/questionGenerationRuntime.js'
+export {
+  handleVideoSourceScope,
+  type VideoSourceScopeResult,
+} from './services/videoSourceApproval.js'
 
 import builder from './builder.js'
 

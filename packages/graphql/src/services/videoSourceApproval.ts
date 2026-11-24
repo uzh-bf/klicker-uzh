@@ -4,6 +4,7 @@
 // final approval. The same link can revoke the approval for as long as it
 // exists. Every step is written to the hash-chained KBVideoAuditEvent log.
 
+import { createHash, timingSafeEqual } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
@@ -25,6 +26,7 @@ import {
   grantExpiryFor,
   hashApprovalToken,
   identityMatchesRecipient,
+  isVideoSourceApprovedAt,
   isWellFormedApprovalToken,
   mintApprovalToken,
   normalizeEmail,
@@ -1222,6 +1224,115 @@ async function sendApprovalGrantedNotice(args: {
       'You can still revoke this approval with the link from the original email.',
     ].join('\n\n'),
     html,
+  })
+}
+
+// #endregion
+
+// #region Gateway scope check
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function bearerMatches(authorization: string | undefined, secret: string) {
+  const digest = (value: string) =>
+    createHash('sha256').update(value, 'utf8').digest()
+  return timingSafeEqual(
+    digest(`Bearer ${secret}`),
+    digest(authorization ?? '')
+  )
+}
+
+export type VideoSourceScopeResult =
+  | { statusCode: 400 | 401 | 503; body: { error: string } }
+  | {
+      statusCode: 200
+      body: {
+        source: null | {
+          sourceId: string
+          status: DB.KBVideoSourceStatus
+          activeRequestId: string | null
+          validUntil: string | null
+          kalturaCategoryId: string
+          cutMode: DB.KBVideoCutMode
+          namePattern: string | null
+          captionLanguage: string
+          approved: boolean
+        }
+      }
+    }
+
+/**
+ * Read-only scope check for the Kaltura gateway, the only Kaltura token
+ * holder. It must call this before every Kaltura call for a source and act
+ * only when `approved` holds (isVideoSourceApprovedAt). Answers from the
+ * database without caching and audits each read as SCOPE_READ.
+ */
+export async function handleVideoSourceScope({
+  prisma,
+  body,
+  authorization,
+  env = process.env,
+  now = () => new Date(),
+}: {
+  prisma: DB.PrismaClient
+  body: unknown
+  authorization?: string
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+}): Promise<VideoSourceScopeResult> {
+  const secret = env.VIDEO_SOURCE_SCOPE_TOKEN?.trim()
+  if (!secret) {
+    return { statusCode: 503, body: { error: 'Service unavailable' } }
+  }
+  if (!bearerMatches(authorization, secret)) {
+    return { statusCode: 401, body: { error: 'Unauthorized' } }
+  }
+  const sourceId =
+    body && typeof body === 'object'
+      ? (body as Record<string, unknown>).sourceId
+      : undefined
+  if (typeof sourceId !== 'string' || !UUID_PATTERN.test(sourceId)) {
+    return { statusCode: 400, body: { error: 'Invalid sourceId' } }
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const source = await tx.kBVideoSource.findUnique({
+      where: { id: sourceId },
+    })
+    const at = now()
+    const approved = source ? isVideoSourceApprovedAt(source, at) : false
+    await appendVideoAuditEvent(tx, {
+      type: 'SCOPE_READ',
+      sourceId: source?.id ?? null,
+      requestId: source?.activeRequestId ?? null,
+      payload: {
+        requestedSourceId: sourceId,
+        found: Boolean(source),
+        status: source?.status ?? null,
+        validUntil: source?.validUntil?.toISOString() ?? null,
+        approved,
+        checkedAt: at.toISOString(),
+      },
+    })
+    return {
+      statusCode: 200 as const,
+      body: {
+        source: source
+          ? {
+              sourceId: source.id,
+              status: source.status,
+              activeRequestId: source.activeRequestId,
+              validUntil: source.validUntil?.toISOString() ?? null,
+              kalturaCategoryId: source.kalturaCategoryId,
+              cutMode: source.cutMode,
+              namePattern: source.namePattern,
+              captionLanguage: source.captionLanguage,
+              approved,
+            }
+          : null,
+      },
+    }
   })
 }
 

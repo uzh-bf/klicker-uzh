@@ -16,6 +16,7 @@ import {
   approveVideoSourceByLink,
   createVideoSource,
   getVideoApprovalLink,
+  handleVideoSourceScope,
   requestVideoSourceApproval,
   revokeVideoSourceByLink,
 } from '../src/services/videoSourceApproval.js'
@@ -537,5 +538,109 @@ describe('video source approval', () => {
       { now: at('2026-11-25T10:00:00Z') }
     )
     expect(approved.validUntil?.toISOString()).toBe('2027-01-31T23:00:00.000Z')
+  })
+})
+
+describe('gateway scope check', () => {
+  const env = { VIDEO_SOURCE_SCOPE_TOKEN: 'fake-scope-credential' }
+  const authorization = 'Bearer fake-scope-credential'
+
+  it('answers only an authorized caller and audits every read', async () => {
+    const { admin, source } = await setup()
+    expect(
+      await handleVideoSourceScope({
+        prisma,
+        body: { sourceId: source.id },
+        authorization: 'Bearer wrong',
+        env,
+      })
+    ).toMatchObject({ statusCode: 401 })
+    expect(
+      await handleVideoSourceScope({
+        prisma,
+        body: { sourceId: source.id },
+        authorization,
+        env: {},
+      })
+    ).toMatchObject({ statusCode: 503 })
+    expect(
+      await handleVideoSourceScope({
+        prisma,
+        body: { sourceId: 'x' },
+        authorization,
+        env,
+      })
+    ).toMatchObject({ statusCode: 400 })
+
+    const pending = await handleVideoSourceScope({
+      prisma,
+      body: { sourceId: source.id },
+      authorization,
+      env,
+    })
+    expect(pending).toMatchObject({
+      statusCode: 200,
+      body: { source: { status: 'DRAFT', approved: false } },
+    })
+
+    const result = await requestVideoSourceApproval(
+      { sourceId: source.id },
+      admin,
+      { provider, now: at('2026-11-23T10:00:00Z') }
+    )
+    await approveVideoSourceByLink(
+      { token: tokenFor(HEAD_EMAIL), consentVersion: '2026-11-v1' },
+      await user('recipient'),
+      { now: at('2026-11-24T10:00:00Z') }
+    )
+    await adminApproveVideoSourceRequest(
+      { requestId: result.requestId },
+      admin,
+      { now: at('2026-11-25T10:00:00Z') }
+    )
+    const check = (iso: string) =>
+      handleVideoSourceScope({
+        prisma,
+        body: { sourceId: source.id },
+        authorization,
+        env,
+        now: at(iso),
+      })
+    expect(await check('2026-12-01T00:00:00Z')).toEqual({
+      statusCode: 200,
+      body: {
+        source: {
+          sourceId: source.id,
+          status: 'APPROVED',
+          activeRequestId: result.requestId,
+          validUntil: '2027-02-01T00:00:00.000Z',
+          kalturaCategoryId: '100001',
+          cutMode: 'CLIP',
+          namePattern: null,
+          captionLanguage: 'de',
+          approved: true,
+        },
+      },
+    })
+    expect(await check('2027-02-01T00:00:00Z')).toMatchObject({
+      body: { source: { approved: false } },
+    })
+
+    const reads = await prisma.kBVideoAuditEvent.findMany({
+      where: { sourceId: source.id, type: 'SCOPE_READ' },
+    })
+    // Only authorized, well-formed requests reach the database.
+    expect(reads).toHaveLength(3)
+  })
+
+  it('answers null for an unknown source', async () => {
+    expect(
+      await handleVideoSourceScope({
+        prisma,
+        body: { sourceId: randomUUID() },
+        authorization,
+        env,
+      })
+    ).toEqual({ statusCode: 200, body: { source: null } })
   })
 })

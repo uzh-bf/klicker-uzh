@@ -1,6 +1,7 @@
 import {
   handleKBIngestionWebhook,
   handleKBSourceGateway,
+  handleVideoSourceScope,
 } from '@klicker-uzh/graphql'
 import express, { type Express } from 'express'
 
@@ -11,6 +12,7 @@ type KBHttpRouteDependencies = {
   prisma: Parameters<typeof handleKBSourceGateway>[0]['prisma']
   sourceGateway?: typeof handleKBSourceGateway
   ingestionWebhook?: typeof handleKBIngestionWebhook
+  videoSourceScope?: typeof handleVideoSourceScope
 }
 
 export function registerKBHttpRoutes(
@@ -19,6 +21,7 @@ export function registerKBHttpRoutes(
     prisma,
     sourceGateway = handleKBSourceGateway,
     ingestionWebhook = handleKBIngestionWebhook,
+    videoSourceScope = handleVideoSourceScope,
   }: KBHttpRouteDependencies
 ) {
   app.get(
@@ -80,6 +83,26 @@ export function registerKBHttpRoutes(
         res.status(result.statusCode).json(result.body)
       } catch {
         console.error('KB ingestion webhook failed')
+        res.status(500).json({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Approval scope check for the Kaltura gateway; read-only, never cached.
+  app.post(
+    '/api/video-sources/scope',
+    express.json({ limit: '4kb' }),
+    async (req, res) => {
+      res.set('Cache-Control', 'no-store')
+      try {
+        const result = await videoSourceScope({
+          prisma,
+          body: req.body,
+          authorization: req.headers.authorization,
+        })
+        res.status(result.statusCode).json(result.body)
+      } catch {
+        console.error('Video source scope check failed')
         res.status(500).json({ error: 'Internal server error' })
       }
     }

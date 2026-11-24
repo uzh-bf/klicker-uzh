@@ -80,6 +80,21 @@ client), `packages/prisma/src/prisma/schema/videoSource.prisma`,
    source to `APPROVED` with `validUntil` = the request's period end. The
    gateway may act only while `isVideoSourceApprovedAt(source, now)` holds.
 
+## Gateway scope check
+
+The Kaltura gateway (a Catalyst service and the only Kaltura token holder)
+checks approval itself before every Kaltura call for a source:
+`POST /api/video-sources/scope` on the backend, bearer
+`VIDEO_SOURCE_SCOPE_TOKEN`, body `{sourceId}`. It answers
+`{source: null | {sourceId, status, activeRequestId, validUntil, kalturaCategoryId, cutMode, namePattern, captionLanguage, approved}}`,
+where `approved` is `isVideoSourceApprovedAt(source, now)` and `validUntil`
+is an ISO string or null. The route is registered before the JWT middleware,
+reads the database without caching (`Cache-Control: no-store`) and appends a
+`SCOPE_READ` audit event per authorized read. Unknown sources answer
+`{source: null}`; a missing token answers 503, a wrong one 401, a malformed
+id 400. The gateway proceeds only when `approved` is true and records the
+`activeRequestId` in its own audit.
+
 ## Link semantics
 
 - Token: 32 random bytes (base64url), only in the email; the database stores
