@@ -5,6 +5,14 @@ import { open, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  acquireBudgetLock,
+  assertBudgetCanStart,
+  beginBudgetTurn,
+  finishBudgetTurn,
+  readBudgetLedger,
+} from './evaluation-budget.mjs'
+import { verifyGuardQualification } from './evaluation-spend-guard.mjs'
+import {
   DEFAULT_CHATBOT_ID,
   DEFAULT_MAX_STREAM_BYTES,
   DEFAULT_MODEL_ID,
@@ -14,21 +22,13 @@ import {
   evaluationError,
   finiteCredits,
   KlickerEvaluationTarget,
-} from '../apps/chat/scripts/klicker-evaluation-target.mjs'
+} from './klicker-evaluation-target.mjs'
+import { validateNumericSidecar } from './tutor-numeric-reference.mjs'
 import {
   runTrajectory,
   TRAJECTORY_GROUPS,
   validateTrajectoryCorpus,
-} from '../apps/chat/scripts/tutor-trajectory.mjs'
-import {
-  acquireBudgetLock,
-  assertBudgetCanStart,
-  beginBudgetTurn,
-  finishBudgetTurn,
-  readBudgetLedger,
-} from './evaluation-budget.mjs'
-import { verifyGuardQualification } from './evaluation-spend-guard.mjs'
-import { validateNumericSidecar } from './tutor-numeric-reference.mjs'
+} from './tutor-trajectory.mjs'
 
 export const TRAJECTORY_ARMS = ['baseline', 'candidate', 'auto']
 
@@ -52,7 +52,7 @@ const VALUE_FLAGS = {
 }
 
 const USAGE = [
-  'Usage: node evaluation/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>] [--answer-style <balanced|bullets>] [--answer-tone <neutral|friendly|direct>]',
+  'Usage: node apps/chat/scripts/run-tutor-trajectories.mjs --corpus <file> --output <file> --arm <baseline|candidate|auto> --budget-file <file> [--repeats <n>] [--group <development|reserved|control>] [--numeric <sidecar>] [--answer-style <balanced|bullets>] [--answer-tone <neutral|friendly|direct>]',
   '',
   'Runs a frozen trajectory corpus against the local evaluation target and',
   'writes one sanitized JSONL receipt per verified turn. The output file is',

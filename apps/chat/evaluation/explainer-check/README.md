@@ -26,8 +26,8 @@ from a chat app running the change, against the same model, with one shared
 version-2 budget file:
 
 ```bash
-node evaluation/run-tutor-trajectories.mjs \
-  --corpus evaluation/data/explainer-check/corpus.json \
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus apps/chat/evaluation/explainer-check/corpus.json \
   --arm baseline --repeats 1 \
   --output project/_local/explainer-check-baseline.jsonl \
   --budget-file "$KLICKER_EVAL_BUDGET_FILE"

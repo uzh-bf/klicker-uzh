@@ -53,9 +53,14 @@ For OpenAI-compatible request-policy or prompt-cache changes, run
 see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
 for contract details and evidence boundaries.
 
+The evaluation launcher, judge and data live in the `klicker-uzh-catalyst`
+repository under `evaluation/`; paths in this section are relative to it. This
+repository keeps only the chat-side target in `apps/chat/scripts/`, tested by
+`apps/chat/test/klicker-evaluation-target.test.mjs`.
+
 For the external synthetic evaluation wrapper, run
-`bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
-Then validate all FineCo Markdown cases against
+`bash evaluation/tests/test-klicker-eval-wrapper.sh` before any credentialed
+smoke test. Then validate all FineCo Markdown cases against
 `evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
 approved secret manager or masked CI variables for live judge checks. Require
 caller-provided `LITELLM_API_BASE` and a visible namespaced model first;
@@ -74,7 +79,7 @@ active. Map the developer Foundry values to `UPSTREAM_OPENAI_API_KEY` and
 `UPSTREAM_OPENAI_BASE_URL` with the approved secret manager. The wrapper
 fetches its own judge key via the standard Infisical CLI when
 `LITELLM_API_KEY` is unset, so no personal operator is needed; the Infisical
-and CI examples are documented in `evaluation/README.md`.
+examples are documented in catalyst's `evaluation/README.md`.
 
 If the LiteLLM container already exists with different upstream values, stop
 the exact checkout and rerun this command. Run the wrapper fake-runtime test
