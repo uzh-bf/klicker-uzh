@@ -269,7 +269,7 @@ export function videoSourceProviderConfigured() {
  * period, who will be asked to approve) and the proposed recording
  * collections. Each half reports its own error so one outage does not hide
  * the other. The provider looks up the recording platform through the
- * ingestion gateway, which audits each call; Klicker records that an admin
+ * Kaltura gateway, which audits each call; Klicker records that an admin
  * asked and for which links.
  */
 export async function resolveVideoSource(

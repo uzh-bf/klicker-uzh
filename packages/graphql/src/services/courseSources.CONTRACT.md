@@ -74,7 +74,7 @@ The period is the explicit label, else the one in the link, else the current.
 `{source, period, directory: Directory | null, directoryError: string | null,
 collections: CollectionCandidate[], collectionsError: string | null}`. This is
 the admin setup preview. The two halves fail independently. `actor` is passed
-to the ingestion gateway for its audit of the Kaltura lookups.
+to the Catalyst Kaltura gateway for its audit of the Kaltura lookups.
 
 ## Errors
 
