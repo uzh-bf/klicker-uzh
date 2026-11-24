@@ -91,6 +91,9 @@ export async function issuePreviewResponseExampleReceipt({
   const question = messageText(requestMessages[0])
   const answer = messageText(responseMessage)
   if (!question || !answer) return null
+  // Writing Coach never retrieves course material, so its answers cannot be
+  // grounded examples; the preview shows no capture action for them.
+  if (chatMode === 'writing-coach') return null
 
   if (!kbId) return { unavailable: true }
 

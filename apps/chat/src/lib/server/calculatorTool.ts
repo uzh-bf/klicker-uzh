@@ -1,11 +1,12 @@
 import { jsonSchema, type ToolSet, tool } from 'ai'
+import { CALCULATOR_TOOL_NAME } from '@/src/lib/calculator'
 import {
   REPLY_LANGUAGE_REMINDER,
   type ReplyLanguageReminder,
 } from '@/src/lib/server/languageInstructions'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 
-export const CALCULATOR_TOOL_NAME = 'calculate'
+export { CALCULATOR_TOOL_NAME }
 
 const MAX_EXPRESSION_LENGTH = 500
 const MAX_EXPRESSIONS = 20
@@ -132,12 +133,15 @@ const calculatorTool = tool({
 })
 
 /**
- * Adds the calculator to the course tools in modes that check learner
- * calculations. Model arithmetic on powers and discount factors drifts in the
- * second decimal, which is enough to reject a correct learner answer.
+ * Adds the calculator to the course tools in modes that state or check
+ * computed numbers. Model arithmetic on powers and discount factors drifts in
+ * the second decimal, which is enough to reject a correct learner answer or to
+ * give a wrong result in a worked example.
  */
 function usesCalculator(chatMode: string): boolean {
-  return chatMode === 'tutor' || chatMode === 'quizzer'
+  return (
+    chatMode === 'tutor' || chatMode === 'explainer' || chatMode === 'quizzer'
+  )
 }
 
 export function withCalculatorTool(chatMode: string, tools: ToolSet): ToolSet {
