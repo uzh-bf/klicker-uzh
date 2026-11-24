@@ -77,6 +77,20 @@ function Chip({
 }
 
 /**
+ * The reader's place in each explanation (step, sliders, preset, chosen path)
+ * by explanation id. A new frame for the same explanation continues there: the
+ * stored message that replaces a streamed answer, the panel and the large
+ * view. The page reports its place and receives it back through the explainer
+ * kit's host messages; the values are display state only.
+ */
+const places = new Map<string, unknown>()
+
+/** Makes the next frame for this explanation start at its first step. */
+export function forgetExplanationPlace(id: string) {
+  places.delete(id)
+}
+
+/**
  * The page runs its own scripts in an opaque origin: no same-origin access to
  * the chat, its cookies or storage, and its own policy forbids network requests.
  * Downloads are allowed so its button can save the diagram as an image.
@@ -84,16 +98,45 @@ function Chip({
 export function ExplanationFrame({
   html,
   title,
+  placeId,
   className,
   style,
 }: {
   html: string
   title: string
+  /** Frames with the same id share the reader's place. */
+  placeId?: string
   className?: string
   style?: React.CSSProperties
 }) {
+  const frameRef = useRef<HTMLIFrameElement>(null)
+  useEffect(() => {
+    if (!placeId) return
+    const onMessage = (event: MessageEvent) => {
+      const frame = frameRef.current?.contentWindow
+      // Only this frame's page may report or ask for this explanation's place.
+      if (!frame || event.source !== frame) return
+      const data: unknown = event.data
+      if (!data || typeof data !== 'object' || !('explainer' in data)) return
+      if (data.explainer === 'ready')
+        frame.postMessage(
+          { explainer: 'restore', state: places.get(placeId) ?? null },
+          '*'
+        )
+      else if (
+        data.explainer === 'state' &&
+        'state' in data &&
+        data.state &&
+        typeof data.state === 'object'
+      )
+        places.set(placeId, data.state)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [placeId])
   return (
     <iframe
+      ref={frameRef}
       title={title}
       srcDoc={html}
       sandbox="allow-scripts allow-downloads"
@@ -143,6 +186,7 @@ export function ExplanationCard({
   // The large frame is mounted only while the dialog is open, so each
   // explanation runs once.
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [inlineFrame, setInlineFrame] = useState(0)
 
   useEffect(() => {
     if (!content || !params.chatbotId) return
@@ -269,8 +313,11 @@ export function ExplanationCard({
         </div>
       ) : html !== null ? (
         <ExplanationFrame
+          // A new frame after the large view closes picks up the place reached there.
+          key={inlineFrame}
           html={html}
           title={title}
+          placeId={id}
           className="block w-full border-0"
           style={{ height: FRAME_HEIGHT }}
         />
@@ -288,7 +335,10 @@ export function ExplanationCard({
           ref={dialogRef}
           className="m-auto h-[90vh] w-[min(1200px,95vw)] max-w-none rounded-md p-0 backdrop:bg-black/40"
           aria-label={title}
-          onClose={() => setDialogOpen(false)}
+          onClose={() => {
+            setDialogOpen(false)
+            setInlineFrame((n) => n + 1)
+          }}
         >
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-end border-b border-slate-200 px-2 py-1">
@@ -305,6 +355,7 @@ export function ExplanationCard({
               <ExplanationFrame
                 html={html}
                 title={title}
+                placeId={id}
                 className="min-h-0 w-full flex-1 border-0"
               />
             ) : null}
