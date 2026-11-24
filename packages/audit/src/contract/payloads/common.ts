@@ -60,13 +60,6 @@ const forbiddenEvidenceKeyParts = new Set([
   'token',
 ])
 
-const forbiddenEvidenceValuePatterns = [
-  /(?:^|\s)Bearer\s+[A-Za-z0-9._~+/-]+/i,
-  /(?:^|[?&])(sig|se|sp|sv|srt|ss)=[^\s&#]+/i,
-  /(?:AccountKey|SharedAccessKey|SharedAccessSignature)\s*=/i,
-  /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
-]
-
 function normalizeKey(key: string): string {
   return key.replaceAll(/[^a-zA-Z0-9]/g, '').toLowerCase()
 }
@@ -83,12 +76,6 @@ export function assertNoForbiddenEvidenceFields(
   }
 
   if (value === null || typeof value !== 'object') {
-    if (
-      typeof value === 'string' &&
-      forbiddenEvidenceValuePatterns.some((pattern) => pattern.test(value))
-    ) {
-      throw new Error(`Forbidden audit evidence value at ${path}`)
-    }
     return
   }
 

@@ -189,22 +189,6 @@ describe('canonical audit envelope', () => {
     expect(() =>
       createCanonicalAuditEvent(context(), {
         eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
-        producerOperationId: `${correlationId}:secret-value`,
-        payload: {
-          entityType: 'ASSESSMENT',
-          entityId: liveQuizId,
-          before: assessmentState('Assessment'),
-          after: {
-            ...assessmentState('Assessment'),
-            description: 'Bearer abc.def.ghi',
-          },
-        },
-      })
-    ).toThrow('Forbidden audit evidence value')
-
-    expect(() =>
-      createCanonicalAuditEvent(context(), {
-        eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
         producerOperationId: `${correlationId}:2`,
         payload: {
           entityType: 'ASSESSMENT',
@@ -236,6 +220,24 @@ describe('canonical audit envelope', () => {
         },
       })
     ).toThrow()
+  })
+
+  it('keeps content that resembles a credential', () => {
+    expect(() =>
+      createCanonicalAuditEvent(context(), {
+        eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
+        producerOperationId: `${correlationId}:credential-like`,
+        payload: {
+          entityType: 'ASSESSMENT',
+          entityId: liveQuizId,
+          before: assessmentState('Assessment'),
+          after: {
+            ...assessmentState('Assessment'),
+            description: 'Bearer bonds pay coupons',
+          },
+        },
+      })
+    ).not.toThrow()
   })
 
   it('keeps deferred tiers unavailable to callers', () => {

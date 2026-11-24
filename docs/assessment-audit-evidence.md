@@ -199,9 +199,10 @@ path before those events can be constructed.
 payload schema version, instead of trusting the producer to supply it. Every
 event uses an explicit, normalized payload allowlist; raw Prisma records and
 arbitrary JSON blobs are not contract values. Strict Zod schemas reject unknown
-fields, and a second guard rejects secret-bearing names and values such as
-tokens, cookies, authorization headers, passwords, private keys, and SAS query
-strings. Participant evidence retains the stable participant UUID; it does not
+fields, and a second guard rejects secret-bearing field names such as tokens,
+cookies, authorization headers, and passwords. String values are not
+pattern-matched: they are participant or lecturer content, and URL fields are
+query-free by schema. Participant evidence retains the stable participant UUID; it does not
 copy participant profile data into the evidence contract.
 
 Payload schemas are retained and dispatched by `(eventType,
