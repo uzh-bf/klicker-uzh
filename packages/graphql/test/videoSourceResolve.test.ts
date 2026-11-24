@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -13,7 +12,6 @@ import { rankCategoryCandidates } from '../src/services/videoSourceApprovalCore.
 // Synthetic ids, names and addresses only.
 const HS26 = { piqYear: '2026', piqSession: '003' as const }
 const d = (iso: string) => new Date(iso)
-const unix = (iso: string) => Math.floor(d(iso).getTime() / 1000)
 
 describe('rankCategoryCandidates', () => {
   it('sorts newest first and proposes the run with recordings this semester', () => {
@@ -82,41 +80,42 @@ describe('rankCategoryCandidates', () => {
   })
 })
 
-describe('createKalturaCatalog', () => {
-  it('starts an app token session and lists categories and entries', async () => {
-    const calls: Array<{ url: string; body: Record<string, unknown> }> = []
+describe('createKalturaCatalog (gateway client)', () => {
+  const actor = { userId: 'admin-1', email: 'admin@example.org' }
+
+  it('asks the gateway, never Kaltura, and identifies the admin', async () => {
+    const calls: Array<{
+      url: string
+      headers: Record<string, string>
+      body: Record<string, unknown>
+    }> = []
     const responses: Record<string, unknown> = {
-      'session/action/startWidgetSession': { ks: 'widget-ks' },
-      'appToken/action/startSession': { ks: 'app-ks' },
-      'category/action/list': {
-        objects: [
+      'olat-node': {
+        categories: [
           {
             id: 11,
             name: 'ctx-2000001',
             fullName: 'a>ctx-2000001',
-            createdAt: unix('2026-08-01T00:00:00Z'),
+            createdAt: '2026-08-01T00:00:00Z',
             entriesCount: 4,
           },
           {
             id: 12,
             name: 'ctx-92000001',
             fullName: 'a>ctx-92000001',
-            createdAt: unix('2026-08-01T00:00:00Z'),
+            createdAt: '2026-08-01T00:00:00Z',
             entriesCount: 1,
           },
         ],
       },
-      'categoryEntry/action/list': {
-        objects: [{ entryId: '0_a' }, { entryId: '0_b' }],
-      },
-      'baseEntry/action/list': {
-        objects: [
+      entries: {
+        entries: [
           {
             id: '0_a',
             name: 'Lecture',
             mediaType: 1,
             status: 2,
-            createdAt: unix('2026-09-01T00:00:00Z'),
+            createdAt: '2026-09-01T00:00:00Z',
           },
           {
             id: '0_b',
@@ -124,24 +123,19 @@ describe('createKalturaCatalog', () => {
             mediaType: 1,
             status: 2,
             parentEntryId: '0_a',
-            createdAt: unix('2026-09-01T00:00:00Z'),
+            createdAt: '2026-09-01T00:00:00Z',
           },
         ],
       },
+      category: { category: null },
     }
-    const audited: Array<{ action: string; params: Record<string, unknown> }> =
-      []
     const kaltura = createKalturaCatalog({
-      beforeCall: async ({ service, action, params }) => {
-        audited.push({ action: `${service}.${action}`, params })
-      },
-      serviceUrl: 'https://kaltura.example.org/',
-      partnerId: '1',
-      appTokenId: 'token-id',
-      appToken: 'fake-app-token',
+      actor,
+      gatewayUrl: 'https://gateway.example.org/',
+      gatewayToken: 'fake-gateway-credential',
       fetch: async (url, init) => {
-        calls.push({ url, body: JSON.parse(init.body) })
-        const key = url.split('/api_v3/service/')[1] ?? ''
+        calls.push({ url, headers: init.headers, body: JSON.parse(init.body) })
+        const key = url.split('/v1/lookup/')[1] ?? ''
         return { ok: true, status: 200, json: async () => responses[key] }
       },
     })
@@ -150,42 +144,30 @@ describe('createKalturaCatalog', () => {
     expect(categories.map((c) => c.id)).toEqual(['11'])
     const entries = await kaltura.listRecentEntries('11', 10)
     expect(entries.map((e) => e.parentEntryId)).toEqual([null, '0_a'])
+    expect(await kaltura.getCategory('999')).toBeNull()
 
-    const start = calls.find((c) =>
-      c.url.endsWith('appToken/action/startSession')
-    )
-    expect(start?.body.tokenHash).toBe(
-      createHash('sha256').update('widget-ksfake-app-token').digest('hex')
-    )
-    // One session serves all calls.
-    expect(
-      calls.filter((c) => c.url.includes('startWidgetSession'))
-    ).toHaveLength(1)
-    expect(calls.at(-1)?.body.ks).toBe('app-ks')
-    // Every request is announced first, without session or token material.
-    expect(audited.map((a) => a.action)).toEqual(
-      calls.map((c) =>
-        c.url.split('/api_v3/service/')[1]?.replace('/action/', '.')
-      )
-    )
-    expect(JSON.stringify(audited)).not.toMatch(
-      /app-ks|widget-ks|tokenHash|token-id/
-    )
-    expect(
-      audited.find((a) => a.action === 'category.list')?.params
-    ).toMatchObject({ filter: { freeText: '2000001' } })
+    expect(calls.map((c) => c.url)).toEqual([
+      'https://gateway.example.org/v1/lookup/olat-node',
+      'https://gateway.example.org/v1/lookup/entries',
+      'https://gateway.example.org/v1/lookup/category',
+    ])
+    for (const call of calls) {
+      expect(call.body.actor).toEqual(actor)
+      expect(call.headers.Authorization).toBe('Bearer fake-gateway-credential')
+    }
   })
 
-  it('reports missing credentials instead of calling Kaltura', async () => {
+  it('reports a missing gateway instead of calling anything', async () => {
     const kaltura = createKalturaCatalog({
-      appTokenId: '',
-      appToken: '',
+      actor,
+      gatewayUrl: '',
+      gatewayToken: '',
       fetch: async () => {
         throw new Error('must not be called')
       },
     })
     await expect(kaltura.findCategoriesForOlatNode('1')).rejects.toThrow(
-      'not configured'
+      'not available yet'
     )
   })
 })

@@ -25,15 +25,14 @@ approved. A `KBVideoSource` binds one admin-confirmed Kaltura category (with a
 cut mode) and a courses.uzh.ch link to a knowledge base. Nothing is fetched for
 a source until it is approved for the current semester.
 
-The token has two holders. The ingestion gateway uses it for approved
-sources only. The GraphQL backend also uses it, in `kalturaCatalog.ts`, while
-an admin sets up a source and the category is by definition not approved
-yet. That second use is limited: admins only (`resolveVideoSource`), the
-allow-listed metadata actions `category.get`, `category.list`,
-`categoryEntry.list` and `baseEntry.list` plus session start (no flavor,
-caption or download URLs), and a `KALTURA_LOOKUP_REQUESTED` audit event per
-lookup followed by a write-ahead `KALTURA_LOOKUP_CALL` event before every
-request, recording the actor and parameters but never the session or token.
+Klicker never holds the Kaltura token; the ingestion gateway is its only
+holder. When an admin sets up a source, `resolveVideoSource` (admins only)
+asks the gateway's metadata lookup endpoints through `kalturaCatalog.ts`
+(`POST /v1/lookup/olat-node`, `/v1/lookup/category`, `/v1/lookup/entries`,
+each carrying the acting admin). The gateway allow-lists the Kaltura actions
+behind them (category and entry metadata only, no flavor, caption or
+download URLs) and writes its own write-ahead audit record per Kaltura call.
+Klicker appends `KALTURA_LOOKUP_REQUESTED` with the actor and the links.
 
 Code: `packages/graphql/src/services/videoSourceApproval.ts` (database flow),
 `videoSourceApprovalCore.ts` (pure rules), `packages/prisma/src/prisma/schema/videoSource.prisma`,
@@ -111,11 +110,11 @@ text hash.
   transactional `update-templates` script for the target environment, or the
   request fails to send (the request row and audit entry still exist and the
   result lists the unsent recipients).
-- The calling service needs egress to `studentservices.uzh.ch` and
-  `api.cast.switch.ch`. Kaltura lookups read `KALTURA_APP_TOKEN_ID` and
-  `KALTURA_APP_TOKEN` (optional `KALTURA_SERVICE_URL`, `KALTURA_PARTNER_ID`);
-  without them the page still resolves the VVZ half and the admin enters the
-  category id by hand.
+- The calling service needs egress to `studentservices.uzh.ch` and to the
+  ingestion gateway (`KALTURA_GATEWAY_URL`, service credential
+  `KALTURA_GATEWAY_TOKEN`), never to Kaltura itself. Without the gateway the
+  page still resolves the VVZ half and the admin enters the category id by
+  hand.
 - Local stacks set `VIDEO_APPROVAL_ALLOW_NON_EDUID=true` because delegated
   logins have no edu-ID. Never set it in staging or production.
 - Changing `VIDEO_APPROVAL_CONSENT_TEXT` requires a new

@@ -287,19 +287,23 @@ export async function resolveVideoSource(
   } = {}
 ) {
   const now = deps.now?.() ?? new Date()
-  // The backend holds the broad Kaltura token here too, for categories that
-  // are not approved yet. Admin-only, metadata-only, and every request is
-  // audited before it is sent.
+  // Klicker holds no Kaltura token: lookups go through the ingestion gateway,
+  // which audits every Kaltura call itself. Klicker records that an admin
+  // asked for a lookup and for which links.
   let actor: Awaited<ReturnType<typeof loadActor>> | undefined
+  const loadLookupActor = async () => {
+    actor ??= await loadActor(ctx)
+    return actor
+  }
   const audit =
     deps.audit ??
     ((type: string, payload: Record<string, unknown>) =>
       ctx.prisma.$transaction(async (tx) => {
-        actor ??= await loadActor(ctx)
+        const who = await loadLookupActor()
         await appendVideoAuditEvent(tx, {
           type,
-          actorUserId: actor.id,
-          actorEmail: actor.email,
+          actorUserId: who.id,
+          actorEmail: who.email,
           payload,
         })
       }))
@@ -352,7 +356,10 @@ export async function resolveVideoSource(
       const kaltura =
         deps.kaltura ??
         createKalturaCatalog({
-          beforeCall: (call) => audit('KALTURA_LOOKUP_CALL', { ...call }),
+          actor: await loadLookupActor().then((a) => ({
+            userId: a.id,
+            email: a.email,
+          })),
         })
       const categories =
         link.kind === 'KALTURA_CHANNEL'
