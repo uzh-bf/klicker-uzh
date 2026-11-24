@@ -31,26 +31,15 @@ import {
   auditOperationPayloadSchema,
   type BulkOperationPayload,
   bulkOperationPayloadSchema,
-  type ClientOperationPayload,
-  clientOperationPayloadSchema,
-  type EvidenceAdministrationPayload,
-  evidenceAdministrationPayloadSchema,
   type ReportPayload,
   reportPayloadSchema,
 } from './payloads/operations.js'
 import {
-  type AnswerChangePayload,
-  answerChangePayloadSchema,
   type ResponseChangePayload,
   responseChangePayloadSchema,
-  type SubmissionAttemptPayload,
   type SubmissionOutcomePayload,
-  submissionAttemptPayloadSchema,
   submissionOutcomePayloadSchema,
 } from './payloads/submission.js'
-
-export const DELIVERY_TIERS = ['LAUNCH', 'FAST_FOLLOW', 'STACK_2'] as const
-export type DeliveryTier = (typeof DELIVERY_TIERS)[number]
 
 export const EMISSION_PATHS = [
   'LANE_1_OUTBOX',
@@ -82,14 +71,10 @@ export type RecordedVia = (typeof RECORDED_VIA_VALUES)[number]
 
 type FamilyDefinition = {
   events: readonly string[]
-  tier: DeliveryTier
   emissionPath: EmissionPath
   evidenceClass: EvidenceClass
   criticality: AuditCriticality
   allowedRecordedVia: readonly RecordedVia[]
-  ownerPackage: string
-  producer: string
-  durabilityPoint: string
 }
 
 const EVENT_FAMILIES = [
@@ -100,14 +85,10 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_BASELINE_ROOT_RECORDED',
       'ASSESSMENT_BASELINE_PART_RECORDED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'assessment audit activation and baseline service',
-    durabilityPoint: 'coverage/baseline transaction commit',
   },
   {
     events: [
@@ -125,14 +106,10 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_IMPORTED',
       'ASSESSMENT_DELETED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'LiveQuiz lifecycle services and scheduled workers',
-    durabilityPoint: 'lifecycle transaction commit',
   },
   {
     events: [
@@ -152,14 +129,10 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_MEDIA_CAPTURED',
       'ASSESSMENT_MEDIA_REPLACED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'LiveQuiz content and configuration services',
-    durabilityPoint: 'content/configuration transaction commit',
   },
   {
     events: [
@@ -167,61 +140,27 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_SESSION_RESUMED',
       'ASSESSMENT_SESSION_ENDED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'SERVER_OBSERVED',
     criticality: 'STANDARD',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'LiveQuiz runtime session transitions',
-    durabilityPoint: 'runtime transition transaction commit',
   },
   {
     events: [
       'ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED',
       'ASSESSMENT_LECTURER_PERMISSION_CHANGED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'assessment eligibility and permission services',
-    durabilityPoint: 'eligibility/permission transaction commit',
   },
   {
     events: ['ASSESSMENT_ACTION_REJECTED'],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'SERVER_OBSERVED',
     criticality: 'STANDARD',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'authenticated assessment endpoints and workers',
-    durabilityPoint: 'standalone audit transaction commit',
-  },
-  {
-    events: ['RESPONSE_ANSWER_CHANGED', 'RESPONSE_ANSWER_CLEARED'],
-    tier: 'STACK_2',
-    emissionPath: 'CLIENT_INGRESS',
-    evidenceClass: 'CLIENT_OBSERVED',
-    criticality: 'STANDARD',
-    allowedRecordedVia: ['CLIENT_QUEUE_DRAINER'],
-    ownerPackage: '@klicker-uzh/audit-ingress',
-    producer: 'PWA client outbox through independent ingress',
-    durabilityPoint: 'Azure Queue insertion before client acknowledgement',
-  },
-  {
-    events: ['SUBMISSION_ATTEMPTED', 'SUBMISSION_AUTO_TRIGGERED'],
-    tier: 'STACK_2',
-    emissionPath: 'CLIENT_INGRESS',
-    evidenceClass: 'CLIENT_OBSERVED',
-    criticality: 'STANDARD',
-    allowedRecordedVia: ['CLIENT_QUEUE_DRAINER'],
-    ownerPackage: '@klicker-uzh/audit-ingress',
-    producer: 'PWA client outbox through independent ingress',
-    durabilityPoint: 'Azure Queue insertion before client acknowledgement',
   },
   {
     events: [
@@ -230,47 +169,31 @@ const EVENT_FAMILIES = [
       'SUBMISSION_REJECTED',
       'SUBMISSION_DUPLICATE',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_2_HATCHET',
     evidenceClass: 'SERVER_OBSERVED',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['HATCHET_PROCESSOR'],
-    ownerPackage: '@klicker-uzh/hatchet-worker-response-processor',
-    producer: 'assessment response processor',
-    durabilityPoint: 'processor audit transaction before task completion',
   },
   {
     events: ['SUBMISSION_PERSISTED', 'SUBMISSION_SCORED'],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_2_HATCHET',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['HATCHET_PROCESSOR'],
-    ownerPackage: '@klicker-uzh/hatchet-worker-response-processor',
-    producer: 'assessment response processor',
-    durabilityPoint: 'response/scoring transaction commit',
   },
   {
     events: ['SUBMISSION_PROCESSING_FAILED', 'SUBMISSION_PROCESSING_RECOVERED'],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_2_HATCHET',
     evidenceClass: 'SERVER_OBSERVED',
     criticality: 'STANDARD',
     allowedRecordedVia: ['HATCHET_PROCESSOR'],
-    ownerPackage: '@klicker-uzh/hatchet-worker-response-processor',
-    producer: 'assessment response processor',
-    durabilityPoint: 'processor audit transaction before task completion',
   },
   {
     events: ['ASSESSMENT_POINTS_CORRECTED', 'ASSESSMENT_PARTICIPANT_RESET'],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'response and scoring administration services',
-    durabilityPoint: 'response/scoring transaction commit',
   },
   {
     events: [
@@ -278,14 +201,10 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_BULK_ITEM_COMPLETED',
       'ASSESSMENT_BULK_OPERATION_COMPLETED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'assessment bulk services and workers',
-    durabilityPoint: 'per-effect transaction commit',
   },
   {
     events: [
@@ -293,76 +212,17 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_REPORT_SUPERSEDED',
       'ASSESSMENT_REPORT_REVOKED',
     ],
-    tier: 'LAUNCH',
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'AUTHORITATIVE',
     criticality: 'CRITICAL',
     allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'assessment report service',
-    durabilityPoint: 'report transaction commit',
   },
   {
-    events: [
-      'EVIDENCE_ANNOTATION',
-      'EVIDENCE_HOLD_PLACED',
-      'EVIDENCE_HOLD_RELEASED',
-    ],
-    tier: 'FAST_FOLLOW',
-    emissionPath: 'OWNER_CLI',
-    evidenceClass: 'ADMINISTRATIVE',
-    criticality: 'STANDARD',
-    allowedRecordedVia: ['OWNER_CLI'],
-    ownerPackage: '@klicker-uzh/audit',
-    producer: 'evidence owner CLI',
-    durabilityPoint: 'direct append-only Azure control-table creation',
-  },
-  {
-    events: [
-      'AUDIT_GAP_DETECTED',
-      'AUDIT_GAP_RESOLVED',
-      'AUDIT_CLIENT_EVENT_REJECTED',
-    ],
-    tier: 'STACK_2',
-    emissionPath: 'CLIENT_INGRESS',
-    evidenceClass: 'SERVER_OBSERVED',
-    criticality: 'STANDARD',
-    allowedRecordedVia: ['CLIENT_QUEUE_DRAINER'],
-    ownerPackage: '@klicker-uzh/audit-ingress',
-    producer: 'independent ingress and client queue drainer',
-    durabilityPoint: 'queue-drainer append transaction',
-  },
-  {
-    events: [
-      'AUDIT_DELIVERY_DELAYED',
-      'AUDIT_DELIVERY_CONFLICTED',
-      'AUDIT_DELIVERY_QUARANTINED',
-      'AUDIT_DELIVERY_RECOVERED',
-    ],
-    tier: 'LAUNCH',
+    events: ['AUDIT_DELIVERY_QUARANTINED'],
     emissionPath: 'LANE_1_OUTBOX',
     evidenceClass: 'SERVER_OBSERVED',
     criticality: 'STANDARD',
     allowedRecordedVia: ['AUDIT_SERVICE'],
-    ownerPackage: '@klicker-uzh/audit',
-    producer: 'audit dispatcher and monitor',
-    durabilityPoint: 'standalone audit transaction commit',
-  },
-  {
-    events: [
-      'AUDIT_MANIFEST_SEALED',
-      'AUDIT_MANIFEST_FAILED',
-      'AUDIT_RETENTION_COMPLETED',
-      'AUDIT_RETENTION_FAILED',
-    ],
-    tier: 'FAST_FOLLOW',
-    emissionPath: 'LANE_1_OUTBOX',
-    evidenceClass: 'SERVER_OBSERVED',
-    criticality: 'STANDARD',
-    allowedRecordedVia: ['AUDIT_SERVICE'],
-    ownerPackage: '@klicker-uzh/audit',
-    producer: 'manifest sealer and retention worker',
-    durabilityPoint: 'standalone audit transaction commit',
   },
 ] as const satisfies readonly FamilyDefinition[]
 
@@ -422,16 +282,6 @@ type BulkEvent =
   | 'ASSESSMENT_BULK_ITEM_COMPLETED'
   | 'ASSESSMENT_BULK_OPERATION_COMPLETED'
 
-type AuditOperationEvent =
-  | 'AUDIT_DELIVERY_DELAYED'
-  | 'AUDIT_DELIVERY_CONFLICTED'
-  | 'AUDIT_DELIVERY_QUARANTINED'
-  | 'AUDIT_DELIVERY_RECOVERED'
-  | 'AUDIT_MANIFEST_SEALED'
-  | 'AUDIT_MANIFEST_FAILED'
-  | 'AUDIT_RETENTION_COMPLETED'
-  | 'AUDIT_RETENTION_FAILED'
-
 export type EventPayload<T extends EventType> =
   T extends 'ASSESSMENT_AUDIT_ACTIVATED'
     ? AuditActivatedPayload
@@ -457,38 +307,20 @@ export type EventPayload<T extends EventType> =
                       ? SessionPayload
                       : T extends 'ASSESSMENT_ACTION_REJECTED'
                         ? RejectedActionPayload
-                        : T extends
-                              | 'RESPONSE_ANSWER_CHANGED'
-                              | 'RESPONSE_ANSWER_CLEARED'
-                          ? AnswerChangePayload
-                          : T extends
-                                | 'SUBMISSION_ATTEMPTED'
-                                | 'SUBMISSION_AUTO_TRIGGERED'
-                            ? SubmissionAttemptPayload
-                            : T extends SubmissionOutcomeEvent
-                              ? SubmissionOutcomePayload
-                              : T extends ResponseChangeEvent
-                                ? ResponseChangePayload
-                                : T extends BulkEvent
-                                  ? BulkOperationPayload
-                                  : T extends
-                                        | 'ASSESSMENT_REPORT_ISSUED'
-                                        | 'ASSESSMENT_REPORT_SUPERSEDED'
-                                        | 'ASSESSMENT_REPORT_REVOKED'
-                                    ? ReportPayload
-                                    : T extends
-                                          | 'EVIDENCE_ANNOTATION'
-                                          | 'EVIDENCE_HOLD_PLACED'
-                                          | 'EVIDENCE_HOLD_RELEASED'
-                                      ? EvidenceAdministrationPayload
-                                      : T extends
-                                            | 'AUDIT_GAP_DETECTED'
-                                            | 'AUDIT_GAP_RESOLVED'
-                                            | 'AUDIT_CLIENT_EVENT_REJECTED'
-                                        ? ClientOperationPayload
-                                        : T extends AuditOperationEvent
-                                          ? AuditOperationPayload
-                                          : never
+                        : T extends SubmissionOutcomeEvent
+                          ? SubmissionOutcomePayload
+                          : T extends ResponseChangeEvent
+                            ? ResponseChangePayload
+                            : T extends BulkEvent
+                              ? BulkOperationPayload
+                              : T extends
+                                    | 'ASSESSMENT_REPORT_ISSUED'
+                                    | 'ASSESSMENT_REPORT_SUPERSEDED'
+                                    | 'ASSESSMENT_REPORT_REVOKED'
+                                ? ReportPayload
+                                : T extends 'AUDIT_DELIVERY_QUARANTINED'
+                                  ? AuditOperationPayload
+                                  : never
 
 const copiedLifecycleSchema = lifecycleTransitionPayloadSchema('DRAFT').refine(
   (value) => value.sourceLiveQuizId !== undefined,
@@ -617,10 +449,6 @@ const EVENT_PAYLOAD_SCHEMAS: Record<EventType, z.ZodTypeAny> = {
   ASSESSMENT_SESSION_RESUMED: sessionPayloadSchema('RESUMED'),
   ASSESSMENT_SESSION_ENDED: sessionPayloadSchema('ENDED'),
   ASSESSMENT_ACTION_REJECTED: rejectedActionPayloadSchema,
-  RESPONSE_ANSWER_CHANGED: answerChangePayloadSchema(false),
-  RESPONSE_ANSWER_CLEARED: answerChangePayloadSchema(true),
-  SUBMISSION_ATTEMPTED: submissionAttemptPayloadSchema('CLICK'),
-  SUBMISSION_AUTO_TRIGGERED: submissionAttemptPayloadSchema('AUTO'),
   SUBMISSION_SERVER_ACCEPTED: submissionOutcomePayloadSchema('SERVER_ACCEPTED'),
   SUBMISSION_VALIDATED: submissionOutcomePayloadSchema('VALIDATED'),
   SUBMISSION_REJECTED: submissionOutcomePayloadSchema('REJECTED'),
@@ -646,31 +474,9 @@ const EVENT_PAYLOAD_SCHEMAS: Record<EventType, z.ZodTypeAny> = {
     (value) => value.reasonCode !== undefined,
     { message: 'revoked reports require reasonCode' }
   ),
-  EVIDENCE_ANNOTATION: evidenceAdministrationPayloadSchema.refine(
-    (value) => value.annotation !== undefined,
-    { message: 'evidence annotations require annotation text' }
-  ),
-  EVIDENCE_HOLD_PLACED: evidenceAdministrationPayloadSchema,
-  EVIDENCE_HOLD_RELEASED: evidenceAdministrationPayloadSchema,
-  AUDIT_GAP_DETECTED: clientOperationPayloadSchema,
-  AUDIT_GAP_RESOLVED: clientOperationPayloadSchema,
-  AUDIT_CLIENT_EVENT_REJECTED: clientOperationPayloadSchema,
-  AUDIT_DELIVERY_DELAYED: auditOperationPayloadSchema('AUDIT_DELIVERY_DELAYED'),
-  AUDIT_DELIVERY_CONFLICTED: auditOperationPayloadSchema(
-    'AUDIT_DELIVERY_CONFLICTED'
-  ),
   AUDIT_DELIVERY_QUARANTINED: auditOperationPayloadSchema(
     'AUDIT_DELIVERY_QUARANTINED'
   ),
-  AUDIT_DELIVERY_RECOVERED: auditOperationPayloadSchema(
-    'AUDIT_DELIVERY_RECOVERED'
-  ),
-  AUDIT_MANIFEST_SEALED: auditOperationPayloadSchema('AUDIT_MANIFEST_SEALED'),
-  AUDIT_MANIFEST_FAILED: auditOperationPayloadSchema('AUDIT_MANIFEST_FAILED'),
-  AUDIT_RETENTION_COMPLETED: auditOperationPayloadSchema(
-    'AUDIT_RETENTION_COMPLETED'
-  ),
-  AUDIT_RETENTION_FAILED: auditOperationPayloadSchema('AUDIT_RETENTION_FAILED'),
 }
 
 export type EventRegistration = Omit<FamilyDefinition, 'events'> & {
@@ -679,15 +485,10 @@ export type EventRegistration = Omit<FamilyDefinition, 'events'> & {
   requiresParticipantScope: boolean
   requiresSubmissionId: boolean
   requiresHatchetEventId: boolean
-  requiresClientProvenance: boolean
 }
 
 const participantScopedEvents = new Set<EventType>([
   'ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED',
-  'RESPONSE_ANSWER_CHANGED',
-  'RESPONSE_ANSWER_CLEARED',
-  'SUBMISSION_ATTEMPTED',
-  'SUBMISSION_AUTO_TRIGGERED',
   'SUBMISSION_SERVER_ACCEPTED',
   'SUBMISSION_VALIDATED',
   'SUBMISSION_REJECTED',
@@ -698,14 +499,9 @@ const participantScopedEvents = new Set<EventType>([
   'SUBMISSION_PROCESSING_RECOVERED',
   'ASSESSMENT_POINTS_CORRECTED',
   'ASSESSMENT_PARTICIPANT_RESET',
-  'AUDIT_GAP_DETECTED',
-  'AUDIT_GAP_RESOLVED',
-  'AUDIT_CLIENT_EVENT_REJECTED',
 ])
 
 const submissionEvents = new Set<EventType>([
-  'SUBMISSION_ATTEMPTED',
-  'SUBMISSION_AUTO_TRIGGERED',
   'SUBMISSION_SERVER_ACCEPTED',
   'SUBMISSION_VALIDATED',
   'SUBMISSION_REJECTED',
@@ -727,16 +523,6 @@ const hatchetEvents = new Set<EventType>([
   'SUBMISSION_PROCESSING_RECOVERED',
 ])
 
-const clientProvenanceEvents = new Set<EventType>([
-  'RESPONSE_ANSWER_CHANGED',
-  'RESPONSE_ANSWER_CLEARED',
-  'SUBMISSION_ATTEMPTED',
-  'SUBMISSION_AUTO_TRIGGERED',
-  'AUDIT_GAP_DETECTED',
-  'AUDIT_GAP_RESOLVED',
-  'AUDIT_CLIENT_EVENT_REJECTED',
-])
-
 const registrations: Partial<Record<EventType, EventRegistration>> = {}
 const stableEventTypes: EventType[] = []
 
@@ -756,7 +542,6 @@ for (const family of EVENT_FAMILIES) {
       requiresParticipantScope: participantScopedEvents.has(eventType),
       requiresSubmissionId: submissionEvents.has(eventType),
       requiresHatchetEventId: hatchetEvents.has(eventType),
-      requiresClientProvenance: clientProvenanceEvents.has(eventType),
     })
     stableEventTypes.push(eventType)
   }
@@ -785,13 +570,4 @@ export function getEventPayloadSchema(
     )
   }
   return schema
-}
-
-export function assertEventTierEnabled(eventType: EventType): void {
-  const registration = EVENT_REGISTRY[eventType]
-  if (registration.tier !== 'LAUNCH') {
-    throw new Error(
-      `Audit event ${eventType} belongs to disabled delivery tier ${registration.tier}`
-    )
-  }
 }

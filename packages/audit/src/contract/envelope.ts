@@ -6,7 +6,6 @@ import {
   deriveAuditEventIdentity,
 } from '../canonical/idempotency.js'
 import {
-  assertEventTierEnabled,
   CRITICALITIES,
   type EVENT_REGISTRY,
   EVIDENCE_CLASSES,
@@ -84,13 +83,6 @@ const additionalScopeSchema = z
 
 const scopeSchema = baseScopeSchema.merge(additionalScopeSchema)
 
-const scopeValidationSchema = z
-  .object({
-    result: z.enum(['MATCHED', 'MISMATCHED', 'UNAVAILABLE']),
-    reasonCode: stableCodeSchema.optional(),
-  })
-  .strict()
-
 const envelopeSchema = z
   .object({
     eventId: uuidSchema,
@@ -104,8 +96,6 @@ const envelopeSchema = z
     transportAttemptedAt: utcIsoMillisecondsSchema.optional(),
     transportAcceptedAt: utcIsoMillisecondsSchema.optional(),
     recordedAt: utcIsoMillisecondsSchema,
-    clientOccurredAt: utcIsoMillisecondsSchema.optional(),
-    clientExpiresAt: utcIsoMillisecondsSchema.optional(),
     actor: actorSchema,
     initiatedBy: initiatedBySchema.optional(),
     authorization: authorizationSchema,
@@ -114,12 +104,6 @@ const envelopeSchema = z
     causationId: uuidSchema.optional(),
     submissionId: uuidSchema.optional(),
     hatchetEventId: z.string().min(1).max(256).optional(),
-    ingressReceiptId: z.string().min(1).max(256).optional(),
-    captureTokenId: uuidSchema.optional(),
-    scopeValidation: scopeValidationSchema.optional(),
-    clientEventId: uuidSchema.optional(),
-    clientStreamId: uuidSchema.optional(),
-    clientSequence: z.number().int().nonnegative().optional(),
     outcome: stableCodeSchema.optional(),
     payload: jsonValueSchema,
     payloadHash: z.string().regex(/^[0-9a-f]{64}$/),
@@ -157,14 +141,6 @@ const draftSchema = z
     causationId: uuidSchema.optional(),
     submissionId: uuidSchema.optional(),
     hatchetEventId: z.string().min(1).max(256).optional(),
-    ingressReceiptId: z.string().min(1).max(256).optional(),
-    captureTokenId: uuidSchema.optional(),
-    scopeValidation: scopeValidationSchema.optional(),
-    clientEventId: uuidSchema.optional(),
-    clientStreamId: uuidSchema.optional(),
-    clientSequence: z.number().int().nonnegative().optional(),
-    clientOccurredAt: z.string().datetime({ offset: true }).optional(),
-    clientExpiresAt: z.string().datetime({ offset: true }).optional(),
     outcome: stableCodeSchema.optional(),
     payload: z.unknown(),
   })
@@ -196,14 +172,6 @@ export type AuditEventDraft<T extends EventType = EventType> = {
   causationId?: string
   submissionId?: string
   hatchetEventId?: string
-  ingressReceiptId?: string
-  captureTokenId?: string
-  scopeValidation?: z.infer<typeof scopeValidationSchema>
-  clientEventId?: string
-  clientStreamId?: string
-  clientSequence?: number
-  clientOccurredAt?: string
-  clientExpiresAt?: string
   outcome?: string
   payload: EventPayload<T>
 }
@@ -220,8 +188,6 @@ export type AuditEnvelope = {
   transportAttemptedAt?: string
   transportAcceptedAt?: string
   recordedAt: string
-  clientOccurredAt?: string
-  clientExpiresAt?: string
   actor: AuditActor
   initiatedBy?: z.infer<typeof initiatedBySchema>
   authorization: AuditAuthorization
@@ -230,12 +196,6 @@ export type AuditEnvelope = {
   causationId?: string
   submissionId?: string
   hatchetEventId?: string
-  ingressReceiptId?: string
-  captureTokenId?: string
-  scopeValidation?: z.infer<typeof scopeValidationSchema>
-  clientEventId?: string
-  clientStreamId?: string
-  clientSequence?: number
   outcome?: string
   payload: JsonValue
   payloadHash: string
@@ -301,18 +261,10 @@ type EventInvariantInput = Pick<
   | 'transportAttemptedAt'
   | 'transportAcceptedAt'
   | 'recordedAt'
-  | 'clientOccurredAt'
-  | 'clientExpiresAt'
   | 'actor'
   | 'scope'
   | 'submissionId'
   | 'hatchetEventId'
-  | 'ingressReceiptId'
-  | 'captureTokenId'
-  | 'scopeValidation'
-  | 'clientEventId'
-  | 'clientStreamId'
-  | 'clientSequence'
   | 'payload'
 >
 
@@ -353,15 +305,6 @@ function assertTrustedChronology(
   ) {
     throw new Error(
       `Audit event ${value.eventType} requires transportAttemptedAt`
-    )
-  }
-  if (
-    registration.requiresClientProvenance &&
-    (value.transportAttemptedAt === undefined ||
-      value.transportAcceptedAt === undefined)
-  ) {
-    throw new Error(
-      `Audit event ${value.eventType} requires trusted transport provenance`
     )
   }
 }
@@ -416,27 +359,6 @@ function assertEventInvariants(
     value.hatchetEventId === undefined
   ) {
     throw new Error(`Audit event ${value.eventType} requires hatchetEventId`)
-  }
-  if (
-    registration.requiresClientProvenance &&
-    (value.ingressReceiptId === undefined ||
-      value.captureTokenId === undefined ||
-      value.scopeValidation === undefined ||
-      value.clientEventId === undefined ||
-      value.clientStreamId === undefined ||
-      value.clientSequence === undefined ||
-      value.clientOccurredAt === undefined ||
-      value.clientExpiresAt === undefined)
-  ) {
-    throw new Error(`Audit event ${value.eventType} requires client provenance`)
-  }
-  if (
-    registration.requiresClientProvenance &&
-    Date.parse(value.clientExpiresAt as string) -
-      Date.parse(value.clientOccurredAt as string) !==
-      7 * 24 * 60 * 60 * 1000
-  ) {
-    throw new Error('Client replay expiry must be exactly seven days')
   }
   assertTrustedChronology(value, registration)
 }
@@ -558,7 +480,6 @@ export function createCanonicalAuditEvent(
   const draft = draftSchema.parse(draftInput)
   const registration = getEventRegistration(draft.eventType)
   const eventType = draft.eventType as EventType
-  assertEventTierEnabled(eventType)
 
   if (!registration.allowedRecordedVia.includes(trustedContext.recordedVia)) {
     throw new Error(
@@ -576,8 +497,6 @@ export function createCanonicalAuditEvent(
     ...trustedContext.scope,
     ...draft.scope,
   })
-  const clientOccurredAt = optionalTimestamp(draft.clientOccurredAt)
-  const clientExpiresAt = optionalTimestamp(draft.clientExpiresAt)
   assertEventInvariants(
     {
       eventType,
@@ -585,18 +504,10 @@ export function createCanonicalAuditEvent(
       transportAttemptedAt: trustedContext.transportAttemptedAt,
       transportAcceptedAt: trustedContext.transportAcceptedAt,
       recordedAt: trustedContext.recordedAt,
-      clientOccurredAt,
-      clientExpiresAt,
       actor: trustedContext.actor,
       scope,
       submissionId: draft.submissionId,
       hatchetEventId: draft.hatchetEventId,
-      ingressReceiptId: draft.ingressReceiptId,
-      captureTokenId: draft.captureTokenId,
-      scopeValidation: draft.scopeValidation,
-      clientEventId: draft.clientEventId,
-      clientStreamId: draft.clientStreamId,
-      clientSequence: draft.clientSequence,
       payload: normalizedPayload,
     },
     registration
@@ -622,8 +533,6 @@ export function createCanonicalAuditEvent(
     transportAttemptedAt: trustedContext.transportAttemptedAt,
     transportAcceptedAt: trustedContext.transportAcceptedAt,
     recordedAt: trustedContext.recordedAt,
-    clientOccurredAt,
-    clientExpiresAt,
     actor: trustedContext.actor,
     initiatedBy: trustedContext.initiatedBy,
     authorization: trustedContext.authorization,
@@ -632,12 +541,6 @@ export function createCanonicalAuditEvent(
     causationId: draft.causationId,
     submissionId: draft.submissionId,
     hatchetEventId: draft.hatchetEventId,
-    ingressReceiptId: draft.ingressReceiptId,
-    captureTokenId: draft.captureTokenId,
-    scopeValidation: draft.scopeValidation,
-    clientEventId: draft.clientEventId,
-    clientStreamId: draft.clientStreamId,
-    clientSequence: draft.clientSequence,
     outcome: draft.outcome,
     payload: normalizedPayload,
     payloadHash,

@@ -109,8 +109,8 @@ standard, server-observed facts that have no business mutation to commit with;
 critical or authoritative evidence must share the business transaction.
 
 Hatchet submission materialization remains a separate emission lane, but it
-ultimately writes the same event contract and outbox. The browser-observed
-Stack 2 lane uses the same registry later through the independent audit ingress.
+ultimately writes the same event contract and outbox. A later browser-observed
+lane must add its event names to the same registry together with its producer.
 
 ## Participant submission materialization
 
@@ -188,12 +188,10 @@ from trusted `v3`, so this artifact-list change must reach that trusted branch
 before hosted stack checks can exercise the updated workers.
 
 `packages/audit/src/contract/event-registry.ts:EVENT_REGISTRY` is the single
-registry for stable event names and their delivery tier, emission path, evidence
-class, criticality, allowed recorder, producer owner, durability point, and
-runtime payload schema. Delivery tiers are `LAUNCH`, `FAST_FOLLOW`, and
-`STACK_2`; Layer 1 constructors admit only launch events. Callers cannot enable
-deferred tiers. A later stack layer must deliberately add its trusted producer
-path before those events can be constructed.
+registry for stable event names and their emission path, evidence class,
+criticality, allowed recorder, and runtime payload schema. It registers only
+events that a production source records; a later stack layer adds its event
+names, payload schemas, and trusted producer path together.
 
 `createCanonicalAuditEvent` derives registry-owned metadata, including the
 payload schema version, instead of trusting the producer to supply it. Every
@@ -220,9 +218,7 @@ element content and scoring are explicit per element type, including selection
 collections and case-study structure. Public image links remain in that content;
 no image bytes, MIME metadata, image fingerprints, or separate image history are
 recorded. Historical version-1 media payload schemas remain readable for retained
-evidence. Client events
-reserve both occurrence and seven-day replay-expiry timestamps, although their
-Stack 2 constructors remain disabled in this layer.
+evidence.
 
 Canonicalization follows RFC 8785/JCS through the pinned `canonicalize` package.
 Dates are normalized to millisecond UTC strings, selected answer option IDs are
@@ -246,8 +242,9 @@ Evidence classes are deliberately different claims:
 
 - `AUTHORITATIVE`: committed Klicker business state.
 - `SERVER_OBSERVED`: what Klicker or Hatchet observed at a server boundary.
-- `CLIENT_OBSERVED`: what the assessment client later reports through Stack 2.
-- `ADMINISTRATIVE`: evidence-owner actions such as holds and annotations.
+- `CLIENT_OBSERVED` and `ADMINISTRATIVE` remain in the storage enums for
+  client-reported facts and evidence-owner actions; no registered event uses
+  them yet.
 
 None of these classes proves a person's unobservable intent.
 
@@ -601,9 +598,9 @@ Layer 4 adds registry metadata and producer-boundary coverage tests plus focused
 tests for exact configuration/block/instance snapshots, deterministic
 response/reset hashes, effective-permission filtering, public image-link
 preservation, and retained legacy media export compatibility. The coverage
-test verifies that every active launch producer has an owner, emission path,
-durability point, and explicit delivery tier; legacy media events are retained
-for read compatibility and excluded from active producer coverage. The test does
+test verifies that every registered event name occurs in a listed production
+source; legacy media events are retained for read compatibility and excluded
+from active producer coverage. The test does
 not claim to statically prove every runtime call site.
 Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer

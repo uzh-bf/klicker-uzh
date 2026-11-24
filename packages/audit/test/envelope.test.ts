@@ -240,45 +240,6 @@ describe('canonical audit envelope', () => {
     ).not.toThrow()
   })
 
-  it('keeps deferred tiers unavailable to callers', () => {
-    expect(() =>
-      createCanonicalAuditEvent(context(), {
-        eventType: 'AUDIT_MANIFEST_SEALED',
-        producerOperationId: `${correlationId}:fast-follow`,
-        payload: { operation: 'AUDIT_MANIFEST_SEALED' },
-      })
-    ).toThrow('disabled delivery tier FAST_FOLLOW')
-
-    expect(() =>
-      createCanonicalAuditEvent(context(), {
-        eventType: 'RESPONSE_ANSWER_CHANGED',
-        producerOperationId: `${correlationId}:stack-2`,
-        payload: {
-          elementInstanceId: 44,
-          elementInstanceVersion: 1,
-          effectiveContentHash: sha256,
-          answer: { kind: 'MC', selectedOptionIds: [0] },
-          trigger: 'IDLE',
-        },
-      })
-    ).toThrow('disabled delivery tier STACK_2')
-
-    expect(() =>
-      createTrustedAuditContext({
-        recordedVia: 'TRANSACTIONAL_OUTBOX',
-        receivedAt: '2026-08-11T08:00:00.123Z',
-        actor: { kind: 'USER', userId: actorId },
-        authorization: {
-          decision: 'ALLOWED',
-          authScope: 'LECTURER',
-        },
-        scope: { liveQuizId, lifecycleEpoch: 1 },
-        correlationId,
-        enabledTiers: ['STACK_2'],
-      } as never)
-    ).toThrow()
-  })
-
   it('requires Hatchet identity and trusted transport chronology', () => {
     const draft = {
       eventType: 'SUBMISSION_SERVER_ACCEPTED' as const,

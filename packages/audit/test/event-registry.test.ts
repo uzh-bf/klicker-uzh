@@ -46,10 +46,6 @@ const expectedStableEventTypes = [
   'ASSESSMENT_SESSION_RESUMED',
   'ASSESSMENT_SESSION_ENDED',
   'ASSESSMENT_ACTION_REJECTED',
-  'RESPONSE_ANSWER_CHANGED',
-  'RESPONSE_ANSWER_CLEARED',
-  'SUBMISSION_ATTEMPTED',
-  'SUBMISSION_AUTO_TRIGGERED',
   'SUBMISSION_SERVER_ACCEPTED',
   'SUBMISSION_VALIDATED',
   'SUBMISSION_REJECTED',
@@ -66,20 +62,7 @@ const expectedStableEventTypes = [
   'ASSESSMENT_REPORT_ISSUED',
   'ASSESSMENT_REPORT_SUPERSEDED',
   'ASSESSMENT_REPORT_REVOKED',
-  'EVIDENCE_ANNOTATION',
-  'EVIDENCE_HOLD_PLACED',
-  'EVIDENCE_HOLD_RELEASED',
-  'AUDIT_GAP_DETECTED',
-  'AUDIT_GAP_RESOLVED',
-  'AUDIT_CLIENT_EVENT_REJECTED',
-  'AUDIT_DELIVERY_DELAYED',
-  'AUDIT_DELIVERY_CONFLICTED',
   'AUDIT_DELIVERY_QUARANTINED',
-  'AUDIT_DELIVERY_RECOVERED',
-  'AUDIT_MANIFEST_SEALED',
-  'AUDIT_MANIFEST_FAILED',
-  'AUDIT_RETENTION_COMPLETED',
-  'AUDIT_RETENTION_FAILED',
 ] as const
 
 describe('assessment audit event registry', () => {
@@ -97,15 +80,11 @@ describe('assessment audit event registry', () => {
     )
   })
 
-  it('assigns each event one schema, tier, owner, producer and durability point', () => {
+  it('assigns each event one schema and at least one recording path', () => {
     for (const eventType of STABLE_EVENT_TYPES) {
       const entry = EVENT_REGISTRY[eventType]
       expect(entry.payloadSchemaVersion).toBe(1)
       expect(entry.payloadSchemas[1]).toBeDefined()
-      expect(['LAUNCH', 'FAST_FOLLOW', 'STACK_2']).toContain(entry.tier)
-      expect(entry.ownerPackage).not.toBe('')
-      expect(entry.producer).not.toBe('')
-      expect(entry.durabilityPoint).not.toBe('')
       expect(entry.allowedRecordedVia.length).toBeGreaterThan(0)
     }
   })
@@ -130,22 +109,16 @@ describe('assessment audit event registry', () => {
     )
   })
 
-  it('declares participant, submission, Hatchet, and client provenance requirements', () => {
-    expect(EVENT_REGISTRY.RESPONSE_ANSWER_CHANGED).toMatchObject({
-      requiresParticipantScope: true,
-      requiresClientProvenance: true,
-    })
+  it('declares participant, submission, and Hatchet requirements', () => {
     expect(EVENT_REGISTRY.SUBMISSION_PERSISTED).toMatchObject({
       requiresParticipantScope: true,
       requiresSubmissionId: true,
       requiresHatchetEventId: true,
-      requiresClientProvenance: false,
     })
     expect(EVENT_REGISTRY.ASSESSMENT_STARTED).toMatchObject({
       requiresParticipantScope: false,
       requiresSubmissionId: false,
       requiresHatchetEventId: false,
-      requiresClientProvenance: false,
     })
     expect(EVENT_REGISTRY.ASSESSMENT_SESSION_STARTED).toMatchObject({
       requiresParticipantScope: false,
@@ -153,22 +126,7 @@ describe('assessment audit event registry', () => {
     })
   })
 
-  it('keeps launch lifecycle and session transitions launch-gating', () => {
-    for (const eventType of [
-      'ASSESSMENT_PUBLISHED',
-      'ASSESSMENT_STARTED',
-      'ASSESSMENT_PAUSED',
-      'ASSESSMENT_RESUMED',
-      'ASSESSMENT_COMPLETED',
-      'ASSESSMENT_REOPENED',
-      'ASSESSMENT_CANCELLED',
-      'ASSESSMENT_RESET',
-      'ASSESSMENT_SESSION_STARTED',
-      'ASSESSMENT_SESSION_RESUMED',
-      'ASSESSMENT_SESSION_ENDED',
-    ] as const) {
-      expect(EVENT_REGISTRY[eventType].tier).toBe('LAUNCH')
-    }
+  it('keeps lifecycle transitions authoritative and critical', () => {
     for (const eventType of [
       'ASSESSMENT_PUBLISHED',
       'ASSESSMENT_STARTED',
