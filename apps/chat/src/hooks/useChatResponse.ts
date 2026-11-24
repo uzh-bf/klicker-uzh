@@ -12,6 +12,7 @@ import {
 } from '../lib/attachments/documentText'
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ReasoningEffort } from '../lib/config/reasoning'
+import { historyTextFromParts } from '../lib/feedback'
 import { readHandoffSource } from '../lib/handoff'
 import {
   hasMeaningfulAssistantContent,
@@ -159,23 +160,7 @@ export function useChatResponse(
             return String(message.content ?? '')
           }
 
-          return message.content
-            .filter(
-              (
-                part
-              ): part is {
-                type: 'text'
-                text: string
-              } =>
-                typeof part === 'object' &&
-                part !== null &&
-                'type' in part &&
-                part.type === 'text' &&
-                'text' in part &&
-                typeof part.text === 'string'
-            )
-            .map((part) => part.text)
-            .join('')
+          return historyTextFromParts(message.content)
         }
 
         // Pages that will not be sent must not stay announced as reviewed.
@@ -417,6 +402,7 @@ export function useChatResponse(
         let currentTextContent = ''
         let currentReasoningContent = ''
         const toolCallsMap: Map<string, any> = new Map()
+        const completedToolCalls = new Set<string>()
         let finishReason: string | null = null
         let messageMetadata: {
           chatMode?: string | null
@@ -568,8 +554,10 @@ export function useChatResponse(
                       type: 'text',
                       text: currentTextContent,
                     })
-                    currentTextContent = ''
                   }
+                  // Text after the tool starts a new part, so it must not
+                  // repeat the text before it.
+                  currentTextContent = ''
 
                   // create tool call object and track by ID
                   const toolCall = {
@@ -604,6 +592,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     const output = normalizeLiveToolOutput(jsonData.output)
+                    completedToolCalls.add(jsonData.toolCallId)
                     existingToolCall.result = output.result
                     existingToolCall.isError = output.isError
 
@@ -617,6 +606,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     const output = normalizeLiveToolOutput(undefined, true)
+                    completedToolCalls.add(jsonData.toolCallId)
                     existingToolCall.result = output.result
                     existingToolCall.isError = output.isError
 
@@ -767,7 +757,13 @@ export function useChatResponse(
           if (
             hasFinishEvent &&
             !hasStreamError &&
-            !hasMeaningfulAssistantContent(orderedContentParts)
+            !hasMeaningfulAssistantContent(
+              orderedContentParts.filter(
+                (part) =>
+                  part.type !== 'tool-call' ||
+                  completedToolCalls.has(part.toolCallId)
+              )
+            )
           ) {
             hasStreamError = true
             orderedContentParts.push(...withEmptyResponseError([]))

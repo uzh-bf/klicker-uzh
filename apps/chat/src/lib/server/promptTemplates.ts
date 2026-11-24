@@ -18,6 +18,9 @@ type PromptContext = {
     timeZone: string
   }
   'numeric-precision': Record<string, never>
+  'explanation-tool': Record<string, never>
+  'explanation-writer': Record<string, never>
+  'feedback-card-tool': Record<string, never>
   'feedback-check': Record<string, never>
   'quiz-feedback-check': Record<string, never>
   'feedback-evidence': {
@@ -26,6 +29,7 @@ type PromptContext = {
   }
   'output-format': { customPersona: boolean }
   'mode-tutor': Record<string, never>
+  'mode-tutor-v2': Record<string, never>
   'mode-explainer': Record<string, never>
   'mode-quizzer': Record<string, never>
   'mode-writing-coach': Record<string, never>

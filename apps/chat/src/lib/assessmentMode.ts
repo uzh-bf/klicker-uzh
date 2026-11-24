@@ -58,6 +58,7 @@ const ASSESSMENT_BLOCKED_PREFIXES = [
   '/auth/lti',
   '/auth/elearning',
   '/auth/pwa-embed',
+  '/auth/handoff',
 ]
 const ASSESSMENT_BLOCKED_TREES = ['/manage', '/preview', '/api/manage']
 

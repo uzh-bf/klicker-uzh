@@ -1026,7 +1026,6 @@ function ChatbotAuthoring({
   const disclaimerEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
-  const writingCoachUnavailableReason = chatbot.writingCoachUnavailableReason
   const customModeConfig = getCustomModeFormValues(chatbot)
   const disclaimerInitialValues = {
     title:
@@ -1498,14 +1497,6 @@ function ChatbotAuthoring({
                     }) => {
                       const controlsDisabled =
                         isSubmitting || publicationPending || revisionPending
-                      // Writing Coach is removed from the participant-facing
-                      // mode set while a required tool binding belongs to
-                      // another mode, so in that state it cannot satisfy the
-                      // "keep one conversational mode enabled" invariant on its
-                      // own.
-                      const writingCoachCannotHoldInvariant =
-                        writingCoachUnavailableReason ===
-                        'REQUIRED_TOOL_BINDING'
 
                       return (
                         <Form className="space-y-4">
@@ -1580,8 +1571,7 @@ function ChatbotAuthoring({
                                 revisionPending ||
                                 (values.tutorEnabled &&
                                   !values.explainerEnabled &&
-                                  (!values.writingCoachEnabled ||
-                                    writingCoachCannotHoldInvariant))
+                                  !values.writingCoachEnabled)
                               }
                               enabled={values.tutorEnabled}
                               mode="tutor"
@@ -1605,8 +1595,7 @@ function ChatbotAuthoring({
                                 revisionPending ||
                                 (values.explainerEnabled &&
                                   !values.tutorEnabled &&
-                                  (!values.writingCoachEnabled ||
-                                    writingCoachCannotHoldInvariant))
+                                  !values.writingCoachEnabled)
                               }
                               enabled={values.explainerEnabled}
                               mode="explainer"
@@ -1648,8 +1637,7 @@ function ChatbotAuthoring({
                                 revisionPending ||
                                 (!values.tutorEnabled &&
                                   !values.explainerEnabled &&
-                                  (values.writingCoachEnabled ||
-                                    writingCoachCannotHoldInvariant))
+                                  values.writingCoachEnabled)
                               }
                               enabled={values.writingCoachEnabled}
                               mode="writing-coach"
@@ -1669,16 +1657,6 @@ function ChatbotAuthoring({
                                 'manage.resources.chatbotModeWritingCoach'
                               )}
                             />
-                            {writingCoachUnavailableReason ? (
-                              <p
-                                className="text-sm text-amber-800"
-                                data-cy="chatbot-writing-coach-unavailable"
-                              >
-                                {t(
-                                  'manage.resources.chatbotWritingCoachRequiredTool'
-                                )}
-                              </p>
-                            ) : null}
                           </div>
                           <p
                             className="text-sm text-gray-600"
@@ -1793,16 +1771,6 @@ function ChatbotAuthoring({
                         )}
                         title={t('manage.resources.chatbotModeWritingCoach')}
                       />
-                      {writingCoachUnavailableReason ? (
-                        <p
-                          className="text-sm text-amber-800"
-                          data-cy="chatbot-writing-coach-unavailable"
-                        >
-                          {t(
-                            'manage.resources.chatbotWritingCoachRequiredTool'
-                          )}
-                        </p>
-                      ) : null}
                     </div>
                     <p
                       className="text-sm text-gray-600"

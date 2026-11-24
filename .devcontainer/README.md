@@ -272,7 +272,6 @@ checkout identity in every proxy upstream.
 | OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030`      |
 | Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078`      |
 | Blob Storage      | `https://blob.klicker.<workspace>.localhost`         | `${WORKSPACE}-azurite:10000` |
-| Graph Blob source | `http://127.0.0.1:10003` (host only)                 | `${WORKSPACE}-azurite:10000` |
 | LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000`      |
 | Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004`      |
 | Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`       |
@@ -288,10 +287,13 @@ the exact Manage origin as Blob CORS on that local emulator. This split keeps
 browser uploads production-like without making Node trust the host's routed
 certificate or requiring Azure credentials.
 
-The linked DevRouter overlay also maps the same Azurite container to loopback
-port `10003` by default. `KB_GRAPH_BLOB_HOST_PORT` can override that host port;
-the generated graph source URLs use `KB_GRAPH_BLOB_ACCOUNT_URL` and never
-change the browser-facing upload URL. Cleartext graph source URLs are accepted
+Linked worktrees publish no Azurite host port, so parallel stacks do not
+collide. Graph source URLs (`KB_GRAPH_BLOB_ACCOUNT_URL`) use the same routed
+`https://blob.klicker.<workspace>.localhost/klickerdev/` account. The host-side
+graph worker must trust the mkcert root and allow that host: start it with
+`DOC_PROCESSING_EXTRA_CA_CERT="$(mkcert -CAROOT)/rootCA.pem"` and add the host
+to `DOC_PROCESSING_SOURCE_URL_ALLOWED_HOSTS`. The primary checkout keeps its
+loopback mapping on port `10000`. Cleartext graph source URLs are accepted
 only for loopback and `.localhost` development hosts.
 
 The lecturer and student MCP servers also run in the `app` container with **no

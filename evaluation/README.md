@@ -84,8 +84,10 @@ stopping. It sends no model or judge request. Do not substitute this evidence fo
 real-provider qualification, permission to transmit source material or a paid run.
 
 The app owns the trajectory-capture importer and the synthetic
-[Explainer compression regression and control](data/explainer-compression/README.md)
-and the [Explainer closing-check corpus](data/explainer-check/README.md).
+[Explainer compression regression and control](data/explainer-compression/README.md),
+the [Explainer closing-check corpus](data/explainer-check/README.md),
+the [Tutor first-turn explanation-check corpus](data/tutor-first-turn-explain-check/README.md)
+and the [Tutor task-support corpus](data/tutor-task-support/README.md).
 These authored development cases do not authorize model calls or judge execution.
 
 ### Offline capture import
@@ -182,7 +184,9 @@ legacy `max_tokens`, hosted tools, multimodal input, multiple completions,
 provider price overrides and redirects fail closed. Function tools execute in
 the application; their separate paid egress must be qualified independently.
 The guard accepts only the exact two true `cache` bypass flags emitted by the
-application, then removes this proxy-only field before forwarding. A nonblank
+application, then removes this proxy-only field before forwarding. It likewise
+accepts the default route's `metadata` only as a single nonblank `session_id`
+of at most 128 characters and removes it before forwarding. A nonblank
 native `prompt_cache_key` of at most 64 characters is preserved. Other cache
 objects and unknown request fields remain unqualified.
 
@@ -561,6 +565,16 @@ transport, authentication, persistence, and mode handling only; it is not
 FineCo quality evidence. Keep the FineCo run parked unless the expected
 `EXPERT_df_fineco_expert` binding is reachable through an authorized synthetic
 environment with a finite response bound.
+
+The adapter also accepts `mode: writing-coach` frontmatter. The synthetic
+`data/ground_truth/writing_coach/` cases pair with
+`data/metrics/klicker_writing_coach.yaml` (authorship, focus and per-case
+expectations). Run them with `--eval-mode ground-truth` against a chatbot that
+has Writing Coach enabled and whose model allow-list resolves to the guarded
+`KLICKER_EVAL_MODEL_ID`. The local MCP fixture chatbot stores `["auto"]`, which
+selects the ADVANCED Auto entry and is refused for its BASE-tier owner, so pin
+its allow-list to the guarded model for the run. Pass an evidence directory
+that does not exist yet, or one with mode `0700`.
 
 For a human developer, use the standard Infisical CLI and a narrow approved
 scope. Automated agent execution must use the existing restricted

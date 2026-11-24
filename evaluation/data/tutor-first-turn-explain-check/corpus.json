@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "explain-diversification-variance-figure",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "first-turn concept explanation with formula and figure request",
+      "rubric": [
+        "Erklärt, dass Diversifikation das unsystematische Risiko senkt, solange die Renditen nicht perfekt positiv korreliert sind, während das systematische Marktrisiko bestehen bleibt.",
+        "Gibt die Portfoliovarianz nur an, wenn das abgerufene Kursmaterial sie enthält, und dann korrekt mit Quelle; enthält es sie nicht, sagt die Antwort das offen, nennt, was das Material abdeckt, und leitet die Formel nicht aus Allgemeinwissen her.",
+        "Zeigt eine Abbildung nur aus dem Kursmaterial oder sagt offen, dass keine passende Abbildung verfügbar ist; erfindet keine Abbildung, Seitenzahl oder Skriptstelle.",
+        "Endet mit genau einer Prüffrage und stellt sonst keine Frage, auch nicht vor der Erklärung.",
+        "Die Prüffrage verlangt, die Idee auf einen neuen Fall anzuwenden, ein Ergebnis vorherzusagen oder sie in eigenen Worten zu erklären, und fragt keinen in der Antwort genannten Fakt ab."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Erkläre mir anhand des Skripts, wie sich Diversifikation auf das Portfoliorisiko auswirkt. Gib die Formel für die Portfoliovarianz an und zeige eine passende Abbildung aus dem Skript."
+        }
+      ]
+    },
+    {
+      "id": "explain-capm-required-return",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "first-turn explanation of a model's reasoning",
+      "rubric": [
+        "States that the CAPM sets the required return as the risk-free rate plus beta times the market risk premium, E(R_i) = R_f + β_i · (E(R_M) − R_f).",
+        "Explains that beta measures the stock's systematic risk, the only risk the CAPM prices because diversifiable risk can be removed at no cost.",
+        "Ends with exactly one check question and asks no other question, including before the explanation.",
+        "The check asks the student to apply the idea to a new case, predict an outcome, or explain it in their own words, and does not ask them to recall a fact stated in the answer."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Explain how the CAPM determines the required return on a stock."
+        }
+      ]
+    },
+    {
+      "id": "skip-lookup-present-value",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "short definition request",
+      "rubric": [
+        "Definiert den Barwert als heutigen Wert künftiger Zahlungen, abgezinst mit einem passenden Zinssatz.",
+        "Endet ohne Verständnis-, Anwendungs- oder Abfragefrage."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Was ist der Barwert?"
+        }
+      ]
+    },
+    {
+      "id": "skip-listen-first-duration",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "explicit full explanation while the student only wants to listen",
+      "rubric": [
+        "Liefert die gewünschte vollständige Erklärung der Duration als barwertgewichtete mittlere Bindungsdauer und als Mass für die Zinssensitivität des Anleihepreises, statt sie zu einem Hinweis zu verkürzen.",
+        "Endet ohne Verständnis-, Anwendungs- oder Abfragefrage und drängt den Lernenden nicht zu antworten.",
+        "Behauptet kein Verständnis des Lernenden, weil keine eigene Arbeit gezeigt wurde."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "Bitte erkläre mir die Duration vollständig, ich möchte zuerst nur zuhören."
+        }
+      ]
+    },
+    {
+      "id": "attempt-perfect-correlation-misconception",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "student states a misconception with reasoning",
+      "rubric": [
+        "Does not confirm the claim and identifies that the student's \"always\" fails for perfectly positively correlated assets.",
+        "Explains that with correlation +1 portfolio volatility is the weighted average of the two volatilities, so diversification lowers risk only when correlation is below +1.",
+        "Responds to the student's stated reasoning rather than giving a generic explanation of diversification.",
+        "Asks at most one question."
+      ],
+      "assessmentTurns": [1],
+      "turns": [
+        {
+          "message": "I think diversification always lowers risk, even if the two assets are perfectly correlated. Right?"
+        }
+      ]
+    },
+    {
+      "id": "skip-followup-perfect-correlation",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "short follow-up after an explanation",
+      "rubric": [
+        "Turn 2 states that two assets with correlation +1 give no diversification benefit, so portfolio volatility is the weighted average of the two volatilities.",
+        "Turn 2 ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Explain why holding many stocks reduces portfolio risk, but not all of it."
+        },
+        {
+          "message": "And with two stocks that are perfectly correlated?"
+        }
+      ]
+    },
+    {
+      "id": "skip-understanding-shown-capm",
+      "group": "development",
+      "language": "en",
+      "mode": "tutor",
+      "support": "student already shows understanding of the explained idea",
+      "rubric": [
+        "Turn 2 confirms that under the CAPM a negative-beta asset has an expected return below the risk-free rate, because it lowers the risk of a diversified portfolio.",
+        "Turn 2 ends without a comprehension, application or recall question."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Explain why the CAPM rewards beta rather than total volatility."
+        },
+        {
+          "message": "So a stock with high volatility but negative beta should, under the CAPM, have an expected return below the risk-free rate, since it hedges market risk. Can you confirm why that follows?"
+        }
+      ]
+    },
+    {
+      "id": "check-answered-correlation",
+      "group": "development",
+      "language": "de",
+      "mode": "tutor",
+      "support": "student answers a closing check with one correct and one incorrect claim",
+      "rubric": [
+        "Die Antwort auf Zug 2 beginnt mit Feedback zur Antwort des Lernenden, bevor neues Material folgt.",
+        "Die Antwort auf Zug 2 bestätigt, dass bei einer Korrelation von -1 mit passenden Gewichten ein risikoloses Portfolio möglich ist.",
+        "Die Antwort auf Zug 2 korrigiert die Aussage zu +1 in ein bis zwei Sätzen: Bei perfekt positiver Korrelation gibt es keinen Diversifikationseffekt, die Portfoliovolatilität ist der gewichtete Durchschnitt der beiden Volatilitäten.",
+        "Das Feedback ist kurz und spezifisch, ohne generisches Lob, und schreibt dem Lernenden kein eigenständiges Beherrschen des Themas zu."
+      ],
+      "assessmentTurns": [2],
+      "turns": [
+        {
+          "message": "Erkläre mir, wie die Korrelation zwischen zwei Anlagen das Risiko eines Portfolios beeinflusst, das beide hält. Prüfe danach mein Verständnis mit einer Frage zu Korrelationen von +1 und -1."
+        },
+        {
+          "message": "Ich versuche deine Frage: Bei einer Korrelation von +1 senkt die Mischung der beiden das Risiko immer noch ein wenig, und bei -1 lässt sich das Risiko mit den richtigen Gewichten auf null bringen."
+        }
+      ]
+    }
+  ]
+}

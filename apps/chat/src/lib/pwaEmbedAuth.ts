@@ -1,5 +1,10 @@
 export const PWA_CHAT_EMBED_EXCHANGE_SCOPE = 'PWA_CHAT_EMBED_EXCHANGE'
 export const PWA_CHAT_EMBED_SESSION_SCOPE = 'PWA_CHAT_EMBED_SESSION'
+// A framed chat (LMS iframe) holds a session that is partitioned to the host
+// site, so a plain link into a new tab arrives logged out. This short-lived
+// token carries the frame's identity to `/auth/handoff`, which turns it into a
+// first-party session for the new tab.
+export const CHAT_TAB_HANDOFF_SCOPE = 'CHAT_TAB_HANDOFF'
 export const PWA_CHAT_EMBED_SESSION_COOKIE = 'chat_pwa_embed_token'
 export const PWA_CHAT_EMBED_SESSION_STORAGE_KEY = 'chat_pwa_embed_token'
 export const PWA_CHAT_EMBED_QUERY_KEY = '_pe'

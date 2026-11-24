@@ -2,7 +2,6 @@ import { Locale } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
   CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
-  getWritingCoachUnavailableReason,
   isChatbotStandardModeKey,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
@@ -179,29 +178,6 @@ describe('chatbot standard mode configuration', () => {
         writingCoachEnabled: 'true',
       })
     ).toThrow()
-  })
-
-  it('explains required-tool exclusions without inheriting tools', () => {
-    const requiredTutor = { chatMode: 'tutor', parameters: { required: true } }
-    expect(getWritingCoachUnavailableReason()).toBeNull()
-    expect(getWritingCoachUnavailableReason([requiredTutor])).toBe(
-      'REQUIRED_TOOL_BINDING'
-    )
-    expect(
-      getWritingCoachUnavailableReason([{ ...requiredTutor, isEnabled: false }])
-    ).toBeNull()
-    expect(
-      getWritingCoachUnavailableReason([
-        requiredTutor,
-        { chatMode: 'writing-coach' },
-      ])
-    ).toBe('REQUIRED_TOOL_BINDING')
-    expect(
-      getWritingCoachUnavailableReason([
-        requiredTutor,
-        { ...requiredTutor, chatMode: 'writing-coach' },
-      ])
-    ).toBeNull()
   })
 
   it('recognizes the standard modes case-sensitively', () => {

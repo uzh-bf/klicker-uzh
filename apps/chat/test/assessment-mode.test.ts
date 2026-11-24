@@ -15,6 +15,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
+import { POST as handoffPost } from '../src/app/api/chatbots/[chatbotId]/handoff/route'
 import { POST as manageChatPost } from '../src/app/api/manage/chat/route'
 import {
   getChatbotOr404,
@@ -227,6 +228,7 @@ describe('assessment mode entry points', () => {
     '/auth/lti',
     '/auth/elearning',
     '/auth/pwa-embed',
+    '/auth/handoff',
     '/manage',
     '/manage/anything',
     '/preview/' + CHATBOT_ID,
@@ -269,6 +271,15 @@ describe('assessment mode entry points', () => {
   test('the manage chat handler returns 404 in assessment mode', async () => {
     vi.stubEnv('CHAT_ASSESSMENT_MODE', 'true')
     const response = await manageChatPost(request('/api/manage/chat'))
+    expect(response.status).toBe(404)
+  })
+
+  test('the new-tab handoff handler returns 404 in assessment mode', async () => {
+    vi.stubEnv('CHAT_ASSESSMENT_MODE', 'true')
+    const response = await handoffPost(
+      request(`/api/chatbots/${CHATBOT_ID}/handoff`),
+      { params: Promise.resolve({ chatbotId: CHATBOT_ID }) }
+    )
     expect(response.status).toBe(404)
   })
 })
