@@ -12,9 +12,23 @@ import {
 } from '../util/chat.js'
 
 // The explainer service is not part of the E2E stack, so the page route is
-// answered with a synthetic page that names its explanation.
+// answered with a synthetic page that names its explanation. Like the
+// explainer kit, it says "ready", takes the place the chat kept for it, and
+// reports its step after each change.
 function explanationPage(title: string) {
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="margin:0;font-family:sans-serif"><main style="padding:24px"><h1 data-title>${title}</h1><button type="button">Next step</button></main></body></html>`
+  const script = `let step = 1, linked = false
+const show = () => { document.querySelector('[data-step]').textContent = 'Step ' + step }
+const report = () => linked && parent.postMessage({ explainer: 'state', state: { step } }, '*')
+addEventListener('message', (e) => {
+  if (e.source !== parent || e.data?.explainer !== 'restore') return
+  linked = true
+  if (e.data.state) step = e.data.state.step
+  show(); report()
+})
+document.querySelector('button').onclick = () => { step++; show(); report() }
+show()
+parent.postMessage({ explainer: 'ready' }, '*')`
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="margin:0;font-family:sans-serif"><main style="padding:24px"><h1 data-title>${title}</h1><p data-step></p><button type="button">Next step</button></main><script>${script}</script></body></html>`
 }
 
 function explanationCall(toolCallId: string, title: string) {
@@ -151,6 +165,35 @@ test('an explanation opens large beside a usable chat and steps through the thre
   await expect(page.getByTestId('explanation-open').last()).toBeFocused()
   await expect(page.getByTestId('explanation-in-panel')).toHaveCount(0)
   await expect(input).toHaveValue('Why does the curve slope upwards?')
+})
+
+test('an explanation keeps the reader’s place across the card and the panel', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openThreadWithExplanations(page)
+  const card = page.locator('[data-explanation-id="call-supply"]')
+  const inline = card.frameLocator('iframe')
+  await inline.getByRole('button', { name: 'Next step' }).click()
+  await inline.getByRole('button', { name: 'Next step' }).click()
+  await expect(inline.getByText('Step 3')).toBeVisible()
+
+  // The panel's new frame continues where the card was, and back again.
+  await card.getByTestId('explanation-open').click()
+  const panel = page
+    .getByTestId('chat-explanation-panel')
+    .frameLocator('iframe')
+  await expect(panel.getByText('Step 3')).toBeVisible()
+  await panel.getByRole('button', { name: 'Next step' }).click()
+  await expect(panel.getByText('Step 4')).toBeVisible()
+  await page.getByTestId('explanation-panel-panel-close').click()
+  await expect(inline.getByText('Step 4')).toBeVisible()
+
+  // Reload starts the explanation over.
+  await card.getByTestId('explanation-open').click()
+  await expect(panel.getByText('Step 4')).toBeVisible()
+  await page.getByTestId('explanation-panel-reload').click()
+  await expect(panel.getByText('Step 1')).toBeVisible()
 })
 
 test('the graph and an explanation share one panel', async ({ page }) => {

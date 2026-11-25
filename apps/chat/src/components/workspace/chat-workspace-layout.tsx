@@ -22,6 +22,7 @@ import {
   ExplanationFrame,
   ExplanationPanelActions,
   ExplanationPanelTitle,
+  forgetExplanationPlace,
 } from '../explanation-card'
 import { ChatGraphConceptContext } from '../knowledge-graph/ChatGraphConcepts'
 import {
@@ -148,7 +149,10 @@ export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
       actions: (
         <ExplanationPanelActions
           item={item}
-          onReload={() => setReload((value) => value + 1)}
+          onReload={() => {
+            forgetExplanationPlace(item.id)
+            setReload((value) => value + 1)
+          }}
         />
       ),
       content: (
@@ -156,6 +160,7 @@ export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
           key={`${item.id}:${reload}`}
           html={item.html}
           title={item.title}
+          placeId={item.id}
           className="min-h-0 w-full flex-1 border-0 bg-white"
         />
       ),
