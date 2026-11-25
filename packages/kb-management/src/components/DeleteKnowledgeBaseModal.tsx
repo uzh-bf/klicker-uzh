@@ -1,6 +1,7 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   DeleteKbDocument,
+  QGetKbChatbotBindingsWithKnowledgeBasesDocument,
   type GetUserKbsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
@@ -23,8 +24,27 @@ function DeleteKnowledgeBaseModal({
   const t = useTranslations()
   const [deleteKb, { loading }] = useMutation(DeleteKbDocument)
 
+  const {
+    data: bindingData,
+    loading: loadingBindings,
+    error: bindingError,
+  } = useQuery(QGetKbChatbotBindingsWithKnowledgeBasesDocument, {
+    variables: { kbId: knowledgeBase.id },
+    fetchPolicy: 'network-only',
+  })
+  const usages = (bindingData?.getKbChatbotBindings ?? []).flatMap(
+    (binding) => {
+      const link = binding.enabledKbs.find(
+        (item) => item.kbId === knowledgeBase.id
+      )
+      return link
+        ? [{ chatbotId: binding.chatbotId, name: binding.chatbotName, link }]
+        : []
+    }
+  )
+
   const handleDelete = async () => {
-    if (loading) return
+    if (loading || loadingBindings || bindingError) return
 
     try {
       await deleteKb({
@@ -48,7 +68,8 @@ function DeleteKnowledgeBaseModal({
       title={t('kb.deleteTitle')}
       primaryLabel={t('shared.generic.delete')}
       primaryButtonStyle="destructive"
-      primaryLoading={loading}
+      primaryLoading={loading || loadingBindings}
+      primaryDisabled={Boolean(bindingError) || loadingBindings}
       onPrimaryAction={handleDelete}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={onClose}
@@ -59,6 +80,23 @@ function DeleteKnowledgeBaseModal({
       className={{ content: 'max-w-xl' }}
     >
       <p>{t('kb.deleteDescription', { name: knowledgeBase.name })}</p>
+      {bindingError && <p>{t('kb.chatbotsLoadError')}</p>}
+      {usages.length > 0 && (
+        <ul className="mt-3 list-disc pl-5">
+          {usages.map(({ chatbotId, name, link }) => (
+            <li key={chatbotId}>
+              <strong>{name}</strong>
+              {link.isDefault && <span> · {t('kb.chatbotDefaultBadge')}</span>}
+              {link.modeBacklinks.length > 0 && (
+                <span>
+                  {' '}
+                  · {link.modeBacklinks.map((mode) => mode.name).join(', ')}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </Modal>
   )
 }

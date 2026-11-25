@@ -154,6 +154,9 @@ describe('prompt cache identity', () => {
     ['mode', { cacheScope: { mode: 'explainer' } }],
     ['deployment', { deploymentId: 'auto-router' }],
     ['transport', { transport: 'chat' as const }],
+    ['revision', { cacheScope: { revisionVersion: 4 } }],
+    ['knowledge base', { cacheScope: { knowledgeBaseId: 'kb-a' } }],
+    ['knowledge base link', { cacheScope: { knowledgeBaseLinkId: 'link-a' } }],
   ])('changes the key when the stable prefix %s changes', async (_, change) => {
     const base = await buildPromptCacheRequest({
       deploymentId: 'gpt-6-luna',
@@ -169,6 +172,28 @@ describe('prompt cache identity', () => {
     })
 
     expect(changed.promptCacheKey).not.toBe(base.promptCacheKey)
+  })
+
+  test('isolates a mode switch between two live knowledge-base links', async () => {
+    const request = (knowledgeBaseLinkId: string) =>
+      buildPromptCacheRequest({
+        deploymentId: 'gpt-6-luna',
+        transport: 'responses',
+        cacheScope: {
+          ...SCOPE,
+          revisionVersion: 3,
+          knowledgeBaseId: `kb-${knowledgeBaseLinkId}`,
+          knowledgeBaseLinkId,
+        },
+        tools: createTools(),
+      })
+
+    const linkA = await request('link-a')
+    const linkB = await request('link-b')
+    const linkAAgain = await request('link-a')
+
+    expect(linkA.promptCacheKey).not.toBe(linkB.promptCacheKey)
+    expect(linkAAgain.promptCacheKey).toBe(linkA.promptCacheKey)
   })
 
   test('changes the key for provider-visible tool changes but not runtime functions', async () => {

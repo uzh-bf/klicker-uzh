@@ -2,6 +2,7 @@ import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import { faFileLines, faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  AddKbLinkToChatbotDocument,
   AttachKbToChatbotDocument,
   ChatbotStatus,
   DetachKbFromChatbotDocument,
@@ -11,6 +12,7 @@ import {
   KbIngestionStatus,
   KbResourceType,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
+  SetChatbotDefaultKbDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   CreateKnowledgeBaseModal,
@@ -20,7 +22,9 @@ import {
   RunStatusMessage,
 } from '@klicker-uzh/kb-management'
 import {
+  Badge,
   Button,
+  Modal,
   SelectField,
   toast,
   UserNotification,
@@ -35,7 +39,7 @@ const KB_LIST_PAGE_SIZE = 50
 
 const refetchQueries = [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }]
 
-// The select value that stands for answering without a knowledge base.
+// The legacy select value that stands for answering without a knowledge base.
 const NO_KNOWLEDGE_BASE = 'no-knowledge-base'
 
 // How many of the newest resources the knowledge base card lists.
@@ -54,7 +58,10 @@ type MaterialsReadiness = {
 
 type ConnectedKnowledgeBase = {
   id: string
+  kbId?: string
+  linkId?: string | null
   name: string
+  isDefault?: boolean
   materialsReadiness?: MaterialsReadiness | null
 }
 
@@ -63,12 +70,14 @@ function KnowledgeBaseCard({
   knowledgeBase,
   addFilesRef,
   onAddFiles,
+  showDefaultBadge,
 }: {
   chatbotId: string
   knowledgeBase: ConnectedKnowledgeBase
   addFilesRef: RefObject<HTMLDivElement | null>
   // Without it the card only shows the knowledge base.
   onAddFiles?: () => void
+  showDefaultBadge?: boolean
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -136,6 +145,14 @@ function KnowledgeBaseCard({
           >
             {knowledgeBase.name}
           </h4>
+          {showDefaultBadge && knowledgeBase.isDefault ? (
+            <Badge
+              className="mt-2 bg-primary-100 text-white"
+              data-cy="chatbot-kb-default-badge"
+            >
+              {t('manage.resources.chatbotKnowledgeBaseDefaultBadge')}
+            </Badge>
+          ) : null}
           <p className="mt-1 text-sm text-slate-600">
             {t('manage.resources.chatbotKnowledgeBaseCardReusable')}
           </p>
@@ -231,7 +248,10 @@ function ChatbotKnowledgeBaseSetup({
   chatbotId,
   chatbotStatus,
   courseIds,
-  connectedKnowledgeBase,
+  connectedKnowledgeBases,
+  approvedCustomModes = [],
+  draftCustomModes = [],
+  perModeKbLinksEnabled,
   connectOnSelect = false,
   proposedKnowledgeBaseName,
   readOnly = false,
@@ -239,7 +259,18 @@ function ChatbotKnowledgeBaseSetup({
   chatbotId: string
   chatbotStatus: ChatbotStatus
   courseIds: string[]
-  connectedKnowledgeBase?: ConnectedKnowledgeBase
+  connectedKnowledgeBases: ConnectedKnowledgeBase[]
+  approvedCustomModes?: {
+    key: string
+    name: string
+    knowledgeBaseLinkId?: string | null
+  }[]
+  draftCustomModes?: {
+    key: string
+    name: string
+    knowledgeBaseLinkId?: string | null
+  }[]
+  perModeKbLinksEnabled: boolean
   // The setup page connects on select, shows the knowledge base card, and
   // keeps creating and adding materials on the chatbot.
   connectOnSelect?: boolean
@@ -257,14 +288,11 @@ function ChatbotKnowledgeBaseSetup({
   const [addResourceKb, setAddResourceKb] = useState<
     { id: string; name: string } | undefined
   >()
+  const [detachTarget, setDetachTarget] = useState<
+    ConnectedKnowledgeBase | undefined
+  >()
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
   const addFilesRef = useRef<HTMLDivElement | null>(null)
-  // Bindings sit outside the chatbot revision, so a choice only has a live
-  // effect on a published chatbot. Elsewhere the host may connect on select,
-  // and choosing no knowledge base is then one of the options instead of a
-  // separate Disconnect button.
-  const connectsOnSelect =
-    connectOnSelect && chatbotStatus !== ChatbotStatus.Published
   // A knowledge base created here whose connection failed. It stays listed and
   // selected so the lecturer can retry the connection instead of creating a
   // second knowledge base.
@@ -287,18 +315,48 @@ function ChatbotKnowledgeBaseSetup({
   )
   const proposedLanguage =
     courseLanguages.size === 1 ? [...courseLanguages][0] : undefined
-  const [attachKb, { loading: attaching }] = useMutation(
+  const [addKbLink, { loading: adding }] = useMutation(
+    AddKbLinkToChatbotDocument
+  )
+  const [attachKb, { loading: attachingLegacy }] = useMutation(
     AttachKbToChatbotDocument
+  )
+  const [setDefaultKb, { loading: settingDefault }] = useMutation(
+    SetChatbotDefaultKbDocument
   )
   const [detachKb, { loading: detaching }] = useMutation(
     DetachKbFromChatbotDocument
   )
-  const mutating = attaching || detaching
+  const mutating = adding || attachingLegacy || settingDefault || detaching
 
   const knowledgeBases = data?.getUserKbsConnection.items ?? []
-  // The connected knowledge base and one just created here stay selectable even
-  // when they fall outside the first page of the lecturer's list.
-  const selectItems = [
+  const connectedKnowledgeBase = connectedKnowledgeBases[0]
+  const connectsOnSelect =
+    !perModeKbLinksEnabled &&
+    connectOnSelect &&
+    chatbotStatus !== ChatbotStatus.Published
+  const linkedKnowledgeBaseIds = new Set(
+    connectedKnowledgeBases.map(
+      (knowledgeBase) => knowledgeBase.kbId ?? knowledgeBase.id
+    )
+  )
+  // A failed connection and a newly created KB stay selectable even when they
+  // fall outside the first page of the lecturer's list.
+  const additiveSelectItems = [
+    ...(unconnectedKb ? [unconnectedKb] : []).filter(
+      (knowledgeBase): knowledgeBase is { id: string; name: string } =>
+        knowledgeBase != null &&
+        !linkedKnowledgeBaseIds.has(knowledgeBase.id) &&
+        !knowledgeBases.some(({ id }) => id === knowledgeBase.id)
+    ),
+    ...knowledgeBases,
+  ]
+    .filter((knowledgeBase) => !linkedKnowledgeBaseIds.has(knowledgeBase.id))
+    .map((knowledgeBase) => ({
+      value: knowledgeBase.id,
+      label: knowledgeBase.name,
+    }))
+  const legacySelectItems = [
     ...[connectedKnowledgeBase, unconnectedKb].filter(
       (knowledgeBase): knowledgeBase is { id: string; name: string } =>
         knowledgeBase != null &&
@@ -309,17 +367,24 @@ function ChatbotKnowledgeBaseSetup({
     value: knowledgeBase.id,
     label: knowledgeBase.name,
   }))
-  if (connectsOnSelect) {
-    selectItems.unshift({
-      value: NO_KNOWLEDGE_BASE,
-      label: t('manage.resources.chatbotNoKnowledgeBaseOption'),
-    })
-  }
-  const selectedValue =
-    selectedKbId ??
-    connectedKnowledgeBase?.id ??
-    (connectsOnSelect ? NO_KNOWLEDGE_BASE : undefined)
+  const selectItems = perModeKbLinksEnabled
+    ? additiveSelectItems
+    : connectsOnSelect
+      ? [
+          {
+            value: NO_KNOWLEDGE_BASE,
+            label: t('manage.resources.chatbotNoKnowledgeBaseOption'),
+          },
+          ...legacySelectItems,
+        ]
+      : legacySelectItems
+  const selectedValue = perModeKbLinksEnabled
+    ? selectedKbId
+    : (selectedKbId ??
+      connectedKnowledgeBase?.id ??
+      (connectsOnSelect ? NO_KNOWLEDGE_BASE : undefined))
   const replacing =
+    !perModeKbLinksEnabled &&
     connectedKnowledgeBase != null &&
     selectedValue != null &&
     selectedValue !== connectedKnowledgeBase.id
@@ -327,15 +392,22 @@ function ChatbotKnowledgeBaseSetup({
     unconnectedKb != null &&
     selectedValue === unconnectedKb.id &&
     selectedValue !== connectedKnowledgeBase?.id
-  const canConnect =
-    selectedValue != null &&
-    selectedValue !== NO_KNOWLEDGE_BASE &&
-    selectedValue !== connectedKnowledgeBase?.id &&
-    !mutating
+  const canConnect = perModeKbLinksEnabled
+    ? selectedKbId != null &&
+      !linkedKnowledgeBaseIds.has(selectedKbId) &&
+      !mutating
+    : selectedValue != null &&
+      selectedValue !== NO_KNOWLEDGE_BASE &&
+      selectedValue !== connectedKnowledgeBase?.id &&
+      !mutating
 
-  const attach = async (kbId: string) => {
+  const addLink = async (kbId: string) => {
     try {
-      await attachKb({ variables: { kbId, chatbotId }, refetchQueries })
+      if (perModeKbLinksEnabled) {
+        await addKbLink({ variables: { kbId, chatbotId }, refetchQueries })
+      } else {
+        await attachKb({ variables: { kbId, chatbotId }, refetchQueries })
+      }
       return true
     } catch (mutationError) {
       console.error('Failed to attach KB to chatbot', mutationError)
@@ -344,7 +416,7 @@ function ChatbotKnowledgeBaseSetup({
   }
 
   const connect = async (kbId: string) => {
-    if (!(await attach(kbId))) {
+    if (!(await addLink(kbId))) {
       toast({
         type: 'error',
         message: t('manage.resources.chatbotKnowledgeBaseConnectError'),
@@ -366,23 +438,61 @@ function ChatbotKnowledgeBaseSetup({
   }
 
   const handleSelect = (kbId: string) => {
-    if (kbId === NO_KNOWLEDGE_BASE) {
+    if (!perModeKbLinksEnabled && kbId === NO_KNOWLEDGE_BASE) {
       setSelectedKbId(undefined)
-      void handleDisconnect()
+      if (connectedKnowledgeBase) setDetachTarget(connectedKnowledgeBase)
       return
     }
     setSelectedKbId(kbId)
-    if (connectsOnSelect && kbId !== connectedKnowledgeBase?.id && !mutating) {
+    if (
+      !perModeKbLinksEnabled &&
+      connectsOnSelect &&
+      kbId !== connectedKnowledgeBase?.id &&
+      !mutating
+    ) {
       void connect(kbId)
     }
   }
 
+  const handleSetDefault = async (
+    knowledgeBase: ConnectedKnowledgeBase | null
+  ) => {
+    if (mutating) return
+    try {
+      await setDefaultKb({
+        variables: {
+          chatbotId,
+          kbId: knowledgeBase ? (knowledgeBase.kbId ?? knowledgeBase.id) : null,
+        },
+        refetchQueries,
+      })
+      toast({
+        type: 'success',
+        message: knowledgeBase
+          ? t('manage.resources.chatbotKnowledgeBaseDefaultSuccess')
+          : t('manage.resources.chatbotKnowledgeBaseDefaultCleared'),
+      })
+    } catch (mutationError) {
+      console.error(
+        'Failed to change the default knowledge base',
+        mutationError
+      )
+      toast({
+        type: 'error',
+        message: t('manage.resources.chatbotKnowledgeBaseDefaultError'),
+      })
+    }
+  }
+
   const handleDisconnect = async () => {
-    if (!connectedKnowledgeBase || mutating) return
+    if (!detachTarget || mutating) return
 
     try {
       await detachKb({
-        variables: { kbId: connectedKnowledgeBase.id, chatbotId },
+        variables: {
+          kbId: detachTarget.kbId ?? detachTarget.id,
+          chatbotId,
+        },
         refetchQueries,
       })
     } catch (mutationError) {
@@ -395,6 +505,7 @@ function ChatbotKnowledgeBaseSetup({
     }
 
     setSelectedKbId(undefined)
+    setDetachTarget(undefined)
     toast({
       type: 'success',
       message: t('manage.resources.chatbotKnowledgeBaseDisconnectSuccess'),
@@ -408,7 +519,7 @@ function ChatbotKnowledgeBaseSetup({
     apolloClient.cache.evict({ fieldName: 'getUserKbsConnection' })
     apolloClient.cache.gc()
 
-    if (!(await attach(id))) {
+    if (!(await addLink(id))) {
       setUnconnectedKb(createdKb)
       setSelectedKbId(id)
       await refetch()
@@ -440,13 +551,14 @@ function ChatbotKnowledgeBaseSetup({
   if (readOnly) {
     return (
       <div className="space-y-3" data-cy="chatbot-kb-setup">
-        {connectedKnowledgeBase ? (
+        {connectedKnowledgeBases.map((knowledgeBase) => (
           <KnowledgeBaseCard
+            key={knowledgeBase.linkId ?? knowledgeBase.id}
             chatbotId={chatbotId}
-            knowledgeBase={connectedKnowledgeBase}
+            knowledgeBase={knowledgeBase}
             addFilesRef={addFilesRef}
           />
-        ) : null}
+        ))}
       </div>
     )
   }
@@ -483,9 +595,7 @@ function ChatbotKnowledgeBaseSetup({
             data={{ cy: 'chatbot-kb-select' }}
           />
         </div>
-        {!connectsOnSelect || canConnect ? (
-          // Without a live effect the button only remains to retry a
-          // connection that failed.
+        {perModeKbLinksEnabled || !connectsOnSelect || canConnect ? (
           <Button
             primary
             disabled={!canConnect}
@@ -495,16 +605,20 @@ function ChatbotKnowledgeBaseSetup({
             <Button.Label>
               {retrying
                 ? t('manage.resources.chatbotKnowledgeBaseRetryConnection')
-                : replacing
-                  ? t('manage.resources.chatbotKnowledgeBaseReplace')
-                  : t('manage.resources.chatbotKnowledgeBaseConnect')}
+                : perModeKbLinksEnabled
+                  ? t('manage.resources.chatbotKnowledgeBaseAddLink')
+                  : replacing
+                    ? t('manage.resources.chatbotKnowledgeBaseReplace')
+                    : t('manage.resources.chatbotKnowledgeBaseConnect')}
             </Button.Label>
           </Button>
         ) : null}
-        {connectedKnowledgeBase && !connectsOnSelect ? (
+        {!perModeKbLinksEnabled &&
+        connectedKnowledgeBase &&
+        !connectsOnSelect ? (
           <Button
             disabled={mutating}
-            onClick={handleDisconnect}
+            onClick={() => setDetachTarget(connectedKnowledgeBase)}
             data={{ cy: 'chatbot-kb-disconnect' }}
           >
             <Button.Label>
@@ -530,7 +644,7 @@ function ChatbotKnowledgeBaseSetup({
           data={{ cy: 'chatbot-kb-created-not-connected' }}
         />
       ) : null}
-      {replacing && !connectsOnSelect ? (
+      {!perModeKbLinksEnabled && replacing && !connectsOnSelect ? (
         <UserNotification
           type="warning"
           message={t(
@@ -542,18 +656,91 @@ function ChatbotKnowledgeBaseSetup({
           data={{ cy: 'chatbot-kb-replacement-warning' }}
         />
       ) : null}
-      {connectOnSelect && connectedKnowledgeBase ? (
-        <KnowledgeBaseCard
-          chatbotId={chatbotId}
-          knowledgeBase={connectedKnowledgeBase}
-          addFilesRef={addFilesRef}
-          onAddFiles={() => {
-            addResourceTriggerRef.current =
-              document.activeElement as HTMLElement
-            setAddResourceKb(connectedKnowledgeBase)
-          }}
-        />
-      ) : null}
+      {connectedKnowledgeBases.length === 0 ? (
+        <UserNotification data={{ cy: 'chatbot-kb-empty' }}>
+          {t('manage.resources.chatbotKnowledgeBaseNoneLinked')}
+        </UserNotification>
+      ) : (
+        <div className="space-y-3">
+          {perModeKbLinksEnabled && (
+            <p
+              className="text-sm text-slate-600"
+              data-cy="chatbot-default-change-impact"
+            >
+              {t('kb.defaultChangeImpact', {
+                modes:
+                  [
+                    ...new Set(
+                      [...approvedCustomModes, ...draftCustomModes]
+                        .filter((mode) => !mode.knowledgeBaseLinkId)
+                        .map((mode) => mode.name)
+                    ),
+                  ].join(', ') || t('shared.generic.none'),
+              })}
+            </p>
+          )}
+          {(perModeKbLinksEnabled
+            ? connectedKnowledgeBases
+            : connectedKnowledgeBase
+              ? [connectedKnowledgeBase]
+              : []
+          ).map((knowledgeBase) => (
+            <div key={knowledgeBase.linkId ?? knowledgeBase.id}>
+              <KnowledgeBaseCard
+                chatbotId={chatbotId}
+                knowledgeBase={knowledgeBase}
+                addFilesRef={addFilesRef}
+                showDefaultBadge={perModeKbLinksEnabled}
+                onAddFiles={() => {
+                  addResourceTriggerRef.current =
+                    document.activeElement as HTMLElement
+                  setAddResourceKb(knowledgeBase)
+                }}
+              />
+              {perModeKbLinksEnabled ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {knowledgeBase.isDefault ? (
+                    <Button
+                      disabled={mutating}
+                      onClick={() => void handleSetDefault(null)}
+                      data={{
+                        cy: `chatbot-kb-clear-default-${knowledgeBase.kbId ?? knowledgeBase.id}`,
+                      }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotKnowledgeBaseClearDefault')}
+                      </Button.Label>
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={mutating}
+                      onClick={() => void handleSetDefault(knowledgeBase)}
+                      data={{
+                        cy: `chatbot-kb-set-default-${knowledgeBase.kbId ?? knowledgeBase.id}`,
+                      }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotKnowledgeBaseMakeDefault')}
+                      </Button.Label>
+                    </Button>
+                  )}
+                  <Button
+                    disabled={mutating}
+                    onClick={() => setDetachTarget(knowledgeBase)}
+                    data={{
+                      cy: `chatbot-kb-detach-${knowledgeBase.kbId ?? knowledgeBase.id}`,
+                    }}
+                  >
+                    <Button.Label>
+                      {t('manage.resources.chatbotKnowledgeBaseDisconnect')}
+                    </Button.Label>
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
       {createOpen ? (
         <CreateKnowledgeBaseModal
           onClose={() => setCreateOpen(false)}
@@ -577,6 +764,65 @@ function ChatbotKnowledgeBaseSetup({
           }}
           onResourceCreated={refreshMaterials}
         />
+      ) : null}
+      {detachTarget ? (
+        <Modal
+          open
+          onClose={() => setDetachTarget(undefined)}
+          title={t('manage.resources.chatbotKnowledgeBaseDetachTitle')}
+          primaryLabel={t('manage.resources.chatbotKnowledgeBaseDisconnect')}
+          primaryButtonStyle="destructive"
+          primaryLoading={detaching}
+          onPrimaryAction={handleDisconnect}
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => setDetachTarget(undefined)}
+          dataContent={{ cy: 'chatbot-kb-detach-modal' }}
+          dataPrimaryAction={{ cy: 'confirm-chatbot-kb-detach' }}
+          dataSecondaryAction={{ cy: 'cancel-chatbot-kb-detach' }}
+        >
+          <p>
+            {t('manage.resources.chatbotKnowledgeBaseDetachDescription', {
+              kbName: detachTarget.name,
+            })}
+          </p>
+          {(() => {
+            const linkId = detachTarget.linkId
+            const approvedModes = linkId
+              ? approvedCustomModes.filter(
+                  (mode) => mode.knowledgeBaseLinkId === linkId
+                )
+              : []
+            const draftModes = linkId
+              ? draftCustomModes.filter(
+                  (mode) => mode.knowledgeBaseLinkId === linkId
+                )
+              : []
+            return (
+              <div className="mt-3 space-y-2 text-sm">
+                <p>
+                  {t(
+                    'manage.resources.chatbotKnowledgeBaseDetachApprovedModes',
+                    {
+                      modes:
+                        approvedModes.map((mode) => mode.name).join(', ') ||
+                        t('shared.generic.none'),
+                    }
+                  )}
+                </p>
+                <p>
+                  {t('manage.resources.chatbotKnowledgeBaseDetachDraftModes', {
+                    modes:
+                      draftModes.map((mode) => mode.name).join(', ') ||
+                      t('shared.generic.none'),
+                  })}
+                </p>
+                <p>
+                  {t('manage.resources.chatbotKnowledgeBaseDetachConsequence')}
+                </p>
+              </div>
+            )
+          })()}
+        </Modal>
       ) : null}
     </div>
   )

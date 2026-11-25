@@ -61,9 +61,13 @@ export interface MCPRequestContext {
   ownerPreviewUserId?: string
   courseId?: string
   authMode: AuthMode
+  chatMode?: string
   kbIds?: readonly string[]
+  kbLinkId?: string
   sessionId?: string
   knowledgeGraphRetrievalEnabled?: boolean
+  /** Re-reads the selected live link before every scope-token mint. */
+  revalidateKnowledgeBaseScope?: () => Promise<void>
 }
 
 export interface MCPRequestOptions {
@@ -198,6 +202,7 @@ async function applyDocQueryAuthHeaders(
 
   const kbIds = normalizeDocQueryKbIds(context.kbIds)
   headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+  await context.revalidateKnowledgeBaseScope?.()
   const token = await signDocQueryScopeToken({
     kbIds,
     chatbotId: context.chatbotId,
@@ -251,6 +256,7 @@ function createScopedDocQueryTransport(
       chatbotId: context.chatbotId,
       sessionId: context.sessionId,
       signToken: signDocQueryScopeToken,
+      revalidateScope: context.revalidateKnowledgeBaseScope,
     }),
   }
 }

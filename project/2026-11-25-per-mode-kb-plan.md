@@ -62,4 +62,4 @@ Start with focused failing fixtures and one bounded fix/rerun for a failed seam.
 
 ## Progress
 
-Planning baseline `2012f2da574962317f94c9e2993ab54b1fcd9620` on `origin/v3-ai`. One implementation branch, one draft PR, no existing PR. The user approved implementation through the verified draft PR, including the shared-history behavior. No source changes, migration or runtime tests have been executed. Fable 5.2's design consultation informed the choice of live links and revisioned selection. The reviewed batch ends at a verified draft.
+Planning baseline `2012f2da574962317f94c9e2993ab54b1fcd9620` on `origin/v3-ai`. One implementation branch, one draft PR, no existing PR. The user approved implementation through the verified draft PR, including the shared-history behavior. The migration and application changes are implemented. The guarded migration rehearsal, focused API and provisioning database suites, full chat suite and shared-history Chromium journey passed locally. Independent final review and hosted checks are pending. Fable 5.2's design consultation informed the choice of live links and revisioned selection. The reviewed batch ends at a verified draft.

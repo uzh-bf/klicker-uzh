@@ -1,4 +1,5 @@
 import { SAFE_TOOL_ERROR } from '../toolOutput'
+import type { MessageRetrievalSource } from './messageKnowledgeBaseProvenance'
 
 export type PersistedAssistantContentPart =
   | { type: 'text'; text: string }
@@ -15,6 +16,13 @@ export type PersistedAssistantContentPart =
   // user-facing strings — the server has no reliable locale, so the client
   // renders the stopped notice from its own translations keyed on `name`.
   | { type: 'data'; name: 'chat-stopped'; data: Record<string, never> }
+  // Original retrieval origin of a turn that actually queried one knowledge
+  // base. Media replay relies on it after a mode or default change.
+  | {
+      type: 'data'
+      name: 'retrieval-source'
+      data: MessageRetrievalSource
+    }
   | EmptyResponseError
 
 type UnfinishedAssistantContentPart =

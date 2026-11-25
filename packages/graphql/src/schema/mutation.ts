@@ -2132,6 +2132,30 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      addKbLinkToChatbot: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBChatbotBinding,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          chatbotId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.addKbLinkToChatbot(args, ctx)
+        },
+      }),
+
+      setChatbotDefaultKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBChatbotBinding,
+        args: {
+          chatbotId: t.arg.id({ required: true }),
+          kbId: t.arg.id({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.setChatbotDefaultKb(args, ctx)
+        },
+      }),
+
       detachKbFromChatbot: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {

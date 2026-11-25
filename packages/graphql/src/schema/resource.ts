@@ -246,6 +246,7 @@ export const ChatbotCustomModeInput = ChatbotCustomModeInputRef.implement({
       type: ChatbotCustomModeMeetingClock,
       required: false,
     }),
+    knowledgeBaseLinkId: t.id({ required: false }),
   }),
 })
 
@@ -284,6 +285,9 @@ export const ChatbotCustomMode = ChatbotCustomModeRef.implement({
       type: ChatbotCustomModeMeetingClock,
       nullable: true,
       resolve: (mode) => mode.meetingClock ?? null,
+    }),
+    knowledgeBaseLinkId: t.exposeID('knowledgeBaseLinkId', {
+      nullable: true,
     }),
   }),
 })
@@ -491,6 +495,7 @@ export interface IChatbot {
   avatar?: string | null
   standardModeConfig?: ChatbotStandardModeConfigShape | null
   customModeConfig?: ChatbotCustomModeConfigShape | null
+  perModeKbLinksEnabled: boolean
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
@@ -521,8 +526,13 @@ export interface IChatbot {
 }
 
 export interface IChatbotKnowledgeBaseSummary {
+  /** Knowledge-base identity retained for existing clients. */
   id: string
+  kbId: string
+  /** Stable identity of this chatbot-to-KB link. */
+  linkId: string
   name: string
+  isDefault: boolean
   metrics?: KBMetrics | null
 }
 
@@ -532,7 +542,10 @@ export const ChatbotKnowledgeBaseSummary =
   ChatbotKnowledgeBaseSummaryRef.implement({
     fields: (t) => ({
       id: t.exposeID('id'),
+      kbId: t.exposeID('kbId'),
+      linkId: t.exposeID('linkId'),
       name: t.exposeString('name'),
+      isDefault: t.exposeBoolean('isDefault'),
     }),
   })
 
@@ -669,6 +682,7 @@ export const Chatbot = ChatbotRef.implement({
     interactiveExplanationsEnabled: t.exposeBoolean(
       'interactiveExplanationsEnabled'
     ),
+    perModeKbLinksEnabled: t.exposeBoolean('perModeKbLinksEnabled'),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

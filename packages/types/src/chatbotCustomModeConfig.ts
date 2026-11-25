@@ -41,6 +41,11 @@ export type ChatbotCustomMode = {
   replyLanguage?: Locale | null
   /** Absent or null means the model receives no time facts. */
   meetingClock?: ChatbotCustomModeMeetingClock | null
+  /**
+   * Stable identity of the chatbot knowledge-base link this mode retrieves
+   * from. Absent or null means the mode follows the chatbot default.
+   */
+  knowledgeBaseLinkId?: string | null
 }
 
 /** Persisted, platform-constrained set of custom chat modes for one chatbot. */
@@ -74,6 +79,11 @@ export type ChatbotCustomModeInput = {
   replyLanguage?: Locale | null
   /** Omission keeps the stored clock of an existing mode; null turns it off. */
   meetingClock?: ChatbotCustomModeMeetingClock | null
+  /**
+   * Omission keeps the stored knowledge-base link of an existing mode. Null
+   * explicitly clears an override so the mode follows the chatbot default.
+   */
+  knowledgeBaseLinkId?: string | null
 }
 
 /** Full replacement input accepted by the section-patch save mutation. */

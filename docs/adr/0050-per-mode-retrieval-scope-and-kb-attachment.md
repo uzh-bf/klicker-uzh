@@ -34,28 +34,23 @@ stored rows with the chatbot's approved modes.
   time with the existing `503 REQUIRED_MCP_UNAVAILABLE` response. An enabled Quizzer also serves without a KB. When configured for
   document retrieval it uses only its authorized restricted binding. An unsupported or typed-disabled mode is still rejected
   before any thread or provider work.
-- Retrieval scope is resolved for the selected mode. An approved custom mode
-  inherits a required Tutor or Explainer `doc_query` binding for the same
-  server, retagged to the selected mode key, so a mode approved after the
-  attachment is grounded without another attachment; an enabled exact binding
-  for the mode itself takes precedence. A selected mode with no enabled `KB`
-  configuration returns no scope instead of a scope violation, so an unbound
-  mode serves without grounding rather than being hidden. Scope isolation is
-  unchanged: enabled `KB` configurations must agree on one server ID and one
-  normalized KB ID set across the chatbot, and a selected mode that does resolve a
-  binding must match it exactly.
-- Attaching a knowledge base upserts the required `doc_query` row for Tutor and
-  Explainer only, and derives the eligible exact custom-mode keys from the
-  chatbot's approved `customModeConfig` — never from the legacy `systemPrompts`
-  map or a pending revision. It disables enabled `KB` rows whose mode is not
-  Tutor, Explainer, an approved custom mode, or Quizzer, and it repoints an
-  already-enabled exact custom or Quizzer row to the new knowledge base. It
-  never creates a custom or Quizzer row and never re-enables a disabled exact
-  override. Approved custom modes inherit the standard binding at request time,
-  so a mode approved after the attachment needs no re-attachment and no stored
-  row of its own. The shared standard-mode key list is asserted against the
-  runtime prompt registry by a test, so provisioning and resolution cannot
-  drift.
+- A chatbot can have several active KB links and at most one default. Linking
+  a KB makes it available for selection. The lecturer can change or clear the
+  default independently. The compatibility attach mutation sets the default.
+- A custom mode can select one link by its immutable ID. An omitted assignment
+  follows the default. Saved revisions govern owner preview and approved
+  revisions govern learners. Changing the default affects inheriting modes on
+  their next search. Renaming a mode or KB preserves its assignment. A revoked
+  explicit link makes that source unavailable until the lecturer reassigns it.
+- The server validates ownership and the effective link before issuing a
+  single-KB Doc Query credential. Existing tool restrictions and disabled
+  exact overrides continue to apply. Legacy MCP-only bots keep the existing
+  validation of one consistent server and scope.
+- Modes serve the same learners. Switching keeps the conversation and model
+  history. New searches use the selected mode’s source. Historical text remains
+  visible. Reopening protected media or reusing source-backed evidence checks
+  its origin and current entitlement. Merely linking a source to the chatbot
+  does not make it browsable by learners.
 - The lecturer-facing concept is only "knowledge base". `Chatbot.mcpConfigurations`
   is deprecated and no longer projected: the service stops loading the rows, so
   the field resolves to an empty list, and the Manage usage view no longer

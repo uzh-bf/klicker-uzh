@@ -70,6 +70,15 @@ async function cleanupAuthoringChatbots() {
     })
   }
 
+  await prisma.kB.deleteMany({
+    where: {
+      ownerId: USER_ID_TEST,
+      name: {
+        in: [`${CHATBOT_PREFIX} Casebook`, `${CHATBOT_PREFIX} Question bank`],
+      },
+    },
+  })
+
   await prisma.chatbotDisclaimer.deleteMany({
     where: { name: { startsWith: CHATBOT_PREFIX } },
   })
@@ -1652,6 +1661,151 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       },
       screenshotName: 'custom-only-participant',
     })
+  })
+
+  test('publishes distinct sources for two modes in one learner conversation', async ({
+    page,
+  }, testInfo) => {
+    test.slow()
+    const prisma = await getPrisma()
+    const chatbotId = await createChatbot(
+      page,
+      `${CHATBOT_PREFIX} Mode sources`
+    )
+    const modes = ['Case discussion', 'Exam practice']
+    const books = ['Casebook', 'Question bank']
+    const links = await Promise.all(
+      books.map((name) =>
+        prisma.kBChatbot.create({
+          data: {
+            chatbot: { connect: { id: chatbotId } },
+            kb: {
+              create: {
+                name: `${CHATBOT_PREFIX} ${name}`,
+                ownerId: USER_ID_TEST,
+              },
+            },
+          },
+          include: { kb: true },
+        })
+      )
+    )
+
+    await navigateToSetupStep(page, 'modes')
+    for (const [index, name] of modes.entries()) {
+      await page.getByTestId('add-chatbot-custom-mode').click()
+      await page.getByTestId(`chatbot-custom-mode-name-${index}`).fill(name)
+      await page
+        .getByTestId(`chatbot-custom-mode-persona-${index}`)
+        .fill(`Discuss the assigned ${books[index]}.`)
+      await page
+        .getByTestId(`chatbot-custom-mode-knowledge-base-${index}`)
+        .click()
+      await page
+        .getByTestId(`chatbot-custom-mode-kb-${index}-${links[index]!.id}`)
+        .click()
+    }
+    await setStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: false,
+    })
+    await page
+      .getByTestId('chatbot-custom-mode-knowledge-base-0')
+      .scrollIntoViewIfNeeded()
+    await attachScreenshot(testInfo, page, 'lecturer-per-mode-sources')
+    await saveSection(page, 'modes')
+    await setPublishingAuthorization(true)
+    await page.reload()
+    await submitChatbotRevision(
+      page,
+      'Practice using separate synthetic reading collections.'
+    )
+    const saved = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+    })
+    const revision = saved.draftConfig as {
+      customModeConfig: {
+        modes: { key: string; knowledgeBaseLinkId: string }[]
+      }
+    }
+    const [first, second] = revision.customModeConfig.modes
+    expect(
+      revision.customModeConfig.modes.map((mode) => mode.knowledgeBaseLinkId)
+    ).toEqual(links.map((link) => link.id))
+    await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/admin`)
+    await page.getByTestId(`open-chatbot-review-${chatbotId}`).click()
+    for (const [index, mode] of revision.customModeConfig.modes.entries()) {
+      await expect(
+        page.getByTestId(`chatbot-admin-review-knowledge-base-${mode.key}`)
+      ).toContainText(links[index]!.kb.name)
+    }
+    await page
+      .getByTestId(`chatbot-admin-review-knowledge-base-${second!.key}`)
+      .scrollIntoViewIfNeeded()
+    await attachScreenshot(testInfo, page, 'review-per-mode-sources')
+    await approveRevision(page, chatbotId, saved.revisionVersion)
+
+    const historyText = 'We discussed the first case together.'
+    const thread = await prisma.chatThread.create({
+      data: {
+        chatbotId,
+        participantId: await getEnrolledParticipantId(),
+        title: 'Source switching',
+        messages: {
+          create: {
+            role: 'assistant',
+            chatMode: first!.key,
+            content: [{ type: 'text', text: historyText }],
+          },
+        },
+      },
+    })
+    const participant = await page.context().newPage()
+    try {
+      await mockChatStream(
+        participant,
+        { textByCall: ['Practice reply', 'Case reply'] },
+        chatbotId
+      )
+      await visitParticipantChat(participant, chatbotId)
+      await participant.getByTestId('chat-thread-select').first().click()
+      await expect(participant).toHaveURL((url) =>
+        url.pathname.endsWith(`/threads/${thread.id}`)
+      )
+      await expect(
+        participant.getByTestId('chat-assistant-message-content').first()
+      ).toContainText(historyText)
+      for (const [key, prompt, reply] of [
+        [second!.key, 'Practice a question about that case.', 'Practice reply'],
+        [first!.key, 'Return to the original case.', 'Case reply'],
+      ] as const) {
+        await participant.getByTestId('chat-mode-switcher').click()
+        await participant.getByTestId(`chat-mode-option-${key}`).click()
+        const request = participant.waitForRequest(
+          (candidate) =>
+            candidate.method() === 'POST' &&
+            candidate.url().endsWith(`/api/chatbots/${chatbotId}/chat`)
+        )
+        await sendChatTurn(participant, chatbotId, key, { prompt, reply })
+        const body = (await request).postDataJSON()
+        expect(body.threadId).toBe(thread.id)
+        expect(body.messages).toContainEqual(
+          expect.objectContaining({ role: 'assistant', content: historyText })
+        )
+      }
+      await attachScreenshot(testInfo, participant, 'learner-shared-history')
+      await participant.reload()
+      await expect(participant).toHaveURL((url) =>
+        url.pathname.endsWith(`/threads/${thread.id}`)
+      )
+      await expect(
+        participant.getByTestId('chat-assistant-message-content').first()
+      ).toContainText(historyText)
+    } finally {
+      await participant.close()
+    }
   })
 
   test('publishes KB-free Quizzer alone and exercises preview plus both participant surfaces', async ({

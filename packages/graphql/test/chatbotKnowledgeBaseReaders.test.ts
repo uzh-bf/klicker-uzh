@@ -13,7 +13,9 @@ type MockKnowledgeBase = {
 }
 
 type MockKnowledgeBaseBinding = {
+  id: string
   isEnabled: boolean
+  isDefault: boolean
   kb: MockKnowledgeBase
 }
 
@@ -37,6 +39,7 @@ function createMockChatbot(knowledgeBases: MockKnowledgeBaseBinding[]) {
     avatar: null,
     systemPrompts: null,
     standardModeConfig: null,
+    customModeConfig: null,
     draftConfig: null,
     modelSelection: true,
     allowedModelIds: ['auto'],
@@ -86,7 +89,11 @@ function createReaderContext(knowledgeBases: MockKnowledgeBaseBinding[]) {
         ...chatbot,
         knowledgeBases: chatbot.knowledgeBases
           .filter(({ isEnabled, kb }) => isEnabled && kb.deletedAt === null)
-          .map(({ kb }) => ({ kb: { id: kb.id, name: kb.name } })),
+          .map(({ id, isDefault, kb }) => ({
+            id,
+            isDefault,
+            kb: { id: kb.id, name: kb.name },
+          })),
       },
     ]
   })
@@ -137,10 +144,16 @@ function createReaderContext(knowledgeBases: MockKnowledgeBaseBinding[]) {
 function knowledgeBaseBinding(
   id: string,
   name: string,
-  options: { isEnabled?: boolean; deletedAt?: Date | null } = {}
+  options: {
+    isEnabled?: boolean
+    isDefault?: boolean
+    deletedAt?: Date | null
+  } = {}
 ): MockKnowledgeBaseBinding {
   return {
+    id: `link-${id}`,
     isEnabled: options.isEnabled ?? true,
+    isDefault: options.isDefault ?? false,
     kb: {
       id,
       name,
@@ -176,14 +189,22 @@ describe('Chatbot knowledge-base reader compatibility', () => {
           deletedAt: new Date('2026-09-09T08:00:00.000Z'),
         }),
       ],
-      expected: [{ id: 'kb-one', name: 'One KB' }],
+      expected: [
+        {
+          id: 'kb-one',
+          kbId: 'kb-one',
+          linkId: 'link-kb-one',
+          name: 'One KB',
+          isDefault: false,
+        },
+      ],
       legacyId: 'kb-one',
       legacyName: 'One KB',
     },
     {
       name: 'many eligible attachments',
       knowledgeBases: [
-        knowledgeBaseBinding('kb-one', 'One KB'),
+        knowledgeBaseBinding('kb-one', 'One KB', { isDefault: true }),
         knowledgeBaseBinding('kb-two', 'Two KB'),
         knowledgeBaseBinding('kb-disabled', 'Disabled KB', {
           isEnabled: false,
@@ -193,8 +214,20 @@ describe('Chatbot knowledge-base reader compatibility', () => {
         }),
       ],
       expected: [
-        { id: 'kb-one', name: 'One KB' },
-        { id: 'kb-two', name: 'Two KB' },
+        {
+          id: 'kb-one',
+          kbId: 'kb-one',
+          linkId: 'link-kb-one',
+          name: 'One KB',
+          isDefault: true,
+        },
+        {
+          id: 'kb-two',
+          kbId: 'kb-two',
+          linkId: 'link-kb-two',
+          name: 'Two KB',
+          isDefault: false,
+        },
       ],
       legacyId: null,
       legacyName: null,
@@ -220,7 +253,10 @@ describe('Chatbot knowledge-base reader compatibility', () => {
         chatbotId: '00000000-0000-4000-8000-000000000003',
         chatbotName: 'Reader test chatbot',
         chatbotStatus: 'DRAFT',
-        enabledKbs: expected,
+        enabledKbs: expected.map((knowledgeBase) => ({
+          ...knowledgeBase,
+          modeBacklinks: [],
+        })),
         enabledKbId: legacyId,
         enabledKbName: legacyName,
       },

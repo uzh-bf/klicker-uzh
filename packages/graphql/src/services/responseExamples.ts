@@ -3,6 +3,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
 import {
   isSafeDocQueryBinding,
+  normalizeChatbotCustomModeConfig,
   resolveEffectiveMCPConfigurations,
 } from '@klicker-uzh/util'
 import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
@@ -87,6 +88,7 @@ type ResponseExampleSetWithModes = ResponseExampleSetWithRelations & {
 }
 
 type ResponseExampleEligibilityRecord = ResponseExampleEligibilityInput & {
+  chatMode: string
   id: string
 }
 
@@ -175,7 +177,9 @@ async function refreshResponseExampleSetDigestAfterLock(
 async function loadCurrentEligibility(
   prisma: ResponseExamplePrisma,
   chatbotId: string,
-  examples: readonly StoredResponseExampleEligibilityInput[]
+  examples: readonly (StoredResponseExampleEligibilityInput & {
+    chatMode: string
+  })[]
 ) {
   const sourceIds = [
     ...new Set(
@@ -191,7 +195,8 @@ async function loadCurrentEligibility(
   const resources = await loadCurrentResponseExampleResources(
     prisma,
     chatbotId,
-    sourceIds
+    sourceIds,
+    examples.map((example) => example.chatMode)
   )
 
   return buildResponseExampleEligibilityReconciliation(examples, resources)
@@ -214,7 +219,8 @@ async function getCurrentEligibilityForExample(
   const resources = await loadCurrentResponseExampleResources(
     prisma,
     chatbotId,
-    sourceIds
+    sourceIds,
+    [example.chatMode]
   )
 
   return evaluateResponseExampleCurrentEligibility(example, resources)
@@ -476,13 +482,15 @@ export async function captureResponseExample(
       select: {
         systemPrompts: true,
         standardModeConfig: true,
+        customModeConfig: true,
         mcpConfigurations: responseExampleChatbotSelect.mcpConfigurations,
         owner: { select: { aiFeaturesEnabled: true } },
         knowledgeBases: {
-          where: { isEnabled: true, kb: { deletedAt: null } },
-          orderBy: { id: 'asc' },
-          take: 2,
-          select: { kbId: true },
+          where: {
+            isEnabled: true,
+            kb: { deletedAt: null, ownerId: ctx.user.sub },
+          },
+          select: { id: true, kbId: true, isDefault: true },
         },
       },
     })
@@ -494,9 +502,16 @@ export async function captureResponseExample(
       )
     }
 
+    const selectedLinkId = normalizeChatbotCustomModeConfig(
+      chatbot.customModeConfig
+    )?.modes.find((mode) => mode.key === claims.chatMode)?.knowledgeBaseLinkId
+    const currentLink = chatbot.knowledgeBases.find((link) =>
+      selectedLinkId == null ? link.isDefault : link.id === selectedLinkId
+    )
     if (
-      chatbot.knowledgeBases.length !== 1 ||
-      chatbot.knowledgeBases[0]?.kbId !== claims.kbId ||
+      !currentLink ||
+      currentLink.id !== claims.kbLinkId ||
+      currentLink.kbId !== claims.kbId ||
       !isResponseExampleModeAvailable(chatbot, claims.chatMode)
     ) {
       throw captureError(
@@ -508,11 +523,14 @@ export async function captureResponseExample(
     const resources = await loadCurrentResponseExampleResources(
       tx,
       input.chatbotId,
-      claims.evidenceReferences.map((reference) => reference.sourceId)
+      claims.evidenceReferences.map((reference) => reference.sourceId),
+      [claims.chatMode]
     )
     const currentEligibility = evaluateResponseExampleCurrentEligibility(
       {
         referenceAnswer: input.answer,
+        chatMode: claims.chatMode,
+        sourceKbLinkId: currentLink.id,
         evidenceReferences: claims.evidenceReferences,
       },
       resources
@@ -548,6 +566,7 @@ export async function captureResponseExample(
         chatMode: claims.chatMode,
         studentMessage: input.question,
         referenceAnswer: input.answer,
+        sourceKbLinkId: currentLink.id,
         responseStyle: responseStyleForChatMode(claims.chatMode),
         status: DB.ResponseExampleStatus.CANDIDATE,
         evidenceReferences: {
@@ -604,6 +623,8 @@ async function reviewResponseExample(
         setId: true,
         status: true,
         chatMode: true,
+        sourceKbLinkId: true,
+        createdAt: true,
         referenceAnswer: true,
         evidenceReferences: {
           select: {
@@ -759,6 +780,8 @@ export async function editAndApproveResponseExample(
         setId: true,
         status: true,
         updatedAt: true,
+        sourceKbLinkId: true,
+        createdAt: true,
         evidenceReferences: {
           select: {
             id: true,
@@ -785,6 +808,7 @@ export async function editAndApproveResponseExample(
       ownership.set.chatbot.id,
       {
         ...example,
+        chatMode: input.chatMode,
         referenceAnswer: input.referenceAnswer,
       }
     )

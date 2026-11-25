@@ -98,6 +98,26 @@ describe('chatbot authoring revision transitions', () => {
       owner
     )
 
+  async function seedKnowledgeBaseLink(
+    chatbotId: string,
+    options: { ownerId?: string; isEnabled?: boolean } = {}
+  ) {
+    const kb = await dependencies.prisma.kB.create({
+      data: {
+        name: 'Synthetic revision KB',
+        ownerId: options.ownerId ?? owner.user.sub,
+      },
+    })
+    const link = await dependencies.prisma.kBChatbot.create({
+      data: {
+        kbId: kb.id,
+        chatbotId,
+        isEnabled: options.isEnabled ?? true,
+      },
+    })
+    return { kb, link }
+  }
+
   it('saves multiple typed sections atomically with one version increment', async () => {
     const bot = await seed()
     const saved = await service.saveChatbotRevision(
@@ -1075,6 +1095,201 @@ describe('chatbot authoring revision transitions', () => {
           welcomeMessage: approvedWelcome,
         },
       ],
+    })
+  })
+
+  it('preserves an omitted custom-mode KB link and clears it explicitly', async () => {
+    const bot = await seed()
+    const { link } = await seedKnowledgeBaseLink(bot.id)
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Case discussion',
+                knowledgeBaseLinkId: link.id,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const mode = saved?.authoringRevision?.customModeConfig?.modes[0]
+    expect(mode?.knowledgeBaseLinkId).toBe(link.id)
+
+    const omitted = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: {
+          customModeConfig: {
+            modes: [{ key: mode?.key, name: 'Case work' }],
+          },
+        },
+      },
+      owner
+    )
+    expect(
+      omitted?.authoringRevision?.customModeConfig?.modes[0]
+        ?.knowledgeBaseLinkId
+    ).toBe(link.id)
+
+    const cleared = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 2,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                key: mode?.key,
+                name: 'Case work',
+                knowledgeBaseLinkId: null,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    expect(
+      cleared?.authoringRevision?.customModeConfig?.modes[0]
+        ?.knowledgeBaseLinkId
+    ).toBeUndefined()
+  })
+
+  it('rejects unavailable and foreign links on save and approval', async () => {
+    const bot = await seed()
+    const { link } = await seedKnowledgeBaseLink(bot.id, { isEnabled: false })
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 0,
+          input: {
+            customModeConfig: {
+              modes: [
+                {
+                  name: 'Disabled source',
+                  knowledgeBaseLinkId: link.id,
+                },
+              ],
+            },
+          },
+        },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    const foreign = await seedKnowledgeBaseLink(bot.id, {
+      ownerId: admin.user.sub,
+    })
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 0,
+          input: {
+            customModeConfig: {
+              modes: [
+                {
+                  name: 'Foreign source',
+                  knowledgeBaseLinkId: foreign.link.id,
+                },
+              ],
+            },
+          },
+        },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    await dependencies.prisma.kBChatbot.update({
+      where: { id: link.id },
+      data: { isEnabled: true },
+    })
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Case discussion',
+                knowledgeBaseLinkId: link.id,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    await dependencies.prisma.kBChatbot.update({
+      where: { id: link.id },
+      data: { isEnabled: false },
+    })
+    await expect(
+      submit(bot.id, saved?.revisionVersion ?? 0)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    await dependencies.prisma.kBChatbot.update({
+      where: { id: link.id },
+      data: { isEnabled: true },
+    })
+    await submit(bot.id, saved?.revisionVersion ?? 0)
+    await dependencies.prisma.kBChatbot.update({
+      where: { id: link.id },
+      data: { isEnabled: false },
+    })
+    await expect(
+      service.approveChatbotRevision(
+        {
+          id: bot.id,
+          expectedRevisionVersion: (saved?.revisionVersion ?? 0) + 1,
+        },
+        admin
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
+
+  it('publishes a valid per-mode KB link only on approval', async () => {
+    const bot = await seed()
+    const { link } = await seedKnowledgeBaseLink(bot.id)
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Exam practice',
+                knowledgeBaseLinkId: link.id,
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    expect((await read(bot.id)).customModeConfig).toBeNull()
+
+    await submit(bot.id, saved?.revisionVersion ?? 0)
+    await service.approveChatbotRevision(
+      {
+        id: bot.id,
+        expectedRevisionVersion: (saved?.revisionVersion ?? 0) + 1,
+      },
+      admin
+    )
+
+    expect((await read(bot.id)).customModeConfig).toMatchObject({
+      modes: [{ name: 'Exam practice', knowledgeBaseLinkId: link.id }],
     })
   })
 

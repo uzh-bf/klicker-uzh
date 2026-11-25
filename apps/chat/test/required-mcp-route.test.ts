@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   findUnique: vi.fn(),
+  findKbServer: vi.fn(),
   findThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   closeMCPTools: vi.fn(),
@@ -45,6 +46,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
       findFirst: mocks.findThread,
     },
     kBResource: { findFirst: mocks.findResource },
+    chatbotMCPServer: { findUnique: mocks.findKbServer },
   },
 }))
 
@@ -211,6 +213,14 @@ describe('required MCP chat preflight', () => {
     mocks.compileSystemPrompt.mockReturnValue('COMPILED-SYSTEM-PROMPT')
     mocks.courseImageStoreConfigured.mockReturnValue(false)
     mocks.findUnique.mockResolvedValue(createChatbot())
+    mocks.findKbServer.mockResolvedValue(
+      createMcpServer({
+        id: 'kb-server',
+        name: 'KB',
+        authType: 'scope_token',
+        isActive: true,
+      })
+    )
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
     )
@@ -383,13 +393,14 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ isActive: false }),
         }),
       ],
-      {
+      expect.objectContaining({
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
         kbIds: undefined,
         sessionId: 'thread-1',
-      }
+        chatMode: 'tutor',
+      })
     )
     expect(mocks.getUserCredits).toHaveBeenCalledWith(
       'participant-1',
@@ -494,13 +505,14 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ name: 'KB' }),
         }),
       ],
-      {
+      expect.objectContaining({
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
         kbIds: [KB_ID],
         sessionId: 'thread-1',
-      }
+        chatMode: 'tutor',
+      })
     )
   })
 
@@ -559,6 +571,23 @@ describe('required MCP chat preflight', () => {
           },
         },
         course: { select: { displayName: true } },
+        knowledgeBases: {
+          select: {
+            id: true,
+            kbId: true,
+            isEnabled: true,
+            isDefault: true,
+            kb: {
+              select: {
+                deletedAt: true,
+                ownerId: true,
+                name: true,
+                knowledgeGraphEnabled: true,
+              },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
         mcpConfigurations: {
           include: { mcpServer: true },
           orderBy: { priority: 'asc' },
@@ -745,13 +774,14 @@ describe('required MCP chat preflight', () => {
           }),
         }),
       ],
-      {
+      expect.objectContaining({
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
         kbIds: [KB_ID],
         sessionId: 'thread-1',
-      }
+        chatMode: 'quizzer',
+      })
     )
   })
 
@@ -962,13 +992,14 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ id: 'server-1' }),
         }),
       ],
-      {
+      expect.objectContaining({
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
         kbIds: undefined,
         sessionId: 'thread-1',
-      }
+        chatMode: 'QuickCheck',
+      })
     )
   })
 
@@ -999,5 +1030,194 @@ describe('required MCP chat preflight', () => {
       error: 'Unsupported chat mode: QuickCheck',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+  })
+
+  describe('explicit mode knowledge-base selection', () => {
+    const KB_B_ID = '2f0c4a1e-6b57-4d4b-9a54-6a9c4a3d1b10'
+    const LINK_A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    const LINK_B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const MODE_KEY = 'cm_case_practice'
+
+    // Mirrors the managed-link rows the route selects.
+    const kbLink = (
+      id: string,
+      kbId: string,
+      overrides: Record<string, unknown> = {}
+    ) => ({
+      id,
+      kbId,
+      isEnabled: true,
+      isDefault: false,
+      kb: {
+        deletedAt: null,
+        ownerId: 'owner-1',
+        name: 'Synthetic source',
+        knowledgeGraphEnabled: false,
+      },
+      ...overrides,
+    })
+
+    // A custom-only chatbot: no persisted MCP rows and no default link.
+    function explicitChatbot(
+      linkId: string | null,
+      knowledgeBases: unknown[] = [
+        kbLink(LINK_A, KB_ID),
+        kbLink(LINK_B, KB_B_ID),
+      ]
+    ) {
+      return createChatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: MODE_KEY,
+              name: 'Case practice',
+              description: 'Practises a course case.',
+              personaText: 'Run a case practice.',
+              knowledgeBaseLinkId: linkId,
+            },
+          ],
+        },
+        knowledgeBases,
+        mcpConfigurations: [],
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      })
+    }
+
+    test.each([
+      ['A', LINK_A, KB_ID],
+      ['B', LINK_B, KB_B_ID],
+    ])('sends exactly source %s with no persisted MCP rows', async (_label, linkId, kbId) => {
+      mocks.findUnique.mockResolvedValueOnce(explicitChatbot(linkId))
+      mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+        tools: {},
+        close: mocks.closeMCPTools,
+      })
+      mocks.compileSystemPrompt.mockImplementationOnce(() => {
+        throw new Error('stop after prompt compilation')
+      })
+
+      await expect(
+        POST(createRequest(MODE_KEY), {
+          params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+        })
+      ).rejects.toThrow('stop after prompt compilation')
+
+      expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+      const [configurations, options] =
+        mocks.getAggregatedMCPTools.mock.calls[0]!
+      expect(configurations).toHaveLength(1)
+      expect(configurations[0].server).toMatchObject({ name: 'KB' })
+      expect(configurations[0].config).toMatchObject({
+        allowedTools: ['doc_query'],
+        parameters: { kb_id: kbId, required: true, toolAlias: 'doc_query' },
+      })
+      expect(configurations[0].config.parameters).not.toHaveProperty('kb_ids')
+      expect(options).toMatchObject({
+        chatMode: MODE_KEY,
+        kbIds: [kbId],
+        kbLinkId: linkId,
+        participantId: 'participant-1',
+      })
+      expect(options.revalidateKnowledgeBaseScope).toEqual(expect.any(Function))
+    })
+
+    test.each([
+      ['a nonexistent link', LINK_A, [kbLink(LINK_B, KB_B_ID)]],
+      ['a revoked link', LINK_A, [kbLink(LINK_A, KB_ID, { isEnabled: false })]],
+      [
+        'a soft-deleted source',
+        LINK_A,
+        [
+          kbLink(LINK_A, KB_ID, {
+            kb: { deletedAt: new Date(0), ownerId: 'owner-1' },
+          }),
+        ],
+      ],
+      [
+        'a source owned by someone else',
+        LINK_A,
+        [kbLink(LINK_A, KB_ID, { kb: { deletedAt: null, ownerId: 'other' } })],
+      ],
+      [
+        'a missing source when another link is the default',
+        LINK_A,
+        [kbLink(LINK_B, KB_B_ID, { isDefault: true })],
+      ],
+    ])('refuses %s before any thread, provider or document work', async (_label, linkId, knowledgeBases) => {
+      mocks.findUnique.mockResolvedValueOnce(
+        explicitChatbot(linkId, knowledgeBases)
+      )
+
+      const response = await POST(createRequest(MODE_KEY), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+
+      expect(response.status).toBe(503)
+      await expect(response.json()).resolves.toMatchObject({
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      })
+      expect(mocks.findKbServer).not.toHaveBeenCalled()
+      expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+      expect(mocks.createThread).not.toHaveBeenCalled()
+      expect(mocks.compileSystemPrompt).not.toHaveBeenCalled()
+    })
+
+    test('stops with unavailability when discovery for an explicit source fails', async () => {
+      mocks.findUnique.mockResolvedValueOnce(explicitChatbot(LINK_A))
+
+      const response = await POST(createRequest(MODE_KEY), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+
+      expect(response.status).toBe(503)
+      expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+      expect(mocks.compileSystemPrompt).not.toHaveBeenCalled()
+    })
+
+    test('refuses an explicit source when the Doc Query server is unavailable', async () => {
+      mocks.findKbServer.mockResolvedValueOnce(null)
+      mocks.findUnique.mockResolvedValueOnce(explicitChatbot(LINK_A))
+
+      const response = await POST(createRequest(MODE_KEY), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+
+      expect(response.status).toBe(503)
+      expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+      expect(mocks.compileSystemPrompt).not.toHaveBeenCalled()
+    })
+
+    test('an inheriting mode without a default searches no source', async () => {
+      mocks.findUnique.mockResolvedValueOnce(explicitChatbot(null))
+      mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+        tools: {},
+        close: mocks.closeMCPTools,
+      })
+      mocks.compileSystemPrompt.mockImplementationOnce(() => {
+        throw new Error('stop after prompt compilation')
+      })
+
+      await expect(
+        POST(createRequest(MODE_KEY), {
+          params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+        })
+      ).rejects.toThrow('stop after prompt compilation')
+
+      expect(mocks.findKbServer).not.toHaveBeenCalled()
+      const [configurations, options] = mocks.getAggregatedMCPTools.mock
+        .calls[0] ?? [[], {}]
+      expect(configurations).toEqual([])
+      expect(options.kbIds).toBeUndefined()
+    })
   })
 })

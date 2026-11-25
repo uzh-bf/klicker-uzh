@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   message: vi.fn(),
   chatbot: vi.fn(),
   resource: vi.fn(),
-  scope: vi.fn(),
   read: vi.fn(),
 }))
 vi.mock('@klicker-uzh/prisma', () => ({
@@ -23,7 +22,6 @@ vi.mock('@/src/lib/server/apiGuards', () => ({ withChatbotAuth: mocks.auth }))
 vi.mock('@/src/lib/server/courseImageStore', () => ({
   readCourseImage: mocks.read,
 }))
-vi.mock('@/src/services/mcpScope', () => ({ resolveMcpScope: mocks.scope }))
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/images/[assetId]/route'
 
@@ -34,6 +32,38 @@ const fixture = JSON.parse(
   )
 )
 const image = courseImageCandidates(fixture)[0]!
+const LINK_ID = '4c1f2f0e-6d1a-4a56-9a2f-7d2b6f2f6f01'
+const server = { id: 'server', name: 'KB' }
+const legacyConfigurations = [
+  {
+    chatMode: 'tutor',
+    isEnabled: true,
+    allowedTools: ['doc_query'],
+    parameters: {
+      required: true,
+      toolAlias: 'doc_query',
+      kb_id: image.kb_id,
+    },
+    mcpServer: server,
+  },
+]
+const managedLink = {
+  id: LINK_ID,
+  kbId: image.kb_id,
+  isEnabled: true,
+  isDefault: true,
+  kb: { deletedAt: null, knowledgeGraphEnabled: true, name: 'Casebook' },
+}
+const provenance = {
+  type: 'data' as const,
+  name: 'retrieval-source',
+  data: {
+    chatMode: 'tutor',
+    kbId: image.kb_id,
+    kbLinkId: LINK_ID,
+    revisionVersion: 3,
+  },
+}
 const req = new NextRequest('http://localhost/api/test')
 const params = Promise.resolve({
   chatbotId: 'bot',
@@ -57,9 +87,11 @@ beforeEach(() => {
       },
     ],
   })
-  mocks.chatbot.mockResolvedValue({ mcpConfigurations: [] })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [],
+    mcpConfigurations: legacyConfigurations,
+  })
   mocks.resource.mockResolvedValue({ id: image.external_resource_id })
-  mocks.scope.mockReturnValue([image.kb_id])
   mocks.read.mockResolvedValue(Buffer.from('png'))
 })
 it('requires authentication before storage access', async () => {
@@ -91,44 +123,73 @@ it('does not serve another participant message or an arbitrary image id', async 
   expect(mocks.read).not.toHaveBeenCalled()
 })
 it('revokes access when the chatbot no longer has the KB binding', async () => {
-  mocks.scope.mockReturnValue([])
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [],
+    mcpConfigurations: [],
+  })
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })
-it('uses all configurations to resolve mode inheritance while scoping enabled configurations', async () => {
-  const server = { id: 'server', name: 'KB' }
-  const enabled = {
-    id: 'enabled',
-    chatMode: 'tutor',
-    isEnabled: true,
-    allowedTools: ['doc_query'],
-    parameters: {},
-    mcpServer: server,
-  }
-  const disabled = {
-    id: 'disabled',
-    chatMode: 'quizzer',
-    isEnabled: false,
-    allowedTools: ['doc_query'],
-    parameters: {},
-    mcpServer: server,
-  }
+it('replays a managed image while its original link is still the mode source', async () => {
   mocks.message.mockResolvedValue({
-    chatMode: 'quizzer',
+    chatMode: 'tutor',
     content: [
       {
         type: 'tool-call',
         toolName: 'show_course_image',
         result: { status: 'selected', image },
       },
+      provenance,
     ],
   })
   mocks.chatbot.mockResolvedValue({
-    mcpConfigurations: [enabled, disabled],
+    knowledgeBases: [managedLink],
+    mcpConfigurations: legacyConfigurations,
   })
-  const response = await GET(req, { params })
-  expect(response.status).toBe(200)
-  expect(mocks.scope).toHaveBeenCalledWith([enabled], 'quizzer', [])
+  expect((await GET(req, { params })).status).toBe(200)
+})
+it('refuses managed evidence without provenance', async () => {
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [managedLink],
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+it('refuses replay after the mode is repointed to another live link', async () => {
+  const otherLinkId = '9a5f2b31-0c86-4f2b-8a10-c3d0e5f5b902'
+  mocks.message.mockResolvedValue({
+    chatMode: 'cm_case',
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+      { ...provenance, data: { ...provenance.data, chatMode: 'cm_case' } },
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, isDefault: false, isEnabled: true },
+      {
+        ...managedLink,
+        id: otherLinkId,
+        kbId: '0b6c4c1a-9d3e-4f1e-9b0c-1d2e3f4a5b6c',
+      },
+    ],
+    customModeConfig: {
+      modes: [
+        {
+          key: 'cm_case',
+          knowledgeBaseLinkId: otherLinkId,
+        },
+      ],
+    },
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
 })
 it('revokes access when the selected resource version is no longer serving', async () => {
   mocks.resource.mockResolvedValue(null)

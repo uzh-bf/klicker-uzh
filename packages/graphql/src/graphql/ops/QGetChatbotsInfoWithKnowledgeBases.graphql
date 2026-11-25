@@ -21,6 +21,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
       languageOfInstruction
       scopeNote
     }
+    perModeKbLinksEnabled
     customModeConfig {
       modes {
         key
@@ -32,6 +33,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
         showReasoning
         replyLanguage
         meetingClock
+        knowledgeBaseLinkId
       }
     }
     authoringRevision {
@@ -77,7 +79,10 @@ query QGetChatbotsInfoWithKnowledgeBases {
     }
     enabledKnowledgeBases {
       id
+      kbId
+      linkId
       name
+      isDefault
       materialsReadiness {
         visibleResourceCount
         servingResourceCount

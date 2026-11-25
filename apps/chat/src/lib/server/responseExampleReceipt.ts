@@ -68,6 +68,7 @@ export async function issuePreviewResponseExampleReceipt({
   ownerId,
   chatbotId,
   kbId,
+  kbLinkId,
   chatMode,
 }: {
   requestMessages: readonly UIMessage[]
@@ -77,6 +78,7 @@ export async function issuePreviewResponseExampleReceipt({
   ownerId: string
   chatbotId: string
   kbId: string | undefined
+  kbLinkId: string | undefined
   chatMode: string
 }): Promise<PreviewResponseExampleCaptureData | null> {
   if (
@@ -95,7 +97,9 @@ export async function issuePreviewResponseExampleReceipt({
   // grounded examples; the preview shows no capture action for them.
   if (chatMode === 'writing-coach') return null
 
-  if (!kbId) return { unavailable: true }
+  // The receipt names the exact live link that served the turn, so a later
+  // unlink or reassignment cannot be replayed against a different source.
+  if (!kbId || !kbLinkId) return { unavailable: true }
 
   const evidenceReferences = normalizeResponseExampleEvidenceFromParts(
     sourceParts(responseMessage),
@@ -111,6 +115,7 @@ export async function issuePreviewResponseExampleReceipt({
     ownerId,
     chatbotId,
     kbId,
+    kbLinkId,
     chatMode,
     question,
     answer,

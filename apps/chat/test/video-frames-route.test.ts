@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   message: vi.fn(),
   chatbot: vi.fn(),
-  scope: vi.fn(),
   read: vi.fn(),
 }))
 vi.mock('@klicker-uzh/prisma', () => ({
@@ -18,13 +17,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 vi.mock('@/src/lib/server/apiGuards', () => ({ withChatbotAuth: mocks.auth }))
-vi.mock('@/src/lib/server/effectiveChatModes', () => ({
-  resolveEffectiveMCPConfigurations: (configs: unknown) => configs,
-}))
 vi.mock('@/src/lib/server/videoFrameStore', () => ({
   readVideoFrame: mocks.read,
 }))
-vi.mock('@/src/services/mcpScope', () => ({ resolveMcpScope: mocks.scope }))
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/frames/[assetId]/route'
 
@@ -35,6 +30,37 @@ const fixture = JSON.parse(
   )
 )
 const frame = videoFrameCandidates(fixture)[0]!
+const LINK_ID = '4c1f2f0e-6d1a-4a56-9a2f-7d2b6f2f6f01'
+const legacyConfigurations = [
+  {
+    chatMode: 'tutor',
+    isEnabled: true,
+    allowedTools: ['doc_query'],
+    parameters: {
+      required: true,
+      toolAlias: 'doc_query',
+      kb_id: frame.kb_id,
+    },
+    mcpServer: { id: 'server', name: 'KB' },
+  },
+]
+const managedLink = {
+  id: LINK_ID,
+  kbId: frame.kb_id,
+  isEnabled: true,
+  isDefault: true,
+  kb: { deletedAt: null, knowledgeGraphEnabled: true, name: 'Casebook' },
+}
+const provenance = {
+  type: 'data' as const,
+  name: 'retrieval-source',
+  data: {
+    chatMode: 'tutor',
+    kbId: frame.kb_id,
+    kbLinkId: LINK_ID,
+    revisionVersion: 2,
+  },
+}
 const req = new NextRequest('http://localhost/api/test')
 const params = Promise.resolve({
   chatbotId: 'bot',
@@ -59,8 +85,10 @@ beforeEach(() => {
       },
     ],
   })
-  mocks.chatbot.mockResolvedValue({ mcpConfigurations: [] })
-  mocks.scope.mockReturnValue([frame.kb_id])
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [],
+    mcpConfigurations: legacyConfigurations,
+  })
   mocks.read.mockResolvedValue(Buffer.from('jpeg'))
 })
 
@@ -112,7 +140,10 @@ it('rejects frames absent from the message and revoked KB bindings', async () =>
       },
     ],
   })
-  mocks.scope.mockReturnValue([])
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [],
+    mcpConfigurations: [],
+  })
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })
@@ -122,10 +153,47 @@ it('rejects source previews after KB access is revoked or the message is not own
     chatMode: 'tutor',
     content: [{ type: 'tool-call', toolName: 'KB_doc_query', result: fixture }],
   })
-  mocks.scope.mockReturnValue([])
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [],
+    mcpConfigurations: [],
+  })
   expect((await GET(req, { params })).status).toBe(404)
-  mocks.scope.mockReturnValue([frame.kb_id])
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [],
+    mcpConfigurations: legacyConfigurations,
+  })
   mocks.message.mockResolvedValue(null)
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
+})
+it('replays a managed frame only with matching original link provenance', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: 'tutor',
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_video_frame',
+        result: { status: 'selected', frame },
+      },
+      provenance,
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [managedLink],
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(200)
+
+  mocks.message.mockResolvedValue({
+    chatMode: 'tutor',
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_video_frame',
+        result: { status: 'selected', frame },
+      },
+    ],
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).toHaveBeenCalledTimes(1)
 })

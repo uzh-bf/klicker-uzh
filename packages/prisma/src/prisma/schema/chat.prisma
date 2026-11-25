@@ -282,6 +282,8 @@ model ResponseExample {
   setId String             @db.Uuid
 
   chatMode        String
+  /// The original link remains identifiable after unlinking and reattaching a KB.
+  sourceKbLinkId  String?               @db.Uuid
   studentMessage  String                @db.Text
   referenceAnswer String                @db.Text
   responseStyle   ResponseExampleStyle

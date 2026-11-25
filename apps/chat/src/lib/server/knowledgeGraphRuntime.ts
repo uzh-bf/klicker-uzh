@@ -4,6 +4,12 @@ import type {
   KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import { createRequire } from 'node:module'
+import { resolveEffectiveChatModeOptions } from './effectiveChatModes'
+import {
+  type GraphKnowledgeBaseChoice,
+  resolveGraphKnowledgeBaseChoices,
+  ownedKnowledgeBaseLinks,
+} from '../../services/mcpScope'
 
 export type PublishedKnowledgeGraph = {
   kbId: string
@@ -84,35 +90,90 @@ export async function getPublishedKnowledgeGraphForChatbot(
   chatbotId: string,
   kbId?: string
 ): Promise<PublishedKnowledgeGraph> {
-  const bindings = await client.kBChatbot.findMany({
-    where: {
-      chatbotId,
-      isEnabled: true,
-      kb: { deletedAt: null, knowledgeGraphEnabled: true },
-    },
-    select: { kbId: true, kb: { select: { name: true } } },
-    orderBy: { kbId: 'asc' },
-  })
-
-  const choices = bindings.map((binding) => ({
-    id: binding.kbId,
-    name: binding.kb.name,
-  }))
-  if (
-    (kbId !== undefined &&
-      !bindings.some((binding) => binding.kbId === kbId)) ||
-    (kbId === undefined && bindings.length > 1)
-  ) {
-    throw new KnowledgeGraphSelectionRequiredError(choices)
-  }
-
+  const choices = await readChatbotKnowledgeGraphChoices(client, chatbotId)
   const knowledgeGraphModule = await loadKnowledgeGraph()
-  const selectedKbId = kbId ?? bindings[0]?.kbId
-  if (selectedKbId === undefined) {
+  if (choices.length === 0) {
     throw new knowledgeGraphModule.KnowledgeGraphNotPublishedError('EMPTY')
   }
 
-  return knowledgeGraphModule.getPublishedKnowledgeGraph(client, selectedKbId)
+  const selected =
+    kbId === undefined
+      ? choices.length === 1
+        ? choices[0]
+        : undefined
+      : choices.find((choice) => choice.id === kbId)
+  if (!selected) {
+    throw new KnowledgeGraphSelectionRequiredError(choices)
+  }
+
+  return knowledgeGraphModule.getPublishedKnowledgeGraph(client, selected.id)
+}
+
+/**
+ * Sources the learner may browse in the graph surface. A source qualifies only
+ * when an approved, learner-visible mode resolves it as its one live Doc Query
+ * source and that knowledge base has a published graph enabled. Merely
+ * attaching a KB, or selecting it only in a draft, never makes it browsable.
+ */
+export async function readChatbotKnowledgeGraphChoices(
+  client: PrismaClient,
+  chatbotId: string
+): Promise<GraphKnowledgeBaseChoice[]> {
+  const chatbot = await client.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: {
+      customModeConfig: true,
+      ownerId: true,
+      standardModeConfig: true,
+      systemPrompts: true,
+      knowledgeBases: {
+        select: {
+          id: true,
+          kbId: true,
+          isEnabled: true,
+          isDefault: true,
+          kb: {
+            select: {
+              deletedAt: true,
+              ownerId: true,
+              knowledgeGraphEnabled: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+      },
+      mcpConfigurations: {
+        select: {
+          allowedTools: true,
+          chatMode: true,
+          isEnabled: true,
+          parameters: true,
+          priority: true,
+          mcpServer: { select: { id: true, name: true } },
+        },
+        orderBy: { priority: 'asc' },
+      },
+    },
+  })
+  if (!chatbot) return []
+
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig,
+    { customModeConfig: chatbot.customModeConfig }
+  )
+
+  return resolveGraphKnowledgeBaseChoices({
+    modes: Object.keys(modeOptions),
+    customModeConfig: chatbot.customModeConfig,
+    knowledgeBaseLinks: ownedKnowledgeBaseLinks(
+      chatbot.knowledgeBases,
+      chatbot.ownerId
+    ),
+    mcpConfigurations: chatbot.mcpConfigurations,
+  })
 }
 
 export class KnowledgeGraphSelectionRequiredError extends Error {

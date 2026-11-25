@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -47,6 +48,7 @@ const describeWithDatabase = DATABASE_URL ? describe : describe.skip
 describeWithDatabase('provision_chatbot_knowledge_base script', () => {
   let prisma: PrismaClient
   let snapshotPath = ''
+  let kbServerId = KB_SERVER_ID
 
   const runScript = (args: Array<string>) =>
     execFileSync(
@@ -119,28 +121,32 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
         courseId: COURSE_ID,
       },
     })
-    await prisma.chatbotMCPServer.createMany({
-      data: [
-        {
-          id: KB_SERVER_ID,
-          name: 'KB',
-          url: 'http://synthetic.invalid/mcp/kb',
-          authType: 'scope_token',
-        },
-        {
-          id: LEGACY_SERVER_ID,
-          name: LEGACY_SERVER_NAME,
-          url: 'http://synthetic.invalid/mcp/legacy',
-          authType: 'bearer',
-        },
-      ],
+    const kbServer = await prisma.chatbotMCPServer.upsert({
+      where: { name: 'KB' },
+      create: {
+        id: KB_SERVER_ID,
+        name: 'KB',
+        url: 'http://synthetic.invalid/mcp/kb',
+        authType: 'scope_token',
+      },
+      update: {},
+      select: { id: true },
+    })
+    kbServerId = kbServer.id
+    await prisma.chatbotMCPServer.create({
+      data: {
+        id: LEGACY_SERVER_ID,
+        name: LEGACY_SERVER_NAME,
+        url: 'http://synthetic.invalid/mcp/legacy',
+        authType: 'none',
+      },
     })
     await prisma.chatbotMCPConfig.createMany({
       data: [
         {
           id: TUTOR_CONFIG_ID,
           chatbotId: CHATBOT_ID,
-          mcpServerId: KB_SERVER_ID,
+          mcpServerId: kbServerId,
           chatMode: 'tutor',
           allowedTools: [DOC_QUERY_TOOL_ALIAS],
           parameters: PHANTOM_KB_PARAMETERS,
@@ -148,7 +154,7 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
         {
           id: EXPLAINER_CONFIG_ID,
           chatbotId: CHATBOT_ID,
-          mcpServerId: KB_SERVER_ID,
+          mcpServerId: kbServerId,
           chatMode: 'explainer',
           allowedTools: [DOC_QUERY_TOOL_ALIAS],
           parameters: PHANTOM_KB_PARAMETERS,
@@ -249,8 +255,12 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
   )
 
   it(
-    'refuses a chatbot already bound to another knowledge base',
+    'adds the target as default and preserves an enabled secondary link',
     async () => {
+      const additiveSnapshot = join(
+        mkdtempSync(join(tmpdir(), 'rsv-kb-additive-')),
+        'snapshot.json'
+      )
       await prisma.kB.create({
         data: {
           id: FOREIGN_KB_ID,
@@ -259,16 +269,118 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
         },
       })
       await prisma.kBChatbot.create({
-        data: { kbId: FOREIGN_KB_ID, chatbotId: CHATBOT_ID },
+        data: {
+          kbId: FOREIGN_KB_ID,
+          chatbotId: CHATBOT_ID,
+          isEnabled: true,
+          isDefault: true,
+        },
       })
       try {
-        const output = runFailingScript(baseArgs)
-        expect(output).toContain('FAIL: binding_conflict')
+        const output = runScript([
+          ...baseArgs,
+          '--snapshot-out',
+          additiveSnapshot,
+          '--apply',
+        ])
+        expect(output).toContain('APPLIED')
+
+        const links = await prisma.kBChatbot.findMany({
+          where: { chatbotId: CHATBOT_ID },
+        })
+        expect(links.find(({ kbId }) => kbId === KB_ID)).toMatchObject({
+          isEnabled: true,
+          isDefault: true,
+        })
+        expect(links.find(({ kbId }) => kbId === FOREIGN_KB_ID)).toMatchObject({
+          isEnabled: true,
+          isDefault: false,
+        })
+        expect(
+          await prisma.kBChatbot.count({
+            where: { chatbotId: CHATBOT_ID, isDefault: true },
+          })
+        ).toBe(1)
+
+        runScript(['--rollback', '--snapshot', additiveSnapshot])
+        expect(
+          await prisma.kBChatbot.count({
+            where: { chatbotId: CHATBOT_ID, kbId: KB_ID },
+          })
+        ).toBe(0)
+        expect(await prisma.kB.count({ where: { id: KB_ID } })).toBe(0)
+        expect(
+          await prisma.kBChatbot.findUnique({
+            where: {
+              kbId_chatbotId: {
+                kbId: FOREIGN_KB_ID,
+                chatbotId: CHATBOT_ID,
+              },
+            },
+          })
+        ).toMatchObject({ isEnabled: true, isDefault: true })
       } finally {
         await prisma.kBChatbot.deleteMany({
           where: { kbId: FOREIGN_KB_ID, chatbotId: CHATBOT_ID },
         })
         await prisma.kB.deleteMany({ where: { id: FOREIGN_KB_ID } })
+      }
+    },
+    SPAWN_TIMEOUT
+  )
+
+  it(
+    'replaces a disabled historical link with a fresh default link',
+    async () => {
+      const disabledSnapshot = join(
+        mkdtempSync(join(tmpdir(), 'rsv-kb-disabled-')),
+        'snapshot.json'
+      )
+      const historicalId = randomUUID()
+      await prisma.kB.create({
+        data: { id: KB_ID, name: KB_NAME, ownerId: OWNER_ID },
+      })
+      await prisma.kBChatbot.create({
+        data: {
+          id: historicalId,
+          kbId: KB_ID,
+          chatbotId: CHATBOT_ID,
+          isEnabled: false,
+          isDefault: false,
+        },
+      })
+      try {
+        runScript([...baseArgs, '--snapshot-out', disabledSnapshot, '--apply'])
+        const replacement = await prisma.kBChatbot.findUniqueOrThrow({
+          where: {
+            kbId_chatbotId: { kbId: KB_ID, chatbotId: CHATBOT_ID },
+          },
+        })
+        expect(replacement.id).not.toBe(historicalId)
+        expect(replacement).toMatchObject({
+          isEnabled: true,
+          isDefault: true,
+        })
+
+        expect(
+          runScript(['--rollback', '--snapshot', disabledSnapshot])
+        ).toContain('bindingRestored=true')
+        expect(
+          await prisma.kBChatbot.findUnique({
+            where: {
+              kbId_chatbotId: { kbId: KB_ID, chatbotId: CHATBOT_ID },
+            },
+          })
+        ).toMatchObject({
+          id: historicalId,
+          isEnabled: false,
+          isDefault: false,
+        })
+      } finally {
+        await prisma.kBChatbot.deleteMany({
+          where: { chatbotId: CHATBOT_ID, kbId: KB_ID },
+        })
+        await prisma.kB.deleteMany({ where: { id: KB_ID } })
       }
     },
     SPAWN_TIMEOUT
@@ -322,10 +434,15 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
       const binding = await prisma.kBChatbot.findUniqueOrThrow({
         where: { kbId_chatbotId: { kbId: KB_ID, chatbotId: CHATBOT_ID } },
       })
-      expect(binding.isEnabled).toBe(true)
+      expect(binding).toMatchObject({ isEnabled: true, isDefault: true })
+      expect(
+        await prisma.kBChatbot.count({
+          where: { chatbotId: CHATBOT_ID, isDefault: true },
+        })
+      ).toBe(1)
 
       const configs = await prisma.chatbotMCPConfig.findMany({
-        where: { chatbotId: CHATBOT_ID, mcpServerId: KB_SERVER_ID },
+        where: { chatbotId: CHATBOT_ID, mcpServerId: kbServerId },
         orderBy: { chatMode: 'asc' },
       })
       expect(configs).toHaveLength(2)
@@ -370,6 +487,7 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
       expect(JSON.parse(readFileSync(replaySnapshot, 'utf8'))).toMatchObject({
         kbWasCreated: false,
         binding: { isEnabled: true },
+        bindings: [{ isEnabled: true, isDefault: true }],
       })
     },
     SPAWN_TIMEOUT
@@ -385,7 +503,7 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
       expect(await prisma.kB.count({ where: { id: KB_ID } })).toBe(0)
       expect(await prisma.kBChatbot.count({ where: { kbId: KB_ID } })).toBe(0)
       const configs = await prisma.chatbotMCPConfig.findMany({
-        where: { chatbotId: CHATBOT_ID, mcpServerId: KB_SERVER_ID },
+        where: { chatbotId: CHATBOT_ID, mcpServerId: kbServerId },
       })
       for (const config of configs) {
         expect(config.isEnabled).toBe(true)
@@ -399,6 +517,42 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
         where: { id: LEGACY_SERVER_ID },
       })
       expect(legacyServer.isActive).toBe(true)
+    },
+    SPAWN_TIMEOUT
+  )
+
+  it(
+    'refuses a thirty-third enabled link without creating a target row',
+    async () => {
+      const capKbIds = Array.from({ length: 32 }, () => randomUUID())
+      await prisma.kB.createMany({
+        data: capKbIds.map((id, index) => ({
+          id,
+          name: 'Synthetic Cap KB ' + index,
+          ownerId: OWNER_ID,
+        })),
+      })
+      await prisma.kBChatbot.createMany({
+        data: capKbIds.map((kbId, index) => ({
+          kbId,
+          chatbotId: CHATBOT_ID,
+          isEnabled: true,
+          isDefault: index === 0,
+        })),
+      })
+      try {
+        const output = runFailingScript(baseArgs)
+        expect(output).toContain('FAIL: link_limit_reached')
+        expect(await prisma.kB.count({ where: { id: KB_ID } })).toBe(0)
+        expect(
+          await prisma.kBChatbot.count({ where: { chatbotId: CHATBOT_ID } })
+        ).toBe(32)
+      } finally {
+        await prisma.kBChatbot.deleteMany({
+          where: { chatbotId: CHATBOT_ID, kbId: { in: capKbIds } },
+        })
+        await prisma.kB.deleteMany({ where: { id: { in: capKbIds } } })
+      }
     },
     SPAWN_TIMEOUT
   )

@@ -6,6 +6,9 @@ import {
 import { hasExactCitationIndexes } from './citations.js'
 
 export interface ResponseExampleCurrentResource {
+  linkId?: string
+  linkCreatedAt?: Date
+  chatModes?: string[]
   id: string
   activeContentSha256: string | null
   deletedAt: Date | null
@@ -23,6 +26,9 @@ export interface ResponseExampleCitationParityInput {
 }
 
 export interface ResponseExampleEligibilityInput {
+  chatMode?: string
+  sourceKbLinkId?: string | null
+  createdAt?: Date
   referenceAnswer: string
   evidenceReferences: readonly ResponseExampleEvidenceEligibilityInput[]
 }
@@ -73,7 +79,7 @@ export function hasCompleteResponseExampleCitationParity(
 
 /**
  * Validate response-example lineage against the resources currently served by
- * the chatbot's one enabled knowledge base. This verifies identity, activity,
+ * the knowledge base selected for the example’s mode. This verifies identity, activity,
  * content hash, and renderer-visible citation parity only.
  */
 export function evaluateResponseExampleCurrentEligibility(
@@ -87,6 +93,14 @@ export function evaluateResponseExampleCurrentEligibility(
     const resource = resourcesById.get(reference.sourceId)
     return (
       resource?.deletedAt === null &&
+      (!resource.chatModes ||
+        (example.chatMode !== undefined &&
+          resource.chatModes.includes(example.chatMode))) &&
+      (example.sourceKbLinkId
+        ? resource.linkId === example.sourceKbLinkId
+        : !resource.linkCreatedAt ||
+          (example.createdAt !== undefined &&
+            resource.linkCreatedAt <= example.createdAt)) &&
       resource.activeContentSha256 !== null &&
       resource.activeContentSha256 === reference.contentHash
     )
@@ -103,34 +117,34 @@ export function evaluateResponseExampleCurrentEligibility(
 export async function loadCurrentResponseExampleResources(
   prisma: Pick<Prisma.TransactionClient, '$queryRaw'>,
   chatbotId: string,
-  sourceIds: readonly string[]
+  sourceIds: readonly string[],
+  chatModes: readonly string[]
 ) {
-  if (sourceIds.length === 0) return []
+  if (sourceIds.length === 0 || chatModes.length === 0) return []
 
   return await prisma.$queryRaw<ResponseExampleCurrentResource[]>(
     PrismaRuntime.sql`
-      WITH enabled_kb AS (
-        SELECT binding."kbId"
-        FROM "public"."KBChatbot" AS binding
-        INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
-        WHERE binding."chatbotId" = ${chatbotId}::uuid
-          AND binding."isEnabled" = true
-          AND kb."deletedAt" IS NULL
-        ORDER BY binding."id" ASC
-        LIMIT 2
-      ), exact_kb AS (
-        SELECT "kbId"
-        FROM enabled_kb
-        WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
-      )
-      SELECT
-        resource."id",
-        resource."activeContentSha256",
-        resource."deletedAt"
-      FROM exact_kb
-      INNER JOIN "public"."KBResource" AS resource
-        ON resource."kbId" = exact_kb."kbId"
-      WHERE resource."id" IN (${PrismaRuntime.join([...sourceIds])})
+      SELECT resource."id", resource."activeContentSha256", resource."deletedAt",
+             binding."id" AS "linkId", binding."createdAt" AS "linkCreatedAt", array_agg(mode.key) AS "chatModes"
+      FROM "public"."Chatbot" AS bot
+      JOIN "public"."KBChatbot" AS binding ON binding."chatbotId" = bot.id AND binding."isEnabled"
+      JOIN "public"."KB" AS kb ON kb.id = binding."kbId" AND kb."deletedAt" IS NULL AND kb."ownerId" = bot."ownerId"
+      JOIN "public"."KBResource" AS resource ON resource."kbId" = kb.id
+      CROSS JOIN unnest(ARRAY[${PrismaRuntime.join([...new Set(chatModes)])}]::text[]) AS mode(key)
+      LEFT JOIN LATERAL (
+        SELECT entry->>'knowledgeBaseLinkId' AS link_id
+        FROM jsonb_array_elements(
+          CASE WHEN jsonb_typeof(bot."customModeConfig"->'modes') = 'array'
+               THEN bot."customModeConfig"->'modes' ELSE '[]'::jsonb END
+        ) AS entry
+        WHERE entry->>'key' = mode.key
+        LIMIT 1
+      ) AS selection ON true
+      WHERE bot.id = ${chatbotId}::uuid
+        AND CASE WHEN selection.link_id IS NULL THEN binding."isDefault"
+                 ELSE binding.id::text = selection.link_id END
+        AND resource.id IN (${PrismaRuntime.join([...sourceIds])})
+      GROUP BY resource.id, binding.id
     `
   )
 }

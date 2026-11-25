@@ -1,7 +1,10 @@
 import type { GetPendingChatbotRevisionReviewsWithPreferencesQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
-import { formatCustomModeSettings } from '../resources/chatbots/ChatbotAuthoring'
+import {
+  formatCustomModeKnowledgeBaseSource,
+  formatCustomModeSettings,
+} from '../resources/chatbots/ChatbotAuthoring'
 import ChatbotDisclaimerPreview from '../resources/chatbots/ChatbotDisclaimerPreview'
 
 type Review =
@@ -34,6 +37,12 @@ function ChatbotPublicationDetails({
   const t = useTranslations()
   const revision = review.chatbot.authoringRevision
   const chatbot = { ...review.chatbot, ...revision }
+  const liveCustomModesByKey = new Map(
+    (review.chatbot.customModeConfig?.modes ?? []).map((mode) => [
+      mode.key,
+      mode,
+    ])
+  )
   const disclaimerTitle = revision
     ? revision.disclaimerTitle
     : review.disclaimerTitle
@@ -225,6 +234,43 @@ function ChatbotPublicationDetails({
               <p data-cy={`chatbot-admin-review-settings-${mode.key}`}>
                 {formatCustomModeSettings(t, mode)}
               </p>
+              <p data-cy={`chatbot-admin-review-knowledge-base-${mode.key}`}>
+                {t('manage.resources.chatbotCustomModeKnowledgeBase')}:{' '}
+                {formatCustomModeKnowledgeBaseSource(
+                  t,
+                  mode,
+                  review.chatbot.enabledKnowledgeBases ?? []
+                )}
+              </p>
+              {(() => {
+                const liveMode = liveCustomModesByKey.get(mode.key)
+                if (!liveMode) return null
+                const sourceChanged =
+                  (mode.knowledgeBaseLinkId ?? null) !==
+                  (liveMode.knowledgeBaseLinkId ?? null)
+                if (!sourceChanged) return null
+                const currentSource = formatCustomModeKnowledgeBaseSource(
+                  t,
+                  mode,
+                  review.chatbot.enabledKnowledgeBases ?? []
+                )
+                const previousSource = formatCustomModeKnowledgeBaseSource(
+                  t,
+                  liveMode,
+                  review.chatbot.enabledKnowledgeBases ?? []
+                )
+                return (
+                  <p
+                    className="font-medium text-amber-700"
+                    data-cy={`chatbot-admin-review-knowledge-base-change-${mode.key}`}
+                  >
+                    {t(
+                      'manage.resources.chatbotCustomModeKnowledgeBaseChanged',
+                      { previous: previousSource, current: currentSource }
+                    )}
+                  </p>
+                )
+              })()}
             </ReviewField>
           ))}
         </dl>

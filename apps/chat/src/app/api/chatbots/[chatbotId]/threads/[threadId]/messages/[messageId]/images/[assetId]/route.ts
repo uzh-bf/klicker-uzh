@@ -2,11 +2,10 @@ import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { readCourseImage } from '@/src/lib/server/courseImageStore'
-import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
+import { readMessageKnowledgeBaseScope } from '@/src/lib/server/currentChatModeSource'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import { selectedCourseImages } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
-import { resolveMcpScope } from '@/src/services/mcpScope'
 
 export async function GET(
   req: NextRequest,
@@ -49,17 +48,13 @@ export async function GET(
       message.content as ChatSourcePart[]
     ).find((item) => item.asset_id === assetId)
     if (!image) return missing()
-    const chatbot = await prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { mcpConfigurations: { include: { mcpServer: true } } },
+    // Replay requires the producing mode and its original live link, plus
+    // current access to exactly that source.
+    const kbIds = await readMessageKnowledgeBaseScope({
+      chatbotId,
+      chatMode: message.chatMode,
+      content: message.content,
     })
-    const allConfigs = chatbot?.mcpConfigurations ?? []
-    const configs = allConfigs.filter((config) => config.isEnabled !== false)
-    const kbIds = resolveMcpScope(
-      configs,
-      message.chatMode ?? 'tutor',
-      resolveEffectiveMCPConfigurations(allConfigs, message.chatMode ?? 'tutor')
-    )
     if (!kbIds?.includes(image.kb_id)) return missing()
     const resource = await prisma.kBResource.findFirst({
       where: {

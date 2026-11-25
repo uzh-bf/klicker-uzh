@@ -423,7 +423,10 @@ class MemoryStore implements ActivationStore {
     return this.copy(row)
   }
 
-  async updateBinding(snapshot: ActivationBindingRecord, isEnabled: boolean) {
+  async updateBinding(
+    snapshot: ActivationBindingRecord,
+    state: { isEnabled: boolean; isDefault: boolean }
+  ) {
     const current = this.bindings.get(snapshot.id)
     if (
       !current ||
@@ -431,9 +434,20 @@ class MemoryStore implements ActivationStore {
     ) {
       throw new CohortActivationError('CONCURRENT_EDIT', 'binding changed')
     }
+    if (state.isDefault) {
+      for (const binding of this.bindings.values()) {
+        if (
+          binding.chatbotId === snapshot.chatbotId &&
+          binding.id !== snapshot.id
+        ) {
+          binding.isDefault = false
+        }
+      }
+    }
     const updated = {
       ...current,
-      isEnabled,
+      isEnabled: state.isEnabled,
+      isDefault: state.isDefault,
       updatedAt: this.nextDate(),
     }
     this.bindings.set(updated.id, updated)
@@ -891,6 +905,11 @@ describe('cohort activation operator', () => {
             JSON.stringify({ required: true, toolAlias: 'doc_query' })
       )
     ).toBe(true)
+    expect(
+      [...store.bindings.values()].every(
+        (binding) => !binding.isEnabled && !binding.isDefault
+      )
+    ).toBe(true)
     const second = await prepareCohortActivation(
       store,
       manifest,
@@ -944,6 +963,7 @@ describe('cohort activation operator', () => {
     })
     expect(switched.status).toBe('switched')
     expect(store.bindingForChatbot(firstId)!.isEnabled).toBe(true)
+    expect(store.bindingForChatbot(firstId)!.isDefault).toBe(true)
     expect(
       store.targetConfigForChatbot(firstId).every((config) => config.isEnabled)
     ).toBe(true)
@@ -967,6 +987,7 @@ describe('cohort activation operator', () => {
     })
     expect(afterFailedSwitch.status).toBe('switched')
     expect(store.bindingForChatbot(firstId)!.isEnabled).toBe(true)
+    expect(store.bindingForChatbot(firstId)!.isDefault).toBe(true)
     expect(store.bindingForChatbot(secondId)!.isEnabled).toBe(false)
 
     const rolledBack = await rollbackCohortChatbot(store, manifest, {
@@ -975,7 +996,9 @@ describe('cohort activation operator', () => {
     })
     expect(rolledBack.status).toBe('rolled_back')
     expect(
-      [...store.bindings.values()].every((binding) => !binding.isEnabled)
+      [...store.bindings.values()].every(
+        (binding) => !binding.isEnabled && !binding.isDefault
+      )
     ).toBe(true)
     expect([...store.sourceConfigs.values()]).toEqual(legacyBefore)
     expect(store.legacyUpdates).toBe(0)
@@ -1131,46 +1154,38 @@ describe('cohort activation operator', () => {
       options(receiptStore, manifest)
     )
     const chatbotId = chatbotIdForAlias(manifest, 'chatbot-001')
-    const switchAlternative = await store.createBinding({
+    const alternative = await store.createBinding({
       kbId: uuid(8800),
       chatbotId,
       isEnabled: false,
+      isDefault: false,
     })
-    store.bindings.get(switchAlternative.id)!.isEnabled = true
-    await expect(
-      switchCohortChatbot(store, manifest, {
-        ...options(receiptStore, manifest),
-        chatbotAlias: 'chatbot-001',
-      })
-    ).rejects.toThrowError(
-      expect.objectContaining({ code: 'ENABLED_KB_CONFLICT' })
-    )
-
-    const cleanStore = new MemoryStore(manifest)
-    const cleanReceipts = new MemoryReceiptStore()
-    await prepareCohortActivation(
-      cleanStore,
-      manifest,
-      options(cleanReceipts, manifest)
-    )
-    await switchCohortChatbot(cleanStore, manifest, {
-      ...options(cleanReceipts, manifest),
+    store.bindings.get(alternative.id)!.isEnabled = true
+    await switchCohortChatbot(store, manifest, {
+      ...options(receiptStore, manifest),
       chatbotAlias: 'chatbot-001',
     })
-    const rollbackAlternative = await cleanStore.createBinding({
-      kbId: uuid(8801),
-      chatbotId: chatbotIdForAlias(manifest, 'chatbot-001'),
-      isEnabled: false,
+    expect(store.bindingForChatbot(chatbotId)!).toMatchObject({
+      isEnabled: true,
+      isDefault: true,
     })
-    cleanStore.bindings.get(rollbackAlternative.id)!.isEnabled = true
-    await expect(
-      rollbackCohortChatbot(cleanStore, manifest, {
-        ...options(cleanReceipts, manifest),
-        chatbotAlias: 'chatbot-001',
-      })
-    ).rejects.toThrowError(
-      expect.objectContaining({ code: 'ENABLED_KB_CONFLICT' })
-    )
+    expect(store.bindings.get(alternative.id)).toMatchObject({
+      isEnabled: true,
+      isDefault: false,
+    })
+
+    await rollbackCohortChatbot(store, manifest, {
+      ...options(receiptStore, manifest),
+      chatbotAlias: 'chatbot-001',
+    })
+    expect(store.bindingForChatbot(chatbotId)!).toMatchObject({
+      isEnabled: false,
+      isDefault: false,
+    })
+    expect(store.bindings.get(alternative.id)).toMatchObject({
+      isEnabled: true,
+      isDefault: false,
+    })
   })
 
   it('refuses an untracked partial target inventory', async () => {

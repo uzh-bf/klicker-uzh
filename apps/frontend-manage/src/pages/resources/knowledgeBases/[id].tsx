@@ -23,7 +23,7 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
       : undefined
   const { data: chatbotData } = useQuery(
     QGetChatbotsInfoWithKnowledgeBasesDocument,
-    { skip: !requestedChatbotId || !aiFeaturesEnabled }
+    { skip: !aiFeaturesEnabled }
   )
   // The way back is offered only for one of the lecturer's own chatbots and is
   // built from that chatbot, never from the raw query parameter.
@@ -54,6 +54,9 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
             kbId={kbId}
             backLink={backLink}
             advanced={settingsMode === 'advanced'}
+            perModeKbLinksEnabled={
+              chatbotData?.getChatbotsInfo?.[0]?.perModeKbLinksEnabled ?? false
+            }
           />
         </>
       ) : (

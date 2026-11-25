@@ -780,6 +780,7 @@ type Chatbot {
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]! @deprecated(reason: "Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.")
   modelSelection: Boolean!
   name: String!
+  perModeKbLinksEnabled: Boolean!
   publicationUseCase: String
   publishedAt: Date
   reviewComment: String
@@ -828,6 +829,7 @@ input ChatbotCreditPolicyInput {
 type ChatbotCustomMode {
   description: String
   key: String!
+  knowledgeBaseLinkId: ID
   meetingClock: ChatbotCustomModeMeetingClock
   name: String!
   personaText: String
@@ -848,6 +850,7 @@ input ChatbotCustomModeConfigInput {
 input ChatbotCustomModeInput {
   description: String
   key: String
+  knowledgeBaseLinkId: ID
   meetingClock: ChatbotCustomModeMeetingClock
   name: String!
   personaText: String
@@ -874,6 +877,9 @@ type ChatbotDisclaimerSummary {
 
 type ChatbotKnowledgeBaseSummary {
   id: ID!
+  isDefault: Boolean!
+  kbId: ID!
+  linkId: ID!
   materialsReadiness: KBMaterialsReadiness
   name: String!
 }
@@ -2446,7 +2452,21 @@ type KBChatbotBinding {
   chatbotStatus: ChatbotStatus!
   enabledKbId: ID @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
   enabledKbName: String @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
-  enabledKbs: [ChatbotKnowledgeBaseSummary!]!
+  enabledKbs: [KBChatbotKnowledgeBaseLink!]!
+}
+
+type KBChatbotKnowledgeBaseLink {
+  id: ID!
+  isDefault: Boolean!
+  kbId: ID!
+  linkId: ID!
+  modeBacklinks: [KBChatbotModeBacklink!]!
+  name: String!
+}
+
+type KBChatbotModeBacklink {
+  key: String!
+  name: String!
 }
 
 type KBConnection {
@@ -2896,6 +2916,7 @@ type Mutation {
   addActivityMessage(message: String!, objectId: String!, objectType: ObjectType!): ActivityLogEntry
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
+  addKbLinkToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: ObjectType!): CatalogObject
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
@@ -3065,6 +3086,7 @@ type Mutation {
   setAiFeatures(costCenter: String, email: String!, enabled: Boolean!, tier: AiSubscriptionTier): Int
   setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
+  setChatbotDefaultKb(chatbotId: ID!, kbId: ID): KBChatbotBinding!
   setGeneratedElementDecision(input: SetGeneratedElementDecisionInput!): GeneratedElementDraft!
   setKbKnowledgeGraphEnabled(enabled: Boolean!, kbId: ID!): KBKnowledgeGraphConfig!
   setLearningAnalyticsConsent(consent: Boolean!, disclosureVersion: String!, expectedRevision: Int!): ParticipantDataUse

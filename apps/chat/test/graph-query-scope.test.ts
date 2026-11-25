@@ -30,13 +30,37 @@ vi.mock('@/src/lib/server/ltiGuest', () => ({
 
 import { graphQueryDependencies } from '../src/services/graphQueryScope'
 
-const binding = { kbId: 'kb-1', kb: { knowledgeGraphEnabled: true } }
+const KB_ID = '35a72f62-a714-45f1-8b18-2cf5681b0c75'
+const KB_ID_2 = '0b6c4c1a-9d3e-4f1e-9b0c-1d2e3f4a5b6c'
+const LINK_ID = '4c1f2f0e-6d1a-4a56-9a2f-7d2b6f2f6f01'
+const binding = {
+  id: LINK_ID,
+  kbId: KB_ID,
+  isEnabled: true,
+  isDefault: true,
+  kb: {
+    deletedAt: null,
+    ownerId: 'owner-1',
+    knowledgeGraphEnabled: true,
+    name: 'Casebook',
+  },
+}
+const configuration = {
+  chatMode: 'tutor',
+  isEnabled: true,
+  allowedTools: ['doc_query'],
+  parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+  priority: 0,
+  mcpServer: { id: 'kb-server', name: 'KB' },
+}
 const context = {
   chatbotId: 'bot-1',
   courseId: 'course-1',
   participantId: 'participant-1',
   authMode: 'account' as const,
-  kbIds: ['kb-1'],
+  chatMode: 'tutor',
+  kbIds: [KB_ID],
+  kbLinkId: LINK_ID,
 }
 
 describe('graph document scope', () => {
@@ -51,10 +75,12 @@ describe('graph document scope', () => {
     mocks.chatbot.mockResolvedValue({
       knowledgeGraphRetrievalEnabled: true,
       ownerId: 'owner-1',
+      customModeConfig: null,
       knowledgeBases: [binding],
+      mcpConfigurations: [configuration],
     })
     mocks.publication.mockResolvedValue({
-      kbId: 'kb-1',
+      kbId: KB_ID,
       buildId: 'build-1',
       graphName: 'private-graph',
       isStale: false,
@@ -91,7 +117,9 @@ describe('graph document scope', () => {
     mocks.chatbot.mockResolvedValue({
       knowledgeGraphRetrievalEnabled: true,
       ownerId: 'owner-1',
-      knowledgeBases: [{ ...binding, kbId: 'kb-2' }],
+      customModeConfig: null,
+      knowledgeBases: [{ ...binding, kbId: KB_ID_2 }],
+      mcpConfigurations: [configuration],
     })
     await expect(
       graphQueryDependencies(context).validateScope()
@@ -124,13 +152,17 @@ describe('graph document scope', () => {
       chatbotId: 'bot-1',
       authMode: 'account' as const,
       ownerPreviewUserId: 'owner-1',
-      kbIds: ['kb-1'],
+      chatMode: 'tutor',
+      kbIds: [KB_ID],
+      kbLinkId: LINK_ID,
     }
     mocks.chatbot.mockResolvedValue({
       knowledgeGraphRetrievalEnabled: true,
       ownerId: 'owner-1',
       status: 'PUBLISHED',
+      customModeConfig: null,
       knowledgeBases: [binding],
+      mcpConfigurations: [configuration],
     })
     expect(
       (await graphQueryDependencies(preview).validateScope()).enabled
@@ -144,7 +176,9 @@ describe('graph document scope', () => {
     ]) {
       mocks.chatbot.mockResolvedValue({
         knowledgeGraphRetrievalEnabled: true,
+        customModeConfig: null,
         knowledgeBases: [binding],
+        mcpConfigurations: [configuration],
         ...chatbot,
       })
       await expect(
@@ -178,7 +212,10 @@ describe('graph document scope', () => {
   it('retains document-only eligibility after the graph policy is disabled', async () => {
     mocks.chatbot.mockResolvedValue({
       knowledgeGraphRetrievalEnabled: false,
+      ownerId: 'owner-1',
+      customModeConfig: null,
       knowledgeBases: [binding],
+      mcpConfigurations: [configuration],
     })
     expect(await graphQueryDependencies(context).validateScope()).toEqual({
       enabled: false,

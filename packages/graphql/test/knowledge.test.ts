@@ -10,12 +10,14 @@ import {
   KBResourceMaterialType,
   KBResourceStatus,
   KBResourceType,
+  CreditResetPeriod,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
   MAX_KB_RESOURCE_COUNT,
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
+  type ChatbotAuthoringRevision,
 } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
@@ -47,6 +49,7 @@ const { resolveMcpScope } = await vi.importActual<{
 }>('../../../apps/chat/src/services/mcpScope.ts')
 
 import {
+  addKbLinkToChatbot,
   attachKbToChatbot,
   confirmKbFileReplacement,
   confirmKbFileUpload,
@@ -71,6 +74,7 @@ import {
   requestKbFileReplacement,
   requestKbFileUpload,
   searchKbKnowledgeGraph,
+  setChatbotDefaultKb,
   setKbKnowledgeGraphEnabled,
   updateKb,
   updateKbResourceMaterialType,
@@ -127,6 +131,20 @@ function withDeniedFeatureFlag(
           ? false
           : (evaluator?.isEnabled(key, attributes) ?? false),
     },
+  }
+}
+
+async function withPluralKbWrites<T>(run: () => Promise<T>): Promise<T> {
+  const previous = process.env.PER_MODE_KB_LINKS_ENABLED
+  process.env.PER_MODE_KB_LINKS_ENABLED = 'true'
+  try {
+    return await run()
+  } finally {
+    if (previous === undefined) {
+      delete process.env.PER_MODE_KB_LINKS_ENABLED
+    } else {
+      process.env.PER_MODE_KB_LINKS_ENABLED = previous
+    }
   }
 }
 
@@ -961,6 +979,10 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
     const bindings = await getKbChatbotBindings({ kbId: kb.id }, userOneCtx)
+    const link = await prisma.kBChatbot.findUniqueOrThrow({
+      where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+      select: { id: true, isDefault: true },
+    })
 
     expect(bindings).toEqual([
       {
@@ -969,12 +991,286 @@ describe('Integration tests for knowledge base CRUD', () => {
         chatbotStatus: chatbot.status,
         enabledKbId: kb.id,
         enabledKbName: kb.name,
-        enabledKbs: [{ id: kb.id, name: kb.name }],
+        enabledKbs: [
+          {
+            id: kb.id,
+            linkId: link.id,
+            kbId: kb.id,
+            name: kb.name,
+            isDefault: link.isDefault,
+            modeBacklinks: [],
+          },
+        ],
       },
     ])
   })
 
-  it('replaces the enabled binding and provisions only doc_query', async () => {
+  it('keeps additive link writes behind the server activation gate', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const previous = process.env.PER_MODE_KB_LINKS_ENABLED
+    delete process.env.PER_MODE_KB_LINKS_ENABLED
+
+    try {
+      await expect(
+        addKbLinkToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'KB_PLURAL_LINKS_DISABLED' },
+      })
+      await expect(
+        setChatbotDefaultKb({ chatbotId: chatbot.id, kbId: null }, userOneCtx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'KB_PLURAL_LINKS_DISABLED' },
+      })
+    } finally {
+      if (previous === undefined) {
+        delete process.env.PER_MODE_KB_LINKS_ENABLED
+      } else {
+        process.env.PER_MODE_KB_LINKS_ENABLED = previous
+      }
+    }
+
+    await expect(
+      prisma.kBChatbot.count({ where: { chatbotId: chatbot.id } })
+    ).resolves.toBe(0)
+  })
+
+  it('adds links without enabling retrieval until a default is chosen', async () => {
+    const firstKb = await createKb({ name: 'Casebook' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Question bank' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Exam practice',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+
+    await withPluralKbWrites(async () => {
+      const first = await addKbLinkToChatbot(
+        { kbId: firstKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+      const both = await addKbLinkToChatbot(
+        { kbId: secondKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+
+      expect(first.enabledKbs).toHaveLength(1)
+      expect(first.enabledKbId).toBe(firstKb.id)
+      expect(both.enabledKbId).toBeNull()
+      expect(both.enabledKbs).toHaveLength(2)
+      expect(both.enabledKbs.every(({ isDefault }) => !isDefault)).toBe(true)
+      await expect(
+        prisma.chatbotMCPConfig.count({
+          where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+        })
+      ).resolves.toBe(0)
+
+      await setChatbotDefaultKb(
+        { chatbotId: chatbot.id, kbId: firstKb.id },
+        userOneCtx
+      )
+      await attachKbToChatbot(
+        { kbId: secondKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+      await detachKbFromChatbot(
+        { kbId: firstKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+
+      const configurations = await prisma.chatbotMCPConfig.findMany({
+        where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+        orderBy: { chatMode: 'asc' },
+      })
+      expect(configurations).toEqual(
+        ['explainer', 'tutor'].map((chatMode) =>
+          expect.objectContaining({
+            chatMode,
+            isEnabled: true,
+            parameters: expect.objectContaining({ kb_id: secondKb.id }),
+          })
+        )
+      )
+
+      const cleared = await setChatbotDefaultKb(
+        { chatbotId: chatbot.id, kbId: null },
+        userOneCtx
+      )
+      expect(cleared.enabledKbs).toEqual([
+        expect.objectContaining({ kbId: secondKb.id, isDefault: false }),
+      ])
+      await expect(
+        prisma.chatbotMCPConfig.count({
+          where: { chatbotId: chatbot.id, isEnabled: true },
+        })
+      ).resolves.toBe(0)
+    })
+  })
+
+  it('returns mode key and name backlinks for published and draft links', async () => {
+    const firstKb = await createKb({ name: 'Casebook' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Question bank' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Mode sources',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+
+    await withPluralKbWrites(async () => {
+      await addKbLinkToChatbot(
+        { kbId: firstKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+      await addKbLinkToChatbot(
+        { kbId: secondKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+      const links = await prisma.kBChatbot.findMany({
+        where: { chatbotId: chatbot.id },
+      })
+      const firstLink = links.find(({ kbId }) => kbId === firstKb.id)!
+      const secondLink = links.find(({ kbId }) => kbId === secondKb.id)!
+      const mode = (
+        key: string,
+        name: string,
+        knowledgeBaseLinkId: string
+      ) => ({
+        key,
+        name,
+        description: null,
+        personaText: null,
+        knowledgeBaseLinkId,
+      })
+      const draftConfig: ChatbotAuthoringRevision = {
+        name: chatbot.name,
+        description: null,
+        avatar: null,
+        standardModeConfig: null,
+        customModeConfig: {
+          modes: [mode('cm_exam', 'Exam practice', secondLink.id)],
+        },
+        modelSelection: false,
+        allowedModelIds: [],
+        allowedReasoningEffortsByModel: null,
+        answerPreferencesEnabled: true,
+        interactiveExplanationsEnabled: false,
+        creditInitialCredits: 1,
+        creditResetPeriod: CreditResetPeriod.WEEKLY,
+        creditResetAmount: 1,
+        creditMaxCredits: 1,
+        disclaimerTitle: null,
+        disclaimerIntroText: null,
+        publicationUseCase: null,
+        expectedStudentCount: null,
+        knowledgeGraphVisible: false,
+        knowledgeGraphRetrievalEnabled: false,
+        disclaimerId: null,
+      }
+      await prisma.chatbot.update({
+        where: { id: chatbot.id },
+        data: {
+          customModeConfig: {
+            modes: [mode('cm_case', 'Case discussion', firstLink.id)],
+          },
+          draftConfig,
+        },
+      })
+
+      const binding = (
+        await getKbChatbotBindings({ kbId: firstKb.id }, userOneCtx)
+      ).find(({ chatbotId }) => chatbotId === chatbot.id)
+      expect(binding?.enabledKbs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            linkId: firstLink.id,
+            modeBacklinks: [{ key: 'cm_case', name: 'Case discussion' }],
+          }),
+          expect.objectContaining({
+            linkId: secondLink.id,
+            modeBacklinks: [{ key: 'cm_exam', name: 'Exam practice' }],
+          }),
+        ])
+      )
+    })
+  })
+
+  it('does not revive a disabled link id when the same KB is linked again', async () => {
+    const kb = await createKb({ name: 'Casebook' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Case trainer',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const disabled = await prisma.kBChatbot.create({
+      data: { kbId: kb.id, chatbotId: chatbot.id, isEnabled: false },
+    })
+
+    await withPluralKbWrites(async () => {
+      await addKbLinkToChatbot(
+        { kbId: kb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+    })
+    const linked = await prisma.kBChatbot.findUniqueOrThrow({
+      where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+    })
+    expect(linked.id).not.toBe(disabled.id)
+    expect(linked).toMatchObject({ isEnabled: true, isDefault: false })
+  })
+
+  it('refuses the thirty-third enabled link', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Many sources',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const kbs = Array.from({ length: 33 }, (_, index) => ({
+      id: randomUUID(),
+      name: `Source ${index}`,
+      ownerId: userOneCtx.user.sub,
+    }))
+    await prisma.kB.createMany({ data: kbs })
+    await prisma.kBChatbot.createMany({
+      data: kbs.slice(0, 32).map(({ id }) => ({
+        kbId: id,
+        chatbotId: chatbot.id,
+        isEnabled: true,
+        isDefault: false,
+      })),
+    })
+
+    await withPluralKbWrites(async () => {
+      await expect(
+        addKbLinkToChatbot(
+          { kbId: kbs[32]!.id, chatbotId: chatbot.id },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'KB_CHATBOT_LINK_LIMIT_REACHED' },
+      })
+    })
+  })
+
+  it('keeps secondary links while legacy attach replaces the default', async () => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
@@ -1054,9 +1350,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       orderBy: { kbId: 'asc' },
     })
     expect(links).toHaveLength(2)
-    expect(links.filter(({ isEnabled }) => isEnabled)).toEqual([
-      expect.objectContaining({ kbId: secondKb.id }),
-    ])
+    expect(links.filter(({ isEnabled }) => isEnabled)).toHaveLength(2)
+    expect(links.filter(({ isEnabled }) => isEnabled)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kbId: firstKb.id, isDefault: false }),
+        expect.objectContaining({ kbId: secondKb.id, isDefault: true }),
+      ])
+    )
 
     await expectScopedConfigurations(secondKb.id)
   })
@@ -1299,7 +1599,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).toEqual([secondKb.id])
   })
 
-  it('serializes concurrent replacements to one enabled binding', async () => {
+  it('serializes concurrent default replacements to one default', async () => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
@@ -1325,6 +1625,11 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBChatbot.count({
         where: { chatbotId: chatbot.id, isEnabled: true },
+      })
+    ).resolves.toBe(2)
+    await expect(
+      prisma.kBChatbot.count({
+        where: { chatbotId: chatbot.id, isDefault: true },
       })
     ).resolves.toBe(1)
   })

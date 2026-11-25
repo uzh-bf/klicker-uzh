@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   createParticipant: vi.fn(),
   createResponseExampleSearchTool: vi.fn(),
   findChatbot: vi.fn(),
+  findKbServer: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   getChatModel: vi.fn(),
   getAutomaticModelId: vi.fn(),
@@ -48,6 +49,7 @@ vi.mock('@/src/lib/server/manageChatRequest', () => ({
 vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
     chatbot: { findUnique: mocks.findChatbot },
+    chatbotMCPServer: { findUnique: mocks.findKbServer },
     chatMessage: { create: mocks.createChatMessage },
     chatThread: { create: mocks.createChatThread },
     participant: { create: mocks.createParticipant },
@@ -110,6 +112,30 @@ const uiMessages = [
 const originalKbId = '11111111-1111-4111-8111-111111111111'
 const additionalKbId = '22222222-2222-4222-8222-222222222222'
 
+const originalLinkId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+const additionalLinkId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+
+// Mirrors the managed-link rows the preview route now selects.
+function kbLink(
+  id: string,
+  kbId: string,
+  overrides: Record<string, unknown> = {}
+) {
+  return {
+    id,
+    kbId,
+    isEnabled: true,
+    isDefault: false,
+    kb: {
+      deletedAt: null,
+      ownerId: 'owner-id',
+      name: `KB ${kbId.slice(0, 2)}`,
+      knowledgeGraphEnabled: false,
+    },
+    ...overrides,
+  }
+}
+
 const baseModel = {
   cost: { input: 0.2, output: 1.2 },
   description: 'Base model',
@@ -144,7 +170,7 @@ function createChatbot(
     allowedReasoningEffortsByModel: null,
     course: { displayName: 'Test Course' },
     id: 'chatbot-id',
-    knowledgeBases: [{ kbId: originalKbId }],
+    knowledgeBases: [kbLink(originalLinkId, originalKbId, { isDefault: true })],
     mcpConfigurations: [
       {
         allowedTools: ['*', 'delete_all'],
@@ -261,6 +287,17 @@ describe('POST owner preview chat', () => {
     })
     mocks.validateManageChatRequest.mockResolvedValue({ messages: uiMessages })
     mocks.findChatbot.mockResolvedValue(createChatbot())
+    mocks.findKbServer.mockResolvedValue({
+      authSecret: null,
+      authType: 'scope_token',
+      chatbotIdHeader: null,
+      id: 'kb-server',
+      isActive: true,
+      name: 'KB',
+      parameters: {},
+      passChatbotId: false,
+      url: 'http://kb.test/mcp',
+    })
     mocks.getAggregatedMCPTools.mockResolvedValue({
       close: mocks.closeMcpTools,
       tools: {
@@ -616,28 +653,28 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         include: expect.objectContaining({
           knowledgeBases: {
-            where: { isEnabled: true, kb: { deletedAt: null } },
-            select: { kbId: true },
+            select: expect.objectContaining({
+              id: true,
+              kbId: true,
+              isEnabled: true,
+              isDefault: true,
+            }),
             orderBy: { id: 'asc' },
-            take: 2,
           },
         }),
       })
     )
     expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
-      expect.objectContaining({ kbId: originalKbId })
+      expect.objectContaining({
+        kbId: originalKbId,
+        kbLinkId: originalLinkId,
+      })
     )
   })
 
-  it.each([
-    { knowledgeBases: [] },
-    { knowledgeBases: [{ kbId: additionalKbId }] },
-    { knowledgeBases: [{ kbId: 'first-kb' }, { kbId: 'second-kb' }] },
-  ])('withholds the receipt KB scope without one matching live binding: $knowledgeBases', async ({
-    knowledgeBases,
-  }) => {
+  it('withholds the receipt KB scope for a chatbot without managed links', async () => {
     const chatbot = await mocks.findChatbot()
-    mocks.findChatbot.mockResolvedValue({ ...chatbot, knowledgeBases })
+    mocks.findChatbot.mockResolvedValue({ ...chatbot, knowledgeBases: [] })
 
     const response = await POST(request(), {
       params: Promise.resolve({ chatbotId: 'chatbot-id' }),
@@ -645,13 +682,72 @@ describe('POST owner preview chat', () => {
     await response.text()
 
     expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
-      expect.objectContaining({ kbId: undefined })
+      expect.objectContaining({ kbId: undefined, kbLinkId: undefined })
     )
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({
         kbIds: [originalKbId],
       })
+    )
+  })
+
+  it('follows the live default link over a stale legacy KB binding', async () => {
+    const chatbot = await mocks.findChatbot()
+    mocks.findChatbot.mockResolvedValue({
+      ...chatbot,
+      knowledgeBases: [
+        kbLink(originalLinkId, originalKbId),
+        kbLink(additionalLinkId, additionalKbId, { isDefault: true }),
+      ],
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          config: expect.objectContaining({
+            parameters: expect.objectContaining({ kb_id: additionalKbId }),
+          }),
+        }),
+      ],
+      expect.objectContaining({
+        kbIds: [additionalKbId],
+        kbLinkId: additionalLinkId,
+      })
+    )
+    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kbId: additionalKbId,
+        kbLinkId: additionalLinkId,
+      })
+    )
+  })
+
+  it('does not search any source when links exist but none is the default', async () => {
+    const chatbot = await mocks.findChatbot()
+    mocks.findChatbot.mockResolvedValue({
+      ...chatbot,
+      knowledgeBases: [
+        kbLink(originalLinkId, originalKbId),
+        kbLink(additionalLinkId, additionalKbId),
+      ],
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+      expect.objectContaining({ kbId: undefined, kbLinkId: undefined })
     )
   })
 
@@ -672,8 +768,9 @@ describe('POST owner preview chat', () => {
     )
   })
 
-  it('uses the configured multi-KB scope even without matching KB relations', async () => {
+  it('uses the configured multi-KB scope on a chatbot without managed links', async () => {
     const chatbot = await mocks.findChatbot()
+    chatbot.knowledgeBases = []
     chatbot.mcpConfigurations[0].parameters = {
       kb_ids: [additionalKbId, originalKbId],
       required: true,
@@ -1525,5 +1622,178 @@ describe('POST owner preview chat', () => {
     // reply-language reminder must follow them as the step's last message.
     expect(prepared.messages[2]).toEqual(REPLY_LANGUAGE_REMINDER)
     expect(streamOptions.allowSystemInMessages).toBe(true)
+  })
+
+  describe('explicit mode sources', () => {
+    const linkA = originalLinkId
+    const linkB = additionalLinkId
+    const modeKey = approvedCustomMode.key
+    const explicitMode = (knowledgeBaseLinkId: string | null) => ({
+      modes: [{ ...approvedCustomMode, knowledgeBaseLinkId }],
+    })
+
+    // A custom-only chatbot has no persisted MCP rows and no default link.
+    function explicitChatbot(overrides: Record<string, unknown> = {}) {
+      return createChatbot({
+        mcpConfigurations: [],
+        knowledgeBases: [
+          kbLink(linkA, originalKbId),
+          kbLink(linkB, additionalKbId),
+        ],
+        customModeConfig: explicitMode(linkA),
+        ...overrides,
+      })
+    }
+
+    async function preview() {
+      setRequestOptions({ selectedMode: modeKey })
+      const response = await POST(request(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+      })
+      // The body is consumed once here; callers assert on the returned text.
+      const body = await response.text()
+      return { response, body }
+    }
+
+    function expectNoProviderWork() {
+      expect(mocks.findKbServer).not.toHaveBeenCalled()
+      expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+      expect(mocks.getChatModel).not.toHaveBeenCalled()
+      expect(mocks.streamText).not.toHaveBeenCalled()
+    }
+
+    it.each([
+      ['A', linkA, originalKbId],
+      ['B', linkB, additionalKbId],
+    ])('sends exactly source %s with no persisted MCP rows', async (_label, linkId, kbId) => {
+      mocks.findChatbot.mockResolvedValue(
+        explicitChatbot({ customModeConfig: explicitMode(linkId) })
+      )
+
+      const { response } = await preview()
+
+      expect(response.status).toBe(200)
+      expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+      const [configurations, options] =
+        mocks.getAggregatedMCPTools.mock.calls[0]!
+      expect(configurations).toHaveLength(1)
+      expect(configurations[0].config).toMatchObject({
+        allowedTools: ['doc_query'],
+        parameters: { kb_id: kbId, required: true, toolAlias: 'doc_query' },
+      })
+      expect(configurations[0].config.parameters).not.toHaveProperty('kb_ids')
+      expect(options).toMatchObject({
+        authMode: 'account',
+        chatMode: modeKey,
+        kbIds: [kbId],
+        kbLinkId: linkId,
+        ownerPreviewUserId: 'owner-id',
+      })
+      expect(options.revalidateKnowledgeBaseScope).toEqual(expect.any(Function))
+      // Custom modes never qualify for response-example capture.
+      expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({ kbId: undefined, kbLinkId: undefined })
+      )
+    })
+
+    it.each([
+      ['a nonexistent link', [kbLink(linkB, additionalKbId)]],
+      ['a revoked link', [kbLink(linkA, originalKbId, { isEnabled: false })]],
+      [
+        'a soft-deleted source',
+        [
+          kbLink(linkA, originalKbId, {
+            kb: { deletedAt: new Date(0), ownerId: 'owner-id' },
+          }),
+        ],
+      ],
+    ])('refuses %s before any provider or document work', async (_label, knowledgeBases) => {
+      mocks.findChatbot.mockResolvedValue(explicitChatbot({ knowledgeBases }))
+
+      const { response, body } = await preview()
+
+      expect(response.status).toBe(503)
+      expect(JSON.parse(body)).toMatchObject({
+        code: 'REQUIRED_MCP_UNAVAILABLE',
+      })
+      expectNoProviderWork()
+    })
+
+    it('does not fall back to the default when the explicit source is gone', async () => {
+      mocks.findChatbot.mockResolvedValue(
+        explicitChatbot({
+          knowledgeBases: [kbLink(linkB, additionalKbId, { isDefault: true })],
+        })
+      )
+
+      const { response } = await preview()
+
+      expect(response.status).toBe(503)
+      expectNoProviderWork()
+    })
+
+    it('refuses an explicit source when the Doc Query server is unavailable', async () => {
+      mocks.findKbServer.mockResolvedValue(null)
+      mocks.findChatbot.mockResolvedValue(explicitChatbot())
+
+      const { response } = await preview()
+
+      expect(response.status).toBe(503)
+      expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+      expect(mocks.streamText).not.toHaveBeenCalled()
+    })
+
+    it('previews the saved draft selection while the approved one stays unchanged', async () => {
+      mocks.findChatbot.mockResolvedValue(
+        explicitChatbot({
+          customModeConfig: explicitMode(linkA),
+          draftConfig: { customModeConfig: explicitMode(linkB) },
+        })
+      )
+
+      const { response } = await preview()
+
+      expect(response.status).toBe(200)
+      expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            config: expect.objectContaining({
+              parameters: expect.objectContaining({ kb_id: additionalKbId }),
+            }),
+          }),
+        ],
+        expect.objectContaining({ kbIds: [additionalKbId], kbLinkId: linkB })
+      )
+      // Published examples belong to the approved source, not the draft one.
+      expect(mocks.loadResponseExampleRuntimeSkill).not.toHaveBeenCalled()
+    })
+
+    it('keeps published examples when the draft selects the approved source', async () => {
+      mocks.findChatbot.mockResolvedValue(
+        explicitChatbot({
+          draftConfig: { customModeConfig: explicitMode(linkA) },
+        })
+      )
+
+      const { response } = await preview()
+
+      expect(response.status).toBe(200)
+      expect(mocks.loadResponseExampleRuntimeSkill).toHaveBeenCalledWith(
+        expect.objectContaining({ chatMode: modeKey })
+      )
+    })
+
+    it('lets a draft explicitly inherit a source-free default', async () => {
+      mocks.findChatbot.mockResolvedValue(
+        explicitChatbot({
+          draftConfig: { customModeConfig: explicitMode(null) },
+        })
+      )
+
+      const { response } = await preview()
+
+      expect(response.status).toBe(200)
+      expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    })
   })
 })

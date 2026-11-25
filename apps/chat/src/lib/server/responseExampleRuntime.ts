@@ -101,7 +101,8 @@ async function loadCurrentEligibility(
   const resources = await loadCurrentResponseExampleResources(
     prisma,
     chatbotId,
-    sourceIds
+    sourceIds,
+    set.examples.map((example) => example.chatMode)
   )
 
   return buildResponseExampleEligibilityReconciliation(set.examples, resources)

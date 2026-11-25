@@ -156,6 +156,8 @@ export interface DocQueryScopedRoute {
 export interface DocQueryScopedFetchOptions extends DocQueryScopedRoute {
   /** Signing seam for tests; defaults to the shared ES256 signer. */
   signToken?: typeof signDocQueryScopeToken
+  /** Re-reads the live mode/link choice immediately before each mint. */
+  revalidateScope?: () => Promise<void>
 }
 
 export interface DocQueryScopedEndpoint {
@@ -263,6 +265,7 @@ export function createDocQueryScopedFetch({
   chatbotId,
   sessionId,
   signToken = signDocQueryScopeToken,
+  revalidateScope,
 }: DocQueryScopedFetchOptions): DocQueryScopedFetch {
   return async (input, init) => {
     const rawUrl = input instanceof Request ? input.url : input
@@ -284,6 +287,7 @@ export function createDocQueryScopedFetch({
     headers.delete('authorization')
     headers.delete(DOC_QUERY_SCOPE_TOKEN_HEADER)
 
+    await revalidateScope?.()
     const token = await signToken({
       kbIds,
       chatbotId,

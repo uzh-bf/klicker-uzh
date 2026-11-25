@@ -29,6 +29,9 @@ const RESERVED_MODE_NAMES = new Set<string>(CHATBOT_STANDARD_MODE_KEYS)
 
 const MODE_KEY_PREFIX = 'cm_'
 
+const KNOWLEDGE_BASE_LINK_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -175,6 +178,17 @@ function normalizeMeetingClock(
   return value as ChatbotCustomModeMeetingClock
 }
 
+function normalizeKnowledgeBaseLinkId(value: unknown): string | null {
+  if (value === undefined || value === null) return null
+  if (
+    typeof value !== 'string' ||
+    !KNOWLEDGE_BASE_LINK_ID_PATTERN.test(value.trim())
+  ) {
+    throw new Error('knowledgeBaseLinkId must be a UUID or null')
+  }
+  return value.trim()
+}
+
 /**
  * Tolerant read of an optional stored setting: an invalid value counts as
  * unset, so it neither hides the mode nor reaches the prompt.
@@ -312,6 +326,16 @@ export function parseChatbotCustomModeConfigInput(
             existingModes.get(key)?.meetingClock
           )
         : normalizeMeetingClock(entry.meetingClock)
+    // Omission preserves the existing override; null explicitly restores
+    // inheritance. Keeping this separate from display fields is important for
+    // older clients that do not submit the new field yet.
+    const knowledgeBaseLinkId =
+      entry.knowledgeBaseLinkId === undefined
+        ? readStoredSetting(
+            normalizeKnowledgeBaseLinkId,
+            existingModes.get(key)?.knowledgeBaseLinkId
+          )
+        : normalizeKnowledgeBaseLinkId(entry.knowledgeBaseLinkId)
 
     return {
       key,
@@ -323,6 +347,7 @@ export function parseChatbotCustomModeConfigInput(
       ...(showReasoning ? { showReasoning: true } : {}),
       ...(replyLanguage !== null ? { replyLanguage } : {}),
       ...(meetingClock !== null ? { meetingClock } : {}),
+      ...(knowledgeBaseLinkId !== null ? { knowledgeBaseLinkId } : {}),
     }
   })
 
@@ -384,6 +409,10 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
       normalizeMeetingClock,
       value.meetingClock
     )
+    const knowledgeBaseLinkId = readStoredSetting(
+      normalizeKnowledgeBaseLinkId,
+      value.knowledgeBaseLinkId
+    )
 
     return {
       key,
@@ -399,6 +428,9 @@ function normalizeStoredMode(value: unknown): ChatbotCustomMode | null {
       ...(value.showReasoning === true ? { showReasoning: true } : {}),
       ...(replyLanguage !== null ? { replyLanguage } : {}),
       ...(meetingClock !== null ? { meetingClock } : {}),
+      // A valid identifier stays visible even if the link no longer exists.
+      // Only an unclassifiable value is dropped, which restores inheritance.
+      ...(knowledgeBaseLinkId !== null ? { knowledgeBaseLinkId } : {}),
     }
   } catch {
     return null

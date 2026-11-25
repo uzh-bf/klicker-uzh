@@ -621,6 +621,7 @@ model KBChatbot {
   id String @id @default(uuid()) @db.Uuid
 
   isEnabled Boolean @default(true)
+  isDefault Boolean @default(false)
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid

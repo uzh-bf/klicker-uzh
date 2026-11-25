@@ -85,6 +85,8 @@ const KB_CURSOR_VERSION = 1
 // rather than failing after dispatch.
 const KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH = 300
 const KB_MCP_SERVER_NAME = 'KB'
+const KB_CHATBOT_LINK_LIMIT = 32
+const PER_MODE_KB_LINKS_ENABLED_ENV = 'PER_MODE_KB_LINKS_ENABLED'
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
@@ -142,6 +144,36 @@ export interface KBResourceConnection {
   needsIngestionCount: number
   failedIngestionCount: number
   inProgressCount: number
+}
+
+interface KBChatbotLinkRecord {
+  id: string
+  kbId: string
+  isDefault: boolean
+  kb: { id: string; name: string }
+}
+
+interface KBChatbotModeBacklink {
+  key: string
+  name: string
+}
+
+interface KBChatbotLinkSummary {
+  id: string
+  linkId: string
+  kbId: string
+  name: string
+  isDefault: boolean
+  modeBacklinks: KBChatbotModeBacklink[]
+}
+
+interface KBChatbotBindingSummary {
+  chatbotId: string
+  chatbotName: string
+  chatbotStatus: DB.ChatbotStatus
+  enabledKbId: string | null
+  enabledKbName: string | null
+  enabledKbs: KBChatbotLinkSummary[]
 }
 
 export interface KBImportedSource {
@@ -1212,6 +1244,247 @@ export async function getKbImportedSourcesConnection(
   }
 }
 
+function assertPluralKbWritesEnabled() {
+  if (process.env[PER_MODE_KB_LINKS_ENABLED_ENV] !== 'true') {
+    throw new GraphQLError('Additive knowledge-base links are disabled', {
+      extensions: { code: 'KB_PLURAL_LINKS_DISABLED' },
+    })
+  }
+}
+
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function getModeLinkBacklinks(
+  customModeConfig: unknown,
+  draftConfig: unknown,
+  defaultLinkId: string | undefined
+): Map<string, KBChatbotModeBacklink[]> {
+  const assignments = new Map<
+    string,
+    KBChatbotModeBacklink & { linkId: string }
+  >()
+  const readConfig = (config: unknown) => {
+    if (!isJsonRecord(config) || !Array.isArray(config.modes)) return
+    for (const mode of config.modes) {
+      if (!isJsonRecord(mode)) continue
+      if (typeof mode.key !== 'string' || typeof mode.name !== 'string') {
+        continue
+      }
+      const linkId = mode.knowledgeBaseLinkId ?? defaultLinkId
+      if (typeof linkId !== 'string') continue
+      assignments.set(JSON.stringify([linkId, mode.key]), {
+        key: mode.key,
+        name: mode.name,
+        linkId,
+      })
+    }
+  }
+
+  readConfig(customModeConfig)
+  if (isJsonRecord(draftConfig)) readConfig(draftConfig.customModeConfig)
+
+  const backlinks = new Map<string, KBChatbotModeBacklink[]>()
+  for (const { key, name, linkId } of [...assignments.values()].sort(
+    (left, right) => left.key.localeCompare(right.key)
+  )) {
+    const entries = backlinks.get(linkId) ?? []
+    entries.push({ key, name })
+    backlinks.set(linkId, entries)
+  }
+  return backlinks
+}
+
+function projectKbChatbotBinding(chatbot: {
+  id: string
+  name: string
+  status: DB.ChatbotStatus
+  customModeConfig: unknown
+  draftConfig: unknown
+  knowledgeBases: KBChatbotLinkRecord[]
+}): KBChatbotBindingSummary {
+  const backlinks = getModeLinkBacklinks(
+    chatbot.customModeConfig,
+    chatbot.draftConfig,
+    chatbot.knowledgeBases.find((link) => link.isDefault)?.id
+  )
+  const enabledKbs = chatbot.knowledgeBases.map((link) => ({
+    id: link.kb.id,
+    linkId: link.id,
+    kbId: link.kb.id,
+    name: link.kb.name,
+    isDefault: link.isDefault,
+    modeBacklinks: backlinks.get(link.id) ?? [],
+  }))
+
+  return {
+    chatbotId: chatbot.id,
+    chatbotName: chatbot.name,
+    chatbotStatus: chatbot.status,
+    enabledKbId: enabledKbs.length === 1 ? (enabledKbs[0]?.kbId ?? null) : null,
+    enabledKbName:
+      enabledKbs.length === 1 ? (enabledKbs[0]?.name ?? null) : null,
+    enabledKbs,
+  }
+}
+
+async function getKbChatbotBindingOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  chatbotId: string,
+  ownerId: string
+): Promise<KBChatbotBindingSummary> {
+  const chatbot = await prisma.chatbot.findFirst({
+    where: { id: chatbotId, ownerId },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      customModeConfig: true,
+      draftConfig: true,
+      knowledgeBases: {
+        where: { isEnabled: true, kb: { deletedAt: null } },
+        select: {
+          id: true,
+          kbId: true,
+          isDefault: true,
+          kb: { select: { id: true, name: true } },
+        },
+        orderBy: { id: 'asc' },
+      },
+    },
+  })
+  if (!chatbot) throw new GraphQLError('Chatbot not found')
+  return projectKbChatbotBinding(chatbot)
+}
+
+async function reconcileDefaultKbProjection(
+  prisma: DB.Prisma.TransactionClient,
+  chatbotId: string,
+  kbId: string | null
+) {
+  const mcpServer = await prisma.chatbotMCPServer.findUnique({
+    where: { name: KB_MCP_SERVER_NAME },
+    select: { id: true, isActive: true },
+  })
+  if (!mcpServer) {
+    if (kbId !== null) {
+      throw new GraphQLError('Knowledge base retrieval is not configured')
+    }
+    return
+  }
+  if (mcpServer.isActive !== true) {
+    if (kbId !== null) {
+      throw new GraphQLError('Knowledge base retrieval is not configured')
+    }
+    await prisma.chatbotMCPConfig.updateMany({
+      where: { chatbotId, mcpServerId: mcpServer.id, isEnabled: true },
+      data: { isEnabled: false },
+    })
+    return
+  }
+  if (kbId === null) {
+    await prisma.chatbotMCPConfig.updateMany({
+      where: { chatbotId, mcpServerId: mcpServer.id, isEnabled: true },
+      data: { isEnabled: false },
+    })
+    return
+  }
+
+  const { customModeConfig } = await prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbotId },
+    select: { customModeConfig: true },
+  })
+  const exactModeKeys = [
+    ...(normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? [])
+      .map(({ key }) => key)
+      .filter((mode) => !isChatbotStandardModeKey(mode)),
+    'quizzer',
+  ]
+
+  await prisma.chatbotMCPConfig.updateMany({
+    where: {
+      chatbotId,
+      mcpServerId: mcpServer.id,
+      isEnabled: true,
+      chatMode: {
+        notIn: [...CHATBOT_KB_RETRIEVAL_MODE_KEYS, ...exactModeKeys],
+      },
+    },
+    data: { isEnabled: false },
+  })
+
+  const retrievalBinding = {
+    allowedTools: ['doc_query'],
+    parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
+    priority: 0,
+  }
+  for (const chatMode of CHATBOT_KB_RETRIEVAL_MODE_KEYS) {
+    await prisma.chatbotMCPConfig.upsert({
+      where: {
+        chatbotId_mcpServerId_chatMode: {
+          chatbotId,
+          mcpServerId: mcpServer.id,
+          chatMode,
+        },
+      },
+      create: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        chatMode,
+        ...retrievalBinding,
+        isEnabled: true,
+      },
+      update: {
+        ...retrievalBinding,
+        isEnabled: true,
+      },
+    })
+  }
+
+  // Enabled exact custom and Quizzer bindings follow the default KB. Disabled
+  // overrides stay untouched and stay disabled.
+  await prisma.chatbotMCPConfig.updateMany({
+    where: {
+      chatbotId,
+      mcpServerId: mcpServer.id,
+      chatMode: { in: exactModeKeys },
+      isEnabled: true,
+    },
+    data: retrievalBinding,
+  })
+}
+
+async function ensureEnabledKbLink(
+  prisma: DB.Prisma.TransactionClient,
+  { kbId, chatbotId }: { kbId: string; chatbotId: string }
+) {
+  const existing = await prisma.kBChatbot.findUnique({
+    where: { kbId_chatbotId: { kbId, chatbotId } },
+    select: { id: true, isEnabled: true },
+  })
+  if (existing?.isEnabled === true) return existing.id
+
+  // Reusing a disabled row would make an old mode reference silently valid
+  // again. A fresh row keeps a detached and reattached source distinguishable.
+  if (existing) {
+    await prisma.kBChatbot.delete({ where: { id: existing.id } })
+  }
+  const enabledCount = await prisma.kBChatbot.count({
+    where: { chatbotId, isEnabled: true },
+  })
+  if (enabledCount >= KB_CHATBOT_LINK_LIMIT) {
+    throw new GraphQLError('Knowledge base link limit reached', {
+      extensions: { code: 'KB_CHATBOT_LINK_LIMIT_REACHED' },
+    })
+  }
+  const created = await prisma.kBChatbot.create({
+    data: { kbId, chatbotId, isEnabled: true, isDefault: false },
+    select: { id: true },
+  })
+  return created.id
+}
+
 export async function getKbChatbotBindings(
   { kbId }: { kbId: string },
   ctx: ContextWithUser
@@ -1225,30 +1498,37 @@ export async function getKbChatbotBindings(
       id: true,
       name: true,
       status: true,
+      customModeConfig: true,
+      draftConfig: true,
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
+          id: true,
+          kbId: true,
+          isDefault: true,
           kb: { select: { id: true, name: true } },
         },
+        orderBy: { id: 'asc' },
       },
     },
     orderBy: { name: 'asc' },
   })
 
-  return chatbots.map((chatbot) => ({
-    chatbotId: chatbot.id,
-    chatbotName: chatbot.name,
-    chatbotStatus: chatbot.status,
-    enabledKbs: chatbot.knowledgeBases.map(({ kb }) => kb),
-    enabledKbId:
-      chatbot.knowledgeBases.length === 1
-        ? (chatbot.knowledgeBases[0]?.kb.id ?? null)
-        : null,
-    enabledKbName:
-      chatbot.knowledgeBases.length === 1
-        ? (chatbot.knowledgeBases[0]?.kb.name ?? null)
-        : null,
-  }))
+  return chatbots.map(projectKbChatbotBinding)
+}
+
+export async function addKbLinkToChatbot(
+  { kbId, chatbotId }: { kbId: string; chatbotId: string },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  assertPluralKbWritesEnabled()
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+    await ensureEnabledKbLink(prisma, { kbId, chatbotId })
+    return getKbChatbotBindingOrThrow(prisma, chatbotId, ctx.user.sub)
+  })
 }
 
 export async function attachKbToChatbot(
@@ -1259,108 +1539,55 @@ export async function attachKbToChatbot(
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
-    const mcpServer = await getKbMcpServerOrThrow(prisma)
-    const { customModeConfig } = await prisma.chatbot.findUniqueOrThrow({
-      where: { id: chatbotId },
-      select: { customModeConfig: true },
+    await getKbMcpServerOrThrow(prisma)
+    await ensureEnabledKbLink(prisma, { kbId, chatbotId })
+    await prisma.kBChatbot.updateMany({
+      where: { chatbotId, isDefault: true },
+      data: { isDefault: false },
     })
+    await prisma.kBChatbot.update({
+      where: { kbId_chatbotId: { kbId, chatbotId } },
+      data: { isDefault: true },
+    })
+    await reconcileDefaultKbProjection(prisma, chatbotId, kbId)
+    return getKbChatbotBindingOrThrow(prisma, chatbotId, ctx.user.sub)
+  })
+}
+
+export async function setChatbotDefaultKb(
+  { chatbotId, kbId }: { chatbotId: string; kbId?: string | null },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  assertPluralKbWritesEnabled()
+  return ctx.prisma.$transaction(async (prisma) => {
+    if (kbId) {
+      await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    }
+    await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+
+    if (kbId) {
+      const link = await prisma.kBChatbot.findUnique({
+        where: { kbId_chatbotId: { kbId, chatbotId } },
+        select: { isEnabled: true },
+      })
+      if (!link?.isEnabled) {
+        throw new GraphQLError('Knowledge base link not found')
+      }
+    }
 
     await prisma.kBChatbot.updateMany({
-      where: {
-        chatbotId,
-        kbId: { not: kbId },
-        isEnabled: true,
-      },
-      data: { isEnabled: false },
+      where: { chatbotId, isDefault: true },
+      data: { isDefault: false },
     })
-    await prisma.kBChatbot.upsert({
-      where: { kbId_chatbotId: { kbId, chatbotId } },
-      create: { kbId, chatbotId, isEnabled: true },
-      update: { isEnabled: true },
-    })
-
-    // Approved custom modes inherit the required standard retrieval binding.
-    // Existing exact rows stay eligible only while their approved keys remain.
-    const exactModeKeys = [
-      ...(normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? [])
-        .map(({ key }) => key)
-        .filter((mode) => !isChatbotStandardModeKey(mode)),
-      'quizzer',
-    ]
-
-    // A binding for a mode the chatbot no longer declares would keep grounding
-    // retrieval that the owner removed. An exact Quizzer row is exempt, because
-    // it overrides Tutor inheritance whether or not it is enabled.
-    await prisma.chatbotMCPConfig.updateMany({
-      where: {
-        chatbotId,
-        mcpServerId: mcpServer.id,
-        isEnabled: true,
-        chatMode: {
-          notIn: [...CHATBOT_KB_RETRIEVAL_MODE_KEYS, ...exactModeKeys],
-        },
-      },
-      data: { isEnabled: false },
-    })
-
-    const retrievalBinding = {
-      allowedTools: ['doc_query'],
-      parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-      priority: 0,
-    }
-    for (const chatMode of CHATBOT_KB_RETRIEVAL_MODE_KEYS) {
-      await prisma.chatbotMCPConfig.upsert({
-        where: {
-          chatbotId_mcpServerId_chatMode: {
-            chatbotId,
-            mcpServerId: mcpServer.id,
-            chatMode,
-          },
-        },
-        create: {
-          chatbotId,
-          mcpServerId: mcpServer.id,
-          chatMode,
-          ...retrievalBinding,
-          isEnabled: true,
-        },
-        update: {
-          ...retrievalBinding,
-          isEnabled: true,
-        },
+    if (kbId) {
+      await prisma.kBChatbot.update({
+        where: { kbId_chatbotId: { kbId, chatbotId } },
+        data: { isDefault: true },
       })
     }
-
-    // Enabled exact custom and Quizzer bindings follow the replacement KB, so
-    // none retain an old scope. Disabled overrides stay untouched.
-    await prisma.chatbotMCPConfig.updateMany({
-      where: {
-        chatbotId,
-        mcpServerId: mcpServer.id,
-        chatMode: { in: exactModeKeys },
-        isEnabled: true,
-      },
-      data: retrievalBinding,
-    })
-
-    const [chatbot, kb] = await Promise.all([
-      prisma.chatbot.findUniqueOrThrow({
-        where: { id: chatbotId },
-        select: { name: true, status: true },
-      }),
-      prisma.kB.findUniqueOrThrow({
-        where: { id: kbId },
-        select: { name: true },
-      }),
-    ])
-    return {
-      chatbotId,
-      chatbotName: chatbot.name,
-      chatbotStatus: chatbot.status,
-      enabledKbId: kbId,
-      enabledKbName: kb.name,
-      enabledKbs: [{ id: kbId, name: kb.name }],
-    }
+    await reconcileDefaultKbProjection(prisma, chatbotId, kbId ?? null)
+    return getKbChatbotBindingOrThrow(prisma, chatbotId, ctx.user.sub)
   })
 }
 
@@ -1373,22 +1600,13 @@ export async function detachKbFromChatbot(
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
 
-    await prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
-    const enabledBinding = await prisma.kBChatbot.findFirst({
-      where: { chatbotId, isEnabled: true },
-      select: { id: true },
+    const existing = await prisma.kBChatbot.findUnique({
+      where: { kbId_chatbotId: { kbId, chatbotId } },
+      select: { isDefault: true },
     })
-    if (!enabledBinding) {
-      const mcpServer = await prisma.chatbotMCPServer.findUnique({
-        where: { name: KB_MCP_SERVER_NAME },
-        select: { id: true },
-      })
-      if (mcpServer) {
-        await prisma.chatbotMCPConfig.updateMany({
-          where: { chatbotId, mcpServerId: mcpServer.id },
-          data: { isEnabled: false },
-        })
-      }
+    await prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
+    if (existing?.isDefault === true) {
+      await reconcileDefaultKbProjection(prisma, chatbotId, null)
     }
 
     return true
@@ -1679,39 +1897,18 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
       }
       const bindings = await prisma.kBChatbot.findMany({
         where: { kbId: id, isEnabled: true },
-        select: { chatbotId: true },
+        select: { chatbotId: true, isDefault: true },
       })
       if (bindings.length > 0) {
+        const defaultChatbotIds = bindings
+          .filter(({ isDefault }) => isDefault)
+          .map(({ chatbotId }) => chatbotId)
         await prisma.kBChatbot.updateMany({
           where: { kbId: id, isEnabled: true },
-          data: { isEnabled: false },
+          data: { isEnabled: false, isDefault: false },
         })
-        const chatbotIds = bindings.map(({ chatbotId }) => chatbotId)
-        const remainingBindings = await prisma.kBChatbot.findMany({
-          where: {
-            chatbotId: { in: chatbotIds },
-            isEnabled: true,
-          },
-          select: { chatbotId: true },
-        })
-        const stillEnabled = new Set(
-          remainingBindings.map(({ chatbotId }) => chatbotId)
-        )
-        const unboundChatbotIds = chatbotIds.filter(
-          (chatbotId) => !stillEnabled.has(chatbotId)
-        )
-        const mcpServer = await prisma.chatbotMCPServer.findUnique({
-          where: { name: KB_MCP_SERVER_NAME },
-          select: { id: true },
-        })
-        if (mcpServer && unboundChatbotIds.length > 0) {
-          await prisma.chatbotMCPConfig.updateMany({
-            where: {
-              mcpServerId: mcpServer.id,
-              chatbotId: { in: unboundChatbotIds },
-            },
-            data: { isEnabled: false },
-          })
+        for (const chatbotId of defaultChatbotIds) {
+          await reconcileDefaultKbProjection(prisma, chatbotId, null)
         }
       }
 

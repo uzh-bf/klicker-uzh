@@ -5,7 +5,10 @@ import {
   DocQueryScopeTokenError,
   signDocQueryScopeToken,
 } from '../src/lib/server/docQueryScopeToken'
-import { DOC_QUERY_SCOPE_TOKEN_HEADER } from '../src/services/mcpScope'
+import {
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  resolveModeKnowledgeBaseScope,
+} from '../src/services/mcpScope'
 
 const TEST_ISSUER = 'https://chat.klicker.test'
 const TEST_AUDIENCE = 'klicker-doc-query-test'
@@ -86,6 +89,25 @@ describe('signDocQueryScopeToken', () => {
     })
 
     expect(payload.kb_id).toEqual([TEST_KB_ID, TEST_KB_ID_2])
+  })
+
+  test('binds a synthetic A/B mode selection to exactly one scalar kb_id', async () => {
+    for (const kbId of [TEST_KB_ID, TEST_KB_ID_2]) {
+      const token = await signDocQueryScopeToken({
+        kbIds: [kbId],
+        chatbotId: TEST_CHATBOT_ID,
+        sessionId: TEST_SESSION_ID,
+        jti: TEST_JTI,
+      })
+      const { payload } = await jwtVerify(token, publicKey, {
+        algorithms: ['ES256'],
+        issuer: TEST_ISSUER,
+        audience: TEST_AUDIENCE,
+      })
+
+      expect(payload.kb_id).toBe(kbId)
+      expect(Array.isArray(payload.kb_id)).toBe(false)
+    }
   })
 
   test.each([
@@ -193,6 +215,66 @@ describe('createDocQueryScopedFetch', () => {
     expect(secondToken).not.toBe(`Bearer ${firstToken}`)
   })
 
+  test('signs one selected KB per turn in the same custom-only thread', async () => {
+    const links = [TEST_KB_ID, TEST_KB_ID_2].map((kbId, index) => ({
+      id: index === 0 ? TEST_CHATBOT_ID : TEST_JTI,
+      kbId,
+      isDefault: false,
+      isEnabled: true,
+      kb: { deletedAt: null },
+    }))
+    const modes = links.map(({ id }, index) => ({
+      key: `cm_source_${index}`,
+      knowledgeBaseLinkId: id,
+    }))
+    for (const index of [0, 1, 0]) {
+      const scope = resolveModeKnowledgeBaseScope({
+        customModeConfig: { modes },
+        selectedMode: modes[index]!.key,
+        knowledgeBaseLinks: links,
+        configurations: [],
+        effectiveConfigurations: [],
+      })
+      expect(scope.useCanonicalDocQuery).toBe(true)
+      const request = createDocQueryScopedFetch({
+        target: TARGET,
+        kbIds: scope.kbIds!,
+        chatbotId: TEST_CHATBOT_ID,
+        sessionId: TEST_SESSION_ID,
+      })
+      await request(TARGET, { method: 'POST' })
+      const init = fetchSpy.mock.lastCall![1] as RequestInit
+      const credential = new Headers(init.headers).get(
+        DOC_QUERY_SCOPE_TOKEN_HEADER
+      )!
+      const { payload } = await jwtVerify(
+        credential.slice('Bearer '.length),
+        publicKey,
+        {
+          algorithms: ['ES256'],
+          issuer: TEST_ISSUER,
+          audience: TEST_AUDIENCE,
+        }
+      )
+      expect(payload).toMatchObject({
+        sub: TEST_SESSION_ID,
+        chatbot_id: TEST_CHATBOT_ID,
+        kb_id: links[index]!.kbId,
+      })
+    }
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(() =>
+      resolveModeKnowledgeBaseScope({
+        customModeConfig: { modes },
+        selectedMode: modes[0]!.key,
+        knowledgeBaseLinks: [],
+        configurations: [],
+        effectiveConfigurations: [],
+      })
+    ).toThrow()
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+  })
+
   test('rejects another destination before signing or fetching', async () => {
     // Signing material stays absent so a wrong ordering surfaces as the
     // configuration error instead of the target mismatch.
@@ -221,6 +303,26 @@ describe('createDocQueryScopedFetch', () => {
       scopedFetch(TARGET, { method: 'POST' })
     ).rejects.toBeInstanceOf(DocQueryScopeTokenError)
 
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  test('blocks minting and the network call when scope revalidation fails', async () => {
+    const revalidateScope = vi.fn(async () => {
+      throw new Error('link revoked')
+    })
+    const scopedFetch = createDocQueryScopedFetch({
+      target: TARGET,
+      kbIds: [TEST_KB_ID],
+      chatbotId: TEST_CHATBOT_ID,
+      sessionId: TEST_SESSION_ID,
+      revalidateScope,
+    })
+
+    await expect(scopedFetch(TARGET, { method: 'POST' })).rejects.toThrow(
+      'link revoked'
+    )
+
+    expect(revalidateScope).toHaveBeenCalledTimes(1)
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 })

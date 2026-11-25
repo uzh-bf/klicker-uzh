@@ -1,3 +1,7 @@
+import {
+  loadCanonicalModeDocQuery,
+  revalidateModeSource,
+} from '@/src/lib/server/currentChatModeSource'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
@@ -102,6 +106,7 @@ import {
   mapAssistantStepContent,
   withEmptyResponseError,
 } from '@/src/lib/server/persistedAssistantContent'
+import { withRetrievalSourceProvenance } from '@/src/lib/server/messageKnowledgeBaseProvenance'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import {
@@ -156,8 +161,9 @@ import {
   type MCPToolsHandle,
 } from '@/src/services/mcpClients'
 import {
-  resolveMcpScope,
   resolveMcpScopeSessionId,
+  resolveModeKnowledgeBaseScope,
+  ownedKnowledgeBaseLinks,
 } from '@/src/services/mcpScope'
 import {
   formatPracticeCandidatesForPrompt,
@@ -784,6 +790,26 @@ export async function POST(
           },
           orderBy: { priority: 'asc' },
         },
+        knowledgeBases: {
+          // Every row counts, including disabled and stale ones: any managed
+          // link keeps this chatbot on the link-scoped admission path instead
+          // of falling back to a legacy MCP wildcard.
+          select: {
+            id: true,
+            kbId: true,
+            isEnabled: true,
+            isDefault: true,
+            kb: {
+              select: {
+                deletedAt: true,
+                ownerId: true,
+                name: true,
+                knowledgeGraphEnabled: true,
+              },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
       },
     })
   } catch (error) {
@@ -1000,9 +1026,6 @@ export async function POST(
     )
   }
 
-  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
-    (config) => config.isEnabled !== false
-  )
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
@@ -1011,44 +1034,65 @@ export async function POST(
     isSafeDocQueryBinding
   )
 
-  let scopedKbIds: string[] | undefined
-  try {
-    scopedKbIds = resolveMcpScope(
-      enabledMCPConfigurations,
-      selectedMode,
-      selectedMCPConfigurations
-    )
-  } catch (error) {
-    if (error instanceof RequiredMCPUnavailableError) {
-      return NextResponse.json(
-        {
-          error: 'Required MCP tool unavailable',
-          code: REQUIRED_MCP_UNAVAILABLE_CODE,
-        },
-        { status: 503 }
-      )
+  // One request resolves exactly one live mode source. A chatbot with no link
+  // rows keeps the legacy MCP-only admission path untouched.
+  const modeKnowledgeBaseScope = (() => {
+    try {
+      return resolveModeKnowledgeBaseScope({
+        customModeConfig: chatbot.customModeConfig,
+        selectedMode,
+        knowledgeBaseLinks: ownedKnowledgeBaseLinks(
+          chatbot.knowledgeBases ?? [],
+          chatbot.ownerId
+        ),
+        configurations: chatbot.mcpConfigurations ?? [],
+        effectiveConfigurations: selectedMCPConfigurations,
+      })
+    } catch (error) {
+      if (error instanceof RequiredMCPUnavailableError) return null
+      throw error
     }
-    throw error
+  })()
+  if (!modeKnowledgeBaseScope) {
+    return NextResponse.json(
+      {
+        error: 'Required MCP tool unavailable',
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      },
+      { status: 503 }
+    )
   }
 
-  mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
-    server: {
-      id: config.mcpServer.id,
-      name: config.mcpServer.name,
-      url: config.mcpServer.url,
-      authType: config.mcpServer.authType,
-      authSecret: config.mcpServer.authSecret ?? '',
-      parameters: config.mcpServer.parameters,
-      isActive: config.mcpServer.isActive,
-      passChatbotId: config.mcpServer.passChatbotId,
-      chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-    },
-    config: {
-      allowedTools: config.allowedTools as string[] | undefined,
-      parameters: config.parameters,
-      priority: config.priority,
-    },
-  }))
+  const scopedKbIds = modeKnowledgeBaseScope.kbIds
+  const retrievalSource = modeKnowledgeBaseScope.link
+    ? {
+        chatMode: selectedMode,
+        kbId: modeKnowledgeBaseScope.link.kbId,
+        kbLinkId: modeKnowledgeBaseScope.link.id,
+        revisionVersion: chatbot.revisionVersion,
+      }
+    : null
+
+  mcpServersWithConfigs = modeKnowledgeBaseScope.effectiveConfigurations.map(
+    (config) => ({
+      server: {
+        id: config.mcpServer.id,
+        name: config.mcpServer.name,
+        url: config.mcpServer.url,
+        authType: config.mcpServer.authType,
+        authSecret: config.mcpServer.authSecret ?? '',
+        parameters: config.mcpServer.parameters,
+        isActive: config.mcpServer.isActive,
+        passChatbotId: config.mcpServer.passChatbotId,
+        chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+      },
+      config: {
+        allowedTools: config.allowedTools as string[] | undefined,
+        parameters: config.parameters,
+        priority: config.priority,
+      },
+    })
+  )
 
   // Resolve the participant-owned thread before the provider-work boundary.
   // Lifecycle-enabled deployments claim the assistant key here; the initial
@@ -1365,21 +1409,47 @@ export async function POST(
 
     let mcpTools: ToolSet = {}
     try {
+      if (
+        modeKnowledgeBaseScope.useCanonicalDocQuery &&
+        modeKnowledgeBaseScope.link
+      ) {
+        mcpServersWithConfigs.push(
+          await loadCanonicalModeDocQuery(modeKnowledgeBaseScope.link.kbId)
+        )
+      }
       mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
         chatbotId,
         participantId,
         authMode,
+        chatMode: selectedMode,
         kbIds: scopedKbIds,
+        ...(modeKnowledgeBaseScope.link
+          ? { kbLinkId: modeKnowledgeBaseScope.link.id }
+          : {}),
         sessionId: mcpScopeSessionId,
         knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
         courseId: chatbot.courseId,
+        ...(modeKnowledgeBaseScope.link
+          ? {
+              revalidateKnowledgeBaseScope: () =>
+                revalidateModeSource(
+                  chatbotId,
+                  selectedMode,
+                  modeKnowledgeBaseScope
+                ),
+            }
+          : {}),
       })
       mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (!(error instanceof RequiredMCPUnavailableError)) throw error
       // Only plain unavailability may be softened for an eLearning-origin
       // question; a scope or isolation violation stays fail-closed here.
-      if (!isElearningThread || error.reason !== 'unavailable') {
+      if (
+        modeKnowledgeBaseScope.useCanonicalDocQuery ||
+        !isElearningThread ||
+        error.reason !== 'unavailable'
+      ) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
         return NextResponse.json(
           {
@@ -1758,6 +1828,13 @@ export async function POST(
               chatbotId,
               mode: selectedMode,
               threadId: owningThread.id,
+              revisionVersion: chatbot.revisionVersion,
+              ...(retrievalSource
+                ? {
+                    knowledgeBaseId: retrievalSource.kbId,
+                    knowledgeBaseLinkId: retrievalSource.kbLinkId,
+                  }
+                : {}),
             },
             tools: modelTools,
           })
@@ -2626,7 +2703,10 @@ export async function POST(
           const completedContent = mapAssistantStepContent(result.steps)
           const emptyResponse = !hasMeaningfulAssistantContent(completedContent)
           await finalizeAssistantLifecycle({
-            content: withEmptyResponseError(completedContent),
+            content: withRetrievalSourceProvenance(
+              withEmptyResponseError(completedContent),
+              retrievalSource
+            ),
             reasoningContent: finishedReasoningContent,
             rawCreditsUsed,
             phase: 'complete',
@@ -2704,7 +2784,10 @@ export async function POST(
           // The marker-only result still closes an aborted lifecycle when the
           // provider reports no reliable usage.
           await finalizeAssistantLifecycle({
-            content: abortedAssistantContent,
+            content: withRetrievalSourceProvenance(
+              abortedAssistantContent,
+              retrievalSource
+            ),
             reasoningContent: abortedReasoningContent,
             rawCreditsUsed: normalizedRawCreditsUsed,
             phase: 'abort',

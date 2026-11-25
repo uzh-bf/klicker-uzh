@@ -47,6 +47,7 @@ export interface ResponseExampleReceiptClaims {
   ownerId: string
   chatbotId: string
   kbId: string
+  kbLinkId?: string
   chatMode: string
   questionHash: string
   answerHash: string
@@ -60,6 +61,7 @@ export interface ResponseExampleReceiptContent {
   ownerId: string
   chatbotId: string
   kbId: string
+  kbLinkId?: string
   chatMode: string
   question: string
   answer: string
@@ -87,6 +89,7 @@ interface ResponseExampleReceiptPayload extends JWTPayload {
   purpose?: unknown
   chatbot_id?: unknown
   kb_id?: unknown
+  kb_link_id?: unknown
   chat_mode?: unknown
   question_sha256?: unknown
   answer_sha256?: unknown
@@ -204,6 +207,9 @@ function validateReceiptContent(
     ownerId: requireUuid(input.ownerId, 'owner id'),
     chatbotId: requireUuid(input.chatbotId, 'chatbot id'),
     kbId: requireUuid(input.kbId, 'knowledge base id'),
+    ...(input.kbLinkId === undefined
+      ? {}
+      : { kbLinkId: requireUuid(input.kbLinkId, 'knowledge base link id') }),
     chatMode: requireBoundedString(
       input.chatMode,
       'chat mode',
@@ -243,6 +249,7 @@ export async function signResponseExampleReceipt(
       purpose: RESPONSE_EXAMPLE_RECEIPT_PURPOSE,
       chatbot_id: content.chatbotId,
       kb_id: content.kbId,
+      kb_link_id: content.kbLinkId,
       chat_mode: content.chatMode,
       question_sha256: hashResponseExampleReceiptContent(content.question),
       answer_sha256: hashResponseExampleReceiptContent(content.answer),
@@ -357,6 +364,11 @@ export async function verifyResponseExampleReceipt(
       ownerId,
       chatbotId,
       kbId,
+      ...(payload.kb_link_id === undefined
+        ? {}
+        : {
+            kbLinkId: requireUuid(payload.kb_link_id, 'knowledge base link id'),
+          }),
       chatMode,
       questionHash,
       answerHash,

@@ -5,7 +5,14 @@ query QGetKbChatbotBindingsWithKnowledgeBases($kbId: ID!) {
     chatbotStatus
     enabledKbs {
       id
+      kbId
+      linkId
       name
+      isDefault
+      modeBacklinks {
+        key
+        name
+      }
     }
   }
 }

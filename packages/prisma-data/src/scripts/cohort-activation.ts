@@ -163,6 +163,7 @@ export type ActivationBindingRecord = {
   kbId: string
   chatbotId: string
   isEnabled: boolean
+  isDefault: boolean
   updatedAt: Date
 }
 
@@ -189,6 +190,7 @@ export type ActivationBindingCreate = {
   kbId: string
   chatbotId: string
   isEnabled: false
+  isDefault: false
 }
 
 export type ActivationConfigCreate = {
@@ -218,7 +220,7 @@ export type ActivationTransactionStore = {
   createConfig(data: ActivationConfigCreate): Promise<ActivationConfigRecord>
   updateBinding(
     snapshot: ActivationBindingRecord,
-    isEnabled: boolean
+    state: { isEnabled: boolean; isDefault: boolean }
   ): Promise<ActivationBindingRecord>
   updateConfig(
     snapshot: ActivationConfigRecord,
@@ -1171,6 +1173,7 @@ function mapBinding(record: {
   kbId: string
   chatbotId: string
   isEnabled: boolean
+  isDefault: boolean
   updatedAt: Date
 }): ActivationBindingRecord {
   return record
@@ -1208,6 +1211,7 @@ function createPrismaActivationDelegate(
     kbId: true,
     chatbotId: true,
     isEnabled: true,
+    isDefault: true,
     updatedAt: true,
   } as const
   const kbSelect = {
@@ -1309,10 +1313,23 @@ function createPrismaActivationDelegate(
       })
       return mapConfig(record)
     },
-    async updateBinding(snapshot, isEnabled) {
+    async updateBinding(snapshot, state) {
+      if (state.isDefault) {
+        await client.kBChatbot.updateMany({
+          where: {
+            chatbotId: snapshot.chatbotId,
+            isDefault: true,
+            id: { not: snapshot.id },
+          },
+          data: { isDefault: false },
+        })
+      }
       const result = await client.kBChatbot.updateMany({
         where: { id: snapshot.id, updatedAt: snapshot.updatedAt },
-        data: { isEnabled },
+        data: {
+          isEnabled: state.isEnabled,
+          isDefault: state.isDefault,
+        },
       })
       if (result.count !== 1) {
         fail('CONCURRENT_EDIT', 'knowledge base binding changed during switch')
@@ -2294,6 +2311,11 @@ function bindingFingerprint(binding: ActivationBindingRecord): string {
   return fingerprint(binding)
 }
 
+function legacyBindingFingerprint(binding: ActivationBindingRecord): string {
+  const { isDefault: _isDefault, ...legacyBinding } = binding
+  return fingerprint(legacyBinding)
+}
+
 function safeServerSnapshot(
   server: ActivationServerRecord,
   alias: typeof SOURCE_SERVER_NAME | typeof TARGET_SERVER_NAME
@@ -2548,7 +2570,12 @@ function assertBinding(
   kbId: string,
   chatbotId: string
 ): asserts binding is ActivationBindingRecord {
-  if (!binding || binding.kbId !== kbId || binding.chatbotId !== chatbotId) {
+  if (
+    !binding ||
+    binding.kbId !== kbId ||
+    binding.chatbotId !== chatbotId ||
+    binding.isDefault !== binding.isEnabled
+  ) {
     fail('BINDING_DRIFT', 'a knowledge base binding drifted')
   }
 }
@@ -2738,19 +2765,6 @@ function assertNoEnabledTargetRows(state: InspectedState): void {
   }
 }
 
-function assertNoEnabledOtherBinding(
-  state: InspectedState,
-  chatbotAlias: string
-): void {
-  const bindings = state.otherBindingsByChatbotAlias.get(chatbotAlias)
-  if (bindings?.some((binding) => binding.isEnabled)) {
-    fail(
-      'ENABLED_KB_CONFLICT',
-      'another knowledge base is already enabled for the chatbot'
-    )
-  }
-}
-
 type GroupState = 'missing' | 'prepared' | 'switched' | 'mixed'
 
 function groupAliases(index: ManifestIndex, chatbotAlias: string): string[] {
@@ -2769,6 +2783,7 @@ function groupState(
   if (!binding || configurations.some((configuration) => !configuration)) {
     return 'missing'
   }
+  if (binding.isDefault !== binding.isEnabled) return 'mixed'
   const enabled = [
     binding.isEnabled,
     ...configurations.map((configuration) => configuration!.isEnabled),
@@ -2983,16 +2998,18 @@ function assertReceiptCurrent(
       }
       continue
     }
-    assertSafeIdentity(
-      expected,
-      expected.alias,
-      binding,
-      bindingFingerprint(binding)
-    )
+    if (
+      expected.updatedAt !== binding.updatedAt.toISOString() ||
+      (expected.fingerprint !== bindingFingerprint(binding) &&
+        expected.fingerprint !== legacyBindingFingerprint(binding))
+    ) {
+      fail('SNAPSHOT_MISMATCH', 'a target binding snapshot no longer matches')
+    }
     if (
       expected.chatbotAlias !== chatbotAlias ||
       expected.corpusAlias !== corpusAlias ||
-      expected.isEnabled !== binding.isEnabled
+      expected.isEnabled !== binding.isEnabled ||
+      expected.isEnabled !== binding.isDefault
     ) {
       fail('SNAPSHOT_MISMATCH', 'a target binding snapshot no longer matches')
     }
@@ -3359,6 +3376,7 @@ export async function prepareCohortActivation(
             kbId: kb.id,
             chatbotId,
             isEnabled: false,
+            isDefault: false,
           })
           assertBinding(createdBinding, kb.id, chatbotId)
           state.bindings.set(chatbotAlias, createdBinding)
@@ -3444,8 +3462,11 @@ async function applyChatbotSwitch(
   const binding = state.bindings.get(chatbotAlias)
   if (!binding) fail('BINDING_MISSING', 'the chatbot binding is missing')
   assertBinding(binding, kb.id, chatbotId)
-  if (binding.isEnabled !== enabled) {
-    await tx.updateBinding(binding, enabled)
+  if (binding.isEnabled !== enabled || binding.isDefault !== enabled) {
+    await tx.updateBinding(binding, {
+      isEnabled: enabled,
+      isDefault: enabled,
+    })
   }
 
   for (const [alias, configuration] of configsForChatbot(index, chatbotAlias)) {
@@ -3534,7 +3555,6 @@ export async function switchCohortChatbot(
     const currentState = await inspectCohortState(store, index, options.target)
     assertReceiptCurrent(currentState, index, receipt)
     assertTargetGroupsCoherent(currentState, index)
-    assertNoEnabledOtherBinding(currentState, options.chatbotAlias)
     if (options.dryRun) {
       if (receipt.switchedChatbotAliases.includes(options.chatbotAlias)) {
         assertCandidateGroup(
@@ -3593,7 +3613,6 @@ export async function switchCohortChatbot(
       assertReceiptCurrent(state, index, receipt)
       assertTargetGroupsCoherent(state, index)
       assertCandidateGroup(state, index, options.chatbotAlias, 'prepared')
-      assertNoEnabledOtherBinding(state, options.chatbotAlias)
       await applyChatbotSwitch(tx, state, index, options.chatbotAlias, true)
       const after = await inspectCohortState(tx, index, options.target)
       return makeReceiptFromState(after, index, manifestFingerprint, {
@@ -3666,7 +3685,6 @@ export async function rollbackCohortChatbot(
       pending ? { pendingChatbotAlias: options.chatbotAlias } : {}
     )
     assertTargetGroupsCoherent(stateBefore, index)
-    assertNoEnabledOtherBinding(stateBefore, options.chatbotAlias)
     if (!pending) {
       assertCandidateGroup(stateBefore, index, options.chatbotAlias, 'switched')
     } else {
@@ -3726,7 +3744,6 @@ export async function rollbackCohortChatbot(
         pendingChatbotAlias: options.chatbotAlias,
       })
       assertTargetGroupsCoherent(state, index)
-      assertNoEnabledOtherBinding(state, options.chatbotAlias)
       const current = groupState(state, index, options.chatbotAlias)
       if (current !== 'switched' && current !== 'prepared') {
         fail('MIXED_STATE', 'the selected chatbot group is mixed')

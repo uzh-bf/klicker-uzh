@@ -50,6 +50,13 @@ export type PromptCacheScope = {
   chatbotId: string
   mode: string
   threadId: string
+  /**
+   * Approved configuration revision, kept in the key so a mode that repoints
+   * its knowledge-base link never reuses the earlier tool/instruction prefix.
+   */
+  revisionVersion?: number
+  knowledgeBaseId?: string
+  knowledgeBaseLinkId?: string
 }
 
 export type PromptCacheIdentityInput = {
@@ -231,6 +238,9 @@ export async function buildPromptCacheRequest(
     transport: input.transport,
     chatbotId: input.cacheScope.chatbotId,
     mode: input.cacheScope.mode,
+    revisionVersion: input.cacheScope.revisionVersion,
+    knowledgeBaseId: input.cacheScope.knowledgeBaseId,
+    knowledgeBaseLinkId: input.cacheScope.knowledgeBaseLinkId,
     // Only the bucket of a domain-separated thread hash enters the key, so the
     // raw thread id never reaches the provider.
     threadBucket:

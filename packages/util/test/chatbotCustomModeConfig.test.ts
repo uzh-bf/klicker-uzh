@@ -21,6 +21,8 @@ function parseModes(
 }
 
 describe('chatbot custom mode configuration', () => {
+  const knowledgeBaseLinkId = 'c2c7ea86-8a91-4fb5-b7b8-1f7e9b8bc7d8'
+
   it('mints a server-side key and canonicalizes bounded fields', () => {
     const config = parseModes(
       [
@@ -90,6 +92,72 @@ describe('chatbot custom mode configuration', () => {
     ).toThrow(
       `welcomeMessage must be at most ${CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH}`
     )
+  })
+
+  it('preserves an omitted knowledge-base link and clears it explicitly', () => {
+    const first = parseModes(
+      [
+        {
+          name: 'Case discussion',
+          knowledgeBaseLinkId,
+        },
+      ],
+      null
+    )
+    expect(first.modes[0]?.knowledgeBaseLinkId).toBe(knowledgeBaseLinkId)
+
+    const omitted = parseModes(
+      [{ key: first.modes[0]?.key, name: 'Case work' }],
+      first
+    )
+    expect(omitted.modes[0]?.knowledgeBaseLinkId).toBe(knowledgeBaseLinkId)
+
+    const cleared = parseModes(
+      [
+        {
+          key: first.modes[0]?.key,
+          name: 'Case work',
+          knowledgeBaseLinkId: null,
+        },
+      ],
+      omitted
+    )
+    expect(cleared.modes[0]?.knowledgeBaseLinkId).toBeUndefined()
+  })
+
+  it('keeps unavailable well-formed links during tolerant reads', () => {
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          {
+            key: 'cm_case',
+            name: 'Case discussion',
+            knowledgeBaseLinkId,
+          },
+        ],
+      })?.modes[0]?.knowledgeBaseLinkId
+    ).toBe(knowledgeBaseLinkId)
+
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          {
+            key: 'cm_case',
+            name: 'Case discussion',
+            knowledgeBaseLinkId: 'not-a-link-id',
+          },
+        ],
+      })?.modes[0]
+    ).toMatchObject({ key: 'cm_case', name: 'Case discussion' })
+  })
+
+  it('rejects a malformed knowledge-base link on writes', () => {
+    expect(() =>
+      parseModes(
+        [{ name: 'Case discussion', knowledgeBaseLinkId: 'not-a-link-id' }],
+        null
+      )
+    ).toThrow('knowledgeBaseLinkId must be a UUID or null')
   })
 
   it('normalizes and round-trips an authored welcome message', () => {

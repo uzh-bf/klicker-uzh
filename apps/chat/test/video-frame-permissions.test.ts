@@ -21,12 +21,8 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
 vi.mock('@/src/lib/server/videoFrameStore', () => ({
   readVideoFrame: mocks.read,
 }))
-// Exercise the real shared configuration resolver and scope validation. Only
+// The real mode and configuration resolvers and scope validation run. Only
 // database, login and storage are replaced; no identity resolver or scope stub.
-vi.mock(
-  '@/src/lib/server/effectiveChatModes',
-  async () => import('../../../packages/util/src/chatbotMCPConfiguration')
-)
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/frames/[assetId]/route'
 
@@ -52,6 +48,34 @@ const tutor = {
   parameters: { kb_id: frame.kb_id, required: true, toolAlias: 'doc_query' },
 }
 
+// Mirrors the chatbot columns the scope reader selects. This chatbot has no
+// managed link rows, so the legacy MCP-only admission path applies.
+function chatbotRow(mcpConfigurations: unknown[]) {
+  return {
+    ownerId: 'owner',
+    status: 'PUBLISHED',
+    customModeConfig: null,
+    draftConfig: null,
+    standardModeConfig: {
+      tutorEnabled: true,
+      explainerEnabled: false,
+      quizzerEnabled: true,
+      writingCoachEnabled: false,
+      explicitModeSelection: true,
+      courseName: null,
+      subjectDomain: null,
+      languageOfInstruction: null,
+      scopeNote: null,
+    },
+    systemPrompts: {
+      tutor: { prompt: 'Tutor' },
+      quizzer: { prompt: 'Quizzer' },
+    },
+    knowledgeBases: [],
+    mcpConfigurations,
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.message.mockResolvedValue({
@@ -64,7 +88,7 @@ beforeEach(() => {
       },
     ],
   })
-  mocks.chatbot.mockResolvedValue({ mcpConfigurations: [tutor] })
+  mocks.chatbot.mockResolvedValue(chatbotRow([tutor]))
   mocks.read.mockResolvedValue(Buffer.from('jpeg'))
 })
 
@@ -76,12 +100,9 @@ it('allows Quizzer to inherit Tutor access when there is no explicit override', 
 it('denies a previously accessible frame after Quizzer is explicitly disabled', async () => {
   expect((await GET(req, { params })).status).toBe(200)
   mocks.read.mockClear()
-  mocks.chatbot.mockResolvedValue({
-    mcpConfigurations: [
-      tutor,
-      { ...tutor, chatMode: 'quizzer', isEnabled: false },
-    ],
-  })
+  mocks.chatbot.mockResolvedValue(
+    chatbotRow([tutor, { ...tutor, chatMode: 'quizzer', isEnabled: false }])
+  )
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })
@@ -91,12 +112,9 @@ it('also denies source-preview frames when Quizzer is explicitly disabled', asyn
     chatMode: 'quizzer',
     content: [{ type: 'tool-call', toolName: 'KB_doc_query', result: fixture }],
   })
-  mocks.chatbot.mockResolvedValue({
-    mcpConfigurations: [
-      tutor,
-      { ...tutor, chatMode: 'quizzer', isEnabled: false },
-    ],
-  })
+  mocks.chatbot.mockResolvedValue(
+    chatbotRow([tutor, { ...tutor, chatMode: 'quizzer', isEnabled: false }])
+  )
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).not.toHaveBeenCalled()
 })

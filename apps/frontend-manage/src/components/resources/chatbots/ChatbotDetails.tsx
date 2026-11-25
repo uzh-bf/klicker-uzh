@@ -1364,7 +1364,10 @@ function ChatbotDetails({
   // Each setup section reports a status and a short summary of its saved
   // values, so a closed section shows what is done and what needs work.
   const savedValues = getChatbotRevisionValues(chatbot)
-  const connectedKnowledgeBase = enabledKnowledgeBases[0]
+  const defaultKnowledgeBase = enabledKnowledgeBases.find(
+    (knowledgeBase) =>
+      (knowledgeBase as { isDefault?: boolean }).isDefault === true
+  )
   const formatList = (items: string[]) =>
     new Intl.ListFormat(locale ?? 'en', {
       style: 'long',
@@ -1382,17 +1385,17 @@ function ChatbotDetails({
   const unsubmitted = <Values,>(saved: Values, live: Values) =>
     comparesLiveValues && hasUnsubmittedChanges(saved, live)
 
-  const materialsReadiness = connectedKnowledgeBase?.materialsReadiness
+  const materialsReadiness = defaultKnowledgeBase?.materialsReadiness
   // Failed resources never block a request, but the lecturer should notice.
   const materialsStatus = resolveSectionStatus({
     warning:
-      !connectedKnowledgeBase ||
+      !defaultKnowledgeBase ||
       (materialsReadiness?.failedResourceCount ?? 0) > 0,
   })
-  const materialsSummary = connectedKnowledgeBase
+  const materialsSummary = defaultKnowledgeBase
     ? [
         t('manage.resources.chatbotSummaryMaterialsConnected', {
-          name: connectedKnowledgeBase.name,
+          name: defaultKnowledgeBase.name,
         }),
         materialsReadiness
           ? t('manage.resources.chatbotSummaryMaterialsReadiness', {
@@ -1404,7 +1407,9 @@ function ChatbotDetails({
       ]
         .filter(Boolean)
         .join(' ')
-    : t('manage.resources.chatbotSummaryMaterialsNone')
+    : enabledKnowledgeBases.length > 0
+      ? t('manage.resources.chatbotSummaryMaterialsNoDefault')
+      : t('manage.resources.chatbotSummaryMaterialsNone')
 
   // A chatbot created before the suggestion existed has no stored student
   // information; its editor then starts from the suggested text, which still
@@ -1952,7 +1957,12 @@ function ChatbotDetails({
               chatbotId={chatbot.id}
               chatbotStatus={chatbot.status}
               courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
-              connectedKnowledgeBase={connectedKnowledgeBase}
+              connectedKnowledgeBases={enabledKnowledgeBases}
+              approvedCustomModes={chatbot.customModeConfig?.modes ?? []}
+              draftCustomModes={
+                chatbot.authoringRevision?.customModeConfig?.modes ?? []
+              }
+              perModeKbLinksEnabled={chatbot.perModeKbLinksEnabled}
               connectOnSelect
               proposedKnowledgeBaseName={chatbot.name}
               readOnly={paused}

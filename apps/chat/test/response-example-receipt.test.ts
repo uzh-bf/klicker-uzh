@@ -7,6 +7,7 @@ import { issuePreviewResponseExampleReceipt } from '../src/lib/server/responseEx
 const OWNER_ID = '6757e679-0452-45fe-9c43-2e3f033e3e18'
 const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2fb63'
+const KB_LINK_ID = 'c2de9f5f-3a1e-4b4c-9c7b-5e6f708192a3'
 const SOURCE_ID = '33ec1c89-f892-4ab6-97cb-27ed037ec33d'
 const KEY_ID = 'response-example-test-key'
 const ISSUER = 'https://chat.klicker.test'
@@ -88,6 +89,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
       ownerId: OWNER_ID,
       chatbotId: CHATBOT_ID,
       kbId: KB_ID,
+      kbLinkId: KB_LINK_ID,
       chatMode: 'tutor',
     })
 
@@ -110,6 +112,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
       ownerId: OWNER_ID,
       chatbotId: CHATBOT_ID,
       kbId: KB_ID,
+      kbLinkId: KB_LINK_ID,
       chatMode: 'tutor',
       evidenceReferences: [
         {
@@ -144,6 +147,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
         ownerId: OWNER_ID,
         chatbotId: CHATBOT_ID,
         kbId: KB_ID,
+        kbLinkId: KB_LINK_ID,
         chatMode: 'tutor',
       })
     ).resolves.toBeNull()
@@ -163,6 +167,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
         ownerId: OWNER_ID,
         chatbotId: CHATBOT_ID,
         kbId: KB_ID,
+        kbLinkId: KB_LINK_ID,
         chatMode: 'tutor',
       })
     ).resolves.toBeNull()
@@ -187,6 +192,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
         ownerId: OWNER_ID,
         chatbotId: CHATBOT_ID,
         kbId: KB_ID,
+        kbLinkId: KB_LINK_ID,
         chatMode: 'tutor',
       })
     ).resolves.toEqual({ unavailable: true })
@@ -202,6 +208,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
         ownerId: OWNER_ID,
         chatbotId: CHATBOT_ID,
         kbId: KB_ID,
+        kbLinkId: KB_LINK_ID,
         chatMode: 'writing-coach',
       })
     ).resolves.toBeNull()
@@ -219,6 +226,7 @@ describe('issuePreviewResponseExampleReceipt', () => {
         ownerId: OWNER_ID,
         chatbotId: CHATBOT_ID,
         kbId: KB_ID,
+        kbLinkId: KB_LINK_ID,
         chatMode: 'tutor',
       })
     ).resolves.toEqual({ unavailable: true })
@@ -234,6 +242,23 @@ describe('issuePreviewResponseExampleReceipt', () => {
         ownerId: OWNER_ID,
         chatbotId: CHATBOT_ID,
         kbId: undefined,
+        kbLinkId: undefined,
+        chatMode: 'tutor',
+      })
+    ).resolves.toEqual({ unavailable: true })
+  })
+
+  it('stays unavailable without the selected live link', async () => {
+    await expect(
+      issuePreviewResponseExampleReceipt({
+        requestMessages: [userMessage('user-1', 'Why?')],
+        responseMessage: assistantMessage(),
+        finishReason: 'stop',
+        isAborted: false,
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        kbId: KB_ID,
+        kbLinkId: undefined,
         chatMode: 'tutor',
       })
     ).resolves.toEqual({ unavailable: true })
