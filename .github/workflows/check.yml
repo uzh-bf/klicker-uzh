@@ -609,7 +609,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@bd5db31b36d529d4437a50959b55f95ada4b4573
+    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@af7c0462accdc98d6518fb3ecb4e02c6b0eb2906
     secrets: inherit
 
   priority-status:
