@@ -40,9 +40,6 @@ on:
       - 'v3'
       - 'v3*'
   pull_request:
-    branches:
-      - 'v3'
-      - 'v3*'
     # No "edited": a title or body edit never changes the tested tree, and a
     # base retarget is revalidated by the restack push or a close and reopen.
     # ready_for_review recomputes the required context against the builds that
