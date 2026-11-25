@@ -1,25 +1,20 @@
 'use client'
 
 import { Progress } from '@uzh-bf/design-system'
-import { Zap } from 'lucide-react'
+import { ChevronDown, ChevronUp, Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
+import { useId, useState } from 'react'
 import { useSettingsStore } from '../stores/settingsStore'
-import { formatCredits } from './thread-credits-format'
-
-function CreditBalance({ current, total }: { current: number; total: number }) {
-  return (
-    <>
-      {formatCredits(current)} / {formatCredits(total)}
-    </>
-  )
-}
+import { formatCreditPercent } from './thread-credits-format'
 
 /**
  * Keeps the balance and exhausted state visible in the main mobile layout
  * while the sidebar is closed. The embedded layout has its own
  * `EmbeddedCreditsBar`, so this is rendered only by `SidebarMain`.
  */
-export function MobileCreditsBar() {
+// `inline` renders the bar inside the framed chat's control row, which owns
+// the border and spacing.
+export function MobileCreditsBar({ inline = false }: { inline?: boolean }) {
   const t = useTranslations()
   const credits = useSettingsStore((state) => state.credits)
   const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
@@ -29,7 +24,11 @@ export function MobileCreditsBar() {
   return (
     <div
       data-cy="chat-mobile-credits-bar"
-      className="bg-background border-b px-3 py-1.5 md:hidden"
+      className={
+        inline
+          ? 'min-w-0 flex-1 px-1 md:hidden'
+          : 'bg-background border-b px-3 py-1.5 md:hidden'
+      }
     >
       <div className="flex items-center gap-1.5 text-xs">
         <Zap className="text-muted-foreground size-3.5 shrink-0" />
@@ -40,7 +39,7 @@ export function MobileCreditsBar() {
           data-cy="chat-mobile-credits-display"
           className="ml-auto shrink-0 font-medium tabular-nums"
         >
-          <CreditBalance current={credits.current} total={credits.total} />
+          {formatCreditPercent(credits.current, credits.total)}%
         </span>
       </div>
       {credits.current === 0 ? (
@@ -60,6 +59,10 @@ export function CreditsFooter() {
   const format = useFormatter()
   const credits = useSettingsStore((state) => state.credits)
   const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
+  // `null` until the participant toggles: the details then follow the
+  // balance, open while it is low and closed otherwise.
+  const [expanded, setExpanded] = useState<boolean | null>(null)
+  const detailsId = useId()
 
   // Say nothing rather than something false: before the fetch resolves (or if
   // it fails) the placeholder state would claim "0 left, never refills".
@@ -71,23 +74,39 @@ export function CreditsFooter() {
   // Warn while there is still room to change course, not once the budget is
   // gone. UZH yellow sits at ~1.2:1 against the grey track, so the warning tier
   // uses the destructive red too rather than a fill nobody can see.
-  const indicatorColor = percentage < 20 ? 'bg-destructive' : 'bg-primary'
+  const low = percentage < 20
+  const indicatorColor = low ? 'bg-destructive' : 'bg-primary'
+  // The explanation and refill date take four lines of a sidebar that should
+  // mostly show the conversation history, so they stay behind the row until
+  // they matter: once the balance runs low they open on their own.
+  const open = expanded ?? low
 
   return (
-    <div
-      data-cy="chat-credits-section"
-      className="space-y-1.5 border-t px-3 py-2.5"
-    >
-      <div className="flex items-center gap-2">
-        <Zap className="size-4" />
+    <div data-cy="chat-credits-section" className="border-t px-3 py-1.5">
+      {/* A real button so the details are reachable by keyboard; the progress
+          bar stays outside it so its progressbar semantics survive. */}
+      <button
+        type="button"
+        data-cy="chat-credits-toggle"
+        aria-expanded={open}
+        aria-controls={detailsId}
+        onClick={() => setExpanded(!open)}
+        className="hover:bg-accent focus-visible:ring-ring -mx-1 flex min-h-11 w-[calc(100%+0.5rem)] items-center gap-2 rounded-md px-1 text-start transition-colors focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+      >
+        <Zap aria-hidden="true" className="size-4 shrink-0" />
         <span className="text-sm font-medium">{t('chat.credits.title')}</span>
         <span
           data-cy="chat-credits-display"
           className="text-muted-foreground ml-auto text-sm tabular-nums"
         >
-          {Math.round(credits.current)} / {credits.total}
+          {formatCreditPercent(credits.current, credits.total)}%
         </span>
-      </div>
+        {open ? (
+          <ChevronUp aria-hidden="true" className="size-4 shrink-0" />
+        ) : (
+          <ChevronDown aria-hidden="true" className="size-4 shrink-0" />
+        )}
+      </button>
 
       <Progress
         value={percentage}
@@ -100,36 +119,43 @@ export function CreditsFooter() {
         // element; reuse the same i18n key as the visible title.
         aria-label={t('chat.credits.title')}
         className={{
-          root: 'h-1.5',
+          root: 'mt-0.5 h-1!',
           background: 'bg-muted',
-          indicator: `h-1.5 ${indicatorColor}`,
+          indicator: `h-1! ${indicatorColor}`,
         }}
         formatter={() => null}
+        // The indicator otherwise keeps a 40px minimum width for its (unused)
+        // label, so a nearly empty or exhausted balance would still look like
+        // a sizable bar. Each message moves the balance by a fraction of a
+        // credit, and the bar has to show that.
+        noMinWidth
       />
 
-      <p className="text-muted-foreground text-xs">
-        {t('chat.credits.costHint')}{' '}
-        {credits.nextResetAt
-          ? t('chat.credits.resetAt', {
-              date: format.dateTime(new Date(credits.nextResetAt), {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-            })
-          : t('chat.credits.resetNone')}
-      </p>
-
-      {credits.current === 0 ? (
-        <p
-          data-cy="chat-credits-empty-message"
-          className="text-muted-foreground text-xs"
-        >
-          {t('chat.credits.exhausted')}
+      <div id={detailsId} hidden={!open} className="mt-1.5 space-y-1">
+        <p className="text-muted-foreground text-xs">
+          {t('chat.credits.costHint')}{' '}
+          {credits.nextResetAt
+            ? t('chat.credits.resetAt', {
+                date: format.dateTime(new Date(credits.nextResetAt), {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              })
+            : t('chat.credits.resetNone')}
         </p>
-      ) : null}
+
+        {credits.current === 0 ? (
+          <p
+            data-cy="chat-credits-empty-message"
+            className="text-muted-foreground text-xs"
+          >
+            {t('chat.credits.exhausted')}
+          </p>
+        ) : null}
+      </div>
     </div>
   )
 }

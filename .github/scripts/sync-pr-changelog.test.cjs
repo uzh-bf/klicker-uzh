@@ -347,3 +347,62 @@ test('isolates configured executable merge drivers and preserves code-span text 
     else process.env[configurationVariable] = previous
   }
 })
+
+test('does not resolve Git through PATH during changelog analysis', (t) => {
+  const { directory, git, commit, root } = fixture(t)
+  const sourceSha = commit('source.txt', 'source\n', 'fix: synthetic source')
+  const bin = path.join(directory, 'poisoned-bin')
+  const executable = path.join(bin, 'git')
+  const marker = path.join(directory, 'poisoned-git-ran')
+  fs.mkdirSync(bin)
+  fs.writeFileSync(
+    executable,
+    [
+      '#!/bin/sh',
+      `printf invoked > ${JSON.stringify(marker)}`,
+      'exec /usr/bin/git "$@"',
+      '',
+    ].join('\n')
+  )
+  fs.chmodSync(executable, 0o755)
+  const modulePath = path.join(__dirname, 'sync-pr-changelog.cjs')
+  const script = `
+    const { createChangelog } = require(${JSON.stringify(modulePath)})
+    const generator = createChangelog({ remote: process.argv[1] })
+    generator.generate({
+      sourceSha: process.argv[2],
+      targetSha: process.argv[3],
+      headSha: process.argv[4],
+    }).then(
+      (result) => {
+        generator.close()
+        if (!result.body) {
+          console.error('Synthetic changelog body is missing')
+          process.exitCode = 1
+          return
+        }
+        process.stdout.write('ok')
+      },
+      (error) => {
+        generator.close()
+        console.error(error)
+        process.exitCode = 1
+      }
+    )
+  `
+  const output = execFileSync(
+    process.execPath,
+    ['-e', script, directory, sourceSha, root, sourceSha],
+    {
+      cwd: directory,
+      env: {
+        ...process.env,
+        PATH: [bin, process.env.PATH].filter(Boolean).join(path.delimiter),
+      },
+      encoding: 'utf8',
+    }
+  )
+
+  assert.equal(output, 'ok')
+  assert.equal(fs.existsSync(marker), false)
+})

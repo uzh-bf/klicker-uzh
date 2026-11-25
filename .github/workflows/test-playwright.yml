@@ -10,7 +10,6 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    branches: ['v3', 'v3*']
     types: [
         labeled,
         opened,

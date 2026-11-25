@@ -2,12 +2,22 @@ import { MAX_TOOL_NAME_LENGTH } from '@/src/lib/config/toolNames'
 
 export const REQUIRED_MCP_UNAVAILABLE_CODE = 'REQUIRED_MCP_UNAVAILABLE'
 
+/**
+ * Why a required MCP tool is unusable. A scope violation is an
+ * authorization/isolation failure and must stay fail-closed; only plain
+ * unavailability may be softened by a caller able to answer without
+ * retrieval.
+ */
+export type RequiredMCPUnavailableReason = 'unavailable' | 'scope_violation'
+
 export class RequiredMCPUnavailableError extends Error {
   readonly code = REQUIRED_MCP_UNAVAILABLE_CODE
+  readonly reason: RequiredMCPUnavailableReason
 
-  constructor() {
+  constructor(reason: RequiredMCPUnavailableReason = 'unavailable') {
     super('Required MCP tool is unavailable')
     this.name = 'RequiredMCPUnavailableError'
+    this.reason = reason
   }
 }
 
@@ -43,4 +53,28 @@ export function parseMCPRuntimePolicy(parameters: unknown): MCPRuntimePolicy {
   }
 
   return { required: true, toolAlias: parameters.toolAlias }
+}
+
+/**
+ * Checks if a tool name matches any of the allowed patterns
+ * Supports wildcard patterns like "search*", "*plot*", "execute_*"
+ */
+export function isToolAllowed(
+  toolName: string,
+  allowedTools: string[]
+): boolean {
+  if (!allowedTools || allowedTools.length === 0) {
+    return true // If no filters specified, allow all tools
+  }
+
+  return allowedTools.some((pattern) => {
+    // Escape regex syntax so only the documented wildcards stay special.
+    const regexPattern = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*') // Replace * with .*
+      .replace(/\?/g, '.') // Replace ? with .
+
+    const regex = new RegExp(`^${regexPattern}$`, 'i')
+    return regex.test(toolName)
+  })
 }

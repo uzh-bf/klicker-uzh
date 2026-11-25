@@ -1,4 +1,4 @@
-import { Column, Img, Markdown, Row, Section } from '@react-email/components'
+import { Column, Img, Markdown, Row, Section } from 'react-email'
 
 function Footer() {
   return (
