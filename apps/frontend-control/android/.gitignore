@@ -1,0 +1,6 @@
+# Bubblewrap regenerates the Android project from twa-manifest.json
+# (`bubblewrap update`). Only the configuration is tracked; the generated
+# project, build outputs and every signing key stay out of this public repo.
+/*
+!/.gitignore
+!/twa-manifest.json

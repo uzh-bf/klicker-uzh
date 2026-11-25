@@ -1419,6 +1419,8 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 **When bumping prd image tags** in `deploy/env-uzh-prd/values.yaml`: if the new tag is the first release whose CI built `backend-docker-migrator-arm`, set `migrator.enabled: true` in the same commit — that is what switches prd from manual migrations to the automatic hook. Conversely, rolling prd back to a tag from before this feature requires setting it to `false` again, or the hook fails on a missing image and blocks the sync.
 
+The Google Play build of the control app is not part of this flow. It is a Trusted Web Activity that is versioned and built separately; see [App Store Packaging](./app-store-packaging.md).
+
 ## Deploy parity across `v3` and `v3-ai`
 
 **Production renders `deploy/` from one branch and runs images built from the
