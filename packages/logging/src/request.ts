@@ -6,12 +6,10 @@ export interface RequestContext {
   [key: string]: string | undefined
   requestId: string
   correlationId: string
-  traceId?: string
-  spanId?: string
 }
 
 export type OptionalRequestContext = Partial<
-  Pick<RequestContext, 'requestId' | 'correlationId' | 'traceId' | 'spanId'>
+  Pick<RequestContext, 'requestId' | 'correlationId'>
 >
 
 export function normalizeDiagnosticId(
@@ -26,23 +24,14 @@ export function resolveRequestContext(
   headers: {
     requestId?: DiagnosticHeader
     correlationId?: DiagnosticHeader
-    traceId?: DiagnosticHeader
-    spanId?: DiagnosticHeader
   },
   generateId: () => string = () => globalThis.crypto.randomUUID()
 ): RequestContext {
   const requestId = normalizeDiagnosticId(headers.requestId) ?? generateId()
   const correlationId =
     normalizeDiagnosticId(headers.correlationId) ?? requestId
-  const traceId = normalizeDiagnosticId(headers.traceId)
-  const spanId = normalizeDiagnosticId(headers.spanId)
 
-  return {
-    requestId,
-    correlationId,
-    ...(traceId ? { traceId } : {}),
-    ...(spanId ? { spanId } : {}),
-  }
+  return { requestId, correlationId }
 }
 
 /**
@@ -52,19 +41,13 @@ export function resolveRequestContext(
 export function resolveOptionalRequestContext(headers: {
   requestId?: DiagnosticHeader
   correlationId?: DiagnosticHeader
-  traceId?: DiagnosticHeader
-  spanId?: DiagnosticHeader
 }): OptionalRequestContext {
   const requestId = normalizeDiagnosticId(headers.requestId)
   const correlationId = normalizeDiagnosticId(headers.correlationId)
-  const traceId = normalizeDiagnosticId(headers.traceId)
-  const spanId = normalizeDiagnosticId(headers.spanId)
 
   return {
     ...(requestId ? { requestId } : {}),
     ...(correlationId ? { correlationId } : {}),
-    ...(traceId ? { traceId } : {}),
-    ...(spanId ? { spanId } : {}),
   }
 }
 

@@ -5,6 +5,11 @@ import pino, {
   type LoggerOptions,
 } from 'pino'
 import { normalizeLogLevel } from './levels.js'
+import {
+  type DiagnosticHeader,
+  type RequestContext,
+  resolveRequestContext,
+} from './request.js'
 
 export type AppLogger = Logger
 
@@ -87,4 +92,58 @@ export function createLogger(
       sync: true,
     })
   )
+}
+
+export interface RequestLogResponse {
+  statusCode: number
+  setHeader(name: string, value: string): unknown
+  once(event: 'finish', listener: () => void): unknown
+}
+
+export interface StartRequestLogOptions {
+  method: string
+  headers: Record<string, DiagnosticHeader>
+  res: RequestLogResponse
+  message: string
+  /** Resolved when the response finishes, so late route bindings count. */
+  route: () => string
+  /** Return true to skip the completion record (health checks, or a failure that was already logged). */
+  skip?: () => boolean
+}
+
+/**
+ * Bind a request-scoped child logger, echo the request ID, and write one
+ * `http.request.completed` record when the response finishes.
+ */
+export function startRequestLog(
+  root: AppLogger,
+  options: StartRequestLogOptions
+): { requestContext: RequestContext; log: AppLogger; startedAt: number } {
+  const requestContext = resolveRequestContext({
+    requestId: options.headers['x-request-id'],
+    correlationId: options.headers['x-correlation-id'],
+  })
+  const log = root.child(requestContext)
+  const startedAt = performance.now()
+  options.res.setHeader('x-request-id', requestContext.requestId)
+
+  options.res.once('finish', () => {
+    if (options.skip?.()) return
+    const failed = options.res.statusCode >= 500
+    log[failed ? 'error' : 'info'](
+      {
+        event: 'http.request.completed',
+        http: {
+          method: options.method,
+          route: options.route(),
+          statusCode: options.res.statusCode,
+          durationMs: Math.round(performance.now() - startedAt),
+        },
+        outcome: failed ? 'failure' : 'success',
+      },
+      options.message
+    )
+  })
+
+  return { requestContext, log, startedAt }
 }
