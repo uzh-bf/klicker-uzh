@@ -23,7 +23,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0008](./0008-use-growthbook-for-feature-flags.md) — Use GrowthBook for shared feature flags
 - [0019](./0019-chatbot-config-postgresql-authoritative.md) — Chatbot configuration is PostgreSQL-authoritative; runtimes compile it per request
 - [0020](./0020-two-tier-chatbot-approval.md) — Two-tier approval: account AI capability plus per-chatbot publication
-- [0021](./0021-templated-standard-modes-reviewed-custom-modes.md) — Standard modes compose with reviewed custom modes; capability-gated Quizzer and all personas layer over fixed scaffolding
+- [0021](./0021-templated-standard-modes-reviewed-custom-modes.md) — Standard and reviewed custom modes share platform safeguards. Quizzer can run with or without course retrieval.
 - [0022](./0022-no-student-text-in-manage.md) — The manage surface shows no student-authored text
 - [0023](./0023-global-learning-analytics-choice-and-course-gate.md) — Global Learning Analytics choice with an independent course gate
 - [0024](./0024-research-export-release-boundary.md) — Research eligibility is checked at export release
