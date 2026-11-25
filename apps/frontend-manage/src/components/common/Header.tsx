@@ -22,6 +22,7 @@ import {
   Tooltip,
 } from '@uzh-bf/design-system'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -145,23 +146,6 @@ function Header({
           },
         ]
       : []),
-    ...(canAuthorChatbots
-      ? [
-          {
-            key: 'chatbots-item',
-            type: 'link' as const,
-            label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
-            badge: t('manage.general.betaFeatures'),
-            data: { cy: 'chatbots' },
-            className: {
-              label: 'bg-opacity-100',
-              text: 'mr-8',
-              badge: 'bg-green-700 hover:bg-green-800',
-            },
-          },
-        ]
-      : []),
   ]
 
   const leftNavigation: NavigationItemProps[] = [
@@ -190,31 +174,30 @@ function Header({
       active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
-
-    {
-      type: 'dropdown',
-      key: 'resources-menubar-item',
-      label: t('manage.general.resources'),
-      icon: faBolt,
-      active:
-        router.pathname.startsWith('/resources/competenceTrees') ||
-        router.pathname === '/resources/answerCollections' ||
-        router.pathname === '/resources/catalog' ||
-        router.pathname === '/resources/userGroups' ||
-        router.pathname === '/resources/mediaLibrary' ||
-        router.pathname.startsWith('/resources/knowledgeBases') ||
-        router.pathname.startsWith('/resources/chatbots'),
-      notification:
-        pendingRequestData &&
-        pendingRequestData.countCatalogSharingRequests !== 0,
-      elements: resourceElements,
-      data: { cy: 'resources' },
-      className: {
-        icon: 'text-orange-400',
-        content: 'flex flex-col gap-0.5',
-      },
-    },
   ]
+
+  const resourcesNavigation: NavigationDropdownItemProps = {
+    type: 'dropdown',
+    key: 'resources-menubar-item',
+    label: t('manage.general.resources'),
+    icon: faBolt,
+    active:
+      router.pathname.startsWith('/resources/competenceTrees') ||
+      router.pathname === '/resources/answerCollections' ||
+      router.pathname === '/resources/catalog' ||
+      router.pathname === '/resources/userGroups' ||
+      router.pathname === '/resources/mediaLibrary' ||
+      router.pathname.startsWith('/resources/knowledgeBases'),
+    notification:
+      pendingRequestData &&
+      pendingRequestData.countCatalogSharingRequests !== 0,
+    elements: resourceElements,
+    data: { cy: 'resources' },
+    className: {
+      icon: 'text-orange-400',
+      content: 'flex flex-col gap-0.5',
+    },
+  }
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [
     ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
@@ -355,7 +338,7 @@ function Header({
         className="print:hidden! flex h-full w-full flex-row flex-wrap items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
-        <div className="ml-4 flex min-w-0 max-w-[calc(100%-1rem)] flex-row items-center gap-1.5 overflow-x-auto">
+        <div className="ml-4 flex min-w-0 max-w-[calc(100%-1rem)] flex-row items-center gap-1.5 overflow-x-auto max-sm:flex-wrap">
           <Image
             priority
             src="/img/klicker_icon_transparent.png"
@@ -367,8 +350,23 @@ function Header({
           />
           <Navigation
             items={leftNavigation}
-            className={{ root: 'shadow-none' }}
+            className={{
+              root: 'shadow-none max-sm:gap-0 max-sm:px-0 max-sm:[&>button]:px-2',
+            }}
           />
+          {canAuthorChatbots && (
+            <Link
+              href="/resources/chatbots"
+              aria-current={
+                router.pathname === '/resources/chatbots' ? 'page' : undefined
+              }
+              data-cy="chatbots"
+              className="shrink-0 rounded-sm px-3 py-1 text-base font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:-outline-offset-2 aria-[current=page]:text-black aria-[current=page]:underline"
+            >
+              {t('manage.resources.chatbots')}
+            </Link>
+          )}
+          <Navigation items={[resourcesNavigation]} />
           {learningAnalyticsEnabled ? (
             analyticsMenu
           ) : (

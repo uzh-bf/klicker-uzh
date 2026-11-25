@@ -164,6 +164,7 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
 
 interface ToolFallbackProps {
   toolName: string
+  toolCallId?: string
   argsText: string
   result?: unknown
   status: { type: string }
@@ -172,6 +173,7 @@ interface ToolFallbackProps {
 
 export const ToolFallback: FC<ToolFallbackProps> = ({
   toolName,
+  toolCallId,
   argsText,
   result,
   status,
@@ -220,7 +222,14 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     toolName === SHOW_EXPLANATION_TOOL_NAME &&
     isRejectedExplanation(result, isError)
   if (toolName === SHOW_EXPLANATION_TOOL_NAME && !explanationRejected) {
-    return <ExplanationCard result={result} status={status} isError={isError} />
+    return (
+      <ExplanationCard
+        toolCallId={toolCallId}
+        result={result}
+        status={status}
+        isError={isError}
+      />
+    )
   }
 
   if (toolName === SHOW_FEEDBACK_TOOL_NAME) {

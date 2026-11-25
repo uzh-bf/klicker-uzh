@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.100](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.99...v3.4.0-alpha.100) (2026-11-23)
+
+
+### Bug Fixes
+
+* **chat:** dash inferred concept map relations ([#6991](https://github.com/uzh-bf/klicker-uzh/issues/6991)) ([2792982](https://github.com/uzh-bf/klicker-uzh/commit/2792982427bd27279fc5c66b741ef1a062c311cf))
+* **chat:** keep a tapped concept visible above the details sheet ([#6999](https://github.com/uzh-bf/klicker-uzh/issues/6999)) ([b1aa06c](https://github.com/uzh-bf/klicker-uzh/commit/b1aa06c4d2ffb4341fe612e856d0b998f8733728))
+* **chat:** show a repeated concept map description once ([#6996](https://github.com/uzh-bf/klicker-uzh/issues/6996)) ([5e202a9](https://github.com/uzh-bf/klicker-uzh/commit/5e202a9997509f4acf24a3004735eca00ac8fda9))
+
+
+### Enhancements
+
+* **chat:** write interactive explanations with a pinned writer model ([#6995](https://github.com/uzh-bf/klicker-uzh/issues/6995)) ([2c0d9c6](https://github.com/uzh-bf/klicker-uzh/commit/2c0d9c6e044729626c85dfa7c3b0d7edd269a0db))
+
 ## [3.4.0-alpha.99](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.98...v3.4.0-alpha.99) (2026-11-23)
 
 

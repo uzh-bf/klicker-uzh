@@ -1579,9 +1579,10 @@ async function handlePOST(
             },
           })
       } catch (error) {
-        console.warn('Explainer service unavailable; tool not offered', {
-          error: error instanceof Error ? error.message : String(error),
-        })
+        logger.warn(
+          { event: 'chat.explainer.unavailable', err: error },
+          'Explainer service unavailable; tool not offered'
+        )
       }
     }
     const explanationToolActive = SHOW_EXPLANATION_TOOL_NAME in explanationTools
