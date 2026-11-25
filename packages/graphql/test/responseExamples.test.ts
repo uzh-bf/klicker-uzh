@@ -335,7 +335,7 @@ describe('response-example foundation', () => {
 
     expect(ownerSet).not.toBeNull()
     expect(ownerSet?.chatbotId).toBe(chatbot.id)
-    expect(ownerSet?.chatModes).toEqual(['explainer', 'tutor'])
+    expect(ownerSet?.chatModes).toEqual(['explainer', 'quizzer', 'tutor'])
     expect(ownerSet?.examples).toHaveLength(2)
     expect(
       ownerSet?.examples.map(({ chatMode, studentMessage, status }) => ({
@@ -1023,7 +1023,7 @@ describe('response-example foundation', () => {
 
   it.each(
     quizzerDenialCases
-  )('denies Quizzer and both approval paths for $label', async ({
+  )('keeps Quizzer mode discovery separate from approval eligibility for $label', async ({
     quizzerEnabled,
     rows,
   }) => {
@@ -1058,7 +1058,11 @@ describe('response-example foundation', () => {
       { chatbotId: chatbot.id },
       userOneCtx
     )
-    expect(listed?.chatModes).toEqual(['explainer', 'tutor'])
+    expect(listed?.chatModes).toEqual(
+      quizzerEnabled
+        ? ['explainer', 'quizzer', 'tutor']
+        : ['explainer', 'tutor']
+    )
     expect(
       listed?.examples.find(({ id }) => id === candidate.id)
     ).toMatchObject({
