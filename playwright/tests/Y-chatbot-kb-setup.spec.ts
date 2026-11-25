@@ -113,8 +113,13 @@ test.describe('Chatbot knowledge base setup', () => {
       page.getByTestId('chatbot-section-materials')
     ).not.toHaveAttribute('data-status', 'warning')
 
-    // Choosing the empty option disconnects the material.
+    // Review the impact while the source is still connected.
     await selectOption(page, '[data-cy="chatbot-kb-select"]', NO_KB_OPTION)
+    await expect(page.getByTestId('chatbot-kb-detach-modal')).toBeVisible()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+    await page.getByTestId('confirm-chatbot-kb-detach').click()
     await expect(page.getByTestId('chatbot-section-materials')).toHaveAttribute(
       'data-status',
       'warning'
