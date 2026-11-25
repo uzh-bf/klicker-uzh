@@ -1627,16 +1627,18 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
     })
 
-    await Promise.all([
-      attachKbToChatbot(
-        { kbId: firstKb.id, chatbotId: chatbot.id },
-        userOneCtx
-      ),
-      attachKbToChatbot(
-        { kbId: secondKb.id, chatbotId: chatbot.id },
-        userOneCtx
-      ),
-    ])
+    await withPluralKbWrites(() =>
+      Promise.all([
+        attachKbToChatbot(
+          { kbId: firstKb.id, chatbotId: chatbot.id },
+          userOneCtx
+        ),
+        attachKbToChatbot(
+          { kbId: secondKb.id, chatbotId: chatbot.id },
+          userOneCtx
+        ),
+      ])
+    )
 
     await expect(
       prisma.kBChatbot.count({

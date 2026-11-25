@@ -1552,13 +1552,9 @@ export async function attachKbToChatbot(
           },
         },
       })
-      if (
-        bot.knowledgeBases.some((link) => link.kbId === kbId && link.isDefault)
-      ) {
-        return getKbChatbotBindingOrThrow(prisma, chatbotId, ctx.user.sub)
-      }
+      const currentDefault = bot.knowledgeBases.find((link) => link.isDefault)
       const previous = bot.knowledgeBases.find((link) => link.kbId !== kbId)
-      if (previous) {
+      if (currentDefault?.kbId !== kbId && previous) {
         const explicitAssignments = getModeLinkBacklinks(
           bot.customModeConfig,
           bot.draftConfig,
