@@ -70,6 +70,7 @@ import {
 import {
   getCustomModeTurnSettings,
   isParticipantReasoningVisible,
+  isSafeDocQueryBinding,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
@@ -607,7 +608,7 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z.string().optional().default('tutor'),
+    selectedMode: z.string().optional(),
     reasoningEffort: z.string().min(1).optional().default('none'),
     answerStyle: answerStyleSchema,
     answerTone: answerToneSchema,
@@ -815,9 +816,13 @@ export async function POST(
     { customModeConfig: chatbot.customModeConfig }
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
-  if (!Object.hasOwn(modeOptions, selectedMode)) {
+  if (!selectedMode || !Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
-      { error: `Unsupported chat mode: ${requestedMode}` },
+      {
+        error: requestedMode
+          ? `Unsupported chat mode: ${requestedMode}`
+          : 'No chat mode is available',
+      },
       { status: 400 }
     )
   }
@@ -1001,6 +1006,9 @@ export async function POST(
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
+  )
+  const configuredQuizzerRetrieval = selectedMCPConfigurations.some(
+    isSafeDocQueryBinding
   )
 
   let scopedKbIds: string[] | undefined
@@ -1607,7 +1615,11 @@ export async function POST(
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
 
-    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+    if (
+      selectedMode === 'quizzer' &&
+      configuredQuizzerRetrieval &&
+      !quizzerDocQueryToolName
+    ) {
       if (!isElearningThread) {
         await failOrDiscardUnstartedClaim('mcp.quizzer')
         return NextResponse.json(
@@ -1639,6 +1651,7 @@ export async function POST(
         answerStyle: appliedAnswerStyle,
         answerTone: appliedAnswerTone,
         customModeConfig: chatbot.customModeConfig,
+        ...(isElearningThread ? { isElearningOrigin: true } : {}),
         ...(imageVisionEnabled ? { courseImageVision: true } : {}),
       }
     )

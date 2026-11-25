@@ -107,9 +107,9 @@ Custom modes defined only in the authored preview configuration remain
 previewable, but capture is unavailable until the review mode contract supports
 them. Legacy prompt-key modes retain their existing review support.
 
-Quizzer selection and approval in response-example review use its standard-mode
-setting and the same effective document-query binding resolver as participant
-Chat. A disabled exact Quizzer binding blocks inheritance on that server.
+An enabled Quizzer appears in the mode list even without a knowledge base.
+Capturing or approving a source-backed Quizzer example also requires an effective
+document-query binding. A disabled exact Quizzer binding blocks inheritance on that server.
 Existing examples remain visible for inspection and rejection when their mode
 becomes unavailable; availability does not erase the lecturer's review record.
 
@@ -775,16 +775,15 @@ custom modes use their configured description.
 defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and the
 approved custom-mode configuration. Participant paths offer only the custom-mode keys the chatbot
 carries as approved configuration; the owner preview may additionally offer saved but unapproved
-modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
-Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
-knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
+modes. A draft may turn off every standard mode. Submission and approval require at least one
+participant-selectable standard or custom mode. Any standard mode can stand alone. A missing or malformed value derives all three flags from legacy `enabled: false`
 opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
 derives Quizzer from its legacy opt-out/default. Custom-mode flags remain
 legacy-controlled. The resolver never suppresses a mode chatbot-wide: a mode with
 no retrieval binding of its own stays offered, and a mode whose declared
 required binding is unavailable fails closed at request time instead of
-disappearing. Quizzer remains the capability-gated exception and appears only
-with a provably restricted course `doc_query` binding. Exact Quizzer
+disappearing. Quizzer can practise a course topic or use learner-supplied material without a KB.
+An eLearning-origin conversation always follows its materials-only policy. Exact Quizzer
 configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
 required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
@@ -796,7 +795,7 @@ instead of allowing requests the server would reject.
 
 Platform standard-mode contract changes apply automatically to every chatbot that exposes that
 mode. Stored standard-mode text remains lower-priority lecturer guidance rather than replacing
-the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
+the contract; no stored prompt migration is required. With a retrieval tool, Quizzer chooses one specific grounded
 practice topic when the student's request is unclear and asks for simple confirmation rather than
 presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
 presents one concise, exam-style course question at a time from retrieved course material without a
@@ -813,9 +812,8 @@ identified from the visible attempts and grounded material, it does not issue th
 checkpoint. This checkpoint is explicitly a short-round snapshot, not a claim that the topic is
 complete, and it does not use grades, proficiency, mastery, or other broad ability claims. Quizzer
 never infers coverage from retrieval exhaustion or a partial list of retrieved topics. It does not
-present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course retrieval
-binding do not expose
-Quizzer. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
+present questions as lecturer-authored or exam-equivalent. Without retrieval, ordinary chat and owner preview use the learner’s topic or passage
+for practice and avoid claims about official course material. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
 returns the required-tool-unavailable response instead of generating an ungrounded question. Once
 discovered, the route requires that document-query tool on Quizzer's first model step, then restores
 automatic tool selection for later steps. Optional retrieval outages can still degrade gracefully in
@@ -1409,8 +1407,7 @@ an existing conversation. Published chatbots continue using their live configura
 saved revision is approved. Context changes do not alter a response already in flight or
 earlier messages.
 
-Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. At
-least one of Tutor, Explainer, or Writing Coach must remain enabled; Quizzer alone is invalid.
+Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. Any single standard mode or eligible custom mode can satisfy the publication rule.
 Missing historical flags normalize to false. An older mutation that omits the new flag preserves
 the stored choice. `saveChatbotRevision` locks the chatbot row and checks
 `expectedRevisionVersion`; if the revision version has advanced, it rejects the save as an edit

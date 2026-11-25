@@ -1566,13 +1566,7 @@ function ChatbotAuthoring({
                               description={t(
                                 'manage.resources.chatbotModeTutorDescription'
                               )}
-                              disabled={
-                                controlsDisabled ||
-                                revisionPending ||
-                                (values.tutorEnabled &&
-                                  !values.explainerEnabled &&
-                                  !values.writingCoachEnabled)
-                              }
+                              disabled={controlsDisabled}
                               enabled={values.tutorEnabled}
                               mode="tutor"
                               onChange={(enabled) => {
@@ -1590,13 +1584,7 @@ function ChatbotAuthoring({
                               description={t(
                                 'manage.resources.chatbotModeExplainerDescription'
                               )}
-                              disabled={
-                                controlsDisabled ||
-                                revisionPending ||
-                                (values.explainerEnabled &&
-                                  !values.tutorEnabled &&
-                                  !values.writingCoachEnabled)
-                              }
+                              disabled={controlsDisabled}
                               enabled={values.explainerEnabled}
                               mode="explainer"
                               onChange={(enabled) => {
@@ -1632,13 +1620,7 @@ function ChatbotAuthoring({
                               description={t(
                                 'manage.resources.chatbotModeWritingCoachDescription'
                               )}
-                              disabled={
-                                controlsDisabled ||
-                                revisionPending ||
-                                (!values.tutorEnabled &&
-                                  !values.explainerEnabled &&
-                                  values.writingCoachEnabled)
-                              }
+                              disabled={controlsDisabled}
                               enabled={values.writingCoachEnabled}
                               mode="writing-coach"
                               onChange={(enabled) => {
