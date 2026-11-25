@@ -543,6 +543,8 @@ export type StreamToolCall = {
 export type StreamOptions = {
   /** Replaces the default `assistant reply #N` answer text. */
   text?: string
+  /** Overrides the answer text by request number, starting at one. */
+  textByCall?: string[]
   /** Emits the answer as separate text deltas, in order. */
   textChunks?: string[]
   /** Delays each streamed SSE line by this many milliseconds. */
@@ -626,9 +628,16 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
  * Returns distinguishable streamed reply per call (`assistant reply #1`, `#2`, …)
  * unless `options.text` overrides the answer text.
  */
-export async function mockChatStream(page: Page, options: StreamOptions = {}) {
+export async function mockChatStream(
+  page: Page,
+  options: StreamOptions = {},
+  chatbotId = CHATBOT_ID
+) {
   if (options.chunkDelayMs !== undefined) {
-    const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
+    const lines = makeStreamLines(
+      options.textByCall?.[0] ?? options.text ?? 'assistant reply #1',
+      options
+    )
 
     await page.addInitScript(
       ({
@@ -764,7 +773,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
         }
       },
       {
-        chatbotPath: `/api/chatbots/${CHATBOT_ID}/chat`,
+        chatbotPath: `/api/chatbots/${chatbotId}/chat`,
         lines,
         delayMs: options.chunkDelayMs,
         pauseAfterTextChunk: options.pauseAfterTextChunk,
@@ -775,14 +784,16 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
   }
 
   let counter = 0
-  await page.route(`**/api/chatbots/${CHATBOT_ID}/chat`, (route) => {
+  await page.route(`**/api/chatbots/${chatbotId}/chat`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
     counter += 1
     return route.fulfill({
       status: 200,
       headers: { 'content-type': 'text/event-stream' },
       body: makeStreamBody(
-        options.text ?? `assistant reply #${counter}`,
+        options.textByCall?.[counter - 1] ??
+          options.text ??
+          `assistant reply #${counter}`,
         options
       ),
     })

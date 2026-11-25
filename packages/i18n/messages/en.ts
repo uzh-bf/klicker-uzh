@@ -18,6 +18,9 @@ export default {
       unavailable: 'This course image is currently unavailable.',
       retry: 'Retry image',
     },
+    workspace: {
+      toolbar: 'Panel controls',
+    },
     graphPanel: {
       missingEndpoint: 'Unknown concept',
       aiGenerated: 'AI-generated',
@@ -32,6 +35,8 @@ export default {
       resize: 'Resize knowledge graph',
       resizeHint:
         'Drag to resize. The arrow keys also resize the knowledge graph.',
+      enlarge: 'Enlarge graph beside the chat',
+      shrink: 'Return graph to its narrow width',
       ask: 'Ask about this',
       showConcept: 'Show this concept in the knowledge graph',
       nodePrompt: 'Help me understand the concept “{topic}”.',
@@ -446,6 +451,21 @@ export default {
         openLarge: 'Open large',
         close: 'Close',
         loading: 'Loading...',
+        openInPanel: 'Open beside the chat',
+        closePanel: 'Close explanation panel',
+        shownInPanel: 'shown beside the chat',
+        aiDraft: 'AI-generated draft',
+        previous: 'Previous explanation',
+        next: 'Next explanation',
+        position: '{current} of {total}',
+        reload: 'Restart explanation',
+        enlarge: 'Enlarge explanation beside the chat',
+        shrink: 'Show explanation narrower',
+        fullscreen: 'Show explanation in fullscreen',
+        restore: 'Show the chat beside the explanation again',
+        resize: 'Resize explanation',
+        resizeHint:
+          'Drag to resize. The arrow keys also resize the explanation.',
       },
       feedback: {
         preparing: 'Preparing feedback...',
@@ -5303,8 +5323,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSummaryModesNone: 'No learning mode is on.',
       chatbotSummaryModesExtras:
         '{framing, select, set {There is a framing} other {There is no framing}} and {custom, plural, =0 {no custom modes} one {one custom mode} other {# custom modes}}.',
-      chatbotSummaryModesQuizzerNeedsKb:
-        'Quizzer needs a knowledge base, so students do not see it yet.',
       chatbotSummaryModelFixed: 'Students use {model}.',
       chatbotSummaryModelFixedReasoning:
         'Students use {model} with {effort} reasoning effort.',
@@ -5394,7 +5412,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Choose which standard modes participants can use',
       chatbotSetupModesTitle: 'Learning modes',
       chatbotSetupModesDescriptionLong:
-        'Choose the standard modes available to participants. Writing Coach supports feedback on writing. Quizzer needs course-material retrieval.',
+        'Choose the learning modes participants can use. You can offer only custom modes.',
       chatbotModeWritingCoach: 'Writing Coach',
       chatbotModeWritingCoachDescription:
         'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
@@ -5407,9 +5425,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Practises exam-style course questions one at a time with formative feedback.',
-      chatbotModeInvariant: 'Keep Tutor, Explainer or Writing Coach enabled.',
+      chatbotModeInvariant:
+        'Before publishing, enable a standard mode or add a custom mode.',
       chatbotModeQuizzerCapabilityNote:
-        'Quizzer may still be hidden when its course-material capability is unavailable.',
+        'With a knowledge base, Quizzer uses course materials. Without one, students can practise a course topic or provide a passage.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
       chatbotCustomModesTitle: 'Custom modes',

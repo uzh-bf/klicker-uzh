@@ -907,32 +907,54 @@ describe('Integration tests for lecturer chatbot management', () => {
       }
     })
 
-    it('rejects disabling all standard modes without writing', async () => {
+    it('stores an explicit all-off mode choice without exposing its marker', async () => {
       const chatbot = await seedOwnedChatbot()
+      const allOff = {
+        ...config,
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+      }
 
       await expect(
         saveChatbotRevision(
           {
             chatbotId: chatbot.id,
             expectedRevisionVersion: chatbot.revisionVersion,
-            input: {
-              standardModeConfig: {
-                ...config,
-                tutorEnabled: false,
-                explainerEnabled: false,
-                quizzerEnabled: false,
-              },
-            },
+            input: { standardModeConfig: allOff },
           },
           userOneCtx
         )
-      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+      ).resolves.toMatchObject({
+        standardModeConfig: expect.objectContaining({
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+        }),
+        authoringRevision: {
+          standardModeConfig: expect.objectContaining({
+            tutorEnabled: false,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+          }),
+        },
+      })
       await expect(
         prisma.chatbot.findUniqueOrThrow({
           where: { id: chatbot.id },
           select: { standardModeConfig: true, revisionVersion: true },
         })
-      ).resolves.toEqual({ standardModeConfig: null, revisionVersion: 0 })
+      ).resolves.toMatchObject({
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+        },
+        revisionVersion: 1,
+      })
     })
 
     it('preserves an existing long framing note in a complete save', async () => {

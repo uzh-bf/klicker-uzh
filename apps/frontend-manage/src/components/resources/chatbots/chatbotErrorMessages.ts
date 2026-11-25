@@ -11,6 +11,7 @@ type ChatbotErrorCode =
   | 'CHATBOT_NOT_EDITABLE'
   | 'CHATBOT_EDIT_CONFLICT'
   | 'CHATBOT_DISCLAIMER_CONFLICT'
+  | 'CHATBOT_MODE_REQUIRED'
   | 'CHATBOT_DISCLAIMER_REQUIRED'
   | 'BAD_USER_INPUT'
   | 'FORBIDDEN'
@@ -19,6 +20,7 @@ export type ChatbotErrorMessageKey =
   | 'manage.resources.chatbotErrorNotEditable'
   | 'manage.resources.chatbotErrorEditConflict'
   | 'manage.resources.chatbotErrorDisclaimerConflict'
+  | 'manage.resources.chatbotModeInvariant'
   | 'manage.resources.chatbotErrorBadUserInput'
   | 'manage.resources.chatbotErrorForbidden'
   | 'manage.resources.chatbotCreateError'
@@ -40,6 +42,7 @@ const errorMessageKeys: Record<ChatbotErrorCode, ChatbotErrorMessageKey> = {
     'manage.resources.chatbotErrorDisclaimerConflict',
   CHATBOT_DISCLAIMER_REQUIRED:
     'manage.resources.chatbotPublicationDisclaimerRequired',
+  CHATBOT_MODE_REQUIRED: 'manage.resources.chatbotModeInvariant',
   BAD_USER_INPUT: 'manage.resources.chatbotErrorBadUserInput',
   FORBIDDEN: 'manage.resources.chatbotErrorForbidden',
 }

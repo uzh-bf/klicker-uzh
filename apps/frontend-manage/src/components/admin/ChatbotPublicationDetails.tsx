@@ -137,6 +137,9 @@ function ChatbotPublicationDetails({
             config?.quizzerEnabled && t('manage.resources.chatbotModeQuizzer'),
             config?.writingCoachEnabled &&
               t('manage.resources.chatbotModeWritingCoach'),
+            ...(revision?.customModeConfig?.modes ?? []).map(
+              (mode) => mode.name
+            ),
           ]
             .filter(Boolean)
             .join(', ') || unknown}

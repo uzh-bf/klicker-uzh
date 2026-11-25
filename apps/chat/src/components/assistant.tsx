@@ -28,17 +28,18 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
-import { OpenInNewTabButton } from './open-in-new-tab-button'
-import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
-import {
-  ChatKnowledgeGraphPanel,
-  useChatGraphPanel,
-} from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { HandoffPrefill } from './handoff-prefill'
+import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import { ModeSwitcher } from './mode-switcher'
+import { OpenInNewTabButton } from './open-in-new-tab-button'
 import { Thread } from './thread'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import {
+  ChatWorkspaceProvider,
+  useChatWorkspace,
+} from './workspace/chat-workspace-context'
+import { ChatWorkspaceLayout } from './workspace/chat-workspace-layout'
 
 interface ChatbotDisclaimer {
   id: string
@@ -149,12 +150,17 @@ export function Assistant({
           initialModeOptions={initialModeOptions}
         >
           <HandoffPrefill />
-          <AssistantLayout
-            chatbot={chatbot}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-            knowledgeGraphVisible={knowledgeGraphVisible}
-          />
+          <ChatWorkspaceProvider
+            chatbotId={chatbot.id}
+            graphEnabled={knowledgeGraphVisible}
+          >
+            <AssistantLayout
+              chatbot={chatbot}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              knowledgeGraphVisible={knowledgeGraphVisible}
+            />
+          </ChatWorkspaceProvider>
         </RuntimeProvider>
       </ChatUiProvider>
 
@@ -503,13 +509,11 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
-  graphPanel,
   knowledgeGraphVisible,
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  graphPanel: ReturnType<typeof useChatGraphPanel>
   knowledgeGraphVisible: boolean
   initialModeOptions: ChatModeOptions
   initialModeOptionsAreFallback: boolean
@@ -524,6 +528,7 @@ function SidebarMain({
     (state) => state.participationRequired
   )
   const isLoading = useChatStore((state) => state.isLoading)
+  const graphPanel = useChatWorkspace().graph
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -652,20 +657,14 @@ function SidebarMain({
               <ThreadSkeleton />
             </div>
           )}
-          <ChatKnowledgeGraphPanel
-            chatbotId={chatbot.id}
-            open={graphPanel.open}
-            onClose={graphPanel.close}
-            focusRequest={graphPanel.focusRequest}
-            onFocusConcept={graphPanel.focusConcept}
-          >
+          <ChatWorkspaceLayout>
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
-          </ChatKnowledgeGraphPanel>
+          </ChatWorkspaceLayout>
         </div>
       </main>
     </SidebarInset>
@@ -686,7 +685,6 @@ function AssistantLayout({
   const t = useTranslations('chat.thread.learningContext')
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
-  const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextUnavailable = useChatContextStore(
@@ -702,7 +700,6 @@ function AssistantLayout({
         <AppSidebar />
         <SidebarMain
           chatbot={chatbot}
-          graphPanel={graphPanel}
           knowledgeGraphVisible={knowledgeGraphVisible}
           initialModeOptions={initialModeOptions}
           initialModeOptionsAreFallback={initialModeOptionsAreFallback}
@@ -737,13 +734,7 @@ function AssistantLayout({
           )}
           {/* Embedded mode shows no graph toggle, but the /graph deep link
               stays reachable for direct embedding of the graph pane. */}
-          <ChatKnowledgeGraphPanel
-            chatbotId={chatbot.id}
-            open={graphPanel.open}
-            onClose={graphPanel.close}
-            focusRequest={graphPanel.focusRequest}
-            onFocusConcept={graphPanel.focusConcept}
-          >
+          <ChatWorkspaceLayout>
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
@@ -752,7 +743,7 @@ function AssistantLayout({
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
-          </ChatKnowledgeGraphPanel>
+          </ChatWorkspaceLayout>
         </div>
       </main>
     </div>

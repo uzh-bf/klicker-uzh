@@ -309,7 +309,9 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   ])
   // No path filter: the required context must always be reportable.
   assert.equal(workflow.on.pull_request.paths, undefined)
-  assert.deepEqual(workflow.on.pull_request.branches, ['v3', 'v3*'])
+  // No branch filter: an upper layer of a pull request stack targets a feature
+  // branch but must still report the required context.
+  assert.equal(workflow.on.pull_request.branches, undefined)
   for (const job of [
     'plan',
     'build',
