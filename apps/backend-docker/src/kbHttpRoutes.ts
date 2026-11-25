@@ -3,6 +3,7 @@ import {
   handleKBSourceGateway,
 } from '@klicker-uzh/graphql'
 import express, { type Express } from 'express'
+import { logger } from './logger.js'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -56,7 +57,10 @@ export function registerKBHttpRoutes(
         result.stream.on('error', () => res.destroy())
         result.stream.pipe(res)
       } catch {
-        console.error('KB source gateway failed')
+        ;(req.locals?.log ?? logger).error(
+          { event: 'kb.source_gateway.failed' },
+          'KB source gateway failed'
+        )
         res.status(500).json({ error: 'Internal server error' })
       }
     }
@@ -79,7 +83,10 @@ export function registerKBHttpRoutes(
         })
         res.status(result.statusCode).json(result.body)
       } catch {
-        console.error('KB ingestion webhook failed')
+        ;(req.locals?.log ?? logger).error(
+          { event: 'kb.ingestion_webhook.failed' },
+          'KB ingestion webhook failed'
+        )
         res.status(500).json({ error: 'Internal server error' })
       }
     }

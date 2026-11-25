@@ -8,6 +8,7 @@ query GetActiveUserCourses($activityId: String, $activityType: ActivityType) {
     isArchived
     isGamificationEnabled
     isAssessmentEnabled
+    isAdaptiveLearningEnabled
     isGroupCreationEnabled
     description
     startDate

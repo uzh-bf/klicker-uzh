@@ -10,6 +10,7 @@ import {
   courseImageCandidates,
   isCourseSearchTool,
 } from '@/src/lib/sources/courseImages'
+import { logger } from './logger'
 import { renderPromptTemplate } from './promptTemplates'
 
 export function canRegisterCourseImageTool(
@@ -120,7 +121,10 @@ export function withCourseImageTool(
             return selection
           })
           .catch((error) => {
-            console.error('Failed to read selected course image', error)
+            logger.error(
+              { event: 'chat.course_image.read_failed', err: error },
+              'Failed to read selected course image'
+            )
             return undefined
           })
           .finally(() => inFlight.delete(asset_id))

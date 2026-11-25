@@ -115,7 +115,7 @@ export async function readCourseImage(
         )
       } else {
         const connectionString = projectionConnectionString()
-        if (!connectionString)
+        if (!connectionString || !container)
           throw new Error('Course image storage unavailable')
         blobServiceClient =
           BlobServiceClient.fromConnectionString(connectionString)

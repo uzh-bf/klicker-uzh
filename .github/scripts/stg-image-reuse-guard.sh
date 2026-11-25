@@ -3,10 +3,10 @@
 # Input-fingerprint reuse guard for the staging image publication (R3).
 #
 # A publication may adopt an image another commit already built and scanned
-# only when every build input is identical. The fingerprint of those inputs is
-# computed by image-input-fingerprint.cjs and published as a registry tag on
+# only when every build input is identical and its revision is an ancestor.
+# The fingerprint of those inputs is computed by image-input-fingerprint.cjs and published as a registry tag on
 # the digest it built, so the tag itself is the record of "this fingerprint was
-# qualifies by this digest". This script only resolves that tag:
+# qualified by this digest". This script resolves the tag and checks ancestry:
 #
 #   MODE=check  does <image>:fp-<fingerprint> exist, and if so what digest
 #   MODE=adopt  publishes that digest under the immutable full-SHA tag
@@ -94,6 +94,20 @@ case "${MODE}" in
       digest="$(printf '%s\n' "${inspect_output}" | awk '$1 == "Digest:" { print $2; exit }')"
       if [[ ! "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
         echo "::error::registry returned no canonical digest for ${reference}" >&2
+        exit 1
+      fi
+      reuse="$(DIGEST="${digest}" node "$(dirname "${BASH_SOURCE[0]}")/stg-image-reuse-ancestry.cjs")"
+      if [[ "${reuse}" == "false" ]]; then
+        printf 'adopt=false\n' >>"${GITHUB_OUTPUT}"
+        write_record false ''
+        {
+          printf '### Build required\n\n'
+          printf '%s\n' "Fingerprint tag \`${reference}\` points to an image outside the candidate's ancestry; rebuild for this revision."
+        } >>"${GITHUB_STEP_SUMMARY}"
+        exit 0
+      fi
+      if [[ "${reuse}" != "true" ]]; then
+        echo "::error::image reuse ancestry check returned no decision" >&2
         exit 1
       fi
       printf 'adopt=true\n' >>"${GITHUB_OUTPUT}"

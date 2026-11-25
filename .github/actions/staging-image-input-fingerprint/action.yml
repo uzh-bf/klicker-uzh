@@ -1,8 +1,8 @@
 name: Staging image input fingerprint
 description: >-
   Resolve the canonical input fingerprint of one staging image target and, when
-  every build input is unchanged, adopt the digest an earlier publication
-  already built and had scanned. Inputs come from the trusted inventory through
+  every build input is unchanged and the image revision is an ancestor, adopt
+  the digest an earlier publication already built and had scanned. Inputs come from the trusted inventory through
   .github/scripts/image-input-fingerprint.cjs; a target the inventory does not
   mark reusable never reaches the registry. The action is fail-closed: an
   unresolvable base image, an untracked input, or an unclear registry answer
@@ -75,6 +75,8 @@ runs:
       env:
         IMAGE: ${{ inputs.image }}
         MODE: check
+        GH_TOKEN: ${{ github.token }}
+        SHA: ${{ inputs.sha }}
         REUSE_RECORD: ${{ inputs.reuse-record }}
         TAG: ${{ steps.resolve.outputs.tag }}
       run: .github/scripts/stg-image-reuse-guard.sh

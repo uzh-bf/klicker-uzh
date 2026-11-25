@@ -1,0 +1,24 @@
+query CompetenceTreeCatalog(
+  $search: String
+  $cursor: String
+  $limit: Int = 25
+  $includeArchived: Boolean = false
+  $ownership: CompetenceTreeCatalogOwnership = ALL
+  $courseId: String
+  $excludeCourseId: String
+) {
+  competenceTreeCatalog(
+    search: $search
+    cursor: $cursor
+    limit: $limit
+    includeArchived: $includeArchived
+    ownership: $ownership
+    courseId: $courseId
+    excludeCourseId: $excludeCourseId
+  ) {
+    items {
+      ...CompetenceTreeSummaryData
+    }
+    nextCursor
+  }
+}
