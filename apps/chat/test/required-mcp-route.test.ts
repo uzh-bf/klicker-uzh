@@ -696,6 +696,17 @@ describe('required MCP chat preflight', () => {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
         },
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: true,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
         mcpConfigurations: [
           createMcpConfiguration({
             allowedTools: ['doc_query'],
@@ -779,12 +790,23 @@ describe('required MCP chat preflight', () => {
     expect(mocks.failChatTurn).not.toHaveBeenCalled()
   })
 
-  test('rejects Quizzer when Tutor only has a wildcard tool binding', async () => {
+  test('offers KB-free Quizzer without treating a wildcard Tutor binding as retrieval', async () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({
         systemPrompts: {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
+        },
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: true,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
         },
         mcpConfigurations: [
           createMcpConfiguration({
@@ -796,13 +818,107 @@ describe('required MCP chat preflight', () => {
       })
     )
 
-    const response = await POST(createRequest('quizzer'), {
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(createRequest('quizzer'), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ kbIds: undefined })
+    )
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'quizzer',
+      expect.objectContaining({
+        toolNames: expect.not.arrayContaining(['KB_doc_query']),
+      })
+    )
+  })
+
+  test('defaults an omitted request to the only approved custom mode', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_custom_only',
+              name: 'Case practice',
+              description: 'Practises a course case.',
+              personaText: 'Run a case practice.',
+            },
+          ],
+        },
+        mcpConfigurations: [],
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(createRequest(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'cm_custom_only',
+      expect.anything()
+    )
+  })
+
+  test('rejects a chatbot with no offered mode before thread or MCP work', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        customModeConfig: null,
+        mcpConfigurations: [],
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      })
+    )
+
+    const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({
-      error: 'Unsupported chat mode: quizzer',
+      error: 'No chat mode is available',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()

@@ -31,9 +31,8 @@ stored rows with the chatbot's approved modes.
 - The effective-mode resolver does not suppress a mode on account of another
   mode's binding. A mode with no retrieval binding of its own stays offered, and
   a mode whose declared required binding is unavailable fails closed at request
-  time with the existing `503 REQUIRED_MCP_UNAVAILABLE` response. Quizzer keeps
-  its capability gate: it appears only with a provably restricted course
-  `doc_query` binding. An unsupported or typed-disabled mode is still rejected
+  time with the existing `503 REQUIRED_MCP_UNAVAILABLE` response. An enabled Quizzer also serves without a KB. When configured for
+  document retrieval it uses only its authorized restricted binding. An unsupported or typed-disabled mode is still rejected
   before any thread or provider work.
 - Retrieval scope is resolved for the selected mode. An approved custom mode
   inherits a required Tutor or Explainer `doc_query` binding for the same
@@ -97,6 +96,6 @@ changes this decision and needs its own ADR update.
 ## References
 
 - [ADR 0021](./0021-templated-standard-modes-reviewed-custom-modes.md) — the
-  superseded visibility rule and the Quizzer capability gate this decision keeps.
+  mode publication, visibility and Quizzer binding rules.
 - [ADR 0019](./0019-chatbot-config-postgresql-authoritative.md) — chatbot
   configuration is PostgreSQL-authoritative and compiled per request.

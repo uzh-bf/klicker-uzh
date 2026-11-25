@@ -6,12 +6,13 @@ vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
 
   return {
     ...actual,
-    renderPromptTemplate: (name: string, context: unknown) =>
+    renderPromptTemplate: vi.fn((name: string, context: unknown) =>
       name === 'citation-contract'
         ? '<SYNTHETIC-CITATION-CONTRACT>'
         : name === 'course-images' || name === 'course-image-vision'
           ? JSON.stringify({ template: name, context })
-          : actual.renderPromptTemplate(name as never, context as never),
+          : actual.renderPromptTemplate(name as never, context as never)
+    ),
   }
 })
 
@@ -374,6 +375,27 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).toContain(DEFAULT_QUIZZER_MARK)
     expect(quizzer).not.toContain(DEFAULT_TUTOR_MARK)
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
+  })
+
+  test.each([
+    { retrieval: false, elearning: false },
+    { retrieval: true, elearning: false },
+    { retrieval: false, elearning: true },
+    { retrieval: true, elearning: true },
+  ])('selects the Quizzer template for retrieval=$retrieval, eLearning=$elearning', ({
+    retrieval,
+    elearning,
+  }) => {
+    vi.mocked(renderPromptTemplate).mockClear()
+    compileSystemPrompt(null, 'quizzer', {
+      courseDisplayName: COURSE_DISPLAY_NAME,
+      toolNames: retrieval ? [DOC_TOOL] : [],
+      isElearningOrigin: elearning,
+    })
+    expect(renderPromptTemplate).toHaveBeenCalledWith('mode-quizzer', {
+      courseRetrievalAvailable: retrieval,
+      isElearningOrigin: elearning,
+    })
   })
 
   test('keeps fixed platform contracts out of the mode contract text', () => {

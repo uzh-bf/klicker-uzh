@@ -1078,6 +1078,301 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
+  it('submits and approves a custom-only revision while preserving its marker', async () => {
+    const bot = await seed()
+    const allOff = {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: false,
+      courseName: null,
+      subjectDomain: null,
+      languageOfInstruction: null,
+      scopeNote: null,
+    }
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { standardModeConfig: allOff },
+      },
+      owner
+    )
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: {
+          customModeConfig: {
+            modes: [
+              {
+                name: 'Interview coach',
+                personaText: 'Ask one interview question at a time.',
+              },
+            ],
+          },
+        },
+      },
+      owner
+    )
+    const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
+    expect(key).toMatch(/^cm_/)
+    expect(saveRevisionStandardMarker(await read(bot.id))).toBe(true)
+
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 2,
+        input: { metadata: { description: 'Synthetic custom-only bot' } },
+      },
+      owner
+    )
+    expect(saveRevisionStandardMarker(await read(bot.id))).toBe(true)
+    expect((await read(bot.id)).standardModeConfig).toBeNull()
+
+    await submit(bot.id, 3)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 4 },
+      admin
+    )
+
+    const approved = await read(bot.id)
+    expect(approved).toMatchObject({
+      status: ChatbotStatus.PUBLISHED,
+      revisionStatus: null,
+      draftConfig: null,
+      standardModeConfig: {
+        ...allOff,
+        explicitModeSelection: true,
+      },
+      customModeConfig: {
+        modes: [{ key, name: 'Interview coach' }],
+      },
+    })
+
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 5,
+        input: {
+          standardModeConfig: allOff,
+          customModeConfig: { modes: [] },
+        },
+      },
+      owner
+    )
+    await expect(submit(bot.id, 6)).rejects.toMatchObject({
+      extensions: { code: 'CHATBOT_MODE_REQUIRED' },
+    })
+    expect(await read(bot.id)).toMatchObject({
+      standardModeConfig: {
+        ...allOff,
+        explicitModeSelection: true,
+      },
+      customModeConfig: {
+        modes: [{ key, name: 'Interview coach' }],
+      },
+      revisionVersion: 6,
+    })
+  })
+
+  it('accepts custom modes saved before the all-off standard flags', async () => {
+    const bot = await seed()
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          customModeConfig: {
+            modes: [{ name: 'Case coach', personaText: 'Discuss one case.' }],
+          },
+        },
+      },
+      owner
+    )
+    const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: {
+          standardModeConfig: {
+            tutorEnabled: false,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            writingCoachEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+
+    await submit(bot.id, 2)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 3 },
+      admin
+    )
+
+    expect(await read(bot.id)).toMatchObject({
+      standardModeConfig: { explicitModeSelection: true },
+      customModeConfig: { modes: [{ key, name: 'Case coach' }] },
+    })
+  })
+
+  it('does not publish a custom mode disabled by its legacy prompt entry', async () => {
+    const bot = await seed()
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          standardModeConfig: {
+            tutorEnabled: false,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            writingCoachEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: {
+          customModeConfig: {
+            modes: [{ name: 'Disabled coach', personaText: 'Stay concise.' }],
+          },
+        },
+      },
+      owner
+    )
+    const key = saved?.authoringRevision?.customModeConfig?.modes[0]?.key
+    if (!key) throw new Error('Missing generated custom mode key')
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        systemPrompts: { [key]: { enabled: false } },
+      },
+    })
+
+    await expect(submit(bot.id, 2)).rejects.toMatchObject({
+      extensions: { code: 'CHATBOT_MODE_REQUIRED' },
+    })
+    expect(await read(bot.id)).toMatchObject({
+      standardModeConfig: null,
+      customModeConfig: null,
+      revisionStatus: ChatbotStatus.DRAFT,
+      revisionVersion: 2,
+    })
+  })
+
+  it('submits and approves Quizzer alone with no knowledge base', async () => {
+    const bot = await seed()
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          standardModeConfig: {
+            tutorEnabled: false,
+            explainerEnabled: false,
+            quizzerEnabled: true,
+            writingCoachEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+
+    await submit(bot.id, 1)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2 },
+      admin
+    )
+
+    expect(await read(bot.id)).toMatchObject({
+      status: ChatbotStatus.PUBLISHED,
+      standardModeConfig: {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: true,
+        writingCoachEnabled: false,
+        explicitModeSelection: true,
+      },
+      customModeConfig: null,
+    })
+    await expect(
+      dependencies.prisma.kBChatbot.count({
+        where: { chatbotId: bot.id, isEnabled: true },
+      })
+    ).resolves.toBe(0)
+  })
+
+  it('rejects an empty candidate at submit and direct approval without changing live state', async () => {
+    const bot = await seed()
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        systemPrompts: {
+          legacyPreview: { prompt: 'Owner-only synthetic preview' },
+        },
+      },
+    })
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          standardModeConfig: {
+            tutorEnabled: false,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            writingCoachEnabled: false,
+          },
+        },
+      },
+      owner
+    )
+
+    await expect(submit(bot.id, 1)).rejects.toMatchObject({
+      extensions: { code: 'CHATBOT_MODE_REQUIRED' },
+    })
+    const afterSubmitFailure = await read(bot.id)
+    expect(afterSubmitFailure).toMatchObject({
+      status: ChatbotStatus.PUBLISHED,
+      revisionStatus: ChatbotStatus.DRAFT,
+      revisionVersion: 1,
+      standardModeConfig: null,
+      customModeConfig: null,
+    })
+
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        status: ChatbotStatus.PENDING_APPROVAL,
+        revisionStatus: ChatbotStatus.PENDING_APPROVAL,
+        revisionVersion: 2,
+      },
+    })
+    await expect(
+      service.approveChatbotRevision(
+        { id: bot.id, expectedRevisionVersion: 2 },
+        admin
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'CHATBOT_MODE_REQUIRED' },
+    })
+    expect(await read(bot.id)).toMatchObject({
+      status: ChatbotStatus.PENDING_APPROVAL,
+      revisionStatus: ChatbotStatus.PENDING_APPROVAL,
+      revisionVersion: 2,
+      standardModeConfig: null,
+      customModeConfig: null,
+    })
+  })
+
   it('keeps draft presentation changes away from the live configuration', async () => {
     const bot = await seed()
     const approvedWelcome = 'First synthetic welcome.'
@@ -1225,3 +1520,11 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 })
+
+function saveRevisionStandardMarker(chatbot: { draftConfig: unknown }) {
+  return (
+    chatbot.draftConfig as {
+      standardModeConfig?: { explicitModeSelection?: boolean } | null
+    }
+  )?.standardModeConfig?.explicitModeSelection
+}

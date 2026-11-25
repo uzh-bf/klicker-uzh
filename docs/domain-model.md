@@ -118,11 +118,11 @@ history, balances, and the original publication date. See
 [ADR 0043](./adr/0043-review-chatbot-revisions-before-activation.md).
 
 The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
-Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
+Tutor, Explainer, Quizzer and Writing Coach configuration: mode flags plus
 course name, subject domain, language of instruction, and an optional scope
 note. The owner-only `saveChatbotRevision` mutation accepts full replacements
 through its `standardModeConfig` section in editable first-publication or
-revision states, requires Tutor or Explainer to remain enabled, and fences every save with the authoring
+revision states and fences every save with the authoring
 version so a concurrent submission cannot be overwritten. Published changes
 remain staged until approval. Tutor and Explainer do not require
 a knowledge base, and a mode without a retrieval binding of its own is not
@@ -130,7 +130,8 @@ hidden on account of another mode's required binding, and an approved custom
 mode inherits a required Tutor or Explainer `doc_query` binding retagged to the
 selected mode. Participants see only approved custom modes, while a saved draft
 mode stays visible to the owner preview. Quizzer remains independently
-configurable but is filtered by the safe course-material capability gate.
+configurable and can serve as the only mode without a KB. Publication requires at
+least one enabled standard mode or eligible custom mode in the reviewed revision.
 Missing or malformed persisted values
 derive all three flags from legacy mode opt-outs/defaults, while valid legacy
 two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
