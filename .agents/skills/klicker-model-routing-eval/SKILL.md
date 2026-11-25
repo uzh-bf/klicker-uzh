@@ -5,13 +5,15 @@ description: Measure and compare KlickerUZH Chat Auto router tier maps and model
 
 # KlickerUZH Auto routing evaluation
 
-Scripts and their flags: [evaluation/routing/README.md](../../../evaluation/routing/README.md).
+Scripts and their flags: `evaluation/routing/README.md` in `klicker-uzh-catalyst`,
+which holds the routing scripts, ground truth and the `eval:klicker` launcher.
+Run the commands below from that repository's root.
 Router and registry facts: [docs/chat-platform.md](../../../docs/chat-platform.md).
 This skill is the procedure and the decision rules.
 
 ## Ground rules
 
-- Use only the synthetic ground truth in `evaluation/data/ground_truth/` for
+- Use only the synthetic ground truth in catalyst's `evaluation/data/ground_truth/` for
   replay, bench and DeepEval. Production traffic enters only as `observe.py`
   aggregates; never fetch, print or store prompts or answers.
 - Inject every key through `rs-infisical-operator`. A missing allowlist
