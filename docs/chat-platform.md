@@ -1193,14 +1193,25 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. A single graph icon in the header toggles a graph dock without
-navigation or replacing the mounted conversation. Desktop shows it on the right;
-compact viewports stack graph above chat. Fullscreen expands the same graph over
-the chatbot, makes background controls inert and contains keyboard focus. Escape
-restores the dock; closing unmounts the graph and returns focus to its toggle.
-Legacy `/graph` links open the dock on entry. Reopening starts an overview.
-`ChatKnowledgeGraphPanel.tsx` owns this presentation in both standalone and
-embedded layouts. Node and relationship details can append a localized, editable
+header grid. The conversation shares its row with one workspace panel that
+shows either the knowledge graph or an interactive explanation, never both
+(`src/components/workspace/`). `ChatWorkspaceProvider` owns which item is shown
+and its size; `ChatWorkspaceLayout` is the shell for both kinds in standalone
+and embedded layouts: resize handle with a per-kind stored width, an expanded
+size that keeps the conversation in a narrow docked column with a usable
+composer, and fullscreen. Fullscreen covers the chatbot, makes background
+controls inert and contains keyboard focus; Escape returns to the previous size,
+and closing unmounts the item and returns focus to the control that opened it.
+Below `lg` the panel replaces the conversation. The graph icon in the header
+toggles the graph without navigation or replacing the mounted conversation;
+legacy `/graph` links open it on entry, and reopening starts an overview.
+An explanation's "Open beside the chat" action opens it expanded. Only one live
+copy of an explanation frame runs: while the panel shows it, its inline card
+collapses to a marker, because two copies would drift apart and narration would
+play twice. The panel steps between the thread's explanations in DOM order,
+keyed by tool call id, and an explanation arriving in a streamed answer replaces
+the one shown. Without the provider (owner preview) the card keeps its modal
+dialog. Node and relationship details can append a localized, editable
 question to the current composer, preserving its draft and attachments. The
 callback carries only bounded display labels (200 characters each), never raw
 properties or graph identifiers. Asking never sends or creates a thread; mobile
