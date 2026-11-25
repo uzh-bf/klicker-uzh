@@ -1540,6 +1540,44 @@ export async function attachKbToChatbot(
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
     await getKbMcpServerOrThrow(prisma)
+    if (process.env[PER_MODE_KB_LINKS_ENABLED_ENV] !== 'true') {
+      const bot = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: chatbotId },
+        select: {
+          customModeConfig: true,
+          draftConfig: true,
+          knowledgeBases: {
+            where: { isEnabled: true },
+            select: { id: true, kbId: true, isDefault: true },
+          },
+        },
+      })
+      if (
+        bot.knowledgeBases.some((link) => link.kbId === kbId && link.isDefault)
+      ) {
+        return getKbChatbotBindingOrThrow(prisma, chatbotId, ctx.user.sub)
+      }
+      const previous = bot.knowledgeBases.find((link) => link.kbId !== kbId)
+      if (previous) {
+        const explicitAssignments = getModeLinkBacklinks(
+          bot.customModeConfig,
+          bot.draftConfig,
+          undefined
+        )
+        // A paused plural rollout must never flatten previously configured sources.
+        if (
+          bot.knowledgeBases.length > 1 ||
+          !previous.isDefault ||
+          explicitAssignments.has(previous.id)
+        ) {
+          assertPluralKbWritesEnabled()
+        }
+        await prisma.kBChatbot.update({
+          where: { id: previous.id },
+          data: { isEnabled: false, isDefault: false },
+        })
+      }
+    }
     await ensureEnabledKbLink(prisma, { kbId, chatbotId })
     await prisma.kBChatbot.updateMany({
       where: { chatbotId, isDefault: true },

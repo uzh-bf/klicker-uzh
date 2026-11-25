@@ -83,6 +83,7 @@ function baseState(overrides: Partial<ProvisionState> = {}): ProvisionState {
 }
 
 const TARGET = {
+  allowSecondaryLinks: true,
   kbId: KB_ID,
   kbName: KB_NAME,
   legacyServerName: LEGACY_SERVER_NAME,
@@ -315,31 +316,32 @@ describe('provision plan', () => {
   it('makes the target the default without disabling secondary links', () => {
     const targetLinkId = randomUUID()
     const secondaryLinkId = randomUUID()
-    const plan = planProvision(
-      baseState({
-        kbById: {
-          id: KB_ID,
-          name: KB_NAME,
-          ownerId: OWNER_ID,
-          deletedAt: null,
+    const state = baseState({
+      kbById: {
+        id: KB_ID,
+        name: KB_NAME,
+        ownerId: OWNER_ID,
+        deletedAt: null,
+      },
+      bindings: [
+        {
+          id: secondaryLinkId,
+          kbId: FOREIGN_KB_ID,
+          isEnabled: true,
+          isDefault: true,
         },
-        bindings: [
-          {
-            id: secondaryLinkId,
-            kbId: FOREIGN_KB_ID,
-            isEnabled: true,
-            isDefault: true,
-          },
-          {
-            id: targetLinkId,
-            kbId: KB_ID,
-            isEnabled: true,
-            isDefault: false,
-          },
-        ],
-      }),
-      TARGET
-    )
+        {
+          id: targetLinkId,
+          kbId: KB_ID,
+          isEnabled: true,
+          isDefault: false,
+        },
+      ],
+    })
+    expect(
+      planProvision(state, { ...TARGET, allowSecondaryLinks: false }).refusal
+    ).toBe('binding_conflict')
+    const plan = planProvision(state, { ...TARGET, allowSecondaryLinks: true })
 
     expect(plan.refusal).toBeNull()
     expect(plan.createBinding).toBe(false)

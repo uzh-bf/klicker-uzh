@@ -37,6 +37,8 @@ stored rows with the chatbot's approved modes.
 - A chatbot can have several active KB links and at most one default. Linking
   a KB makes it available for selection. The lecturer can change or clear the
   default independently. The compatibility attach mutation sets the default.
+  Before enabling plural writes, it preserves the legacy singleton replacement
+  behavior and refuses changes that would flatten an existing plural configuration.
 - A custom mode can select one link by its immutable ID. An omitted assignment
   follows the default. Saved revisions govern owner preview and approved
   revisions govern learners. Changing the default affects inheriting modes on

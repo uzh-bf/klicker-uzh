@@ -244,7 +244,12 @@ export type ProvisionPlan = {
 
 export function planProvision(
   state: ProvisionState,
-  target: { kbId: string; kbName: string; legacyServerName: string | null }
+  target: {
+    kbId: string
+    kbName: string
+    legacyServerName: string | null
+    allowSecondaryLinks?: boolean
+  }
 ): ProvisionPlan {
   const refusal = (code: string): ProvisionPlan => ({
     refusal: code,
@@ -275,6 +280,14 @@ export function planProvision(
   }
   if (state.kbNameConflictIds.length > 0) return refusal('kb_name_conflict')
 
+  if (
+    !target.allowSecondaryLinks &&
+    state.bindings.some(
+      (binding) => binding.isEnabled && binding.kbId !== target.kbId
+    )
+  ) {
+    return refusal('binding_conflict')
+  }
   const targetBinding = state.bindings.find(
     (binding) => binding.kbId === target.kbId
   )

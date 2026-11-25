@@ -172,6 +172,8 @@ async function applyInTransaction(
           // closed instead of being overwritten.
           const state = await readState(tx, args)
           const plan = planProvision(state, {
+            allowSecondaryLinks:
+              process.env.PER_MODE_KB_LINKS_ENABLED === 'true',
             kbId: args.kbId,
             kbName: args.kbName,
             legacyServerName: args.legacyServerName,
@@ -497,6 +499,7 @@ async function main() {
 
   const state = await readState(prisma, args)
   const plan = planProvision(state, {
+    allowSecondaryLinks: process.env.PER_MODE_KB_LINKS_ENABLED === 'true',
     kbId: args.kbId,
     kbName: args.kbName,
     legacyServerName: args.legacyServerName,

@@ -692,6 +692,27 @@ describe('POST owner preview chat', () => {
     )
   })
 
+  it('revalidates a legacy preview-only mode before issuing a credential', async () => {
+    const legacy = createChatbot({
+      systemPrompts: { 'case-lab': { prompt: 'Discuss a case' } },
+      mcpConfigurations: (
+        createChatbot().mcpConfigurations as Array<Record<string, unknown>>
+      ).map((row) => ({ ...row, allowedTools: ['doc_query'] })),
+    })
+    mocks.findChatbot.mockResolvedValue(legacy)
+    setRequestOptions({ selectedMode: 'case-lab' })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    expect(response.status).toBe(200)
+    const options = mocks.getAggregatedMCPTools.mock.calls.at(-1)![1]
+    await expect(
+      options.revalidateKnowledgeBaseScope()
+    ).resolves.toBeUndefined()
+    mocks.findChatbot.mockResolvedValue({ ...legacy, systemPrompts: {} })
+    await expect(options.revalidateKnowledgeBaseScope()).rejects.toThrow()
+  })
+
   it('follows the live default link over a stale legacy KB binding', async () => {
     const chatbot = await mocks.findChatbot()
     mocks.findChatbot.mockResolvedValue({

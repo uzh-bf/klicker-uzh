@@ -1270,7 +1270,10 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
   })
 
-  it('keeps secondary links while legacy attach replaces the default', async () => {
+  it.each([
+    true,
+    false,
+  ])('replaces the legacy default with plural writes enabled=%s', async (plural) => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
@@ -1340,23 +1343,36 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     await expectScopedConfigurations(firstKb.id)
 
-    await attachKbToChatbot(
-      { kbId: secondKb.id, chatbotId: chatbot.id },
-      userOneCtx
-    )
+    const replace = () =>
+      attachKbToChatbot(
+        { kbId: secondKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+    if (plural) await withPluralKbWrites(replace)
+    else {
+      const previous = process.env.PER_MODE_KB_LINKS_ENABLED
+      try {
+        delete process.env.PER_MODE_KB_LINKS_ENABLED
+        await replace()
+      } finally {
+        if (previous !== undefined)
+          process.env.PER_MODE_KB_LINKS_ENABLED = previous
+      }
+    }
 
     const links = await prisma.kBChatbot.findMany({
       where: { chatbotId: chatbot.id },
       orderBy: { kbId: 'asc' },
     })
     expect(links).toHaveLength(2)
-    expect(links.filter(({ isEnabled }) => isEnabled)).toHaveLength(2)
-    expect(links.filter(({ isEnabled }) => isEnabled)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kbId: firstKb.id, isDefault: false }),
-        expect.objectContaining({ kbId: secondKb.id, isDefault: true }),
-      ])
-    )
+    expect(links.find((link) => link.kbId === firstKb.id)).toMatchObject({
+      isEnabled: plural,
+      isDefault: false,
+    })
+    expect(links.find((link) => link.kbId === secondKb.id)).toMatchObject({
+      isEnabled: true,
+      isDefault: true,
+    })
 
     await expectScopedConfigurations(secondKb.id)
   })

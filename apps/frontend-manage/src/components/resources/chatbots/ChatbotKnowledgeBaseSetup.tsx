@@ -548,7 +548,11 @@ function ChatbotKnowledgeBaseSetup({
       ],
     })
 
-  if (readOnly) {
+  if (
+    readOnly ||
+    (!perModeKbLinksEnabled &&
+      connectedKnowledgeBases.some((link) => link.isDefault === false))
+  ) {
     return (
       <div className="space-y-3" data-cy="chatbot-kb-setup">
         {connectedKnowledgeBases.map((knowledgeBase) => (
@@ -556,6 +560,7 @@ function ChatbotKnowledgeBaseSetup({
             key={knowledgeBase.linkId ?? knowledgeBase.id}
             chatbotId={chatbotId}
             knowledgeBase={knowledgeBase}
+            showDefaultBadge
             addFilesRef={addFilesRef}
           />
         ))}

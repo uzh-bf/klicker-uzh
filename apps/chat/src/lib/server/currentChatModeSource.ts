@@ -72,7 +72,10 @@ function currentModeScope(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
     config.standardModeConfig,
-    { customModeConfig: config.customModeConfig }
+    {
+      customModeConfig: config.customModeConfig,
+      allowUnapprovedModes: ownerPreview,
+    }
   )
   if (!Object.hasOwn(modes, selectedMode))
     throw new RequiredMCPUnavailableError('scope_violation')

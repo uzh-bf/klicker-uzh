@@ -80,7 +80,7 @@ ingestion-cli corpus-import publish --package <dir> --corpus <slug> \
 
 - `CreateChatbot` bound to the courseId.
 - Read current state with `GetChatbotsInfoWithAuthoringRevisions` — it returns `status`, `revisionStatus`, `revisionVersion`, and the current knowledge-graph flags.
-- `AttachKbToChatbot` is the legacy operation (despite M-prefixed filenames elsewhere). It makes the selected KB the default and preserves enabled secondary links.
+- `AttachKbToChatbot` is the legacy operation (despite M-prefixed filenames elsewhere). With plural writes enabled, it makes the selected KB the default and preserves secondary links. While the gate is off it replaces a single unassigned default. It refuses a replacement that would discard an explicit source assignment or modify an existing plural configuration. The provisioning CLI requires the same opt-in before retaining a different enabled source.
 - `AddKbLinkToChatbot(kbId, chatbotId)` is additive and leaves the current default alone. `SetChatbotDefaultKb(chatbotId, kbId)` chooses a default, and a null `kbId` clears it; `DetachKbFromChatbot(kbId, chatbotId)` unlinks one source. The two new writers require `PER_MODE_KB_LINKS_ENABLED=true` on the backend.
 - A chatbot has at most one default and at most 32 enabled links. Only the default drives the managed Doc Query MCP configuration. Secondary links remain available to explicit custom-mode selections.
 - `getKbChatbotBindings.enabledKbs` returns `{ linkId, id, kbId, name, isDefault, modeBacklinks }`. The deprecated singular `enabledKbId` and `enabledKbName` remain populated only when exactly one enabled link exists, so existing singleton clients keep their previous projection.

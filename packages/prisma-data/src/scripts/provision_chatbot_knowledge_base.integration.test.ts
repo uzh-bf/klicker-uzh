@@ -50,7 +50,7 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
   let snapshotPath = ''
   let kbServerId = KB_SERVER_ID
 
-  const runScript = (args: Array<string>) =>
+  const runScript = (args: Array<string>, allowSecondaryLinks = false) =>
     execFileSync(
       process.execPath,
       [
@@ -61,14 +61,21 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
       {
         cwd: SCRIPT_DIRECTORY,
         encoding: 'utf8',
-        env: { ...process.env, DATABASE_URL },
+        env: {
+          ...process.env,
+          DATABASE_URL,
+          PER_MODE_KB_LINKS_ENABLED: String(allowSecondaryLinks),
+        },
         timeout: SPAWN_TIMEOUT,
       }
     )
 
-  const runFailingScript = (args: Array<string>) => {
+  const runFailingScript = (
+    args: Array<string>,
+    allowSecondaryLinks = false
+  ) => {
     try {
-      return runScript(args)
+      return runScript(args, allowSecondaryLinks)
     } catch (error) {
       return String((error as { stdout?: Buffer | string }).stdout ?? '')
     }
@@ -277,12 +284,10 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
         },
       })
       try {
-        const output = runScript([
-          ...baseArgs,
-          '--snapshot-out',
-          additiveSnapshot,
-          '--apply',
-        ])
+        const output = runScript(
+          [...baseArgs, '--snapshot-out', additiveSnapshot, '--apply'],
+          true
+        )
         expect(output).toContain('APPLIED')
 
         const links = await prisma.kBChatbot.findMany({
@@ -541,7 +546,7 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
         })),
       })
       try {
-        const output = runFailingScript(baseArgs)
+        const output = runFailingScript(baseArgs, true)
         expect(output).toContain('FAIL: link_limit_reached')
         expect(await prisma.kB.count({ where: { id: KB_ID } })).toBe(0)
         expect(
