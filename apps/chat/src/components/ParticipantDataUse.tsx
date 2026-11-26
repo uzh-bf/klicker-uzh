@@ -19,6 +19,7 @@ import { Settings2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ChatDataUseState } from '../lib/dataUse'
 import {
@@ -284,6 +285,10 @@ export function ParticipantDataUseSettings({
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
   const [conflict, setConflict] = useState(false)
+  // The dialog is rendered into the document body. Inside the sidebar it would
+  // share the sidebar's stacking context and sit behind the message composer.
+  const [portalReady, setPortalReady] = useState(false)
+  useEffect(() => setPortalReady(true), [])
 
   useEffect(() => {
     if (!open) return
@@ -383,58 +388,66 @@ export function ParticipantDataUseSettings({
           {t('chat.dataUse.settingsTitle')}
         </span>
       </Button>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title={t('chat.dataUse.settingsTitle')}
-        className={{ content: 'max-w-2xl' }}
-      >
-        {loading ? (
-          <div className="p-4 text-sm">{t('chat.dataUse.settingsLoading')}</div>
-        ) : !state ? (
-          <UserNotification type="error">
-            {t('shared.generic.systemError')}
-          </UserNotification>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-slate-600">
-              {t('chat.dataUse.settingsIntro')}
-            </p>
-            <ParticipantDataUseChoices
-              disabled={saving}
-              researchConsent={state.researchConsent}
-              learningAnalyticsConsent={
-                state.learningAnalyticsChoiceRecorded
-                  ? state.learningAnalyticsConsent
-                  : undefined
-              }
-              onResearchConsentChange={(consent) =>
-                updateChoice('research', consent)
-              }
-              onLearningAnalyticsConsentChange={(consent) =>
-                updateChoice('analytics', consent)
-              }
-              dataCy={choicesDataCy}
-            />
-            <TutorPersonalizationChoice
-              disabled={saving}
-              consent={state.tutorPersonalizationConsent}
-              onChange={(consent) => updateChoice('personalization', consent)}
-              dataCy={personalizationDataCy}
-            />
-            <TutorLearnerContextView chatbotId={chatbotId} />
-            {failed && (
+      {portalReady &&
+        createPortal(
+          <Modal
+            open={open}
+            onClose={() => setOpen(false)}
+            title={t('chat.dataUse.settingsTitle')}
+            className={{ content: 'max-w-2xl' }}
+          >
+            {loading ? (
+              <div className="p-4 text-sm">
+                {t('chat.dataUse.settingsLoading')}
+              </div>
+            ) : !state ? (
               <UserNotification type="error">
-                {t(
-                  conflict
-                    ? 'pwa.profile.dataUseConflict'
-                    : 'shared.generic.systemError'
-                )}
+                {t('shared.generic.systemError')}
               </UserNotification>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">
+                  {t('chat.dataUse.settingsIntro')}
+                </p>
+                <ParticipantDataUseChoices
+                  disabled={saving}
+                  researchConsent={state.researchConsent}
+                  learningAnalyticsConsent={
+                    state.learningAnalyticsChoiceRecorded
+                      ? state.learningAnalyticsConsent
+                      : undefined
+                  }
+                  onResearchConsentChange={(consent) =>
+                    updateChoice('research', consent)
+                  }
+                  onLearningAnalyticsConsentChange={(consent) =>
+                    updateChoice('analytics', consent)
+                  }
+                  dataCy={choicesDataCy}
+                />
+                <TutorPersonalizationChoice
+                  disabled={saving}
+                  consent={state.tutorPersonalizationConsent}
+                  onChange={(consent) =>
+                    updateChoice('personalization', consent)
+                  }
+                  dataCy={personalizationDataCy}
+                />
+                <TutorLearnerContextView chatbotId={chatbotId} />
+                {failed && (
+                  <UserNotification type="error">
+                    {t(
+                      conflict
+                        ? 'pwa.profile.dataUseConflict'
+                        : 'shared.generic.systemError'
+                    )}
+                  </UserNotification>
+                )}
+              </div>
             )}
-          </div>
+          </Modal>,
+          document.body
         )}
-      </Modal>
     </>
   )
 }
