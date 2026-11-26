@@ -14,10 +14,9 @@ interface ActivityArtifactFrameProps {
  *
  * The host accepts only the fixed `/frame` route of the configured publisher
  * origin, renders it with `sandbox="allow-scripts"` and sends nothing through
- * the URL. The sandboxed child is opaque-origin, so its browser origin cannot
- * be named as a target origin. The message therefore goes to `*` while being
- * addressed to this frame's own content window only. The frame itself checks
- * that the sender is its parent and that the parent origin is trusted.
+ * the URL. The opaque child starts the connection by transferring a
+ * MessagePort to a configured parent origin. The host accepts that port only
+ * from this iframe, then sends exercises over the private port.
  */
 function ActivityArtifactFrame({
   frameUrl,
@@ -27,7 +26,16 @@ function ActivityArtifactFrame({
   className,
 }: ActivityArtifactFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const framePortRef = useRef<MessagePort | null>(null)
   const lastSentPayloadRef = useRef<string | null>(null)
+  const exerciseRef = useRef(exercise)
+  const exercisePayload = useMemo(() => JSON.stringify(exercise), [exercise])
+  const exercisePayloadRef = useRef(exercisePayload)
+
+  // Keep the event listener stable without allowing a prop update to race a
+  // port handshake. JavaScript delivers the message after the current render.
+  exerciseRef.current = exercise
+  exercisePayloadRef.current = exercisePayload
 
   const frameSrc = useMemo(() => {
     try {
@@ -45,37 +53,69 @@ function ActivityArtifactFrame({
     }
   }, [canonicalUrl, frameUrl])
 
-  const sendExercise = useCallback(() => {
-    const frame = frameRef.current
-    if (!frame || !frame.contentWindow) return
+  const sendExercise = useCallback((port: MessagePort | null) => {
+    if (!port) return
+    port.postMessage({
+      type: 'activity-artifact',
+      exercise: exerciseRef.current,
+    })
+    lastSentPayloadRef.current = exercisePayloadRef.current
+  }, [])
 
-    // Read the window at send time. This addresses only this iframe instance,
-    // including on every load, never other frames or the top-level page.
-    frame.contentWindow.postMessage(
-      { type: 'activity-artifact', exercise },
-      '*'
-    )
-    lastSentPayloadRef.current = JSON.stringify(exercise)
-  }, [exercise])
+  const handleFrameMessage = useCallback(
+    (event: MessageEvent) => {
+      const frame = frameRef.current
+      if (!frame?.contentWindow || event.source !== frame.contentWindow) return
+
+      // A sandboxed child has an opaque origin. Its exact WindowProxy above
+      // binds the message to this iframe while this check requires sandboxing.
+      if (event.origin !== 'null') return
+      const data = event.data as { type?: unknown } | null
+      if (data?.type !== 'activity-artifact-ready') return
+
+      const port = event.ports[0]
+      if (!port) return
+      framePortRef.current?.close()
+      framePortRef.current = port
+      sendExercise(port)
+    },
+    [sendExercise]
+  )
+
+  const setFrameRef = useCallback(
+    (frame: HTMLIFrameElement | null) => {
+      // Current callers render this only after a client query or preview
+      // action, so the listener is installed before the iframe document can
+      // send its one-shot handshake. A server-rendered caller needs a listener
+      // established before that HTML reaches the browser.
+      if (frameRef.current === frame) return
+      window.removeEventListener('message', handleFrameMessage)
+      framePortRef.current?.close()
+      framePortRef.current = null
+      lastSentPayloadRef.current = null
+      frameRef.current = frame
+      if (frame) window.addEventListener('message', handleFrameMessage)
+    },
+    [handleFrameMessage]
+  )
 
   // A fresh authorized response replaces the rendered exercise. The frame
-  // re-mounts the definition on every message it accepts.
+  // preserves its rendered state when the serialized definition is unchanged.
   useEffect(() => {
-    const payload = JSON.stringify(exercise)
-    if (lastSentPayloadRef.current === payload) return
-    sendExercise()
-  }, [exercise, sendExercise])
+    if (lastSentPayloadRef.current === exercisePayload) return
+    sendExercise(framePortRef.current)
+  }, [exercisePayload, sendExercise])
 
   if (!frameSrc) return null
 
   return (
     <iframe
-      ref={frameRef}
+      key={frameSrc}
+      ref={setFrameRef}
       src={frameSrc}
       title={title}
       sandbox="allow-scripts"
       referrerPolicy="no-referrer"
-      onLoad={sendExercise}
       className={className}
     />
   )

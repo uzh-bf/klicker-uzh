@@ -46,6 +46,8 @@ jobs:
             group: Check codebase
           - workflow: CodeQL
             group: CodeQL
+          - workflow: Test activity artifact publisher
+            group: Test activity artifact publisher
           - workflow: Test lightweight unit suites
             group: Test lightweight unit suites
           - workflow: Test graphql package logic functionalities

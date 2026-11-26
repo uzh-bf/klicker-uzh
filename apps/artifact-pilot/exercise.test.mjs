@@ -29,10 +29,20 @@ test('admission requires a closed template and bounded data', () => {
   const source = sourceFor(baseExercise)
   assert.throws(() => parseSource(source.replace('<main>', '<main hidden>')))
   assert.throws(() => parseSource(source.replace('"years":2', '"years":3000')))
+  assert.throws(() => parseSource(source.replace('"face":1000,', '')))
   assert.throws(() =>
     parseSource(source.replace('"face":1000', '"face":1000,"extra":true'))
   )
   assert.throws(() => price(baseExercise, Infinity))
+})
+test('exact-key admission is independent of JSON member order', () => {
+  const reordered = sourceFor({
+    cashflows: baseExercise.cashflows,
+    face: baseExercise.face,
+    years: baseExercise.years,
+    title: baseExercise.title,
+  })
+  assert.deepEqual(parseSource(reordered), baseExercise)
 })
 test('stored revisions survive renderer changes while admission stays strict', () => {
   const historical = sourceFor(baseExercise).replace(

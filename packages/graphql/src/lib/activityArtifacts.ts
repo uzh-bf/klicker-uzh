@@ -23,15 +23,18 @@ const REQUEST_TIMEOUT_MILLISECONDS = 5000
 const RUN_CLAIM_TTL_SECONDS = 25
 const RUN_CLAIM_AUDIENCE = 'artifact-pilot'
 
-const EXERCISE_KEYS = 'cashflows|face|title|years'
-const CASHFLOW_KEYS = 'amount|when'
+const EXERCISE_KEYS = ['cashflows', 'face', 'title', 'years']
+const CASHFLOW_KEYS = ['amount', 'when']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function hasExactKeys(value: Record<string, unknown>, expected: string) {
-  return Object.keys(value).sort().join('|') === expected
+function hasExactKeys(value: Record<string, unknown>, expected: string[]) {
+  return (
+    Object.keys(value).length === expected.length &&
+    expected.every((key) => Object.hasOwn(value, key))
+  )
 }
 
 function isFiniteNumber(value: unknown): value is number {

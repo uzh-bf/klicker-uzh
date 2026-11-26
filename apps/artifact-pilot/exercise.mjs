@@ -14,8 +14,11 @@ function validate(exercise) {
   }
   function fields(value, keys) {
     requireValue(value && typeof value === 'object' && !Array.isArray(value))
+    const valueKeys = Object.keys(value)
+    const allowedKeys = new Set(keys)
     requireValue(
-      Object.keys(value).sort().join('|') === [...keys].sort().join('|')
+      valueKeys.length === keys.length &&
+        valueKeys.every((key) => allowedKeys.has(key))
     )
   }
   fields(exercise, ['title', 'years', 'face', 'cashflows'])
@@ -136,17 +139,52 @@ export const baseExercise = {
   cashflows: [{ when: 'maturity', amount: 'face' }],
 }
 
+function frameProgram(allowedParents) {
+  if (parent === window) return
+
+  const parents = new Set(allowedParents)
+  const pendingPorts = new Set()
+  let lastExercise = null
+
+  for (const parentOrigin of parents) {
+    const channel = new MessageChannel()
+    pendingPorts.add(channel.port1)
+    channel.port1.addEventListener('message', (event) => {
+      if (event.data?.type !== 'activity-artifact') return
+
+      for (const pending of pendingPorts) {
+        if (pending !== channel.port1) pending.close()
+      }
+      pendingPorts.clear()
+      pendingPorts.add(channel.port1)
+
+      try {
+        const exercise = validate(event.data.exercise)
+        const serialized = JSON.stringify(exercise)
+        if (serialized === lastExercise) return
+        lastExercise = serialized
+        mount(exercise)
+      } catch {
+        lastExercise = null
+        document.querySelector('main').replaceChildren()
+      }
+    })
+    channel.port1.start()
+    parent.postMessage({ type: 'activity-artifact-ready' }, parentOrigin, [
+      channel.port2,
+    ])
+  }
+}
+
 // The frame contains no private data until its authorized parent sends an exercise.
 export function frame(parents) {
   const script =
     library +
-    '\nconst parents = new Set(' +
+    '\nconst parents = ' +
     JSON.stringify(parents) +
-    ');\n' +
-    'addEventListener("message", event => {\n' +
-    '  if (event.source !== parent || !parents.has(event.origin) || event.data?.type !== "activity-artifact") return;\n' +
-    '  try { mount(validate(event.data.exercise)) } catch { document.querySelector("main").replaceChildren() }\n' +
-    '});'
+    ';\n(' +
+    frameProgram.toString() +
+    ')(parents);'
   const hash = createHash('sha256').update(script).digest('base64')
   return {
     html:

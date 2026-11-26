@@ -88,111 +88,144 @@ function result(row) {
   }
 }
 
+function json(res, status, value) {
+  res.writeHead(status, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(value))
+}
+
+function health(req, res) {
+  json(res, 200, { ready: true })
+}
+
+function viewerFrame(req, res) {
+  res.writeHead(200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Security-Policy': shell.policy,
+  })
+  res.end(shell.html)
+}
+
+function redirectArtifact(req, res, { artifactId }) {
+  res.writeHead(303, { Location: manage + '/artifacts/' + artifactId })
+  res.end()
+}
+
+async function publishRevision(req, res) {
+  if (!authorized(req.headers.authorization, lcKey)) fail(403, 'Forbidden')
+  const body = await readBody(req)
+  if (!body || body.subject !== lecturer) fail(403, 'Forbidden')
+  if (
+    typeof body.sourceId !== 'string' ||
+    !body.sourceId.trim() ||
+    body.sourceId.length > 512
+  )
+    fail(422, 'Invalid source identifier')
+  try {
+    parseSource(body.html)
+  } catch {
+    fail(422, 'Use the approved calculator template and bounded cash flows')
+  }
+  json(
+    res,
+    200,
+    result(await publish(pool, lecturer, body.sourceId, body.html))
+  )
+}
+
+async function assignRevision(req, res) {
+  if (
+    !authorized(req.headers.authorization, klickerKey) ||
+    req.headers['x-artifact-subject'] !== lecturerKlicker
+  )
+    fail(403, 'Forbidden')
+  const body = await readBody(req)
+  if (!course || body?.courseId !== course) fail(403, 'Course unavailable')
+  if (
+    typeof body.instanceId !== 'string' ||
+    !body.instanceId ||
+    body.instanceId.length > 128 ||
+    !new RegExp('^' + uuid + '$').test(body.artifactId) ||
+    !new RegExp('^' + uuid + '$').test(body.revisionId)
+  )
+    fail(422, 'Invalid pin')
+  if (!(await bindAssignment(pool, lecturer, body)))
+    fail(409, 'Instance binding unavailable')
+  json(res, 200, {
+    artifactId: body.artifactId,
+    revisionId: body.revisionId,
+  })
+}
+
+async function readArtifact(req, res, { artifactId, revisionId }) {
+  if (!authorized(req.headers.authorization, klickerKey)) fail(403, 'Forbidden')
+  const subject = req.headers['x-artifact-subject']
+  const operation = req.headers['x-artifact-operation']
+  let row
+  if (operation === 'run') {
+    const expires = Number(req.headers['x-artifact-expires'])
+    const now = Date.now() / 1000
+    if (
+      !course ||
+      req.headers['x-artifact-course'] !== course ||
+      !participants.has(subject) ||
+      req.headers['x-artifact-audience'] !== 'artifact-pilot' ||
+      !revisionId ||
+      !Number.isInteger(expires) ||
+      expires <= now ||
+      expires > now + 31
+    )
+      fail(403, 'Forbidden')
+    row = await readAssignment(
+      pool,
+      course,
+      req.headers['x-artifact-instance'],
+      artifactId,
+      revisionId
+    )
+  } else {
+    if (subject !== lecturerKlicker || operation) fail(403, 'Forbidden')
+    row = await readRevision(pool, lecturer, artifactId, revisionId)
+  }
+  if (!row) fail(404, 'Revision unavailable')
+  json(res, 200, result(row))
+}
+
+const routes = new Map([
+  ['GET /health', health],
+  ['GET /frame', viewerFrame],
+  ['POST /v1/revisions', publishRevision],
+  ['POST /v1/assignments', assignRevision],
+])
+
+function matchRoute(req) {
+  if (typeof req.url !== 'string') return null
+  const handler = routes.get(req.method + ' ' + req.url)
+  if (handler) return { handler }
+  if (req.method !== 'GET') return null
+  const link = canonical.exec(req.url)
+  if (link) return { handler: redirectArtifact, artifactId: link[1] }
+  const target = read.exec(req.url)
+  if (target)
+    return {
+      handler: readArtifact,
+      artifactId: target[1],
+      revisionId: target[2],
+    }
+  return null
+}
+
 const server = createServer(async (req, res) => {
   res.setHeader('Cache-Control', 'private, no-store')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Content-Type-Options', 'nosniff')
-  const json = (status, value) => {
-    res.writeHead(status, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify(value))
-  }
   try {
-    if (req.url === '/health' && req.method === 'GET')
-      return json(200, { ready: true })
+    const route = matchRoute(req)
+    if (route?.handler === health) return health(req, res)
     if (Date.now() >= expiry) fail(403, 'Pilot closed')
-    if (req.method === 'GET' && req.url === '/frame') {
-      res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Security-Policy': shell.policy,
-      })
-      return res.end(shell.html)
-    }
-    const link = canonical.exec(req.url)
-    if (req.method === 'GET' && link) {
-      res.writeHead(303, { Location: manage + '/artifacts/' + link[1] })
-      return res.end()
-    }
-    if (req.method === 'POST' && req.url === '/v1/revisions') {
-      if (!authorized(req.headers.authorization, lcKey)) fail(403, 'Forbidden')
-      const body = await readBody(req)
-      if (!body || body.subject !== lecturer) fail(403, 'Forbidden')
-      if (
-        typeof body.sourceId !== 'string' ||
-        !body.sourceId.trim() ||
-        body.sourceId.length > 512
-      )
-        fail(422, 'Invalid source identifier')
-      try {
-        parseSource(body.html)
-      } catch {
-        fail(422, 'Use the approved calculator template and bounded cash flows')
-      }
-      return json(
-        200,
-        result(await publish(pool, lecturer, body.sourceId, body.html))
-      )
-    }
-    if (req.method === 'POST' && req.url === '/v1/assignments') {
-      if (
-        !authorized(req.headers.authorization, klickerKey) ||
-        req.headers['x-artifact-subject'] !== lecturerKlicker
-      )
-        fail(403, 'Forbidden')
-      const body = await readBody(req)
-      if (!course || body?.courseId !== course) fail(403, 'Course unavailable')
-      if (
-        typeof body.instanceId !== 'string' ||
-        !body.instanceId ||
-        body.instanceId.length > 128 ||
-        !new RegExp('^' + uuid + '$').test(body.artifactId) ||
-        !new RegExp('^' + uuid + '$').test(body.revisionId)
-      )
-        fail(422, 'Invalid pin')
-      if (!(await bindAssignment(pool, lecturer, body)))
-        fail(409, 'Instance binding unavailable')
-      return json(200, {
-        artifactId: body.artifactId,
-        revisionId: body.revisionId,
-      })
-    }
-    const target = read.exec(req.url)
-    if (req.method === 'GET' && target) {
-      if (!authorized(req.headers.authorization, klickerKey))
-        fail(403, 'Forbidden')
-      const subject = req.headers['x-artifact-subject']
-      let row
-      if (req.headers['x-artifact-operation'] === 'run') {
-        const expires = Number(req.headers['x-artifact-expires'])
-        const now = Date.now() / 1000
-        if (
-          !course ||
-          req.headers['x-artifact-course'] !== course ||
-          !participants.has(subject) ||
-          req.headers['x-artifact-audience'] !== 'artifact-pilot' ||
-          !target[2] ||
-          !Number.isInteger(expires) ||
-          expires <= now ||
-          expires > now + 31
-        )
-          fail(403, 'Forbidden')
-        row = await readAssignment(
-          pool,
-          course,
-          req.headers['x-artifact-instance'],
-          target[1],
-          target[2]
-        )
-      } else {
-        if (subject !== lecturerKlicker || req.headers['x-artifact-operation'])
-          fail(403, 'Forbidden')
-        row = await readRevision(pool, lecturer, target[1], target[2])
-      }
-      if (!row) fail(404, 'Revision unavailable')
-      return json(200, result(row))
-    }
-    fail(404, 'Unavailable')
+    if (!route) fail(404, 'Unavailable')
+    await route.handler(req, res, route)
   } catch (error) {
-    json(error.status || 500, {
+    json(res, error.status || 500, {
       error: error.status ? error.message : 'Request failed',
     })
   }
