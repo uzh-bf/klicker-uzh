@@ -26,7 +26,7 @@ tags:
 
 Draft and manual main reviews use `z-ai/glm-5.3-flash` through the fixed
 `moat-flash` profile. The bounded advisor uses `zai-org/GLM-5.3` through the
-`moat-advisor` profile. Stack topology uses `moat-flash`. Both models use
+`moat-advisor` profile. Stack topology runs on `moat-flash` and can call the bounded full GLM advisor. Both models use
 maximum reasoning. Main-review requests that offer `task_done` set `tool_choice` to `required`. The manual tool
 canary uses `moat-flash`; the canary and stack topology requests call the fixed
 [MOAT endpoint](https://api.commandcode.ai/inference/v1/chat/completions)

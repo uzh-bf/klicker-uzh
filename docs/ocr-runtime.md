@@ -37,7 +37,7 @@ Draft and final main reviews use `z-ai/glm-5.3-flash` through the fixed
 `tool_choice` to `required`.
 
 The full `zai-org/GLM-5.3` model is used through the `moat-advisor` profile for
-focused advisor consultations at maximum reasoning. Stack topology uses Flash. Each
+focused advisor consultations at maximum reasoning. Stack topology runs on Flash and may ask the full GLM advisor for focused advice. Each
 advisor request contains one question and selected source excerpts; it receives
 neither the complete diff nor the reviewer conversation. The portable skill
 directs difficult and architectural questions to that advisor after source
