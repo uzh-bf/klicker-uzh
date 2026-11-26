@@ -111,7 +111,7 @@ describe('locked reply language', () => {
     expect(
       stepReminder('quizzer', locked).content.endsWith(locked.content)
     ).toBe(true)
-    expect(stepReminder('explainer', locked)).toBe(locked)
+    expect(stepReminder('writing-coach', locked)).toBe(locked)
   })
 })
 

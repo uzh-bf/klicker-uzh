@@ -46,7 +46,10 @@ describe('chatbot bootstrap route', () => {
 
     expect(response.status).toBe(200)
     const payload = await response.json()
-    expect(Object.keys(payload)).toEqual(['modelSelection', 'modeOptions'])
+    expect(Object.keys(payload).sort()).toEqual([
+      'modeOptions',
+      'modelSelection',
+    ])
     expect(payload.modelSelection).toBe(true)
     expect(typeof payload.modeOptions.tutor.description).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
@@ -94,6 +97,7 @@ describe('chatbot bootstrap route', () => {
     expect(payload.modeOptions).toEqual({
       explainer: expect.objectContaining({ description: expect.any(String) }),
       tutor: expect.objectContaining({ description: expect.any(String) }),
+      quizzer: expect.objectContaining({ description: expect.any(String) }),
       'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b': {
         description: 'Practises ethical reasoning in a role play.',
         name: 'Ethik-Rollenspiel',

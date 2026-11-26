@@ -1,13 +1,13 @@
 import { routing } from '@klicker-uzh/i18n'
 import type {
   ChatbotCustomModeConfig,
-  ChatbotStandardModeConfig,
+  StoredChatbotStandardModeConfig,
 } from '@klicker-uzh/types'
 
 declare global {
   namespace PrismaJson {
     type PrismaChatbotCustomModeConfig = ChatbotCustomModeConfig
-    type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
+    type PrismaChatbotStandardModeConfig = StoredChatbotStandardModeConfig
   }
 }
 

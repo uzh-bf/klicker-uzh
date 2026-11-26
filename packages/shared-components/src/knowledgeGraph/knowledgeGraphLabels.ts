@@ -16,6 +16,11 @@ export type KnowledgeGraphDetailsLabels = {
   sources: string
   loadingConnections: string
   expandConnections: string
+  allConnectionsShown: string
+  aiGeneratedNote: string
+  quiz: string
+  inferredRelation: string
+  unsourcedRelation: string
   from: string
   to: string
   concepts: string
@@ -51,16 +56,22 @@ export type KnowledgeGraphViewerLabels = {
   resetLayout: string
   legendAriaLabel: string
   conceptTypes: string
+  inferredRelationLegend: string
   shapeCircle: string
   shapeDiamond: string
   shapeRoundedSquare: string
   shapeHexagon: string
+  shapeTriangle: string
+  shapePentagon: string
+  shapeStar: string
+  shapeOctagon: string
   loading: string
   searchFirstPrompt: string
   unavailableTitle: string
   notReadyTitle: string
   checkAgain: string
   searchResults: string
+  showAsList: string
   loadedConcepts: (count: number) => string
   noConceptsLoaded: string
   loadedRelationships: (count: number) => string
@@ -115,16 +126,22 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   resetLayout: 'Reset layout',
   legendAriaLabel: 'Concept type legend',
   conceptTypes: 'Concept types',
+  inferredRelationLegend: 'Dashed: inferred or without a source',
   shapeCircle: 'circle',
   shapeDiamond: 'diamond',
   shapeRoundedSquare: 'rounded square',
   shapeHexagon: 'hexagon',
+  shapeTriangle: 'triangle',
+  shapePentagon: 'pentagon',
+  shapeStar: 'star',
+  shapeOctagon: 'octagon',
   loading: 'Loading knowledge graph…',
   searchFirstPrompt: 'Search for a concept to explore the knowledge graph.',
   unavailableTitle: 'Knowledge graph unavailable',
   notReadyTitle: 'Knowledge graph not ready',
   checkAgain: 'Check again',
   searchResults: 'Search results',
+  showAsList: 'Show as list',
   loadedConcepts: (count) => `Loaded concepts (${count})`,
   noConceptsLoaded: 'No concepts loaded.',
   loadedRelationships: (count) => `Loaded relationships (${count})`,
@@ -156,6 +173,13 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     sources: 'Sources',
     loadingConnections: 'Loading connections…',
     expandConnections: 'Expand connections',
+    allConnectionsShown: 'All connections shown',
+    aiGeneratedNote: 'AI-generated from course materials. Check the sources.',
+    quiz: 'Quiz me on this',
+    inferredRelation:
+      'Inferred: this relationship is drawn from the course materials but not stated in them directly.',
+    unsourcedRelation:
+      'No supporting source is recorded for this relationship.',
     from: 'From',
     to: 'To',
     concepts: 'Concepts',

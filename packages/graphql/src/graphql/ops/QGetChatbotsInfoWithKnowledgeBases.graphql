@@ -15,6 +15,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
       tutorEnabled
       explainerEnabled
       quizzerEnabled
+      writingCoachEnabled
       courseName
       subjectDomain
       languageOfInstruction
@@ -38,6 +39,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     }
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     knowledgeGraphVisible
     knowledgeGraphRetrievalEnabled
     allowedModelIds
@@ -52,6 +54,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     courses {
       id
       name
+      numOfParticipants
     }
     usageSummary {
       threadCount
@@ -75,6 +78,13 @@ query QGetChatbotsInfoWithKnowledgeBases {
     enabledKnowledgeBases {
       id
       name
+      materialsReadiness {
+        visibleResourceCount
+        servingResourceCount
+        processingResourceCount
+        failedResourceCount
+        lastChangedAt
+      }
     }
     createdAt
     updatedAt

@@ -482,10 +482,23 @@ test('rejects unsafe workflow publication changes', () => {
     fixtureDefinitions({ pushBranches: ["'v3'"] }),
     /approved push triggers/
   )
+  // A candidate branch that has not synced the priority router yet keeps the
+  // previous types and must still promote.
+  const preRouter = mutate(
+    'types: [opened, synchronize, reopened, ready_for_review, labeled]',
+    'types: [opened, synchronize, reopened, ready_for_review]'
+  )
+  validateFixture({
+    definitions: preRouter,
+    expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+    repository: REPOSITORY,
+    sourceBranch: 'v3',
+    targetIds: FIXTURE_TARGET_IDS,
+  })
   reject(
     'reduced pull-request types',
     mutate(
-      'types: [opened, synchronize, reopened, ready_for_review]',
+      'types: [opened, synchronize, reopened, ready_for_review, labeled]',
       'types: [opened]'
     ),
     /approved pull-request triggers/
@@ -493,8 +506,8 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'workflow-level path filter',
     mutate(
-      '    types: [opened, synchronize, reopened, ready_for_review]',
-      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, ready_for_review]'
+      '    types: [opened, synchronize, reopened, ready_for_review, labeled]',
+      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, ready_for_review, labeled]'
     ),
     /must not filter pull-request paths/
   )
@@ -586,7 +599,10 @@ test('rejects unsafe workflow publication changes', () => {
   )
   reject(
     'ARM build no longer defers drafts',
-    mutate('github.event.pull_request.draft == false', 'true'),
+    mutate(
+      "(github.event_name != 'pull_request' || github.event.pull_request.draft == false)",
+      'true'
+    ),
     /does not defer draft builds/
   )
   reject(
@@ -621,8 +637,8 @@ test('rejects unsafe workflow publication changes', () => {
   reject(
     'status job no longer reports',
     mutate(
-      '    if: always()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10',
-      '    if: success()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10'
+      "(always() && (github.event.action != 'labeled' || needs.priority-route.outputs.run_label_event == 'true'))",
+      'success()'
     ),
     /must report for every outcome/
   )
@@ -2684,6 +2700,51 @@ test('default CI evidence reader decodes bounded archives and rejects ambiguous 
   artifacts.pop()
   artifacts[0].size_in_bytes = 1048577
   await assert.rejects(readCiEvidence(args), /ambiguous/)
+})
+
+test('default CI evidence reader selects the verified attempt among re-run artifacts', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-artifact-test-'))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  const archives = {}
+  for (const attempt of [1, 2]) {
+    fs.writeFileSync(
+      path.join(dir, 'required-ci-evidence.json'),
+      JSON.stringify(await fixtureCiEvidence({ run: { id: 504, attempt } }))
+    )
+    execFileSync(
+      'zip',
+      ['-q', `evidence-${attempt}.zip`, 'required-ci-evidence.json'],
+      { cwd: dir }
+    )
+    archives[attempt] = fs.readFileSync(
+      path.join(dir, `evidence-${attempt}.zip`)
+    )
+  }
+  const artifacts = [1, 2].map((attempt) => ({
+    id: attempt,
+    name: 'required-ci-evidence',
+    expired: false,
+    size_in_bytes: archives[attempt].length,
+  }))
+  const github = {
+    paginate: async () => artifacts,
+    rest: {
+      actions: {
+        listWorkflowRunArtifacts: async () => {},
+        downloadArtifact: async ({ artifact_id }) => ({
+          data: archives[artifact_id],
+        }),
+      },
+    },
+  }
+  const args = (attempt) => ({
+    github,
+    context: reviewContext(),
+    run: { id: 504, attempt },
+  })
+  assert.equal((await readCiEvidence(args(2))).run.attempt, 2)
+  assert.equal((await readCiEvidence(args(1))).run.attempt, 1)
+  await assert.rejects(readCiEvidence(args(3)), /ambiguous/)
 })
 
 // The Sonar job delegates to the reusable analysis workflow, so GitHub reports

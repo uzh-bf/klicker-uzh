@@ -158,6 +158,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
               chatbotId: pending.id,
               chatMode: 'tutor',
               allowedTools: ['doc_query'],
+              parameters: { required: true },
             },
           },
         },

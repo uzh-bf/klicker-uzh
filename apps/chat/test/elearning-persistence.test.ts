@@ -325,6 +325,42 @@ describe('eLearning save-before-generation', () => {
 })
 
 describe('eLearning origin and branch context', () => {
+  test('passes eLearning provenance to a knowledge-base-free Quizzer prompt', async () => {
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({
+        mcpConfigurations: [],
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      })
+    )
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(
+        createRequest(await elearningEnvelope(), { selectedMode: 'quizzer' }),
+        { params: Promise.resolve({ chatbotId: CHATBOT_ID }) }
+      )
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'quizzer',
+      expect.objectContaining({
+        toolNames: expect.not.arrayContaining(['KB_doc_query']),
+        isElearningOrigin: true,
+      })
+    )
+  })
+
   test('retains the edited question context instead of the live page', async () => {
     const SOURCE_MESSAGE_ID = 'user-message-0'
 

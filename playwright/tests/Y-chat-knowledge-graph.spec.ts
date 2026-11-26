@@ -1,5 +1,9 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
+import {
+  openChatbotSection,
+  setAiSettingsMode,
+} from '../util/fixtures/manage.js'
 import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
@@ -11,6 +15,18 @@ import {
   setParticipantToken,
   testImageUpload,
 } from '../util/chat.js'
+
+// The docked panel keeps its concept and relationship lists collapsed so the
+// graph gets the height; open them before interacting with list entries.
+async function showGraphLists(page: Page) {
+  const lists = page.getByTestId('knowledge-graph-lists')
+  if ((await lists.getAttribute('open')) === null) {
+    // An open details sheet may cover the toggle, so use the keyboard.
+    await lists.locator('summary').focus()
+    await page.keyboard.press('Enter')
+  }
+  await expect(lists).toHaveAttribute('open', '')
+}
 
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
 // The host launcher must preserve that disposable database between setup and test.
@@ -97,6 +113,7 @@ test('Native knowledge graph exploration and lecturer visibility policy', async 
     await page.keyboard.press('Enter')
     await expect(page.getByTestId('knowledge-graph-details')).toBeVisible()
     await page.getByTestId('knowledge-graph-expand').click()
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -233,6 +250,7 @@ test('Native answer concepts link to the published graph', async ({ page }) => {
     await covariance.click()
 
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -470,6 +488,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     expect(conversation!.x + conversation!.width).toBeLessThanOrEqual(
       dock!.x + 1
     )
+    await showGraphLists(page)
     await page.getByTestId('knowledge-graph-loaded-node').first().click()
     const fullscreen = page.getByTestId('knowledge-graph-fullscreen')
     await fullscreen.click()
@@ -539,7 +558,10 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
               relationType: 'related',
               relationStatus: 'extracted',
               sourceReferences: [],
-              properties: {},
+              properties: {
+                description: 'Synthetic relation description.',
+                kg_relationship_id: 'rel_synthetic',
+              },
             },
           ],
         }),
@@ -548,16 +570,26 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph?embed=true`)
     const input = page.getByTestId('chat-composer-input')
-    await expect(input).toBeVisible()
+    // On a phone the open map replaces the conversation instead of stacking.
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await expect(input).toBeHidden()
     const sent: string[] = []
     page.on('request', (request) => {
       if (request.method() === 'POST' && request.url().endsWith('/chat'))
         sent.push(request.url())
     })
+    await showGraphLists(page)
     await page
       .getByTestId('knowledge-graph-loaded-relationship')
       .first()
       .click()
+    // Learners get the relation's description, not the stored property list.
+    await expect(
+      page.getByTestId('knowledge-graph-relation-description')
+    ).toBeVisible()
+    await expect(
+      page.locator('#knowledge-graph-properties-heading')
+    ).toHaveCount(0)
     await page.getByTestId('knowledge-graph-ask').click()
     await expect(input).toBeFocused()
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toHaveCount(0)
@@ -802,6 +834,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await link.click()
 
     await expect(page.getByTestId('chat-knowledge-graph-panel')).toBeVisible()
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -828,6 +861,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await expect(option).toBeVisible()
     await option.click()
 
+    await showGraphLists(page)
     await expect(
       page
         .getByTestId('knowledge-graph-loaded-node')
@@ -888,6 +922,7 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       await expect(option).toBeVisible()
       await option.tap()
 
+      await showGraphLists(page)
       await expect(
         page
           .getByTestId('knowledge-graph-loaded-node')
@@ -897,10 +932,9 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
   })
 })
 
-test('GraphRAG rollout controls retrieval independently of the student map', async ({
+test('GraphRAG retrieval is controlled independently of the student map', async ({
   page,
 }) => {
-  let enabled = false
   let payloadReads = 0
   await page.route('**/api/features/*', async (route) => {
     payloadReads += 1
@@ -909,24 +943,21 @@ test('GraphRAG rollout controls retrieval independently of the student map', asy
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: true },
-          'chatbot-graphrag': { defaultValue: enabled },
         },
       }),
     })
   })
+  // Both knowledge-graph switches are advanced controls.
+  await setAiSettingsMode(page, 'advanced')
   await loginLecturer(page)
   const url = `${process.env.URL_MANAGE}/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge`
   await page.goto(url)
+  await openChatbotSection(page, 'graph')
   const map = page.getByTestId('chatbot-knowledge-graph-visible-switch')
   const retrieval = page.getByTestId('chatbot-knowledge-graph-retrieval-switch')
   await expect(map).toBeVisible()
-  await expect(retrieval).toHaveCount(0)
-  expect(payloadReads).toBeGreaterThan(0)
-  enabled = true
-  await page.evaluate(() => localStorage.clear())
-  await page.reload()
-  await expect(map).toBeVisible()
   await expect(retrieval).toBeVisible()
+  expect(payloadReads).toBeGreaterThan(0)
   const initial = await retrieval.isChecked()
   await retrieval.setChecked(!initial)
   await expect(retrieval).toBeChecked({ checked: !initial })

@@ -10,13 +10,16 @@ import {
   CHAT_BASE_MODEL_ID,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  getAvailableChatbotCustomModeKeys,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  getEffectiveChatbotStandardModeFlags,
   isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
   parseChatbotCustomModeConfigInput,
-  parseChatbotStandardModeConfigInput,
+  parseChatbotStandardModeConfigForStorage,
+  parseStoredChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -29,11 +32,14 @@ import {
   isFeatureFlagEnabled,
   requireFeatureFlagAccess,
 } from '../lib/featureFlags.js'
+import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import {
   type ChatbotCreditPolicy,
+  DEFAULT_CHATBOT_CREDIT_POLICY,
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from './chatbotCreditPolicy.js'
+import { getKbMetricsMap } from './knowledge.js'
 
 const chatModelSchema = z
   .object({
@@ -442,6 +448,7 @@ const chatbotOwnerSelect = {
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
   answerPreferencesEnabled: true,
+  interactiveExplanationsEnabled: true,
   knowledgeGraphVisible: true,
   knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
@@ -474,6 +481,7 @@ type ChatbotWithOwnerCourse = {
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
   answerPreferencesEnabled: boolean
+  interactiveExplanationsEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -633,6 +641,7 @@ function cloneJson(value: unknown): unknown {
 type ChatbotRevisionLiveFlags = Pick<
   DB.Chatbot,
   | 'answerPreferencesEnabled'
+  | 'interactiveExplanationsEnabled'
   | 'knowledgeGraphVisible'
   | 'knowledgeGraphRetrievalEnabled'
 >
@@ -748,6 +757,12 @@ function parseStoredRevision(
     return null
   }
   if (
+    value.interactiveExplanationsEnabled !== undefined &&
+    typeof value.interactiveExplanationsEnabled !== 'boolean'
+  ) {
+    return null
+  }
+  if (
     value.knowledgeGraphRetrievalEnabled !== undefined &&
     typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
   ) {
@@ -775,6 +790,10 @@ function parseStoredRevision(
       value.answerPreferencesEnabled === undefined
         ? live.answerPreferencesEnabled
         : value.answerPreferencesEnabled,
+    interactiveExplanationsEnabled:
+      value.interactiveExplanationsEnabled === undefined
+        ? live.interactiveExplanationsEnabled
+        : value.interactiveExplanationsEnabled,
     creditInitialCredits: value.creditInitialCredits as number,
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
@@ -822,6 +841,7 @@ function buildRevisionFromLive(
       chatbot.allowedReasoningEffortsByModel
     ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
     answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
+    interactiveExplanationsEnabled: chatbot.interactiveExplanationsEnabled,
     creditInitialCredits: chatbot.creditInitialCredits,
     creditResetPeriod: chatbot.creditResetPeriod,
     creditResetAmount: chatbot.creditResetAmount,
@@ -1003,6 +1023,7 @@ function revisionLiveData(
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
     answerPreferencesEnabled: revision.answerPreferencesEnabled,
+    interactiveExplanationsEnabled: revision.interactiveExplanationsEnabled,
     knowledgeGraphVisible: revision.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
@@ -1102,7 +1123,8 @@ function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
 
 function validateCompleteRevision(
   revision: ChatbotAuthoringRevision,
-  requirePublicationFields: boolean
+  requirePublicationFields: boolean,
+  systemPrompts: unknown
 ) {
   if (revision.name.trim().length === 0) {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
@@ -1110,7 +1132,10 @@ function validateCompleteRevision(
 
   if (revision.standardModeConfig !== null) {
     try {
-      parseChatbotStandardModeConfigInput(revision.standardModeConfig)
+      parseStoredChatbotStandardModeConfig(
+        revision.standardModeConfig,
+        systemPrompts
+      )
     } catch (error) {
       throw chatbotError(
         error instanceof Error
@@ -1154,6 +1179,22 @@ function validateCompleteRevision(
   }
 
   if (requirePublicationFields) {
+    const standardFlags = getEffectiveChatbotStandardModeFlags(
+      revision.standardModeConfig,
+      systemPrompts
+    )
+    const hasStandardMode = Object.values(standardFlags).some(Boolean)
+    const customModeKeys = getAvailableChatbotCustomModeKeys(
+      revision.customModeConfig,
+      systemPrompts
+    )
+    if (!hasStandardMode && customModeKeys.length === 0) {
+      throw chatbotError(
+        'Enable at least one chat mode before publication',
+        'CHATBOT_MODE_REQUIRED'
+      )
+    }
+
     const useCase = normalizedRevision.publicationUseCase
     if (
       typeof useCase !== 'string' ||
@@ -1209,6 +1250,7 @@ type RevisionModelPolicyInput = {
   modelSelection: boolean
   allowedModelIds: string[]
   answerPreferencesEnabled?: boolean | null
+  interactiveExplanationsEnabled?: boolean | null
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
     efforts: string[]
@@ -1262,7 +1304,8 @@ async function assertGraphRetrievalTransition(
   try {
     allowed =
       owner !== null &&
-      ctx.featureFlags?.isEnabled('chatbot-graphrag', {
+      owner.betaEnabled === true &&
+      ctx.featureFlags?.isEnabled('ai-beta', {
         id: ownerId,
         actorType: 'user',
         role: owner.role,
@@ -1371,13 +1414,6 @@ export async function saveChatbotRevision(
     ...(input.modelPolicy
       ? normalizeRevisionModelPolicy(input.modelPolicy)
       : {}),
-    ...(input.standardModeConfig
-      ? {
-          standardModeConfig: parseRevisionStandardModeConfig(
-            input.standardModeConfig
-          ),
-        }
-      : {}),
     ...(input.creditPolicy
       ? normalizeAndValidateCreditPolicy(input.creditPolicy)
       : {}),
@@ -1405,6 +1441,22 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    // An older client omits writingCoachEnabled; keep the stored choice instead
+    // of silently disabling the mode.
+    if (input.standardModeConfig) {
+      next = {
+        ...next,
+        standardModeConfig: parseRevisionStandardModeConfig({
+          ...input.standardModeConfig,
+          writingCoachEnabled:
+            input.standardModeConfig.writingCoachEnabled ??
+            normalizeChatbotStandardModeConfig(
+              current.standardModeConfig,
+              chatbot.systemPrompts
+            ).writingCoachEnabled,
+        }),
+      }
+    }
     // Custom-mode keys are minted here so a stale version throws before any key
     // is generated, and an existing mode keeps the key stored on messages.
     if (input.customModeConfig) {
@@ -1423,6 +1475,18 @@ export async function saveChatbotRevision(
       current.knowledgeGraphRetrievalEnabled,
       next.knowledgeGraphRetrievalEnabled
     )
+    // Only turning the setting on needs the flag; an unrelated save that
+    // carries an already-enabled value stays allowed.
+    if (
+      next.interactiveExplanationsEnabled &&
+      !current.interactiveExplanationsEnabled &&
+      !(await isFeatureFlagEnabled(ctx, 'interactive-explanations'))
+    ) {
+      throw chatbotError(
+        'Interactive explanations are not available',
+        'FORBIDDEN'
+      )
+    }
     await assertModelPolicyEntitled(
       tx,
       chatbot.ownerId,
@@ -1599,6 +1663,9 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
     ...(typeof args.answerPreferencesEnabled === 'boolean'
       ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
       : {}),
+    ...(typeof args.interactiveExplanationsEnabled === 'boolean'
+      ? { interactiveExplanationsEnabled: args.interactiveExplanationsEnabled }
+      : {}),
     modelSelection: args.modelSelection,
     allowedModelIds,
     allowedReasoningEffortsByModel:
@@ -1617,7 +1684,7 @@ function parseRevisionStandardModeConfig(
   input: ChatbotStandardModeConfigInput
 ) {
   try {
-    return parseChatbotStandardModeConfigInput(input)
+    return parseChatbotStandardModeConfigForStorage(input)
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1679,7 +1746,11 @@ export async function submitChatbotRevision(
     const revision = getRevisionSnapshot(chatbot)
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.systemPrompts
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1842,7 +1913,11 @@ export async function approveChatbotRevision(
     }
 
     const revision = getRevisionSnapshot(chatbot)
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.systemPrompts
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1953,7 +2028,14 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     where: { ownerId: ctx.user.sub },
     select: {
       ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
+      course: {
+        select: {
+          id: true,
+          name: true,
+          // Prefills the expected student count of a publication request.
+          _count: { select: { participations: true } },
+        },
+      },
       disclaimer: {
         select: { id: true, name: true, title: true, introText: true },
       },
@@ -2039,6 +2121,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   const messageCountById = new Map(
     messageCountRows.map((row) => [row.chatbotId, Number(row.count)])
   )
+  const kbMetricsById = await getKbMetricsMap(ctx.prisma, [
+    ...new Set(
+      chatbots.flatMap((chatbot) =>
+        chatbot.knowledgeBases.map(({ kb }) => kb.id)
+      )
+    ),
+  ])
 
   return chatbots.map((chatbot) => {
     const creditAggregate = creditAggregateById.get(chatbot.id)
@@ -2075,14 +2164,28 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
+    const enabledKnowledgeBases = chatbot.knowledgeBases.map(({ kb }) => ({
+      ...kb,
+      metrics: kbMetricsById.get(kb.id) ?? null,
+    }))
+
     return {
       ...shapeChatbotResponse(chatbot),
+      courses: chatbot.course
+        ? [
+            {
+              id: chatbot.course.id,
+              name: chatbot.course.name,
+              numOfParticipants: chatbot.course._count.participations,
+            },
+          ]
+        : [],
       usageSummary,
       disclaimerSummary,
-      enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
+      enabledKnowledgeBases,
       enabledKnowledgeBase:
-        chatbot.knowledgeBases.length === 1
-          ? (chatbot.knowledgeBases[0]?.kb ?? null)
+        enabledKnowledgeBases.length === 1
+          ? (enabledKnowledgeBases[0] ?? null)
           : null,
     }
   })
@@ -2172,6 +2275,8 @@ type CreateChatbotArgs = {
   description?: string | null
   avatar?: string | null
   courseId: string
+  disclaimerTitle?: string | null
+  disclaimerIntroText?: string | null
 }
 
 // New chatbots start on GPT-6 Luna, the BASE default model, which is also the
@@ -2196,6 +2301,10 @@ export async function createChatbot(
   args: CreateChatbotArgs,
   ctx: ContextWithUser
 ) {
+  // Creating a chatbot needs the account's AI approval, like knowledge bases.
+  // Editing and withdrawing existing chatbots keep the authoring gate alone.
+  await assertManageAiEnabled(ctx)
+
   // Resource-level authorization: the target course must belong to the
   // requesting lecturer. Pothos already checked authenticate + catalyst; this
   // is the third (execute-time ownership) layer of the auth model.
@@ -2208,6 +2317,19 @@ export async function createChatbot(
   }
   if (args.name === '') {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
+  }
+
+  // The client passes its localized suggested disclaimer so a new chatbot can
+  // request publication without a separate disclaimer step. Both texts are
+  // required together; omitting them keeps the chatbot without a disclaimer.
+  const hasDisclaimer =
+    args.disclaimerTitle != null || args.disclaimerIntroText != null
+  const disclaimerTitle = normalizeDisclaimerText(args.disclaimerTitle ?? '')
+  const disclaimerIntroText = normalizeDisclaimerText(
+    args.disclaimerIntroText ?? ''
+  )
+  if (hasDisclaimer) {
+    validateDisclaimerContent(disclaimerTitle, disclaimerIntroText)
   }
 
   const defaultModelId = getNewChatbotModelId(getChatModelRegistry())
@@ -2229,8 +2351,21 @@ export async function createChatbot(
       // New chatbots start with the participant map off (lecturer opts in).
       knowledgeGraphVisible: false,
       knowledgeGraphRetrievalEnabled: false,
+      ...DEFAULT_CHATBOT_CREDIT_POLICY,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
+      ...(hasDisclaimer
+        ? {
+            disclaimer: {
+              create: {
+                name: `${args.name} disclaimer`,
+                title: disclaimerTitle,
+                introText: disclaimerIntroText,
+                owner: { connect: { id: ctx.user.sub } },
+              },
+            },
+          }
+        : {}),
       // systemPrompts intentionally left unset (null): the chat runtime
       // composes its Tutor and Explainer platform defaults and exposes Quizzer
       // only when course retrieval is available. Custom modes are added and

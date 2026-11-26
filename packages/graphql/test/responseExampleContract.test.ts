@@ -14,7 +14,11 @@ describe('response-example mode eligibility', () => {
     {},
     { explainer: { prompt: 'Synthetic' } },
   ])('offers platform defaults when prompt overrides do not declare all modes', (systemPrompts) => {
-    expect(extractChatbotModes(systemPrompts)).toEqual(['explainer', 'tutor'])
+    expect(extractChatbotModes(systemPrompts)).toEqual([
+      'explainer',
+      'quizzer',
+      'tutor',
+    ])
   })
 
   it('preserves legacy disablement and other stored mode keys', () => {
@@ -23,7 +27,7 @@ describe('response-example mode eligibility', () => {
         explainer: { enabled: false },
         custom: { prompt: 'Synthetic' },
       })
-    ).toEqual(['custom', 'tutor'])
+    ).toEqual(['custom', 'quizzer', 'tutor'])
   })
 
   it('uses explicit standard settings ahead of legacy prompt flags', () => {
@@ -35,7 +39,18 @@ describe('response-example mode eligibility', () => {
     ).toEqual(['tutor'])
   })
 
-  it('offers Quizzer without prompt overrides when a safe Tutor binding is inherited', () => {
+  it('does not infer response-example support from Writing Coach configuration', () => {
+    expect(
+      extractChatbotModes(null, {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: true,
+      })
+    ).toEqual([])
+  })
+
+  it('offers Quizzer without a knowledge-base retrieval binding', () => {
     expect(
       extractChatbotModes(null, null, [
         {
@@ -49,7 +64,10 @@ describe('response-example mode eligibility', () => {
   })
 
   it.each([
-    { name: 'missing bindings', bindings: [] },
+    {
+      name: 'missing bindings',
+      bindings: [],
+    },
     {
       name: 'wildcard tools',
       bindings: [
@@ -94,10 +112,18 @@ describe('response-example mode eligibility', () => {
         },
       ],
     },
-  ])('does not advertise stored Quizzer with $name', ({ bindings }) => {
-    expect(extractChatbotModes({ quizzer: {} }, null, bindings)).not.toContain(
-      'quizzer'
-    )
+  ])('advertises stored Quizzer independently of $name', ({ bindings }) => {
+    expect(
+      extractChatbotModes(
+        { quizzer: {} },
+        {
+          tutorEnabled: true,
+          explainerEnabled: true,
+          quizzerEnabled: true,
+        },
+        bindings
+      )
+    ).toContain('quizzer')
   })
 
   it('keeps an explicitly disabled Quizzer unavailable with a safe binding', () => {

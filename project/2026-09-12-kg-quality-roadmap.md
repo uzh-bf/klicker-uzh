@@ -18,7 +18,87 @@ Automatic parser-only freshness remains deferred. Earlier canonical checks do
 not qualify the revised source. Merge, deployment, live refresh/build, activation
 and paid evaluation remain separate gates; OpenRouter review remains waived.
 
-## Current planning checkpoint — 2026-10-19
+## Current delivery checkpoint — 2026-10-27
+
+The image-scan blocker from October 23 is resolved. Two dependency lifts
+merged into `v3-ai`:
+[#6683](https://github.com/uzh-bf/klicker-uzh/pull/6683) removes legacy
+Next dependencies, and
+[#6699](https://github.com/uzh-bf/klicker-uzh/pull/6699) patches request
+parsers and migrates Zod validation. The staging image builds and scans
+then passed, so #6672 and the W5 consumer reached staging.
+[#6695](https://github.com/uzh-bf/klicker-uzh/pull/6695) also merged; it
+clears a stale chat status when Stop is pressed before the first answer
+text, and keeps timestamps from pointing into the future.
+
+The automatic staging promotion for this release was rejected by the
+promoter's workflow validation. It was promoted by manual dispatch instead.
+The validation failure and a failing SonarCloud quality gate on the same
+release are open with the rollout owner.
+
+Staging checks on a test chatbot passed:
+
+- Pressing Stop before the first answer text restores the draft and clears
+  the live status, both in an empty conversation and with history.
+- A follow-up answer completes with citations, and its timestamp is not in
+  the future.
+- A participant's cited answer keeps its sources and citation links after a
+  reload, and a citation link moves focus to its source card.
+
+One finding is recorded and deliberately not fixed yet: earlier messages'
+timestamps are not stable in the client. In the owner preview, an earlier
+answer takes the newest answer's time. In participant chat, the live time
+differs from the stored time until the page reloads.
+
+Still open from October 23: graph-assisted search in the owner preview is
+unconfirmed, the #6645 manage-setting screenshots are not captured, and W5
+waits for the human review of its calibration sample and the three
+decisions in the Catalyst W5 plan. The three open findings below are
+unchanged.
+
+### Previous delivery checkpoint — 2026-10-23
+
+The Klicker side of the October 19 directions is merged into `v3-ai`:
+
+- **W9b.** Graph-assisted document search keeps ordinary evidence and its
+  relevance order across documents
+  ([#6613](https://github.com/uzh-bf/klicker-uzh/pull/6613),
+  [plan](2026-10-19-w9b-rank-preserving-passage-selection-plan.md)). The
+  matched W9 comparison has not been rerun with it.
+- **W5 consumer.** Graph views read typed relations, evidence status and
+  source pages from generated graphs and fail closed on anything else
+  ([#6616](https://github.com/uzh-bf/klicker-uzh/pull/6616),
+  [#6672](https://github.com/uzh-bf/klicker-uzh/pull/6672),
+  [plan](2026-10-19-w5-kg-relation-consumer-plan.md)). #6672 adds the seven
+  types of the unified `kg-relations/v1` vocabulary.
+- **Concept links.** Answers link concept labels to a focused graph panel, and
+  the knowledge-graph setting and owner preview are fixed
+  ([#6645](https://github.com/uzh-bf/klicker-uzh/pull/6645),
+  [#6647](https://github.com/uzh-bf/klicker-uzh/pull/6647),
+  [plan](plans_wip/PLAN-kg-chat-concept-links.md)). Both reached staging and
+  were checked there; graph-assisted search in the owner preview is not yet
+  confirmed.
+
+On the generator side, typed relations are merged behind a setting that stays
+off. The first calibration on a course script passed the fixture thresholds
+and found no relation without a source page, but accuracy on course text
+still waits for a human review. The Catalyst
+[W5 plan](https://github.com/uzh-bf/klicker-uzh-catalyst/blob/main/docs/project/knowledge-graph/2026-10-19-w5-typed-evidence-linked-relations-plan.md)
+records the run and three open decisions: the relation cap, the setting
+default, and separating `is_a` from `example_of`.
+
+Open findings from the staging checks, not yet planned:
+
+- Footer-only passages are indexed as standalone chunks in the KB service.
+- Course documents can state conflicting facts, and nothing flags them.
+- The 250-node graph overview is too dense to read.
+
+The staging image build for the #6672 merge was blocked by three fixable
+HIGH/CRITICAL findings in the backend image scan. A dependency lift like
+[#6668](https://github.com/uzh-bf/klicker-uzh/pull/6668) has to land before
+#6672 can reach staging.
+
+### Previous planning checkpoint — 2026-10-19
 
 The first matched W9 comparison ran under the
 [adoption plan](2026-10-07-graphrag-adoption-plan.md) protocol on a private

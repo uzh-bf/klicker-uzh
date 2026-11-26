@@ -12,6 +12,16 @@ The required-MCP visibility rule below is superseded by
 [ADR 0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md), which makes
 availability per mode and resolves retrieval scope for the selected mode.
 
+Writing Coach amends the mode and context clauses below: `writing-coach` is a
+fourth platform standard mode and starts disabled. A draft may have no modes. Submission and approval require at least one mode
+that participants can select, including Quizzer alone or a reviewed custom mode.
+Historical configurations without `writingCoachEnabled` keep it disabled, while
+an older update that omits the flag preserves an explicit stored choice. Writing
+Coach receives the same full typed lecturer context as Tutor and Explainer.
+Manage and the server now share the 1,000-character `scopeNote` limit, replacing
+the earlier 200-character authoring limit. These rules supersede the three-mode,
+Tutor-or-Explainer and shorter authoring-limit statements below.
+
 ## Context
 
 Historically a chatbot's `systemPrompts[mode].prompt` fully replaced the
@@ -38,8 +48,7 @@ replacing:
   `subjectDomain`, `languageOfInstruction`, and `scopeNote`, plus explicit
   `tutorEnabled`, `explainerEnabled`, and `quizzerEnabled` flags, in the nullable
   typed `Chatbot.standardModeConfig` value. A valid mutation value requires all
-  three flags and must leave Tutor or Explainer enabled; Quizzer never satisfies
-  that invariant. Tutor and Explainer do not require a knowledge base. Missing
+  three flags. A lecturer can explicitly turn off every standard mode. Tutor and Explainer do not require a knowledge base. Missing
   or malformed persisted values derive all three flags from legacy opt-outs and
   defaults, while a valid pre-flag value with only Tutor and Explainer flags
   derives Quizzer from its legacy opt-out/default. This keeps existing rows
@@ -47,14 +56,13 @@ replacing:
   bounds the fields, and the Manage owner projection returns only the combined
   effective settings, never raw `systemPrompts`.
 - Tutor and Explainer are general standard candidates. Quizzer is independently
-  configurable but remains capability-gated: it appears only when the server
-  can resolve a restricted course `doc_query` binding. An exact Quizzer MCP configuration takes
+  configurable. Without a retrieval binding it offers topic-based practice. An exact Quizzer MCP configuration takes
   precedence per server. Otherwise Quizzer may inherit only a Tutor binding
   that exposes an exact `doc_query` tool or a required single-tool alias named
   `doc_query`; unrestricted and wildcard configurations are never inherited.
   A disabled exact Quizzer row blocks inheritance from that server. After MCP
   discovery, a Quizzer request fails closed with the existing required-tool
-  response if no `doc_query` tool is available; optional retrieval outages keep
+  response if a configured retrieval binding cannot supply its `doc_query` tool; optional retrieval outages keep
   their existing graceful-degradation behavior in Tutor and Explainer.
   Runtime scope checks reject conflicting stored bindings across modes, while
   authorizing the selected request from the effective configuration produced by

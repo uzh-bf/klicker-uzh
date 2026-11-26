@@ -19,6 +19,21 @@ playwright/
 
 ## Local run
 
+Inspect the launcher from a host shell without installing dependencies or
+starting services:
+
+```bash
+node util/run-playwright-host.mjs --help
+node util/run-playwright-host.mjs --version
+```
+
+Version output uses the locally installed Playwright version when readable;
+otherwise it reports the declared requirement and labels the installation as
+missing or its version as unavailable. The direct Node form works on a cold
+checkout. The `pnpm run playwright:host` wrapper reaches the same launcher, but
+pnpm rejects a missing or stale dependency install before running its script.
+Keep that dependency guard enabled.
+
 Run from a host shell at the repository root. The launcher starts or reconciles
 the exact devrouter workspace, resolves its namespaced routes and database, and
 keeps the Playwright process and browser binaries on the host.
@@ -40,6 +55,9 @@ node util/run-playwright-host.mjs --project=chromium
 
 # run one spec
 node util/run-playwright-host.mjs --project=chromium tests/A-login.spec.ts
+
+# match CI: production test builds instead of the dev servers
+node util/run-playwright-host.mjs --ci-runtime --project=chromium
 
 # inspect the resolved workspace without printing credentials
 node util/run-playwright-host.mjs --print-env

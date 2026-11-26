@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useSettingsStore } from '../src/stores/settingsStore'
 
 function deferred<T>() {
@@ -19,6 +19,7 @@ function modesResponse(mode: string) {
 }
 
 describe('settingsStore mode loading', () => {
+  afterEach(() => vi.unstubAllGlobals())
   beforeEach(() => {
     vi.restoreAllMocks()
     useSettingsStore.setState({
@@ -150,5 +151,20 @@ describe('settingsStore mode loading', () => {
 
     expect(useSettingsStore.getState().modeOptions).toEqual({})
     expect(useSettingsStore.getState().selectedMode).toBe('')
+  })
+
+  test('selects the first server mode when the stored selection is unavailable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          modeOptions: { 'synthetic-mode': 'synthetic-description' },
+        }),
+      })
+    )
+    useSettingsStore.setState({ selectedMode: 'unavailable-mode' })
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+    expect(useSettingsStore.getState().selectedMode).toBe('synthetic-mode')
   })
 })

@@ -30,7 +30,7 @@ wipe phase do not come back.
 
 This is easy to misread as an application bug. It surfaced as seven confident
 failures in the manage-assistant eval harness
-(`evaluation/manage-assistant`) that read exactly like model regressions —
+(`apps/chat/evaluation/manage-assistant`) that read exactly like model regressions —
 including four hard-gate prompt-injection "failures" — when the real cause was
 that the seed had left the DB with no courses and no injection-payload
 elements.
@@ -59,6 +59,6 @@ Two consequences worth remembering:
   for the user report a ready environment.
 - **Fixture-dependent test suites should assert their fixtures exist**, not
   assume them. A suite that blames the model (or the code) for a missing
-  fixture is worse than one that refuses to run. `evaluation/manage-assistant`
+  fixture is worse than one that refuses to run. `apps/chat/evaluation/manage-assistant`
   now checks both base courses and its own payload elements before running, for
   exactly this reason.

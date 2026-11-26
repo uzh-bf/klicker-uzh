@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getAuthenticatedManageUser: vi.fn(),
-  getManageAiCapability: vi.fn(),
+  getManageAssistantCapability: vi.fn(),
   rateLimitCheck: vi.fn(),
   readBoundedJson: vi.fn(),
   tryAcquireManageChatRequest: vi.fn(),
@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 // These cases focus on the route boundary. The capability helper is stubbed so
 // the route's denial and temporary-outage contracts stay independently visible.
 vi.mock('@/src/lib/server/featureFlags', () => ({
-  getManageAiCapability: mocks.getManageAiCapability,
+  getManageAssistantCapability: mocks.getManageAssistantCapability,
 }))
 
 vi.mock('@/src/lib/server/manageAuth', () => ({
@@ -47,8 +47,8 @@ async function expectJson(response: Response, status: number, body: unknown) {
 
 describe('POST /api/manage/chat request boundary', () => {
   beforeEach(() => {
-    mocks.getManageAiCapability.mockReset()
-    mocks.getManageAiCapability.mockResolvedValue('enabled')
+    mocks.getManageAssistantCapability.mockReset()
+    mocks.getManageAssistantCapability.mockResolvedValue('enabled')
     mocks.getAuthenticatedManageUser.mockReset()
     mocks.rateLimitCheck.mockReset()
     mocks.readBoundedJson.mockReset()
@@ -79,7 +79,7 @@ describe('POST /api/manage/chat request boundary', () => {
   })
 
   test('returns 403 for an explicit AI denial before rate limiting or reading the request', async () => {
-    mocks.getManageAiCapability.mockResolvedValue('disabled')
+    mocks.getManageAssistantCapability.mockResolvedValue('disabled')
 
     await expectJson(await POST(request()), 403, { error: 'Not available' })
     expect(mocks.rateLimitCheck).not.toHaveBeenCalled()
@@ -87,7 +87,9 @@ describe('POST /api/manage/chat request boundary', () => {
   })
 
   test('returns a retryable 503 for a temporary AI outage before rate limiting or reading the request', async () => {
-    mocks.getManageAiCapability.mockResolvedValue('temporarilyUnavailable')
+    mocks.getManageAssistantCapability.mockResolvedValue(
+      'temporarilyUnavailable'
+    )
 
     const response = await POST(request())
     await expectJson(response, 503, {

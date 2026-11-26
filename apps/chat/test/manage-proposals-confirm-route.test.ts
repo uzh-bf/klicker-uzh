@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getAuthenticatedManageUser: vi.fn(),
-  getManageAiCapability: vi.fn(),
+  getManageAssistantCapability: vi.fn(),
   rateLimitCheck: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/featureFlags', () => ({
-  getManageAiCapability: mocks.getManageAiCapability,
+  getManageAssistantCapability: mocks.getManageAssistantCapability,
 }))
 
 vi.mock('@/src/lib/server/manageAuth', () => ({
@@ -48,8 +48,8 @@ describe('POST /api/manage/proposals/confirm AI boundary', () => {
       scope: 'FULL_ACCESS',
       sub: 'lecturer-1',
     })
-    mocks.getManageAiCapability.mockReset()
-    mocks.getManageAiCapability.mockResolvedValue('enabled')
+    mocks.getManageAssistantCapability.mockReset()
+    mocks.getManageAssistantCapability.mockResolvedValue('enabled')
     mocks.rateLimitCheck.mockReset()
     mocks.rateLimitCheck.mockReturnValue({
       allowed: true,
@@ -58,14 +58,16 @@ describe('POST /api/manage/proposals/confirm AI boundary', () => {
   })
 
   test('returns 403 for an explicit AI denial before rate limiting', async () => {
-    mocks.getManageAiCapability.mockResolvedValue('disabled')
+    mocks.getManageAssistantCapability.mockResolvedValue('disabled')
 
     await expectJson(await POST(request()), 403, { error: 'Not available' })
     expect(mocks.rateLimitCheck).not.toHaveBeenCalled()
   })
 
   test('returns a retryable 503 for a temporary AI outage before rate limiting', async () => {
-    mocks.getManageAiCapability.mockResolvedValue('temporarilyUnavailable')
+    mocks.getManageAssistantCapability.mockResolvedValue(
+      'temporarilyUnavailable'
+    )
 
     const response = await POST(request())
     await expectJson(response, 503, {

@@ -13,6 +13,7 @@ query QGetChatbotsInfoWithStandardModes {
       tutorEnabled
       explainerEnabled
       quizzerEnabled
+      writingCoachEnabled
       courseName
       subjectDomain
       languageOfInstruction
@@ -20,6 +21,7 @@ query QGetChatbotsInfoWithStandardModes {
     }
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId

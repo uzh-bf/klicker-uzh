@@ -7,9 +7,11 @@ import {
   CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT,
   CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
+  getAvailableChatbotCustomModeKeys,
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
 } from '../src/chatbotCustomModeConfig.js'
+import { CHATBOT_STANDARD_MODE_KEYS } from '../src/chatbotStandardModeConfig.js'
 
 function parseModes(
   modes: Array<Record<string, unknown>>,
@@ -477,9 +479,9 @@ describe('chatbot custom mode configuration', () => {
   })
 
   it('rejects names colliding with the standard modes or with each other', () => {
-    expect(() => parseModes([{ name: 'Tutor' }], null)).toThrow(
-      'Mode name "Tutor" is reserved'
-    )
+    for (const key of CHATBOT_STANDARD_MODE_KEYS) {
+      expect(() => parseModes([{ name: key.toUpperCase() }], null)).toThrow()
+    }
     expect(() =>
       parseModes([{ name: 'Interview' }, { name: ' interview ' }], null)
     ).toThrow('Mode name "interview" is used more than once')
@@ -535,5 +537,21 @@ describe('chatbot custom mode configuration', () => {
         },
       ],
     })
+    const stored = {
+      modes: [
+        { key: 'cm_keep', name: 'Keep me' },
+        { key: 'cm_keep', name: 'Duplicate key' },
+        { key: 'cm_duplicate_name', name: 'keep me' },
+        { key: '   ', name: 'Blank key' },
+        { key: 'cm_reserved', name: 'Tutor' },
+        { key: 'cm_bad_name', name: '' },
+      ],
+    }
+    expect(getAvailableChatbotCustomModeKeys(stored)).toEqual(['cm_keep'])
+    expect(
+      getAvailableChatbotCustomModeKeys(stored, {
+        cm_keep: { enabled: false },
+      })
+    ).toEqual([])
   })
 })

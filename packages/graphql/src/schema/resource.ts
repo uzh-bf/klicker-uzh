@@ -14,6 +14,7 @@ import type {
   ChatAccountUsageOverview,
 } from '../services/chatAccountUsage.js'
 import type { ChatbotRevisionSaveInput as ChatbotRevisionSaveInputShape } from '../services/chatbots.js'
+import type { KBMetrics } from '../services/knowledge.js'
 import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { AiSubscriptionTier, LocaleType } from './user.js'
@@ -197,6 +198,7 @@ export const ChatbotStandardModeConfigInput =
       tutorEnabled: t.boolean({ required: true }),
       explainerEnabled: t.boolean({ required: true }),
       quizzerEnabled: t.boolean({ required: true }),
+      writingCoachEnabled: t.boolean({ required: false }),
       courseName: t.string({ required: false }),
       subjectDomain: t.string({ required: false }),
       languageOfInstruction: t.field({
@@ -215,6 +217,7 @@ export const ChatbotStandardModeConfig = ChatbotStandardModeConfigRef.implement(
       tutorEnabled: t.exposeBoolean('tutorEnabled'),
       explainerEnabled: t.exposeBoolean('explainerEnabled'),
       quizzerEnabled: t.exposeBoolean('quizzerEnabled'),
+      writingCoachEnabled: t.exposeBoolean('writingCoachEnabled'),
       courseName: t.exposeString('courseName', { nullable: true }),
       subjectDomain: t.exposeString('subjectDomain', { nullable: true }),
       languageOfInstruction: t.expose('languageOfInstruction', {
@@ -317,6 +320,7 @@ export const ChatbotRevisionModelPolicyInput =
       modelSelection: t.boolean({ required: true }),
       allowedModelIds: t.stringList({ required: true }),
       answerPreferencesEnabled: t.boolean({ required: false }),
+      interactiveExplanationsEnabled: t.boolean({ required: false }),
       allowedReasoningEffortsByModel: t.field({
         type: [ChatbotReasoningConfigInputRef],
         required: false,
@@ -422,6 +426,9 @@ export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
+    interactiveExplanationsEnabled: t.exposeBoolean(
+      'interactiveExplanationsEnabled'
+    ),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (revision) =>
@@ -488,6 +495,7 @@ export interface IChatbot {
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
   answerPreferencesEnabled: boolean
+  interactiveExplanationsEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -515,6 +523,7 @@ export interface IChatbot {
 export interface IChatbotKnowledgeBaseSummary {
   id: string
   name: string
+  metrics?: KBMetrics | null
 }
 
 export const ChatbotKnowledgeBaseSummaryRef =
@@ -636,6 +645,14 @@ export const Chatbot = ChatbotRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
+    // Kept for clients built before Writing Coach stopped depending on other
+    // modes' tool bindings; it always resolves to null.
+    writingCoachUnavailableReason: t.string({
+      nullable: true,
+      deprecationReason:
+        'Writing Coach availability no longer depends on tool bindings.',
+      resolve: () => null,
+    }),
     standardModeConfig: t.field({
       type: ChatbotStandardModeConfigRef,
       nullable: true,
@@ -649,6 +666,9 @@ export const Chatbot = ChatbotRef.implement({
     modelSelection: t.exposeBoolean('modelSelection'),
     allowedModelIds: t.exposeStringList('allowedModelIds'),
     answerPreferencesEnabled: t.exposeBoolean('answerPreferencesEnabled'),
+    interactiveExplanationsEnabled: t.exposeBoolean(
+      'interactiveExplanationsEnabled'
+    ),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

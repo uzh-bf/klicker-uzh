@@ -65,69 +65,56 @@ describe('effective chatbot modes', () => {
   })
 
   test('composes platform and stored modes while preserving custom copy in owner preview', () => {
-    expect(
-      resolveEffectiveChatModeOptions(
-        {
-          tutor: {
-            prompt: 'Custom Tutor prompt',
-            description: 'Custom Tutor description',
-          },
-          explainer: { description: 'Stored Explainer description' },
-          custom: { description: 'Custom mode description' },
+    const options = resolveEffectiveChatModeOptions(
+      {
+        tutor: {
+          prompt: 'Custom Tutor prompt',
+          description: 'Custom Tutor description',
         },
-        [],
-        null,
-        { allowUnapprovedModes: true }
-      )
-    ).toEqual({
-      tutor: {
-        description:
-          'Guides students with focused questions, hints, and feedback.',
+        explainer: { description: 'Stored Explainer description' },
+        custom: { description: 'Custom mode description' },
       },
-      explainer: {
-        description:
-          'Explains course concepts directly with definitions and grounded examples.',
-      },
-      custom: { description: 'Custom mode description' },
-    })
+      [],
+      null,
+      { allowUnapprovedModes: true }
+    )
+    expect(Object.keys(options).sort()).toEqual([
+      'custom',
+      'explainer',
+      'quizzer',
+      'tutor',
+    ])
+    expect(options.custom?.description).toBe('Custom mode description')
   })
 
   test('advertises only approved custom modes without unapproved stored keys', () => {
-    expect(
-      resolveEffectiveChatModeOptions(
-        {
-          tutor: { prompt: 'Custom Tutor prompt' },
-          'Draft-Mode': { description: 'Draft mode' },
+    const options = resolveEffectiveChatModeOptions(
+      {
+        tutor: { prompt: 'Custom Tutor prompt' },
+        'Draft-Mode': { description: 'Draft mode' },
+      },
+      [],
+      null,
+      {
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_approved_fixture',
+              name: 'Ethik-Rollenspiel',
+              description: 'Practises ethical reasoning in a role play.',
+              personaText: 'Act as the role-play counterpart.',
+            },
+          ],
         },
-        [],
-        null,
-        {
-          customModeConfig: {
-            modes: [
-              {
-                key: 'cm_approved_fixture',
-                name: 'Ethik-Rollenspiel',
-                description: 'Practises ethical reasoning in a role play.',
-                personaText: 'Act as the role-play counterpart.',
-              },
-            ],
-          },
-        }
-      )
-    ).toEqual({
-      explainer: {
-        description:
-          'Explains course concepts directly with definitions and grounded examples.',
-      },
-      tutor: {
-        description:
-          'Guides students with focused questions, hints, and feedback.',
-      },
-      cm_approved_fixture: {
-        description: 'Practises ethical reasoning in a role play.',
-        name: 'Ethik-Rollenspiel',
-      },
-    })
+      }
+    )
+    expect(Object.keys(options).sort()).toEqual([
+      'cm_approved_fixture',
+      'explainer',
+      'quizzer',
+      'tutor',
+    ])
+    expect(options.cm_approved_fixture?.name).toBe('Ethik-Rollenspiel')
   })
 
   test('keeps unapproved stored keys and approved custom modes in owner preview', () => {
@@ -160,12 +147,14 @@ describe('effective chatbot modes', () => {
     })
   })
 
-  test('ignores a custom-mode entry that reuses a standard-mode key', () => {
+  test.each(
+    CHATBOT_STANDARD_MODE_KEYS
+  )('ignores a custom-mode entry that reuses %s', (key) => {
     const modeOptions = resolveEffectiveChatModeOptions(null, [], null, {
       customModeConfig: {
         modes: [
           {
-            key: 'tutor',
+            key,
             name: 'Tutor replacement',
             description: 'Replacement description',
             personaText: null,
@@ -174,10 +163,7 @@ describe('effective chatbot modes', () => {
       },
     })
 
-    expect(modeOptions.tutor).toEqual({
-      description:
-        'Guides students with focused questions, hints, and feedback.',
-    })
+    expect(modeOptions).toEqual(resolveEffectiveChatModeOptions(null, [], null))
   })
 
   test('honours explicit mode opt-outs', () => {
@@ -192,6 +178,41 @@ describe('effective chatbot modes', () => {
         []
       )
     ).toEqual({})
+  })
+
+  test('offers the approved custom modes for a marked custom-only configuration', () => {
+    const modeOptions = resolveEffectiveChatModeOptions(
+      null,
+      [],
+      {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: false,
+        writingCoachEnabled: false,
+        explicitModeSelection: true,
+        courseName: null,
+        subjectDomain: null,
+        languageOfInstruction: null,
+        scopeNote: null,
+      },
+      {
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_custom_only',
+              name: 'Case practice',
+              description: 'Practises a course case.',
+              personaText: 'Run a case practice.',
+            },
+          ],
+        },
+      }
+    )
+
+    expect(Object.keys(modeOptions)).toEqual(['cm_custom_only'])
+    expect(resolveRequestedChatMode(modeOptions, undefined)).toBe(
+      'cm_custom_only'
+    )
   })
 
   test('uses valid typed standard-mode flags over legacy opt-outs', () => {
@@ -279,7 +300,7 @@ describe('effective chatbot modes', () => {
     ).toHaveProperty('quizzer')
   })
 
-  test('hides enabled typed Quizzer without a safe document-query capability', () => {
+  test('offers enabled typed Quizzer without a knowledge-base capability', () => {
     expect(
       resolveEffectiveChatModeOptions(
         null,
@@ -296,7 +317,10 @@ describe('effective chatbot modes', () => {
           quizzerEnabled: true,
         }
       )
-    ).not.toHaveProperty('quizzer')
+    ).toHaveProperty('quizzer', {
+      description:
+        'Practises exam-style course questions one at a time, with formative feedback.',
+    })
   })
 
   test('does not expose blank custom mode keys', () => {
@@ -328,6 +352,61 @@ describe('effective chatbot modes', () => {
     )
   })
 
+  test('defaults an omitted request to Tutor, otherwise the first offered mode', () => {
+    expect(
+      resolveRequestedChatMode(
+        { tutor: {}, cm_first: {}, cm_second: {} },
+        undefined
+      )
+    ).toBe('tutor')
+    expect(
+      resolveRequestedChatMode({ cm_first: {}, cm_second: {} }, undefined)
+    ).toBe('cm_first')
+    expect(resolveRequestedChatMode({}, undefined)).toBeNull()
+  })
+
+  test('keeps legacy custom-mode opt-outs out of participant modes', () => {
+    const options = resolveEffectiveChatModeOptions(null, [], null, {
+      customModeConfig: {
+        modes: [
+          {
+            key: 'cm_enabled',
+            name: 'Enabled',
+            description: null,
+            personaText: null,
+          },
+          {
+            key: 'cm_disabled',
+            name: 'Disabled',
+            description: null,
+            personaText: null,
+          },
+        ],
+      },
+    })
+
+    expect(options).toHaveProperty('cm_enabled')
+    expect(
+      resolveEffectiveChatModeOptions(
+        { cm_disabled: { enabled: false } },
+        [],
+        null,
+        {
+          customModeConfig: {
+            modes: [
+              {
+                key: 'cm_disabled',
+                name: 'Disabled',
+                description: null,
+                personaText: null,
+              },
+            ],
+          },
+        }
+      )
+    ).not.toHaveProperty('cm_disabled')
+  })
+
   test('offers approved unbound modes without exposing unapproved stored keys', () => {
     const configurations = [
       config({
@@ -357,6 +436,7 @@ describe('effective chatbot modes', () => {
     expect(Object.keys(modeOptions).sort()).toEqual([
       'cm_approved',
       'explainer',
+      'quizzer',
       'tutor',
     ])
     expect(
@@ -475,7 +555,7 @@ describe('effective chatbot modes', () => {
     ).toEqual([])
     expect(
       resolveEffectiveChatModeOptions(null, configurations)
-    ).not.toHaveProperty('quizzer')
+    ).toHaveProperty('quizzer')
   })
 
   test('resolves exact Quizzer precedence per server', () => {
@@ -551,7 +631,7 @@ describe('effective chatbot modes', () => {
     ).toHaveProperty('quizzer')
   })
 
-  test('does not expose Quizzer without a safe document-query binding', () => {
+  test('keeps Quizzer visible when its only configured tools are unsafe', () => {
     const configurations = [
       config({
         allowedTools: ['doc_*'],
@@ -565,7 +645,7 @@ describe('effective chatbot modes', () => {
         { quizzer: { description: 'Quizzer' } },
         configurations
       )
-    ).not.toHaveProperty('quizzer')
+    ).toHaveProperty('quizzer')
   })
 
   test('inherits a required document-query binding for a custom mode', () => {
@@ -695,5 +775,61 @@ describe('effective chatbot modes', () => {
         priority: 1,
       }),
     ])
+  })
+})
+
+describe('Writing Coach availability', () => {
+  const config = {
+    tutorEnabled: false,
+    explainerEnabled: false,
+    quizzerEnabled: false,
+    writingCoachEnabled: true,
+  }
+
+  test('requires opt-in and supports a standalone writing chatbot', () => {
+    expect(resolveEffectiveChatModeOptions(null, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    expect(
+      Object.keys(resolveEffectiveChatModeOptions(null, [], config))
+    ).toEqual(['writing-coach'])
+  })
+
+  test("stays offered without inheriting another mode's required binding", () => {
+    // Attaching a knowledge base stores required doc_query bindings for Tutor
+    // and Explainer only; Writing Coach must remain available and tool-free.
+    const requiredBinding = {
+      chatMode: 'tutor',
+      isEnabled: true,
+      parameters: { required: true, toolAlias: 'doc_query' },
+      mcpServerId: 'synthetic-server',
+    }
+    expect(
+      Object.keys(
+        resolveEffectiveChatModeOptions(null, [requiredBinding], config)
+      )
+    ).toEqual(['writing-coach'])
+    expect(
+      resolveEffectiveMCPConfigurations([requiredBinding], 'writing-coach')
+    ).toEqual([])
+  })
+
+  test('requires the typed opt-in even when stored guidance uses the same key', () => {
+    const stored = { 'writing-coach': { enabled: true } }
+    expect(resolveEffectiveChatModeOptions(stored, [])).not.toHaveProperty(
+      'writing-coach'
+    )
+    const options = resolveEffectiveChatModeOptions(stored, [], config)
+    expect(Object.keys(options)).toEqual(['writing-coach'])
+    expect(resolveRequestedChatMode(options, 'WRITING-COACH')).toBe(
+      'writing-coach'
+    )
+    expect(
+      resolveEffectiveChatModeOptions(
+        { 'writing-coach': { enabled: false } },
+        [],
+        config
+      )
+    ).toHaveProperty('writing-coach')
   })
 })

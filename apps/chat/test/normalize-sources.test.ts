@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   countDocQueryDocuments,
   isDocQueryToolName,
+  normalizeResponseExampleEvidenceFromParts,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
 
@@ -344,13 +345,59 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
+      id: 'url:urn:video-ingestion:sha256:video#t=42.0,59.0||0:42|42|59',
       index: 1,
       type: 'video',
       title: 'Lecture 1 — 0:42–0:59',
       labeledPage: '0:42',
       startSec: 42,
       endSec: 59,
+      videoPassages: [
+        {
+          startSec: 42,
+          endSec: 59,
+          excerpt: 'Video context',
+        },
+      ],
     })
+  })
+
+  test('retains every video passage in retrieval order', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [
+              { content: 'First passage', start_sec: 42, end_sec: 59 },
+              { content: 'Later passage', start_sec: 754, end_sec: 800 },
+              { content: 'Unknown end', start_sec: 1200 },
+              { content: 'Unsupported without a start', end_sec: 1500 },
+              { content: 'Negative start', start_sec: -1, end_sec: 10 },
+              {
+                content: 'Nonfinite start',
+                start_sec: Number.POSITIVE_INFINITY,
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]).toMatchObject({
+      startSec: 42,
+      endSec: 59,
+      excerpt: 'First passage',
+      videoPassages: [
+        { startSec: 42, endSec: 59, excerpt: 'First passage' },
+        { startSec: 754, endSec: 800, excerpt: 'Later passage' },
+        { startSec: 1200, excerpt: 'Unknown end' },
+      ],
+    })
+    expect(result[0]?.videoPassages).toHaveLength(3)
   })
 
   test('documents mode drops a reversed structured end time', () => {
@@ -383,7 +430,7 @@ describe('normalizeSourcesFromParts', () => {
     expect(result[0]?.endSec).toBeUndefined()
   })
 
-  test('structured video ranges participate in source deduplication', () => {
+  test('merges additional passages for the same original source key', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('IW_doc_query', {
         mode: 'documents',
@@ -394,21 +441,77 @@ describe('normalizeSourcesFromParts', () => {
             title: 'Lecture 1',
             chunks: [{ content: 'First', start_sec: 42, end_sec: 59 }],
           },
+        ],
+      }),
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
           {
-            reference: 'urn:video-ingestion:sha256:video#t=42.0,75.0',
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
             source_type: 'video',
             title: 'Lecture 1',
-            chunks: [{ content: 'Second', start_sec: 42, end_sec: 75 }],
+            chunks: [
+              { content: 'First', start_sec: 42, end_sec: 59 },
+              { content: 'Second', start_sec: 75, end_sec: 90 },
+            ],
           },
         ],
       }),
     ])
 
-    expect(
-      result.map(({ startSec, endSec }) => ({ startSec, endSec }))
-    ).toEqual([
-      { startSec: 42, endSec: 59 },
-      { startSec: 42, endSec: 75 },
+    expect(result.map(({ index, title }) => ({ index, title }))).toEqual([
+      { index: 1, title: 'Lecture 1' },
+    ])
+    expect(result[0]).toMatchObject({
+      startSec: 42,
+      endSec: 59,
+      excerpt: 'First',
+      videoPassages: [
+        { startSec: 42, endSec: 59, excerpt: 'First' },
+        { startSec: 75, endSec: 90, excerpt: 'Second' },
+      ],
+    })
+    expect(result[0]?.id).toBe(
+      'url:urn:video-ingestion:sha256:video#t=42.0,59.0|||42|59'
+    )
+  })
+
+  test('different first video ranges keep the original IDs and indices', () => {
+    const reference = 'urn:video-ingestion:sha256:video#t=42.0,59.0'
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference,
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [{ content: 'First', start_sec: 42, end_sec: 59 }],
+          },
+        ],
+      }),
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference,
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [{ content: 'Later', start_sec: 75, end_sec: 90 }],
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id, index }) => ({ id, index }))).toEqual([
+      {
+        id: 'url:urn:video-ingestion:sha256:video#t=42.0,59.0|||42|59',
+        index: 1,
+      },
+      {
+        id: 'url:urn:video-ingestion:sha256:video#t=42.0,59.0|||75|90',
+        index: 2,
+      },
     ])
   })
 
@@ -836,6 +939,182 @@ describe('normalizeSourcesFromParts', () => {
     ])
 
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
+  })
+
+  test('keeps display deduplication independent from capture lineage', () => {
+    const sharedLineage = {
+      source_id: '33ec1c89-f892-4ab6-97cb-27ed037ec33d',
+      chunk_id: 'chunk-7',
+      content_hash: 'b'.repeat(64),
+      citation_anchor: 'page=7',
+    }
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            ...sharedLineage,
+            file_name: 'lecture-01.pdf',
+            source_url: 'https://example.com/lecture-01.pdf',
+          },
+          {
+            ...sharedLineage,
+            file_name: 'course-notes.html',
+            source_url: 'https://example.com/course-notes.html',
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id }) => id)).toEqual([
+      'url:https://example.com/lecture-01.pdf||',
+      'url:https://example.com/course-notes.html||',
+    ])
+  })
+})
+
+describe('normalizeResponseExampleEvidenceFromParts', () => {
+  const sourceId = '33ec1c89-f892-4ab6-97cb-27ed037ec33d'
+  const contentHash = 'b'.repeat(64)
+
+  test('returns only complete lineage cited by the final Markdown answer', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        answer: 'Some answer text.',
+        sources: [
+          {
+            expert: 'Course source',
+            file_name: 'lecture-01.pdf',
+            source_id: sourceId,
+            chunk_id: 'chunk-7',
+            content_hash: contentHash,
+            citation_anchor: 'page=7',
+          },
+          {
+            expert: 'Unused source',
+            file_name: 'lecture-02.pdf',
+            source_id: 'b3ef3f06-ab00-4ff3-9ca2-c24cab723af3',
+            chunk_id: 'chunk-9',
+            content_hash: 'c'.repeat(64),
+            citation_anchor: 'page=9',
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'The relevant explanation is grounded here. [1]'
+      )
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('reads documents-mode lineage from the cited source chunk', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'lecture-01.pdf',
+            source_type: 'pdf',
+            source_id: sourceId,
+            chunks: [
+              {
+                chunk_id: 'chunk-7',
+                content_hash: contentHash,
+                citation_anchor: 'page=7',
+                content: 'Relevant excerpt',
+              },
+            ],
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('withholds capture for video locators unsupported by saved examples', () => {
+    const parts = [
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video:synthetic#t=754.0,800.0',
+            source_type: 'video',
+            source_id: sourceId,
+            chunks: [
+              {
+                chunk_id: 'earlier-chunk',
+                content_hash: contentHash,
+                citation_anchor: 'timestamp=0:00',
+                content: 'Earlier passage',
+                start_sec: 0,
+                end_sec: 754,
+              },
+              {
+                chunk_id: 'chunk-12',
+                content_hash: contentHash,
+                citation_anchor: 'timestamp=12:34',
+                content: 'Relevant video excerpt',
+                start_sec: 754,
+                end_sec: 800,
+              },
+            ],
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, '[1, T. 12:34]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, '[1] [1, t. 12:34]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'Literal `[1, t. 12:34]`, evidence [1].'
+      )?.[0]?.chunkId
+    ).toBe('earlier-chunk')
+  })
+
+  test('fails closed for missing lineage or an unresolved citation', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        sources: [{ expert: 'Course source', file_name: 'lecture.pdf' }],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [2]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer')
+    ).toBeNull()
   })
 })
 

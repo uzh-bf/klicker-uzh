@@ -70,6 +70,58 @@ test('provider configuration separates backing ownership and agrees on retrieval
   assert.equal(result.docProcessing.env.HATCHET_CLIENT_TOKEN, undefined)
   assert.equal(result.docProcessing.env.PYTHONDONTWRITEBYTECODE, '1')
   assert.equal(result.docProcessing.backing.postgres_port, 31013)
+  assert.deepEqual(result.docProcessing.blob, {
+    kind: 'azurite',
+    endpoint: 'http://127.0.0.1:31008/devstoreaccount1',
+    container: 'doc-processing',
+  })
+  assert.equal(
+    result.docProcessing.env.DOC_PROCESSING_DEFAULT_PIPELINE_MODE,
+    'staged'
+  )
+  assert.equal(
+    result.docProcessing.env.DOC_PROCESSING_DEFAULT_PICTURE_DESCRIPTION,
+    'off'
+  )
+  assert.equal(
+    Object.keys(result.docProcessing.env).some(
+      (key) =>
+        key.startsWith('DOC_PROCESSING_STAGED_') ||
+        key.startsWith('DOC_PROCESSING_AZURE_STORAGE_') ||
+        key.startsWith('DOC_PROCESSING_EXTRACT_')
+    ),
+    false
+  )
+  const connection = (value) =>
+    Object.fromEntries(
+      value
+        .split(';')
+        .filter(Boolean)
+        .map((part) => {
+          const split = part.indexOf('=')
+          return [part.slice(0, split), part.slice(split + 1)]
+        })
+    )
+  const projection = connection(
+    env.chat.COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING
+  )
+  const artifacts = connection(worker.AZURE_STORAGE_CONNECTION_STRING)
+  assert.equal(projection.AccountName, artifacts.AccountName)
+  assert.equal(projection.AccountKey === artifacts.AccountKey, true)
+  assert.equal(
+    projection.BlobEndpoint,
+    'http://host.docker.internal:31008/devstoreaccount1'
+  )
+  assert.equal(
+    env.chat.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER,
+    result.docProcessing.blob.container
+  )
+  assert.notEqual(
+    project.artifacts.azure_blob.container,
+    result.docProcessing.blob.container
+  )
+  assert.equal(env.chat.COURSE_IMAGE_PROJECTION_STORAGE_PREFIX, 'projection')
+
   assert.equal(
     worker.WEB_SCRAPING_BASE_URL,
     'http://host.docker.internal:31016'
@@ -264,4 +316,67 @@ test('the producer project writes real vectors and durable artifacts to the loca
   assert.equal(project.artifacts.enabled, true)
   assert.equal(project.artifacts.backend, 'azure_blob')
   assert.equal(project.vector_store.dry_run, undefined)
+})
+
+test('projection readers and processor follow the selected ingestion Blob port', () => {
+  const ports = providerPorts()
+  ports.ingestion.azurite = 32008
+  const result = renderProviderLocalConfiguration(fixture(), {
+    instance: 'kb-fixture',
+    ports,
+  })
+  assert.equal(new URL(result.docProcessing.blob.endpoint).port, '32008')
+  assert.equal(
+    result.environment.chat.COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING.includes(
+      'BlobEndpoint=http://host.docker.internal:32008/devstoreaccount1;'
+    ),
+    true
+  )
+  assert.notEqual(
+    new URL(result.docProcessing.blob.endpoint).port,
+    String(ports.klicker.blob)
+  )
+})
+
+test('bounded qualification disables extra inference and limits each resource embedding request', () => {
+  const input = { instance: 'kb-bounded', ports: providerPorts() }
+  const bounded = renderProviderLocalConfiguration(fixture(), input, true)
+  const ordinary = renderProviderLocalConfiguration(fixture(), input)
+  assert.equal(bounded.project.embedding.max_retries, 0)
+  assert.equal(bounded.project.embedding.application_retries, 0)
+  assert.equal(bounded.project.embedding.require_complete, true)
+  assert.deepEqual(bounded.project.resource_embedding_limits, {
+    max_chunks: 4,
+    max_input_bytes: 16384,
+    max_requests: 1,
+  })
+  for (const name of ['language_detection', 'metadata_extraction', 'context'])
+    assert.equal(bounded.project[name].enabled, false)
+  assert.equal(bounded.project.chunking.auto_detect.enabled, false)
+  assert.equal(bounded.project.cleaning.cleanup, 'none')
+  assert.equal(
+    bounded.retrievalEnvironment
+      .KLICKER_LOCAL_RETRIEVAL_DOC_QUERY_RESPONSE_MODE,
+    'documents'
+  )
+  assert.equal(
+    bounded.retrievalEnvironment.KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MAX_RETRIES,
+    '0'
+  )
+  assert.equal(
+    bounded.retrievalEnvironment.KLICKER_LOCAL_RETRIEVAL_RERANKER_TYPE,
+    'none'
+  )
+  assert.equal(
+    bounded.retrievalEnvironment
+      .KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_QUERY_EXPANSION_ENABLED,
+    'false'
+  )
+  assert.equal(ordinary.project.resource_embedding_limits, undefined)
+  assert.equal(ordinary.project.embedding.max_retries, undefined)
+  assert.equal(
+    ordinary.retrievalEnvironment
+      .KLICKER_LOCAL_RETRIEVAL_DOC_QUERY_RESPONSE_MODE,
+    undefined
+  )
 })

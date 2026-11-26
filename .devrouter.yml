@@ -21,7 +21,7 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.5.1
+  version: 0.6.3
 project:
   name: klicker-uzh
 # Reproducible ignored state for `workspace cleanup`, `reclaim` and `trim`.
@@ -34,6 +34,11 @@ worktrees:
 managedRuntime:
   devcontainer:
     prepareCommand: [node, util/generate-dependency-mounts.mjs]
+    freshBootstrap:
+      command:
+        [bash, .devcontainer/recover-bootstrap.sh, --initialize-new-disposable]
+      dataVolumes: [pgdata]
+      sharedCaches: [pnpm_store]
     # Managed base: the DevPod primary `app` is implicit; postgres serves
     # post-create reset/push/seed, Azurite is an app dependency, and Hatchet is
     # boot-critical for the backend.
@@ -219,7 +224,8 @@ apps:
     runtime: proxy
     upstream: ${WORKSPACE}-db:5432
 
-  # lti-service: pre-built, runs on 4000. Full LTI launch requires external LMS.
+  # lti-service: pre-built, runs on 4000. playwright/lti-harness provides a
+  # mock LTI platform for local launches; real LMS launches need an LMS.
   - name: lti
     host: lti.klicker.localhost
     protocol: http

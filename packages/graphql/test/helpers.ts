@@ -362,15 +362,10 @@ export async function testInitialization(
     },
     prisma,
     featureFlags: {
-      // The seeded owners hold every knowledge-base admission; a case that
-      // exercises a denial builds its own context from this one.
-      isEnabled: vi.fn((key) =>
-        [
-          'ai-beta',
-          'kb-ingestion',
-          'kb-graph-builds',
-          'kb-graph-domain-selection',
-        ].includes(key)
+      // The seeded owners hold the AI beta and question generation; a case
+      // that exercises a denial builds its own context from this one.
+      isEnabled: vi.fn(
+        (key) => key === 'ai-beta' || key === 'question-generation'
       ),
       getAiBetaDecision: vi.fn(() => 'enabled' as const),
       refresh: vi.fn(async () => undefined),
@@ -892,8 +887,10 @@ export async function seedCourse(
       name: uuidv4(),
       displayName: uuidv4(),
       description: uuidv4(),
+      // Nine digits like the pins of created courses: pin codes are unique, and
+      // four-digit draws collided with courses from earlier tests.
       pinCode: !isAssessmentEnabled
-        ? Math.floor(Math.random() * 9000 + 1000)
+        ? Math.floor(Math.random() * 900000000 + 100000000)
         : null,
       startDate: startDate ?? defaultStartDate,
       endDate: endDate ?? defaultEndDate,

@@ -11,9 +11,10 @@ import {
   beginBudgetTurn,
   finishBudgetTurn,
   readBudgetLedger,
-} from '../../../evaluation/evaluation-budget.mjs'
-import { verifyGuardQualification } from '../../../evaluation/evaluation-spend-guard.mjs'
+} from './evaluation-budget.mjs'
+import { verifyGuardQualification } from './evaluation-spend-guard.mjs'
 
+import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
   evaluatePersistedEvidence,
   evidenceError,
@@ -21,7 +22,7 @@ import {
 } from './klicker-evaluation-evidence.mjs'
 
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
-// Keep the local launcher fallback in util/_run_klicker_eval.sh aligned.
+// Keep the launcher fallback in klicker-uzh-catalyst's evaluation/ aligned.
 export const DEFAULT_MODEL_ID = 'gpt-6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
@@ -133,6 +134,10 @@ function yamlScalar(value) {
   return trimmed
 }
 
+// Writing Coach is tool-free, so only the canary keeps the Tutor and Explainer
+// restriction that its retrieval-tool check needs.
+const GROUND_TRUTH_MODES = ['tutor', 'explainer', 'writing-coach']
+
 export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   const normalized = text.replaceAll('\r\n', '\n')
   if (!normalized.startsWith('---\n')) {
@@ -168,7 +173,7 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   if (!question || !mode) {
     throw evaluationError(`ground_truth_fields_missing:${basename(filePath)}`)
   }
-  if (!['tutor', 'explainer'].includes(mode)) {
+  if (!GROUND_TRUTH_MODES.includes(mode)) {
     throw evaluationError(`ground_truth_mode_invalid:${basename(filePath)}`)
   }
 
@@ -923,7 +928,13 @@ export class KlickerEvaluationTarget {
     throw evaluationError('assistant_message_timeout')
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode, cookie) {
+  async readCompletedMessage(
+    threadId,
+    assistantMessageId,
+    mode,
+    cookie,
+    expectedSelectedModelId = this.modelId
+  ) {
     const messages = await this.pollThreadMessages(
       threadId,
       assistantMessageId,
@@ -934,10 +945,76 @@ export class KlickerEvaluationTarget {
     )
     if (!message) throw evaluationError('assistant_message_timeout')
     if (message.chatMode !== mode) throw evaluationError('chat_mode_mismatch')
-    if (message.modelId !== this.modelId) {
+    if (message.modelId !== expectedSelectedModelId) {
       throw evaluationError('chat_model_mismatch')
     }
     return message
+  }
+
+  async runTurn({
+    question,
+    mode,
+    threadId,
+    history = [],
+    parentId,
+    answerStyle,
+    answerTone,
+    expectedSelectedModelId = this.modelId,
+    maxStreamBytes = this.maxStreamBytes,
+  }) {
+    if (!CHAT_MODE_KEYS.includes(mode)) {
+      throw evaluationError('chat_mode_invalid')
+    }
+    // `history` and `parentId` describe the same conversation: a turn that
+    // continues a thread may only hang off the trailing assistant message of the
+    // history it submits, and an empty history is a root turn.
+    const trailingAssistantMessage =
+      history.at(-1)?.role === 'assistant' ? history.at(-1) : null
+    if (parentId && !trailingAssistantMessage) {
+      throw evaluationError('chat_parent_without_history')
+    }
+    if (parentId && trailingAssistantMessage?.id !== parentId) {
+      throw evaluationError('chat_parent_history_mismatch')
+    }
+    const resolvedParentId = parentId ?? trailingAssistantMessage?.id ?? null
+    await this.ensureSession()
+    const currentThreadId = threadId || (await this.createThread(this.cookie))
+    const userMessageId = randomUUID()
+    const assistantMessageId = randomUUID()
+    await this.submitTurn({
+      question,
+      mode,
+      threadId: currentThreadId,
+      userMessageId,
+      assistantMessageId,
+      maxStreamBytes,
+      history,
+      parentId: resolvedParentId,
+      answerStyle,
+      answerTone,
+      cookie: this.cookie,
+    })
+    const message = await this.readCompletedMessage(
+      currentThreadId,
+      assistantMessageId,
+      mode,
+      this.cookie,
+      expectedSelectedModelId
+    )
+    const result = extractAssistantMessage(message)
+    return {
+      ...result,
+      threadId: currentThreadId,
+      userMessageId,
+      assistantMessageId,
+      requestedModelId: this.modelId,
+      selectedModelId: message.modelId,
+      history: [
+        ...history,
+        { id: userMessageId, role: 'user', content: question },
+        { id: assistantMessageId, role: 'assistant', content: result.answer },
+      ],
+    }
   }
 
   async runQuestion(question) {

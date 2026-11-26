@@ -150,15 +150,13 @@ model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
 
 For the local Klicker target evaluation adapter, run
-
-    bash util/test-klicker-eval-wrapper.sh
-
-before any credentialed run. Start the exact worktree with the developer
+`apps/chat/test/klicker-evaluation-target.test.mjs` here and the launcher's
+`evaluation/tests/test-klicker-eval-wrapper.sh` in `klicker-uzh-catalyst` before any
+credentialed run. Start the exact worktree with the developer
 Foundry values mapped to `UPSTREAM_OPENAI_API_KEY` and
 `UPSTREAM_OPENAI_BASE_URL` by the approved secret manager. The repository
 wrapper does not require a personal operator or fetch secrets itself. Native
-Infisical and CI examples are documented in
-[`evaluation/README.md`](../evaluation/README.md).
+Infisical examples are documented in `klicker-uzh-catalyst`'s `evaluation/README.md`.
 
 The VPN must be active. If the worktree runtime already exists with different
 upstream values, stop that exact checkout and run the command again; ensure
@@ -213,8 +211,8 @@ browser binaries. The `pnpm playwright:host` package script calls the same
 launcher, but pnpm's `verifyDepsBeforeRun: error` check stops it before the
 launcher runs whenever the host install is missing or stale. That is the normal
 state of a devcontainer checkout. The launcher prints the stack mode before the
-browser phase: Next dev servers locally (CI tests production builds), the
-runtime profile, and the database port. `--print-env` prints the workspace,
+browser phase: Next dev servers by default or CI production test builds with
+`--ci-runtime`, the runtime profile, and the database port. `--print-env` prints the workspace,
 app URLs, and database host without running tests. Package scripts route to the same launcher, while
 `playwright.config.ts` rejects direct local commands and every local container
 before global setup can reset data. The devcontainer also sets a non-directory
@@ -237,6 +235,25 @@ cleanup and seeding remain
 the acceptance default. Keep one worker for a shared runtime because per-spec
 cleanup resets shared fixed identities; parallel shards need separate complete
 worktree runtimes, including Redis and Hatchet.
+
+To reproduce a CI result locally, add `--ci-runtime` before the Playwright
+arguments. The launcher resolves the same Devrouter runtime plan as a CI shard
+and writes it to `.devcontainer/.runtime/playwright-ci-plan.json`. While that
+file exists, the devcontainer runs the plan's `build:test` and then CI's
+`start:playwright:ci` instead of the dev servers. The apps keep the
+workspace's routed HTTPS origins through `KLICKER_TEST_ROUTED_DOMAIN` in
+`util/_with_local_test_origins.sh`. That script also blanks the Matomo
+variables, so no test build, in CI or locally, reports synthetic page views to
+the production analytics sites in `.env.production`. Each `--ci-runtime` run
+rebuilds through Turbo's cache, so an unchanged tree restarts quickly.
+
+Without the flag, the launcher removes the plan and writes
+`.devcontainer/.runtime/playwright-dev-test`. The devcontainer then runs the
+dev servers through their `dev:test` scripts, which load the backend's
+synthetic feature flag fixture and test controller as CI's `start:test` does.
+The remaining difference from CI is the dev server build. A plain
+`devrouter ensure .` keeps whichever mode the last launcher run selected;
+delete both marker files to return to ordinary development.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
@@ -292,7 +309,7 @@ before any readiness probe, and a survivor advances into the readiness pass.
 - The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, compact modal isolation and focus restoration, cross-origin Escape and focus restoration, persistent context and change announcements, short mobile viewports, desktop-only size persistence, viewport-clamped size presets, breakpoint transitions that preserve the conversation, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, localized draft confirmation and parent-owned editor navigation, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
 - GrowthBook-backed AI availability is covered in `playwright/tests/Y-ai-beta-availability.spec.ts`. The suite injects the authenticated capability query, verifies that an enabled-to-temporarily-unavailable transition keeps the AI entry visible but disabled with recovery guidance, confirms the direct Generate route remains a stable retryable state, and proves recovery without a full reload. Its explicit-denial case verifies that the AI entry remains hidden and the direct route stays unavailable. This is presentation evidence; backend authorization remains covered by the GraphQL and Chat contract tests.
 - Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
-- `evaluation/manage-assistant` keeps the matching E7 readiness contract. Each case declares `assistant_text` or `transport_ui`: model-mediated faults must prove the expected zero-tool or `FORBIDDEN` tool-output condition and require a non-empty assistant message before the judge runs; assistant text, reasoning, tool outputs, route bodies, and the `Retry-After` header are all scanned for internal-detail leaks with payload-redacted diagnostics. Route-level 401/429 faults must match the exact public JSON/status/header contract. The 429 case exhausts a fresh dummy subject with invalid request bodies that return before model invocation, then captures the real limiter response. Run the deterministic contract suite with `cd evaluation/manage-assistant && uv run pytest -m offline -q`; live judged evidence remains a separate paid release gate.
+- `apps/chat/evaluation/manage-assistant` keeps the matching E7 readiness contract. Each case declares `assistant_text` or `transport_ui`: model-mediated faults must prove the expected zero-tool or `FORBIDDEN` tool-output condition and require a non-empty assistant message before the judge runs; assistant text, reasoning, tool outputs, route bodies, and the `Retry-After` header are all scanned for internal-detail leaks with payload-redacted diagnostics. Route-level 401/429 faults must match the exact public JSON/status/header contract. The 429 case exhausts a fresh dummy subject with invalid request bodies that return before model invocation, then captures the real limiter response. Run the deterministic contract suite with `cd apps/chat/evaluation/manage-assistant && uv run pytest -m offline -q`; live judged evidence remains a separate paid release gate.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.
 
 ## Lecturer MCP smoke tests
@@ -476,7 +493,9 @@ Backend test mode still owns synthetic feature flags, coverage instrumentation,
 and arbitrary GraphQL operations used by the harness. CI frontend parity does
 not imply that these backend fixtures or the deployed image digest are identical
 to production. Local `playwright:host` uses the development runtime for fast
-iteration; required CI and explicit production browser checks provide acceptance.
+iteration, and `--ci-runtime` serves the CI production test builds when a local
+run must match CI; required CI and explicit production browser checks provide
+acceptance.
 
 ## Local recovery regression checks
 
