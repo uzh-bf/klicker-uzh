@@ -1,5 +1,10 @@
 import { useApolloClient, useMutation, useQuery } from '@apollo/client'
-import { faFileLines, faLink } from '@fortawesome/free-solid-svg-icons'
+import {
+  faChevronRight,
+  faEllipsisVertical,
+  faFileLines,
+  faLink,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddKbLinkToChatbotDocument,
@@ -24,6 +29,7 @@ import {
 import {
   Badge,
   Button,
+  Dropdown,
   Modal,
   SelectField,
   toast,
@@ -32,7 +38,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useFormatter, useTranslations } from 'next-intl'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { useId, useEffect, useRef, useState } from 'react'
 
 // The largest page the knowledge-base list accepts in one request.
 const KB_LIST_PAGE_SIZE = 50
@@ -65,18 +71,22 @@ type ConnectedKnowledgeBase = {
   materialsReadiness?: MaterialsReadiness | null
 }
 
-function KnowledgeBaseCard({
+function KnowledgeBaseRow({
   chatbotId,
   knowledgeBase,
-  addFilesRef,
   onAddFiles,
+  onDefault,
+  onDetach,
+  busy,
   showDefaultBadge,
 }: {
   chatbotId: string
   knowledgeBase: ConnectedKnowledgeBase
-  addFilesRef: RefObject<HTMLDivElement | null>
-  // Without it the card only shows the knowledge base.
-  onAddFiles?: () => void
+  // Read-only rows omit management actions.
+  onAddFiles?: (trigger: HTMLElement | null) => void
+  onDefault?: () => void
+  onDetach?: () => void
+  busy: boolean
   showDefaultBadge?: boolean
 }) {
   const t = useTranslations()
@@ -109,138 +119,219 @@ function KnowledgeBaseCard({
     return () => stopPolling()
   }, [activeCount, apolloClient, startPolling, stopPolling])
 
-  const counts = [
-    {
-      key: 'resources',
-      label: t('manage.resources.chatbotKnowledgeBaseCardResources'),
-      value: readiness?.visibleResourceCount ?? 0,
-    },
-    {
-      key: 'ready',
-      label: t('manage.resources.chatbotKnowledgeBaseCardReady'),
-      value: readiness?.servingResourceCount ?? 0,
-    },
-    {
-      key: 'processing',
-      label: t('manage.resources.chatbotKnowledgeBaseCardProcessing'),
-      value: readiness?.processingResourceCount ?? 0,
-    },
-    {
-      key: 'failed',
-      label: t('manage.resources.chatbotKnowledgeBaseCardFailed'),
-      value: readiness?.failedResourceCount ?? 0,
-    },
+  const [expanded, setExpanded] = useState(false)
+  const detailId = useId()
+  const actionRef = useRef<HTMLDivElement>(null)
+  const kbId = knowledgeBase.kbId ?? knowledgeBase.id
+  const actions = [
+    ...(onAddFiles
+      ? [
+          {
+            id: 'add',
+            label: t('manage.resources.chatbotKnowledgeBaseAddFiles'),
+            onClick: () =>
+              onAddFiles(actionRef.current?.querySelector('button') ?? null),
+            data: { cy: 'chatbot-kb-add-files' },
+          },
+        ]
+      : []),
+    ...(onDefault
+      ? [
+          {
+            id: 'default',
+            label: t(
+              knowledgeBase.isDefault
+                ? 'manage.resources.chatbotKnowledgeBaseClearDefault'
+                : 'manage.resources.chatbotKnowledgeBaseMakeDefault'
+            ),
+            onClick: onDefault,
+            disabled: busy,
+            data: {
+              cy: `chatbot-kb-${knowledgeBase.isDefault ? 'clear' : 'set'}-default-${kbId}`,
+            },
+          },
+        ]
+      : []),
+    ...(onDetach
+      ? [
+          {
+            id: 'detach',
+            label: t('manage.resources.chatbotKnowledgeBaseDisconnect'),
+            onClick: onDetach,
+            disabled: busy,
+            data: { cy: `chatbot-kb-detach-${kbId}` },
+          },
+        ]
+      : []),
   ]
 
   return (
-    <div
-      className="space-y-4 rounded-md border border-slate-200 bg-white p-4"
-      data-cy="chatbot-kb-card"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h4
-            className="break-words font-semibold text-slate-900"
-            data-cy="chatbot-enabled-knowledge-base"
-          >
-            {knowledgeBase.name}
-          </h4>
-          {showDefaultBadge && knowledgeBase.isDefault ? (
-            <Badge
-              className="mt-2 bg-primary-100 text-white"
-              data-cy="chatbot-kb-default-badge"
+    <tbody className="border-t border-slate-200" data-cy="chatbot-kb-card">
+      <tr className={expanded ? 'bg-slate-50' : undefined}>
+        <th scope="row" className="py-3 pl-1 pr-2 text-left font-normal">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+              aria-controls={detailId}
+              aria-label={t('manage.resources.chatbotKnowledgeBaseDetailsFor', {
+                name: knowledgeBase.name,
+              })}
+              className="h-8 w-7 shrink-0 rounded text-slate-600 hover:bg-slate-100 focus-visible:outline-2"
             >
-              {t('manage.resources.chatbotKnowledgeBaseDefaultBadge')}
-            </Badge>
-          ) : null}
-          <p className="mt-1 text-sm text-slate-600">
-            {t('manage.resources.chatbotKnowledgeBaseCardReusable')}
-          </p>
-        </div>
-        <Link
-          href={`/resources/knowledgeBases/${encodeURIComponent(knowledgeBase.id)}?chatbotId=${encodeURIComponent(chatbotId)}`}
-          className="text-primary-100 shrink-0 text-sm hover:underline"
-          data-cy="chatbot-kb-open"
-        >
-          {t('manage.resources.chatbotKnowledgeBaseCardOpen')}
-        </Link>
-      </div>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {counts.map(({ key, label, value }) => (
-          <div key={key} data-cy={`chatbot-kb-card-${key}`}>
-            <dt className="text-xs text-slate-600">{label}</dt>
-            <dd className="text-lg font-semibold text-slate-900">
-              {format.number(value)}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <p className="text-sm text-slate-600" data-cy="chatbot-kb-card-changed">
-        {readiness?.lastChangedAt
-          ? t('manage.resources.chatbotKnowledgeBaseCardLastChanged', {
-              date: format.dateTime(new Date(readiness.lastChangedAt), {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              }),
-            })
-          : t('manage.resources.chatbotKnowledgeBaseCardEmpty')}
-      </p>
-      {resources.length > 0 ? (
-        <div>
-          <h5 className="text-sm font-medium text-slate-900">
-            {t('manage.resources.chatbotKnowledgeBaseCardRecent')}
-          </h5>
-          <ul className="mt-2 divide-y divide-slate-100">
-            {resources.map((resource) => (
-              <li
-                key={resource.id}
-                className="py-2"
-                data-cy={`chatbot-kb-card-resource-${resource.id}`}
+              <FontAwesomeIcon
+                icon={faChevronRight}
+                className={expanded ? 'rotate-90' : ''}
+              />
+            </button>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <Link
+                href={`/resources/knowledgeBases/${encodeURIComponent(knowledgeBase.id)}?chatbotId=${encodeURIComponent(chatbotId)}`}
+                className="text-primary-100 break-words font-semibold hover:underline [overflow-wrap:anywhere]"
+                data-cy="chatbot-kb-open"
               >
-                <div className="flex items-center gap-2">
-                  <FontAwesomeIcon
-                    icon={
-                      resource.type === KbResourceType.Blob
-                        ? faFileLines
-                        : faLink
-                    }
-                    className="h-4 w-4 shrink-0 text-slate-500"
-                    aria-hidden="true"
-                  />
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-800">
-                    {resource.title}
-                  </span>
-                  {resource.latestIngestionRun ? (
-                    <RunStatusBadge
-                      status={resource.latestIngestionRun.status}
-                      dataCy={`chatbot-kb-card-resource-status-${resource.id}`}
-                    />
-                  ) : null}
+                <span data-cy="chatbot-enabled-knowledge-base">
+                  {knowledgeBase.name}
+                </span>
+              </Link>
+              {showDefaultBadge && knowledgeBase.isDefault && (
+                <Badge
+                  className="bg-primary-10 text-primary-100"
+                  data-cy="chatbot-kb-default-badge"
+                >
+                  {t('manage.resources.chatbotKnowledgeBaseDefaultBadge')}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </th>
+        <td className="px-2 py-3 text-sm tabular-nums text-slate-700">
+          {readiness ? (
+            <>
+              <span data-cy="chatbot-kb-card-resources">
+                {readiness.visibleResourceCount === 0
+                  ? t('manage.resources.chatbotKnowledgeBaseNoResources')
+                  : t('manage.resources.chatbotKnowledgeBaseReadyCount', {
+                      ready: readiness.servingResourceCount,
+                      total: readiness.visibleResourceCount,
+                    })}
+              </span>
+              {readiness.processingResourceCount > 0 && (
+                <div className="text-xs text-slate-600">
+                  {t('manage.resources.chatbotKnowledgeBaseCardProcessing')} ·{' '}
+                  {format.number(readiness.processingResourceCount)}
                 </div>
-                {resource.latestIngestionRun?.status ===
-                KbIngestionStatus.Failed ? (
-                  <RunStatusMessage
-                    status={resource.latestIngestionRun.status}
-                    errorCode={resource.latestIngestionRun.errorCode}
-                    statusMessage={resource.latestIngestionRun.statusMessage}
-                    className="mt-1 pl-6 text-xs text-red-700"
-                  />
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {onAddFiles ? (
-        <div ref={addFilesRef} className="w-max">
-          <Button onClick={onAddFiles} data={{ cy: 'chatbot-kb-add-files' }}>
-            <Button.Label>
-              {t('manage.resources.chatbotKnowledgeBaseAddFiles')}
-            </Button.Label>
-          </Button>
-        </div>
-      ) : null}
-    </div>
+              )}
+              {readiness.failedResourceCount > 0 && (
+                <div className="text-xs font-medium text-red-700">
+                  {t('manage.resources.chatbotKnowledgeBaseCardFailed')} ·{' '}
+                  {format.number(readiness.failedResourceCount)}
+                </div>
+              )}
+            </>
+          ) : (
+            '—'
+          )}
+        </td>
+        {onAddFiles && (
+          <td className="py-2 pr-1 text-right">
+            <div
+              ref={actionRef}
+              id={`chatbot-kb-actions-${chatbotId}-${kbId}`}
+              className="inline-block"
+            >
+              <Dropdown
+                items={actions}
+                trigger={
+                  <>
+                    <span className="sr-only">
+                      {t('manage.resources.chatbotKnowledgeBaseActionsFor', {
+                        name: knowledgeBase.name,
+                      })}
+                    </span>
+                    <FontAwesomeIcon icon={faEllipsisVertical} />
+                  </>
+                }
+                className={{
+                  trigger:
+                    'h-9 w-9 rounded-md border-none bg-transparent text-slate-600 hover:bg-slate-100',
+                }}
+                data={{ cy: `chatbot-kb-actions-${kbId}` }}
+              />
+            </div>
+          </td>
+        )}
+      </tr>
+      <tr id={detailId} hidden={!expanded}>
+        <td
+          colSpan={onAddFiles ? 3 : 2}
+          className="space-y-3 bg-slate-50 px-4 pb-4 pt-2 sm:pl-10"
+        >
+          <p
+            className="text-sm text-slate-600"
+            data-cy="chatbot-kb-card-changed"
+          >
+            {readiness?.lastChangedAt
+              ? t('manage.resources.chatbotKnowledgeBaseCardLastChanged', {
+                  date: format.dateTime(new Date(readiness.lastChangedAt), {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  }),
+                })
+              : t('manage.resources.chatbotKnowledgeBaseCardEmpty')}
+          </p>
+          {resources.length > 0 ? (
+            <div>
+              <h5 className="text-sm font-medium text-slate-900">
+                {t('manage.resources.chatbotKnowledgeBaseCardRecent')}
+              </h5>
+              <ul className="mt-2 divide-y divide-slate-100">
+                {resources.map((resource) => (
+                  <li
+                    key={resource.id}
+                    className="py-2"
+                    data-cy={`chatbot-kb-card-resource-${resource.id}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FontAwesomeIcon
+                        icon={
+                          resource.type === KbResourceType.Blob
+                            ? faFileLines
+                            : faLink
+                        }
+                        className="h-4 w-4 shrink-0 text-slate-500"
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm text-slate-800">
+                        {resource.title}
+                      </span>
+                      {resource.latestIngestionRun ? (
+                        <RunStatusBadge
+                          status={resource.latestIngestionRun.status}
+                          dataCy={`chatbot-kb-card-resource-status-${resource.id}`}
+                        />
+                      ) : null}
+                    </div>
+                    {resource.latestIngestionRun?.status ===
+                    KbIngestionStatus.Failed ? (
+                      <RunStatusMessage
+                        status={resource.latestIngestionRun.status}
+                        errorCode={resource.latestIngestionRun.errorCode}
+                        statusMessage={
+                          resource.latestIngestionRun.statusMessage
+                        }
+                        className="mt-1 pl-6 text-xs text-red-700"
+                      />
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </td>
+      </tr>
+    </tbody>
   )
 }
 
@@ -292,7 +383,6 @@ function ChatbotKnowledgeBaseSetup({
     ConnectedKnowledgeBase | undefined
   >()
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
-  const addFilesRef = useRef<HTMLDivElement | null>(null)
   // A knowledge base created here whose connection failed. It stays listed and
   // selected so the lecturer can retry the connection instead of creating a
   // second knowledge base.
@@ -528,7 +618,7 @@ function ChatbotKnowledgeBaseSetup({
 
     if (connectOnSelect) {
       setSelectedKbId(undefined)
-      // Closing the dialog leads to the new knowledge base's card.
+      // Closing the dialog returns focus to the new knowledge base’s actions.
       addResourceTriggerRef.current = null
       setAddResourceKb(createdKb)
       return
@@ -539,7 +629,7 @@ function ChatbotKnowledgeBaseSetup({
     )
   }
 
-  // New materials change the card's list and the chatbot's materials counts.
+  // New materials change the row’s resource list and the chatbot’s materials counts.
   const refreshMaterials = () =>
     apolloClient.refetchQueries({
       include: [
@@ -548,25 +638,69 @@ function ChatbotKnowledgeBaseSetup({
       ],
     })
 
-  if (
+  const listReadOnly =
     readOnly ||
     (!perModeKbLinksEnabled &&
       connectedKnowledgeBases.some((link) => link.isDefault === false))
-  ) {
-    return (
-      <div className="space-y-3" data-cy="chatbot-kb-setup">
-        {connectedKnowledgeBases.map((knowledgeBase) => (
-          <KnowledgeBaseCard
+  const visibleLinks =
+    listReadOnly || perModeKbLinksEnabled
+      ? connectedKnowledgeBases
+      : connectedKnowledgeBases.slice(0, 1)
+  const linkedTable = visibleLinks.length > 0 && (
+    <div className="overflow-hidden rounded-md border border-slate-200">
+      <table
+        className="w-full table-fixed border-collapse text-sm"
+        aria-label={t('manage.resources.knowledgeBase')}
+      >
+        <thead className="bg-slate-50 text-left text-xs text-slate-600">
+          <tr>
+            <th scope="col" className="py-2 pl-9 font-medium">
+              {t('manage.resources.knowledgeBase')}
+            </th>
+            <th scope="col" className="w-[30%] px-2 py-2 font-medium">
+              {t('manage.resources.chatbotKnowledgeBaseCardResources')}
+            </th>
+            {!listReadOnly && (
+              <th scope="col" className="w-11">
+                <span className="sr-only">{t('shared.generic.actions')}</span>
+              </th>
+            )}
+          </tr>
+        </thead>
+        {visibleLinks.map((knowledgeBase) => (
+          <KnowledgeBaseRow
             key={knowledgeBase.linkId ?? knowledgeBase.id}
             chatbotId={chatbotId}
             knowledgeBase={knowledgeBase}
-            showDefaultBadge
-            addFilesRef={addFilesRef}
+            showDefaultBadge={perModeKbLinksEnabled || listReadOnly}
+            busy={mutating}
+            onAddFiles={
+              listReadOnly
+                ? undefined
+                : (trigger) => {
+                    addResourceTriggerRef.current = trigger
+                    setAddResourceKb(knowledgeBase)
+                  }
+            }
+            onDefault={
+              listReadOnly || !perModeKbLinksEnabled
+                ? undefined
+                : () =>
+                    void handleSetDefault(
+                      knowledgeBase.isDefault ? null : knowledgeBase
+                    )
+            }
+            onDetach={
+              listReadOnly || !perModeKbLinksEnabled
+                ? undefined
+                : () => setDetachTarget(knowledgeBase)
+            }
           />
         ))}
-      </div>
-    )
-  }
+      </table>
+    </div>
+  )
+  if (listReadOnly) return <div data-cy="chatbot-kb-setup">{linkedTable}</div>
 
   return (
     <div className="space-y-3" data-cy="chatbot-kb-setup">
@@ -684,66 +818,7 @@ function ChatbotKnowledgeBaseSetup({
               })}
             </p>
           )}
-          {(perModeKbLinksEnabled
-            ? connectedKnowledgeBases
-            : connectedKnowledgeBase
-              ? [connectedKnowledgeBase]
-              : []
-          ).map((knowledgeBase) => (
-            <div key={knowledgeBase.linkId ?? knowledgeBase.id}>
-              <KnowledgeBaseCard
-                chatbotId={chatbotId}
-                knowledgeBase={knowledgeBase}
-                addFilesRef={addFilesRef}
-                showDefaultBadge={perModeKbLinksEnabled}
-                onAddFiles={() => {
-                  addResourceTriggerRef.current =
-                    document.activeElement as HTMLElement
-                  setAddResourceKb(knowledgeBase)
-                }}
-              />
-              {perModeKbLinksEnabled ? (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {knowledgeBase.isDefault ? (
-                    <Button
-                      disabled={mutating}
-                      onClick={() => void handleSetDefault(null)}
-                      data={{
-                        cy: `chatbot-kb-clear-default-${knowledgeBase.kbId ?? knowledgeBase.id}`,
-                      }}
-                    >
-                      <Button.Label>
-                        {t('manage.resources.chatbotKnowledgeBaseClearDefault')}
-                      </Button.Label>
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled={mutating}
-                      onClick={() => void handleSetDefault(knowledgeBase)}
-                      data={{
-                        cy: `chatbot-kb-set-default-${knowledgeBase.kbId ?? knowledgeBase.id}`,
-                      }}
-                    >
-                      <Button.Label>
-                        {t('manage.resources.chatbotKnowledgeBaseMakeDefault')}
-                      </Button.Label>
-                    </Button>
-                  )}
-                  <Button
-                    disabled={mutating}
-                    onClick={() => setDetachTarget(knowledgeBase)}
-                    data={{
-                      cy: `chatbot-kb-detach-${knowledgeBase.kbId ?? knowledgeBase.id}`,
-                    }}
-                  >
-                    <Button.Label>
-                      {t('manage.resources.chatbotKnowledgeBaseDisconnect')}
-                    </Button.Label>
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          ))}
+          {linkedTable}
         </div>
       )}
       {createOpen ? (
@@ -763,7 +838,12 @@ function ChatbotKnowledgeBaseSetup({
             setAddResourceKb(undefined)
             if (!addResourceTriggerRef.current) {
               window.requestAnimationFrame(() =>
-                addFilesRef.current?.querySelector('button')?.focus()
+                document
+                  .getElementById(
+                    `chatbot-kb-actions-${chatbotId}-${addResourceKb.id}`
+                  )
+                  ?.querySelector('button')
+                  ?.focus()
               )
             }
           }}

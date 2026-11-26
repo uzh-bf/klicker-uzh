@@ -5427,6 +5427,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseCardReusable:
         'A knowledge base is a reusable collection of materials. Other chatbots can use it too.',
       chatbotKnowledgeBaseCardOpen: 'Open knowledge base',
+      chatbotKnowledgeBaseDetailsFor: 'Details for {name}',
+      chatbotKnowledgeBaseActionsFor: 'Actions for {name}',
+      chatbotKnowledgeBaseNoResources: 'No resources',
+      chatbotKnowledgeBaseReadyCount:
+        '{ready, number} of {total, number} ready',
       chatbotKnowledgeBaseCardResources: 'Resources',
       chatbotKnowledgeBaseCardReady: 'Ready',
       chatbotKnowledgeBaseCardProcessing: 'Processing',

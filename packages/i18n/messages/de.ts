@@ -5554,6 +5554,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotKnowledgeBaseCardReusable:
         'Eine Wissensdatenbank ist eine wiederverwendbare Sammlung von Materialien. Auch andere Chatbots können sie nutzen.',
       chatbotKnowledgeBaseCardOpen: 'Wissensdatenbank öffnen',
+      chatbotKnowledgeBaseDetailsFor: 'Details zu {name}',
+      chatbotKnowledgeBaseActionsFor: 'Aktionen für {name}',
+      chatbotKnowledgeBaseNoResources: 'Keine Materialien',
+      chatbotKnowledgeBaseReadyCount:
+        '{ready, number} von {total, number} bereit',
       chatbotKnowledgeBaseCardResources: 'Ressourcen',
       chatbotKnowledgeBaseCardReady: 'Bereit',
       chatbotKnowledgeBaseCardProcessing: 'In Verarbeitung',
