@@ -174,6 +174,41 @@ describe('buildConversationExport status', () => {
   })
 })
 
+describe('buildConversationExport empty answers', () => {
+  it('counts an answer with the empty-response marker as failed', () => {
+    const result = buildConversationExport({
+      metadata,
+      roster: [rosterEntry()],
+      threads: [
+        {
+          id: 't1',
+          participantId: 'p1',
+          title: null,
+          createdAt: new Date(Date.UTC(2026, 11, 16, 9, 0)),
+          messages: [
+            message('q1', 0),
+            message('a1', 1, {
+              parentId: 'q1',
+              role: 'assistant',
+              content: [
+                {
+                  type: 'data',
+                  name: 'chat-error',
+                  data: { code: 'EMPTY_RESPONSE' },
+                },
+              ],
+            }),
+          ],
+        },
+      ],
+    })
+
+    const student = result.students[0]!
+    expect(student.failedAnswers).toBe(1)
+    expect(student.threads[0]!.messages[1]!.status).toBe('failed')
+  })
+})
+
 describe('buildConversationExport', () => {
   it('reconciles the roster without choosing among several conversations', () => {
     const exported = buildConversationExport({

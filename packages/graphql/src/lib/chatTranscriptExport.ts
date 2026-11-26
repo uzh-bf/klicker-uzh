@@ -152,20 +152,39 @@ function messageStatus(
 ): ExportedMessage['status'] {
   if (message.lifecycleStatus === 'IN_PROGRESS') return 'incomplete'
   if (message.lifecycleStatus === 'FAILED') return 'failed'
-  // A student-stopped answer is stored as COMPLETED with a marker part.
-  if (
-    Array.isArray(message.content) &&
-    message.content.some(
-      (part) =>
-        !!part &&
-        typeof part === 'object' &&
-        (part as { type?: unknown }).type === 'data' &&
-        (part as { name?: unknown }).name === 'chat-stopped'
-    )
-  ) {
-    return 'incomplete'
+  // Answers that ended without visible text carry an EMPTY_RESPONSE error
+  // marker; older rows stored them as COMPLETED.
+  if (hasDataPart(message.content, 'chat-error', 'EMPTY_RESPONSE')) {
+    return 'failed'
   }
+  // A student-stopped answer is stored as COMPLETED with a marker part.
+  if (hasDataPart(message.content, 'chat-stopped')) return 'incomplete'
   return 'complete'
+}
+
+function hasDataPart(content: unknown, name: string, code?: string) {
+  return (
+    Array.isArray(content) &&
+    content.some((part) => {
+      if (!part || typeof part !== 'object') return false
+      const {
+        type,
+        name: partName,
+        data,
+      } = part as {
+        type?: unknown
+        name?: unknown
+        data?: unknown
+      }
+      if (type !== 'data' || partName !== name) return false
+      if (code === undefined) return true
+      return (
+        !!data &&
+        typeof data === 'object' &&
+        (data as { code?: unknown }).code === code
+      )
+    })
+  )
 }
 
 // Orders a thread's messages depth-first along the parentId tree and labels
