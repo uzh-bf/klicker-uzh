@@ -852,7 +852,10 @@ describe('required MCP chat preflight', () => {
 
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       [],
-      expect.objectContaining({ kbIds: undefined })
+      expect.objectContaining({ kbIds: undefined }),
+      {},
+      'account',
+      expect.anything()
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
       expect.anything(),
