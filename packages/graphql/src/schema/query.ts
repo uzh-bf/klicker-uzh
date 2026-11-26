@@ -6,6 +6,7 @@ import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as AssessmentTranscriptExportService from '../services/assessmentTranscriptExports.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -1093,6 +1094,24 @@ export const Query = builder.queryType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
+      }),
+
+      // Chatbots whose conversations may be requested through the attested
+      // assessment export; the course ADMIN permission gates the list.
+      assessmentExportChatbots: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ChatbotPublic],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await AssessmentTranscriptExportService.getAssessmentExportChatbots(
+              args,
+              ctx
+            )
           }
         ),
       }),

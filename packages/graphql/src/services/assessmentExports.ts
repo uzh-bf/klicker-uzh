@@ -9,8 +9,20 @@ import {
 } from './courses.js'
 import { checkAccess } from './sharing.js'
 
-function exportError(code: string) {
+export function exportError(code: string) {
   return new GraphQLError(code, { extensions: { code } })
+}
+
+// Only accounts that signed in with full scope may use the attested exports.
+export function assertAssessmentExportUser(ctx: ContextWithUser) {
+  if (
+    (ctx.user.role !== DB.UserRole.USER &&
+      ctx.user.role !== DB.UserRole.ADMIN) ||
+    (ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER &&
+      ctx.user.scope !== DB.UserLoginScope.FULL_ACCESS)
+  ) {
+    throw exportError('DATA_EXPORT_FORBIDDEN')
+  }
 }
 
 export async function downloadAssessmentExport(
@@ -22,14 +34,7 @@ export async function downloadAssessmentExport(
     if (signal?.aborted) throw exportError('DATA_EXPORT_CANCELLED')
   }
   checkCancellation()
-  if (
-    (ctx.user.role !== DB.UserRole.USER &&
-      ctx.user.role !== DB.UserRole.ADMIN) ||
-    (ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER &&
-      ctx.user.scope !== DB.UserLoginScope.FULL_ACCESS)
-  ) {
-    throw exportError('DATA_EXPORT_FORBIDDEN')
-  }
+  assertAssessmentExportUser(ctx)
   const validation = assessmentExportRequestSchema.safeParse(input)
   if (!validation.success) throw exportError('DATA_EXPORT_INVALID_REQUEST')
   const request = validation.data

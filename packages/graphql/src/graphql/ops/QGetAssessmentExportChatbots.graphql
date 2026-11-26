@@ -1,0 +1,6 @@
+query GetAssessmentExportChatbots($courseId: String!) {
+  assessmentExportChatbots(courseId: $courseId) {
+    id
+    name
+  }
+}

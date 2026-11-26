@@ -8,6 +8,7 @@ import {
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
+  AssessmentTranscriptExportEvent,
   BuildKBGraphInput,
   CourseDeletionEvent,
   DeleteKBResourceInput,
@@ -584,6 +585,45 @@ export function prepareHatchetTasks({
     },
   })
 
+  const processAssessmentTranscriptExport = hatchet.task({
+    name: 'process-assessment-transcript-export',
+    retries: 3,
+    backoff: { factor: 60, maxSeconds: 120 },
+    executionTimeout: '30m',
+    scheduleTimeout: '60m',
+    defaultPriority: Priority.LOW,
+    concurrency: {
+      expression: "'assessment-transcript-export'",
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    },
+    onEvents: ['process-assessment-transcript-export'],
+    fn: async (input: AssessmentTranscriptExportEvent, executionContext) => {
+      const success = await handlers.handleProcessAssessmentTranscriptExport(
+        input,
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const sweepAssessmentTranscriptExports = hatchet.task({
+    name: 'sweep-assessment-transcript-exports',
+    retries: 0,
+    onCrons: [
+      '17 * * * *', // hourly (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleSweepAssessmentTranscriptExports(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   const tasks = {
     updateGroupAverageScores,
     runningRandomGroupAssignments,
@@ -609,6 +649,8 @@ export function prepareHatchetTasks({
     processCourseDuplication,
     sweepStaleCourseDuplications,
     processCourseDeletion,
+    processAssessmentTranscriptExport,
+    sweepAssessmentTranscriptExports,
   }
 
   preparedTasks = tasks

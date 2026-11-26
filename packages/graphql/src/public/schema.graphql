@@ -3568,6 +3568,7 @@ type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
+  assessmentExportChatbots(courseId: String!): [ChatbotPublic!]
   assessmentParticipantInvitations(courseId: String!, numEntries: Int, offset: Int): AssessmentParticipantInvitationPage
   assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse

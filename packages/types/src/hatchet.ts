@@ -91,6 +91,12 @@ export type CourseDeletionEvent = {
   deleteDraftActivities: boolean
 }
 
+// Payload of the `process-assessment-transcript-export` event. The receipt
+// holds the request; the event carries only its id.
+export type AssessmentTranscriptExportEvent = {
+  exportId: string
+}
+
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
@@ -177,6 +183,16 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleProcessAssessmentTranscriptExport: (
+    input: AssessmentTranscriptExportEvent,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleSweepAssessmentTranscriptExports: (
+    _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -241,6 +257,14 @@ export interface PreparedHatchetTasks {
   >
   processCourseDeletion: TaskWorkflowDeclaration<
     CourseDeletionEvent,
+    { success: boolean }
+  >
+  processAssessmentTranscriptExport: TaskWorkflowDeclaration<
+    AssessmentTranscriptExportEvent,
+    { success: boolean }
+  >
+  sweepAssessmentTranscriptExports: TaskWorkflowDeclaration<
+    Record<string, never>,
     { success: boolean }
   >
 }
