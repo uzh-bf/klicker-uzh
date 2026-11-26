@@ -1,8 +1,7 @@
-import type { Chatbot } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import ChatbotItem from './ChatbotItem'
+import ChatbotItem, { type ChatbotListItem } from './ChatbotItem'
 
 function ChatbotList({
   chatbots,
@@ -11,10 +10,10 @@ function ChatbotList({
   onSelect,
   onCreate,
 }: {
-  chatbots?: Chatbot[]
+  chatbots?: ChatbotListItem[]
   loading: boolean
   selectedId?: string
-  onSelect: (chatbot: Chatbot) => void
+  onSelect: (chatbot: ChatbotListItem) => void
   onCreate: () => void
 }) {
   const t = useTranslations()

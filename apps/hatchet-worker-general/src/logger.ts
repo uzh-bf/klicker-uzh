@@ -1,4 +1,5 @@
 import pino from 'pino'
+import pretty from 'pino-pretty'
 
 // Service name for log base context
 const SERVICE_NAME = process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
@@ -7,32 +8,28 @@ const SERVICE_NAME = process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
 const level = (process.env.LOG_LEVEL ?? 'info').toLowerCase()
 
 const isPretty =
-  (process.env.NODE_ENV !== 'production' &&
-    process.env.PINO_PRETTY !== 'false') ??
-  false
+  process.env.NODE_ENV !== 'production' && process.env.PINO_PRETTY !== 'false'
 
-// Configure transport only in pretty/dev mode to avoid extra deps in prod
-const transport = isPretty
-  ? pino.transport({
-      target: 'pino-pretty',
-      options: {
+const options = {
+  level,
+  base: {
+    service: SERVICE_NAME,
+  },
+  timestamp: pino.stdTimeFunctions.isoTime,
+  messageKey: 'message',
+}
+
+// Keep development formatting in-process so logging does not need a
+// background transport thread.
+export const logger = isPretty
+  ? pino(
+      options,
+      pretty({
         colorize: true,
         singleLine: true,
         translateTime: 'SYS:standard',
-      },
-    })
-  : undefined
-
-export const logger = pino(
-  {
-    level,
-    base: {
-      service: SERVICE_NAME,
-    },
-    timestamp: pino.stdTimeFunctions.isoTime,
-    messageKey: 'message',
-  },
-  transport as any
-)
+      })
+    )
+  : pino(options)
 
 export default logger

@@ -110,7 +110,7 @@ describe('settingsStore credits loading', () => {
       'fetch',
       vi.fn().mockResolvedValueOnce(
         creditsResponse(0, {
-          automaticModelId: 'gpt-5.6-luna',
+          automaticModelId: 'gpt-6-luna',
           availableModels: [
             {
               id: 'gpt-4.1',
@@ -122,8 +122,8 @@ describe('settingsStore credits loading', () => {
               supportsImageAttachments: true,
             },
             {
-              id: 'gpt-5.6-luna',
-              name: 'GPT-5.6 Luna',
+              id: 'gpt-6-luna',
+              name: 'GPT-6 Luna',
               description: 'base fallback',
               fallback: true,
               supportsReasoning: true,
@@ -139,5 +139,32 @@ describe('settingsStore credits loading', () => {
 
     expect(useSettingsStore.getState().selectedModel).toBe('gpt-4.1')
     expect(useSettingsStore.getState().modelOptions).toHaveLength(2)
+  })
+
+  test.each([
+    ['gpt-5.5', 'auto'],
+    ['gpt-6-luna', 'gpt-6-luna'],
+  ])('reconciles saved selection %s to %s', async (saved, expected) => {
+    useSettingsStore.setState({
+      modelSelectionEnabled: true,
+      selectedModel: saved,
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'auto',
+          availableModels: ['gpt-6-luna', 'auto'].map((id) => ({
+            id,
+            supportsReasoning: false,
+            allowedReasoningEfforts: [],
+          })),
+        })
+      )
+    )
+
+    await useSettingsStore.getState().loadCredits('chatbot-model-selection')
+
+    expect(useSettingsStore.getState().selectedModel).toBe(expected)
   })
 })

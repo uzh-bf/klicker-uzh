@@ -1,0 +1,863 @@
+'use client'
+
+import { useApolloClient, useMutation, useQuery } from '@apollo/client'
+import type {
+  GetKbKnowledgeGraphNeighborsWithRelationsQuery,
+  GetKbKnowledgeGraphOverviewWithRelationsQuery,
+} from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetKbKnowledgeGraphDomainConfigDocument,
+  GetKbKnowledgeGraphNeighborsWithRelationsDocument,
+  GetKbKnowledgeGraphOverviewWithRelationsDocument,
+  KbGraphBuildStatus,
+  KbGraphCostStatus,
+  KbGraphQualityTier,
+  RebuildKbKnowledgeGraphWithDomainDocument,
+  SearchKbKnowledgeGraphWithRelationsDocument,
+  SetKbKnowledgeGraphEnabledDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type {
+  KnowledgeGraphRelationStatus,
+  KnowledgeGraphRelationType,
+  KnowledgeGraphResponse,
+  KnowledgeGraphSourceReference,
+} from '@klicker-uzh/types'
+import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
+import { useFormatter, useTranslations } from 'next-intl'
+// biome-ignore lint/correctness/noUnusedImports: this package uses the classic JSX transform.
+import React, { useEffect, useMemo, useState } from 'react'
+import {
+  DEFAULT_DOMAIN_GENERATION_LANGUAGE,
+  DEFAULT_DOMAIN_POLICY_ID,
+  DEFAULT_DOMAIN_POLICY_VERSION,
+  isSameKbDomain,
+  kbDomainLabelForId,
+  useKbDomainLabels,
+} from '../kbDomainSettings'
+
+const KnowledgeGraphViewer = dynamic(
+  () =>
+    import(
+      '@klicker-uzh/shared-components/src/knowledgeGraph/KnowledgeGraphViewer'
+    ).then((module) => module.KnowledgeGraphViewer),
+  { ssr: false }
+)
+
+type GraphResponse =
+  | GetKbKnowledgeGraphOverviewWithRelationsQuery['getKbKnowledgeGraphOverview']
+  | GetKbKnowledgeGraphNeighborsWithRelationsQuery['getKbKnowledgeGraphNeighbors']
+
+function toSourceReference(
+  source: GraphResponse['nodes'][number]['sourceReferences'][number]
+): KnowledgeGraphSourceReference {
+  return {
+    resourceId: source.resourceId,
+    title: source.title,
+    ...(source.reference == null ? {} : { reference: source.reference }),
+    ...(source.pages == null ? {} : { pages: source.pages }),
+  }
+}
+
+function toKnowledgeGraphResponse(
+  response: GraphResponse
+): KnowledgeGraphResponse {
+  return {
+    kbId: response.kbId,
+    buildId: response.buildId,
+    isStale: response.isStale,
+    truncated: response.truncated,
+    nodes: response.nodes.map((node) => ({
+      id: node.id,
+      labels: node.labels,
+      kind: node.kind,
+      displayLabel: node.displayLabel,
+      ...(node.summary == null ? {} : { summary: node.summary }),
+      ...(node.content == null ? {} : { content: node.content }),
+      degree: node.degree,
+      sourceReferences: node.sourceReferences.map(toSourceReference),
+    })),
+    edges: response.edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: edge.type,
+      label: edge.label,
+      relationType: edge.relationType as KnowledgeGraphRelationType,
+      relationStatus: edge.relationStatus as KnowledgeGraphRelationStatus,
+      sourceReferences: edge.sourceReferences.map(toSourceReference),
+      properties: edge.properties as Record<string, string | number | boolean>,
+    })),
+  }
+}
+
+type GraphErrorDetails = {
+  code?: string
+  remainingMinorUnits?: number
+}
+
+function getGraphErrorDetails(error: unknown): GraphErrorDetails | null {
+  if (!error || typeof error !== 'object') return null
+
+  const extensions = (error as { extensions?: Record<string, unknown> })
+    .extensions
+  if (extensions) {
+    const code =
+      typeof extensions.code === 'string' ? extensions.code : undefined
+    const remainingMinorUnits =
+      typeof extensions.remainingMinorUnits === 'number'
+        ? extensions.remainingMinorUnits
+        : undefined
+    if (code || remainingMinorUnits !== undefined) {
+      return { code, remainingMinorUnits }
+    }
+  }
+
+  for (const key of ['graphQLErrors', 'errors'] as const) {
+    const nestedErrors = (error as Record<string, unknown>)[key]
+    if (!Array.isArray(nestedErrors)) continue
+
+    for (const nestedError of nestedErrors) {
+      const details = getGraphErrorDetails(nestedError)
+      if (details?.code) return details
+    }
+  }
+
+  return null
+}
+
+function normalizeGraphError(error: unknown): never {
+  if (getGraphErrorDetails(error)?.code?.startsWith('KB_GRAPH_')) {
+    throw new KnowledgeGraphUnavailableError()
+  }
+
+  throw error
+}
+
+type KnowledgeGraphStatusLabels = {
+  empty: string
+  queued: string
+  processing: string
+  succeeded: string
+  failed: string
+}
+
+type KnowledgeGraphCostStatusLabels = {
+  reserved: string
+  settled: string
+  released: string
+  needsHumanReview: string
+}
+
+function statusLabel(
+  status: KbGraphBuildStatus | null | undefined,
+  labels: KnowledgeGraphStatusLabels
+) {
+  switch (status) {
+    case KbGraphBuildStatus.Queued:
+      return labels.queued
+    case KbGraphBuildStatus.Processing:
+      return labels.processing
+    case KbGraphBuildStatus.Succeeded:
+      return labels.succeeded
+    case KbGraphBuildStatus.Failed:
+      return labels.failed
+    default:
+      return labels.empty
+  }
+}
+
+function costStatusLabel(
+  status: KbGraphCostStatus | null | undefined,
+  labels: KnowledgeGraphCostStatusLabels
+) {
+  switch (status) {
+    case KbGraphCostStatus.Reserved:
+      return labels.reserved
+    case KbGraphCostStatus.Settled:
+      return labels.settled
+    case KbGraphCostStatus.Released:
+      return labels.released
+    case KbGraphCostStatus.NeedsHumanReview:
+      return labels.needsHumanReview
+    default:
+      return '—'
+  }
+}
+
+function formatMinorUnits(
+  format: ReturnType<typeof useFormatter>,
+  amountMinorUnits: number | null | undefined,
+  currency: string | null | undefined
+) {
+  if (amountMinorUnits == null || currency == null) return '—'
+  return format.number(amountMinorUnits / 100, {
+    style: 'currency',
+    currency,
+  })
+}
+
+function KnowledgeGraphPreview({
+  kbId,
+  servedBuildId,
+}: {
+  kbId: string
+  servedBuildId: string | null
+}) {
+  const t = useTranslations()
+  const apolloClient = useApolloClient()
+  const dataSource = useMemo<KnowledgeGraphDataSource>(
+    () => ({
+      overview: async () => {
+        try {
+          const { data } = await apolloClient.query({
+            query: GetKbKnowledgeGraphOverviewWithRelationsDocument,
+            variables: { kbId },
+            fetchPolicy: 'network-only',
+          })
+          return toKnowledgeGraphResponse(data.getKbKnowledgeGraphOverview)
+        } catch (error) {
+          return normalizeGraphError(error)
+        }
+      },
+      search: async (query) => {
+        try {
+          const { data } = await apolloClient.query({
+            query: SearchKbKnowledgeGraphWithRelationsDocument,
+            variables: { kbId, query },
+            fetchPolicy: 'network-only',
+          })
+          return toKnowledgeGraphResponse(data.searchKbKnowledgeGraph)
+        } catch (error) {
+          return normalizeGraphError(error)
+        }
+      },
+      neighbors: async (nodeId) => {
+        try {
+          const { data } = await apolloClient.query({
+            query: GetKbKnowledgeGraphNeighborsWithRelationsDocument,
+            variables: { kbId, nodeId },
+            fetchPolicy: 'network-only',
+          })
+          return toKnowledgeGraphResponse(data.getKbKnowledgeGraphNeighbors)
+        } catch (error) {
+          return normalizeGraphError(error)
+        }
+      },
+    }),
+    // The viewer reloads its graph when the data source identity changes, so the
+    // served build has to participate: otherwise a rebuild that publishes a new
+    // graph leaves the previous graph, legend and concept count on screen until
+    // the page is reloaded.
+    [apolloClient, kbId, servedBuildId]
+  )
+
+  return (
+    <div data-cy="kb-knowledge-graph-preview">
+      <KnowledgeGraphViewer
+        dataSource={dataSource}
+        unavailableMessage={t('kb.graphPreviewUnavailable')}
+        className="!h-[42rem]"
+      />
+    </div>
+  )
+}
+
+function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
+  const t = useTranslations()
+  const {
+    labelForKey: translateDomainLabelKey,
+    languageLabel: translateDomainLanguage,
+    versionLabel: formatDomainVersion,
+  } = useKbDomainLabels()
+  const format = useFormatter()
+  const router = useRouter()
+  const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
+    KbGraphQualityTier.Standard
+  )
+  const [operationError, setOperationError] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
+    GetKbKnowledgeGraphDomainConfigDocument,
+    {
+      variables: { kbId },
+      fetchPolicy: 'network-only',
+      notifyOnNetworkStatusChange: true,
+    }
+  )
+  const [rebuildGraph, { loading: isRebuilding }] = useMutation(
+    RebuildKbKnowledgeGraphWithDomainDocument
+  )
+  const [setGraphEnabled, { loading: isTogglingEnabled }] = useMutation(
+    SetKbKnowledgeGraphEnabledDocument
+  )
+  const config = data?.getKbKnowledgeGraphConfig
+  const domainConfig = data?.getKbKnowledgeGraphDomainConfig
+
+  useEffect(() => {
+    if (router.asPath.endsWith('#knowledge-graph')) {
+      setDetailsOpen(true)
+    }
+  }, [router.asPath])
+  // A plain anchor on the same page changes only the hash, without a router
+  // navigation, so it is followed separately.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === '#knowledge-graph') setDetailsOpen(true)
+    }
+    window.addEventListener('hashchange', openFromHash)
+    return () => window.removeEventListener('hashchange', openFromHash)
+  }, [])
+  const formattedBillingLabel =
+    config?.billingLabel === 'SEMESTER_QUOTA'
+      ? t('kb.graphBillingSemesterQuota')
+      : config?.billingLabel === 'PROVIDER_BILLED'
+        ? t('kb.graphBillingProvider')
+        : '—'
+  const isActive =
+    config?.status === KbGraphBuildStatus.Queued ||
+    config?.status === KbGraphBuildStatus.Processing
+  const hasPublishedGraph = config?.publishedBuildId != null
+  const selectedEstimate =
+    selectedTier === KbGraphQualityTier.High
+      ? config?.highEstimateMinorUnits
+      : config?.standardEstimateMinorUnits
+  const formattedSelectedEstimate = formatMinorUnits(
+    format,
+    selectedEstimate,
+    config?.quotaCurrency
+  )
+  const formattedRemainingQuota = formatMinorUnits(
+    format,
+    config?.remainingSemesterQuotaMinorUnits,
+    config?.quotaCurrency
+  )
+  const insufficientQuota =
+    selectedEstimate != null &&
+    config?.remainingSemesterQuotaMinorUnits != null &&
+    selectedEstimate > config.remainingSemesterQuotaMinorUnits
+
+  const domainOptions = domainConfig?.options ?? []
+  // The panel reports what a build ran with, never what the next one will use:
+  // the subject area and language live on the knowledge base and are edited in
+  // its settings, so nothing here is a control the lecturer can change.
+  const buildDomain =
+    config?.domainPolicyId != null
+      ? {
+          id: config.domainPolicyId,
+          version: config.domainPolicyVersion ?? null,
+          language: config.domainPolicyLanguage ?? null,
+        }
+      : null
+  // The categories a build recorded describe that build. A retired pair must
+  // not borrow another catalog entry's categories, so they are read from the
+  // build itself rather than looked up again.
+  const domainCategoryNames = (config?.domainCategories ?? []).map(
+    (category) => category.name
+  )
+
+  const domainLabelForId = (id: string) =>
+    kbDomainLabelForId(id, domainOptions, translateDomainLabelKey)
+
+  // A failed or superseded attempt must not relabel the graph that is actually
+  // served, so the published build's own domain is reported separately. A
+  // legacy published build records no triple, and by contract that served graph
+  // was generated with the default Finance v1 in German; applying that default
+  // only here leaves the stored null values meaning "no explicit domain".
+  const reportedDomain = buildDomain ?? {
+    id: null,
+    version: null,
+    language: null,
+  }
+  const publishedDomain = {
+    id:
+      config?.publishedDomainPolicyId ??
+      (hasPublishedGraph ? DEFAULT_DOMAIN_POLICY_ID : null),
+    version:
+      config?.publishedDomainPolicyVersion ??
+      (hasPublishedGraph ? DEFAULT_DOMAIN_POLICY_VERSION : null),
+    language:
+      config?.publishedDomainPolicyLanguage ??
+      (hasPublishedGraph ? DEFAULT_DOMAIN_GENERATION_LANGUAGE : null),
+  }
+  // Both sides take the effective legacy default, so two legacy builds that
+  // serve the same domain are not reported as different.
+  const showPublishedDomain =
+    hasPublishedGraph &&
+    publishedDomain.id != null &&
+    !isSameKbDomain(publishedDomain, reportedDomain)
+  const publishedDomainLabel =
+    publishedDomain.id != null
+      ? (domainLabelForId(publishedDomain.id) ?? publishedDomain.id)
+      : null
+  useEffect(() => {
+    if (config?.qualityTier != null && !isActive) {
+      setSelectedTier(config.qualityTier)
+    }
+  }, [config?.qualityTier, isActive])
+
+  useEffect(() => {
+    if (isActive) {
+      startPolling(30_000)
+    } else {
+      stopPolling()
+    }
+    return stopPolling
+  }, [isActive, startPolling, stopPolling])
+
+  const tierItems = [
+    {
+      value: KbGraphQualityTier.Standard,
+      label: t('kb.graphQualityStandard'),
+    },
+    {
+      value: KbGraphQualityTier.High,
+      label: t('kb.graphQualityHigh'),
+    },
+  ]
+  const statusLabels: KnowledgeGraphStatusLabels = {
+    empty: t('kb.graphStatusEmpty'),
+    queued: t('kb.graphStatusQueued'),
+    processing: t('kb.graphStatusProcessing'),
+    succeeded: t('kb.graphStatusSucceeded'),
+    failed: t('kb.graphStatusFailed'),
+  }
+  const costStatusLabels: KnowledgeGraphCostStatusLabels = {
+    reserved: t('kb.graphCostStatusReserved'),
+    settled: t('kb.graphCostStatusSettled'),
+    released: t('kb.graphCostStatusReleased'),
+    needsHumanReview: t('kb.graphCostStatusNeedsHumanReview'),
+  }
+  let graphSummary: string
+  if (loading && data === undefined) {
+    graphSummary = t('kb.graphLoading')
+  } else if (error || config === undefined) {
+    graphSummary = t('kb.graphLoadError')
+  } else {
+    graphSummary = [
+      `${t('kb.graphStatusLabel')}: ${statusLabel(config.status, statusLabels)}`,
+      config.isStale && hasPublishedGraph ? t('kb.graphStale') : null,
+      config.costStatus === KbGraphCostStatus.NeedsHumanReview
+        ? costStatusLabel(config.costStatus, costStatusLabels)
+        : null,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .join(', ')
+  }
+
+  const handleRebuild = async () => {
+    if (isRebuilding || isActive || !config?.isEnabled || insufficientQuota) {
+      return
+    }
+
+    setOperationError(null)
+    try {
+      const result = await rebuildGraph({
+        variables: {
+          kbId,
+          qualityTier: selectedTier,
+        },
+      })
+      const buildId = result.data?.rebuildKbKnowledgeGraphWithDomain.buildId
+      if (buildId) {
+        window.dispatchEvent(
+          new CustomEvent('klicker:generation-started', {
+            detail: {
+              kind: 'graph',
+              id: buildId,
+              kbId,
+              label: t('kb.graphTitle'),
+              startedAt: Date.now(),
+            },
+          })
+        )
+      }
+      await refetch()
+    } catch (error) {
+      console.error('Failed to rebuild KB knowledge graph', { kbId })
+      const details = getGraphErrorDetails(error)
+      if (details?.code === 'KB_GRAPH_QUOTA_EXCEEDED') {
+        setOperationError(
+          t('kb.graphQuotaInsufficient', {
+            estimate: formattedSelectedEstimate,
+            remaining: formatMinorUnits(
+              format,
+              details.remainingMinorUnits ??
+                config.remainingSemesterQuotaMinorUnits,
+              config.quotaCurrency
+            ),
+          })
+        )
+        try {
+          await refetch()
+        } catch {
+          console.warn('Failed to refresh KB graph quota after rejection', {
+            kbId,
+          })
+        }
+      } else if (details?.code === 'KB_GRAPH_NO_COURSE_CONTENT') {
+        setOperationError(t('kb.graphNoCourseContent'))
+      } else {
+        setOperationError(t('kb.graphBuildError'))
+      }
+    }
+  }
+
+  const handleEnabledChange = async (enabled: boolean) => {
+    setOperationError(null)
+    try {
+      await setGraphEnabled({ variables: { kbId, enabled } })
+      try {
+        await refetch()
+      } catch {
+        console.warn('Failed to refresh KB knowledge graph opt-in', { kbId })
+      }
+    } catch {
+      console.error('Failed to update KB knowledge graph opt-in', { kbId })
+      setOperationError(t('kb.graphEnableError'))
+    }
+  }
+
+  return (
+    <details
+      id="knowledge-graph"
+      open={detailsOpen}
+      className="mt-4"
+      data-cy="kb-graph-settings"
+      onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+    >
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
+        <h2 className="font-semibold text-slate-900">{t('kb.graphTitle')}</h2>
+        <span
+          className="text-sm text-slate-600"
+          aria-live="polite"
+          data-cy="kb-graph-summary-status"
+        >
+          {graphSummary}
+        </span>
+        <span className="text-sm font-medium text-primary-100">
+          {t('kb.configure')}
+        </span>
+      </summary>
+      <section className="mt-3 space-y-4" data-cy="kb-knowledge-graph-panel">
+        <p className="text-sm text-slate-600">{t('kb.graphDescription')}</p>
+
+        {loading && data === undefined ? (
+          <p className="text-sm text-slate-600" role="status">
+            {t('kb.graphLoading')}
+          </p>
+        ) : error || config === undefined ? (
+          <div
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
+            role="alert"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{t('kb.graphLoadError')}</span>
+              <Button
+                onClick={() => void refetch()}
+                data={{ cy: 'kb-knowledge-graph-config-retry' }}
+              >
+                <Button.Label>{t('kb.graphRetry')}</Button.Label>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <Switch
+                size="sm"
+                label={t('kb.graphEnableLabel')}
+                className={{ label: 'min-w-0 whitespace-normal' }}
+                checked={config.isEnabled}
+                onCheckedChange={(enabled) => void handleEnabledChange(enabled)}
+                disabled={isTogglingEnabled}
+                data={{ cy: 'kb-knowledge-graph-enabled' }}
+              />
+              <p className="mt-2 text-xs text-slate-500">
+                {config.isEnabled
+                  ? t('kb.graphEnabledDescription')
+                  : t('kb.graphDisabledDescription')}
+              </p>
+              {!config.costConfigurationReady ? (
+                <p
+                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                  data-cy="kb-knowledge-graph-cost-unconfigured"
+                >
+                  {t('kb.graphCostUnavailable')}
+                </p>
+              ) : null}
+              <div
+                className={`grid gap-3 sm:items-end ${
+                  buildDomain != null
+                    ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+                    : 'sm:grid-cols-[minmax(0,1fr)_auto]'
+                }`}
+              >
+                {buildDomain != null ? (
+                  <div
+                    className="space-y-1"
+                    data-cy="kb-knowledge-graph-domain"
+                  >
+                    <span className="text-sm font-medium text-slate-900">
+                      {t('kb.graphDomainLabel')}
+                    </span>
+                    <p className="text-sm text-slate-600">
+                      {domainLabelForId(buildDomain.id) ?? buildDomain.id}
+                    </p>
+                  </div>
+                ) : null}
+                <SelectField
+                  label={t('kb.graphQualityTierLabel')}
+                  items={tierItems}
+                  value={selectedTier}
+                  onChange={(value) => {
+                    setOperationError(null)
+                    setSelectedTier(value as KbGraphQualityTier)
+                  }}
+                  disabled={
+                    isActive ||
+                    isRebuilding ||
+                    !config.isEnabled ||
+                    !config.costConfigurationReady
+                  }
+                  data={{ cy: 'kb-knowledge-graph-quality-tier' }}
+                  className={{
+                    root: 'w-full',
+                    select: { trigger: 'w-full' },
+                  }}
+                />
+                <Button
+                  primary
+                  loading={isRebuilding}
+                  disabled={
+                    isActive ||
+                    !config.isEnabled ||
+                    !config.costConfigurationReady ||
+                    insufficientQuota
+                  }
+                  onClick={() => void handleRebuild()}
+                  data={{ cy: 'kb-knowledge-graph-rebuild' }}
+                >
+                  <Button.Label>
+                    {hasPublishedGraph
+                      ? t('kb.graphRebuild')
+                      : t('kb.graphBuild')}
+                  </Button.Label>
+                </Button>
+              </div>
+              {config?.focusTopic != null ? (
+                <div
+                  className="mt-3 space-y-1"
+                  data-cy="kb-knowledge-graph-focus-topic"
+                >
+                  <span className="text-sm font-medium text-slate-900">
+                    {t('kb.graphFocusTopicLabel')}
+                  </span>
+                  <p className="text-sm text-slate-600">{config.focusTopic}</p>
+                </div>
+              ) : null}
+              <p className="mt-3 text-xs text-slate-500">
+                {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
+              </p>
+              {domainCategoryNames.length > 0 ? (
+                <div
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                  data-cy="kb-knowledge-graph-domain-categories"
+                >
+                  <span className="text-xs font-semibold text-slate-600">
+                    {t('kb.graphDomainCategoriesLabel')}:
+                  </span>
+                  {domainCategoryNames.map((name) => (
+                    <Badge key={name} variant="outline">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+              {showPublishedDomain && publishedDomainLabel != null ? (
+                <p
+                  className="mt-2 text-xs text-slate-500"
+                  data-cy="kb-knowledge-graph-published-domain"
+                >
+                  {t('kb.graphDomainPublished', {
+                    domain: publishedDomainLabel,
+                    version: formatDomainVersion(publishedDomain.version),
+                    language: translateDomainLanguage(publishedDomain.language),
+                  })}
+                </p>
+              ) : null}
+              {insufficientQuota ? (
+                <p
+                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                  role="status"
+                  data-cy="kb-knowledge-graph-quota-insufficient"
+                >
+                  {t('kb.graphQuotaInsufficient', {
+                    estimate: formattedSelectedEstimate,
+                    remaining: formattedRemainingQuota,
+                  })}
+                </p>
+              ) : null}
+              <div
+                className="mt-3 grid gap-2 border-t border-slate-200 pt-3 text-sm text-slate-700 sm:grid-cols-2"
+                data-cy="kb-knowledge-graph-cost"
+              >
+                <p>
+                  <span className="font-semibold">
+                    {t('kb.graphBillingLabel')}:
+                  </span>{' '}
+                  {formattedBillingLabel}
+                </p>
+                <p>
+                  <span className="font-semibold">
+                    {t('kb.graphRemainingQuota')}:
+                  </span>{' '}
+                  {formatMinorUnits(
+                    format,
+                    config.remainingSemesterQuotaMinorUnits,
+                    config.quotaCurrency
+                  )}
+                </p>
+                <p>
+                  <span className="font-semibold">
+                    {t('kb.graphWorstCaseBalance')}:
+                  </span>{' '}
+                  {formatMinorUnits(
+                    format,
+                    config.worstCaseRemainingMinorUnits,
+                    config.quotaCurrency
+                  )}
+                </p>
+                <p>
+                  <span className="font-semibold">{t('kb.graphMaxCost')}:</span>{' '}
+                  {formatMinorUnits(
+                    format,
+                    config.maxCostMinorUnits,
+                    config.quotaCurrency
+                  )}
+                </p>
+                {config.costStatus ? (
+                  <p>
+                    <span className="font-semibold">
+                      {t('kb.graphCostStatus')}:
+                    </span>{' '}
+                    {costStatusLabel(config.costStatus, costStatusLabels)}
+                  </p>
+                ) : null}
+                {config.actualCostMinorUnits != null ? (
+                  <p data-cy="kb-knowledge-graph-actual-cost">
+                    <span className="font-semibold">
+                      {t('kb.graphActualCost')}:
+                    </span>{' '}
+                    {formatMinorUnits(
+                      format,
+                      config.actualCostMinorUnits,
+                      config.costCurrency
+                    )}
+                  </p>
+                ) : null}
+              </div>
+              {config.actualRequestCount != null ? (
+                <p
+                  className="mt-2 text-xs text-slate-500"
+                  data-cy="kb-knowledge-graph-actual-usage"
+                >
+                  {t('kb.graphActualUsage', {
+                    requests: config.actualRequestCount,
+                    inputTokens: config.actualInputTokens ?? 0,
+                    outputTokens: config.actualOutputTokens ?? 0,
+                    embeddingTokens: config.actualEmbeddingTokens ?? 0,
+                  })}
+                </p>
+              ) : null}
+              <div
+                className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm"
+                aria-live="polite"
+                aria-atomic="true"
+                data-cy="kb-knowledge-graph-status"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-slate-900">
+                    {t('kb.graphStatusLabel')}:
+                  </span>
+                  <Badge variant="outline">
+                    {statusLabel(config.status, statusLabels)}
+                  </Badge>
+                  {config.isStale && hasPublishedGraph ? (
+                    <Badge variant="outline">{t('kb.graphStale')}</Badge>
+                  ) : null}
+                </div>
+                {config.buildId ? (
+                  <p className="break-all text-xs text-slate-500">
+                    {t('kb.graphBuildId', { buildId: config.buildId })}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            {operationError ? (
+              <p
+                className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
+                role="alert"
+              >
+                {operationError}
+              </p>
+            ) : null}
+
+            {detailsOpen ? (
+              <div>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="font-semibold text-slate-900">
+                    {t('kb.graphPreviewTitle')}
+                  </h3>
+                  {config.elementGenerationReady ? (
+                    <Button
+                      primary
+                      onClick={() =>
+                        void router.push({
+                          pathname: '/elements/generate',
+                          query: { kbId },
+                        })
+                      }
+                      data={{ cy: 'kb-generate-elements' }}
+                    >
+                      <Button.Label>
+                        {t('kb.graphGenerateElements')}
+                      </Button.Label>
+                    </Button>
+                  ) : null}
+                </div>
+                {hasPublishedGraph && !config.elementGenerationReady ? (
+                  <p
+                    className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                    data-cy="kb-element-generation-unavailable"
+                  >
+                    {t('kb.graphElementGenerationUnavailable')}
+                  </p>
+                ) : null}
+                {hasPublishedGraph ? (
+                  <KnowledgeGraphPreview
+                    kbId={kbId}
+                    servedBuildId={config.publishedBuildId ?? null}
+                  />
+                ) : (
+                  <div
+                    className="rounded-lg border border-dashed border-slate-400 bg-slate-50 p-6 text-center text-sm text-slate-600"
+                    data-cy="kb-knowledge-graph-preview-unavailable"
+                  >
+                    {t('kb.graphPreviewUnavailable')}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </>
+        )}
+      </section>
+    </details>
+  )
+}
+
+export default KnowledgeGraphPanel

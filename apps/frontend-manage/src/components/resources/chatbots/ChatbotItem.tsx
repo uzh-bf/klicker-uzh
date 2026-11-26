@@ -1,20 +1,29 @@
 import type { Chatbot } from '@klicker-uzh/graphql/dist/ops'
+import { KnowledgeBaseMaterialsReadiness } from '@klicker-uzh/kb-management'
 import { Badge } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
+
+// The list only reads these fields, so its items do not have to carry the whole
+// chatbot entity.
+type ChatbotListItem = Pick<
+  Chatbot,
+  'courses' | 'enabledKnowledgeBases' | 'id' | 'name' | 'status'
+>
 
 function ChatbotItem({
   chatbot,
   selected,
   onSelect,
 }: {
-  chatbot: Chatbot
+  chatbot: ChatbotListItem
   selected?: boolean
   onSelect: () => void
 }) {
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
+  const knowledgeBase = chatbot.enabledKnowledgeBases?.[0]
 
   return (
     <button
@@ -43,9 +52,22 @@ function ChatbotItem({
               })
             : t('manage.resources.noLinkedCourses')}
         </div>
+        <div className="text-sm text-gray-500" data-cy="chatbot-list-materials">
+          {knowledgeBase
+            ? t('manage.resources.chatbotListKnowledgeBase', {
+                kbName: knowledgeBase.name,
+              })
+            : t('manage.resources.chatbotListNoKnowledgeBase')}
+        </div>
+        {knowledgeBase?.materialsReadiness ? (
+          <KnowledgeBaseMaterialsReadiness
+            metrics={knowledgeBase.materialsReadiness}
+          />
+        ) : null}
       </div>
     </button>
   )
 }
 
 export default ChatbotItem
+export type { ChatbotListItem }

@@ -1,0 +1,209 @@
+{
+  "contract": "kg-relations/v1",
+  "edges": [
+    {
+      "id": "rel_contrast",
+      "properties": {
+        "description": "Permutation and Combination (synthetic)",
+        "internal_evidence_refs": "res-1|7",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "contrast",
+        "kg_relationship_id": "rel_contrast",
+        "kg_source_node_id": "node_permutation",
+        "kg_target_node_id": "node_combination",
+        "relation_status": "inferred",
+        "relation_type": "contrasts_with",
+        "source_id": "chunk-3",
+        "weight": 1.0
+      },
+      "source": "node_permutation",
+      "target": "node_combination",
+      "type": "RELATED"
+    },
+    {
+      "id": "rel_formula",
+      "properties": {
+        "description": "Permutation and Factorial (synthetic)",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "formula",
+        "kg_relationship_id": "rel_formula",
+        "kg_source_node_id": "node_permutation",
+        "kg_target_node_id": "node_factorial",
+        "relation_status": "inferred",
+        "relation_type": "has_formula",
+        "source_id": "chunk-unmapped",
+        "weight": 1.0
+      },
+      "source": "node_permutation",
+      "target": "node_factorial",
+      "type": "RELATED"
+    },
+    {
+      "id": "rel_legacy",
+      "properties": {
+        "description": "Factorial and Permutation (synthetic)",
+        "internal_evidence_refs": "res-2|4",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "legacy",
+        "kg_relationship_id": "rel_legacy",
+        "kg_source_node_id": "node_factorial",
+        "kg_target_node_id": "node_permutation",
+        "source_id": "chunk-2",
+        "weight": 1.0
+      },
+      "source": "node_factorial",
+      "target": "node_permutation",
+      "type": "RELATED"
+    },
+    {
+      "id": "rel_part",
+      "properties": {
+        "description": "Binomial Coefficient and Factorial (synthetic)",
+        "internal_evidence_refs": "res-1|1,2;res-2|4",
+        "kg_direction": "target_to_source",
+        "kg_provenance_fingerprint": "part",
+        "kg_relationship_id": "rel_part",
+        "kg_source_node_id": "node_binomial",
+        "kg_target_node_id": "node_factorial",
+        "relation_status": "source",
+        "relation_type": "part_of",
+        "source_id": "chunk-1<SEP>chunk-2",
+        "weight": 1.0
+      },
+      "source": "node_factorial",
+      "target": "node_binomial",
+      "type": "RELATED"
+    },
+    {
+      "id": "rel_prerequisite",
+      "properties": {
+        "description": "Counting Principle and Permutation (synthetic)",
+        "internal_evidence_refs": "res-1|1,2",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "prerequisite",
+        "kg_relationship_id": "rel_prerequisite",
+        "kg_source_node_id": "node_counting",
+        "kg_target_node_id": "node_permutation",
+        "relation_status": "inferred",
+        "relation_type": "prerequisite_of",
+        "source_id": "chunk-1",
+        "weight": 1.0
+      },
+      "source": "node_counting",
+      "target": "node_permutation",
+      "type": "RELATED"
+    },
+    {
+      "id": "rel_related",
+      "properties": {
+        "description": "Counting Principle and Combination (synthetic)",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "related",
+        "kg_relationship_id": "rel_related",
+        "kg_source_node_id": "node_counting",
+        "kg_target_node_id": "node_combination",
+        "relation_status": "extracted",
+        "relation_type": "related",
+        "source_id": "chunk-unmapped",
+        "weight": 1.0
+      },
+      "source": "node_counting",
+      "target": "node_combination",
+      "type": "RELATED"
+    },
+    {
+      "id": "rel_synonym",
+      "properties": {
+        "description": "Combination and Binomial Coefficient (synthetic)",
+        "kg_direction": "source_to_target",
+        "kg_provenance_fingerprint": "synonym",
+        "kg_relationship_id": "rel_synonym",
+        "kg_source_node_id": "node_combination",
+        "kg_target_node_id": "node_binomial",
+        "relation_status": "source",
+        "relation_type": "synonym_of",
+        "source_id": "chunk-unmapped",
+        "weight": 1.0
+      },
+      "source": "node_combination",
+      "target": "node_binomial",
+      "type": "RELATED"
+    }
+  ],
+  "nodes": [
+    {
+      "degree": 2,
+      "id": "node_binomial",
+      "labels": ["Method"],
+      "properties": {
+        "degree": 2,
+        "description": "Binomial Coefficient (synthetic)",
+        "entity_type": "Method",
+        "kg_node_id": "node_binomial",
+        "kg_provenance_fingerprint": "binomial",
+        "name": "Binomial Coefficient",
+        "source_id": "chunk-unmapped"
+      }
+    },
+    {
+      "degree": 3,
+      "id": "node_combination",
+      "labels": ["Concept"],
+      "properties": {
+        "degree": 3,
+        "description": "Combination (synthetic)",
+        "entity_type": "Concept",
+        "internal_evidence_refs": "res-1|7",
+        "kg_node_id": "node_combination",
+        "kg_provenance_fingerprint": "combination",
+        "name": "Combination",
+        "source_id": "chunk-3"
+      }
+    },
+    {
+      "degree": 2,
+      "id": "node_counting",
+      "labels": ["Concept"],
+      "properties": {
+        "degree": 2,
+        "description": "Counting Principle (synthetic)",
+        "entity_type": "Concept",
+        "internal_evidence_refs": "res-1|1,2;res-2|4",
+        "kg_node_id": "node_counting",
+        "kg_provenance_fingerprint": "counting",
+        "name": "Counting Principle",
+        "source_id": "chunk-1<SEP>chunk-2"
+      }
+    },
+    {
+      "degree": 3,
+      "id": "node_factorial",
+      "labels": ["Method"],
+      "properties": {
+        "degree": 3,
+        "description": "Factorial (synthetic)",
+        "entity_type": "Method",
+        "internal_evidence_refs": "res-2|4",
+        "kg_node_id": "node_factorial",
+        "kg_provenance_fingerprint": "factorial",
+        "name": "Factorial",
+        "source_id": "chunk-2"
+      }
+    },
+    {
+      "degree": 4,
+      "id": "node_permutation",
+      "labels": ["Concept"],
+      "properties": {
+        "degree": 4,
+        "description": "Permutation (synthetic)",
+        "entity_type": "Concept",
+        "internal_evidence_refs": "res-1|1,2",
+        "kg_node_id": "node_permutation",
+        "kg_provenance_fingerprint": "permutation",
+        "name": "Permutation",
+        "source_id": "chunk-1"
+      }
+    }
+  ]
+}

@@ -175,6 +175,80 @@ describe('model-only citation indices', () => {
     expect(withModelCitationIndices(projected, steps)).toEqual(projected)
   })
 
+  test('same-key video repeats keep one index and every raw passage', () => {
+    const first = {
+      reference: 'urn:video:synthetic#t=42.0,59.0',
+      title: 'Synthetic lecture',
+      source_type: 'video',
+      citation_index: 99,
+      chunks: [{ content: 'Passage 42', start_sec: 42, end_sec: 59 }],
+    }
+    const second = {
+      ...first,
+      chunks: [
+        { content: 'Passage 42', start_sec: 42, end_sec: 59 },
+        { content: 'Passage 754', start_sec: 754, end_sec: 800 },
+      ],
+    }
+    const steps = [
+      { content: [call('first'), result('first', payload(first))] },
+      { content: [call('second'), result('second', payload(second))] },
+    ]
+    const projected = withModelCitationIndices(
+      [message('first'), message('second')],
+      steps
+    )
+
+    expect(
+      projected.map(
+        (_message, index) =>
+          projectedPayload(projected, index).sources[0].citation_index
+      )
+    ).toEqual([1, 1])
+    expect(projectedPayload(projected, 1).sources[0].chunks).toEqual(
+      second.chunks
+    )
+  })
+
+  test('different first video ranges keep the original separate indices', () => {
+    const video = (reference: string, start: number, end: number) => ({
+      reference,
+      title: 'Synthetic lecture',
+      source_type: 'video',
+      citation_index: 99,
+      chunks: [
+        {
+          content: `Passage ${start}`,
+          start_sec: start,
+          end_sec: end,
+        },
+      ],
+    })
+    const first = video('urn:video:synthetic#t=42.0,59.0', 42, 59)
+    const second = video('urn:video:synthetic#t=42.0,59.0', 754, 800)
+    const steps = [
+      { content: [call('first'), result('first', payload(first))] },
+      { content: [call('second'), result('second', payload(second))] },
+    ]
+    const projected = withModelCitationIndices(
+      [message('first'), message('second')],
+      steps
+    )
+
+    expect(
+      projected.map(
+        (_message, index) =>
+          projectedPayload(projected, index).sources[0].citation_index
+      )
+    ).toEqual([1, 2])
+    expect(projectedPayload(projected, 0).sources[0].chunks).toEqual(
+      first.chunks
+    )
+    expect(projectedPayload(projected, 1).sources[0].chunks).toEqual(
+      second.chunks
+    )
+  })
+
   test('uses call order despite reversed completion and reuses indices across searches', () => {
     const a = group('urn:a'),
       b = group('urn:b'),

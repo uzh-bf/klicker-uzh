@@ -13,6 +13,7 @@ import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
+import { getStoredAuthToken } from '@klicker-uzh/util/client-auth'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
@@ -66,7 +67,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
       // failing the request before it reaches the API.
       let token: string | null = null
       try {
-        token = sessionStorage.getItem('participant_token')
+        token = getStoredAuthToken('participant_token')
       } catch {
         token = null
       }
