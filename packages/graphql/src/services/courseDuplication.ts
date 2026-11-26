@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { runInAuditTransaction } from '@klicker-uzh/audit'
+import {
+  deriveAuditCorrelationId,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { resolveOptionalRequestContext } from '@klicker-uzh/logging/request'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -471,6 +474,15 @@ async function normalizeStaleCourseDuplicationJob(
       'NX'
     )
     if (processLockAcquired !== 'OK') return job
+    // Large courses can take longer than the lock lifetime, so keep it alive
+    // the same way the worker does while the audit work runs.
+    const processLockRenewal = setInterval(() => {
+      void renewCourseDuplicationProcessLock(
+        redis,
+        processLockKey,
+        processLockValue
+      ).catch(() => undefined)
+    }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
     try {
       await completeCopiedAssessmentAudit(prisma, job.assessmentCopies ?? [])
     } catch (error) {
@@ -483,6 +495,7 @@ async function normalizeStaleCourseDuplicationJob(
       )
       return job
     } finally {
+      clearInterval(processLockRenewal)
       await releaseCourseDuplicationLockValue(
         redis,
         processLockKey,
@@ -1902,8 +1915,13 @@ async function completeCopiedAssessmentAudit(
         where: { id: copiedLiveQuizId },
         select: { status: true, isDeleted: true, startedAt: true },
       })
+      // A stable operation per copied quiz gives every attempt the same
+      // idempotency key, so a second writer cannot add a second copy event.
       const operation = assessmentAuditSystemOperation({
         occurredAt: copiedAt,
+        correlationId: deriveAuditCorrelationId(
+          `assessment-copied:${copiedLiveQuizId}`
+        ),
       })
       await emitCoveredAssessmentAuditEvents({
         tx,
