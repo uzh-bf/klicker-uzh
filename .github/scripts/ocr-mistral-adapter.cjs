@@ -2877,7 +2877,7 @@ function createProgressFilter(write, onCompression = () => {}) {
     if (!dropping) {
       let event
       const tool =
-        /^\[ocr\] {3}([▶√✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context|lookup_library_docs)(?: |$)/u.exec(
+        /^\[ocr\] {3}([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context|lookup_library_docs)(?: |$)/u.exec(
           line
         )
       const started =
@@ -2923,7 +2923,7 @@ function createProgressFilter(write, onCompression = () => {}) {
           // Diagnostic consumers cannot change process output or completion.
         }
       } else if (tool) {
-        const state = { '▶': 'started', '√': 'completed', '✘': 'failed' }[
+        const state = { '▶': 'started', '✔': 'completed', '✘': 'failed' }[
           tool[1]
         ]
         event = `event=tool_${state} tool=${tool[2]}`

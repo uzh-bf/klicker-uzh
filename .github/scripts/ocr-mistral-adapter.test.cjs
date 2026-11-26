@@ -1048,10 +1048,10 @@ test('progress reconstructs known events without reflecting private fields or wo
     [
       '[ocr] 8 file(s) changed, reviewing 5 in /OCR_PRIVATE_SENTINEL',
       '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"',
-      '[ocr]   √ file_read (3ms)',
+      '[ocr]   ✔ file_read (3ms)',
       '[ocr]   ✘ code_search failed: OCR_PRIVATE_SENTINEL',
       '[ocr]   ▶ lookup_library_docs "OCR_PRIVATE_SENTINEL"',
-      '[ocr]   √ lookup_library_docs (3ms)',
+      '[ocr]   ✔ lookup_library_docs (3ms)',
       '[ocr]   ✘ lookup_library_docs failed: OCR_PRIVATE_SENTINEL',
       '[ocr] Plan completed for group "OCR_PRIVATE_SENTINEL"',
       '[ocr] Review filter removed 2 comment(s) for group "OCR_PRIVATE_SENTINEL"',
@@ -1092,12 +1092,12 @@ test('progress drops whole overlong records, resumes at newline and safely flush
   const records = []
   const progress = createProgressFilter((line) => records.push(line))
   progress.write('[ocr]   ▶ file_read ' + 'x'.repeat(4096))
-  progress.write('[ocr]   √ file_find (1ms)')
+  progress.write('[ocr]   ✔ file_find (1ms)')
   assert.equal(records.length, 0)
   progress.write(
     '\n[ocr] 9999999999999999 file(s) changed, reviewing 1 in private\n'
   )
-  progress.write('[ocr]   √ file_find (1ms)')
+  progress.write('[ocr]   ✔ file_find (1ms)')
   assert.equal(records.length, 0)
   progress.end()
   progress.end()
@@ -1119,7 +1119,7 @@ test('progress drops whole overlong records, resumes at newline and safely flush
     throw new Error('synthetic log sink unavailable')
   })
   assert.doesNotThrow(() => {
-    failed.write('[ocr]   √ file_read (1ms)\n')
+    failed.write('[ocr]   ✔ file_read (1ms)\n')
     failed.end()
   })
 })
@@ -1215,7 +1215,7 @@ test('progress heartbeats reflect quiet time and finish clears the timer exactly
     records[2],
     'OCR progress event=heartbeat elapsed_ms=150000 idle_ms=60000\n'
   )
-  progress.write('[ocr]   √ file_read (1ms)')
+  progress.write('[ocr]   ✔ file_read (1ms)')
   progress.finish({ code: 0 })
   const finished = records.slice()
   assert.match(
@@ -1224,7 +1224,7 @@ test('progress heartbeats reflect quiet time and finish clears the timer exactly
   )
   progress.finish({ code: 7 })
   progress.end()
-  progress.write('[ocr]   √ code_search (1ms)\n')
+  progress.write('[ocr]   ✔ code_search (1ms)\n')
   time += 60000
   tick()
   assert.deepEqual(records, finished)
@@ -1339,7 +1339,7 @@ test('heartbeat and terminal sink failures preserve lifecycle cleanup', () => {
   assert.doesNotThrow(() => {
     time = 60000
     tick()
-    progress.write('[ocr]   √ file_read (1ms)\n')
+    progress.write('[ocr]   ✔ file_read (1ms)\n')
     progress.finish({ failed: true })
   })
   assert.equal(cleared, true)
@@ -5164,7 +5164,7 @@ test('run strips upstream keys and injects only the selected loopback model', as
 
 test('run streams filtered progress before completion while preserving raw stderr, JSON and exit status', async (t) => {
   const rawLine = '[ocr]   ▶ file_read "OCR_PRIVATE_SENTINEL"\n'
-  const finalLine = '[ocr]   √ file_read (1ms)'
+  const finalLine = '[ocr]   ✔ file_read (1ms)'
   const fatalLine =
     'Error: review failed (timeout): OCR_PRIVATE_SENTINEL https://provider.invalid/v1\n'
   const script = `
@@ -5303,7 +5303,7 @@ test('live progress reports a quiet successful process and spawn failure without
 })
 
 test('a missing live-log descriptor never falls back into result or private stderr', async () => {
-  const raw = '[ocr]   √ file_read (1ms)\n'
+  const raw = '[ocr]   ✔ file_read (1ms)\n'
   const result = await runCli(
     [
       'run',

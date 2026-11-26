@@ -33,12 +33,11 @@ enclosing commit hash, avoiding a self-reference.
 
 Draft and final main reviews use `z-ai/glm-5.3-flash` through the fixed
 `moat-flash` profile at maximum reasoning. MOAT's OpenAI-compatible upstream is
-`https://api.commandcode.ai/inference/v1/chat/completions`. Tool-bearing MOAT
-requests force tool use; main-review requests that offer `task_done` set
+`https://api.commandcode.ai/inference/v1/chat/completions`. Main-review requests that offer `task_done` set
 `tool_choice` to `required`.
 
 The full `zai-org/GLM-5.3` model is used through the `moat-advisor` profile for
-focused advisor consultations and stack topology at maximum reasoning. Each
+focused advisor consultations at maximum reasoning. Stack topology uses Flash. Each
 advisor request contains one question and selected source excerpts; it receives
 neither the complete diff nor the reviewer conversation. The portable skill
 directs difficult and architectural questions to that advisor after source
