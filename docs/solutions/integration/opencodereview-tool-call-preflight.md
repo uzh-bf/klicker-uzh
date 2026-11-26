@@ -14,6 +14,7 @@ root_cause: 'The text-only preflight did not exercise the tool-bearing review re
 tags:
   - open-code-review
   - openrouter
+  - moat
   - github-actions
   - llm-tools
   - final-review
@@ -23,19 +24,22 @@ tags:
 
 ## Current review routes
 
-Draft and manual main reviews use Mistral-hosted
-`deepseek-v4-1-flash-1017` through the `mistral-deepseek` profile. The bounded
-advisor uses Mistral-hosted `zai-glm-5-3`. Both models use maximum reasoning. The manual tool canary and stack topology request call the
-fixed Mistral endpoint directly. OCR uses the runner-local
+Draft and manual main reviews use `z-ai/glm-5.3-flash` through the fixed
+`moat-flash` profile. The bounded advisor uses `zai-org/GLM-5.3` through the
+`moat-advisor` profile, which also handles stack topology. Both models use
+maximum reasoning. Tool-bearing MOAT requests force tool use, and main-review
+requests that offer `task_done` set `tool_choice` to `required`. The manual tool
+canary uses `moat-flash`; the canary and stack topology requests call the fixed
+[MOAT endpoint](https://api.commandcode.ai/inference/v1/chat/completions)
+directly. OCR uses the runner-local
 [adapter](../../../.github/scripts/ocr-mistral-adapter.cjs), which translates
 `max_completion_tokens` to `max_tokens` and restores native thinking chunks
 from bounded memory when OCR replays an assistant turn. Answer text and thinking
-metadata remain separate so strict topology JSON stays parseable. Mistral's
-structured-output grammar rejects `uniqueItems` on topology layer arrays with
-HTTP 400. The request schema omits that keyword; `validateTopologyResult`
-still rejects duplicate layer numbers before publication. The topology call
-allows up to 65,536 completion tokens and ten minutes for maximum reasoning;
-length-truncated answers fail closed.
+metadata remain separate so strict topology JSON stays parseable. The topology
+request schema keeps `uniqueItems` omitted for provider grammar compatibility;
+`validateTopologyResult` still rejects duplicate layer numbers before
+publication. The topology call allows up to 65,536 completion tokens and ten
+minutes for maximum reasoning; length-truncated answers fail closed.
 
 Topology source evidence is assembled after the review job fetches the frozen
 commit range. Reading it while creating the earlier metadata snapshot would
@@ -47,8 +51,10 @@ The schema describes the confidence prefix using its existing vocabulary;
 the shared finding validator enforces it before publication. This keeps provider
 grammar compatibility separate from local acceptance checks.
 
-The upstream `MISTRAL_API_KEY` exists only in the adapter or direct request
-process. OCR receives a random loopback capability, and its mode-0600 config
+The workflow supplies the upstream `CMD_API_KEY` through the `cmd-api-key`
+action input. The composite places it only in the review step; the adapter or
+direct request process is its only consumer. OCR receives a random loopback
+capability, and its mode-0600 config
 uses `auth_token_cmd` to read that capability from the environment. The attempt
 wrapper closes the adapter before returning. The manual config must omit `llm.url`:
 OCR 1.13.0 gives a saved URL precedence over `OCR_LLM_URL`, so a saved upstream

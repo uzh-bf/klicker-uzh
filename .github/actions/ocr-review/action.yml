@@ -2,8 +2,8 @@ name: OCR shared runtime
 description: Run a bounded draft OpenCodeReview review from trusted policy.
 
 inputs:
-  mistral-api-key:
-    description: Mistral API key used by the OCR adapter.
+  cmd-api-key:
+    description: Command Code API key used by the OCR adapter.
     required: true
   context7-api-key:
     description: Optional Context7 API key used by the OCR review tools.
@@ -27,7 +27,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-deepseek
+        OCR_ADAPTER_PROVIDER: moat-flash
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" verify-release
 
     - name: Checkout trusted review policy
@@ -55,7 +55,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-deepseek
+        OCR_ADAPTER_PROVIDER: moat-flash
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" prepare
 
@@ -77,13 +77,13 @@ runs:
       id: review
       shell: bash
       env:
-        MISTRAL_API_KEY: ${{ inputs.mistral-api-key }}
+        CMD_API_KEY: ${{ inputs.cmd-api-key }}
         CONTEXT7_API_KEY: ${{ inputs.context7-api-key }}
         OCR_ACTION_PATH: ${{ github.action_path }}
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-deepseek
+        OCR_ADAPTER_PROVIDER: moat-flash
         OCR_PROVIDER_PAUSED: ${{ inputs['provider-paused'] }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" run
 
@@ -96,7 +96,7 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-deepseek
+        OCR_ADAPTER_PROVIDER: moat-flash
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" validate
 
     - name: Publish draft findings
@@ -145,5 +145,5 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_ADAPTER_PROVIDER: mistral-deepseek
+        OCR_ADAPTER_PROVIDER: moat-flash
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" summary

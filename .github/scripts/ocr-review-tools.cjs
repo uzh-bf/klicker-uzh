@@ -11,6 +11,7 @@ const {
   validContextPath: validPath,
   validLibraryId,
 } = require('./ocr-runtime-config.cjs')
+const { MOAT_ADVISOR_MODEL } = require('./ocr-mistral-adapter.cjs')
 
 const ADVISOR_MAX_ATTEMPTS = 8
 const ALLOWANCE_SCHEMA = 'ocr-advisor-allowance/v1'
@@ -1035,7 +1036,7 @@ async function startReviewTools(options = {}) {
       )
       attemptOutcome.stage = 'request'
       const body = {
-        model: 'zai-glm-5-3',
+        model: MOAT_ADVISOR_MODEL,
         reasoning_effort: 'max',
         max_tokens: 16384,
         messages: [
@@ -1459,7 +1460,7 @@ async function startFocusedAdvisor(options = {}) {
     const { startAdapter } = require('./ocr-mistral-adapter.cjs')
     if (signal?.aborted) throw failure('cancelled')
     adapter = await startAdapter({
-      provider: 'mistral',
+      provider: 'moat-advisor',
       apiKey,
       ...(options.availability ? { availability: options.availability } : {}),
       usageJournalPath: `${diagnosticsPath}.events.jsonl`,

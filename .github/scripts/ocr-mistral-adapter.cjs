@@ -32,7 +32,37 @@ const MISTRAL_PRICING = {
   cachedInput: 0.14,
   output: 4.4,
 }
+const MOAT_URL = 'https://api.commandcode.ai/inference/v1/chat/completions'
+const MOAT_FLASH_MODEL = 'z-ai/glm-5.3-flash'
+const MOAT_ADVISOR_MODEL = 'zai-org/GLM-5.3'
+const MOAT_PRICING = {
+  date: '2026-11-26',
+  source: 'https://commandcode.ai/docs/moat',
+}
 const PROVIDERS = {
+  'moat-flash': {
+    name: 'moat-flash',
+    label: 'Command Code MOAT',
+    url: MOAT_URL,
+    model: MOAT_FLASH_MODEL,
+    responseModels: [MOAT_FLASH_MODEL],
+    secret: 'CMD_API_KEY',
+    pricing: {
+      ...MOAT_PRICING,
+      input: 0.045,
+      cachedInput: 0.009,
+      output: 0.15,
+    },
+  },
+  'moat-advisor': {
+    name: 'moat-advisor',
+    label: 'Command Code MOAT',
+    url: MOAT_URL,
+    model: MOAT_ADVISOR_MODEL,
+    responseModels: [MOAT_ADVISOR_MODEL],
+    secret: 'CMD_API_KEY',
+    pricing: { ...MOAT_PRICING, input: 0.49, cachedInput: 0.091, output: 1.54 },
+  },
   mistral: {
     name: 'mistral',
     label: 'Mistral',
@@ -820,7 +850,13 @@ function translateMistralRequest(
     )
   }
   if (
-    ['openrouter', 'mistral-flash', 'mistral-deepseek'].includes(provider) &&
+    [
+      'openrouter',
+      'mistral-flash',
+      'mistral-deepseek',
+      'moat-flash',
+      'moat-advisor',
+    ].includes(provider) &&
     effort !== 'max'
   ) {
     throw new AdapterError('invalid_request', 'draft reasoning must be max')
@@ -858,7 +894,10 @@ function translateMistralRequest(
   if (hasCompletionTool(body) && typeof translated.tool_choice !== 'object') {
     // OCR completes through task_done. Optional tool use lets a prose answer
     // enter its zero-tool retry path, which replays the growing history.
-    translated.tool_choice = provider === 'openrouter' ? 'required' : 'any'
+    translated.tool_choice =
+      provider === 'openrouter' || provider.startsWith('moat-')
+        ? 'required'
+        : 'any'
   }
   return translated
 }
@@ -2541,7 +2580,12 @@ function commandSummary(args) {
   }
   const estimate = report.estimate
   const pricing = profile.pricing
-  const priceDigits = ['openrouter', 'mistral-deepseek'].includes(profile.name)
+  const priceDigits = [
+    'openrouter',
+    'mistral-deepseek',
+    'moat-flash',
+    'moat-advisor',
+  ].includes(profile.name)
     ? 3
     : 2
   const failures = Object.fromEntries(
@@ -2589,7 +2633,7 @@ function commandSummary(args) {
   const summary = [
     '### OCR estimated cost and caching savings',
     '',
-    `${profile.label} \`${profile.model}\`; [list pricing](${pricing.source}) checked ${pricing.date}: ` +
+    `${profile.label} \`${profile.model}\`; [reference pricing](${pricing.source}) checked ${pricing.date}: ` +
       `$${pricing.input.toFixed(priceDigits)} input / $${pricing.cachedInput.toFixed(priceDigits)} cached input / $${pricing.output.toFixed(priceDigits)} output per million tokens (USD).`,
     '',
   ]
@@ -2688,7 +2732,7 @@ function commandSummary(args) {
     '',
     'OCR budget counters use uncached input plus output as reported to OCR. Provider usage includes cached input; estimated USD charges it at the pinned cached-input rate. Failed calls can have provider usage without appearing in the OCR result counters.',
     '',
-    'Estimate covers recorded invocations in the expected stages only. Missing receipts prevent a complete total. Excludes taxes, account discounts and runner costs. Prices are pinned to the date above.',
+    'Estimate covers recorded invocations in the expected stages only. Missing receipts prevent a complete total. Excludes subscription fees, taxes, additional discounts and runner costs. Prices are pinned to the date above.',
     ''
   )
   const output = summary.join('\n')
@@ -2728,7 +2772,7 @@ function commandFinalSummary(args) {
     if (match && !Object.hasOwn(expected, match[1]))
       expected[match[1]] = Number(match[2])
   }
-  const main = readReport(args[0], expected, 'mistral-deepseek')
+  const main = readReport(args[0], expected, 'moat-flash')
   let advisor
   try {
     const receipt = JSON.parse(
@@ -2746,12 +2790,12 @@ function commandFinalSummary(args) {
                 ? fs.readFileSync(advisorPath, 'utf8')
                 : '',
               { adapter: 0 },
-              'mistral'
+              'moat-advisor'
             ).estimate
           : readReport(
               advisorPath,
               { adapter: receipt.expected_receipts },
-              'mistral'
+              'moat-advisor'
             )
     }
   } catch {
@@ -2769,7 +2813,7 @@ function commandFinalSummary(args) {
           savings: main.savings + advisor.savings,
         }
       : null
-  const text = `\n${line('deepseek_main', main)}\n${line('glm_advisor', advisor)}\n${line('final_and_advisor', sum)}\nAdvisor usage has a separate allowance and is excluded from OCR's main review budget counters.\n`
+  const text = `\n${line('glm_flash_main', main)}\n${line('glm_advisor', advisor)}\n${line('final_and_advisor', sum)}\nAdvisor usage has a separate allowance and is excluded from OCR's main review budget counters.\n`
   process.stdout.write(text)
   if (process.env.GITHUB_STEP_SUMMARY)
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text)
@@ -2833,7 +2877,7 @@ function createProgressFilter(write, onCompression = () => {}) {
     if (!dropping) {
       let event
       const tool =
-        /^\[ocr\] {3}([▶✔✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context|lookup_library_docs)(?: |$)/u.exec(
+        /^\[ocr\] {3}([▶√✘]) (task_done|code_comment|file_read_diff|file_read|file_find|code_search|ask_review_advisor|read_review_context|lookup_library_docs)(?: |$)/u.exec(
           line
         )
       const started =
@@ -2879,7 +2923,7 @@ function createProgressFilter(write, onCompression = () => {}) {
           // Diagnostic consumers cannot change process output or completion.
         }
       } else if (tool) {
-        const state = { '▶': 'started', '✔': 'completed', '✘': 'failed' }[
+        const state = { '▶': 'started', '√': 'completed', '✘': 'failed' }[
           tool[1]
         ]
         event = `event=tool_${state} tool=${tool[2]}`
@@ -3176,6 +3220,7 @@ async function commandRun(args, options = {}) {
     },
   })
   const childEnv = { ...process.env }
+  delete childEnv.CMD_API_KEY
   delete childEnv.MISTRAL_API_KEY
   delete childEnv.OPENROUTER_API_KEY
   delete childEnv.OCR_ADVISOR_STATE_PATH
@@ -3451,6 +3496,9 @@ async function main(argv) {
 }
 
 module.exports = {
+  MOAT_URL,
+  MOAT_FLASH_MODEL,
+  MOAT_ADVISOR_MODEL,
   MISTRAL_URL,
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
