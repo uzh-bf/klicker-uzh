@@ -10,9 +10,11 @@ import {
   processElementData,
   recomputeDerivedPermissions,
   signJWT,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
   verifyElearningChatGrant,
   verifyJWT,
 } from '@klicker-uzh/util'
+import { deriveLearnerMemoryKey } from '@klicker-uzh/util/learner-memory'
 import bcrypt from 'bcryptjs'
 import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
@@ -710,6 +712,27 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
         })
       )
     }
+  }
+
+  // Learning notes live in the memory service under a keyed hash. The request
+  // to delete them is written in the same transaction and outlives the
+  // account, so the retry task can deliver it afterwards. Its epoch is one
+  // above the account's last, which also makes the service drop a note that is
+  // still being written. Without the key secret no note can exist.
+  const learnerKey = deriveLearnerMemoryKey(ctx.user.sub)
+  if (learnerKey) {
+    deletionPromises.push(
+      ctx.prisma.$executeRaw`
+        INSERT INTO "LearnerMemoryForgetRequest"
+          ("learnerKey", "courseId", "epoch", "requestedAt")
+        SELECT ${learnerKey}, NULL, "learnerMemoryEpoch" + 1, clock_timestamp()
+        FROM "Participant"
+        WHERE "id" = ${ctx.user.sub}::uuid
+          AND "tutorPersonalizationConsent" = true
+          AND "tutorPersonalizationDisclosureVersion" =
+            ${TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION}
+      `
+    )
   }
 
   deletionPromises.push(

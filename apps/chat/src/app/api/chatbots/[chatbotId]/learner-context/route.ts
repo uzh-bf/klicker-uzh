@@ -2,6 +2,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { resolveLearnerContext } from '@/src/lib/server/learnerContext'
+import { requestLearnerNotesDeletion } from '@/src/lib/server/learnerMemory'
 
 export const maxDuration = 60
 
@@ -9,6 +10,8 @@ export const maxDuration = 60
  * Show the student what the Tutor would receive about them on their next
  * message in this chatbot. It runs the same resolution as a chat turn and
  * returns the text unchanged, so the view cannot drift from what is sent.
+ * `notes` says what applies to the learning notes, so the view can explain
+ * why none are shown.
  */
 export async function GET(
   req: NextRequest,
@@ -23,17 +26,24 @@ export async function GET(
   try {
     const chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
-      select: { personalizationEnabled: true },
+      select: { personalizationEnabled: true, ownerId: true },
     })
-    const result = await resolveLearnerContext({
-      mode: 'tutor',
-      chatbotPersonalizationEnabled: chatbot?.personalizationEnabled === true,
-      participantId: authResult.participantId,
-      courseId: authResult.chatbot.courseId,
-    })
+    if (!chatbot) {
+      return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+    }
+    const result = await resolveLearnerContext(
+      {
+        mode: 'tutor',
+        chatbotPersonalizationEnabled: chatbot.personalizationEnabled,
+        chatbotOwnerId: chatbot.ownerId,
+        participantId: authResult.participantId,
+        courseId: authResult.chatbot.courseId,
+      },
+      'view'
+    )
     return NextResponse.json(
       result.eligible
-        ? { active: true, text: result.text }
+        ? { active: true, text: result.text, notes: result.notes }
         : { active: false, reason: result.reason },
       { headers: { 'Cache-Control': 'no-store' } }
     )
@@ -41,6 +51,39 @@ export async function GET(
     console.error('Failed to resolve the learner context view')
     return NextResponse.json(
       { error: 'LEARNER_CONTEXT_UNAVAILABLE' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * Delete the student's learning notes for this chatbot's course. The student
+ * keeps their choice; later Tutor conversations start new notes. Deleting is
+ * always allowed, whatever the choice or the chatbot's settings currently are.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string }> }
+) {
+  const { chatbotId } = await params
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
+  }
+
+  try {
+    const status = await requestLearnerNotesDeletion({
+      participantId: authResult.participantId,
+      courseId: authResult.chatbot.courseId,
+    })
+    return NextResponse.json(
+      { status },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
+  } catch {
+    console.error('Failed to record the learning-notes deletion')
+    return NextResponse.json(
+      { error: 'LEARNER_NOTES_DELETION_FAILED' },
       { status: 500 }
     )
   }

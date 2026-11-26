@@ -23,13 +23,47 @@ export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = '2026-09-08'
 export const TUTOR_PERSONALIZATION_DISCLOSURE_VERSION = '2026-11-26-results'
 
 /**
+ * The notice of a deployment with learner memory. It describes the practice
+ * results and the stored learning notes. Notes are used only for a yes
+ * recorded under this version.
+ */
+export const TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION =
+  '2026-11-26-results-notes'
+
+/**
  * Notice versions under which a recorded yes lets the Tutor use the student's
- * course results. A later notice that widens the purpose is added here, so a
- * student who agreed under an earlier version keeps what they agreed to.
+ * course results. Every version covers them, so a student who agreed under an
+ * earlier notice keeps what they agreed to when a later one widens the purpose.
  */
 export const TUTOR_PERSONALIZATION_RESULTS_VERSIONS: readonly string[] = [
   TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
 ]
+
+/**
+ * The notice a deployment shows and records new answers under. The caller
+ * says whether the deployment has learner memory, so this module stays free of
+ * server-only code.
+ */
+export function currentTutorPersonalizationDisclosureVersion(
+  learnerMemoryAvailable: boolean
+): string {
+  return learnerMemoryAvailable
+    ? TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION
+    : TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
+}
+
+/** Whether a recorded choice lets the Tutor keep and use learning notes. */
+export function coversLearnerMemory(choice: {
+  tutorPersonalizationConsent: boolean | null
+  tutorPersonalizationDisclosureVersion: string | null
+}): boolean {
+  return (
+    choice.tutorPersonalizationConsent === true &&
+    choice.tutorPersonalizationDisclosureVersion ===
+      TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION
+  )
+}
 
 export const participantAccountDataUseSelect = {
   dataUseAcknowledgedAt: true,

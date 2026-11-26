@@ -1,7 +1,6 @@
 'use client'
 
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { TUTOR_PERSONALIZATION_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
@@ -17,18 +16,20 @@ export const DATA_USE_CHANGED_EVENT = 'klicker-chat-data-use-changed'
  * the card stays away; the choice remains available in the data-use settings.
  */
 const OFFER_LATER_KEY = 'klicker-chat-tutor-personalization-later'
+/** The same for the later question about learning notes. */
+const NOTES_OFFER_LATER_KEY = 'klicker-chat-tutor-personalization-notes-later'
 
-function offerPostponed(): boolean {
+function offerPostponed(key: string): boolean {
   try {
-    return window.localStorage.getItem(OFFER_LATER_KEY) === 'true'
+    return window.localStorage.getItem(key) === 'true'
   } catch {
     return false
   }
 }
 
-function postponeOffer() {
+function postponeOffer(key: string) {
   try {
-    window.localStorage.setItem(OFFER_LATER_KEY, 'true')
+    window.localStorage.setItem(key, 'true')
   } catch {
     // Without storage the card returns on the next visit, which is harmless.
   }
@@ -51,6 +52,10 @@ async function readDataUseState(
  * only while the choice is unanswered, in a chatbot whose lecturer switched
  * personalization on and that has the Tutor mode. Yes, no and "decide later"
  * carry equal weight, and nothing is preselected.
+ *
+ * A student who agreed before the deployment kept learning notes is asked
+ * once more, about the notes only. Their earlier yes stays as it is unless
+ * they agree; switching personalization off remains in the settings.
  */
 export function TutorPersonalizationOffer({
   chatbotId,
@@ -65,6 +70,7 @@ export function TutorPersonalizationOffer({
   )
   const [state, setState] = useState<ChatDataUseState | null>(null)
   const [postponed, setPostponed] = useState(true)
+  const [notesPostponed, setNotesPostponed] = useState(true)
   const [showNotice, setShowNotice] = useState(false)
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -73,7 +79,8 @@ export function TutorPersonalizationOffer({
 
   useEffect(() => {
     if (!offered) return
-    setPostponed(offerPostponed())
+    setPostponed(offerPostponed(OFFER_LATER_KEY))
+    setNotesPostponed(offerPostponed(NOTES_OFFER_LATER_KEY))
 
     let active = true
     const load = () =>
@@ -101,7 +108,7 @@ export function TutorPersonalizationOffer({
             purpose: 'personalization',
             consent,
             expectedRevision,
-            disclosureVersion: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+            disclosureVersion: state.tutorPersonalizationCurrentVersion,
           }),
         })
       try {
@@ -114,7 +121,10 @@ export function TutorPersonalizationOffer({
             setFailed(true)
             return
           }
-          if (current.tutorPersonalizationConsent !== null) {
+          if (
+            current.tutorPersonalizationConsent !==
+            state.tutorPersonalizationConsent
+          ) {
             setState(current)
             return
           }
@@ -135,14 +145,70 @@ export function TutorPersonalizationOffer({
     [state, chatbotId]
   )
 
+  if (!offered || !state?.complete) return null
+
+  const notice = state.tutorPersonalizationNotesOffered
+    ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
+    : t('shared.tutorPersonalization.notice')
+
   if (
-    !offered ||
-    postponed ||
-    !state?.complete ||
-    state.tutorPersonalizationConsent !== null
+    state.tutorPersonalizationConsent === true &&
+    state.tutorPersonalizationNotesOffered &&
+    !state.tutorPersonalizationNotesAgreed &&
+    !notesPostponed
   ) {
-    return null
+    return (
+      <section
+        aria-labelledby="tutor-personalization-notes-offer-title"
+        data-cy="chat-personalization-notes-offer"
+        className="bg-background shrink-0 border-b px-4 py-3"
+      >
+        <div className="mx-auto flex max-w-3xl flex-col gap-2">
+          <h2
+            id="tutor-personalization-notes-offer-title"
+            className="text-base font-semibold"
+          >
+            {t('chat.personalization.reofferTitle')}
+          </h2>
+          <p className="text-sm">{t('chat.personalization.reofferLead')}</p>
+          <div className="prose prose-sm max-w-none">
+            <DynamicMarkdown
+              withLinkButtons={false}
+              content={t('shared.tutorPersonalization.noticeNotes')}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              disabled={saving}
+              data={{ cy: 'chat-personalization-notes-offer-yes' }}
+              onClick={() => void answer(true)}
+            >
+              {t('chat.personalization.reofferYes')}
+            </Button>
+            <Button
+              type="button"
+              disabled={saving}
+              data={{ cy: 'chat-personalization-notes-offer-keep' }}
+              onClick={() => {
+                postponeOffer(NOTES_OFFER_LATER_KEY)
+                setNotesPostponed(true)
+              }}
+            >
+              {t('chat.personalization.reofferKeep')}
+            </Button>
+          </div>
+          {failed && (
+            <UserNotification type="error">
+              {t('shared.generic.systemError')}
+            </UserNotification>
+          )}
+        </div>
+      </section>
+    )
   }
+
+  if (postponed || state.tutorPersonalizationConsent !== null) return null
 
   return (
     <section
@@ -178,10 +244,7 @@ export function TutorPersonalizationOffer({
               id="tutor-personalization-offer-notice"
               className="prose prose-sm mt-2 max-w-none"
             >
-              <DynamicMarkdown
-                withLinkButtons={false}
-                content={t('shared.tutorPersonalization.notice')}
-              />
+              <DynamicMarkdown withLinkButtons={false} content={notice} />
             </div>
           )}
         </div>
@@ -207,7 +270,7 @@ export function TutorPersonalizationOffer({
             disabled={saving}
             data={{ cy: 'chat-personalization-offer-later' }}
             onClick={() => {
-              postponeOffer()
+              postponeOffer(OFFER_LATER_KEY)
               setPostponed(true)
             }}
           >
@@ -225,8 +288,11 @@ export function TutorPersonalizationOffer({
 }
 
 type LearnerContextView =
-  | { active: true; text: string }
+  | { active: true; text: string; notes: string }
   | { active: false; reason: string }
+
+/** Notes exist, or may exist, for this student in this chatbot's course. */
+const NOTES_IN_USE = ['present', 'empty', 'unavailable']
 
 /**
  * Lets the student read what the Tutor would receive about them with their
@@ -239,6 +305,11 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const [open, setOpen] = useState(false)
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deletion, setDeletion] = useState<
+    'deleted' | 'pending' | 'failed' | null
+  >(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -267,6 +338,43 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
     window.addEventListener(DATA_USE_CHANGED_EVENT, reload)
     return () => window.removeEventListener(DATA_USE_CHANGED_EVENT, reload)
   }, [open, load])
+
+  const deleteNotes = useCallback(async () => {
+    setDeleting(true)
+    setDeletion(null)
+    try {
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/learner-context`,
+        { method: 'DELETE' }
+      )
+      const status = response.ok
+        ? ((await response.json()) as { status: string }).status
+        : null
+      setDeletion(
+        status === 'deleted'
+          ? 'deleted'
+          : status === 'pending'
+            ? 'pending'
+            : 'failed'
+      )
+      setConfirmingDeletion(false)
+      await load()
+    } catch {
+      setDeletion('failed')
+    } finally {
+      setDeleting(false)
+    }
+  }, [chatbotId, load])
+
+  const notes = view?.active ? view.notes : null
+  const notesMessage =
+    notes === 'unavailable'
+      ? t('chat.personalization.notesUnavailable')
+      : notes === 'deleting' && deletion === null
+        ? t('chat.personalization.notesDeleting')
+        : notes === 'empty' && deletion === null
+          ? t('chat.personalization.notesEmpty')
+          : null
 
   const inactiveMessage =
     view && !view.active
@@ -317,6 +425,56 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
               </pre>
             </>
           ) : null}
+          {!failed && notesMessage && (
+            <p data-cy="chat-personalization-notes-state">{notesMessage}</p>
+          )}
+          {deletion && (
+            <p data-cy="chat-personalization-notes-deletion">
+              {deletion === 'deleted'
+                ? t('chat.personalization.notesDeleted')
+                : deletion === 'pending'
+                  ? t('chat.personalization.notesDeletePending')
+                  : t('shared.generic.systemError')}
+            </p>
+          )}
+          {!failed &&
+            notes !== null &&
+            NOTES_IN_USE.includes(notes) &&
+            (confirmingDeletion ? (
+              <div className="flex flex-col gap-2 rounded border p-2">
+                <p>{t('chat.personalization.notesDeleteConfirm')}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    disabled={deleting}
+                    data={{ cy: 'chat-personalization-notes-delete-confirm' }}
+                    onClick={() => void deleteNotes()}
+                  >
+                    {t('chat.personalization.notesDeleteYes')}
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => setConfirmingDeletion(false)}
+                  >
+                    {t('chat.personalization.notesDeleteCancel')}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Button
+                  type="button"
+                  data={{ cy: 'chat-personalization-notes-delete' }}
+                  onClick={() => {
+                    setDeletion(null)
+                    setConfirmingDeletion(true)
+                  }}
+                >
+                  {t('chat.personalization.notesDelete')}
+                </Button>
+              </div>
+            ))}
         </div>
       )}
     </div>

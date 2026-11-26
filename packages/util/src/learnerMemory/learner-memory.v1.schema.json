@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://klicker.uzh.ch/contracts/learner-memory.v1.schema.json",
+  "title": "Learner memory contract, version 1",
+  "description": "HTTP contract between public KlickerUZH (caller) and the Catalyst learner-memory service. Public owns this file; the service pins a byte-identical copy. All routes except GET /healthz live under /learner-memory/v1, take a JSON body, and require 'Authorization: Bearer <token>'. The service never receives a name, e-mail address or account identifier.",
+  "x-contractVersion": 1,
+  "x-routes": {
+    "GET /healthz": { "response": "#/$defs/Health" },
+    "POST /learner-memory/v1/recall": {
+      "request": "#/$defs/CourseScope",
+      "response": "#/$defs/RecordResponse"
+    },
+    "POST /learner-memory/v1/inspect": {
+      "request": "#/$defs/CourseScope",
+      "response": "#/$defs/RecordResponse"
+    },
+    "POST /learner-memory/v1/observe": {
+      "request": "#/$defs/ObserveRequest",
+      "response": "#/$defs/ObserveResponse"
+    },
+    "POST /learner-memory/v1/forget": {
+      "request": "#/$defs/ForgetRequest",
+      "response": "#/$defs/ForgetResponse"
+    },
+    "POST /learner-memory/v1/forget-all": {
+      "request": "#/$defs/ForgetAllRequest",
+      "response": "#/$defs/ForgetResponse"
+    }
+  },
+  "x-rules": [
+    "Epoch floor: the service keeps, per learnerKey, the highest epoch it has seen in any request. A request whose epoch is lower than that floor fails with 409 LEARNER_MEMORY_STALE_EPOCH and changes nothing.",
+    "Epoch purge: when a request raises the floor, every record of that learner stored under a lower epoch is deleted before the request is answered. recall and inspect never return a record stored under a lower epoch than the request's.",
+    "Course tombstone: forget stores forgottenAt for the learner and course. An observe whose exchangeAt is not later than that time answers 200 with status 'dropped' and stores nothing.",
+    "forget and forget-all are idempotent and answer 200 when nothing is stored.",
+    "Concurrent observes for one learner and course must not lose an update.",
+    "A record holds only the fields of #/$defs/Record. The service stores no message text.",
+    "Unknown properties are rejected with 400 LEARNER_MEMORY_INVALID_REQUEST."
+  ],
+  "x-errors": {
+    "400": "LEARNER_MEMORY_INVALID_REQUEST",
+    "401": "LEARNER_MEMORY_UNAUTHORIZED",
+    "409": "LEARNER_MEMORY_STALE_EPOCH",
+    "413": "LEARNER_MEMORY_REQUEST_TOO_LARGE",
+    "502": "LEARNER_MEMORY_DISTILLATION_FAILED"
+  },
+  "$defs": {
+    "LearnerKey": {
+      "description": "Keyed hash (HMAC-SHA-256, lowercase hex) of the participant id, computed by public.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "CourseId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Epoch": {
+      "description": "The participant's memory epoch in the public database. It increases on every opt-out.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "Timestamp": {
+      "description": "Time taken from the public database, ISO 8601 in UTC with milliseconds.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "Health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "contractVersion"],
+      "properties": {
+        "status": { "const": "ok" },
+        "contractVersion": { "const": 1 }
+      }
+    },
+    "CourseScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["learnerKey", "courseId", "epoch"],
+      "properties": {
+        "learnerKey": { "$ref": "#/$defs/LearnerKey" },
+        "courseId": { "$ref": "#/$defs/CourseId" },
+        "epoch": { "$ref": "#/$defs/Epoch" }
+      }
+    },
+    "TopicEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["topic", "status", "lastSeenAt"],
+      "properties": {
+        "topic": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "status": { "enum": ["struggling", "progressing", "confident"] },
+        "note": { "type": "string", "maxLength": 160 },
+        "lastSeenAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "Record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["topics", "difficulties", "goal", "updatedAt"],
+      "properties": {
+        "topics": {
+          "type": "array",
+          "maxItems": 12,
+          "items": { "$ref": "#/$defs/TopicEntry" }
+        },
+        "difficulties": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+        },
+        "goal": {
+          "anyOf": [
+            { "type": "string", "minLength": 1, "maxLength": 200 },
+            { "type": "null" }
+          ]
+        },
+        "updatedAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "RecordResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record"],
+      "properties": {
+        "record": {
+          "anyOf": [{ "$ref": "#/$defs/Record" }, { "type": "null" }]
+        }
+      }
+    },
+    "ObserveRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["learnerKey", "courseId", "epoch", "exchangeAt", "exchange"],
+      "properties": {
+        "learnerKey": { "$ref": "#/$defs/LearnerKey" },
+        "courseId": { "$ref": "#/$defs/CourseId" },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "exchangeAt": { "$ref": "#/$defs/Timestamp" },
+        "locale": { "enum": ["de", "en"] },
+        "exchange": {
+          "description": "The latest completed Tutor exchange. Used for distillation only and never stored.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["userMessage", "assistantMessage"],
+          "properties": {
+            "userMessage": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "assistantMessage": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            }
+          }
+        }
+      }
+    },
+    "ObserveResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["stored", "unchanged", "dropped"] }
+      }
+    },
+    "ForgetRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["learnerKey", "courseId", "epoch", "forgottenAt"],
+      "properties": {
+        "learnerKey": { "$ref": "#/$defs/LearnerKey" },
+        "courseId": { "$ref": "#/$defs/CourseId" },
+        "epoch": { "$ref": "#/$defs/Epoch" },
+        "forgottenAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "ForgetAllRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["learnerKey", "epoch"],
+      "properties": {
+        "learnerKey": { "$ref": "#/$defs/LearnerKey" },
+        "epoch": { "$ref": "#/$defs/Epoch" }
+      }
+    },
+    "ForgetResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "const": "forgotten" }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": { "type": "string" }
+      }
+    }
+  }
+}

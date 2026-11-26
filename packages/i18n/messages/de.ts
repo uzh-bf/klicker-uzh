@@ -117,6 +117,24 @@ export default {
         'Du hast der Personalisierung nicht zugestimmt. Der Tutor erhält deshalb nichts über dich.',
       viewChatbotOff:
         'Für diesen Chatbot ist die Personalisierung nicht eingeschaltet. Der Tutor erhält hier deshalb nichts über dich.',
+      reofferTitle: 'Darf der Tutor Lernnotizen führen?',
+      reofferLead:
+        'Der Tutor kann jetzt zusätzlich kurze Notizen zu deinem Lernen in diesem Kurs führen und in späteren Gesprächen nutzen. Deine bisherige Zustimmung gilt nur für deine Übungsergebnisse. Das ist freiwillig.',
+      reofferYes: 'Ja, auch Notizen führen',
+      reofferKeep: 'So lassen, wie es ist',
+      notesEmpty: 'Zu dir gibt es in diesem Kurs noch keine Lernnotizen.',
+      notesUnavailable:
+        'Deine Lernnotizen können gerade nicht geladen werden. Der Tutor arbeitet deshalb aktuell ohne sie.',
+      notesDeleting:
+        'Deine Lernnotizen für diesen Kurs werden gelöscht. Der Tutor verwendet sie nicht.',
+      notesDelete: 'Meine Lernnotizen für diesen Kurs löschen',
+      notesDeleteConfirm:
+        'Alle Lernnotizen zu dir in diesem Kurs löschen? Das kann nicht rückgängig gemacht werden. In späteren Gesprächen beginnt der Tutor neue Notizen.',
+      notesDeleteYes: 'Ja, löschen',
+      notesDeleteCancel: 'Abbrechen',
+      notesDeleted: 'Deine Lernnotizen für diesen Kurs wurden gelöscht.',
+      notesDeletePending:
+        'Deine Lernnotizen für diesen Kurs werden nicht mehr verwendet und in Kürze gelöscht.',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -764,6 +782,11 @@ export default {
       badgeOff: 'Aus',
       notice:
         'Wenn du zustimmst, passt der Tutor seine Erklärungen und Hinweise an dich an. Mit jeder Nachricht erhält er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs (Übungsquizzes und Microlearnings): welche Themen du geübt hast, ob deine Antworten richtig waren, wann du zuletzt geübt hast und wie viel vom Kurs du schon bearbeitet hast. Die Zusammenfassung wird für jede Nachricht neu erstellt und nicht gespeichert. Sie wird zusammen mit deiner Nachricht an den Sprachmodell-Anbieter gesendet, den dieser Chatbot nutzt. Das gilt in allen Kursen, in denen die Lehrperson die Personalisierung eingeschaltet hat, immer nur mit den Daten des jeweiligen Kurses. Lehrpersonen sehen weder die Zusammenfassung noch deine Entscheidung. Du kannst jederzeit in den Chat-Einstellungen oder unter «Datennutzung und Einstellungen» sehen, was der Tutor aktuell erhält, und deine Entscheidung ändern. Eine Änderung gilt ab deiner nächsten Nachricht. Ohne deine Zustimmung funktioniert der Tutor wie bisher.',
+      noticeNotes:
+        'In Kursen, in denen Lernnotizen verfügbar sind, führt der Tutor zusätzlich kurze Notizen zu deinem Lernen in diesem Kurs: an welchen Themen du gearbeitet hast und wie es lief, Schwierigkeiten, die wiederholt aufgetreten sind, und ein Ziel, das du genannt hast. Dafür werden deine Nachricht und die Antwort des Tutors nach jeder Tutor-Antwort an einen Notizdienst gesendet, der für KlickerUZH betrieben wird. Er aktualisiert die Notizen mit einem Sprachmodell und speichert die Nachrichten nicht. Die Notizen werden pro Kurs unter einem pseudonymen Schlüssel gespeichert, dem Tutor mit deinen späteren Nachrichten in diesem Kurs mitgegeben und sind für Lehrpersonen nicht sichtbar. Du kannst deine Notizen jederzeit in den Chat-Einstellungen lesen und löschen. Wenn du deine Zustimmung widerrufst oder dein Konto löschst, werden alle deine Notizen gelöscht.',
+      notesUpgradeHint:
+        'Der Tutor kann jetzt zusätzlich kurze Lernnotizen führen. Deine bisherige Zustimmung gilt nur für deine Übungsergebnisse.',
+      notesUpgradeAction: 'Lernnotizen ebenfalls erlauben',
       controlLabel: 'Deine Entscheidung',
       yes: 'Ja, personalisieren',
       no: 'Nein, nicht personalisieren',
@@ -5892,6 +5915,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       personalization: 'Tutor-Personalisierung',
       personalizationDescription:
         'Für Studierende, die zustimmen, nutzt der Tutor eine kurze Zusammenfassung ihrer eigenen Übungsergebnisse in diesem Kurs, um seine Hilfe anzupassen. Die Studierenden entscheiden selbst, und Sie sehen weder ihre Entscheidung noch ihre Daten. Standardmässig ausgeschaltet.',
+      personalizationNotesAvailable:
+        'Für diesen Chatbot sind Lernnotizen verfügbar: Für Studierende, die zustimmen, führt der Tutor zusätzlich kurze Notizen zu ihrem Lernen in diesem Kurs und nutzt sie in späteren Gesprächen. Sie sehen diese Notizen nicht.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

@@ -1,8 +1,15 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
+  coversLearnerMemory,
+  currentTutorPersonalizationDisclosureVersion,
   isParticipantDataUseComplete,
   TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
 } from '@klicker-uzh/util'
+import {
+  deriveLearnerMemoryKey,
+  isLearnerMemoryConfigured,
+} from '@klicker-uzh/util/learner-memory'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import {
@@ -25,6 +32,7 @@ const accountDataUseSelect = {
   tutorPersonalizationConsent: true,
   tutorPersonalizationChoiceAt: true,
   tutorPersonalizationDisclosureVersion: true,
+  learnerMemoryEpoch: true,
 } satisfies DB.Prisma.ParticipantSelect
 
 export type ParticipantAccountDataUseFields = DB.Prisma.ParticipantGetPayload<{
@@ -165,10 +173,23 @@ export async function updateParticipantDataUseChoice(
 const personalizationInput = z
   .object({
     expectedRevision: z.number().int().nonnegative(),
-    disclosureVersion: z.literal(TUTOR_PERSONALIZATION_DISCLOSURE_VERSION),
+    disclosureVersion: z.enum([
+      TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+      TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+    ]),
     consent: z.boolean(),
   })
   .strict()
+
+/**
+ * The personalization notice this deployment shows. A deployment with learner
+ * memory shows the notice that also describes the learning notes.
+ */
+export function getCurrentTutorPersonalizationDisclosureVersion(): string {
+  return currentTutorPersonalizationDisclosureVersion(
+    isLearnerMemoryConfigured()
+  )
+}
 
 /**
  * Record the optional Tutor personalization choice. It is answered under its
@@ -184,6 +205,15 @@ export async function updateParticipantTutorPersonalizationChoice(
   }
   const parsed = personalizationInput.safeParse(input)
   if (!parsed.success) throw dataUseError('PARTICIPANT_DATA_USE_INVALID_INPUT')
+  // A yes is recorded only under the notice this deployment shows, so it never
+  // covers more or less than the student has read. A no needs no such check.
+  if (
+    parsed.data.consent &&
+    parsed.data.disclosureVersion !==
+      getCurrentTutorPersonalizationDisclosureVersion()
+  ) {
+    throw dataUseError('PARTICIPANT_DATA_USE_INVALID_INPUT')
+  }
   return saveParticipantDataUse(
     { kind: 'personalization', ...parsed.data },
     ctx
@@ -242,6 +272,17 @@ async function saveParticipantDataUse(
           if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
             throw dataUseError('PARTICIPANT_DATA_USE_CLOCK_FAILURE')
           }
+          // Consent to learning notes ends whenever a yes that covered them
+          // is replaced by anything else: a no, or a yes under a notice
+          // without notes. The epoch rises in this transaction, so from this
+          // commit on the memory service ignores and deletes what it stored
+          // before, whether or not the deletion request below has arrived.
+          const notesConsentEnds =
+            coversLearnerMemory(participant) &&
+            !coversLearnerMemory({
+              tutorPersonalizationConsent: input.consent,
+              tutorPersonalizationDisclosureVersion: input.disclosureVersion,
+            })
           const updated = await prisma.participant.update({
             where: { id: participant.id },
             select: accountDataUseSelect,
@@ -250,8 +291,26 @@ async function saveParticipantDataUse(
               tutorPersonalizationConsent: input.consent,
               tutorPersonalizationChoiceAt: now,
               tutorPersonalizationDisclosureVersion: input.disclosureVersion,
+              ...(notesConsentEnds
+                ? { learnerMemoryEpoch: { increment: 1 } }
+                : {}),
             },
           })
+          if (notesConsentEnds) {
+            // Without the key secret no record can exist under this
+            // participant's key, and the opt-out must not fail on it.
+            const learnerKey = deriveLearnerMemoryKey(participant.id)
+            if (learnerKey) {
+              await prisma.learnerMemoryForgetRequest.create({
+                data: {
+                  learnerKey,
+                  courseId: null,
+                  epoch: updated.learnerMemoryEpoch,
+                  requestedAt: now,
+                },
+              })
+            }
+          }
           // The account acknowledgement is unchanged, so the event repeats the
           // account disclosure version the completion check just confirmed.
           await prisma.participantDataUseEvent.create({

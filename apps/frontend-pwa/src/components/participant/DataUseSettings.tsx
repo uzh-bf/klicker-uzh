@@ -6,7 +6,10 @@ import {
   SetTutorPersonalizationConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
   Button,
@@ -204,6 +207,11 @@ function DataUseSettings() {
     void updateLearningAnalyticsConsent(consent)
   }
 
+  // The deployment keeps learning notes, so the notice describes them.
+  const notesOffered =
+    dataUse?.currentTutorPersonalizationDisclosureVersion ===
+    TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION
+
   if (loading) {
     return (
       <div className="flex min-h-40 items-center justify-center rounded-md md:bg-slate-50 md:p-4">
@@ -336,6 +344,26 @@ function DataUseSettings() {
         <Prose className={{ root: 'prose-sm' }}>
           {t('shared.tutorPersonalization.notice')}
         </Prose>
+        {notesOffered && (
+          <Prose className={{ root: 'prose-sm' }}>
+            {t('shared.tutorPersonalization.noticeNotes')}
+          </Prose>
+        )}
+        {notesOffered &&
+          dataUse.tutorPersonalizationConsent === true &&
+          dataUse.tutorPersonalizationDisclosureVersion !==
+            dataUse.currentTutorPersonalizationDisclosureVersion && (
+            <div className="flex flex-col items-start gap-2 text-sm">
+              <p>{t('shared.tutorPersonalization.notesUpgradeHint')}</p>
+              <Button
+                disabled={saving || conflict || versionMismatch}
+                data={{ cy: 'participant-tutor-personalization-notes' }}
+                onClick={() => void updateTutorPersonalizationConsent(true)}
+              >
+                {t('shared.tutorPersonalization.notesUpgradeAction')}
+              </Button>
+            </div>
+          )}
       </div>
 
       <Modal

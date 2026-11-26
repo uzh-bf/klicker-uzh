@@ -30,6 +30,12 @@ describe('package subpath exports', () => {
     expect(dataUse.isParticipantDataUseComplete).toBeTypeOf('function')
   })
 
+  it('loads the learner-memory client through the public package path', async () => {
+    const learnerMemory = await import('@klicker-uzh/util/learner-memory')
+
+    expect(learnerMemory.isLearnerMemoryConfigured({})).toBe(false)
+  })
+
   it('loads response-example digest helpers through the public package path', async () => {
     const digest = await import('@klicker-uzh/util/response-example-digest')
 

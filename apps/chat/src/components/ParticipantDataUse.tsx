@@ -3,10 +3,7 @@
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import ParticipantDataUseChoices from '@klicker-uzh/shared-components/src/participant/ParticipantDataUseChoices'
 import TutorPersonalizationChoice from '@klicker-uzh/shared-components/src/participant/TutorPersonalizationChoice'
-import {
-  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
-} from '@klicker-uzh/util/participant-account-data-use'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import {
   Button,
   Checkbox,
@@ -41,6 +38,7 @@ const personalizationDataCy = {
   toggle: 'chat-data-use-personalization-toggle',
   yes: 'chat-data-use-personalization-true',
   no: 'chat-data-use-personalization-false',
+  agreeToNotes: 'chat-data-use-personalization-notes',
 }
 
 interface DataUseResponse {
@@ -337,7 +335,7 @@ export function ParticipantDataUseSettings({
           expectedRevision: state.dataUseRevision,
           disclosureVersion:
             purpose === 'personalization'
-              ? TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
+              ? state.tutorPersonalizationCurrentVersion
               : PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         }),
       })
@@ -428,6 +426,14 @@ export function ParticipantDataUseSettings({
                 <TutorPersonalizationChoice
                   disabled={saving}
                   consent={state.tutorPersonalizationConsent}
+                  withNotes={state.tutorPersonalizationNotesOffered}
+                  onAgreeToNotes={
+                    state.tutorPersonalizationConsent === true &&
+                    state.tutorPersonalizationNotesOffered &&
+                    !state.tutorPersonalizationNotesAgreed
+                      ? () => updateChoice('personalization', true)
+                      : undefined
+                  }
                   onChange={(consent) =>
                     updateChoice('personalization', consent)
                   }

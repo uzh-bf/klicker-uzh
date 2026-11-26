@@ -81,6 +81,13 @@ global:
     control: ''
     assessmentApi: ''
     assessmentPwa: ''
+  # Optional learner-memory service for the Tutor's learning notes. Empty
+  # leaves the deployment without learning notes. The GraphQL backend, the
+  # chat and the general Hatchet worker each read LEARNER_MEMORY_SERVICE_TOKEN
+  # and LEARNER_MEMORY_KEY_SECRET from their own Secret; all three need the
+  # same values.
+  learnerMemory:
+    serviceUrl: ''
 
 hatchet:
   client:

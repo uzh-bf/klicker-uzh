@@ -1229,6 +1229,14 @@ function ChatbotDetails({
           <div className="text-xs text-gray-500">
             {t('manage.resources.personalizationDescription')}
           </div>
+          {chatbot.learnerMemoryAvailable && (
+            <div
+              className="text-xs text-gray-500"
+              data-cy="chatbot-personalization-notes-available"
+            >
+              {t('manage.resources.personalizationNotesAvailable')}
+            </div>
+          )}
         </div>
 
         {!modelSettingsEditable ? (

@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   Badge,
+  Button,
   H4,
   RadioGroup,
   RadioGroupItem,
@@ -27,7 +28,15 @@ interface TutorPersonalizationChoiceProps {
   disabled?: boolean
   defaultOpen?: boolean
   onChange: (consent: boolean) => void
-  dataCy: { toggle: string; yes: string; no: string }
+  /** The deployment keeps learning notes, so the notice describes them. */
+  withNotes?: boolean
+  /**
+   * Set while a recorded yes covers practice results only although the notice
+   * now also describes learning notes. Agreeing records the yes again under
+   * the current notice.
+   */
+  onAgreeToNotes?: () => void
+  dataCy: { toggle: string; yes: string; no: string; agreeToNotes?: string }
 }
 
 function consentToRadioValue(consent: boolean | null): '' | 'yes' | 'no' {
@@ -40,6 +49,8 @@ function TutorPersonalizationChoice({
   disabled,
   defaultOpen = false,
   onChange,
+  withNotes = false,
+  onAgreeToNotes,
   dataCy,
 }: TutorPersonalizationChoiceProps) {
   const t = useTranslations()
@@ -107,7 +118,11 @@ function TutorPersonalizationChoice({
             withProse
             withLinkButtons={false}
             className={{ root: 'prose-sm' }}
-            content={t('shared.tutorPersonalization.notice')}
+            content={
+              withNotes
+                ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
+                : t('shared.tutorPersonalization.notice')
+            }
           />
           <p className="mt-3 text-sm font-medium">
             {t('shared.tutorPersonalization.controlLabel')}
@@ -144,6 +159,18 @@ function TutorPersonalizationChoice({
               </ShadcnLabel>
             ))}
           </RadioGroup>
+          {onAgreeToNotes && (
+            <div className="mt-3 flex flex-col items-start gap-2 rounded border border-slate-300 p-2 text-sm">
+              <p>{t('shared.tutorPersonalization.notesUpgradeHint')}</p>
+              <Button
+                disabled={disabled}
+                data={{ cy: dataCy.agreeToNotes }}
+                onClick={onAgreeToNotes}
+              >
+                {t('shared.tutorPersonalization.notesUpgradeAction')}
+              </Button>
+            </div>
+          )}
         </div>
       </ShadcnCollapsibleContent>
     </ShadcnCollapsible>

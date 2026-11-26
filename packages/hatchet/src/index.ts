@@ -30,6 +30,7 @@ import {
   retainFailedKBDeletionDispatch,
 } from './kbIngestion.js'
 import { maintainKBResources } from './kbMaintenance.js'
+import { retryLearnerMemoryForgets } from './learnerMemoryForgets.js'
 
 export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 export * from './client.js'
@@ -508,6 +509,18 @@ export function prepareHatchetTasks({
       }),
   })
 
+  const retryLearnerMemoryForgetsTask = hatchet.task({
+    name: 'retry-learner-memory-forgets',
+    onCrons: ['*/5 * * * *'],
+    concurrency: {
+      expression: '"retry-learner-memory-forgets"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) =>
+      retryLearnerMemoryForgets({ prisma, logger: ctx.logger }),
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -605,6 +618,7 @@ export function prepareHatchetTasks({
     monitorKBGraphBuilds,
     prepareKBGraphs,
     maintainKBResources: maintainKBResourcesTask,
+    retryLearnerMemoryForgets: retryLearnerMemoryForgetsTask,
     createAuditLogEntry,
     processCourseDuplication,
     sweepStaleCourseDuplications,
