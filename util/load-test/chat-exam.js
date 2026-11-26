@@ -92,7 +92,7 @@ const authVariants = {
     scope: undefined,
   },
 }
-const authMode = __ENV.KLICKER_AUTH_MODE || 'regular'
+const authMode = __ENV.KLICKER_AUTH_MODE || 'assessment'
 const variant = authVariants[authMode]
 if (!variant) {
   throw new Error('KLICKER_AUTH_MODE must be assessment or regular')
@@ -226,10 +226,12 @@ function sendTurn(state) {
     }
   )
 
-  // The endpoint answers with an AI SDK SSE stream. A finish event must
-  // arrive and no error event may appear. Content is never stored.
+  // The endpoint answers with an AI SDK SSE stream. A finish event and some
+  // answer text must arrive and no error event may appear. Only the text
+  // length is kept; content is never stored.
   let sawFinish = false
   let sawError = false
+  let answerChars = 0
   const eventTypes = {}
   for (const line of (res.body || '').split('\n')) {
     if (!line.startsWith('data: ')) continue
@@ -240,12 +242,20 @@ function sendTurn(state) {
       eventTypes[event.type] = (eventTypes[event.type] || 0) + 1
       if (event.type === 'finish') sawFinish = true
       if (event.type === 'error') sawError = true
+      if (event.type === 'text-delta' && typeof event.delta === 'string') {
+        answerChars += event.delta.trim().length
+      }
     } catch {
       // ignore non-JSON keepalive lines
     }
   }
 
-  const ok = res.status >= 200 && res.status < 300 && sawFinish && !sawError
+  const ok =
+    res.status >= 200 &&
+    res.status < 300 &&
+    sawFinish &&
+    !sawError &&
+    answerChars > 0
   check(res, { 'chat turn completed': () => ok })
   if (ok) {
     state.parentId = assistantMessageId
@@ -255,6 +265,7 @@ function sendTurn(state) {
     failed.add(1, {
       status: String(res.status),
       stream_error: String(sawError),
+      empty_answer: String(answerChars === 0),
     })
     // Event types only; message content and error text are never logged.
     console.warn(

@@ -77,7 +77,7 @@ KLICKER_SESSION_TOKEN=<session-token> \
 
 ### 5. `chat-exam.js` (Exam-shaped Load Against the Local Mock Model)
 
-Simulates an exam: N students (default 100), one chat turn per student every 45 s for 30 minutes (at most 40 per student, never two in flight per student), all starting at the same instant, plus a page reload with history fetch every 10th slot. Each student gets a participant session cookie signed with the development `APP_SECRET`; no Edu-ID and no paid model is involved. `KLICKER_AUTH_MODE=assessment` mints the assessment chat's `next-auth.participant-session-token` (HS256, `iss` the auth origin, `role` PARTICIPANT, `scope` EDUID). `KLICKER_AUTH_MODE=regular` (default) mints today's `participant_token` (`iss` the API origin), which the chat app in this repository authenticates. The issuer defaults to the chat origin with `chat.` replaced by `auth.` or `api.`, which matches the routed development origins. `KLICKER_AUTH_ISSUER` is required for non-local targets. `KLICKER_AUTH_COOKIE` and `KLICKER_AUTH_ISSUER` override the cookie name and issuer.
+Simulates an exam: N students (default 100), one chat turn per student every 45 s for 30 minutes (at most 40 per student, never two in flight per student), all starting at the same instant, plus a page reload with history fetch every 10th slot. Each student gets a participant session cookie signed with the development `APP_SECRET`; no Edu-ID and no paid model is involved. `KLICKER_AUTH_MODE=assessment` (default) mints the assessment chat's `next-auth.participant-session-token` (HS256, `iss` the auth origin, `role` PARTICIPANT, `scope` EDUID), so the chat under test must run with `CHAT_ASSESSMENT_MODE=true`. `KLICKER_AUTH_MODE=regular` mints the regular chat's `participant_token` (`iss` the API origin). A turn counts as completed only when the stream finishes without an error event and contains answer text. The issuer defaults to the chat origin with `chat.` replaced by `auth.` or `api.`, which matches the routed development origins. `KLICKER_AUTH_ISSUER` is required for non-local targets. `KLICKER_AUTH_COOKIE` and `KLICKER_AUTH_ISSUER` override the cookie name and issuer.
 
 **Targets local only by default.** The script refuses any host other than `localhost`, `127.0.0.1` or `*.localhost`. A remote host also needs `KLICKER_ALLOW_REMOTE_TARGET=true` and `KLICKER_ALLOW_SIDE_EFFECTS=true` (plus `KLICKER_ALLOW_PRODUCTION=true` for production). Remote runs need separate authorization and a real seeded course; the seeder below is local-only.
 
@@ -91,7 +91,7 @@ devrouter exec . -- bash -c 'cd packages/prisma-data && \
 
 # 2. Route chat to the mock model (stops the real litellm container; run after `ensure`).
 LITELLM_CONTAINER=<project>-litellm-1 util/load-test/mock-litellm.sh start
-devrouter exec . -- node util/load-test/chat-mock-registry.mjs   # add KEY=VALUE args, e.g. CHAT_ASSESSMENT_MODE=true CHAT_PUBLIC_PWA_URL=... CHAT_PUBLIC_URL=...
+devrouter exec . -- node util/load-test/chat-mock-registry.mjs CHAT_ASSESSMENT_MODE=true   # add further KEY=VALUE args, e.g. CHAT_PUBLIC_PWA_URL=... CHAT_PUBLIC_URL=...
 #    (chat restarts outside turbo; the other apps stop being served until the next `ensure`)
 
 # 3. Run. The dev APP_SECRET is read from the committed dev-only env file.
