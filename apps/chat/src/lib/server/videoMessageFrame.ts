@@ -28,7 +28,7 @@ export async function resolveAuthorizedVideoFrame({
       role: 'assistant',
       thread: { participantId, chatbotId },
     },
-    select: { content: true, chatMode: true },
+    select: { content: true, chatMode: true, createdAt: true },
   })
   if (!message || !Array.isArray(message.content)) return undefined
 
@@ -48,6 +48,7 @@ export async function resolveAuthorizedVideoFrame({
     chatbotId,
     chatMode: message.chatMode,
     content: message.content,
+    createdAt: message.createdAt,
   })
   return kbIds?.includes(frame.kb_id) ? frame : undefined
 }

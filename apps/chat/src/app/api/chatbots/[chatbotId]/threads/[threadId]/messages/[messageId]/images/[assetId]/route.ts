@@ -41,7 +41,7 @@ export async function GET(
         role: 'assistant',
         thread: { participantId: auth.participantId, chatbotId },
       },
-      select: { content: true, chatMode: true },
+      select: { content: true, chatMode: true, createdAt: true },
     })
     if (!message || !Array.isArray(message.content)) return missing()
     const image = selectedCourseImages(
@@ -54,6 +54,7 @@ export async function GET(
       chatbotId,
       chatMode: message.chatMode,
       content: message.content,
+      createdAt: message.createdAt,
     })
     if (!kbIds?.includes(image.kb_id)) return missing()
     const resource = await prisma.kBResource.findFirst({

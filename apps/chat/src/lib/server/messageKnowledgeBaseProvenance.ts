@@ -78,6 +78,18 @@ export function readMessageRetrievalSource(
   return null
 }
 
+/**
+ * Whether the message carries a retrieval-source part at all, valid or not.
+ * Only messages without one predate provenance markers.
+ */
+export function hasRetrievalSourceMarker(content: unknown): boolean {
+  if (!Array.isArray(content)) return false
+  return content.some((value) => {
+    const part = asPart(value)
+    return part?.type === 'data' && part.name === RETRIEVAL_SOURCE_DATA_PART
+  })
+}
+
 /** Whether the persisted turn actually called Doc Query successfully. */
 export function hasSuccessfulDocQueryResult(content: unknown): boolean {
   if (!Array.isArray(content)) return false

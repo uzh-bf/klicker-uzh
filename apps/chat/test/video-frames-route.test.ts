@@ -31,6 +31,7 @@ const fixture = JSON.parse(
 )
 const frame = videoFrameCandidates(fixture)[0]!
 const LINK_ID = '4c1f2f0e-6d1a-4a56-9a2f-7d2b6f2f6f01'
+const OTHER_LINK_ID = '9a5f2b31-0c86-4f2b-8a10-c3d0e5f5b902'
 const legacyConfigurations = [
   {
     chatMode: 'tutor',
@@ -192,7 +193,39 @@ it('replays a managed frame only with matching original link provenance', async 
         toolName: 'show_video_frame',
         result: { status: 'selected', frame },
       },
+      { ...provenance, data: { ...provenance.data, kbLinkId: OTHER_LINK_ID } },
     ],
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).toHaveBeenCalledTimes(1)
+})
+it('keeps serving a frame stored before provenance markers while its link is unchanged', async () => {
+  const unmarked = {
+    chatMode: 'tutor',
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_video_frame',
+        result: { status: 'selected', frame },
+      },
+    ],
+  }
+  mocks.message.mockResolvedValue(unmarked)
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, createdAt: new Date('2026-05-01T00:00:00Z') },
+    ],
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(200)
+
+  // A reattached KB gets a new link that did not exist for the old message.
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, createdAt: new Date('2026-07-01T00:00:00Z') },
+    ],
+    mcpConfigurations: legacyConfigurations,
   })
   expect((await GET(req, { params })).status).toBe(404)
   expect(mocks.read).toHaveBeenCalledTimes(1)

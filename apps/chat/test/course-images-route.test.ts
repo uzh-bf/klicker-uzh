@@ -148,9 +148,99 @@ it('replays a managed image while its original link is still the mode source', a
   })
   expect((await GET(req, { params })).status).toBe(200)
 })
-it('refuses managed evidence without provenance', async () => {
+it('keeps serving an image stored before provenance markers', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: null,
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+    ],
+  })
   mocks.chatbot.mockResolvedValue({
-    knowledgeBases: [managedLink],
+    knowledgeBases: [
+      { ...managedLink, createdAt: new Date('2026-05-01T00:00:00Z') },
+    ],
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(200)
+})
+it('refuses an unmarked image when its KB was reattached after the message', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: 'tutor',
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, createdAt: new Date('2026-07-01T00:00:00Z') },
+    ],
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+it('refuses an unmarked image after its mode is repointed to another link', async () => {
+  const otherLinkId = '9a5f2b31-0c86-4f2b-8a10-c3d0e5f5b902'
+  const createdAt = new Date('2026-05-01T00:00:00Z')
+  mocks.message.mockResolvedValue({
+    chatMode: 'cm_case',
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, createdAt },
+      {
+        ...managedLink,
+        id: otherLinkId,
+        isDefault: false,
+        kbId: '0b6c4c1a-9d3e-4f1e-9b0c-1d2e3f4a5b6c',
+        createdAt,
+      },
+    ],
+    customModeConfig: {
+      modes: [
+        { key: 'cm_case', name: 'Case', knowledgeBaseLinkId: otherLinkId },
+      ],
+    },
+    mcpConfigurations: legacyConfigurations,
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+it('refuses a malformed provenance marker instead of falling back', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: 'tutor',
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+      { ...provenance, data: { chatMode: 'tutor' } },
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, createdAt: new Date('2026-05-01T00:00:00Z') },
+    ],
     mcpConfigurations: legacyConfigurations,
   })
   expect((await GET(req, { params })).status).toBe(404)

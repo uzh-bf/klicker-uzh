@@ -12,7 +12,10 @@ import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
 } from './effectiveChatModes'
-import { readMessageRetrievalSource } from './messageKnowledgeBaseProvenance'
+import {
+  hasRetrievalSourceMarker,
+  readMessageRetrievalSource,
+} from './messageKnowledgeBaseProvenance'
 
 function readChatbotSources(chatbotId: string) {
   return prisma.chatbot.findUnique({
@@ -30,6 +33,7 @@ function readChatbotSources(chatbotId: string) {
           kbId: true,
           isEnabled: true,
           isDefault: true,
+          createdAt: true,
           kb: {
             select: {
               deletedAt: true,
@@ -60,14 +64,16 @@ type SourceSnapshot = NonNullable<
   Awaited<ReturnType<typeof readChatbotSources>>
 >
 
-function currentModeScope(
+function modeConfiguration(chatbot: SourceSnapshot, ownerPreview: boolean) {
+  return ownerPreview ? resolveOwnerPreviewModeConfigurations(chatbot) : chatbot
+}
+
+function isModeOffered(
   chatbot: SourceSnapshot,
   selectedMode: string,
   ownerPreview: boolean
-) {
-  const config = ownerPreview
-    ? resolveOwnerPreviewModeConfigurations(chatbot)
-    : chatbot
+): boolean {
+  const config = modeConfiguration(chatbot, ownerPreview)
   const modes = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
@@ -77,20 +83,78 @@ function currentModeScope(
       allowUnapprovedModes: ownerPreview,
     }
   )
-  if (!Object.hasOwn(modes, selectedMode))
-    throw new RequiredMCPUnavailableError('scope_violation')
+  return Object.hasOwn(modes, selectedMode)
+}
+
+function ownedLinks(chatbot: SourceSnapshot) {
+  return chatbot.knowledgeBases.map((link) =>
+    link.kb.ownerId === chatbot.ownerId ? link : { ...link, isEnabled: false }
+  )
+}
+
+function modeScope(
+  chatbot: SourceSnapshot,
+  selectedMode: string,
+  ownerPreview: boolean
+) {
   return resolveModeKnowledgeBaseScope({
-    customModeConfig: config.customModeConfig,
+    customModeConfig: modeConfiguration(chatbot, ownerPreview).customModeConfig,
     selectedMode,
-    knowledgeBaseLinks: chatbot.knowledgeBases.map((link) =>
-      link.kb.ownerId === chatbot.ownerId ? link : { ...link, isEnabled: false }
-    ),
+    knowledgeBaseLinks: ownedLinks(chatbot),
     configurations: chatbot.mcpConfigurations,
     effectiveConfigurations: resolveEffectiveMCPConfigurations(
       chatbot.mcpConfigurations,
       selectedMode
     ),
   })
+}
+
+function currentModeScope(
+  chatbot: SourceSnapshot,
+  selectedMode: string,
+  ownerPreview: boolean
+) {
+  if (!isModeOffered(chatbot, selectedMode, ownerPreview))
+    throw new RequiredMCPUnavailableError('scope_violation')
+  return modeScope(chatbot, selectedMode, ownerPreview)
+}
+
+/**
+ * Scope for media in an assistant message stored before turns carried a
+ * retrieval-source marker. Each chatbot then had at most one enabled link, so
+ * a live link that already existed when the message was written and is still
+ * the source of the message's mode is the link that produced it. A link
+ * created later (for example after a detach and reattach) never qualifies.
+ */
+function unmarkedMessageKnowledgeBaseScope(
+  chatbot: SourceSnapshot,
+  chatMode: string | null,
+  messageCreatedAt: Date | undefined
+): string[] | null {
+  // Older messages could be stored without a mode; they ran in tutor mode.
+  const selectedMode = chatMode ?? 'tutor'
+  const managed = chatbot.knowledgeBases.length > 0
+  try {
+    if (!managed) return modeScope(chatbot, selectedMode, false).kbIds ?? null
+    if (!messageCreatedAt) return null
+
+    // A mode that is no longer offered keeps the chatbot default, as before
+    // per-mode sources existed. An offered mode must still resolve cleanly.
+    const link = isModeOffered(chatbot, selectedMode, false)
+      ? modeScope(chatbot, selectedMode, false).link
+      : (ownedLinks(chatbot).find(
+          (candidate) =>
+            candidate.isEnabled &&
+            candidate.isDefault &&
+            candidate.kb.deletedAt === null
+        ) ?? null)
+    if (!link) return null
+    const row = chatbot.knowledgeBases.find(({ id }) => id === link.id)
+    if (!row || row.createdAt > messageCreatedAt) return null
+    return [link.kbId]
+  } catch {
+    return null
+  }
 }
 
 export async function revalidateModeSource(
@@ -124,46 +188,49 @@ export async function revalidateModeSource(
  * Knowledge-base scope that may still authorize bytes or frames referenced by
  * a stored assistant message.
  *
- * A managed chatbot needs the turn's original link provenance, re-resolved
- * against the currently approved mode. Legacy chatbots without any link row
- * keep the pre-link scope path. Both callers read the message first, so this
- * never widens access for a message the caller did not already own.
+ * A marked turn needs its original link provenance, re-resolved against the
+ * currently approved mode. A turn stored before markers existed keeps working
+ * while its original source is still the mode's live source. Both callers read
+ * the message first, so this never widens access for a message the caller did
+ * not already own.
  */
 export async function readMessageKnowledgeBaseScope({
   chatbotId,
   chatMode,
   content,
+  createdAt,
 }: {
   chatbotId: string
   chatMode: string | null
   content: unknown
+  createdAt?: Date
 }): Promise<string[] | null> {
   const chatbot = await readChatbotSources(chatbotId)
   if (!chatbot) return null
 
+  if (!hasRetrievalSourceMarker(content)) {
+    return unmarkedMessageKnowledgeBaseScope(chatbot, chatMode, createdAt)
+  }
+
   const provenance = readMessageRetrievalSource(content)
   const managed = chatbot.knowledgeBases.length > 0
-  // Ambiguous evidence is unavailable: a managed turn without a marker, a
-  // marker that names another mode, or a marker on an unmanaged chatbot.
+  // A present marker is never ignored: a malformed marker, one that names
+  // another mode, or one on an unmanaged chatbot makes the evidence unavailable.
   if (
-    managed &&
-    (!provenance || !chatMode || provenance.chatMode !== chatMode)
+    !managed ||
+    !provenance ||
+    !chatMode ||
+    provenance.chatMode !== chatMode
   ) {
     return null
   }
-  if (!managed && provenance) return null
-
-  const selectedMode = managed ? provenance!.chatMode : chatMode
-  if (!selectedMode) return null
 
   try {
-    const scope = currentModeScope(chatbot, selectedMode, false)
+    const scope = currentModeScope(chatbot, provenance.chatMode, false)
 
-    if (!managed) return scope.kbIds ?? null
     // The producing link must still be the mode's current live selection.
     if (
       !scope.link ||
-      !provenance ||
       scope.link.id !== provenance.kbLinkId ||
       scope.link.kbId !== provenance.kbId
     ) {
