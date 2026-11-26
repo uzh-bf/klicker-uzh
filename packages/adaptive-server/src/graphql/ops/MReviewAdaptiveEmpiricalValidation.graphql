@@ -1,0 +1,12 @@
+mutation ReviewAdaptiveEmpiricalValidation(
+  $validationId: String!
+  $decision: AdaptiveReviewDecision!
+) {
+  reviewAdaptiveEmpiricalValidation(
+    validationId: $validationId
+    decision: $decision
+  ) {
+    id
+    status
+  }
+}

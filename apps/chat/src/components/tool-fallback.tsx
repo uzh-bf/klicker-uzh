@@ -16,17 +16,13 @@ import {
   courseImageModelInput,
 } from '@/src/lib/sources/courseImages'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
-import {
-  countDocQueryDocuments,
-  isDocQueryToolName,
-  parseDocQueryPayload,
-} from '@/src/lib/sources/normalizeSources'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeToolName'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
 import { ExplanationCard, isRejectedExplanation } from './explanation-card'
-import { FeedbackCard, isRejectedFeedback } from './feedback-card'
+import { FeedbackCard } from './feedback-card'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -100,9 +96,9 @@ export type DocQueryChipState = 'running' | 'done' | 'doneEmpty' | 'failed'
  * component.
  *
  * "No results" is claimed only for a payload that actually parsed and
- * yielded no valid retrieved documents. Anything unreadable stays plain
- * "done": a cancelled call leaves the `'Loading...'`/`'Executing...'`
- * placeholder from `hooks/useChatResponse.ts` behind as the result, and telling a student
+ * yielded no sources. Anything unreadable stays plain "done": a cancelled
+ * call leaves the `'Loading...'`/`'Executing...'` placeholder from
+ * `hooks/useChatResponse.ts` behind as the result, and telling a student
  * their search found nothing would be worse than saying nothing at all.
  */
 export function getDocQueryChipState({
@@ -112,24 +108,16 @@ export function getDocQueryChipState({
   result,
   isError,
 }: {
-  toolName?: string
+  toolName: string
   isRunning: boolean
   isFailed: boolean
   result: unknown
   isError?: boolean
 }): DocQueryChipState {
   if (isRunning) return 'running'
-  const retrievalState = getDocQueryResult(result).state
-  if (isFailed || isError || retrievalState === 'failed') return 'failed'
-  const payload = parseDocQueryPayload(result)
-  if (!payload || !Array.isArray(payload.sources)) {
-    return retrievalState === 'empty' ? 'doneEmpty' : 'done'
-  }
-
-  const documentCount = countDocQueryDocuments(payload)
-  if (documentCount > 0 || retrievalState === 'success') return 'done'
-
-  return retrievalState === 'empty' ? 'doneEmpty' : 'done'
+  const state = getDocQueryResult(result).state
+  if (isFailed || isError || state === 'failed') return 'failed'
+  return state === 'empty' ? 'doneEmpty' : 'done'
 }
 
 function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
@@ -147,8 +135,7 @@ function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
 
 /**
  * Extracts the search query a model issued to a doc_query tool from its
- * (possibly still-streaming) JSON args text — `{ "question": "...", ... }`
- * or the legacy `{ "query": "...", ... }` shape.
+ * (possibly still-streaming) JSON args text — `{ "query": "...", ... }`.
  * Parses defensively: partial/non-JSON argsText, or a payload with no
  * non-empty string `query` field, both read as "nothing to show" rather than
  * throwing.
@@ -245,9 +232,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     )
   }
 
-  const feedbackRejected =
-    toolName === SHOW_FEEDBACK_TOOL_NAME && isRejectedFeedback(result, isError)
-  if (toolName === SHOW_FEEDBACK_TOOL_NAME && !feedbackRejected) {
+  if (toolName === SHOW_FEEDBACK_TOOL_NAME) {
     return <FeedbackCard result={result} status={status} isError={isError} />
   }
 
@@ -275,13 +260,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isDocQuery = isDocQueryToolName(toolName)
 
   const docQueryState = isDocQuery
-    ? getDocQueryChipState({
-        toolName,
-        isRunning,
-        isFailed,
-        result,
-        isError,
-      })
+    ? getDocQueryChipState({ toolName, isRunning, isFailed, result, isError })
     : undefined
 
   const retrieval = isDocQuery ? getDocQueryResult(result) : undefined
@@ -300,7 +279,6 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         <button
           type="button"
           data-cy="chat-tool-call-toggle"
-          data-tool-kind={isDocQuery ? 'doc-query' : 'other'}
           onClick={() => setIsCollapsed(!isCollapsed)}
           aria-expanded={!isCollapsed}
           className={twMerge(
@@ -334,13 +312,11 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
             ? docQueryChipLabel(t, docQueryState)
             : explanationRejected
               ? t('chat.thread.explanation.rejected')
-              : feedbackRejected
-                ? t('chat.thread.feedback.rejected')
-                : isFailed
-                  ? t('chat.toolFallback.failed', { tool })
-                  : isRunning
-                    ? t('chat.toolFallback.running', { tool })
-                    : t('chat.toolFallback.done', { tool })}
+              : isFailed
+                ? t('chat.toolFallback.failed', { tool })
+                : isRunning
+                  ? t('chat.toolFallback.running', { tool })
+                  : t('chat.toolFallback.done', { tool })}
         </button>
         {imageInputLabel && (
           <span
@@ -376,7 +352,6 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
                 )}
                 {docQueryState === 'running' ||
                 docQueryState === 'failed' ||
-                docQueryState === 'doneEmpty' ||
                 retrieval?.state === 'empty' ? (
                   <p>{docQueryChipLabel(t, docQueryState ?? 'done')}</p>
                 ) : retrieval && retrieval.groups.length > 0 ? (

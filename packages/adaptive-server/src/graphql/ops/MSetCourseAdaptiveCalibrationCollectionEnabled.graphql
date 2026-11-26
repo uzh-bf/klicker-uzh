@@ -1,0 +1,9 @@
+mutation SetCourseAdaptiveCalibrationCollectionEnabled(
+  $courseId: String!
+  $enabled: Boolean!
+) {
+  setCourseAdaptiveCalibrationCollectionEnabled(
+    courseId: $courseId
+    enabled: $enabled
+  )
+}
