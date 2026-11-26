@@ -20,6 +20,7 @@ export async function GET(
     const chatbotResult = await getChatbotOr404(chatbotId, {
       modelSelection: true,
       answerPreferencesEnabled: true,
+      personalizationEnabled: true,
       systemPrompts: true,
       standardModeConfig: true,
       customModeConfig: true,
@@ -43,6 +44,7 @@ export async function GET(
     return NextResponse.json({
       modelSelection: chatbot.modelSelection,
       answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
+      personalizationEnabled: chatbot.personalizationEnabled,
       modeOptions: resolveEffectiveChatModeOptions(
         chatbot.systemPrompts,
         mcpConfigurations,

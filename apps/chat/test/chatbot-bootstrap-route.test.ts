@@ -25,6 +25,7 @@ describe('chatbot bootstrap route', () => {
     mocks.getChatbotOr404.mockResolvedValue({
       chatbot: {
         modelSelection: true,
+        personalizationEnabled: true,
         systemPrompts: {
           tutor: {
             prompt: 'private prompt',
@@ -49,8 +50,10 @@ describe('chatbot bootstrap route', () => {
     expect(Object.keys(payload).sort()).toEqual([
       'modeOptions',
       'modelSelection',
+      'personalizationEnabled',
     ])
     expect(payload.modelSelection).toBe(true)
+    expect(payload.personalizationEnabled).toBe(true)
     expect(typeof payload.modeOptions.tutor.description).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
     expect(mocks.getChatbotOr404.mock.calls[0]?.[1]).toMatchObject({

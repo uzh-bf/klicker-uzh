@@ -5870,6 +5870,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ein: Im Tutor- und im Erklärmodus kann der Chatbot interaktive, von KI erzeugte Erklärungen in einzelnen Schritten anzeigen.',
       interactiveExplanationsDisabledDescription:
         'Aus: Der Chatbot antwortet nur mit Text und zeigt keine interaktiven Erklärungen.',
+      personalization: 'Tutor-Personalisierung',
+      personalizationDescription:
+        'Für Studierende, die zustimmen, nutzt der Tutor eine kurze Zusammenfassung ihrer eigenen Übungsergebnisse in diesem Kurs, um seine Hilfe anzupassen. Die Studierenden entscheiden selbst, und Sie sehen weder ihre Entscheidung noch ihre Daten. Standardmässig ausgeschaltet.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

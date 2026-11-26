@@ -488,6 +488,44 @@ describe('chatbot authoring revision transitions', () => {
     })
   })
 
+  it('stages the personalization switch until approval', async () => {
+    const bot = await seed()
+    expect(bot.personalizationEnabled).toBe(false)
+
+    const staged = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          modelPolicy: {
+            modelSelection: false,
+            allowedModelIds: ['auto'],
+            personalizationEnabled: true,
+          },
+        },
+      },
+      owner
+    )
+    expect(staged?.personalizationEnabled).toBe(false)
+    expect(staged?.authoringRevision).toMatchObject({
+      personalizationEnabled: true,
+    })
+    expect(await read(bot.id)).toMatchObject({
+      personalizationEnabled: false,
+      draftConfig: { personalizationEnabled: true },
+    })
+
+    await submit(bot.id, 1)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2 },
+      admin
+    )
+    expect(await read(bot.id)).toMatchObject({
+      personalizationEnabled: true,
+      draftConfig: null,
+    })
+  })
+
   it('requires the interactive-explanations flag to turn the setting on', async () => {
     const bot = await seed()
     expect(bot.interactiveExplanationsEnabled).toBe(false)

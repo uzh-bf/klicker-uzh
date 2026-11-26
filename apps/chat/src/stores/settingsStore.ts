@@ -87,6 +87,9 @@ interface SettingsState {
   // Whether the chatbot lets students choose an answer format and tone. Off
   // until the chatbot's settings have loaded, so the controls never flash.
   answerPreferencesEnabled: boolean
+  // Whether the lecturer has switched Tutor personalization on for this
+  // chatbot. Off until the chatbot's settings have loaded.
+  personalizationEnabled: boolean
   authMode: AuthMode
 
   // Available options
@@ -141,6 +144,7 @@ export const useSettingsStore = create<SettingsState>()(
       creditsLoaded: false,
       modelSelectionEnabled: false,
       answerPreferencesEnabled: false,
+      personalizationEnabled: false,
       authMode: 'account' as AuthMode,
       modeOptions: {},
       modeOptionsChatbotId: null,
@@ -198,12 +202,14 @@ export const useSettingsStore = create<SettingsState>()(
             ),
             modelSelectionEnabled: false,
             answerPreferencesEnabled: false,
+            personalizationEnabled: false,
           }))
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
           modelSelectionEnabled: false,
           answerPreferencesEnabled: false,
+          personalizationEnabled: false,
         })
 
         try {
@@ -222,6 +228,8 @@ export const useSettingsStore = create<SettingsState>()(
           const modelSelectionEnabled = responseData.modelSelection ?? false
           const answerPreferencesEnabled =
             responseData.answerPreferencesEnabled === true
+          const personalizationEnabled =
+            responseData.personalizationEnabled === true
 
           const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
           if (!resolvedModeOptions) {
@@ -234,6 +242,7 @@ export const useSettingsStore = create<SettingsState>()(
               modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
               answerPreferencesEnabled,
+              personalizationEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
                 state.selectedMode

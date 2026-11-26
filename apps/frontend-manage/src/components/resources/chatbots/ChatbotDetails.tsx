@@ -309,6 +309,7 @@ function ChatbotDetails({
   const [answerPreferencesEnabled, setAnswerPreferencesEnabled] = useState(true)
   const [interactiveExplanationsEnabled, setInteractiveExplanationsEnabled] =
     useState(false)
+  const [personalizationEnabled, setPersonalizationEnabled] = useState(false)
   const [fixedModelId, setFixedModelId] = useState('')
   const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
   const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
@@ -421,6 +422,7 @@ function ChatbotDetails({
     setInteractiveExplanationsEnabled(
       revisionValues.interactiveExplanationsEnabled
     )
+    setPersonalizationEnabled(revisionValues.personalizationEnabled)
     setFixedModelId(getDefaultFixedModelId(revisionValues, modelRegistry))
     setAllowedModelIds(
       getInitialSelectedModelIds(revisionValues, modelRegistry)
@@ -577,6 +579,7 @@ function ChatbotDetails({
       answerPreferencesEnabled !== revisionValues.answerPreferencesEnabled ||
       interactiveExplanationsEnabled !==
         revisionValues.interactiveExplanationsEnabled ||
+      personalizationEnabled !== revisionValues.personalizationEnabled ||
       !sameStringSet(currentSelectedModelIds, initialSelectedModelIds) ||
       reasoningConfigIsDirty
     )
@@ -587,6 +590,7 @@ function ChatbotDetails({
     interactiveExplanationsEnabled,
     modelRegistry,
     modelSelectionEnabled,
+    personalizationEnabled,
     reasoningConfig,
     fixedModelId,
   ])
@@ -724,6 +728,12 @@ function ChatbotDetails({
     setInteractiveExplanationsEnabled(checked)
   }
 
+  const handlePersonalizationChange = (checked: boolean) => {
+    setSaveError(null)
+    clearRevisionConflict()
+    setPersonalizationEnabled(checked)
+  }
+
   const handleModelSelectionChange = (checked: boolean) => {
     setSaveError(null)
     clearRevisionConflict()
@@ -820,6 +830,7 @@ function ChatbotDetails({
               modelSelection: modelSelectionEnabled,
               answerPreferencesEnabled,
               interactiveExplanationsEnabled,
+              personalizationEnabled,
               allowedModelIds: normalizedAllowedModelIds,
               allowedReasoningEffortsByModel: normalizedReasoningConfig,
             },
@@ -1193,6 +1204,32 @@ function ChatbotDetails({
             </div>
           </div>
         )}
+
+        <div className="flex flex-col gap-2 border-t pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <label
+              htmlFor="chatbot-personalization-switch"
+              className="text-sm font-medium text-gray-700"
+            >
+              {t('manage.resources.personalization')}
+            </label>
+            <Switch
+              id="chatbot-personalization-switch"
+              checked={personalizationEnabled}
+              disabled={
+                isSaving ||
+                !modelSettingsEditable ||
+                revisionPending ||
+                publicationSubmitting
+              }
+              onCheckedChange={handlePersonalizationChange}
+              data={{ cy: 'chatbot-personalization-switch' }}
+            />
+          </div>
+          <div className="text-xs text-gray-500">
+            {t('manage.resources.personalizationDescription')}
+          </div>
+        </div>
 
         {!modelSettingsEditable ? (
           <UserNotification>

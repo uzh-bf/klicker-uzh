@@ -25,6 +25,8 @@ export type ChatbotAuthoringRevision = {
   answerPreferencesEnabled: boolean
   /** Revisions saved before this field existed inherit the live setting. */
   interactiveExplanationsEnabled: boolean
+  /** Revisions saved before this field existed inherit the live setting. */
+  personalizationEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: CreditResetPeriod
   creditResetAmount: number

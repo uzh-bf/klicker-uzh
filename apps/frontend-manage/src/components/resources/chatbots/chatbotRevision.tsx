@@ -32,6 +32,7 @@ type ChatbotRevisionValues = Pick<
   | 'customModeConfig'
   | 'answerPreferencesEnabled'
   | 'interactiveExplanationsEnabled'
+  | 'personalizationEnabled'
   | 'modelSelection'
   | 'allowedModelIds'
   | 'allowedReasoningEffortsByModel'
@@ -79,6 +80,9 @@ function getChatbotRevisionValues(
     interactiveExplanationsEnabled: revision
       ? revision.interactiveExplanationsEnabled
       : chatbot.interactiveExplanationsEnabled,
+    personalizationEnabled: revision
+      ? revision.personalizationEnabled
+      : chatbot.personalizationEnabled,
     modelSelection: revision ? revision.modelSelection : chatbot.modelSelection,
     allowedModelIds: revision
       ? [...revision.allowedModelIds]
