@@ -317,6 +317,15 @@ eligible. _Avoid_: anonymised research export (participant-level rows remain
 pseudonymised; "anonymous" is reserved for outputs that pass a disclosure
 check).
 
+**Personalization choice**:
+The participant's single account-level choice to let the Tutor use a summary
+of their own course results and keep a memory of their learning progress per
+course. It is explicit, starts unanswered, and is independent of Research
+participation and Learning Analytics. It applies only in chatbots where the
+lecturer enabled personalization, and never combines data across courses.
+Opting out stops the use from the next message and deletes the memory.
+_Avoid_: Learning Analytics consent, tutor disclaimer.
+
 **Privacy-policy acknowledgement**:
 An acknowledgement that the participant has read the applicable privacy policy
 and accepts the platform terms. It is not consent to research or Learning

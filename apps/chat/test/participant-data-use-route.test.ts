@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   loadChatDataUseState: vi.fn(),
   completeParticipantDataUse: vi.fn(),
   updateParticipantDataUseChoice: vi.fn(),
+  updateParticipantTutorPersonalizationChoice: vi.fn(),
 }))
 
 vi.mock('@klicker-uzh/prisma', () => ({ prisma: { participant: {} } }))
@@ -14,6 +15,8 @@ vi.mock('@klicker-uzh/prisma', () => ({ prisma: { participant: {} } }))
 vi.mock('@klicker-uzh/graphql/dist/participant-data-use', () => ({
   completeParticipantDataUse: mocks.completeParticipantDataUse,
   updateParticipantDataUseChoice: mocks.updateParticipantDataUseChoice,
+  updateParticipantTutorPersonalizationChoice:
+    mocks.updateParticipantTutorPersonalizationChoice,
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -242,6 +245,46 @@ describe('chat participant data-use route', () => {
       { params: params() }
     )
     expect(rejected.status).toBe(400)
+    expect(
+      mocks.updateParticipantTutorPersonalizationChoice
+    ).not.toHaveBeenCalled()
+  })
+
+  test('routes the personalization purpose to its own writer', async () => {
+    mocks.updateParticipantTutorPersonalizationChoice.mockResolvedValue({
+      id: participantId,
+      ...acknowledgedParticipantDataUse,
+      tutorPersonalizationConsent: true,
+    })
+
+    const response = await PATCH(
+      request('PATCH', {
+        purpose: 'personalization',
+        consent: true,
+        expectedRevision: 1,
+        disclosureVersion: '1999-01-01',
+        unexpected: 'ignored',
+      }),
+      { params: params() }
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).state).toMatchObject({
+      tutorPersonalizationConsent: true,
+    })
+    expect(mocks.updateParticipantDataUseChoice).not.toHaveBeenCalled()
+    expect(
+      mocks.updateParticipantTutorPersonalizationChoice
+    ).toHaveBeenCalledWith(
+      {
+        expectedRevision: 1,
+        disclosureVersion: '1999-01-01',
+        consent: true,
+      },
+      expect.objectContaining({
+        user: { sub: participantId, role: 'PARTICIPANT' },
+      })
+    )
   })
 
   test('rejects a malformed body as invalid input on both writes', async () => {

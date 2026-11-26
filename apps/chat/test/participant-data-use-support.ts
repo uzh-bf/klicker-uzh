@@ -16,5 +16,8 @@ export const acknowledgedParticipantDataUse = {
   learningAnalyticsConsent: false,
   learningAnalyticsChoiceAt: new Date('2026-09-08T00:00:00.000Z'),
   learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  tutorPersonalizationConsent: null,
+  tutorPersonalizationChoiceAt: null,
+  tutorPersonalizationDisclosureVersion: null,
   dataUseRevision: 1,
 }

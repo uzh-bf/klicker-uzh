@@ -3,8 +3,10 @@ import {
   GetParticipantAccountDataUseDocument,
   SetLearningAnalyticsConsentDocument,
   SetResearchConsentDocument,
+  SetTutorPersonalizationConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import TutorPersonalizationChoice from '@klicker-uzh/shared-components/src/participant/TutorPersonalizationChoice'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
@@ -36,10 +38,17 @@ function DataUseSettings() {
     setLearningAnalyticsConsent,
     { loading: savingLearningAnalyticsConsent },
   ] = useMutation(SetLearningAnalyticsConsentDocument)
+  const [
+    setTutorPersonalizationConsent,
+    { loading: savingTutorPersonalizationConsent },
+  ] = useMutation(SetTutorPersonalizationConsentDocument)
 
   const dataUse = data?.selfAccountDataUse
   const saving =
-    savingResearchConsent || savingLearningAnalyticsConsent || reloading
+    savingResearchConsent ||
+    savingLearningAnalyticsConsent ||
+    savingTutorPersonalizationConsent ||
+    reloading
   // The disclosure text is bundled with this frontend build; if the server
   // already requires a newer version, the displayed content cannot record
   // choices until the page has been reloaded with matching content.
@@ -141,6 +150,41 @@ function DataUseSettings() {
         options: { duration: 6000 },
       })
       return false
+    }
+  }
+
+  async function updateTutorPersonalizationConsent(consent: boolean) {
+    if (!dataUse || saving || conflict || versionMismatch) return
+
+    try {
+      const result = await setTutorPersonalizationConsent({
+        variables: {
+          consent,
+          expectedRevision: dataUse.dataUseRevision,
+          disclosureVersion:
+            dataUse.currentTutorPersonalizationDisclosureVersion,
+        },
+      })
+
+      if (!result.data?.setTutorPersonalizationConsent)
+        throw new Error('Save failed')
+      await reloadDataUse()
+    } catch (error) {
+      if (isDataUseConflict(error)) {
+        setConflict(true)
+        toast({
+          type: 'error',
+          message: t('pwa.profile.dataUseConflict'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
     }
   }
 
@@ -269,6 +313,18 @@ function DataUseSettings() {
           {t('pwa.profile.learningAnalyticsConsentDescription')}
         </Prose>
       </div>
+
+      <TutorPersonalizationChoice
+        consent={dataUse.tutorPersonalizationConsent ?? null}
+        disabled={saving || conflict || versionMismatch}
+        defaultOpen
+        onChange={(consent) => void updateTutorPersonalizationConsent(consent)}
+        dataCy={{
+          toggle: 'data-use-personalization-toggle',
+          yes: 'data-use-personalization-true',
+          no: 'data-use-personalization-false',
+        }}
+      />
 
       <Modal
         open={withdrawalConfirmationOpen}

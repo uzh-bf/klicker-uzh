@@ -738,6 +738,17 @@ export default {
       previous: 'Zurück',
       next: 'Weiter',
     },
+    tutorPersonalization: {
+      title: 'Tutor personalisieren',
+      badgeUnanswered: 'Nicht entschieden',
+      badgeOn: 'Ein',
+      badgeOff: 'Aus',
+      notice:
+        'Wenn du zustimmst, passt der Tutor seine Erklärungen und Hinweise an dich an. Mit jeder Nachricht erhält er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs (Übungsquizzes und Microlearnings): welche Themen du geübt hast, ob deine Antworten richtig waren, wann du zuletzt geübt hast und wie viel vom Kurs du schon bearbeitet hast. Die Zusammenfassung wird für jede Nachricht neu erstellt und nicht gespeichert. Sie wird zusammen mit deiner Nachricht an den Sprachmodell-Anbieter gesendet, den dieser Chatbot nutzt. Das gilt in allen Kursen, in denen die Lehrperson die Personalisierung eingeschaltet hat, immer nur mit den Daten des jeweiligen Kurses. Lehrpersonen sehen weder die Zusammenfassung noch deine Entscheidung. Du kannst jederzeit in den Chat-Einstellungen oder unter «Datennutzung und Einstellungen» sehen, was der Tutor aktuell erhält, und deine Entscheidung ändern. Eine Änderung gilt ab deiner nächsten Nachricht. Ohne deine Zustimmung funktioniert der Tutor wie bisher.',
+      controlLabel: 'Deine Entscheidung',
+      yes: 'Ja, personalisieren',
+      no: 'Nein, nicht personalisieren',
+    },
     questions: {
       roundedTo: 'Rundet auf {accuracy} Nachkommastellen.',
       numInvalidValue:
