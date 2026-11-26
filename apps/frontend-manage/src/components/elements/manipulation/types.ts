@@ -11,6 +11,7 @@ export type ActivityArtifactFormValue = {
   url: string
   artifactId: string
   revisionId: string
+  version: number
 }
 
 // Pin loaded with the element. Display only; ordinary edits never resend it.
