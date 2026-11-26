@@ -480,8 +480,18 @@ async function normalizeStaleCourseDuplicationJob(
         processLockValue
       ).catch(() => undefined)
     }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
+    // A worker may have changed the job between the read above and this lock,
+    // so continue from the stored state, not the earlier copy.
+    let lockedJob: CourseDuplicationJob | null = job
     try {
-      await completeCopiedAssessmentAudit(prisma, job.assessmentCopies ?? [])
+      lockedJob = await getCourseDuplicationJob(redis, job.id, log)
+      if (!lockedJob || isTerminalCourseDuplicationStatus(lockedJob.status)) {
+        return lockedJob ?? job
+      }
+      await completeCopiedAssessmentAudit(
+        prisma,
+        lockedJob.assessmentCopies ?? []
+      )
     } catch (error) {
       log?.error(
         {
@@ -506,7 +516,7 @@ async function normalizeStaleCourseDuplicationJob(
       },
       'Course duplication job went stale but its course is committed; marking completed'
     )
-    return await updateCourseDuplicationJob(redis, job, {
+    return await updateCourseDuplicationJob(redis, lockedJob ?? job, {
       status: 'COMPLETED',
       createdCourseId: committedCourse.id,
     })
