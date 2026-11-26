@@ -99,6 +99,25 @@ export default {
         'Ändere die optionalen Zwecke für Dein KlickerUZH-Konto. Forschung und Learning Analytics sind freiwillig, und ein Widerspruch gilt für deren künftige Nutzung.',
       settingsLoading: 'Einstellungen zur Datennutzung werden geladen…',
     },
+    personalization: {
+      offerTitle: 'Tutor personalisieren?',
+      offerLead:
+        'Wenn du zustimmst, passt der Tutor seine Hilfe an dich an. Dazu nutzt er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs. Das ist freiwillig, und ohne Zustimmung funktioniert der Tutor wie bisher.',
+      offerShowDetails: 'Was genau wird verwendet?',
+      offerHideDetails: 'Details ausblenden',
+      offerLater: 'Später entscheiden',
+      viewShow: 'Anzeigen, was der Tutor aktuell erhält',
+      viewHide: 'Ausblenden, was der Tutor aktuell erhält',
+      viewLoading: 'Wird geladen…',
+      viewIntro:
+        'Mit deiner nächsten Nachricht im Tutor-Modus erhält der Tutor genau den folgenden Text über dich. Er ist auf Englisch verfasst, unabhängig von deiner Chat-Sprache.',
+      viewEmpty:
+        'Du hast in diesem Kurs noch keine Übungsergebnisse. Der Tutor erhält deshalb aktuell nichts über dich.',
+      viewNoConsent:
+        'Du hast der Personalisierung nicht zugestimmt. Der Tutor erhält deshalb nichts über dich.',
+      viewChatbotOff:
+        'Für diesen Chatbot ist die Personalisierung nicht eingeschaltet. Der Tutor erhält hier deshalb nichts über dich.',
+    },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',

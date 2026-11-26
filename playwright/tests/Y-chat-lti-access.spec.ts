@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+} from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
@@ -593,6 +596,97 @@ test.describe('LTI chatbot launch identity resolution', () => {
         }
       } finally {
         await fresh.close()
+      }
+    })
+  }
+
+  for (const identity of ['registered', 'guest'] as const) {
+    test(`${identity} answers the Tutor personalization offer and sees what the Tutor receives`, async ({
+      page,
+    }) => {
+      const prisma = await getPrisma()
+      const readChoice = async (participantId: string) => {
+        const participant = await prisma.participant.findUniqueOrThrow({
+          where: { id: participantId },
+          select: {
+            tutorPersonalizationConsent: true,
+            tutorPersonalizationDisclosureVersion: true,
+          },
+        })
+        return [
+          participant.tutorPersonalizationConsent,
+          participant.tutorPersonalizationDisclosureVersion,
+        ]
+      }
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: { personalizationEnabled: true },
+      })
+      try {
+        await setLtiProbeCookie(page)
+        if (identity === 'registered') {
+          await prisma.participant.create({
+            data: {
+              username: 'lti-e2e-personalization',
+              password: FIXTURE_PASSWORD,
+              accounts: {
+                create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' },
+              },
+            },
+          })
+        }
+        await launchChatbot(page, {
+          sub: identity === 'registered' ? LTI_SUB_LINKED : LTI_SUB_GUEST,
+        })
+        await expectChatbotReached(page)
+        const { participantId } =
+          await prisma.participantAccount.findFirstOrThrow({
+            where:
+              identity === 'registered'
+                ? { ssoId: LTI_SUB_LINKED }
+                : { ssoId: { startsWith: 'chat-guest:' } },
+            select: { participantId: true },
+          })
+
+        // The offer is shown unanswered, and showing it records nothing.
+        const offer = page.getByTestId('chat-personalization-offer')
+        await expect(offer).toBeVisible()
+        expect(await readChoice(participantId)).toEqual([null, null])
+
+        await page.getByTestId('chat-personalization-offer-yes').click()
+        await expect(offer).toHaveCount(0)
+        await expect
+          .poll(() => readChoice(participantId))
+          .toEqual([true, TUTOR_PERSONALIZATION_DISCLOSURE_VERSION])
+
+        // An answered offer does not return.
+        await page.reload()
+        await expect(page.getByTestId('chat-composer')).toBeVisible()
+        await expect(offer).toHaveCount(0)
+
+        // This student has no practice results, so nothing is sent yet.
+        await page.getByTestId('chat-data-use-settings-toggle').click()
+        const viewToggle = page.getByTestId('chat-personalization-view-toggle')
+        const view = page.getByTestId('chat-personalization-view')
+        await viewToggle.click()
+        await expect(view).toContainText(
+          /no practice results|noch keine Übungsergebnisse/
+        )
+
+        // Opting out is reflected in the same view without a reload.
+        await page.getByTestId('chat-data-use-personalization-toggle').click()
+        await page.getByTestId('chat-data-use-personalization-false').click()
+        await expect
+          .poll(() => readChoice(participantId))
+          .toEqual([false, TUTOR_PERSONALIZATION_DISCLOSURE_VERSION])
+        await expect(view).toContainText(
+          /not agreed to personalization|nicht zugestimmt/
+        )
+      } finally {
+        await prisma.chatbot.update({
+          where: { id: CHATBOT_ID },
+          data: { personalizationEnabled: false },
+        })
       }
     })
   }

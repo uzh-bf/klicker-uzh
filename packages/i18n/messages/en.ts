@@ -98,6 +98,25 @@ export default {
         'Change the optional purposes for your KlickerUZH account. Research and Learning Analytics are voluntary, and an objection applies to their future use.',
       settingsLoading: 'Loading your data use settings…',
     },
+    personalization: {
+      offerTitle: 'Personalize the Tutor?',
+      offerLead:
+        'If you agree, the Tutor adapts its help to you, using a short summary of your own practice results in this course. This is optional, and the Tutor works as before without it.',
+      offerShowDetails: 'What exactly is used?',
+      offerHideDetails: 'Hide details',
+      offerLater: 'Decide later',
+      viewShow: 'Show what the Tutor currently receives',
+      viewHide: 'Hide what the Tutor currently receives',
+      viewLoading: 'Loading…',
+      viewIntro:
+        'With your next message in Tutor mode, the Tutor receives exactly the following text about you. It is written in English, whatever language you chat in.',
+      viewEmpty:
+        'You have no practice results in this course yet, so the Tutor currently receives nothing about you.',
+      viewNoConsent:
+        'You have not agreed to personalization, so the Tutor receives nothing about you.',
+      viewChatbotOff:
+        'Personalization is not switched on for this chatbot, so the Tutor receives nothing about you here.',
+    },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',

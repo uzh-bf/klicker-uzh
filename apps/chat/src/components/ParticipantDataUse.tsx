@@ -21,6 +21,10 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ChatDataUseState } from '../lib/dataUse'
+import {
+  DATA_USE_CHANGED_EVENT,
+  TutorLearnerContextView,
+} from './tutor-personalization'
 
 const choicesDataCy = {
   researchYes: 'chat-data-use-research-true',
@@ -353,6 +357,7 @@ export function ParticipantDataUseSettings({
       }
       const data = (await response.json()) as DataUseResponse
       setState(data.state)
+      window.dispatchEvent(new Event(DATA_USE_CHANGED_EVENT))
     } catch {
       setFailed(true)
     } finally {
@@ -417,6 +422,7 @@ export function ParticipantDataUseSettings({
               onChange={(consent) => updateChoice('personalization', consent)}
               dataCy={personalizationDataCy}
             />
+            <TutorLearnerContextView chatbotId={chatbotId} />
             {failed && (
               <UserNotification type="error">
                 {t(

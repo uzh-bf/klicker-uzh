@@ -78,6 +78,7 @@ import {
 import { isChatbotInteractiveExplanationsEnabled } from '@/src/lib/server/featureFlags'
 import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import { loadLearnerContextForTurn } from '@/src/lib/server/learnerContext'
 import {
   flushLangfuseTelemetry,
   getChatTraceContext,
@@ -1435,6 +1436,16 @@ export async function POST(
       )
     }
 
+    // Started here and awaited after the practice lookup, so resolving it adds
+    // no time before the first token. It never rejects.
+    const learnerContextPromise = loadLearnerContextForTurn({
+      requestId,
+      mode: selectedMode,
+      chatbotPersonalizationEnabled: chatbot.personalizationEnabled,
+      participantId,
+      courseId: authChatbot.courseId,
+    })
+
     let practiceCandidatePrompt = ''
     let practiceCandidateCount = 0
     const practiceCandidateRefs = new Map<string, string>()
@@ -1475,6 +1486,14 @@ export async function POST(
         )
       }
     }
+
+    const learnerContextPrompt = await learnerContextPromise
+    logChatDev('learnerContext.resolved', {
+      requestId,
+      chatbotId,
+      included: learnerContextPrompt.length > 0,
+      length: learnerContextPrompt.length,
+    })
 
     // Registered by mode and deployment capability, not by this turn's
     // candidates, so the tool list at the start of the request prefix stays
@@ -1675,6 +1694,7 @@ export async function POST(
       chatContextPrompt,
       elearningContextPrompt,
       practiceCandidatePrompt,
+      learnerContextPrompt,
     ]
     const effectiveSystemPrompt = stableSections.filter(Boolean).join('\n\n')
 

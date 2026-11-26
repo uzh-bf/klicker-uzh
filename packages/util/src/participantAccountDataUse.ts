@@ -22,6 +22,15 @@ export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = '2026-09-08'
  */
 export const TUTOR_PERSONALIZATION_DISCLOSURE_VERSION = '2026-11-26-results'
 
+/**
+ * Notice versions under which a recorded yes lets the Tutor use the student's
+ * course results. A later notice that widens the purpose is added here, so a
+ * student who agreed under an earlier version keeps what they agreed to.
+ */
+export const TUTOR_PERSONALIZATION_RESULTS_VERSIONS: readonly string[] = [
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+]
+
 export const participantAccountDataUseSelect = {
   dataUseAcknowledgedAt: true,
   dataUseAcknowledgedVersion: true,
