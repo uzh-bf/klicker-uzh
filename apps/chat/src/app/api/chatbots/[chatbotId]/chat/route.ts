@@ -1443,7 +1443,7 @@ export async function POST(
       mode: selectedMode,
       chatbotPersonalizationEnabled: chatbot.personalizationEnabled,
       participantId,
-      courseId: authChatbot.courseId,
+      courseId: chatbot.courseId,
     })
 
     let practiceCandidatePrompt = ''
