@@ -37,8 +37,11 @@ export async function GET(
         : { active: false, reason: result.reason },
       { headers: { 'Cache-Control': 'no-store' } }
     )
-  } catch {
-    console.error('Failed to resolve the learner context view')
+  } catch (error) {
+    // Only the error type is logged, so learner data stays out of the logs.
+    console.error('Failed to resolve the learner context view', {
+      errorType: error instanceof Error ? error.name : typeof error,
+    })
     return NextResponse.json(
       { error: 'LEARNER_CONTEXT_UNAVAILABLE' },
       { status: 500 }
