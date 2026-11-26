@@ -3,6 +3,7 @@
 import type { KnowledgeGraphFocusRequest } from '@klicker-uzh/shared-components/src/knowledgeGraph/KnowledgeGraphViewer'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { usePathname } from 'next/navigation'
+import type { FeedbackAnnotation, FeedbackContent } from '@/src/lib/feedback'
 import {
   createContext,
   type ReactNode,
@@ -21,6 +22,11 @@ import {
  */
 export type ChatCanvasArtifactData = {
   explanation: { title: string; html: string }
+  feedback: {
+    title: string
+    content: FeedbackContent
+    annotation: FeedbackAnnotation | null
+  }
 }
 
 export type ChatCanvasArtifactType = keyof ChatCanvasArtifactData
@@ -52,6 +58,7 @@ const ARTIFACT_OPEN_SIZE: Record<
   Exclude<ChatWorkspaceSize, 'fullscreen'>
 > = {
   explanation: 'expanded',
+  feedback: 'expanded',
 }
 
 type PendingFocus = 'composer' | 'opener' | null
@@ -282,7 +289,7 @@ export function ChatWorkspaceProvider({
         const artifact = registry.current.get(
           registryKey(kind, element.dataset.canvasArtifactId ?? '')
         )
-        return artifact ? [artifact as ChatCanvasArtifact<K>] : []
+        return artifact ? [artifact as unknown as ChatCanvasArtifact<K>] : []
       }),
     []
   )

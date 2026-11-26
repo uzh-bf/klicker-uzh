@@ -1201,7 +1201,12 @@ content, stored-width key) to `WORKSPACE_PANELS` in `chat-workspace-layout.tsx`;
 its message card registers through `artifacts.register` and marks its root and
 open control with `data-canvas-artifact`, `data-canvas-artifact-id` and
 `data-canvas-artifact-open`, which give stepping its thread order and closing
-its focus target. `ChatWorkspaceProvider` owns which item is shown
+its focus target. Feedback cards (`show_feedback`, `feedback/1`) are the second
+artifact type. The card finds the reviewed passage in the learner's earlier
+messages on the client, with the same quote normalization the server uses to
+accept quotes (`src/lib/feedback.ts`), so stored cards need no extra data: it
+marks the quotes in that passage and keeps the remarks without a found quote as
+notes. Without a found quote it shows its list layout. `ChatWorkspaceProvider` owns which item is shown
 and its size; `ChatWorkspaceLayout` is the shell for every kind in standalone
 and embedded layouts: resize handle with a per-kind stored width, an expanded
 size that keeps the conversation in a narrow docked column with a usable
