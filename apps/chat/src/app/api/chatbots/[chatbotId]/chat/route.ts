@@ -2711,8 +2711,13 @@ export async function POST(
               stepsCount: result.steps?.length ?? 0,
             })
           }
+          // The notes are updated from the reply text as it was stored.
           reportLearnerExchange(
-            firstError || emptyResponse ? null : partialContent
+            firstError || emptyResponse
+              ? null
+              : completedContent
+                  .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+                  .join('\n\n')
           )
         },
 
@@ -2818,6 +2823,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          reportLearnerExchange(null)
           await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError

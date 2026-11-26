@@ -1596,7 +1596,8 @@ contract, the choice, eligibility and the interface.
   and not retried.
 - **Withdrawal.** The data-use writer raises `learnerMemoryEpoch` and writes a
   `LearnerMemoryForgetRequest` in the same transaction whenever a yes that
-  covered notes is replaced by anything else. The service refuses and purges
+  covered notes is replaced by anything else. The request is sent by the
+  retry task, not by the writer. The service refuses and purges
   everything below the highest epoch it has seen, so earlier notes are unusable
   from that commit on, whether or not the deletion has arrived. Account
   deletion writes the same request one epoch higher. Neither can fail because

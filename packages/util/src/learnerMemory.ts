@@ -403,7 +403,12 @@ export async function deliverLearnerMemoryForgets(input: {
       completedAt: null,
       ...(input.ids ? { id: { in: input.ids } } : {}),
     },
-    orderBy: { id: 'asc' },
+    // Requests never tried come first, then the ones waiting longest, so a
+    // request the service keeps refusing cannot hold back newer ones.
+    orderBy: [
+      { lastAttemptAt: { sort: 'asc', nulls: 'first' } },
+      { id: 'asc' },
+    ],
     take: input.limit ?? 50,
   })
 

@@ -79,7 +79,9 @@ is a new purpose. Three existing mechanisms looked reusable and are not:
   also raises the participant's memory epoch and records a forget request in a
   table that does not depend on the participant row. Every call to the service
   carries the epoch, and the service never returns a record with an older one.
-  Deletion is requested at once and retried until the service confirms it.
+  A background task sends the request within minutes and retries until the
+  service confirms it; a deletion the student starts in the chat is sent at
+  once.
   Account deletion records a forget-everything request in the same
   transaction.
 - **Course-bound use.** The account-wide yes does not combine data across
