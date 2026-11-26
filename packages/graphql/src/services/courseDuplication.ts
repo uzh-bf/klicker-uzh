@@ -825,7 +825,20 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       throw new Error('Course duplication job is already being processed')
     }
 
-    let job = pendingJob
+    // Another delivery may have finished the job between the read above and
+    // this lock, so continue from the stored state, not the earlier copy.
+    const lockedJob = await getCourseDuplicationJob(redis, jobId, log)
+    if (!lockedJob || isTerminalCourseDuplicationStatus(lockedJob.status)) {
+      await releaseCourseDuplicationLockValue(
+        redis,
+        processLockKey,
+        processLockValue
+      )
+      if (lockedJob) await releaseCourseDuplicationSourceLock(redis, lockedJob)
+      return lockedJob !== null
+    }
+
+    let job = lockedJob
     let committedCourseId: string | null = null
     let processLockRenewal: ReturnType<typeof setInterval> | undefined
 
@@ -1894,6 +1907,11 @@ async function completeCopiedAssessmentAudit(
         liveQuizId: copiedLiveQuizId,
       })
       if (outcome === 'NOT_SELECTED') continue
+      // A failed activation leaves the copy uncovered, so no copy event could
+      // be written; fail here so the job stays retryable.
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        throw new Error('Copied assessment audit activation failed')
+      }
     }
 
     const copiedEvent = await client.assessmentAuditOutboxEvent.findFirst({
