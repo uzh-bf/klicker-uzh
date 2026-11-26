@@ -835,7 +835,7 @@ backendGraphql:
     # Near the per-pod CPU of a busy lecture, so a crowded node does not
     # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 150m
+      cpu: 100m
       memory: 448Mi
     limits:
       memory: 1Gi
