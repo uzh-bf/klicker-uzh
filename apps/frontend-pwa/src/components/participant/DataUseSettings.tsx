@@ -6,7 +6,6 @@ import {
   SetTutorPersonalizationConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import TutorPersonalizationChoice from '@klicker-uzh/shared-components/src/participant/TutorPersonalizationChoice'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
@@ -314,17 +313,30 @@ function DataUseSettings() {
         </Prose>
       </div>
 
-      <TutorPersonalizationChoice
-        consent={dataUse.tutorPersonalizationConsent ?? null}
-        disabled={saving || conflict || versionMismatch}
-        defaultOpen
-        onChange={(consent) => void updateTutorPersonalizationConsent(consent)}
-        dataCy={{
-          toggle: 'data-use-personalization-toggle',
-          yes: 'data-use-personalization-true',
-          no: 'data-use-personalization-false',
-        }}
-      />
+      <div className="flex flex-col gap-2 rounded border bg-white p-3">
+        <Switch
+          checked={dataUse.tutorPersonalizationConsent === true}
+          disabled={saving || conflict || versionMismatch}
+          onCheckedChange={(consent) =>
+            void updateTutorPersonalizationConsent(consent)
+          }
+          label={`${t('shared.tutorPersonalization.title')}: ${
+            dataUse.tutorPersonalizationConsent === true
+              ? t('shared.generic.yes')
+              : dataUse.tutorPersonalizationConsent === false
+                ? t('shared.generic.no')
+                : t('shared.tutorPersonalization.badgeUnanswered')
+          }`}
+          className={{
+            root: 'flex flex-row-reverse justify-end gap-3',
+            label: 'mr-0 font-semibold',
+          }}
+          data={{ cy: 'participant-tutor-personalization-consent' }}
+        />
+        <Prose className={{ root: 'prose-sm' }}>
+          {t('shared.tutorPersonalization.notice')}
+        </Prose>
+      </div>
 
       <Modal
         open={withdrawalConfirmationOpen}
