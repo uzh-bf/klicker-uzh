@@ -143,7 +143,7 @@ function prepareApp({
 
   app.post(
     ['/api/data-exports/research', '/api/data-exports/assessment'],
-    express.json({ limit: '16kb' }),
+    express.json({ limit: '32kb' }),
     async (req: any, res) => {
       res.setHeader('Cache-Control', 'no-store')
       res.setHeader('X-Content-Type-Options', 'nosniff')
