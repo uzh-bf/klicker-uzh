@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useSettingsStore } from '../src/stores/settingsStore'
 
 function deferred<T>() {
@@ -19,6 +19,7 @@ function modesResponse(mode: string) {
 }
 
 describe('settingsStore mode loading', () => {
+  afterEach(() => vi.unstubAllGlobals())
   beforeEach(() => {
     vi.restoreAllMocks()
     useSettingsStore.setState({
@@ -64,7 +65,7 @@ describe('settingsStore mode loading', () => {
 
     expect(useSettingsStore.getState().modeOptionsChatbotId).toBe('chatbot-2')
     expect(useSettingsStore.getState().modeOptions).toEqual({
-      explainer: 'explainer mode',
+      explainer: { description: 'explainer mode' },
     })
   })
 
@@ -87,8 +88,8 @@ describe('settingsStore mode loading', () => {
 
     expect(useSettingsStore.getState().selectedMode).toBe('custom')
     expect(useSettingsStore.getState().modeOptions).toEqual({
-      tutor: 'Tutor mode',
-      custom: '',
+      tutor: { description: 'Tutor mode' },
+      custom: { description: '' },
     })
   })
 
@@ -102,7 +103,7 @@ describe('settingsStore mode loading', () => {
     )
 
     await useSettingsStore.getState().loadModeOptions('chatbot-1', {
-      tutor: 'Stale initial mode',
+      tutor: { description: 'Stale initial mode' },
     })
 
     expect(useSettingsStore.getState().modeOptions).toEqual({})
@@ -114,12 +115,12 @@ describe('settingsStore mode loading', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
 
     await useSettingsStore.getState().loadModeOptions('chatbot-1', {
-      explainer: 'Explainer mode',
+      explainer: { description: 'Explainer mode' },
     })
 
     expect(useSettingsStore.getState().selectedMode).toBe('explainer')
     expect(useSettingsStore.getState().modeOptions).toEqual({
-      explainer: 'Explainer mode',
+      explainer: { description: 'Explainer mode' },
     })
   })
 
@@ -134,12 +135,12 @@ describe('settingsStore mode loading', () => {
     )
 
     await useSettingsStore.getState().loadModeOptions('chatbot-1', {
-      custom: 'Custom mode',
+      custom: { description: 'Custom mode' },
     })
 
     expect(useSettingsStore.getState().selectedMode).toBe('custom')
     expect(useSettingsStore.getState().modeOptions).toEqual({
-      custom: 'Custom mode',
+      custom: { description: 'Custom mode' },
     })
   })
 
@@ -150,5 +151,20 @@ describe('settingsStore mode loading', () => {
 
     expect(useSettingsStore.getState().modeOptions).toEqual({})
     expect(useSettingsStore.getState().selectedMode).toBe('')
+  })
+
+  test('selects the first server mode when the stored selection is unavailable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          modeOptions: { 'synthetic-mode': 'synthetic-description' },
+        }),
+      })
+    )
+    useSettingsStore.setState({ selectedMode: 'unavailable-mode' })
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+    expect(useSettingsStore.getState().selectedMode).toBe('synthetic-mode')
   })
 })

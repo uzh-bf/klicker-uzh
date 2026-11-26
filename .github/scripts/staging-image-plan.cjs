@@ -128,6 +128,7 @@ function matrixEntry(target, jobName = buildJobName(target)) {
     // resolves an input fingerprint before it builds. See
     // image-input-fingerprint.cjs for what makes a target reusable.
     reuse: target.reuse === true,
+    releaseAssets: target.releaseAssets === true,
     syncSchema: target.syncSchema === true,
   }
 }

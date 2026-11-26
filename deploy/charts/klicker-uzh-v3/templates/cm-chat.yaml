@@ -57,6 +57,9 @@ data:
   CHAT_EXPLANATION_TOOL: "1"
   EXPLAINER_SERVICE_URL: {{ required "chat.explainer.serviceUrl is required when chat.explainer.enabled is true" .Values.chat.explainer.serviceUrl | quote }}
   {{- end }}
+  {{- if (.Values.chat.feedback).enabled }}
+  CHAT_FEEDBACK_TOOL: "1"
+  {{- end }}
   {{- if $scopedMcpEnv }}
   {{- $scopedMcpEnv | nindent 2 }}
   {{- end }}

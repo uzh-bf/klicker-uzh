@@ -1,5 +1,10 @@
 import type { ExtendedThreadMessageLike } from '../stores/chatStore'
 import { stripDocumentBlocks } from './attachments/documentText'
+import {
+  FEEDBACK_HISTORY_LABELS,
+  type FeedbackTextLabels,
+  feedbackPartText,
+} from './feedback'
 import { normalizeSourcesFromParts } from './sources/normalizeSources'
 import { getSourceNavigationUrl } from './sources/sourceUrl'
 
@@ -7,17 +12,24 @@ export interface ThreadMarkdownLabels {
   user: string
   assistant: string
   sources: string
+  feedback?: FeedbackTextLabels
 }
 
-const getMessageText = (message: ExtendedThreadMessageLike): string => {
+const getMessageText = (
+  message: ExtendedThreadMessageLike,
+  feedbackLabels: FeedbackTextLabels
+): string => {
   // Only answer text is exported. Tool calls, reasoning and data markers are
   // internals of how the answer was produced, not part of the study note.
+  // Feedback cards are part of the answer, so their text is kept.
   const textParts =
     typeof message.content === 'string'
       ? [message.content]
-      : message.content.flatMap((part) =>
-          part.type === 'text' ? [part.text] : []
-        )
+      : message.content.flatMap((part) => {
+          if (part.type === 'text') return [part.text]
+          const card = feedbackPartText(part, feedbackLabels)
+          return card === null ? [] : [card]
+        })
   const presentedParts =
     message.role === 'user'
       ? textParts.map((text) => stripDocumentBlocks(text))
@@ -58,7 +70,10 @@ export const threadToMarkdown = ({
 
   for (const message of messages) {
     if (message.role !== 'user' && message.role !== 'assistant') continue
-    const text = getMessageText(message)
+    const text = getMessageText(
+      message,
+      labels.feedback ?? FEEDBACK_HISTORY_LABELS
+    )
     if (!text) continue
 
     const heading = message.role === 'user' ? labels.user : labels.assistant

@@ -37,7 +37,6 @@ packages/graphql/instrumented/
 
 deploy/charts/
 
-
 apps/frontend-pwa/ios/
 apps/frontend-pwa/android/
 
