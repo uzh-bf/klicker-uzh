@@ -280,6 +280,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
