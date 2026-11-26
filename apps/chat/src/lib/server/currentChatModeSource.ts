@@ -228,8 +228,11 @@ export async function readMessageKnowledgeBaseScope({
   try {
     const scope = currentModeScope(chatbot, provenance.chatMode, false)
 
-    // The producing link must still be the mode's current live selection.
+    // Replay needs both the producing link and its live document access.
     if (
+      !scope.hasDocQueryAccess ||
+      scope.kbIds?.length !== 1 ||
+      scope.kbIds?.[0] !== scope.link?.kbId ||
       !scope.link ||
       scope.link.id !== provenance.kbLinkId ||
       scope.link.kbId !== provenance.kbId

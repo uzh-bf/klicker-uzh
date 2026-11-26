@@ -2160,6 +2160,7 @@ export const Mutation = builder.mutationType({
         nullable: false,
         args: {
           kbId: t.arg.id({ required: true }),
+          expectedLinkId: t.arg.id({ required: false }),
           chatbotId: t.arg.id({ required: true }),
         },
         resolve: async (_, args, ctx) => {

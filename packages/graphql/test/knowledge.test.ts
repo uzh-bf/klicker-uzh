@@ -1117,6 +1117,109 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
   })
 
+  it('preserves explicitly assigned exact bindings when clearing the default', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    const { id: chatbotId } = await prisma.chatbot.create({
+      data: {
+        name: 'Case study',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const fallback = await createKb({ name: 'General reading' }, userOneCtx)
+    const source = await createKb({ name: 'Case reading' }, userOneCtx)
+    await withPluralKbWrites(async () => {
+      const binding = await addKbLinkToChatbot(
+        { chatbotId, kbId: source.id },
+        userOneCtx
+      )
+      await attachKbToChatbot({ chatbotId, kbId: fallback.id }, userOneCtx)
+      await prisma.chatbot.update({
+        where: { id: chatbotId },
+        data: {
+          customModeConfig: {
+            modes: [
+              {
+                key: 'cm_cases',
+                name: 'Cases',
+                description: null,
+                personaText: null,
+                knowledgeBaseLinkId: binding.enabledKbs[0]!.linkId,
+              },
+            ],
+          },
+        },
+      })
+      const tutor = await prisma.chatbotMCPConfig.findFirstOrThrow({
+        where: { chatbotId, chatMode: 'tutor' },
+      })
+      await prisma.chatbotMCPConfig.create({
+        data: {
+          chatbotId,
+          mcpServerId: tutor.mcpServerId,
+          chatMode: 'cm_cases',
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: source.id,
+          },
+          isEnabled: true,
+        },
+      })
+      await expect(
+        setChatbotDefaultKb({ chatbotId, kbId: '' }, userOneCtx)
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+      await expect(
+        prisma.kBChatbot.findFirst({ where: { chatbotId, isDefault: true } })
+      ).resolves.toMatchObject({ kbId: fallback.id })
+      await setChatbotDefaultKb({ chatbotId, kbId: null }, userOneCtx)
+      await expect(
+        prisma.chatbotMCPConfig.findMany({
+          where: { chatbotId, isEnabled: true },
+        })
+      ).resolves.toEqual([
+        expect.objectContaining({
+          chatMode: 'cm_cases',
+          parameters: expect.objectContaining({ kb_id: source.id }),
+        }),
+      ])
+      await detachKbFromChatbot({ chatbotId, kbId: source.id }, userOneCtx)
+      await detachKbFromChatbot({ chatbotId, kbId: fallback.id }, userOneCtx)
+      await expect(
+        prisma.chatbotMCPConfig.count({ where: { chatbotId, isEnabled: true } })
+      ).resolves.toBe(0)
+    })
+  })
+
+  it('rejects confirmation of an obsolete attachment after the same source is reattached', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    const { id: chatbotId } = await prisma.chatbot.create({
+      data: {
+        name: 'Case study',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const { id: kbId } = await createKb({ name: 'Case reading' }, userOneCtx)
+    const link = await attachKbToChatbot({ chatbotId, kbId }, userOneCtx)
+    const expectedLinkId = link.enabledKbs[0]!.linkId
+    await detachKbFromChatbot({ chatbotId, kbId, expectedLinkId }, userOneCtx)
+    const fresh = await attachKbToChatbot({ chatbotId, kbId }, userOneCtx)
+    await expect(
+      detachKbFromChatbot({ chatbotId, kbId, expectedLinkId }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_CHATBOT_LINK_CHANGED' },
+    })
+    await expect(
+      prisma.kBChatbot.findFirst({ where: { chatbotId, kbId } })
+    ).resolves.toMatchObject({
+      id: fresh.enabledKbs[0]!.linkId,
+      isEnabled: true,
+      isDefault: true,
+    })
+  })
+
   it('returns mode key and name backlinks for published and draft links', async () => {
     const firstKb = await createKb({ name: 'Casebook' }, userOneCtx)
     const secondKb = await createKb({ name: 'Question bank' }, userOneCtx)

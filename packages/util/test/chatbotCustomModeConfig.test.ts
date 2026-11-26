@@ -125,6 +125,32 @@ describe('chatbot custom mode configuration', () => {
     expect(cleared.modes[0]?.knowledgeBaseLinkId).toBeUndefined()
   })
 
+  it('normalizes accepted knowledge-base link IDs to lowercase', () => {
+    const uppercaseLinkId = knowledgeBaseLinkId.toUpperCase()
+    const authored = parseModes(
+      [
+        {
+          name: 'Case discussion',
+          knowledgeBaseLinkId: ` ${uppercaseLinkId} `,
+        },
+      ],
+      null
+    )
+    expect(authored.modes[0]?.knowledgeBaseLinkId).toBe(knowledgeBaseLinkId)
+
+    expect(
+      normalizeChatbotCustomModeConfig({
+        modes: [
+          {
+            key: 'cm_case',
+            name: 'Case discussion',
+            knowledgeBaseLinkId: uppercaseLinkId,
+          },
+        ],
+      })?.modes[0]?.knowledgeBaseLinkId
+    ).toBe(knowledgeBaseLinkId)
+  })
+
   it('keeps unavailable well-formed links during tolerant reads', () => {
     expect(
       normalizeChatbotCustomModeConfig({

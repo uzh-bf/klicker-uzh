@@ -649,7 +649,9 @@ async function lockOwnedChatbotOrThrow(
     FOR UPDATE
   `
   if (lockedChatbot.length === 0) {
-    throw new GraphQLError('Chatbot not found')
+    throw new GraphQLError('Chatbot not found', {
+      extensions: { code: 'NOT_FOUND' },
+    })
   }
 }
 
@@ -665,7 +667,9 @@ async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
     },
   })
   if (!mcpServer || !mcpServer.isActive) {
-    throw new GraphQLError('Knowledge base retrieval is not configured')
+    throw new GraphQLError('Knowledge base retrieval is not configured', {
+      extensions: { code: 'KB_RETRIEVAL_NOT_CONFIGURED' },
+    })
   }
   return mcpServer
 }
@@ -1354,7 +1358,10 @@ async function getKbChatbotBindingOrThrow(
       },
     },
   })
-  if (!chatbot) throw new GraphQLError('Chatbot not found')
+  if (!chatbot)
+    throw new GraphQLError('Chatbot not found', {
+      extensions: { code: 'NOT_FOUND' },
+    })
   return projectKbChatbotBinding(chatbot)
 }
 
@@ -1369,38 +1376,52 @@ async function reconcileDefaultKbProjection(
   })
   if (!mcpServer) {
     if (kbId !== null) {
-      throw new GraphQLError('Knowledge base retrieval is not configured')
+      throw new GraphQLError('Knowledge base retrieval is not configured', {
+        extensions: { code: 'KB_RETRIEVAL_NOT_CONFIGURED' },
+      })
     }
     return
   }
-  if (mcpServer.isActive !== true) {
-    if (kbId !== null) {
-      throw new GraphQLError('Knowledge base retrieval is not configured')
-    }
-    await prisma.chatbotMCPConfig.updateMany({
-      where: { chatbotId, mcpServerId: mcpServer.id, isEnabled: true },
-      data: { isEnabled: false },
+  if (!mcpServer.isActive && kbId !== null) {
+    throw new GraphQLError('Knowledge base retrieval is not configured', {
+      extensions: { code: 'KB_RETRIEVAL_NOT_CONFIGURED' },
     })
-    return
   }
+  const { customModeConfig, knowledgeBases } =
+    await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: {
+        customModeConfig: true,
+        knowledgeBases: {
+          where: { isEnabled: true, kb: { deletedAt: null } },
+          select: { id: true },
+        },
+      },
+    })
+  const modes = (
+    normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? []
+  ).filter(({ key }) => !isChatbotStandardModeKey(key))
+  const liveLinkIds = new Set(knowledgeBases.map(({ id }) => id))
+  const explicitKeys = modes
+    .filter(
+      ({ knowledgeBaseLinkId }) =>
+        knowledgeBaseLinkId && liveLinkIds.has(knowledgeBaseLinkId)
+    )
+    .map(({ key }) => key)
   if (kbId === null) {
+    // An exact binding for an explicitly assigned mode is independent of the default.
     await prisma.chatbotMCPConfig.updateMany({
-      where: { chatbotId, mcpServerId: mcpServer.id, isEnabled: true },
+      where: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        isEnabled: true,
+        chatMode: { notIn: explicitKeys },
+      },
       data: { isEnabled: false },
     })
     return
   }
-
-  const { customModeConfig } = await prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbotId },
-    select: { customModeConfig: true },
-  })
-  const exactModeKeys = [
-    ...(normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? [])
-      .map(({ key }) => key)
-      .filter((mode) => !isChatbotStandardModeKey(mode)),
-    'quizzer',
-  ]
+  const exactModeKeys = [...modes.map(({ key }) => key), 'quizzer']
 
   await prisma.chatbotMCPConfig.updateMany({
     where: {
@@ -1442,17 +1463,38 @@ async function reconcileDefaultKbProjection(
     })
   }
 
-  // Enabled exact custom and Quizzer bindings follow the default KB. Disabled
-  // overrides stay untouched and stay disabled.
+  // Only inherited custom-mode and Quizzer bindings follow the default KB.
   await prisma.chatbotMCPConfig.updateMany({
     where: {
       chatbotId,
       mcpServerId: mcpServer.id,
-      chatMode: { in: exactModeKeys },
+      chatMode: { in: exactModeKeys, notIn: explicitKeys },
       isEnabled: true,
     },
     data: retrievalBinding,
   })
+}
+
+async function reconcileRemovedKbLink(
+  prisma: DB.Prisma.TransactionClient,
+  chatbotId: string,
+  wasDefault: boolean
+) {
+  // Without a default, retain only the bindings backed by live explicit assignments.
+  if (
+    !wasDefault &&
+    (await prisma.kBChatbot.findFirst({
+      where: {
+        chatbotId,
+        isDefault: true,
+        isEnabled: true,
+        kb: { deletedAt: null },
+      },
+      select: { id: true },
+    }))
+  )
+    return
+  await reconcileDefaultKbProjection(prisma, chatbotId, null)
 }
 
 async function ensureEnabledKbLink(
@@ -1594,6 +1636,11 @@ export async function setChatbotDefaultKb(
 ) {
   await assertManageAiEnabled(ctx)
   assertPluralKbWritesEnabled()
+  if (kbId != null && !validateUuid(kbId)) {
+    throw new GraphQLError('Invalid knowledge base ID', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
   return ctx.prisma.$transaction(async (prisma) => {
     if (kbId) {
       await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
@@ -1606,7 +1653,9 @@ export async function setChatbotDefaultKb(
         select: { isEnabled: true },
       })
       if (!link?.isEnabled) {
-        throw new GraphQLError('Knowledge base link not found')
+        throw new GraphQLError('Knowledge base link not found', {
+          extensions: { code: 'NOT_FOUND' },
+        })
       }
     }
 
@@ -1626,7 +1675,11 @@ export async function setChatbotDefaultKb(
 }
 
 export async function detachKbFromChatbot(
-  { kbId, chatbotId }: { kbId: string; chatbotId: string },
+  {
+    kbId,
+    chatbotId,
+    expectedLinkId,
+  }: { kbId: string; chatbotId: string; expectedLinkId?: string | null },
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
@@ -1636,11 +1689,16 @@ export async function detachKbFromChatbot(
 
     const existing = await prisma.kBChatbot.findUnique({
       where: { kbId_chatbotId: { kbId, chatbotId } },
-      select: { isDefault: true },
+      select: { id: true, isDefault: true },
     })
+    if (expectedLinkId != null && existing?.id !== expectedLinkId) {
+      throw new GraphQLError('Knowledge base link has changed', {
+        extensions: { code: 'KB_CHATBOT_LINK_CHANGED' },
+      })
+    }
     await prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
-    if (existing?.isDefault === true) {
-      await reconcileDefaultKbProjection(prisma, chatbotId, null)
+    if (existing) {
+      await reconcileRemovedKbLink(prisma, chatbotId, existing.isDefault)
     }
 
     return true
@@ -1934,15 +1992,12 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
         select: { chatbotId: true, isDefault: true },
       })
       if (bindings.length > 0) {
-        const defaultChatbotIds = bindings
-          .filter(({ isDefault }) => isDefault)
-          .map(({ chatbotId }) => chatbotId)
         await prisma.kBChatbot.updateMany({
           where: { kbId: id, isEnabled: true },
           data: { isEnabled: false, isDefault: false },
         })
-        for (const chatbotId of defaultChatbotIds) {
-          await reconcileDefaultKbProjection(prisma, chatbotId, null)
+        for (const { chatbotId, isDefault } of bindings) {
+          await reconcileRemovedKbLink(prisma, chatbotId, isDefault)
         }
       }
 

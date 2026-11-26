@@ -148,6 +148,29 @@ it('replays a managed image while its original link is still the mode source', a
   })
   expect((await GET(req, { params })).status).toBe(200)
 })
+it('refuses managed replay when the mode no longer has document access', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: 'tutor',
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+      provenance,
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [managedLink],
+    mcpConfigurations: legacyConfigurations.map((configuration) => ({
+      ...configuration,
+      isEnabled: false,
+    })),
+  })
+
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
 it('keeps serving an image stored before provenance markers', async () => {
   mocks.message.mockResolvedValue({
     chatMode: null,

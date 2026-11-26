@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  assertRollbackTarget,
   buildSnapshot,
   DOC_QUERY_TOOL_ALIAS,
   equalJson,
@@ -528,6 +529,53 @@ describe('provision snapshot', () => {
     expect(snapshot.binding).toBeNull()
     expect(snapshot.configs).toHaveLength(2)
     expect(parseSnapshot(JSON.stringify(snapshot))).toEqual(snapshot)
+  })
+
+  it('keeps legacy rollback compatible while rejecting an ambiguous relink', () => {
+    const priorTargetId = randomUUID()
+    const currentTargetId = randomUUID()
+    const snapshotFor = (isEnabled: boolean) =>
+      parseSnapshot(
+        JSON.stringify(
+          buildSnapshot(
+            baseState({
+              bindings: [
+                {
+                  id: priorTargetId,
+                  kbId: KB_ID,
+                  isEnabled,
+                  isDefault: isEnabled,
+                },
+              ],
+            }),
+            planProvision(baseState(), TARGET),
+            {
+              chatbotId: CHATBOT_ID,
+              kbId: KB_ID,
+              kbName: KB_NAME,
+            }
+          )
+        )
+      )
+
+    const enabledLegacySnapshot = snapshotFor(true)
+    expect(enabledLegacySnapshot.appliedBindingId).toBeUndefined()
+    expect(() =>
+      assertRollbackTarget(enabledLegacySnapshot, { id: priorTargetId })
+    ).not.toThrow()
+    expect(() =>
+      assertRollbackTarget(enabledLegacySnapshot, { id: currentTargetId })
+    ).toThrow('legacy snapshot cannot verify a relinked target')
+
+    expect(() =>
+      assertRollbackTarget(snapshotFor(false), { id: currentTargetId })
+    ).toThrow(ProvisionFailure)
+    expect(() =>
+      assertRollbackTarget(
+        { ...snapshotFor(false), appliedBindingId: currentTargetId },
+        { id: currentTargetId }
+      )
+    ).not.toThrow()
   })
 
   it('refuses a snapshot from another contract version or shape', () => {

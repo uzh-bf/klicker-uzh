@@ -1064,6 +1064,10 @@ export async function POST(
   }
 
   const scopedKbIds = modeKnowledgeBaseScope.kbIds
+  const revalidateKnowledgeBaseScope = modeKnowledgeBaseScope.link
+    ? () =>
+        revalidateModeSource(chatbotId, selectedMode, modeKnowledgeBaseScope)
+    : undefined
   const retrievalSource = modeKnowledgeBaseScope.link
     ? {
         chatMode: selectedMode,
@@ -1429,15 +1433,8 @@ export async function POST(
         sessionId: mcpScopeSessionId,
         knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
         courseId: chatbot.courseId,
-        ...(modeKnowledgeBaseScope.link
-          ? {
-              revalidateKnowledgeBaseScope: () =>
-                revalidateModeSource(
-                  chatbotId,
-                  selectedMode,
-                  modeKnowledgeBaseScope
-                ),
-            }
+        ...(revalidateKnowledgeBaseScope
+          ? { revalidateKnowledgeBaseScope }
           : {}),
       })
       mcpTools = mcpToolsHandle.tools
@@ -1470,7 +1467,12 @@ export async function POST(
     }
 
     if (scopedKbIds?.length && videoFrameStoreConfigured()) {
-      mcpTools = withVideoFrameTool(mcpTools, scopedKbIds, readVideoFrame)
+      mcpTools = withVideoFrameTool(
+        mcpTools,
+        scopedKbIds,
+        readVideoFrame,
+        revalidateKnowledgeBaseScope
+      )
     }
 
     let responseExampleSummary = ''
@@ -1662,6 +1664,7 @@ export async function POST(
           kbIds: scopedKbIds ?? [],
           readImage: (image) =>
             readCourseImagePreview(image, scopedKbIds ?? []),
+          revalidateScope: revalidateKnowledgeBaseScope,
         })
       : undefined
     if (imageDecisionEnabled) {
@@ -1670,7 +1673,8 @@ export async function POST(
         scopedKbIds ?? [],
         (image) => readCourseImagePreview(image, scopedKbIds ?? []),
         imageVisionEnabled,
-        courseImageVision?.hasPixelInput
+        courseImageVision?.hasPixelInput,
+        revalidateKnowledgeBaseScope
       )
     }
     const toolNames = Object.keys(chatTools)

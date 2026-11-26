@@ -533,3 +533,34 @@ export function parseSnapshot(raw: string): ProvisionSnapshot {
     bindings: normalizedBindings,
   } as ProvisionSnapshot
 }
+
+export function assertRollbackTarget(
+  snapshot: ProvisionSnapshot,
+  currentTarget: { id: string } | null
+): void {
+  const priorTarget = snapshot.bindings.find(
+    (binding) => binding.kbId === snapshot.kbId
+  )
+  if (
+    snapshot.appliedBindingId !== undefined &&
+    currentTarget?.id !== snapshot.appliedBindingId
+  ) {
+    throw new ProvisionFailure(
+      'rollback_concurrent_change',
+      currentTarget
+        ? 'target binding was relinked after apply'
+        : 'target binding was removed after apply'
+    )
+  }
+  // Older snapshots can identify a pre-existing link only by its original ID.
+  if (
+    priorTarget &&
+    snapshot.appliedBindingId === undefined &&
+    currentTarget?.id !== priorTarget.id
+  ) {
+    throw new ProvisionFailure(
+      'rollback_concurrent_change',
+      'legacy snapshot cannot verify a relinked target'
+    )
+  }
+}

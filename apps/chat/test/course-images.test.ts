@@ -234,6 +234,50 @@ describe('course image selection', () => {
     ).toEqual({ status: 'unavailable' })
     expect(read).toHaveBeenCalledTimes(1)
   })
+
+  it('revalidates the live source before reading a selected image', async () => {
+    const revalidate = vi.fn().mockResolvedValue(undefined)
+    const read = vi.fn().mockResolvedValue(Buffer.from('png'))
+    const tools = withCourseImageTool(
+      searchTools(),
+      [candidate.kb_id],
+      read,
+      false,
+      undefined,
+      revalidate
+    )
+    await call(tools, 'KB_doc_query', { query: 'diagram' })
+
+    await expect(
+      call(tools, 'show_course_image', {
+        asset_id: candidate.asset_id,
+        reason: 'The retrieved passage identifies the requested figure.',
+      })
+    ).resolves.toMatchObject({ status: 'selected' })
+    expect(revalidate).toHaveBeenCalledOnce()
+    expect(revalidate.mock.invocationCallOrder[0]).toBeLessThan(
+      read.mock.invocationCallOrder[0]!
+    )
+
+    const revoked = vi.fn().mockRejectedValue(new Error('source revoked'))
+    const deniedRead = vi.fn().mockResolvedValue(Buffer.from('png'))
+    const denied = withCourseImageTool(
+      searchTools(),
+      [candidate.kb_id],
+      deniedRead,
+      false,
+      undefined,
+      revoked
+    )
+    await call(denied, 'KB_doc_query', { query: 'diagram' })
+    await expect(
+      call(denied, 'show_course_image', {
+        asset_id: candidate.asset_id,
+        reason: 'The retrieved passage identifies the requested figure.',
+      })
+    ).resolves.toEqual({ status: 'unavailable' })
+    expect(deniedRead).not.toHaveBeenCalled()
+  })
   it('records supplied input, ignoring a model or retrieval claim of pixels', async () => {
     const forged = structuredClone(fixture)
     forged.sources[0].chunks[0].visual_assets.assets[0].model_input = 'pixels'

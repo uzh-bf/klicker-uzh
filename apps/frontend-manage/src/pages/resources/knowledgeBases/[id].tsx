@@ -21,10 +21,13 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
     typeof router.query.chatbotId === 'string'
       ? router.query.chatbotId
       : undefined
-  const { data: chatbotData } = useQuery(
-    QGetChatbotsInfoWithKnowledgeBasesDocument,
-    { skip: !aiFeaturesEnabled }
-  )
+  const {
+    data: chatbotData,
+    loading: chatbotDataLoading,
+    error: chatbotDataError,
+  } = useQuery(QGetChatbotsInfoWithKnowledgeBasesDocument, {
+    skip: !aiFeaturesEnabled,
+  })
   // The way back is offered only for one of the lecturer's own chatbots and is
   // built from that chatbot, never from the raw query parameter.
   const chatbot = chatbotData?.getChatbotsInfo?.find(
@@ -55,7 +58,10 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
             backLink={backLink}
             advanced={settingsMode === 'advanced'}
             perModeKbLinksEnabled={
-              chatbotData?.getChatbotsInfo?.[0]?.perModeKbLinksEnabled ?? false
+              chatbotData?.getChatbotsInfo?.[0]?.perModeKbLinksEnabled
+            }
+            perModeKbLinksCapabilityError={
+              !chatbotDataLoading && Boolean(chatbotDataError)
             }
           />
         </>

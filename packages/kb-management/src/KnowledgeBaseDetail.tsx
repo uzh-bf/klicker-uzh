@@ -17,7 +17,8 @@ function KnowledgeBaseDetail({
   kbId,
   backLink,
   advanced = false,
-  perModeKbLinksEnabled = false,
+  perModeKbLinksEnabled,
+  perModeKbLinksCapabilityError = false,
 }: {
   kbId: string
   // Advanced mode adds usage and quota figures, resource search and filters,
@@ -26,6 +27,7 @@ function KnowledgeBaseDetail({
   // materials, add them and see that they are ready.
   advanced?: boolean
   perModeKbLinksEnabled?: boolean
+  perModeKbLinksCapabilityError?: boolean
   // A banner leading back, for example to the chatbot whose materials are
   // being prepared. The caller owns and validates the target.
   backLink?: { href: string; label: string; message: string }
@@ -250,6 +252,7 @@ function KnowledgeBaseDetail({
         kbId={kbId}
         onChanged={refreshMetrics}
         perModeKbLinksEnabled={perModeKbLinksEnabled}
+        perModeKbLinksCapabilityError={perModeKbLinksCapabilityError}
       />
       {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
       {addResourceOpen ? (

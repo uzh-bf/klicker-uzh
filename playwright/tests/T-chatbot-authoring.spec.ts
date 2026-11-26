@@ -1808,6 +1808,144 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     }
   })
 
+  test('shows approved and draft inherited custom modes for default detach', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const chatbot = await seedPublicationChatbot({
+      name: `${CHATBOT_PREFIX} Default source impact`,
+      status: 'DRAFT',
+      withDisclaimer: true,
+    })
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        standardModeConfig: {
+          tutorEnabled: true,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          scopeNote: null,
+        },
+      },
+    })
+    const kb = await prisma.kB.create({
+      data: {
+        name: `${CHATBOT_PREFIX} Casebook`,
+        ownerId: USER_ID_TEST,
+      },
+    })
+    const link = await prisma.kBChatbot.create({
+      data: {
+        chatbotId: chatbot.id,
+        kbId: kb.id,
+        isEnabled: true,
+        isDefault: true,
+      },
+    })
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_default_inherited',
+              name: 'Inherited reader',
+              description: null,
+              personaText: null,
+            },
+            {
+              key: 'cm_default_explicit',
+              name: 'Explicit reader',
+              description: null,
+              personaText: null,
+              knowledgeBaseLinkId: link.id,
+            },
+          ],
+        },
+      },
+    })
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        draftConfig: {
+          name: chatbot.name,
+          description: chatbot.description,
+          avatar: chatbot.avatar,
+          standardModeConfig: {
+            tutorEnabled: true,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            scopeNote: null,
+          },
+          customModeConfig: {
+            modes: [
+              {
+                key: 'cm_default_inherited',
+                name: 'Draft inherited reader',
+                description: null,
+                personaText: null,
+              },
+              {
+                key: 'cm_default_explicit',
+                name: 'Draft explicit reader',
+                description: null,
+                personaText: null,
+                knowledgeBaseLinkId: link.id,
+              },
+            ],
+          },
+          modelSelection: chatbot.modelSelection,
+          allowedModelIds: chatbot.allowedModelIds,
+          creditInitialCredits: chatbot.creditInitialCredits,
+          creditResetPeriod: chatbot.creditResetPeriod,
+          creditResetAmount: chatbot.creditResetAmount,
+          creditMaxCredits: chatbot.creditMaxCredits,
+          disclaimerTitle: null,
+          disclaimerIntroText: null,
+          publicationUseCase: null,
+        },
+        revisionVersion: 1,
+      },
+    })
+
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const operationName =
+        new URL(request.url()).searchParams.get('operationName') ??
+        request.postDataJSON()?.operationName
+      if (operationName !== 'QGetChatbotsInfoWithKnowledgeBases') {
+        await route.fallback()
+        return
+      }
+      const response = await route.fetch()
+      const json = await response.json()
+      for (const item of json.data?.getChatbotsInfo ?? []) {
+        item.perModeKbLinksEnabled = true
+      }
+      await route.fulfill({ response, json })
+    })
+
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbot.id}&view=knowledge&step=materials`
+    )
+    await expect(page.getByTestId('chatbot-kb-default-badge')).toBeVisible()
+    await page.getByTestId(`chatbot-kb-actions-${kb.id}`).click()
+    await page.getByTestId(`chatbot-kb-detach-${kb.id}`).click()
+
+    const detachModal = page.getByTestId('chatbot-kb-detach-modal')
+    const approvedImpact = detachModal.getByTestId(
+      'chatbot-kb-detach-approved-impact'
+    )
+    await expect(approvedImpact).toContainText('Inherited reader')
+    await expect(approvedImpact).toContainText('Explicit reader')
+    const draftImpact = detachModal.getByTestId(
+      'chatbot-kb-detach-draft-impact'
+    )
+    await expect(draftImpact).toContainText('Draft inherited reader')
+    await expect(draftImpact).toContainText('Draft explicit reader')
+    await page.getByTestId('cancel-chatbot-kb-detach').click()
+  })
+
   test('publishes KB-free Quizzer alone and exercises preview plus both participant surfaces', async ({
     page,
   }, testInfo) => {

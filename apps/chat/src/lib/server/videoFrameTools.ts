@@ -15,7 +15,8 @@ import {
 export function withVideoFrameTool(
   tools: ToolSet,
   kbIds: readonly string[],
-  readFrame: (frame: VideoFrame) => Promise<unknown>
+  readFrame: (frame: VideoFrame) => Promise<unknown>,
+  revalidateScope?: () => Promise<void>
 ): ToolSet {
   const candidates = new Map<string, VideoFrame>()
   const selected = new Set<string>()
@@ -62,6 +63,7 @@ export function withVideoFrameTool(
 
       const readPromise = (async () => {
         try {
+          if (revalidateScope) await revalidateScope()
           await readFrame(frame)
           selected.add(asset_id)
           return true

@@ -191,6 +191,40 @@ describe('video frame selection', () => {
     expect(read).toHaveBeenCalledTimes(1)
   })
 
+  it('revalidates the live source before reading a selected frame', async () => {
+    const revalidate = vi.fn().mockResolvedValue(undefined)
+    const read = vi.fn().mockResolvedValue(Buffer.from('jpeg'))
+    const tools = withVideoFrameTool(
+      searchTools(),
+      [candidate.kb_id],
+      read,
+      revalidate
+    )
+    await call(tools, 'KB_doc_query', { query: 'diagram in lecture' })
+
+    await expect(
+      call(tools, 'show_video_frame', { asset_id: candidate.asset_id })
+    ).resolves.toMatchObject({ status: 'selected' })
+    expect(revalidate).toHaveBeenCalledOnce()
+    expect(revalidate.mock.invocationCallOrder[0]).toBeLessThan(
+      read.mock.invocationCallOrder[0]!
+    )
+
+    const revoked = vi.fn().mockRejectedValue(new Error('source revoked'))
+    const deniedRead = vi.fn().mockResolvedValue(Buffer.from('jpeg'))
+    const denied = withVideoFrameTool(
+      searchTools(),
+      [candidate.kb_id],
+      deniedRead,
+      revoked
+    )
+    await call(denied, 'KB_doc_query', { query: 'diagram in lecture' })
+    await expect(
+      call(denied, 'show_video_frame', { asset_id: candidate.asset_id })
+    ).resolves.toEqual({ status: 'unavailable' })
+    expect(deniedRead).not.toHaveBeenCalled()
+  })
+
   it('places selected video stills through the document image marker contract', async () => {
     const tools = withVideoFrameTool(
       searchTools(),

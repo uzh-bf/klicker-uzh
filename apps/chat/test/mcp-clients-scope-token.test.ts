@@ -225,7 +225,7 @@ describe('current-v3 Doc Query scope', () => {
     await handle.close()
   })
 
-  test('keeps bearer transport auth separate from the scope token header', async () => {
+  test('keeps the bearer transport credential separate from per-request scope tokens', async () => {
     await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
       kbIds: [KB_ID],
       sessionId: SESSION_ID,
@@ -238,19 +238,119 @@ describe('current-v3 Doc Query scope', () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer opaque-transport-token',
-          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
         },
+        fetch: expect.any(Function),
         redirect: 'error',
       },
     })
-    expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
-      kbIds: [KB_ID],
-      chatbotId: CHATBOT_ID,
-      sessionId: SESSION_ID,
-      jti: expect.any(String),
-    })
+    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
     expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
     expect(clientToolsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('revalidates and mints a fresh scope token for every bearer request', async () => {
+    const sentRequests: Array<RequestInit | undefined> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+        sentRequests.push(init)
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    try {
+      const revalidate = vi.fn().mockResolvedValue(undefined)
+      await getAggregatedMCPTools([createServer()], {
+        chatbotId: CHATBOT_ID,
+        authMode: 'account',
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+        revalidateKnowledgeBaseScope: revalidate,
+      })
+      const transport = (
+        createSDKMCPClientMock.mock.calls[0]?.[0] as {
+          transport: {
+            fetch?: (url: string | URL, init?: RequestInit) => Promise<Response>
+          }
+        }
+      ).transport
+
+      signDocQueryScopeTokenMock.mockResolvedValueOnce('first-token')
+      await transport.fetch?.('https://mcp.example.test', { method: 'POST' })
+      signDocQueryScopeTokenMock.mockResolvedValueOnce('second-token')
+      await transport.fetch?.(new URL('https://mcp.example.test'), {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer stale',
+          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer stale-scope',
+        },
+      })
+
+      expect(revalidate).toHaveBeenCalledTimes(2)
+      expect(signDocQueryScopeTokenMock).toHaveBeenCalledTimes(2)
+      expect(revalidate.mock.invocationCallOrder[0]).toBeLessThan(
+        signDocQueryScopeTokenMock.mock.invocationCallOrder[0]!
+      )
+      expect(signDocQueryScopeTokenMock).toHaveBeenNthCalledWith(1, {
+        kbIds: [KB_ID],
+        chatbotId: CHATBOT_ID,
+        sessionId: SESSION_ID,
+        jti: expect.any(String),
+      })
+      const [firstInit, secondInit] = sentRequests
+      const firstHeaders = new Headers(firstInit?.headers)
+      const secondHeaders = new Headers(secondInit?.headers)
+      expect(firstHeaders.get('authorization')).toBe(
+        'Bearer opaque-transport-token'
+      )
+      expect(firstHeaders.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer first-token'
+      )
+      expect(secondHeaders.get('authorization')).toBe(
+        'Bearer opaque-transport-token'
+      )
+      expect(secondHeaders.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer second-token'
+      )
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  test('fails closed before the network when bearer scope revalidation is revoked', async () => {
+    const fetchSpy = vi.fn(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchSpy)
+
+    try {
+      const revalidate = vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('source revoked'))
+      await getAggregatedMCPTools([createServer()], {
+        chatbotId: CHATBOT_ID,
+        authMode: 'account',
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+        revalidateKnowledgeBaseScope: revalidate,
+      })
+      const transport = (
+        createSDKMCPClientMock.mock.calls[0]?.[0] as {
+          transport: {
+            fetch?: (url: string | URL, init?: RequestInit) => Promise<Response>
+          }
+        }
+      ).transport
+
+      await transport.fetch?.('https://mcp.example.test', { method: 'POST' })
+      await expect(
+        transport.fetch?.('https://mcp.example.test', { method: 'POST' })
+      ).rejects.toThrow('source revoked')
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(signDocQueryScopeTokenMock).toHaveBeenCalledOnce()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   test('emits a multi-knowledge-base scope through one client and tool discovery', async () => {
@@ -271,6 +371,18 @@ describe('current-v3 Doc Query scope', () => {
       CHATBOT_ID,
       { kbIds: [KB_ID, secondKbId], sessionId: SESSION_ID }
     )
+
+    const transport = (
+      createSDKMCPClientMock.mock.calls[0]?.[0] as {
+        transport: { fetch: (input: string) => Promise<Response> }
+      }
+    ).transport
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}')))
+    try {
+      await transport.fetch('https://mcp.example.test')
+    } finally {
+      vi.unstubAllGlobals()
+    }
 
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
       kbIds: [KB_ID, secondKbId],

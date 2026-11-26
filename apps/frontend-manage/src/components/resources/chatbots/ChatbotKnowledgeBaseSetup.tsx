@@ -179,6 +179,7 @@ function KnowledgeBaseRow({
                 name: knowledgeBase.name,
               })}
               className="h-8 w-7 shrink-0 rounded text-slate-600 hover:bg-slate-100 focus-visible:outline-2"
+              data-cy={`chatbot-kb-row-toggle-${kbId}`}
             >
               <FontAwesomeIcon
                 icon={faChevronRight}
@@ -342,6 +343,8 @@ function ChatbotKnowledgeBaseSetup({
   connectedKnowledgeBases,
   approvedCustomModes = [],
   draftCustomModes = [],
+  approvedStandardModes = [],
+  draftStandardModes = [],
   perModeKbLinksEnabled,
   connectOnSelect = false,
   proposedKnowledgeBaseName,
@@ -361,6 +364,8 @@ function ChatbotKnowledgeBaseSetup({
     name: string
     knowledgeBaseLinkId?: string | null
   }[]
+  approvedStandardModes?: string[]
+  draftStandardModes?: string[]
   perModeKbLinksEnabled: boolean
   // The setup page connects on select, shows the knowledge base card, and
   // keeps creating and adding materials on the chatbot.
@@ -582,6 +587,9 @@ function ChatbotKnowledgeBaseSetup({
         variables: {
           kbId: detachTarget.kbId ?? detachTarget.id,
           chatbotId,
+          ...(detachTarget.linkId
+            ? { expectedLinkId: detachTarget.linkId }
+            : {}),
         },
         refetchQueries,
       })
@@ -872,34 +880,51 @@ function ChatbotKnowledgeBaseSetup({
           </p>
           {(() => {
             const linkId = detachTarget.linkId
-            const approvedModes = linkId
-              ? approvedCustomModes.filter(
-                  (mode) => mode.knowledgeBaseLinkId === linkId
+            const usesDefault = detachTarget.isDefault === true
+            const approvedModes = [
+              ...(usesDefault ? approvedStandardModes : []),
+              ...approvedCustomModes
+                .filter((mode) =>
+                  usesDefault
+                    ? !mode.knowledgeBaseLinkId ||
+                      mode.knowledgeBaseLinkId === linkId
+                    : mode.knowledgeBaseLinkId === linkId
                 )
-              : []
-            const draftModes = linkId
-              ? draftCustomModes.filter(
-                  (mode) => mode.knowledgeBaseLinkId === linkId
+                .map((mode) => mode.name),
+            ]
+            const draftModes = [
+              ...(usesDefault ? draftStandardModes : []),
+              ...draftCustomModes
+                .filter((mode) =>
+                  usesDefault
+                    ? !mode.knowledgeBaseLinkId ||
+                      mode.knowledgeBaseLinkId === linkId
+                    : mode.knowledgeBaseLinkId === linkId
                 )
-              : []
+                .map((mode) => mode.name),
+            ]
             return (
               <div className="mt-3 space-y-2 text-sm">
-                <p>
+                <p data-cy="chatbot-kb-detach-approved-impact">
                   {t(
-                    'manage.resources.chatbotKnowledgeBaseDetachApprovedModes',
+                    usesDefault
+                      ? 'manage.resources.chatbotKnowledgeBaseDetachDefaultApprovedModes'
+                      : 'manage.resources.chatbotKnowledgeBaseDetachApprovedModes',
                     {
                       modes:
-                        approvedModes.map((mode) => mode.name).join(', ') ||
-                        t('shared.generic.none'),
+                        approvedModes.join(', ') || t('shared.generic.none'),
                     }
                   )}
                 </p>
-                <p>
-                  {t('manage.resources.chatbotKnowledgeBaseDetachDraftModes', {
-                    modes:
-                      draftModes.map((mode) => mode.name).join(', ') ||
-                      t('shared.generic.none'),
-                  })}
+                <p data-cy="chatbot-kb-detach-draft-impact">
+                  {t(
+                    usesDefault
+                      ? 'manage.resources.chatbotKnowledgeBaseDetachDefaultDraftModes'
+                      : 'manage.resources.chatbotKnowledgeBaseDetachDraftModes',
+                    {
+                      modes: draftModes.join(', ') || t('shared.generic.none'),
+                    }
+                  )}
                 </p>
                 <p>
                   {t('manage.resources.chatbotKnowledgeBaseDetachConsequence')}

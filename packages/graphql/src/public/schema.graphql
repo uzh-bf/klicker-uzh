@@ -2990,7 +2990,7 @@ type Mutation {
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
-  detachKbFromChatbot(chatbotId: ID!, kbId: ID!): Boolean!
+  detachKbFromChatbot(chatbotId: ID!, expectedLinkId: ID, kbId: ID!): Boolean!
   duplicateAnswerCollection(id: Int!): AnswerCollection
   duplicateGeneratedElementDraft(input: GeneratedElementDraftInput!): GeneratedElementDraft!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!

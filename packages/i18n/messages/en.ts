@@ -5408,6 +5408,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Approved custom modes that explicitly select this link: {modes}.',
       chatbotKnowledgeBaseDetachDraftModes:
         'Draft custom modes that explicitly select this link: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultApprovedModes:
+        'Approved standard and custom modes that use this default source: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultDraftModes:
+        'Draft standard and custom modes that use this default source: {modes}.',
       chatbotKnowledgeBaseDetachConsequence:
         'Removing the link takes effect for new retrieval and media reads. Existing broken references remain visible until reassigned.',
       chatbotKnowledgeBaseReplacementWarning:

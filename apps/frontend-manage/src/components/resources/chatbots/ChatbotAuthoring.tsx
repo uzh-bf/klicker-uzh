@@ -1156,6 +1156,14 @@ function ChatbotAuthoring({
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
   const customModeConfig = getCustomModeFormValues(chatbot)
+  const reviewCustomModes = (revisionValues.customModeConfig?.modes ?? []).map(
+    (mode) => ({
+      ...mode,
+      description: mode.description ?? '',
+      welcomeMessage: mode.welcomeMessage ?? '',
+      starterPrompts: [...(mode.starterPrompts ?? [])],
+    })
+  )
   const liveCustomModesByKey = new Map(
     (chatbot.customModeConfig?.modes ?? []).map((mode) => [mode.key, mode])
   )
@@ -1900,7 +1908,10 @@ function ChatbotAuthoring({
                 <CustomModesEditor
                   chatbot={chatbot}
                   disabled={
-                    !modeEditable || revisionPending || publicationPending
+                    !modeEditable ||
+                    revisionPending ||
+                    publicationPending ||
+                    (embedded && modeNavigationState.pending)
                   }
                   initialValues={customModeConfig}
                   formRef={customModesFormRef}
@@ -2296,7 +2307,7 @@ function ChatbotAuthoring({
                       </Button.Label>
                     </Button>
                   </div>
-                  {customModeConfig.modes.length === 0 ? (
+                  {reviewCustomModes.length === 0 ? (
                     <p
                       className="text-sm text-gray-900"
                       data-cy="chatbot-review-custom-modes-empty"
@@ -2305,7 +2316,7 @@ function ChatbotAuthoring({
                     </p>
                   ) : (
                     <ul className="space-y-3">
-                      {customModeConfig.modes.map((mode, index) => (
+                      {reviewCustomModes.map((mode, index) => (
                         <li
                           key={mode.key}
                           className="text-sm"

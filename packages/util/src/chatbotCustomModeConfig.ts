@@ -186,7 +186,7 @@ function normalizeKnowledgeBaseLinkId(value: unknown): string | null {
   ) {
     throw new Error('knowledgeBaseLinkId must be a UUID or null')
   }
-  return value.trim()
+  return value.trim().toLowerCase()
 }
 
 /**

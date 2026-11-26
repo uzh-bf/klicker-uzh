@@ -1104,6 +1104,7 @@ export function createFileActivationReceiptStore(
 
 type PrismaActivationClient = Pick<
   PrismaClient,
+  | '$queryRaw'
   | 'kB'
   | 'course'
   | 'chatbot'

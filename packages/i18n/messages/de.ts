@@ -5533,6 +5533,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Freigegebene eigene Modi, die diese Verknüpfung ausdrücklich verwenden: {modes}.',
       chatbotKnowledgeBaseDetachDraftModes:
         'Entwürfe eigener Modi, die diese Verknüpfung ausdrücklich verwenden: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultApprovedModes:
+        'Freigegebene Standard- und eigene Modi, die diese Standardquelle verwenden: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultDraftModes:
+        'Entwürfe von Standard- und eigenen Modi, die diese Standardquelle verwenden: {modes}.',
       chatbotKnowledgeBaseDetachConsequence:
         'Das Entfernen wirkt für neue Abrufe und Medienzugriffe. Bestehende nicht verfügbare Verweise bleiben sichtbar, bis sie neu zugewiesen werden.',
       chatbotKnowledgeBaseReplacementWarning:

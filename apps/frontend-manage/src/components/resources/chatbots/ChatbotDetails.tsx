@@ -1375,6 +1375,27 @@ function ChatbotDetails({
     }).format(items)
   const getModelName = (modelId: string) =>
     modelRegistry.find((model) => model.id === modelId)?.name ?? modelId
+  const getCourseMaterialStandardModes = (
+    config:
+      | {
+          tutorEnabled?: boolean | null
+          explainerEnabled?: boolean | null
+          quizzerEnabled?: boolean | null
+        }
+      | null
+      | undefined
+  ) =>
+    [
+      (config?.tutorEnabled ?? true)
+        ? t('manage.resources.chatbotModeTutor')
+        : null,
+      (config?.explainerEnabled ?? true)
+        ? t('manage.resources.chatbotModeExplainer')
+        : null,
+      (config?.quizzerEnabled ?? true)
+        ? t('manage.resources.chatbotModeQuizzer')
+        : null,
+    ].filter((name): name is string => name !== null)
 
   // A published chatbot keeps its live values until a review approves the
   // saved revision, so a section whose saved values differ from the live ones
@@ -1386,11 +1407,13 @@ function ChatbotDetails({
     comparesLiveValues && hasUnsubmittedChanges(saved, live)
 
   const materialsReadiness = defaultKnowledgeBase?.materialsReadiness
+  const hasFailedMaterials = enabledKnowledgeBases.some(
+    (knowledgeBase) =>
+      (knowledgeBase.materialsReadiness?.failedResourceCount ?? 0) > 0
+  )
   // Failed resources never block a request, but the lecturer should notice.
   const materialsStatus = resolveSectionStatus({
-    warning:
-      !defaultKnowledgeBase ||
-      (materialsReadiness?.failedResourceCount ?? 0) > 0,
+    warning: !defaultKnowledgeBase || hasFailedMaterials,
   })
   const materialsSummary = defaultKnowledgeBase
     ? [
@@ -1961,6 +1984,16 @@ function ChatbotDetails({
               approvedCustomModes={chatbot.customModeConfig?.modes ?? []}
               draftCustomModes={
                 chatbot.authoringRevision?.customModeConfig?.modes ?? []
+              }
+              approvedStandardModes={getCourseMaterialStandardModes(
+                chatbot.standardModeConfig
+              )}
+              draftStandardModes={
+                chatbot.authoringRevision
+                  ? getCourseMaterialStandardModes(
+                      chatbot.authoringRevision.standardModeConfig
+                    )
+                  : []
               }
               perModeKbLinksEnabled={chatbot.perModeKbLinksEnabled}
               connectOnSelect

@@ -26,6 +26,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import {
+  assertRollbackTarget,
   buildSnapshot,
   DOC_QUERY_SERVER_NAME,
   DOC_QUERY_TOOL_ALIAS,
@@ -395,17 +396,7 @@ async function rollback(snapshotPath: string) {
         },
         select: { id: true },
       })
-      if (
-        snapshot.appliedBindingId !== undefined &&
-        (!currentTarget || currentTarget.id !== snapshot.appliedBindingId)
-      ) {
-        throw new ProvisionFailure(
-          'rollback_concurrent_change',
-          currentTarget
-            ? 'target binding was relinked after apply'
-            : 'target binding was removed after apply'
-        )
-      }
+      assertRollbackTarget(snapshot, currentTarget)
 
       let bindingRestored = false
       if (priorTarget) {
