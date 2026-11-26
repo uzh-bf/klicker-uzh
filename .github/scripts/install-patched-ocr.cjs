@@ -45,6 +45,7 @@ function install(directory, archive) {
     throw new Error('An absolute installation directory is required')
   }
   const env = { ...process.env, GOTOOLCHAIN: 'local', GOFLAGS: '-mod=readonly' }
+  delete env.CMD_API_KEY
   delete env.MISTRAL_API_KEY
   delete env.OCR_LLM_TOKEN
   delete env.GH_TOKEN

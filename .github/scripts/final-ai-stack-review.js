@@ -17,6 +17,8 @@ const path = require('node:path')
 
 const {
   FINAL_REVIEW_BOT,
+  FINAL_REVIEW_MODEL,
+  FINAL_REVIEW_PROFILE,
   buildFinalReviewEvidenceDigest,
   createGhGithub,
   decodeMetadata,
@@ -44,13 +46,13 @@ const {
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const {
-  MISTRAL_DEEPSEEK_MODEL,
-  MISTRAL_URL,
+  MOAT_URL,
   callMistral,
   createHistoryStore,
   writeDiagnostics,
 } = require('./ocr-mistral-adapter.cjs')
-const FINAL_STACK_REVIEW_MODEL = MISTRAL_DEEPSEEK_MODEL
+const FINAL_STACK_REVIEW_MODEL = FINAL_REVIEW_MODEL
+const FINAL_STACK_REVIEW_PROFILE = FINAL_REVIEW_PROFILE
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
 const STACK_COMBINED_OCR_SCHEMA = 'final-ai-stack-combined-ocr/v1'
@@ -63,7 +65,7 @@ const STACK_RULES_PATH =
   '.github/open-code-review/final-stack-topology-rules.json'
 const STACK_SCHEMA_PATH =
   '.github/open-code-review/final-stack-topology-schema.json'
-const MISTRAL_API_KEY_ENV = 'MISTRAL_API_KEY'
+const CMD_API_KEY_ENV = 'CMD_API_KEY'
 const REPORT_LIMIT = 55_000
 const CLEAN_EVIDENCE_LIMIT = REPORT_LIMIT
 const MAX_MANIFEST_FILES = 2_000
@@ -2531,7 +2533,10 @@ function combineOCRResults(results, layerNumbers = null) {
     schema_version: STACK_COMBINED_OCR_SCHEMA,
     comments,
     finish_reason: 'stop',
-    llm: { model: FINAL_STACK_REVIEW_MODEL },
+    llm: {
+      provider: FINAL_STACK_REVIEW_PROFILE,
+      model: FINAL_STACK_REVIEW_MODEL,
+    },
     manifest: {
       schema_version: 'ocr.run-manifest/v1',
       terminal_state: 'complete',
@@ -2625,7 +2630,7 @@ function validateTopologyResult(
       owners.length === 0 ||
       !Array.isArray(layers) ||
       layers.length === 0 ||
-      // Mistral's structured-output grammar does not support uniqueItems.
+      // The strict-output grammar does not support uniqueItems.
       new Set(layers).size !== layers.length ||
       layers.some(
         (layer) =>
@@ -3068,7 +3073,7 @@ function buildTopologyRequest({
 }) {
   const request = {
     model: FINAL_STACK_REVIEW_MODEL,
-    provider: 'mistral-deepseek',
+    provider: FINAL_STACK_REVIEW_PROFILE,
     max_tokens: maxTokens,
     messages: messages ?? [
       {
@@ -3139,7 +3144,7 @@ function aggregateTopologyDiagnostics(snapshots) {
   for (const snapshot of snapshots) {
     if (
       snapshot?.stage !== 'topology' ||
-      snapshot.provider !== 'mistral-deepseek' ||
+      snapshot.provider !== FINAL_STACK_REVIEW_PROFILE ||
       snapshot.model !== FINAL_STACK_REVIEW_MODEL
     ) {
       throw new Error('Topology diagnostics have an invalid identity')
@@ -3163,7 +3168,7 @@ function aggregateTopologyDiagnostics(snapshots) {
   return {
     schema_version: 1,
     stage: 'topology',
-    provider: 'mistral-deepseek',
+    provider: FINAL_STACK_REVIEW_PROFILE,
     model: FINAL_STACK_REVIEW_MODEL,
     provider_availability: providerAvailability,
     ...aggregate,
@@ -3275,8 +3280,7 @@ async function callTopologyModel({
   signal: externalSignal,
   usageJournalPath,
 }) {
-  if (!apiKey)
-    throw new Error('MISTRAL_API_KEY is required for topology review')
+  if (!apiKey) throw new Error('CMD_API_KEY is required for topology review')
   if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
   if (
     !Number.isSafeInteger(deadlineMs) ||
@@ -3295,7 +3299,9 @@ async function callTopologyModel({
     Math.max(0, deadlineMs - Date.now())
   )
   const diagnosticsSnapshots = []
-  const history = createHistoryStore({ provider: 'mistral-deepseek' })
+  const history = createHistoryStore({
+    provider: FINAL_STACK_REVIEW_PROFILE,
+  })
   const seenToolIds = new Set()
   const aggregateUsage = {
     completion_tokens: 0,
@@ -3360,7 +3366,7 @@ async function callTopologyModel({
         diagnosticsStage: 'topology',
         fetchImpl,
         history,
-        provider: 'mistral-deepseek',
+        provider: FINAL_STACK_REVIEW_PROFILE,
         signal: controller.signal,
         timeoutMs: Math.min(120_000, Math.max(1, deadlineMs - Date.now())),
         usageJournalPath,
@@ -3911,7 +3917,7 @@ async function runTopologyCli() {
     expectedManifestDigest
   )
   const codeResult = JSON.parse(fs.readFileSync(codeResultPath, 'utf8'))
-  const apiKey = process.env[MISTRAL_API_KEY_ENV]
+  const apiKey = process.env[CMD_API_KEY_ENV]
   const diagnosticsPath = process.env.OCR_ADVISOR_DIAGNOSTICS_PATH
   const statePath = process.env.OCR_ADVISOR_STATE_PATH
   const trustedSha = process.env.TRUSTED_SHA
@@ -4024,8 +4030,9 @@ module.exports = {
   decodeMetadata,
   encodeMetadata,
   FINAL_STACK_REVIEW_MODEL,
+  FINAL_STACK_REVIEW_PROFILE,
   MAX_MANIFEST_FILES,
-  MISTRAL_URL,
+  MOAT_URL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
   STACK_CLEAN_EVIDENCE_SCHEMA,
   STACK_REVIEW_COMMAND,
