@@ -636,7 +636,7 @@ export async function manipulateLiveQuiz(
     sharingType,
   } = persisted
 
-  if (!id && activity.isAssessmentEnabled) {
+  if (activity.isAssessmentEnabled && !existingActivity?.isAssessmentEnabled) {
     try {
       const outcome = await activateNewAssessmentAuditIfSelected({
         client: ctx.prisma,

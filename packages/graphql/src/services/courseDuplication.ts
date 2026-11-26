@@ -116,6 +116,9 @@ interface CourseDuplicationJob extends CourseDuplicationStatus {
   catalystInstitutional: boolean
   catalystIndividual: boolean
   args?: CourseDuplicationJobArgs
+  // Copied and source live quiz IDs of an assessment course copy, recorded
+  // before the copy commits so a retry can finish their audit evidence.
+  assessmentCopies?: [string, string][]
 }
 
 function getCourseDuplicationStatusKey(jobId: string) {
@@ -385,7 +388,11 @@ async function updateCourseDuplicationJob(
   patch: Partial<
     Pick<
       CourseDuplicationJob,
-      'createdCourseId' | 'errorMessage' | 'errorType' | 'status'
+      | 'assessmentCopies'
+      | 'createdCourseId'
+      | 'errorMessage'
+      | 'errorType'
+      | 'status'
     >
   >
 ) {
@@ -813,6 +820,12 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
 
       if (existingCourse) {
         committedCourseId = existingCourse.id
+        // The previous attempt may have stopped after the copy committed but
+        // before its assessment audit work finished.
+        await completeCopiedAssessmentAudit(
+          globalCtx.prisma,
+          job.assessmentCopies ?? []
+        )
         await updateCourseDuplicationJob(redis, job, {
           status: 'COMPLETED',
           createdCourseId: existingCourse.id,
@@ -845,6 +858,13 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
             scope: job.userScope,
             catalystInstitutional: job.catalystInstitutional,
             catalystIndividual: job.catalystIndividual,
+          },
+        },
+        {
+          onAssessmentCopies: async (assessmentCopies) => {
+            job = await updateCourseDuplicationJob(redis, job, {
+              assessmentCopies,
+            })
           },
         }
       )
@@ -1795,6 +1815,66 @@ async function assertCourseDuplicationInstanceAccess({
   }
 }
 
+/**
+ * Activates audit coverage for copied assessments and records the source of
+ * each copy. A retried job calls this again for a course that already
+ * committed, so it skips copies that are already covered or already carry
+ * their copy event.
+ */
+async function completeCopiedAssessmentAudit(
+  client: PrismaClient,
+  copiedLiveQuizSources: Iterable<[string, string]>
+) {
+  for (const [copiedLiveQuizId, sourceLiveQuizId] of copiedLiveQuizSources) {
+    const latestScope = await client.assessmentAuditScope.findFirst({
+      where: { liveQuizId: copiedLiveQuizId },
+      orderBy: { lifecycleEpoch: 'desc' },
+      select: { coverageState: true },
+    })
+    if (
+      latestScope?.coverageState !== DB.AssessmentAuditCoverageState.COVERED
+    ) {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client,
+        liveQuizId: copiedLiveQuizId,
+      })
+      if (outcome === 'NOT_SELECTED') continue
+    }
+
+    const copiedEvent = await client.assessmentAuditOutboxEvent.findFirst({
+      where: { liveQuizId: copiedLiveQuizId, eventType: 'ASSESSMENT_COPIED' },
+      select: { eventId: true },
+    })
+    if (copiedEvent !== null) continue
+
+    const copiedAt = new Date()
+    await runInAuditTransaction(client, async (tx, auditTx) => {
+      const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
+      if (copied === null) return
+      const operation = assessmentAuditSystemOperation({
+        occurredAt: copiedAt,
+      })
+      await emitCoveredAssessmentAuditEvents({
+        tx,
+        auditTx,
+        liveQuizId: copiedLiveQuizId,
+        courseId: copied.courseId,
+        operation,
+        drafts: [
+          assessmentLifecycleDraft({
+            eventType: 'ASSESSMENT_COPIED',
+            producerOperationId: `${operation.correlationId}:copied`,
+            fromState: null,
+            toState: 'DRAFT',
+            reasonCode: 'COURSE_DUPLICATION',
+            sourceLiveQuizId,
+          }),
+        ],
+      })
+    })
+  }
+}
+
 export async function duplicateCourse(
   {
     courseId,
@@ -1816,7 +1896,10 @@ export async function duplicateCourse(
     duplicateMicrolearnings,
     duplicateGroupActivities,
   }: CourseDuplicationArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  options?: {
+    onAssessmentCopies?: (copies: [string, string][]) => Promise<void>
+  }
 ) {
   if (!sourceCourseId) {
     throw new Error('Course ID to duplicate not provided')
@@ -1904,11 +1987,18 @@ export async function duplicateCourse(
         ctx,
         prisma,
       })
-      for (const [
-        sourceLiveQuizId,
-        copiedLiveQuizId,
-      ] of copiedActivityIds.liveQuizIds) {
-        copiedLiveQuizSources.set(copiedLiveQuizId, sourceLiveQuizId)
+      // Only copies in an assessment course become assessments; audit
+      // activation rejects the regular quizzes of an ordinary course.
+      if (oldCourse.isAssessmentEnabled) {
+        for (const [
+          sourceLiveQuizId,
+          copiedLiveQuizId,
+        ] of copiedActivityIds.liveQuizIds) {
+          copiedLiveQuizSources.set(copiedLiveQuizId, sourceLiveQuizId)
+        }
+        if (copiedLiveQuizSources.size > 0) {
+          await options?.onAssessmentCopies?.([...copiedLiveQuizSources])
+        }
       }
 
       await prisma.course.update({
@@ -1982,39 +2072,7 @@ export async function duplicateCourse(
 
   // Activation needs the committed copy: the baseline reader must not use the
   // root Prisma client while the duplication transaction is still open.
-  for (const [copiedLiveQuizId, sourceLiveQuizId] of copiedLiveQuizSources) {
-    const outcome = await activateNewAssessmentAuditIfSelected({
-      client: ctx.prisma,
-      liveQuizId: copiedLiveQuizId,
-    })
-    if (outcome === 'NOT_SELECTED') continue
-
-    const copiedAt = new Date()
-    await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
-      const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
-      if (copied === null) return
-      const operation = assessmentAuditSystemOperation({
-        occurredAt: copiedAt,
-      })
-      await emitCoveredAssessmentAuditEvents({
-        tx,
-        auditTx,
-        liveQuizId: copiedLiveQuizId,
-        courseId: copied.courseId,
-        operation,
-        drafts: [
-          assessmentLifecycleDraft({
-            eventType: 'ASSESSMENT_COPIED',
-            producerOperationId: `${operation.correlationId}:copied`,
-            fromState: null,
-            toState: 'DRAFT',
-            reasonCode: 'COURSE_DUPLICATION',
-            sourceLiveQuizId,
-          }),
-        ],
-      })
-    })
-  }
+  await completeCopiedAssessmentAudit(ctx.prisma, copiedLiveQuizSources)
 
   return duplicatedCourse
 }
