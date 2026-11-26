@@ -482,9 +482,8 @@ async function normalizeStaleCourseDuplicationJob(
     }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
     // A worker may have changed the job between the read above and this lock,
     // so continue from the stored state, not the earlier copy.
-    let lockedJob: CourseDuplicationJob | null = job
     try {
-      lockedJob = await getCourseDuplicationJob(redis, job.id, log)
+      const lockedJob = await getCourseDuplicationJob(redis, job.id, log)
       if (!lockedJob || isTerminalCourseDuplicationStatus(lockedJob.status)) {
         return lockedJob ?? job
       }
@@ -492,6 +491,19 @@ async function normalizeStaleCourseDuplicationJob(
         prisma,
         lockedJob.assessmentCopies ?? []
       )
+      // Mark the job completed while still holding the lock, so no other
+      // recovery starts between the audit work and the terminal status.
+      log?.warn(
+        {
+          event: 'course_duplication.status.reconciled',
+          outcome: 'committed_course',
+        },
+        'Course duplication job went stale but its course is committed; marking completed'
+      )
+      return await updateCourseDuplicationJob(redis, lockedJob, {
+        status: 'COMPLETED',
+        createdCourseId: committedCourse.id,
+      })
     } catch (error) {
       log?.error(
         {
@@ -509,17 +521,6 @@ async function normalizeStaleCourseDuplicationJob(
         processLockValue
       )
     }
-    log?.warn(
-      {
-        event: 'course_duplication.status.reconciled',
-        outcome: 'committed_course',
-      },
-      'Course duplication job went stale but its course is committed; marking completed'
-    )
-    return await updateCourseDuplicationJob(redis, lockedJob ?? job, {
-      status: 'COMPLETED',
-      createdCourseId: committedCourse.id,
-    })
   }
 
   log?.warn(
