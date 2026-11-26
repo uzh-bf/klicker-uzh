@@ -1,0 +1,5 @@
+query GetVideoApprovalLink($token: String!) {
+  getVideoApprovalLink(token: $token) {
+    ...VideoApprovalLinkData
+  }
+}

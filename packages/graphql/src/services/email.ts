@@ -1,10 +1,12 @@
-import * as DB from '@klicker-uzh/prisma/client'
+import type * as DB from '@klicker-uzh/prisma/client'
 import nodemailer, { type Transporter } from 'nodemailer'
 
 type AVAILABLE_EMAIL_TEMPLATES =
   | 'MagicLinkRequested'
   | 'ParticipantAccountActivation'
   | 'RandomizedGroupCreationFailure'
+  | 'VideoSourceApprovalRequested'
+  | 'VideoSourceApprovalGranted'
 
 let transport: Transporter | undefined
 

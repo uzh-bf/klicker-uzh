@@ -1,0 +1,5 @@
+mutation RevokeVideoSourceByLink($token: String!, $reason: String) {
+  revokeVideoSourceByLink(token: $token, reason: $reason) {
+    ...VideoApprovalLinkData
+  }
+}

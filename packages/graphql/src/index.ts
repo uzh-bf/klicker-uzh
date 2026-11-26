@@ -19,6 +19,10 @@ export {
   createQuestionGenerationRuntimeFromEnv as createElementGenerationRuntimeFromEnv,
   type QuestionGenerationRuntime as ElementGenerationRuntime,
 } from './services/questionGenerationRuntime.js'
+export {
+  handleVideoSourceScope,
+  type VideoSourceScopeResult,
+} from './services/videoSourceApproval.js'
 
 import builder from './builder.js'
 
@@ -38,6 +42,7 @@ import './schema/microLearning.js'
 import './schema/participant.js'
 import './schema/participantInvitation.js'
 import './schema/resource.js'
+import './schema/videoSource.js'
 import './schema/sharing.js'
 import './schema/template.js'
 import './schema/user.js'

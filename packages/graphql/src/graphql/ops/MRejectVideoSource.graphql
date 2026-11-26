@@ -1,0 +1,5 @@
+mutation RejectVideoSource($sourceId: ID!, $reason: String!) {
+  rejectVideoSource(sourceId: $sourceId, reason: $reason) {
+    ...KBVideoSourceData
+  }
+}

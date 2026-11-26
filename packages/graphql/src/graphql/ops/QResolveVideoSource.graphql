@@ -1,0 +1,44 @@
+query ResolveVideoSource(
+  $sourceUrl: String!
+  $directoryUrl: String!
+  $period: String
+) {
+  resolveVideoSource(
+    sourceUrl: $sourceUrl
+    directoryUrl: $directoryUrl
+    period: $period
+  ) {
+    sourceKind
+    externalRef
+    fixedCollectionId
+    periodLabel
+    periodStart
+    periodEnd
+    directory {
+      canonicalUrl
+      title
+      shortName
+      recipients {
+        name
+        email
+        roles
+      }
+      withoutEmail
+      warnings
+    }
+    directoryError
+    collections {
+      id
+      name
+      fullName
+      createdAt
+      entriesCount
+      recordingsInPeriod
+      latestRecordingName
+      latestRecordingAt
+      sampleRecordingNames
+      recommended
+    }
+    collectionsError
+  }
+}

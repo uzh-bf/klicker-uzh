@@ -1,15 +1,19 @@
+import { useQuery } from '@apollo/client'
+import { VideoSourceSubmissionEnabledDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import KnowledgeBaseFileDropzone from './KnowledgeBaseFileDropzone'
 import KnowledgeBaseUrlForm from './KnowledgeBaseUrlForm'
+import KnowledgeBaseVideoSourceForm from './KnowledgeBaseVideoSourceForm'
 
-type AddResourceMode = 'chooser' | 'website' | 'document'
+type AddResourceMode = 'chooser' | 'website' | 'document' | 'video'
 
 const FOCUS_SELECTORS: Record<AddResourceMode, string> = {
   chooser: '[data-cy="choose-kb-resource-website"]',
   website: '[data-cy="kb-url-title"]',
   document: '[data-cy="kb-file-dropzone"]',
+  video: '[data-cy="kb-video-name"]',
 }
 
 function KnowledgeBaseAddResourceModal({
@@ -18,6 +22,7 @@ function KnowledgeBaseAddResourceModal({
   triggerRef,
   onClose,
   onResourceCreated,
+  onVideoSourceSubmitted,
 }: {
   kbId: string
   // Names the knowledge base in the title where the page does not show it.
@@ -25,8 +30,11 @@ function KnowledgeBaseAddResourceModal({
   triggerRef: React.RefObject<HTMLElement | null>
   onClose: () => void
   onResourceCreated: () => Promise<unknown>
+  onVideoSourceSubmitted?: () => Promise<unknown>
 }) {
   const t = useTranslations()
+  const { data: videoData } = useQuery(VideoSourceSubmissionEnabledDocument)
+  const videoEnabled = videoData?.videoSourceSubmissionEnabled === true
   const [mode, setMode] = useState<AddResourceMode>('chooser')
   const [uploadingDocument, setUploadingDocument] = useState(false)
 
@@ -104,9 +112,18 @@ function KnowledgeBaseAddResourceModal({
       : t('kb.addResourceTitle'),
     website: t('kb.addWebsite'),
     document: t('kb.addDocument'),
+    video: t('kb.addVideo'),
   }
   const resourceForm =
-    mode === 'website' ? (
+    mode === 'video' ? (
+      <KnowledgeBaseVideoSourceForm
+        kbId={kbId}
+        onSubmitted={async () => {
+          await onVideoSourceSubmitted?.()
+          closeModal()
+        }}
+      />
+    ) : mode === 'website' ? (
       <KnowledgeBaseUrlForm
         kbId={kbId}
         embedded
@@ -181,8 +198,9 @@ function KnowledgeBaseAddResourceModal({
             </Button.Label>
           </Button>
           <Button
-            disabled
-            aria-disabled="true"
+            disabled={!videoEnabled}
+            aria-disabled={!videoEnabled}
+            onClick={() => setMode('video')}
             data={{ cy: 'choose-kb-resource-video' }}
             className={{
               root: 'h-auto min-h-24 w-full justify-start px-4 py-3 text-left',
@@ -191,7 +209,9 @@ function KnowledgeBaseAddResourceModal({
             <Button.Label>
               <span className="block font-semibold">{t('kb.addVideo')}</span>
               <span className="mt-1 block text-xs font-normal text-slate-600">
-                {t('kb.comingSoon')}
+                {videoEnabled
+                  ? t('kb.addVideoDescription')
+                  : t('kb.comingSoon')}
               </span>
             </Button.Label>
           </Button>

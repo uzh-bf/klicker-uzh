@@ -1,0 +1,234 @@
+// #region Lecture video sources and their approval
+//
+// A video source binds one Kaltura category to a knowledge base. Links and
+// course directories are interpreted by an institution's course-sources
+// provider (packages/graphql/src/services/courseSources.CONTRACT.md).
+// Nothing is fetched from Kaltura for a source until a listed lecturer has
+// approved it through their emailed link and a Klicker admin has given final
+// approval. See
+// docs/solutions/integration/video-source-approval.md.
+
+// How a course publishes its edited recordings in the channel.
+enum KBVideoCutMode {
+  CLIP // clips (sourceType 35) of the capture; raw captures wait for their cut
+  EDITED // capture entries trimmed and renamed in place; requires namePattern
+  AS_RECORDED // capture entries published uncut, accepted after a settle delay
+}
+
+enum KBVideoSourceStatus {
+  SUBMITTED // added by a KB owner; an admin has not verified the links yet
+  REJECTED // an admin found the links do not belong together
+  VERIFIED // an admin confirmed the category; no approval requested yet
+  PENDING_APPROVAL // a request is open, no recipient has approved yet
+  AWAITING_ADMIN // a recipient approved, admin final approval outstanding
+  APPROVED // discovery runs until validUntil
+  PAUSED // validity ended (period over); needs a new request
+  REVOKED // a recipient or admin revoked; needs a new request
+}
+
+enum KBVideoApprovalRequestStatus {
+  OPEN // links can grant until grantExpiresAt
+  APPROVED // a recipient approved, admin final approval outstanding
+  ACTIVE // admin approved; valid until validUntil
+  SUPERSEDED // replaced by a newer request before it became active
+  REVOKED // revoked by a recipient or an admin
+}
+
+enum KBVideoApprovalDecisionKind {
+  APPROVE
+  REVOKE
+  ADMIN_APPROVE
+  ADMIN_REVOKE
+}
+
+enum KBVideoApprovalRecipientOrigin {
+  DIRECTORY
+  ADMIN_ADDED
+}
+
+model KBVideoSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  // Shown to approvers, e.g. "Finance I lecture recordings".
+  name              String
+  // Provider-defined link kind and the id the link names (empty for manual).
+  sourceKind        String
+  externalRef       String?
+  // The recordings link the admin entered.
+  sourceUrl         String
+  // Course directory link; recipients are snapshotted per period on request.
+  directoryUrl      String
+  // Set when the provider says the link itself names the category.
+  fixedCollectionId String?
+
+  // Set by the admin who verifies that the links belong together. The
+  // category is what the gateway filters on and what approval binds to.
+  // Changing it after approval requires a new request.
+  kalturaCategoryId     String?
+  categoryConfirmedAt   DateTime?
+  categoryConfirmedById String?   @db.Uuid
+
+  cutMode         KBVideoCutMode?
+  // Required for EDITED: only entries whose name matches are course videos.
+  namePattern     String?
+  // The language whose READY caption gates processing, e.g. "de".
+  captionLanguage String?
+
+  rejectedAt      DateTime?
+  rejectedById    String?   @db.Uuid
+  rejectionReason String?
+
+  status          KBVideoSourceStatus @default(SUBMITTED)
+  // Copied from the active request so the gateway check is one row read.
+  activeRequestId String?             @unique @db.Uuid
+  validUntil      DateTime?
+
+  // Discovery bookkeeping (owned by the discovery worker).
+  lastPolledAt      DateTime?
+  lastSeenUpdatedAt DateTime?
+
+  // The KB owner who submitted the source.
+  createdById String @db.Uuid
+
+  requests KBVideoApprovalRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId])
+  @@index([status])
+}
+
+model KBVideoApprovalRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  source   KBVideoSource @relation(fields: [sourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sourceId String        @db.Uuid
+
+  // Bound at request time; the approval never extends past this period.
+  periodLabel       String // e.g. HS26
+  periodEnd         DateTime // exclusive; validUntil on admin approval
+  // Kaltura category at request time; approval covers exactly this id.
+  kalturaCategoryId String
+
+  // Who asked. Name and email are copied so the email, the landing page and
+  // the audit trail keep showing the requester even if the account changes.
+  requestedById    String @db.Uuid
+  requestedByName  String
+  requestedByEmail String
+
+  // Shown in emails and on the approval page.
+  courseTitle           String
+  courseShortName       String
+  directoryCanonicalUrl String
+
+  // Provider directory snapshot as sent (or the admin's manual entry).
+  directorySnapshot       Json
+  directorySnapshotSha256 String
+
+  consentVersion    String
+  consentTextSha256 String
+
+  status         KBVideoApprovalRequestStatus @default(OPEN)
+  // Links can approve until here; they can revoke for as long as the request exists.
+  grantExpiresAt DateTime
+  // Period end; set on admin approval.
+  validUntil     DateTime?
+
+  approvedAt            DateTime?
+  approvedByRecipientId String?   @db.Uuid
+  adminApprovedAt       DateTime?
+  adminApprovedById     String?   @db.Uuid
+  supersededAt          DateTime?
+  revokedAt             DateTime?
+
+  recipients KBVideoApprovalRecipient[]
+  decisions  KBVideoApprovalDecision[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sourceId, status])
+}
+
+model KBVideoApprovalRecipient {
+  id String @id @default(uuid()) @db.Uuid
+
+  request   KBVideoApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  requestId String                 @db.Uuid
+
+  name   String
+  email  String
+  // Provider roles, e.g. RESPONSIBLE, LECTURER.
+  roles  String[]
+  origin KBVideoApprovalRecipientOrigin @default(DIRECTORY)
+
+  // SHA-256 of the emailed link token; the token itself is never stored.
+  tokenSha256 String @unique
+
+  sentAt        DateTime?
+  firstOpenedAt DateTime?
+
+  decisions KBVideoApprovalDecision[]
+
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+}
+
+// Append-only record of every approval decision.
+model KBVideoApprovalDecision {
+  id String @id @default(uuid()) @db.Uuid
+
+  request   KBVideoApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  requestId String                 @db.Uuid
+
+  // Set for decisions taken through a recipient's link.
+  recipient   KBVideoApprovalRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  recipientId String?                   @db.Uuid
+
+  kind KBVideoApprovalDecisionKind
+
+  userId          String  @db.Uuid
+  userEmail       String
+  // edu-ID subject of the signed-in account, if it has one.
+  eduIdSubject    String?
+  // Whether the signed-in account's email equals the recipient's email.
+  identityMatched Boolean
+
+  consentVersion    String?
+  consentTextSha256 String?
+  reason            String?
+
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+}
+
+// Append-only, hash-chained audit log for the video pipeline. Each row's hash
+// covers its content and the previous row's hash, so a removed or edited row
+// breaks the chain. Rows are appended under an advisory lock.
+model KBVideoAuditEvent {
+  seq Int @id @default(autoincrement())
+
+  sourceId  String? @db.Uuid
+  requestId String? @db.Uuid
+
+  type        String
+  actorUserId String? @db.Uuid
+  actorEmail  String?
+  payload     Json
+
+  prevHash String?
+  hash     String  @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([sourceId, seq])
+  @@index([requestId])
+}
+
+// #endregion

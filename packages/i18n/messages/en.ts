@@ -2160,6 +2160,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     addDocument: 'Document',
     addDocumentDescription: 'Upload a PDF, TXT or Markdown file.',
     addVideo: 'Video',
+    addVideoDescription:
+      'Lecture recordings from an OLAT course node or a MediaSpace channel.',
+    videoDescription:
+      'Paste the link to the recordings (OLAT course node or MediaSpace channel) and the link to the course in the course directory.',
+    videoNameLabel: 'Name',
+    videoNamePlaceholder: 'e.g. Lecture recordings',
+    videoSourceUrlLabel: 'Recordings link',
+    videoDirectoryUrlLabel: 'Course directory link',
+    videoNextSteps:
+      'An administrator checks that the recordings belong to this course. Then the lecturers listed in the course directory receive an email asking for their approval. Recordings are processed only after one of them approved.',
+    videoSubmit: 'Submit for review',
+    videoSubmitted: 'Submitted. An administrator will check the links.',
+    videoSubmitError: 'The links could not be submitted.',
+    videoSourcesTitle: 'Lecture recordings',
+    videoStatusSUBMITTED: 'Waiting for an administrator to check the links',
+    videoStatusREJECTED: 'Not accepted: {reason}',
+    videoStatusVERIFIED: 'Links checked, approval request not sent yet',
+    videoStatusPENDING_APPROVAL:
+      'Waiting for approval by the lecturers ({count, plural, one {# person} other {# people}} asked)',
+    videoStatusAWAITING_ADMIN:
+      'Approved by a lecturer, waiting for final approval by an administrator',
+    videoStatusAPPROVED: 'Approved until {date}',
+    videoStatusPAUSED: 'Approval period ended; a new request is needed',
+    videoStatusREVOKED: 'Approval revoked',
     comingSoon: 'Coming soon',
     configure: 'Configure',
     backToResourceTypes: 'Back',
@@ -2390,6 +2414,54 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Adding new content to knowledge bases is temporarily disabled.',
   },
   manage: {
+    videoApproval: {
+      pageTitle: 'Lecture recordings for the course chatbot',
+      requestedBy:
+        '{name} ({email}) asked you on {date} to approve the use of these lecture recordings.',
+      sentTo: 'Sent to {name} ({email})',
+      course: 'Course',
+      period: 'Period',
+      responsible: 'Module responsible',
+      chatbots: 'Chatbot',
+      source: 'Recordings',
+      channel: 'Kaltura channel',
+      cutMode: 'Which recordings',
+      cutModeCLIP: 'Edited clips published in the channel',
+      cutModeEDITED: 'Edited recordings published in the channel',
+      cutModeAS_RECORDED: 'Recordings as published in the channel',
+      recordingsScope:
+        'All matching recordings of {period} are processed, including earlier ones. Add the MediaSpace tag ai-skip to a recording to exclude it.',
+      directoryLink: 'Course directory',
+      consentTitle: 'What you agree to',
+      consentCheck: 'I have read this and agree.',
+      approve: 'Approve',
+      decline: 'Decline',
+      revoke: 'Revoke approval',
+      revokeConfirmTitle: 'Revoke and remove?',
+      revokeConfirmText:
+        'KlickerUZH stops processing these recordings and removes everything it created from them. This cannot be undone; a new approval needs a new request.',
+      revokeReason: 'Reason (optional)',
+      revokeConfirm: 'Revoke and remove',
+      cancel: 'Cancel',
+      identityMismatch:
+        'This link was sent to {recipient}, and you are signed in as {signedIn}. You can still decide; a KlickerUZH administrator reviews the mismatch.',
+      eduIdRequired:
+        'Please sign out and sign in again with your edu-ID to decide on this request.',
+      stateAWAITING_APPROVAL: 'This link can approve until {date}.',
+      stateGRANT_EXPIRED:
+        'This link could approve until {date}. Ask {requester} for a new request if you want to approve. You can still decline here.',
+      stateSUPERSEDED:
+        'A newer request replaced this one. Please use the link from the most recent email.',
+      stateAWAITING_ADMIN:
+        'Approved by {name} on {date}. A KlickerUZH administrator completes the check before processing starts.',
+      stateACTIVE:
+        'Approved by {name}. Recordings are processed until {date}. You can revoke the approval here at any time.',
+      stateENDED:
+        'The approval for {period} has ended. Material created from its recordings stays in the chatbot until you revoke it here.',
+      stateREVOKED: 'This approval was revoked. Nothing is processed any more.',
+      invalidLink:
+        'This link is not valid. Please use the link from the email exactly as it was sent.',
+    },
     assistant: {
       open: 'Assistant',
       title: 'KlickerUZH Assistant',
@@ -2475,6 +2547,61 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      videoSources: 'Lecture video sources',
+      videoSourceDescription:
+        'Lecture video sources submitted by knowledge base owners. Check that the recordings link belongs to the course in the course directory, confirm the Kaltura category and send the approval emails, or reject the submission with a reason.',
+      videoSourceManualMode:
+        'No course-sources provider is configured. Enter the course, the period, the recipients and the Kaltura category id yourself.',
+      videoSourceKb: 'Knowledge base',
+      videoSourceUrl: 'Recordings link',
+      videoSourceDirectoryUrl: 'Course directory link',
+      videoSourcePeriod: 'Period (optional with a provider, e.g. HS26)',
+      videoSourceResolve: 'Look up',
+      videoSourceDirectory: 'Course directory, {period}',
+      videoSourceRecipients: 'Approval emails will go to:',
+      videoSourceWithoutEmail:
+        'No email address in the course directory for: {names}',
+      videoSourceCourseTitle: 'Course title',
+      videoSourceCourseShortName: 'Course short name (optional)',
+      videoSourcePeriodEnd: 'Last day of the period',
+      videoSourceRecipientLines: 'Recipients, one per line: Name <email>',
+      videoSourceCategories: 'Kaltura category',
+      videoSourceLinkKind:
+        'Link type {kind}, reference {ref}. Check that the proposed category belongs to this period.',
+      videoSourceRecommended: 'proposed',
+      videoSourceCandidateStats:
+        'Created {created} · {entries} entries · {inPeriod} recordings in this period',
+      videoSourceLatest: 'Latest recording: {name} ({date})',
+      videoSourceCategoryId: 'Confirmed Kaltura category id',
+      videoSourceConfirmHint:
+        'Creating the source records you as the admin who confirmed this category.',
+      videoSourceCutMode: 'Cut mode',
+      videoSourceNamePattern:
+        'Name pattern of edited recordings (regular expression)',
+      videoSourceCaptionLanguage: 'Caption language',
+      videoSourceShowAll: 'Show all sources, not only open ones',
+      videoSourceQueueEmpty: 'Nothing to review.',
+      videoSourceSubmitted: 'Submitted',
+      videoSourceStatusSUBMITTED: 'Submitted, not verified',
+      videoSourceStatusREJECTED: 'Rejected',
+      videoSourceStatusVERIFIED: 'Verified, approval request not sent',
+      videoSourceStatusPENDING_APPROVAL: 'Waiting for a lecturer',
+      videoSourceStatusAWAITING_ADMIN:
+        'Approved by a lecturer, final approval due',
+      videoSourceStatusAPPROVED: 'Approved',
+      videoSourceStatusPAUSED: 'Period ended',
+      videoSourceStatusREVOKED: 'Revoked',
+      videoSourceAwaitingFinal:
+        'A lecturer approved {course} for {period}. Give the final approval to start processing.',
+      videoSourceIdentityMismatch:
+        'Approved while signed in as {email}, which is not the address the request was sent to.',
+      videoSourceFinalApprove: 'Give final approval',
+      videoSourceVerify: 'Verify and send approval emails',
+      videoSourceRejectReason:
+        'Reason for rejecting (shown to the knowledge base owner)',
+      videoSourceReject: 'Reject submission',
+      videoSourceSent:
+        'Source created. Approval emails sent to {count} recipients for {period}.',
       chatbotRejectionReason: 'Reason for rejection',
       chatbotRejectConsequence:
         'The owner will see this reason and can revise the chatbot before requesting approval again.',

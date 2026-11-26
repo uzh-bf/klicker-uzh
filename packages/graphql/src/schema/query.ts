@@ -28,6 +28,7 @@ import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import * as VideoSourceApprovalService from '../services/videoSourceApproval.js'
 import {
   ActivityDetails,
   CourseActivityList,
@@ -167,6 +168,12 @@ import {
   UserLogin,
   UserLoginScope,
 } from './user.js'
+import {
+  KBVideoSourceRef,
+  KBVideoSourceStatus,
+  VideoApprovalLink,
+  VideoSourceResolutionRef,
+} from './videoSource.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -1628,6 +1635,66 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbImportedSourcesConnection(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getVideoSourcesForReview: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: [KBVideoSourceRef],
+        args: {
+          statuses: t.arg({ type: [KBVideoSourceStatus], required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.getVideoSourcesForReview(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getKbVideoSources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: [KBVideoSourceRef],
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.getKbVideoSources(args, ctx)
+        },
+      }),
+
+      videoSourceSubmissionEnabled: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        resolve: (_, __, ctx) =>
+          VideoSourceApprovalService.videoSourceSubmissionEnabled(ctx),
+      }),
+
+      resolveVideoSource: t.withAuth(asAdmin).field({
+        nullable: false,
+        type: VideoSourceResolutionRef,
+        args: {
+          sourceUrl: t.arg.string({ required: true }),
+          directoryUrl: t.arg.string({ required: true }),
+          period: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.resolveVideoSource(args, ctx)
+        },
+      }),
+
+      videoSourceProviderConfigured: t.withAuth(asAdmin).boolean({
+        nullable: false,
+        resolve: () =>
+          VideoSourceApprovalService.videoSourceProviderConfigured(),
+      }),
+
+      getVideoApprovalLink: t.withAuth(asUser).field({
+        nullable: false,
+        type: VideoApprovalLink,
+        args: { token: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await VideoSourceApprovalService.getVideoApprovalLink(
             args,
             ctx
           )

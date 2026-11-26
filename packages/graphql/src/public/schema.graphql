@@ -2688,6 +2688,102 @@ enum KBSourceOrigin {
   MANAGED
 }
 
+type KBVideoApprovalDecision {
+  createdAt: Date!
+  eduIdSignedIn: Boolean!
+  id: ID!
+  identityMatched: Boolean!
+  kind: KBVideoApprovalDecisionKind!
+  reason: String
+  recipientId: ID
+  userEmail: String!
+}
+
+enum KBVideoApprovalDecisionKind {
+  ADMIN_APPROVE
+  ADMIN_REVOKE
+  APPROVE
+  REVOKE
+}
+
+type KBVideoApprovalRecipient {
+  email: String!
+  firstOpenedAt: Date
+  id: ID!
+  name: String!
+  roles: [String!]!
+  sentAt: Date
+}
+
+type KBVideoApprovalRequest {
+  adminApprovedAt: Date
+  approvedAt: Date
+  consentVersion: String!
+  courseTitle: String!
+  createdAt: Date!
+  decisions: [KBVideoApprovalDecision!]!
+  directorySnapshotSha256: String!
+  grantExpiresAt: Date!
+  id: ID!
+  kalturaCategoryId: String!
+  periodEnd: Date!
+  periodLabel: String!
+  recipients: [KBVideoApprovalRecipient!]!
+  requestedByEmail: String!
+  requestedByName: String!
+  revokedAt: Date
+  status: KBVideoApprovalRequestStatus!
+  validUntil: Date
+}
+
+enum KBVideoApprovalRequestStatus {
+  ACTIVE
+  APPROVED
+  OPEN
+  REVOKED
+  SUPERSEDED
+}
+
+enum KBVideoCutMode {
+  AS_RECORDED
+  CLIP
+  EDITED
+}
+
+type KBVideoSource {
+  captionLanguage: String
+  createdAt: Date!
+  cutMode: KBVideoCutMode
+  directoryUrl: String!
+  externalRef: String
+  fixedCollectionId: String
+  id: ID!
+  kalturaCategoryId: String
+  kbId: ID!
+  kbName: String
+  kbOwnerEmail: String
+  name: String!
+  namePattern: String
+  rejectedAt: Date
+  rejectionReason: String
+  requests: [KBVideoApprovalRequest!]!
+  sourceKind: String!
+  sourceUrl: String!
+  status: KBVideoSourceStatus!
+  validUntil: Date
+}
+
+enum KBVideoSourceStatus {
+  APPROVED
+  AWAITING_ADMIN
+  PAUSED
+  PENDING_APPROVAL
+  REJECTED
+  REVOKED
+  SUBMITTED
+  VERIFIED
+}
+
 type KnowledgeGraphEdge {
   id: ID!
   label: String!
@@ -2899,11 +2995,14 @@ type Mutation {
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: ObjectType!): CatalogObject
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
+  adminApproveVideoSourceRequest(requestId: ID!): KBVideoSource!
+  adminRevokeVideoSource(reason: String!, sourceId: ID!): KBVideoSource!
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
   approveChatbotRevision(expectedRevisionVersion: Int!, id: String!): Chatbot
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   approveResponseExample(id: String!): ResponseExampleSet
+  approveVideoSourceByLink(consentVersion: String!, token: String!): VideoApprovalLink!
   attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
@@ -3038,6 +3137,7 @@ type Mutation {
   rebuildKbKnowledgeGraphWithDomain(focusTopic: String, kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   rejectChatbotRevision(comment: String!, expectedRevisionVersion: Int!, id: String!): Chatbot
   rejectResponseExample(id: String!): ResponseExampleSet
+  rejectVideoSource(reason: String!, sourceId: ID!): KBVideoSource!
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -3048,6 +3148,7 @@ type Mutation {
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
   requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
+  requestVideoSourceApproval(additionalRecipients: [VideoApprovalRecipientInput!], excludedEmails: [String!], manual: VideoApprovalManualDirectoryInput, period: String, reason: String, sourceId: ID!): VideoApprovalRequestResult!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
@@ -3057,6 +3158,7 @@ type Mutation {
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  revokeVideoSourceByLink(reason: String, token: String!): VideoApprovalLink!
   saveChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, input: ChatbotRevisionSaveInput!): Chatbot
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
@@ -3078,6 +3180,7 @@ type Mutation {
   startLiveQuiz(id: String!): LiveQuizMeta
   submitChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!, expectedStudentCount: Int!, useCase: String!): Chatbot
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
+  submitVideoSource(directoryUrl: String!, kbId: ID!, name: String!, sourceUrl: String!): KBVideoSource!
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
@@ -3099,6 +3202,7 @@ type Mutation {
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  verifyVideoSource(additionalRecipients: [VideoApprovalRecipientInput!], captionLanguage: String!, cutMode: KBVideoCutMode!, excludedEmails: [String!], kalturaCategoryId: String!, manual: VideoApprovalManualDirectoryInput, namePattern: String, period: String, reason: String, sourceId: ID!): VideoApprovalRequestResult!
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
   withdrawChatbotRevision(chatbotId: String!, expectedRevisionVersion: Int!): Chatbot
 }
@@ -3646,6 +3750,7 @@ type Query {
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!
   getKbResources(after: String, first: Int, kbId: ID!, materialType: KBResourceMaterialType, search: String, status: KBIngestionStatus, type: KBResourceType): KBResourceConnection!
+  getKbVideoSources(kbId: ID!): [KBVideoSource!]!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -3675,6 +3780,8 @@ type Query {
   getUserKbsConnection(after: String, first: Int, search: String): KBConnection!
   getUsersAiFeatures: [UserInfo!]
   getUsersPrivatePreview: [UserInfo!]
+  getVideoApprovalLink(token: String!): VideoApprovalLink!
+  getVideoSourcesForReview(statuses: [KBVideoSourceStatus!]): [KBVideoSource!]!
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
@@ -3692,6 +3799,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  resolveVideoSource(directoryUrl: String!, period: String, sourceUrl: String!): VideoSourceResolution!
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfAccountDataUse: ParticipantAccountDataUse
@@ -3712,6 +3820,8 @@ type Query {
   userScope: UserLoginScope
   userTags: [Tag!]
   validateAvailableLiveQuiz(courseId: String!, quizId: String!): Boolean
+  videoSourceProviderConfigured: Boolean!
+  videoSourceSubmissionEnabled: Boolean!
 }
 
 type QuestionFeedback {
@@ -4298,6 +4408,118 @@ enum UserRole {
   PARTICIPANT
   TEMPORARY_PARTICIPANT
   USER
+}
+
+type VideoApprovalLink {
+  canApprove: Boolean!
+  canRevoke: Boolean!
+  chatbotNames: [String!]!
+  consentText: String!
+  consentVersion: String!
+  courseShortName: String!
+  courseTitle: String!
+  cutMode: KBVideoCutMode
+  decidedAt: Date
+  decidedByName: String
+  directoryUrl: String!
+  eduIdRequired: Boolean!
+  eduIdSignedIn: Boolean!
+  grantExpiresAt: Date!
+  identityMatched: Boolean!
+  kalturaCategoryId: String!
+  periodLabel: String!
+  recipientEmail: String!
+  recipientName: String!
+  requestId: ID!
+  requestedAt: Date!
+  requestedByEmail: String!
+  requestedByName: String!
+  responsibleNames: [String!]!
+  signedInEmail: String!
+  sourceName: String!
+  sourceUrl: String!
+  state: VideoApprovalLinkState!
+  validUntil: Date
+}
+
+enum VideoApprovalLinkState {
+  ACTIVE
+  AWAITING_ADMIN
+  AWAITING_APPROVAL
+  ENDED
+  GRANT_EXPIRED
+  REVOKED
+  SUPERSEDED
+}
+
+input VideoApprovalManualDirectoryInput {
+  courseShortName: String
+  courseTitle: String!
+  periodEnd: Date!
+  periodLabel: String!
+}
+
+input VideoApprovalRecipientInput {
+  email: String!
+  name: String!
+}
+
+type VideoApprovalRequestRecipient {
+  email: String!
+  name: String!
+  roles: [String!]!
+  sent: Boolean!
+}
+
+type VideoApprovalRequestResult {
+  contactsWithoutEmail: [String!]!
+  grantExpiresAt: Date!
+  periodEnd: Date!
+  periodLabel: String!
+  recipients: [VideoApprovalRequestRecipient!]!
+  requestId: ID!
+  warnings: [String!]!
+}
+
+type VideoSourceCollectionCandidate {
+  createdAt: Date!
+  entriesCount: Int!
+  fullName: String!
+  id: String!
+  latestRecordingAt: Date
+  latestRecordingName: String
+  name: String!
+  recommended: Boolean!
+  recordingsInPeriod: Int!
+  sampleRecordingNames: [String!]!
+}
+
+type VideoSourceDirectoryPreview {
+  canonicalUrl: String!
+  recipients: [VideoSourceDirectoryRecipient!]!
+  shortName: String!
+  title: String!
+  warnings: [String!]!
+  withoutEmail: [String!]!
+}
+
+type VideoSourceDirectoryRecipient {
+  email: String!
+  name: String!
+  roles: [String!]!
+}
+
+type VideoSourceResolution {
+  collections: [VideoSourceCollectionCandidate!]!
+  collectionsError: String
+  directory: VideoSourceDirectoryPreview
+  directoryError: String
+  externalRef: String
+  fixedCollectionId: String
+  periodEnd: Date!
+  periodLabel: String!
+  periodStart: Date!
+  sourceKind: String!
 }
 
 type WeekdayActivityAnalytics {

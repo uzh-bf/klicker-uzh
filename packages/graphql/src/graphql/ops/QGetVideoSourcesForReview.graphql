@@ -1,0 +1,7 @@
+query GetVideoSourcesForReview($statuses: [KBVideoSourceStatus!]) {
+  getVideoSourcesForReview(statuses: $statuses) {
+    ...KBVideoSourceData
+    kbName
+    kbOwnerEmail
+  }
+}

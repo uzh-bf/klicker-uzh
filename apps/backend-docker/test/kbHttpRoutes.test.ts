@@ -1,12 +1,13 @@
-import {
-  handleKBIngestionWebhook,
-  handleKBSourceGateway,
-} from '@klicker-uzh/graphql'
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import type { AddressInfo } from 'node:net'
 import { Readable } from 'node:stream'
 import test from 'node:test'
+import type {
+  handleKBIngestionWebhook,
+  handleKBSourceGateway,
+  handleVideoSourceScope,
+} from '@klicker-uzh/graphql'
 import express from 'express'
 import { registerKBHttpRoutes } from '../src/kbHttpRoutes.js'
 
@@ -171,5 +172,34 @@ test('returns a generic error when webhook handling throws', async () => {
     assert.deepEqual(await response.json(), {
       error: 'Internal server error',
     })
+  })
+})
+
+test('passes the scope check body and bearer to the handler', async () => {
+  let seen: { body: unknown; authorization?: string } | undefined
+  const videoSourceScope = (async ({ body, authorization }) => {
+    seen = { body, authorization }
+    return { statusCode: 200, body: { source: null } }
+  }) as typeof handleVideoSourceScope
+
+  await withRoutes(
+    { ...routeDependencies(), videoSourceScope },
+    async (origin) => {
+      const response = await fetch(`${origin}/api/video-sources/scope`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer fake-scope-credential',
+        },
+        body: JSON.stringify({ sourceId: RESOURCE_ID }),
+      })
+      assert.equal(response.status, 200)
+      assert.equal(response.headers.get('cache-control'), 'no-store')
+      assert.deepEqual(await response.json(), { source: null })
+    }
+  )
+  assert.deepEqual(seen, {
+    body: { sourceId: RESOURCE_ID },
+    authorization: 'Bearer fake-scope-credential',
   })
 })

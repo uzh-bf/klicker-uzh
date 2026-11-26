@@ -1,0 +1,5 @@
+mutation ApproveVideoSourceByLink($token: String!, $consentVersion: String!) {
+  approveVideoSourceByLink(token: $token, consentVersion: $consentVersion) {
+    ...VideoApprovalLinkData
+  }
+}
