@@ -15,6 +15,8 @@ The course chatbot is an AI assistant that you can offer to the students of a sp
 
 A chatbot offers one or several **learning modes** (for example a tutor mode that guides students with questions, or an explainer mode that answers directly), and it can be connected to a [knowledge base](/tutorials/knowledge_bases/) with your course materials. Usage is limited through a **credit** budget per student, so a chatbot cannot consume an unlimited amount of resources.
 
+You set up the chatbot yourself, test it in a private preview and then request its publication. The KlickerUZH team reviews every publication request before students can use the chatbot.
+
 :::warning
 AI-generated answers can be wrong or incomplete. Please inform your students that they should verify important information against the official course materials. The chat interface itself also displays a corresponding hint.
 :::
@@ -31,50 +33,175 @@ You create and configure chatbots yourself in the lecturer interface. You need:
 
 If one of these is missing, the **Chatbots** page explains what is needed instead of the setup.
 
-Publication to students is reviewed by the KlickerUZH team. You can prepare and test a chatbot on your own at any time, but students only see it after the publication request has been approved.
+## How do I create a chatbot?
 
-## How do I set up a chatbot?
+![Chatbots page with the list of your chatbots and the button to create a new one](/img/chatbot/chatbot_list.png)
 
-Open **Resources** → **Chatbots** and choose **Create chatbot**. Give the chatbot a name and select the course it belongs to. The course cannot be changed later. The chatbot is created as a draft that students cannot see, and the setup page opens.
+Open **Chatbots** in the main navigation of the lecturer interface. The page lists all your chatbots with their status, the linked course and the connected materials. Choose **Create chatbot** to start a new one:
 
-The setup page shows all settings as sections on one page. Each section shows its status (for example _Suggested_, _Saved_ or _Needs attention_), and you save each section separately.
+1. **Name:** The name is shown to students in the chat interface, so choose a name that students recognize, for example the name of the course.
+2. **Course:** Select the course the chatbot belongs to. Only courses that you own can be selected, and the course cannot be changed later.
+3. **Description (optional):** A short description helps you to tell your chatbots apart.
 
-1. **Materials:** Choose the [knowledge base](/tutorials/knowledge_bases/) the chatbot answers from, or create a new one and add files directly from the setup page. The section shows whether the materials are still processing or ready. A chatbot can also run without materials, but then it answers from the AI model alone and cannot cite sources.
-2. **Student information:** The text students read and accept before their first message. A suggestion is prepared for you; the preview shows the complete text including the fixed platform sections on student responsibility and data protection.
+![Dialog to create a new chatbot with name, course and description](/img/chatbot/chatbot_create.png)
 
-The following sections are optional. The defaults work for most courses:
+Choose **Create draft and continue** to create the chatbot. It starts as a **draft** that students cannot see, and its setup page opens. If you have already prepared your materials, you can also start from the knowledge base: **Create chatbot using this knowledge base** creates a draft that is connected to these materials right away.
 
-3. **Learning modes and framing:** Choose which standard modes students can use:
+## How is the setup page organized?
 
-   - **Tutor:** guides students with questions, hints and feedback instead of giving the answer right away.
-   - **Explainer:** explains course concepts directly with definitions and grounded examples.
-   - **Quizzer:** practises exam-style questions from the course materials one at a time, with formative feedback. Requires connected materials.
-   - **Writing Coach:** gives specific feedback on student texts and revision strategies; students write every revision themselves.
+![Setup page of a draft chatbot with the collapsed setup sections and their status](/img/chatbot/chatbot_setup.png)
 
-   The **chatbot framing** describes your course, audience, prior knowledge and learning priorities, and guides the answers in all standard modes. You can also add **custom modes** with their own name, description and persona text, for example for role-plays.
+The setup page shows the whole chatbot configuration as sections on one page. Each section shows a one-line summary of its current settings and a status, so you can see at a glance what is still missing:
 
-4. **Model:** Which AI model students use, and whether they may choose between several models and reasoning levels. By default, students use the cost-efficient standard model and cannot switch.
-5. **Usage limits:** The credit budget per student (see [How do credits work?](#how-do-credits-work)).
-6. **Knowledge graph** (advanced): Whether students see a concept map of the course materials and whether it is used to improve search in the materials.
+- **Suggested** or **Default:** KlickerUZH has prepared a value for you. You can keep it as it is.
+- **Saved:** Your settings are stored.
+- **Unsaved changes:** You have edited the section but not yet saved it. Save each section with its **Save** button or use **Discard changes**. KlickerUZH warns you if you try to leave the page with unsaved changes.
+- **Incomplete** or **Needs attention:** Required information is missing, or something needs your attention before you can request publication.
 
-Use **Preview** to open the chatbot as a student would see it and test it with your own questions before anything is published.
+The first two sections, **Materials** and **Student information**, are the ones every chatbot needs. All other sections are optional, and their defaults work for most courses. Use **Edit details** next to the chatbot name to change its name and description.
 
-## How do I publish a chatbot?
+**Simple and advanced settings:** With the switch in the upper right corner, you can choose between **Simple settings** and **Advanced settings**. The simple view only shows the sections most lecturers need. The advanced view additionally shows the **Model** and **Knowledge graph** sections, more details on the knowledge base pages and technical details such as the chatbot ID. KlickerUZH remembers your choice in your browser.
 
-When the required sections are saved, complete **Request publication** at the end of the setup page. Describe the intended use case and the expected number of students, then submit the request. The KlickerUZH team reviews it and either publishes the chatbot or returns it with a comment. A returned request can be updated and submitted again.
+## How do I connect my course materials?
 
-Once the chatbot is published, students of the linked course can use it.
+![Materials section with a connected knowledge base and the processing status of its resources](/img/chatbot/chatbot_materials.png)
+
+In the **Materials** section, choose the [knowledge base](/tutorials/knowledge_bases/) the chatbot answers from. The knowledge base is connected as soon as you select it. The section then shows how many of its resources are ready or still processing, which files were added recently, and when the materials were last changed.
+
+- **Add files:** Opens the knowledge base so you can add further materials. A banner reminds you which chatbot you are preparing the materials for, and **Back to chatbot setup** brings you back.
+- **Replace or disconnect:** A chatbot uses one knowledge base at a time. Connecting another knowledge base replaces the current one, and **Disconnect** removes the connection.
+- **No knowledge base:** A chatbot can also run without materials. It then answers from the general knowledge of the AI model and cannot cite sources.
+
+A knowledge base is a reusable collection of materials, so you can connect the same knowledge base to several chatbots, for example to the chatbots of two courses that share their slides.
+
+:::info
+For a published chatbot, changes to its materials take effect for students **immediately**: connecting, replacing or disconnecting a knowledge base, and adding files to it, are not part of the review.
+:::
+
+## What do students read before they start?
+
+![Student information section with the title and introduction that students read before their first message](/img/chatbot/chatbot_student_information.png)
+
+Before their first message, students have to accept a short text, the **student information**. In this section, you write its **title** and an **introduction** that explains what the chatbot is meant for, what it can and cannot help with, and how students should use it. A neutral suggestion is prepared for you when the chatbot is created; you can save it as it is or adapt it to your course.
+
+Use **Preview** in the section header to see the complete text as students see it. Below your introduction, KlickerUZH always adds two fixed sections on **student responsibility** (chatbot answers are not exam-relevant on their own, and important information has to be verified against the course materials) and **data protection** (no personal data in prompts, processing via Azure OpenAI in the EU or Switzerland, and anonymised review to improve the offering).
+
+![Preview of the complete student information including the fixed platform sections](/img/chatbot/chatbot_student_preview.png)
+
+## Which learning modes can I offer?
+
+![Learning modes and framing section with the four standard modes and the chatbot framing](/img/chatbot/chatbot_modes.png)
+
+In the section **Learning modes and framing**, you choose which modes students can switch between in the chat. Four standard modes are available:
+
+1. **Tutor:** Guides students with questions, hints and feedback instead of giving the answer right away. On by default.
+2. **Explainer:** Explains course concepts directly with definitions and grounded examples. On by default.
+3. **Quizzer:** Practises exam-style questions one at a time and gives formative feedback on each attempt. With a knowledge base, the questions are based on your course materials. Without one, students can practise a course topic they name or a passage they paste. On by default.
+4. **Writing Coach:** Gives specific feedback on student texts and suggests revision strategies; students write every revision themselves. Off by default.
+
+The **chatbot framing** describes your course to the chatbot: the audience, their prior knowledge, typical tasks and your learning priorities. It guides the answers in all standard modes. Two context examples (scientific writing and less formal writing) show you what a helpful framing looks like and can be used as a starting point.
+
+You can turn off all standard modes and offer only [custom modes](#how-do-i-add-a-custom-mode), or offer Quizzer as the only mode. Before you request publication, at least one standard or custom mode has to be enabled. If students can use only one mode, the mode switcher is hidden in the chat.
+
+## How do I add a custom mode?
+
+![Custom mode for a role-play with its persona, welcome message and starter prompts](/img/chatbot/chatbot_custom_mode.png)
+
+Custom modes let you offer a mode that the standard modes do not cover, for example a role-play in which students interview a client, or a mode that only works on a specific case study. You can add up to five custom modes in the section **Learning modes and framing**. Each custom mode has the following settings:
+
+1. **Mode name and short description:** Shown to students in the mode switcher. Each custom mode needs a unique name.
+2. **Persona and instructions:** Describes how the mode should respond to students, for example the role it plays, the facts it knows and the rules it follows (up to 10,000 characters).
+3. **Welcome message (optional):** Shown in an empty chat in this mode. Leave it empty to use the standard greeting.
+4. **Starter prompts (optional):** Up to four suggestions that are shown in an empty chat. Students decide themselves whether to send them.
+5. **Reply language:** By default, replies follow the language the student writes in. For role-plays that must stay in one language, you can fix the reply language to English or German.
+6. **Show model reasoning to students:** Off by default. The reasoning summary of the model can paraphrase the persona and instructions, for example the hidden facts of a role-play, so only turn it on if this is not a problem. The owner preview always shows the reasoning.
+7. **Meeting clock:** Off by default. For timed role-plays, the chatbot can be told how many minutes have passed since the student's first message (and optionally the time of day). Describe the length and phases of the meeting in the persona.
+
+Custom modes are part of the chatbot configuration and are reviewed together with the rest of it before students can use them.
+
+## How do I choose the AI model?
+
+![Model section in the advanced settings with the model choice and the answer options for students](/img/chatbot/chatbot_model.png)
+
+The **Model** section is only shown in the **advanced settings**. By default, students use the cost-efficient standard model and cannot switch, which is sufficient for most courses.
+
+1. **Let students choose the model:** If this is off, select the model the chatbot always uses. If it is on, select the models students can choose between (at least one). In both cases, a small fallback model remains available when a student's credits run out.
+2. **Reasoning effort:** For models that support reasoning, define which effort levels students may select. A higher effort can improve answers to difficult questions, but takes longer and consumes more credits.
+3. **Let students choose answer format and tone:** If this is on (default), students can ask for answers as bullet points and in a friendly or direct tone. If it is off, all students get the same answer format and tone.
+4. **Interactive explanations:** Off by default. If this is on, the chatbot may show interactive step-by-step explanations in Tutor and Explainer mode (see [What do students see?](#what-do-students-see)). These explanations are generated by AI and are not reviewed before students see them.
+
+Some models are advanced models that require an advanced AI subscription with a cost center. If your account does not have one, these models cannot be selected.
+
+:::info
+Interactive explanations are being rolled out gradually. If the setting is not shown in the **Model** section, it has not been activated for your account yet.
+:::
+
+## How do I limit usage?
+
+![Usage limits section with the starting budget, top-up period, top-up amount and maximum balance](/img/chatbot/chatbot_usage_limits.png)
+
+Every student has an individual credit balance per chatbot. Credits are counted in US dollars of model cost: each answer is charged to the student's budget at the cost of the model that produced it. The cost of a turn therefore depends on the selected model and on the length of the conversation, so it is not one credit per message.
+
+In the section **Usage limits**, you define:
+
+1. **Starting budget per student:** The amount a student receives on first use.
+2. **Top-up period:** Whether the budget is topped up daily, weekly, every two weeks, monthly, or not at all.
+3. **Top-up amount:** The amount added at each top-up.
+4. **Maximum balance per student:** Top-ups never raise the balance above this value.
+
+The default is USD 3 per student, topped up daily to at most USD 3, which is sufficient for regular use with the standard models. When a student's balance reaches zero, the chatbot keeps working, but falls back to a smaller model. Students see their remaining balance and the date of the next top-up in the sidebar of the chat.
+
+## How do I show the concept map to students?
+
+![Knowledge graph section in the advanced settings with the concept map and graph search switches](/img/chatbot/chatbot_knowledge_graph.png)
+
+From the materials in a knowledge base, KlickerUZH can build a **knowledge graph** of the course concepts and their relationships (see [knowledge bases](/tutorials/knowledge_bases/#how-do-i-build-a-knowledge-graph)). The section **Knowledge graph** in the advanced settings controls how a chatbot uses the published graph of its knowledge base:
+
+- **Show the concept map to students:** Students can open an interactive map of the course concepts next to the chat, explore it and ask questions about a concept or a relationship directly from the map.
+- **Use graph connections for document search:** When searching the course materials, the chatbot may use related concepts from the graph as additional search hints. Answers still cite passages of your documents only.
+
+Both options are off by default, and both only have an effect once a graph has been built and published for the connected knowledge base.
+
+## How do I test my chatbot?
+
+![Owner preview of a chatbot with a test conversation](/img/chatbot/chatbot_owner_preview.png)
+
+Use **Open owner preview** at the top of the setup page to try your chatbot in a new browser tab, exactly in the chat interface your students will use. The preview is available while the chatbot is still a draft, so you can test it before you request publication.
+
+- **Test conversations:** Conversations in the preview are only for you and are not added to your saved conversations. Use **New test conversation** to start over.
+- **Saved settings:** The preview starts from your saved learning modes, including custom modes, so save a section before you test it. Model and reasoning choices that you change inside the preview only apply to the current test conversation.
+- **Limits:** In the preview, the chatbot can search your materials, but image attachments and other tools are not available.
+
+## How do I publish my chatbot?
+
+![Request publication card at the end of the setup page with the use case and the expected number of students](/img/chatbot/chatbot_publication_request.png)
+
+When the required sections are saved, complete **Request publication** at the end of the setup page:
+
+1. **Use case:** Describe how you intend to use the chatbot in your course.
+2. **Expected student count:** Estimate how many students will use the chatbot.
+
+If something is still missing, the card lists what needs to be done first, for example a section with unsaved changes; select an entry to jump to the corresponding section. Then submit the request. The chatbot's status changes to **Pending approval**, and its settings are locked while the KlickerUZH team reviews the request. The team either publishes the chatbot or returns it with a review comment and the label **Changes requested**. You can then adapt the setup and choose **Resubmit for approval**.
+
+Once the chatbot is **Published**, students of the linked course can use it.
 
 ## How do I change a published chatbot?
 
-The published configuration stays live for students while you prepare changes:
+![Published chatbot with its usage summary and the link to open it in the course](/img/chatbot/chatbot_published.png)
 
-- **Materials** apply immediately. Connecting, replacing or disconnecting a knowledge base, and adding files to it, takes effect for students without review.
-- **All other sections** are saved as a new revision and apply after review. Submit them with **Submit changes for review**. While a revision is under review, its fields are locked; you can withdraw it to continue editing.
+The published configuration stays live for students while you prepare and review changes:
+
+- **Materials** apply immediately (see [How do I connect my course materials?](#how-do-i-connect-my-course-materials)).
+- **All other sections** are marked **Applies after review**. When you save them, they are stored as a new revision and listed as "not yet submitted". Choose **Submit changes for review** to send the revision to the KlickerUZH team.
+- **While a revision is under review**, its fields are locked. You can **withdraw** the revision to continue editing it. If a revision is rejected, its review comment is shown, and you can update and resubmit it.
+
+For a published chatbot, the page also shows a **usage summary** for your course: conversations, messages, the number of students, the budget left across students, the last activity and last top-up, and how many students have accepted or declined the student information. Use **Open the chatbot in …** to open the chatbot as students see it in the linked course.
+
+If the KlickerUZH team pauses a chatbot, students cannot use it, and its settings cannot be changed until it is active again.
 
 ## How do students access the chatbot?
 
-Each chatbot has an **access link** for its course, which you can open from the chatbot page under "Resources" and copy from your browser. Opening the link enrols a logged-in student in the corresponding course and redirects them into the chat application, so a single link is enough to get students started. Students of the course also find the chatbot through the **AI tutor** button in the KlickerUZH student app (see [course AI tutor](/tutorials/course_ai_tutor/)).
+Each published chatbot has an **access link** for its course, which you can open from the chatbot page with **Open the chatbot in …** and copy from your browser. Opening the link enrols a logged-in student in the corresponding course and redirects them into the chat application, so a single link is enough to get students started. Students of the course also find the chatbot through the **AI tutor** button in the KlickerUZH student app (see [course AI tutor](/tutorials/course_ai_tutor/)).
 
 You can use the link in two ways:
 
@@ -93,25 +220,22 @@ The student view is described in detail in the [student documentation on the cou
 - **Switch between learning modes**, if your chatbot offers more than one. A changed mode applies to the next message a student sends.
 - **Edit an earlier message**, which creates a new answer variant that students can page through.
 - **Attach images** to a question (up to three per message) if the selected model supports them.
+- **Choose an answer format and tone**, if you allow it in the **Model** section.
+- **Open the concept map** next to the chat, if you show it in the **Knowledge graph** section.
+- **Work through interactive explanations** next to the chat, if you enable them in the **Model** section.
 - **Rate answers** as helpful or not helpful, and change or retract that rating later.
 
+The concept map and interactive explanations open in a panel beside the conversation, which students can widen, switch to fullscreen or close again. On small screens, the panel replaces the conversation until it is closed.
+
 Only the current rating of an answer is stored, without free text. There is currently no rating dashboard or export for lecturers; the stored ratings allow the KlickerUZH team to review answer quality over time.
-
-## How do credits work?
-
-Every student has an individual credit balance per chatbot. Credits are counted in US dollars of model cost. The cost of a turn depends on the selected model and on the length of the conversation, so it is not one credit per message.
-
-In **Usage limits**, you set the starting budget, whether and how often the budget is topped up, and the maximum balance. The default is USD 3 per student, topped up daily to at most USD 3, which is sufficient for regular use with the standard models.
-
-Students see their remaining balance in the sidebar of the chat interface, together with the date of the next refill. When the balance reaches zero, the chatbot keeps working, but falls back to a smaller model. The chatbot page shows the usage of your course (conversations, messages, students and credits used).
 
 ## Can the chatbot cite course materials?
 
 If your chatbot is connected to a [knowledge base](/tutorials/knowledge_bases/), its answers can cite the materials it used. Numbered markers such as `[1]` in the answer refer to source cards displayed underneath it, which point to the corresponding file and page or to a link. Without a knowledge base, the chatbot answers based on the AI model alone and no sources are shown.
 
-## What about data protection and the disclaimer?
+## What about data protection and the student information?
 
-Before students can send their first message, they have to accept the **student information** (disclaimer). If a student declines, the chatbot remains blocked for them; the decision can be changed later when the student opens the chatbot directly. The chatbot page shows how many students have accepted and how many have declined.
+Before students can send their first message, they have to accept the **student information**. If a student declines, the chatbot remains blocked for them; the decision can be changed later when the student opens the chatbot directly. The usage summary of a published chatbot shows how many students have accepted and how many have declined.
 
 Conversations are processed by an AI model provider and may be reviewed in anonymised form to improve the offering. Please encourage your students not to share personal data in their prompts. The binding privacy statement is provided separately and is not part of this documentation.
 
