@@ -2389,6 +2389,11 @@ export async function POST(
       history: modelMessages as ModelMessage[],
     })
 
+    // Each feedback attempt is a step; three attempts plus retrieval and the
+    // closing text need more than the usual five. An explanation call is one
+    // step, because its writer repairs drafts inside the tool.
+    const maxSteps = explanationToolActive || feedbackToolActive ? 7 : 5
+
     const startStream = () => {
       providerStreamStarted = true
       return streamText({
@@ -2451,6 +2456,11 @@ export async function POST(
           responseMessages,
         }) => {
           const prepared = {
+            // The last allowed step must write the answer. Without this, a turn
+            // that spends every step on tool calls ends with no text at all.
+            ...(stepNumber === maxSteps - 1
+              ? { toolChoice: 'none' as const }
+              : {}),
             // Standard platform modes retrieve first, so the answer is grounded
             // before it is written. Custom modes keep the retrieval tool offered
             // but choose for themselves, so attaching a knowledge base never
@@ -2495,12 +2505,7 @@ export async function POST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        // Each feedback attempt is a step; three attempts plus retrieval and
-        // the closing text need more than the usual five. An explanation call
-        // is one step, because its writer repairs drafts inside the tool.
-        stopWhen: isStepCount(
-          explanationToolActive || feedbackToolActive ? 7 : 5
-        ),
+        stopWhen: isStepCount(maxSteps),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
         experimental_transform: providerRefusalTransform(
