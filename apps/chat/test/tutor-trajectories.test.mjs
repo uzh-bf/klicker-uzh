@@ -11,21 +11,21 @@ import {
   MAX_SUBMITTED_TURNS,
   readBudgetLedger,
   reserveProviderSpend,
-} from '../../../evaluation/evaluation-budget.mjs'
-import { requestReservation } from '../../../evaluation/evaluation-spend-guard.mjs'
-import {
-  parseArguments,
-  runTutorTrajectories,
-} from '../../../evaluation/run-tutor-trajectories.mjs'
-import {
-  calculateTutorReference,
-  compareTutorNumericClaim,
-  validateNumericSidecar,
-} from '../../../evaluation/tutor-numeric-reference.mjs'
+} from '../scripts/evaluation-budget.mjs'
+import { requestReservation } from '../scripts/evaluation-spend-guard.mjs'
 import {
   DEFAULT_CHATBOT_ID,
   KlickerEvaluationTarget,
 } from '../scripts/klicker-evaluation-target.mjs'
+import {
+  parseArguments,
+  runTutorTrajectories,
+} from '../scripts/run-tutor-trajectories.mjs'
+import {
+  calculateTutorReference,
+  compareTutorNumericClaim,
+  validateNumericSidecar,
+} from '../scripts/tutor-numeric-reference.mjs'
 import {
   buildSourceReceipt,
   EXPECTED_DOC_QUERY_TOOL,
@@ -146,10 +146,7 @@ test('numerical references reject unsupported or ambiguous inputs', () => {
 })
 
 test('numerical sidecar obligations must reference corpus assessment turns', async () => {
-  const dataDirectory = new URL(
-    '../../../evaluation/data/trajectories/',
-    import.meta.url
-  )
+  const dataDirectory = new URL('../evaluation/trajectories/', import.meta.url)
   const corpus = validateTrajectoryCorpus(
     JSON.parse(
       await readFile(new URL('tutor-attribution-v2.json', dataDirectory))

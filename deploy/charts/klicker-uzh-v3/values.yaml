@@ -318,6 +318,11 @@ chat:
     enabled: false
     serviceUrl: ''
 
+  # Structured feedback cards (the show_feedback tool) in Tutor, Quizzer and
+  # Writing Coach.
+  feedback:
+    enabled: false
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always

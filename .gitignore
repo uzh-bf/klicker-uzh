@@ -105,12 +105,6 @@ packages/prisma-data/src/data/summerschool_*
 # backlog/ClickUp dumps, triage records, product strategy/vision briefs)
 project/_local/
 
-# Evaluation scope metadata is supplied privately on each developer machine.
-evaluation/config.local.json
-
-# Routing-eval run outputs can hold answer text and traffic aggregates.
-evaluation/routing/_local/
-
 # Local agent-tool state (session plans, tool permissions) — machine-specific
 .commandcode/
 .zcode/

@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.101](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.100...v3.4.0-alpha.101) (2026-11-25)
+
+
+### Features
+
+* **chat:** show explanations and the knowledge graph in one docked workspace panel ([#7006](https://github.com/uzh-bf/klicker-uzh/issues/7006)) ([0945bca](https://github.com/uzh-bf/klicker-uzh/commit/0945bca6e448f43f6009b2ef06835a8d6de0b008))
+
+
+### Bug Fixes
+
+* **chat:** keep the reader's place when an explanation opens in a new frame ([#7014](https://github.com/uzh-bf/klicker-uzh/issues/7014)) ([75cb00f](https://github.com/uzh-bf/klicker-uzh/commit/75cb00fdfe61080e0694673aa7e5ec77ce8cfa67))
+* **ci:** match the sync controller trigger by workflow path ([#6962](https://github.com/uzh-bf/klicker-uzh/issues/6962)) ([75df954](https://github.com/uzh-bf/klicker-uzh/commit/75df954687ea57a32353873fb485c998efaacc92))
+* **ci:** promote staging runs after re-runs and stop the course pin flake ([#7005](https://github.com/uzh-bf/klicker-uzh/issues/7005)) ([4a75f71](https://github.com/uzh-bf/klicker-uzh/commit/4a75f71bc45e12f84ce19b3a23b46b7cb8541487))
+* **ci:** run required check suites for pull requests into any branch ([#7019](https://github.com/uzh-bf/klicker-uzh/issues/7019)) ([a01d779](https://github.com/uzh-bf/klicker-uzh/commit/a01d7798df4dbb9f53613df505645a7e1799aaaa))
+* **control:** keep translations when a page arrives without messages ([#6848](https://github.com/uzh-bf/klicker-uzh/issues/6848)) ([2012f2d](https://github.com/uzh-bf/klicker-uzh/commit/2012f2da574962317f94c9e2993ab54b1fcd9620))
+* **deploy:** align the staging explainer URL ([#6978](https://github.com/uzh-bf/klicker-uzh/issues/6978)) ([0554f67](https://github.com/uzh-bf/klicker-uzh/commit/0554f67c28682f5de991c1811101a2be6186930b))
+
+
+### Deployment
+
+* **prd:** offer interactive explanations in the chat ([#6988](https://github.com/uzh-bf/klicker-uzh/issues/6988)) ([bb5e668](https://github.com/uzh-bf/klicker-uzh/commit/bb5e668dffd9bacd69446561124f94d9ad64f60e))
+* **prd:** promote alpha.100 for chat only ([#7003](https://github.com/uzh-bf/klicker-uzh/issues/7003)) ([1c266f7](https://github.com/uzh-bf/klicker-uzh/commit/1c266f7cf30365c84bdd2e382c1a3d3c514d9477))
+* **prd:** promote alpha.97 application images ([#6956](https://github.com/uzh-bf/klicker-uzh/issues/6956)) ([0e15aaf](https://github.com/uzh-bf/klicker-uzh/commit/0e15aafc407568c4e9faf7d68e0d1010750068f0))
+* **prd:** promote alpha.98 for chat only ([#6986](https://github.com/uzh-bf/klicker-uzh/issues/6986)) ([f55554d](https://github.com/uzh-bf/klicker-uzh/commit/f55554da32f15d0e59d36e58660df716add9e902))
+* **prd:** promote alpha.99 for chat only ([#6994](https://github.com/uzh-bf/klicker-uzh/issues/6994)) ([b709b91](https://github.com/uzh-bf/klicker-uzh/commit/b709b91b70fd602ddd3fea7275e26a468c77cb0b))
+
+
+### Refactors
+
+* **eval:** move evaluation to klicker-uzh-catalyst ([#6845](https://github.com/uzh-bf/klicker-uzh/issues/6845)) ([ff9c37b](https://github.com/uzh-bf/klicker-uzh/commit/ff9c37b362f57d6ca4c054b177811b7e3581ad0a))
+
+
+### Enhancements
+
+* **chat:** add Sol and Astra 6.2 and Auto v5 ([#6947](https://github.com/uzh-bf/klicker-uzh/issues/6947)) ([bb84a1c](https://github.com/uzh-bf/klicker-uzh/commit/bb84a1cbb3e2f27a2827c9ca0e031220849c2023))
+* **chat:** allow custom-only chatbots and Quizzer without a knowledge base ([#7022](https://github.com/uzh-bf/klicker-uzh/issues/7022)) ([4774f53](https://github.com/uzh-bf/klicker-uzh/commit/4774f533e353e0ced92c7a63237ba244f5d8fdf4))
+* **manage:** add Chatbots to the main navigation ([#7007](https://github.com/uzh-bf/klicker-uzh/issues/7007)) ([6b7337f](https://github.com/uzh-bf/klicker-uzh/commit/6b7337f41db954c65467fe8c9705a521a71fd51d))
+
+
+### Build and CI
+
+* repin the check executor to the sync merge and regenerate the envelopes ([1ebdcb7](https://github.com/uzh-bf/klicker-uzh/commit/1ebdcb7b1f361647325c6ca9913fb6ed30c7f873))
+
 ## [3.4.0-alpha.100](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.99...v3.4.0-alpha.100) (2026-11-23)
 
 

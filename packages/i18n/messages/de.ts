@@ -5443,8 +5443,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryModesNone: 'Kein Lernmodus ist aktiv.',
       chatbotSummaryModesExtras:
         '{framing, select, set {Es gibt eine Rahmung} other {Es gibt keine Rahmung}} und {custom, plural, =0 {keine eigenen Modi} one {einen eigenen Modus} other {# eigene Modi}}.',
-      chatbotSummaryModesQuizzerNeedsKb:
-        'Quizzer braucht eine Wissensdatenbank, deshalb sehen Studierende ihn noch nicht.',
       chatbotSummaryModelFixed: 'Studierende nutzen {model}.',
       chatbotSummaryModelFixedReasoning:
         'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
@@ -5541,7 +5539,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Der Quizzer benötigt Zugriff auf Kursmaterialien.',
+        'Wählen Sie die Lernmodi für die Teilnehmenden aus. Sie können auch ausschliesslich eigene Modi anbieten.',
       chatbotModeWritingCoach: 'Schreibcoach',
       chatbotModeWritingCoachDescription:
         'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
@@ -5555,9 +5553,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeQuizzerDescription:
         'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
       chatbotModeInvariant:
-        'Tutor, Erklärer oder Schreibcoach muss aktiviert bleiben.',
+        'Aktivieren Sie vor der Veröffentlichung mindestens einen Standardmodus oder fügen Sie einen eigenen Modus hinzu.',
       chatbotModeQuizzerCapabilityNote:
-        'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
+        'Mit einer Wissensdatenbank übt der Quizzer anhand der Kursmaterialien. Ohne Wissensdatenbank können Studierende ein Kursthema oder einen Text zum Üben angeben.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
       chatbotCustomModesTitle: 'Eigene Modi',
