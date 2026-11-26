@@ -12,6 +12,16 @@ import type * as DB from '@klicker-uzh/prisma/client'
  */
 export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = '2026-09-08'
 
+/**
+ * The notice revision a participant answers when choosing Tutor
+ * personalization. It is separate from the account disclosure version: the
+ * choice is optional, is offered inside a chatbot, and never blocks account or
+ * chat use. A text change that alters what the participant agrees to requires
+ * a new identifier, and a recorded yes then counts only for the version it was
+ * given under.
+ */
+export const TUTOR_PERSONALIZATION_DISCLOSURE_VERSION = '2026-11-26-results'
+
 export const participantAccountDataUseSelect = {
   dataUseAcknowledgedAt: true,
   dataUseAcknowledgedVersion: true,

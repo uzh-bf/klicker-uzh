@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { isParticipantDataUseComplete } from '@klicker-uzh/util'
+import {
+  isParticipantDataUseComplete,
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import {
@@ -19,6 +22,9 @@ const accountDataUseSelect = {
   dataUseAcknowledgedAt: true,
   dataUseAcknowledgedVersion: true,
   dataUseRevision: true,
+  tutorPersonalizationConsent: true,
+  tutorPersonalizationChoiceAt: true,
+  tutorPersonalizationDisclosureVersion: true,
 } satisfies DB.Prisma.ParticipantSelect
 
 export type ParticipantAccountDataUseFields = DB.Prisma.ParticipantGetPayload<{
@@ -156,17 +162,46 @@ export async function updateParticipantDataUseChoice(
   return saveParticipantDataUse({ kind: purpose, ...parsed.data }, ctx)
 }
 
+const personalizationInput = z
+  .object({
+    expectedRevision: z.number().int().nonnegative(),
+    disclosureVersion: z.literal(TUTOR_PERSONALIZATION_DISCLOSURE_VERSION),
+    consent: z.boolean(),
+  })
+  .strict()
+
+/**
+ * Record the optional Tutor personalization choice. It is answered under its
+ * own notice version, needs a completed account notice first, and is not part
+ * of that completion: an unanswered choice never blocks account or chat use.
+ */
+export async function updateParticipantTutorPersonalizationChoice(
+  input: unknown,
+  ctx: ParticipantDataUseContext
+) {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    throw dataUseError('PARTICIPANT_DATA_USE_FORBIDDEN')
+  }
+  const parsed = personalizationInput.safeParse(input)
+  if (!parsed.success) throw dataUseError('PARTICIPANT_DATA_USE_INVALID_INPUT')
+  return saveParticipantDataUse(
+    { kind: 'personalization', ...parsed.data },
+    ctx
+  )
+}
+
 async function saveParticipantDataUse(
   input:
     | ({ kind: 'completion' } & z.infer<typeof completionInput>)
-    | ({ kind: 'research' | 'analytics' } & z.infer<typeof choiceInput>),
+    | ({ kind: 'research' | 'analytics' } & z.infer<typeof choiceInput>)
+    | ({ kind: 'personalization' } & z.infer<typeof personalizationInput>),
   ctx: ParticipantDataUseContext
 ) {
   return ctx.prisma
     .$transaction(
       async (prisma) => {
         await prisma.$executeRaw`SET LOCAL lock_timeout = '5s'`
-        if (input.kind !== 'research')
+        if (input.kind === 'completion' || input.kind === 'analytics')
           await prisma.$executeRaw`
       SELECT pg_advisory_xact_lock(
         ${LEARNING_ANALYTICS_ADVISORY_LOCK.classId},
@@ -188,6 +223,52 @@ async function saveParticipantDataUse(
           !isParticipantDataUseComplete(participant)
         ) {
           throw dataUseError('PARTICIPANT_DATA_USE_COMPLETION_REQUIRED')
+        }
+        if (input.kind === 'personalization') {
+          if (participant.dataUseRevision !== input.expectedRevision) {
+            throw dataUseError('PARTICIPANT_DATA_USE_STALE_REVISION')
+          }
+          if (
+            participant.tutorPersonalizationConsent === input.consent &&
+            participant.tutorPersonalizationDisclosureVersion ===
+              input.disclosureVersion
+          )
+            return participant
+
+          const clock = await prisma.$queryRaw<Array<{ now: Date }>>`
+      SELECT clock_timestamp() AS "now"
+    `
+          const now = clock[0]?.now
+          if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+            throw dataUseError('PARTICIPANT_DATA_USE_CLOCK_FAILURE')
+          }
+          const updated = await prisma.participant.update({
+            where: { id: participant.id },
+            select: accountDataUseSelect,
+            data: {
+              dataUseRevision: { increment: 1 },
+              tutorPersonalizationConsent: input.consent,
+              tutorPersonalizationChoiceAt: now,
+              tutorPersonalizationDisclosureVersion: input.disclosureVersion,
+            },
+          })
+          // The account acknowledgement is unchanged, so the event repeats the
+          // account disclosure version the completion check just confirmed.
+          await prisma.participantDataUseEvent.create({
+            data: {
+              participantId: participant.id,
+              revision: updated.dataUseRevision,
+              disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+              researchConsent: updated.researchConsent,
+              learningAnalyticsConsent: updated.learningAnalyticsConsent,
+              acknowledged: true,
+              tutorPersonalizationConsent: updated.tutorPersonalizationConsent,
+              tutorPersonalizationDisclosureVersion:
+                updated.tutorPersonalizationDisclosureVersion,
+              createdAt: now,
+            },
+          })
+          return updated
         }
         const request =
           input.kind === 'completion'
@@ -268,6 +349,9 @@ async function saveParticipantDataUse(
             researchConsent: updated.researchConsent,
             learningAnalyticsConsent: updated.learningAnalyticsConsent,
             acknowledged: true,
+            tutorPersonalizationConsent: updated.tutorPersonalizationConsent,
+            tutorPersonalizationDisclosureVersion:
+              updated.tutorPersonalizationDisclosureVersion,
             createdAt: now,
           },
         })

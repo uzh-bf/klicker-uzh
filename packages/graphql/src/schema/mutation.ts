@@ -22,6 +22,7 @@ import * as NotificationService from '../services/notifications.js'
 import {
   completeParticipantDataUse,
   updateParticipantDataUseChoice,
+  updateParticipantTutorPersonalizationChoice,
 } from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
@@ -584,6 +585,17 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await updateParticipantDataUseChoice('analytics', args, ctx)
         },
+      }),
+
+      setTutorPersonalizationConsent: t.withAuth(asParticipant).field({
+        type: ParticipantAccountDataUse,
+        args: {
+          consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+        },
+        resolve: (_, args, ctx) =>
+          updateParticipantTutorPersonalizationChoice(args, ctx),
       }),
 
       leaveParticipantGroup: t.withAuth(asParticipant).field({
