@@ -22,7 +22,10 @@ import {
   assessmentLifecycleDraft,
   emitCoveredAssessmentAuditEvents,
 } from './assessmentAuditProducers.js'
-import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
+import {
+  activateNewAssessmentAuditIfSelected,
+  lifecycleState,
+} from './assessmentAuditRollout.js'
 import { type CourseCreationArgs, createCourse } from './courses.js'
 import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
@@ -454,8 +457,20 @@ async function normalizeStaleCourseDuplicationJob(
 
   if (committedCourse) {
     // The attempts may have stopped after the copy committed but before its
-    // assessment audit work finished. Leave the job stale on failure so a
-    // later sweep tries again instead of completing it without evidence.
+    // assessment audit work finished. Status polling and the sweep can reach
+    // this concurrently, so the work runs under the worker's process lock; a
+    // caller that cannot take it leaves the job for a later pass. Failure
+    // also leaves the job stale instead of completing it without evidence.
+    const processLockKey = getCourseDuplicationProcessLockKey(job.id)
+    const processLockValue = randomUUID()
+    const processLockAcquired = await redis.set(
+      processLockKey,
+      processLockValue,
+      'EX',
+      COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS,
+      'NX'
+    )
+    if (processLockAcquired !== 'OK') return job
     try {
       await completeCopiedAssessmentAudit(prisma, job.assessmentCopies ?? [])
     } catch (error) {
@@ -467,6 +482,12 @@ async function normalizeStaleCourseDuplicationJob(
         'Copied assessment audit could not be completed for a stale job'
       )
       return job
+    } finally {
+      await releaseCourseDuplicationLockValue(
+        redis,
+        processLockKey,
+        processLockValue
+      )
     }
     log?.warn(
       {
@@ -1875,6 +1896,12 @@ async function completeCopiedAssessmentAudit(
     await runInAuditTransaction(client, async (tx, auditTx) => {
       const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
       if (copied === null) return
+      // A retry can run after the copy was scheduled or published, so record
+      // the state it is in now rather than assuming it is still a draft.
+      const copiedState = await tx.liveQuiz.findUniqueOrThrow({
+        where: { id: copiedLiveQuizId },
+        select: { status: true, isDeleted: true, startedAt: true },
+      })
       const operation = assessmentAuditSystemOperation({
         occurredAt: copiedAt,
       })
@@ -1889,7 +1916,7 @@ async function completeCopiedAssessmentAudit(
             eventType: 'ASSESSMENT_COPIED',
             producerOperationId: `${operation.correlationId}:copied`,
             fromState: null,
-            toState: 'DRAFT',
+            toState: lifecycleState(copiedState),
             reasonCode: 'COURSE_DUPLICATION',
             sourceLiveQuizId,
           }),
