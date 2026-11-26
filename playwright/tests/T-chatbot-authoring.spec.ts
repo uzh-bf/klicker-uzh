@@ -1473,12 +1473,17 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Begin the synthetic debate',
       'Explain the exercise',
     ]
+    let releaseModeSave!: () => void
+    const pendingModeSave = new Promise<void>((resolve) => {
+      releaseModeSave = resolve
+    })
     let customModeConfigVariables: Record<string, unknown> | undefined
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
       if (request.postDataJSON()?.operationName === 'MSaveChatbotRevision') {
         customModeConfigVariables =
           request.postDataJSON()?.variables?.input?.customModeConfig
+        if (customModeConfigVariables) await pendingModeSave
       }
       await route.continue()
     })
@@ -1524,6 +1529,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(page.getByTestId('chatbot-section-modes-save')).toBeEnabled()
     await page.getByTestId('chatbot-section-modes-save').click()
+    try {
+      await expect.poll(() => customModeConfigVariables).toBeDefined()
+      await expect(
+        page.getByTestId('chatbot-custom-mode-name-0')
+      ).toBeDisabled()
+    } finally {
+      releaseModeSave()
+    }
     await expect
       .poll(() => customModeConfigVariables)
       .toMatchObject({

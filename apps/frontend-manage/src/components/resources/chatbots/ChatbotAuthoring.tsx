@@ -553,6 +553,7 @@ function SetupStepFooter({
 function CustomModesEditor({
   chatbot,
   disabled,
+  savingStandardModes,
   initialValues,
   formRef,
   hideFooter = false,
@@ -562,6 +563,7 @@ function CustomModesEditor({
 }: {
   chatbot: RevisionChatbot
   disabled: boolean
+  savingStandardModes: boolean
   initialValues: CustomModeFormValues
   // Lets the standard modes save include these modes in the same revision.
   formRef?: ChatbotFormRef
@@ -651,7 +653,7 @@ function CustomModesEditor({
             values,
             setFieldValue,
           }) => {
-            const controlsDisabled = disabled || isSubmitting
+            const controlsDisabled = savingStandardModes || isSubmitting
             const formError =
               saveError ??
               (typeof errors.modes === 'string' ? errors.modes : null)
@@ -1908,11 +1910,9 @@ function ChatbotAuthoring({
                 <CustomModesEditor
                   chatbot={chatbot}
                   disabled={
-                    !modeEditable ||
-                    revisionPending ||
-                    publicationPending ||
-                    (embedded && modeNavigationState.pending)
+                    !modeEditable || revisionPending || publicationPending
                   }
+                  savingStandardModes={embedded && modeNavigationState.pending}
                   initialValues={customModeConfig}
                   formRef={customModesFormRef}
                   hideFooter={embedded}
