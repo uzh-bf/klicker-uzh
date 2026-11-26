@@ -1,0 +1,41 @@
+name: Test activity artifact publisher
+on:
+  pull_request:
+    paths:
+      - 'apps/artifact-pilot/**'
+      - '.github/workflows/test-activity-artifacts.yml'
+  push:
+    branches: [v3-ai]
+    paths:
+      - 'apps/artifact-pilot/**'
+      - '.github/workflows/test-activity-artifacts.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  publisher:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 12
+    services:
+      database:
+        image: postgres:17.7-alpine
+        env:
+          POSTGRES_DB: artifact_pilot_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd pg_isready --health-interval 2s
+          --health-timeout 2s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production renderer and PostgreSQL client
+        run: docker build --file apps/artifact-pilot/Dockerfile --tag artifact-under-test .
+      - name: Check prices, access, immutable pins and concurrent admission
+        env:
+          DATABASE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          docker run --rm --network "container:$DATABASE_CONTAINER" \
+            --env ARTIFACT_TEST_DATABASE_URL=postgres://postgres@127.0.0.1/artifact_pilot_test \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/exercise.test.mjs,target=/workspace/apps/artifact-pilot/exercise.test.mjs,readonly" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/repository.test.mjs,target=/workspace/apps/artifact-pilot/repository.test.mjs,readonly" \
+            artifact-under-test node --test exercise.test.mjs repository.test.mjs

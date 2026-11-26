@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/artifact-pilot",
+  "version": "0.1.0",
+  "dependencies": {
+    "pg": "8.16.3"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test exercise.test.mjs",
+    "test:postgres": "node --test repository.test.mjs"
+  },
+  "type": "module"
+}

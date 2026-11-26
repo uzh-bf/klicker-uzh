@@ -272,6 +272,12 @@ importers:
         specifier: ~3.1.14
         version: 3.1.14
 
+  apps/artifact-pilot:
+    dependencies:
+      pg:
+        specifier: 8.16.3
+        version: 8.16.3
+
   apps/auth:
     dependencies:
       '@auth/prisma-adapter':

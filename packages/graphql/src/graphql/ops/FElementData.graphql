@@ -161,6 +161,7 @@ fragment ElementData on ElementInstance {
       explanation
       basePoints
       pointsMultiplier
+      hasActivityArtifact
     }
   }
 }

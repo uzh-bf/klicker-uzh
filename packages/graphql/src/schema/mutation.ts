@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import { z } from 'zod'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
+import * as ActivityArtifactService from '../services/activityArtifacts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
@@ -34,6 +35,7 @@ import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
+import { ContentArtifactInput } from './activityArtifact.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
@@ -1166,6 +1168,12 @@ export const Mutation = builder.mutationType({
           basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
+          // Only an explicit attach or upgrade sends the reviewed revision.
+          // Ordinary edits omit it and keep the stored pin unchanged.
+          activityArtifact: t.arg({
+            type: ContentArtifactInput,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           // if element is edited, >= WRITE permissions on element required
@@ -1184,8 +1192,19 @@ export const Mutation = builder.mutationType({
             }
           }
 
+          const { activityArtifact, ...elementArgs } = args
+          const options = activityArtifact
+            ? {
+                activityArtifact:
+                  await ActivityArtifactService.resolveContentArtifactPin(
+                    activityArtifact,
+                    ctx
+                  ),
+              }
+            : undefined
+
           return await ElementService.manipulateElement(
-            { ...args, type: DB.ElementType.CONTENT },
+            { ...elementArgs, type: DB.ElementType.CONTENT, options },
             ctx
           )
         },

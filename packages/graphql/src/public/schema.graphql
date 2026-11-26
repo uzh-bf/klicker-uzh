@@ -14,6 +14,29 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityArtifactPin {
+  artifactId: ID!
+  digest: String!
+  exercise: Json!
+  renderedDigest: String!
+  revisionId: ID!
+  title: String!
+  url: String!
+  version: Int!
+}
+
+type ActivityArtifactRevision {
+  artifactId: ID!
+  digest: String!
+  exercise: Json!
+  frameUrl: String!
+  renderedDigest: String!
+  revisionId: ID!
+  title: String!
+  url: String!
+  version: Int!
+}
+
 type ActivityDetails {
   arePointsAwarded: Boolean!
   courseId: String
@@ -1141,7 +1164,14 @@ type ContentActivityEvaluationData {
   type: ElementType!
 }
 
+input ContentArtifactInput {
+  artifactId: String!
+  revisionId: String!
+  url: String!
+}
+
 type ContentElement {
+  activityArtifact: ActivityArtifactPin
   basePoints: Boolean!
   content: String!
   createdAt: Date
@@ -1174,6 +1204,7 @@ type ContentElementData {
   content: String!
   elementId: Int!
   explanation: String
+  hasActivityArtifact: Boolean
   id: ID!
   name: String!
   pointsMultiplier: Int!
@@ -3017,7 +3048,7 @@ type Mutation {
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
-  manipulateContentElement(basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateContentElement(activityArtifact: ContentArtifactInput, basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
@@ -3565,6 +3596,7 @@ type PushSubscription {
 }
 
 type Query {
+  activityArtifactForInstance(elementInstanceId: Int!): ActivityArtifactRevision
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
@@ -3690,6 +3722,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
+  previewActivityArtifact(url: String!): ActivityArtifactRevision
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
@@ -3697,6 +3730,7 @@ type Query {
   selfAccountDataUse: ParticipantAccountDataUse
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
+  staffActivityArtifact(artifactId: String!): ActivityArtifactRevision
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
   studentCourseResults(courseId: String!, participantId: String!): [ActivityStudentPerformance!]
   studentLiveQuiz(id: String!): LiveQuiz

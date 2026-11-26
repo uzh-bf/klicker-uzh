@@ -15,6 +15,7 @@ import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import type { QuestionGenerationRuntime } from '../services/questionGenerationRuntime.js'
+import type { ActivityArtifactRuntime } from './activityArtifacts.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -49,6 +50,9 @@ export interface Context extends BaseContext {
   featureFlags?: FeatureFlagEvaluator
   // Catalyst adapter for generated Klicker elements and immutable artifacts.
   elementGenerationRuntime?: QuestionGenerationRuntime
+  // Publisher client for the activity-artifact pilot. Absent configuration
+  // keeps every artifact surface disabled.
+  activityArtifactRuntime?: ActivityArtifactRuntime
   betaPreference?: {
     userId: string
     value: Promise<boolean | null>

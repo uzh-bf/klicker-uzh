@@ -19,9 +19,14 @@ export {
   createQuestionGenerationRuntimeFromEnv as createElementGenerationRuntimeFromEnv,
   type QuestionGenerationRuntime as ElementGenerationRuntime,
 } from './services/questionGenerationRuntime.js'
+export {
+  createActivityArtifactRuntimeFromEnv,
+  type ActivityArtifactRuntime,
+} from './lib/activityArtifacts.js'
 
 import builder from './builder.js'
 
+import './schema/activityArtifact.js'
 import './schema/achievement.js'
 import './schema/activities.js'
 import './schema/assessment.js'

@@ -208,6 +208,9 @@ function useElementFormInitialValues({
       return {
         ...sharedAttributes,
         type: ElementType.Content,
+        // Read-only view of the stored pin. A new revision is only stored
+        // after an explicit confirmation in the attachment section.
+        currentActivityArtifact: question.activityArtifact ?? null,
       }
     }
 

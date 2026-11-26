@@ -29,6 +29,7 @@ import {
 } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
+import ActivityArtifactInstance from '../microLearning/ActivityArtifactInstance'
 import Bookmark from './Bookmark'
 import type { EmbedQuizNavigationState } from './embed'
 import InstanceHeader from './InstanceHeader'
@@ -685,6 +686,11 @@ function ElementStack({
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
+                    renderActivityArtifact={(elementInstanceId) => (
+                      <ActivityArtifactInstance
+                        elementInstanceId={elementInstanceId}
+                      />
+                    )}
                     preview={
                       embedded &&
                       (focusedPresentation

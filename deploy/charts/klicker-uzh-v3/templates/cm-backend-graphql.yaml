@@ -18,6 +18,10 @@ data:
   RESPONSE_EXAMPLE_RECEIPT_ISSUER: {{ .Values.chat.responseExampleReceipt.issuer | quote }}
   RESPONSE_EXAMPLE_RECEIPT_AUDIENCE: {{ .Values.chat.responseExampleReceipt.audience | quote }}
   RESPONSE_EXAMPLE_RECEIPT_KID: {{ .Values.chat.responseExampleReceipt.keyId | quote }}
+  {{- if .Values.backendGraphql.activityArtifact.enabled }}
+  ACTIVITY_ARTIFACT_ORIGIN: {{ required "backendGraphql.activityArtifact.publisherOrigin is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.publisherOrigin | quote }}
+  ACTIVITY_ARTIFACT_SERVICE_URL: {{ required "backendGraphql.activityArtifact.serviceUrl is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.serviceUrl | quote }}
+  {{- end }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}

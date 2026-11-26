@@ -369,6 +369,21 @@ export const ContentElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
+
+      // Students only learn that an artifact is attached. The validated
+      // exercise is served by an authorized per-instance query.
+      hasActivityArtifact: t.boolean({
+        nullable: true,
+        resolve: (element) =>
+          Boolean(
+            (
+              element.options as
+                | { activityArtifact?: unknown }
+                | null
+                | undefined
+            )?.activityArtifact
+          ),
+      }),
     }),
   })
 

@@ -50,6 +50,10 @@ import {
 import builder from '../builder.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
+  ActivityArtifactPin,
+  toPublicActivityArtifactPin,
+} from './activityArtifact.js'
+import {
   CaseStudyCaseSolution,
   CaseStudyElementOptions,
   ChoiceElementOptions,
@@ -848,6 +852,14 @@ export const ContentElement = builder
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
+
+      // Only the public projection of the pinned revision is exposed; the
+      // mapped lecturer subject stays server-side.
+      activityArtifact: t.field({
+        type: ActivityArtifactPin,
+        nullable: true,
+        resolve: (element) => toPublicActivityArtifactPin(element.options),
+      }),
     }),
   })
 

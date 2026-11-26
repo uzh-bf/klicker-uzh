@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
@@ -12,6 +13,7 @@ interface ContentelementProps {
   onRead: () => void
   elementIx: number
   hideReadButton?: boolean
+  renderActivityArtifact?: (elementInstanceId: number) => ReactNode
 }
 
 function ContentElement({
@@ -20,8 +22,15 @@ function ContentElement({
   onRead,
   elementIx,
   hideReadButton = false,
+  renderActivityArtifact,
 }: ContentelementProps) {
   const t = useTranslations()
+
+  // Older instances carry no artifact field at all, so presence is checked
+  // defensively and only the attached case asks the server for a render.
+  const hasActivityArtifact =
+    'hasActivityArtifact' in element.elementData &&
+    element.elementData.hasActivityArtifact === true
 
   return (
     <div
@@ -43,6 +52,9 @@ function ContentElement({
             data={{ cy: `content-element-md-${elementIx}` }}
             className={{ root: 'p-2' }}
           />
+          {hasActivityArtifact && renderActivityArtifact ? (
+            <div className="p-2">{renderActivityArtifact(element.id)}</div>
+          ) : null}
         </div>
       </div>
       {!hideReadButton && (
