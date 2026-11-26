@@ -102,6 +102,8 @@ export default {
       offerTitle: 'Personalize the Tutor?',
       offerLead:
         'If you agree, the Tutor adapts its help to you, using a short summary of your own practice results in this course. This is optional, and the Tutor works as before without it.',
+      offerLeadNotes:
+        'If you agree, the Tutor adapts its help to you. It uses a short summary of your own practice results in this course and keeps short notes about your learning in it. This is optional, and the Tutor works as before without it.',
       offerShowDetails: 'What exactly is used?',
       offerHideDetails: 'Hide details',
       offerLater: 'Decide later',

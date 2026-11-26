@@ -223,7 +223,13 @@ export function TutorPersonalizationOffer({
         >
           {t('chat.personalization.offerTitle')}
         </h2>
-        <p className="text-sm">{t('chat.personalization.offerLead')}</p>
+        <p className="text-sm">
+          {t(
+            state.tutorPersonalizationNotesOffered
+              ? 'chat.personalization.offerLeadNotes'
+              : 'chat.personalization.offerLead'
+          )}
+        </p>
         <div>
           <button
             type="button"

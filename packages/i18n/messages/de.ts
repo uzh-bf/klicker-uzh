@@ -103,6 +103,8 @@ export default {
       offerTitle: 'Tutor personalisieren?',
       offerLead:
         'Wenn du zustimmst, passt der Tutor seine Hilfe an dich an. Dazu nutzt er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs. Das ist freiwillig, und ohne Zustimmung funktioniert der Tutor wie bisher.',
+      offerLeadNotes:
+        'Wenn du zustimmst, passt der Tutor seine Hilfe an dich an. Dazu nutzt er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs und führt kurze Notizen zu deinem Lernen in diesem Kurs. Das ist freiwillig, und ohne Zustimmung funktioniert der Tutor wie bisher.',
       offerShowDetails: 'Was genau wird verwendet?',
       offerHideDetails: 'Details ausblenden',
       offerLater: 'Später entscheiden',
