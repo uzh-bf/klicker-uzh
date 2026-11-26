@@ -68,11 +68,14 @@ const feedbackCall = {
   },
 }
 
-async function openThreadWithFeedback(page: Page) {
+async function openThreadWithFeedback(
+  page: Page,
+  learnerText = LEARNER_MESSAGE
+) {
   const thread = await seedThread(await getEnrolledParticipantId(), {
     title: 'Feedback',
     messages: [
-      { role: 'user', content: [{ type: 'text', text: LEARNER_MESSAGE }] },
+      { role: 'user', content: [{ type: 'text', text: learnerText }] },
       {
         role: 'assistant',
         content: [feedbackCall, { type: 'text', text: 'Here is my feedback.' }],
@@ -116,7 +119,7 @@ test('feedback marks its remarks in the learner’s text, with a list and a pane
   await marks.last().click()
   const rail = card.getByTestId('feedback-comment-rail')
   await expect(
-    rail.locator('[data-feedback-comment="improvement-0"]')
+    rail.locator('[data-feedback-comment="improvement-0"] button')
   ).toHaveAttribute('aria-pressed', 'true')
   await marks.first().press('Enter')
   await expect(marks.first()).toHaveAttribute('aria-pressed', 'true')
@@ -151,13 +154,29 @@ test('on a phone a remark opens below its paragraph and steps on', async ({
   const card = page.locator('[data-feedback-card]')
   await expect(card.getByTestId('feedback-comment-rail')).toBeHidden()
 
-  await card.locator('[data-feedback-mark]').first().click()
+  const marks = card.locator('[data-feedback-mark]')
+  await marks.first().click()
   const drawer = card.getByTestId('feedback-comment-drawer')
   await expect(drawer).toBeVisible()
-  await expect(drawer).toContainText('1 of 3')
+  await expect(marks.first()).toHaveAttribute('aria-pressed', 'true')
   await page.screenshot({ path: test.info().outputPath('phone-drawer.png') })
-  await drawer.getByRole('button', { name: 'Next remark' }).click()
-  await expect(drawer).toContainText('2 of 3')
-  await card.locator('[data-feedback-mark]').nth(1).press('Escape')
+  await drawer.getByTestId('feedback-comment-next').click()
+  await expect(marks.nth(1)).toHaveAttribute('aria-pressed', 'true')
+  await expect(marks.nth(1)).toBeFocused()
+  await marks.nth(1).press('Escape')
   await expect(drawer).toHaveCount(0)
+})
+
+test('feedback on an attached document marks the document text', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  // The stored message format of a typed question with one attached file.
+  const withDocument =
+    'Please check the attached paragraph against the rubric.\n\n' +
+    '--- Attached document: essay.txt ---\n' +
+    LEARNER_MESSAGE.split('\n\n')[1] +
+    '\n--- End of attached document ---'
+  await openThreadWithFeedback(page, withDocument)
+  await expect(page.locator('[data-feedback-mark]')).toHaveCount(3)
 })

@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { buildDocumentBlock } from '@/src/lib/attachments/documentText'
 import {
-  annotateFeedback,
+  annotateFeedback as annotateWith,
   type FeedbackItem,
+  learnerPassages,
   locateQuote,
 } from '@/src/lib/feedback'
+
+// The server's view of the messages: typed text and attached documents.
+const annotateFeedback = (items: FeedbackItem[], messages: readonly string[]) =>
+  annotateWith(items, learnerPassages(messages))
 
 const marked = (raw: string, quote: string) => {
   const span = locateQuote(raw, quote)
@@ -99,6 +104,15 @@ describe('annotateFeedback', () => {
       text: 'Returns do not move',
       itemIds: ['a', 'b'],
     })
+  })
+
+  it('does not report blank lines around the text as text left out', () => {
+    const annotation = annotateFeedback(
+      [item('a', 'Only paragraph text')],
+      ['\n\nOnly paragraph text\n\n']
+    )
+    expect(annotation?.blocks[0].gapBefore).toBe(false)
+    expect(annotation?.gapAfter).toBe(false)
   })
 
   it('leaves the card as a list when no quote is found', () => {

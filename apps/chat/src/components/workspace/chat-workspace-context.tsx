@@ -3,7 +3,6 @@
 import type { KnowledgeGraphFocusRequest } from '@klicker-uzh/shared-components/src/knowledgeGraph/KnowledgeGraphViewer'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { usePathname } from 'next/navigation'
-import type { FeedbackAnnotation, FeedbackContent } from '@/src/lib/feedback'
 import {
   createContext,
   type ReactNode,
@@ -14,6 +13,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { MessageSources } from '@/src/hooks/useMessageSources'
+import type { FeedbackAnnotation, FeedbackContent } from '@/src/lib/feedback'
 
 /**
  * What a message card hands the canvas to show one of its artifacts, per
@@ -26,6 +27,7 @@ export type ChatCanvasArtifactData = {
     title: string
     content: FeedbackContent
     annotation: FeedbackAnnotation | null
+    sources: MessageSources
   }
 }
 

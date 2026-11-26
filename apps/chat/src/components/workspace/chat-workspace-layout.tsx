@@ -257,7 +257,12 @@ export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
           {children}
         </ChatGraphConceptContext.Provider>
       </div>
-      {item && Panel ? <Panel item={item} /> : null}
+      {item && Panel ? (
+        // Concept links in panel text open the graph, as in the thread.
+        <ChatGraphConceptContext.Provider value={conceptContext}>
+          <Panel item={item} />
+        </ChatGraphConceptContext.Provider>
+      ) : null}
     </div>
   )
 }

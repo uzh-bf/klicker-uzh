@@ -174,15 +174,21 @@ export function historyTextFromParts(parts: readonly unknown[]): string {
  * including case, must match.
  */
 export function normalizeForQuote(text: string): string {
+  return unifyQuoteCharacters(text).replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * The per-character part of `normalizeForQuote`, without the whitespace
+ * collapse, so the offset map below can apply it per cluster.
+ */
+function unifyQuoteCharacters(text: string): string {
   return text
     .normalize('NFKC')
     .replace(/[\u00AD\u200B-\u200D\u2060\uFEFF]/g, '')
     .replace(/[‘’‚′]/g, "'")
     .replace(/[“”„«»″]/g, '"')
     .replace(/[\u2010-\u2015\u2212]/g, '-')
-    .replace(/ß/g, 'ss')
-    .replace(/\s+/g, ' ')
-    .trim()
+    .replace(/\u00DF/g, 'ss')
 }
 
 /** A quote must name a passage, not just a letter or punctuation. */
@@ -214,30 +220,26 @@ function normalizeWithOffsets(raw: string): {
   ends: number[]
 } {
   let text = ''
+  let trailingSpace = false
   const starts: number[] = []
   const ends: number[] = []
   for (const match of raw.matchAll(/\P{M}\p{M}*|\p{M}+/gu)) {
     const start = match.index ?? 0
     const end = start + match[0].length
-    const piece = match[0]
-      .normalize('NFKC')
-      .replace(/[­​-‍⁠﻿]/g, '')
-      .replace(/[‘’‚′]/g, "'")
-      .replace(/[“”„«»″]/g, '"')
-      .replace(/[‐-―−]/g, '-')
-      .replace(/ß/g, 'ss')
+    const piece = unifyQuoteCharacters(match[0])
     for (const char of piece) {
       const space = /\s/.test(char)
       // Leading whitespace is trimmed and runs collapse to one space.
-      if (space && (text === '' || text.endsWith(' '))) continue
+      if (space && (text === '' || trailingSpace)) continue
       for (let unit = 0; unit < char.length; unit++) {
         starts.push(start)
         ends.push(end)
       }
       text += space ? ' ' : char
+      trailingSpace = space
     }
   }
-  if (text.endsWith(' ')) {
+  if (trailingSpace) {
     text = text.slice(0, -1)
     starts.pop()
     ends.pop()
@@ -254,10 +256,17 @@ export type QuoteSpan = { start: number; end: number }
  * name a passage. The first occurrence wins.
  */
 export function locateQuote(raw: string, quote: string): QuoteSpan | null {
+  return locateInMapped(raw, normalizeWithOffsets(raw), quote)
+}
+
+function locateInMapped(
+  raw: string,
+  mapped: ReturnType<typeof normalizeWithOffsets>,
+  quote: string
+): QuoteSpan | null {
   const needle = normalizeForQuote(quote)
   if ((needle.match(/[\p{L}\p{N}]/gu)?.length ?? 0) < MIN_QUOTE_WORD_CHARACTERS)
     return null
-  const mapped = normalizeWithOffsets(raw)
   const index = mapped.text.indexOf(needle)
   if (index === -1) return null
   const span = {
@@ -338,22 +347,23 @@ export type FeedbackAnnotation = {
 
 /**
  * Places the card's quotes in the learner's text: the passage (a typed
- * message or an attached document) that contains most quotes, the latest on a
- * tie. Only paragraphs with a quote are shown, so instructions or a rubric
+ * message or an attached document, see `learnerPassages`) that contains most
+ * quotes, the latest on a tie. Only paragraphs with a quote are shown, so instructions or a rubric
  * around the work stay out. Returns null when no quote is found, which leaves
  * the card in its list layout.
  */
 export function annotateFeedback(
   items: readonly FeedbackItem[],
-  learnerMessages: readonly string[]
+  passages: readonly string[]
 ): FeedbackAnnotation | null {
   const quoted = items.filter((item) => item.quote)
   if (quoted.length === 0) return null
   let best: { passage: string; spans: Map<string, QuoteSpan> } | null = null
-  for (const passage of learnerPassages(learnerMessages)) {
+  for (const passage of passages) {
+    const mapped = normalizeWithOffsets(passage)
     const spans = new Map<string, QuoteSpan>()
     for (const item of quoted) {
-      const span = locateQuote(passage, item.quote)
+      const span = locateInMapped(passage, mapped, item.quote)
       if (span) spans.set(item.id, span)
     }
     if (spans.size > 0 && spans.size >= (best?.spans.size ?? 0))
@@ -371,6 +381,9 @@ export function annotateFeedback(
     from = (match.index ?? 0) + match[0].length
   }
   paragraphs.push({ start: from, end: passage.length })
+  // Blank lines around the text are not text left out.
+  const hasText = (paragraph: QuoteSpan) =>
+    passage.slice(paragraph.start, paragraph.end).trim() !== ''
   const ranges: Array<QuoteSpan & { first: number; last: number }> = []
   paragraphs.forEach((paragraph, index) => {
     const marked = Array.from(spans.values()).some(
@@ -406,7 +419,12 @@ export function annotateFeedback(
       if (last && last.itemIds.join() === itemIds.join()) last.text += text
       else if (text) segments.push({ text, itemIds })
     }
-    return { gapBefore: range.first > 0, segments }
+    return {
+      gapBefore: paragraphs
+        .slice(0, range.first)
+        .some((paragraph) => hasText(paragraph)),
+      segments,
+    }
   })
 
   const anchored: string[][] = []
@@ -421,7 +439,9 @@ export function annotateFeedback(
   }
   return {
     blocks,
-    gapAfter: (ranges[ranges.length - 1]?.last ?? 0) < paragraphs.length - 1,
+    gapAfter: paragraphs
+      .slice((ranges[ranges.length - 1]?.last ?? 0) + 1)
+      .some((paragraph) => hasText(paragraph)),
     anchored,
     unanchored: items
       .filter((item) => !spans.has(item.id))

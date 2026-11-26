@@ -27,6 +27,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { MessageSources } from '@/src/hooks/useMessageSources'
 import {
   annotateFeedback,
   asFeedbackResult,
@@ -38,6 +39,10 @@ import {
   feedbackToText,
 } from '@/src/lib/feedback'
 import { MarkdownText } from './markdown-text'
+import {
+  MessageSourcesProvider,
+  useMessageSourcesContext,
+} from './message-sources-context'
 import {
   type ChatCanvasArtifact,
   useOptionalChatWorkspace,
@@ -196,19 +201,25 @@ function ItemBadge({ item }: Readonly<{ item: FeedbackItem }>) {
 }
 
 /** One remark with its comment, as listed in the margin or the drawer. */
-function ItemComment({ item }: Readonly<{ item: FeedbackItem }>) {
+function ItemHeading({ item }: Readonly<{ item: FeedbackItem }>) {
   const t = useTranslations('chat.thread.feedback')
   return (
+    <span className="flex flex-wrap items-center gap-2">
+      <ItemBadge item={item} />
+      <span className="text-sm font-semibold text-slate-900">
+        {item.kind === 'strength' ? t('strengths') : item.label}
+      </span>
+      {item.kind === 'criterion' && item.status ? (
+        <StatusPill status={item.status} />
+      ) : null}
+    </span>
+  )
+}
+
+function ItemComment({ item }: Readonly<{ item: FeedbackItem }>) {
+  return (
     <div className="min-w-0 space-y-1">
-      <div className="flex flex-wrap items-center gap-2">
-        <ItemBadge item={item} />
-        <span className="text-sm font-semibold text-slate-900">
-          {item.kind === 'strength' ? t('strengths') : item.label}
-        </span>
-        {item.kind === 'criterion' && item.status ? (
-          <StatusPill status={item.status} />
-        ) : null}
-      </div>
+      <ItemHeading item={item} />
       <div className="text-slate-700">
         <FeedbackText text={item.comment} />
       </div>
@@ -373,7 +384,10 @@ function AnnotatedText({
         current.join() === itemIds.join() ? [] : itemIds
       )
     } else if (event.key === 'Escape' && selected.length > 0) {
+      // Clearing the selection is this Escape's whole effect; the panel must
+      // not also leave fullscreen.
       event.preventDefault()
+      event.stopPropagation()
       setSelected([])
     }
   }
@@ -390,6 +404,7 @@ function AnnotatedText({
               <button
                 type="button"
                 aria-label={t('previousComment')}
+                data-cy="feedback-comment-previous"
                 disabled={anchoredIndex <= 0}
                 onClick={() => step(-1)}
                 className="inline-flex size-7 items-center justify-center rounded hover:bg-slate-200 disabled:opacity-40"
@@ -405,6 +420,7 @@ function AnnotatedText({
               <button
                 type="button"
                 aria-label={t('nextComment')}
+                data-cy="feedback-comment-next"
                 disabled={anchoredIndex >= annotation.anchored.length - 1}
                 onClick={() => step(1)}
                 className="inline-flex size-7 items-center justify-center rounded hover:bg-slate-200 disabled:opacity-40"
@@ -521,21 +537,30 @@ function AnnotatedText({
               const item = byId.get(id)
               if (!item) return null
               const active = selected.includes(id)
+              // The comment may hold links and buttons of its own, so only
+              // the heading selects the remark.
               return (
-                <button
+                <div
                   key={id}
-                  type="button"
-                  aria-controls={rootId}
-                  aria-pressed={active}
                   data-feedback-comment={id}
-                  onClick={() => setSelected(active ? [] : group)}
                   className={twMerge(
-                    'block w-full rounded-md border border-slate-200 bg-white p-2 text-left transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500',
+                    'space-y-1 rounded-md border border-slate-200 bg-white p-2 transition-colors',
                     active && 'border-sky-300 bg-sky-50'
                   )}
                 >
-                  <ItemComment item={item} />
-                </button>
+                  <button
+                    type="button"
+                    aria-controls={rootId}
+                    aria-pressed={active}
+                    onClick={() => setSelected(active ? [] : group)}
+                    className="block w-full rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                  >
+                    <ItemHeading item={item} />
+                  </button>
+                  <div className="text-slate-700">
+                    <FeedbackText text={item.comment} />
+                  </div>
+                </div>
               )
             })
           )}
@@ -661,24 +686,37 @@ function ViewToggle({
   )
 }
 
-/** The learner's messages before this one, as stored text. */
-function useEarlierLearnerMessages(): string[] {
+/**
+ * The passages of the learner's messages before this one: typed text and,
+ * separately, each attached document, which the thread keeps beside the
+ * message. These are the passages the server accepted quotes from.
+ */
+function useEarlierLearnerPassages(): readonly string[] {
   const messageId = useAuiState((s) => s.message.id)
   const messages = useAuiState((s) => s.thread.messages) as ReadonlyArray<{
     id: string
     role: string
     content: ReadonlyArray<{ type: string; text?: string }>
+    metadata?: { custom?: { documentAttachments?: Array<{ text?: string }> } }
   }>
-  return useMemo(() => {
+  const passages = useMemo(() => {
     const end = messages.findIndex((message) => message.id === messageId)
     return (end === -1 ? messages : messages.slice(0, end))
       .filter((message) => message.role === 'user')
-      .map((message) =>
+      .flatMap((message) => [
         message.content
           .map((part) => (part.type === 'text' ? (part.text ?? '') : ''))
-          .join('')
-      )
+          .join(''),
+        ...(message.metadata?.custom?.documentAttachments ?? []).map(
+          (document) => document.text ?? ''
+        ),
+      ])
   }, [messages, messageId])
+  // The thread array changes with every streamed chunk; the learner's
+  // passages do not, so matching runs again only when they change.
+  const key = passages.join('\u0000')
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed by content
+  return useMemo(() => passages, [key])
 }
 
 /**
@@ -716,22 +754,37 @@ export const FeedbackCard: FC<FeedbackCardProps> = ({
   const parsed = asFeedbackResult(result)
   const content =
     parsed?.kind === 'feedback' && !isError ? parsed.content : null
-  const learnerMessages = useEarlierLearnerMessages()
+  const passages = useEarlierLearnerPassages()
   const annotation = useMemo(
-    () =>
-      content
-        ? annotateFeedback(feedbackItems(content), learnerMessages)
-        : null,
-    [content, learnerMessages]
+    () => (content ? annotateFeedback(feedbackItems(content), passages) : null),
+    [content, passages]
   )
   const [view, setView] = useState<'annotated' | 'list'>('annotated')
   const title = content?.title || t('fallbackTitle')
 
+  // The panel renders outside the message, so it takes the message's sources
+  // along for its citation markers.
+  const { messageId, sources, courseImageSourcesByAssetId, citedPageRanges } =
+    useMessageSourcesContext()
+  const messageSources = useMemo<MessageSources>(
+    () => ({
+      messageId,
+      sources,
+      courseImageSourcesByAssetId,
+      citedPageRanges,
+    }),
+    [messageId, sources, courseImageSourcesByAssetId, citedPageRanges]
+  )
   const register = workspace?.artifacts.register
   useEffect(() => {
     if (!register || !content) return
-    return register('feedback', id, { title, content, annotation })
-  }, [register, id, title, content, annotation])
+    return register('feedback', id, {
+      title,
+      content,
+      annotation,
+      sources: messageSources,
+    })
+  }, [register, id, title, content, annotation, messageSources])
 
   if (status.type === 'running' && !parsed)
     return (
@@ -798,6 +851,7 @@ export const FeedbackCard: FC<FeedbackCardProps> = ({
                   title,
                   content,
                   annotation,
+                  sources: messageSources,
                 })
             }}
             className="inline-flex min-h-8 items-center gap-1 rounded px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
@@ -850,11 +904,13 @@ export function FeedbackPanelContent({
           <ViewToggle view={view} onChange={setView} />
         </div>
       ) : null}
-      <FeedbackBody
-        content={item.content}
-        annotation={item.annotation}
-        view={view}
-      />
+      <MessageSourcesProvider value={item.sources}>
+        <FeedbackBody
+          content={item.content}
+          annotation={item.annotation}
+          view={view}
+        />
+      </MessageSourcesProvider>
     </div>
   )
 }
