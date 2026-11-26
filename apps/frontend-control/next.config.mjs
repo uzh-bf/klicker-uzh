@@ -10,6 +10,7 @@ let nextConfig = {
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
     NODE_ENV: process.env.NODE_ENV,
     pagesRouterOnly: true,
+    buildTsconfigPath: 'tsconfig.check.json',
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
   async redirects() {
@@ -40,6 +41,25 @@ let nextConfig = {
         permanent: true,
       },
     ]
+  },
+  // Opt-in same-origin GraphQL proxy (local dev): WebKit treats each
+  // *.klicker.localhost host as its own site and withholds the SameSite=Lax
+  // session cookie on cross-host API calls, which breaks iOS (Capacitor) login.
+  async rewrites() {
+    const { NEXT_PUBLIC_CONTROL_API_URL, CONTROL_API_PROXY_URL } = process.env
+    if (!NEXT_PUBLIC_CONTROL_API_URL || !CONTROL_API_PROXY_URL) {
+      return []
+    }
+    let source
+    try {
+      source = new URL(NEXT_PUBLIC_CONTROL_API_URL).pathname
+    } catch {
+      console.warn(
+        'NEXT_PUBLIC_CONTROL_API_URL is not an absolute URL; the same-origin API proxy is disabled'
+      )
+      return []
+    }
+    return [{ source, destination: CONTROL_API_PROXY_URL }]
   },
 }
 

@@ -5,8 +5,8 @@ import ElementTableChart from '@klicker-uzh/shared-components/src/charts/Element
 import ElementWordCloud from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ShowStatisticsType } from './elements/NREvaluation'
@@ -17,6 +17,7 @@ interface ElementChartProps {
   instanceEvaluation: ElementInstanceEvaluation
   showSolution: boolean
   showExplanation: boolean
+  showPercentages?: boolean
   showStatistics?: ShowStatisticsType
   textSize: TextSizeType
   className?: string
@@ -27,6 +28,7 @@ function ElementChart({
   instanceEvaluation,
   showSolution,
   showExplanation,
+  showPercentages,
   showStatistics,
   textSize,
   className,
@@ -66,6 +68,7 @@ function ElementChart({
         instance={instanceEvaluation}
         showSolution={showSolution}
         showExplanation={showExplanation}
+        showPercentages={showPercentages}
         textSize={textSize}
         className={className}
       />

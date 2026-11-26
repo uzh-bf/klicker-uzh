@@ -1,0 +1,19 @@
+mutation EditAndApproveResponseExample(
+  $id: String!
+  $chatMode: String!
+  $studentMessage: String!
+  $referenceAnswer: String!
+  $responseStyle: ResponseExampleStyle!
+  $expectedUpdatedAt: Date!
+) {
+  editAndApproveResponseExample(
+    id: $id
+    chatMode: $chatMode
+    studentMessage: $studentMessage
+    referenceAnswer: $referenceAnswer
+    responseStyle: $responseStyle
+    expectedUpdatedAt: $expectedUpdatedAt
+  ) {
+    ...ResponseExampleSetData
+  }
+}

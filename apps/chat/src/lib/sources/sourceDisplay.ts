@@ -33,6 +33,81 @@ export function formatTimestamp(totalSeconds: number): string {
   return `${minutes}:${paddedSeconds}`
 }
 
+function normalizeCitedStartSecs(values: readonly number[]): number[] {
+  return [
+    ...new Set(
+      values.filter((value) => Number.isSafeInteger(value) && value >= 0)
+    ),
+  ].sort((left, right) => left - right)
+}
+
+function passageContainsTimestamp(
+  passage: NonNullable<ChatSource['videoPassages']>[number],
+  timestamp: number
+): boolean {
+  if (!Number.isFinite(passage.startSec) || passage.startSec < 0) return false
+
+  const displayedStart = Math.floor(passage.startSec)
+  if (timestamp < displayedStart) return false
+  if (passage.endSec === undefined) return timestamp === displayedStart
+  if (!Number.isFinite(passage.endSec) || passage.endSec < passage.startSec) {
+    return false
+  }
+  return timestamp <= Math.floor(passage.endSec)
+}
+
+export function findVideoPassage<
+  T extends NonNullable<ChatSource['videoPassages']>[number],
+>(passages: readonly T[], timestamp: number): T | undefined {
+  return (
+    passages.find(
+      (passage) =>
+        Math.floor(passage.startSec) === timestamp &&
+        passageContainsTimestamp(passage, timestamp)
+    ) ??
+    passages.find((passage) => passageContainsTimestamp(passage, timestamp))
+  )
+}
+
+/**
+ * Applies validated marker clocks to normalized video sources. Each marker is
+ * checked against the retrieved passage bounds; an unknown end supports only
+ * its displayed start. The earliest cited position chooses the excerpt, with
+ * ties resolved in retrieval order. Sources without a supported clock keep
+ * their historical first-chunk fallback unchanged.
+ */
+export function applyVideoCitationTimes(
+  sources: ChatSource[],
+  citedTimes: ReadonlyMap<number, readonly number[]>
+): ChatSource[] {
+  if (citedTimes.size === 0) return sources
+
+  return sources.map((source) => {
+    if (source.type !== 'video' || !source.videoPassages?.length) return source
+
+    const supported = normalizeCitedStartSecs(
+      citedTimes.get(source.index) ?? []
+    ).filter((timestamp) =>
+      source.videoPassages?.some((passage) =>
+        passageContainsTimestamp(passage, timestamp)
+      )
+    )
+    const earliest = supported[0]
+    if (earliest === undefined) return source
+
+    const passage = findVideoPassage(source.videoPassages, earliest)
+    if (!passage) return source
+
+    return {
+      ...source,
+      startSec: passage.startSec,
+      endSec: passage.endSec,
+      excerpt: passage.excerpt,
+      citedStartSecs: supported,
+    }
+  })
+}
+
 /**
  * Seconds from the time notations a course video link or a chunk label
  * realistically uses: plain seconds (`90`), clock form (`1:30`, `1:02:03`),
@@ -74,12 +149,19 @@ function parseLabeledTimestampSeconds(value: string): number | undefined {
 /**
  * A video position for the card and the hover preview.
  *
- * Structured video results provide `startSec` (and optionally `endSec`), while
- * legacy results may still carry a clock-valued `labeledPage` or a time
- * parameter in the video URL. The structured start wins so a compatibility
- * label cannot disagree with the canonical range metadata.
+ * Validated citation clocks win and render together in ascending order.
+ * Otherwise structured video results provide `startSec` (and optionally
+ * `endSec`), while legacy results may still carry a clock-valued
+ * `labeledPage` or a time parameter in the video URL. The structured start
+ * wins so a compatibility label cannot disagree with the canonical range
+ * metadata.
  */
 export function getSourceTimestamp(source: ChatSource): string | undefined {
+  const citedStartSecs = normalizeCitedStartSecs(source.citedStartSecs ?? [])
+  if (citedStartSecs.length > 0) {
+    return citedStartSecs.map(formatTimestamp).join(', ')
+  }
+
   if (source.startSec !== undefined) {
     return formatTimestamp(source.startSec)
   }
@@ -149,30 +231,107 @@ export function getSourcePageLabel(value?: string): string | undefined {
 }
 
 /**
+ * The page value a card may show on its own, without the answer having named a
+ * page: the single publisher label the retrieved chunks agree on.
+ *
+ * A retrieved span is never displayed. `page`/`pageEnd` and
+ * `labeledPage`/`labeledPageEnd` are the envelope of everything retrieval
+ * returned, so one question about a 127-page script arrives as `2–127`; a card
+ * that prints it reads as "the answer used pages 2 to 127". Only the answer's
+ * own page detail may produce a displayed range (see
+ * `formatCitedPageRanges`), which is why a span degrades to no page line here.
+ * A single physical page stays hidden for the older reason: it is a PDF
+ * navigation position, not the number printed on the page (see
+ * `getSourceNavigationUrl`).
+ */
+export function getSourcePageRange(source: ChatSource): string | undefined {
+  const label = getSourcePageLabel(source.labeledPage)
+  if (!label) return undefined
+
+  // `labeledPageEnd` is derived only when the chunk labels disagree, so its
+  // presence is exactly the "retrieval spread past one page" case.
+  return source.labeledPageEnd === undefined ? label : undefined
+}
+
+/**
+ * The smallest set of page ranges that covers exactly the given pages:
+ * `[2, 3, 7]` becomes `2–3, 7`. Nothing between cited pages is added, so a
+ * card never claims pages the answer did not use — the span from the first to
+ * the last of 20 retrieved chunks (`2–95` for an answer that cites pages 6–7)
+ * is what this replaces.
+ */
+export function formatCitedPageRanges(
+  pages: readonly number[]
+): string | undefined {
+  const sorted = [
+    ...new Set(pages.filter((page) => Number.isSafeInteger(page))),
+  ].sort((left, right) => left - right)
+  const first = sorted[0]
+  if (first === undefined) return undefined
+
+  const ranges: string[] = []
+  let start = first
+  let end = first
+  for (const page of sorted.slice(1)) {
+    if (page === end + 1) {
+      end = page
+      continue
+    }
+    ranges.push(start === end ? `${start}` : `${start}–${end}`)
+    start = page
+    end = page
+  }
+  ranges.push(start === end ? `${start}` : `${start}–${end}`)
+
+  return ranges.join(', ')
+}
+
+function getVideoSecondaryLine(
+  source: ChatSource,
+  t: Translate,
+  pageLabel?: string
+): string {
+  const timestamp = getSourceTimestamp(source)
+  if (timestamp) {
+    if (
+      normalizeCitedStartSecs(source.citedStartSecs ?? []).length === 0 &&
+      source.startSec !== undefined &&
+      source.endSec !== undefined &&
+      source.endSec > source.startSec
+    )
+      return `${timestamp}–${formatTimestamp(source.endSec)}`
+    return timestamp
+  }
+  const label = t('chat.sources.video')
+  if (timestamp === undefined && pageLabel)
+    return `${label} · ${t('chat.sources.page', { page: pageLabel })}`
+  return label
+}
+
+/**
  * The locator line under a source's name, by what that kind of source is
  * actually addressed by: a page for documents, a position for videos, an
  * address for web links. Falls back to the address when a document carries no
  * page at all, so the line stays informative instead of empty. `null` only
  * when nothing at all is known.
  *
+ * `citedPageRange` is the page range the answer itself cites for this source
+ * (see `formatCitedPageRanges`). It wins over the retrieved envelope, which
+ * spans every chunk retrieval returned and is not what the answer used.
+ *
  * Shared so the source card and the citation preview render an identical
  * secondary line for the same source.
  */
 export function getSourceSecondaryLine(
   source: ChatSource,
-  t: Translate
+  t: Translate,
+  citedPageRange?: string
 ): string | null {
   const parts: string[] = []
-  const pageLabel = getSourcePageLabel(source.labeledPage)
+  const pageLabel = citedPageRange ?? getSourcePageRange(source)
 
-  if (source.type === 'video') {
-    const timestamp = getSourceTimestamp(source)
-    parts.push(timestamp ?? t('chat.sources.video'))
-    if (timestamp === undefined && pageLabel) {
-      parts.push(t('chat.sources.page', { page: pageLabel }))
-    }
-    return parts.join(' · ')
-  }
+  if (source.type === 'video')
+    return getVideoSecondaryLine(source, t, pageLabel)
 
   if (source.type === 'image') {
     parts.push(t('chat.sources.image'))

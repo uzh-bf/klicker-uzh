@@ -76,6 +76,13 @@ function admittedWarpbuildAttempt(input) {
   }
 }
 
+function sortedReasonCodes(reasons) {
+  return [...new Set(reasons)].sort((left, right) => {
+    if (left === right) return 0
+    return left < right ? -1 : 1
+  })
+}
+
 function choosePlaywrightRoute(input) {
   const {
     eventName,
@@ -181,6 +188,7 @@ function choosePlaywrightRoute(input) {
     prDraft === 'true' &&
     validRepository &&
     headRepository === repository &&
+    !forceHosted &&
     isSyncBranch(headRef)
   ) {
     reasons.push('draft-sync-deferred')
@@ -188,7 +196,7 @@ function choosePlaywrightRoute(input) {
       schemaVersion: ROUTE_SCHEMA_VERSION,
       route: 'hosted',
       selectorPrState: 'deferred',
-      reasonCodes: [...new Set(reasons)].sort(),
+      reasonCodes: sortedReasonCodes(reasons),
     }
   }
   const smartDraftApplies =
@@ -232,7 +240,7 @@ function choosePlaywrightRoute(input) {
         }
       : {}),
     selectorPrState: smartDraftApplies ? 'draft' : 'ready',
-    reasonCodes: [...new Set(reasons)].sort(),
+    reasonCodes: sortedReasonCodes(reasons),
   }
 }
 

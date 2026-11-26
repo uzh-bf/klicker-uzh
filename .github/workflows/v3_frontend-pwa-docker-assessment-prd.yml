@@ -49,6 +49,22 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
 
+      - name: Resolve the previous release image
+        id: previous_release
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The image pinned in the production values is what production runs.
+          # Without a usable image the build starts a fresh asset history.
+          tag="$(awk '/^[^ #]/{top=($0=="assessment:")} top&&/^  frontendPWA:/{f=1;next} f&&/^  [^ ]/{f=0} f&&/^    image:/{i=1;next} i&&/^    [^ ]/{i=0} i&&/^      tag:/{print $2;exit}' deploy/env-uzh-prd/values.yaml | tr -d "\"'")"
+          image=""
+          if [ -n "$tag" ] && docker buildx imagetools inspect "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm:${tag}" >/dev/null 2>&1; then
+            image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm:${tag}"
+          else
+            echo "::warning::no pinned production image found; building without release history"
+          fi
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -63,6 +79,7 @@ jobs:
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
             NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD }}
             NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD }}
+            PREVIOUS_IMAGE=${{ steps.previous_release.outputs.image }}
   build-amd:
     if: ${{ false }}
     runs-on: ubuntu-latest

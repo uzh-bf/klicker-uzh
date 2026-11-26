@@ -38,7 +38,9 @@ function createIsomorphLink() {
       ? []
       : [
           createPersistedQueryLink({
-            useGETForHashedQueries: true, // Optional but allows better caching
+            // Same-origin GET omits Origin, which the API needs for cookie selection.
+            useGETForHashedQueries:
+              !isBrowser || !process.env.NEXT_PUBLIC_CONTROL_API_URL,
             // eslint-disable-next-line react-hooks/rules-of-hooks
             generateHash: usePregeneratedHashes(hashes),
           }),
@@ -77,7 +79,8 @@ function createIsomorphLink() {
 
   let link: ApolloLink = new HttpLink({
     uri: isBrowser
-      ? process.env.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_CONTROL_API_URL ||
+        process.env.NEXT_PUBLIC_API_URL
       : process.env.API_URL_SSR ||
         process.env.NEXT_PUBLIC_API_URL_SSR ||
         process.env.NEXT_PUBLIC_API_URL,

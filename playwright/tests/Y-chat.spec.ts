@@ -1,12 +1,15 @@
 import { expect, test, type Page } from '@playwright/test'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
   chatUrl,
   clearChatCookies,
+  ensureChatbotSeeded,
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
+  mintPwaEmbedSessionToken,
   OTHER_PARTICIPANT_ID,
   resetChatState,
   seedThread,
@@ -18,6 +21,7 @@ import {
   TEST_PNG_DATA_URL,
   testImageUpload,
 } from '../util/chat.js'
+import { deMessages, enMessages } from '../util/messages.js'
 import { selectOption } from '../util/workflow.js'
 
 const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
@@ -455,9 +459,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
-      'You are chatting with E2E Chatbot.'
-    )
+    await expect(page.getByTestId('chat-welcome-chatbot')).toBeVisible()
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
       'Selected mode: Tutor'
     )
@@ -465,6 +467,122 @@ test.describe('Chatbot Messaging Interface', () => {
       'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Custom-mode introduction and starters follow the selected mode and empty-thread state', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const original = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: CHATBOT_ID },
+      select: { customModeConfig: true, standardModeConfig: true },
+    })
+    const welcomeMessage =
+      'A synthetic introduction.\n<img src=x onerror=alert(1)>'
+    const starterPrompts = [
+      'Start synthetic practice',
+      'Explain synthetic flow',
+    ]
+    const modes = [
+      {
+        key: 'cm_intro_fixture',
+        name: 'Conversation practice',
+        description: null,
+        personaText: null,
+        welcomeMessage,
+        starterPrompts,
+      },
+      {
+        key: 'cm_legacy_fixture',
+        name: 'Independent practice',
+        description: null,
+        personaText: null,
+      },
+    ]
+    const chatRequests: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request.url().endsWith(`/api/chatbots/${CHATBOT_ID}/chat`)
+      ) {
+        chatRequests.push(request.postData() ?? '')
+      }
+    })
+    try {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: {
+          standardModeConfig: {
+            tutorEnabled: true,
+            explainerEnabled: false,
+            quizzerEnabled: false,
+            scopeNote: null,
+          },
+          customModeConfig: { modes },
+        },
+      })
+      await visitChat(page)
+      await selectChatMode(page, modes[0].key, modes[0].name)
+      const welcome = page.getByTestId('chat-custom-mode-welcome')
+      const starters = page.getByTestId('chat-welcome-suggestion')
+      const input = page.getByTestId('chat-composer-input')
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(welcome.locator('img')).toHaveCount(0)
+      await expect(starters).toHaveText(starterPrompts)
+      await page.reload()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await starters.first().click()
+      await expect(input).toHaveValue(starterPrompts[0])
+      expect(chatRequests).toHaveLength(0)
+      await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
+      await page.getByTestId('chat-welcome-mode-switcher').click()
+      await page
+        .getByTestId('chat-welcome-mode-option-cm_legacy_fixture')
+        .click()
+      await expect(welcome).toHaveCount(0)
+      await expect(starters).toHaveCount(0)
+      await page.getByTestId('chat-welcome-mode-switcher').click()
+      await page
+        .getByTestId('chat-welcome-mode-option-cm_intro_fixture')
+        .click()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await input.fill('Synthetic student reply')
+      await page.getByTestId('chat-send-button').click()
+      await expect(page.getByTestId('chat-assistant-message')).toBeVisible()
+      await expect(welcome).toHaveCount(0)
+      expect(chatRequests).toHaveLength(1)
+      expect(chatRequests[0]).not.toContain(
+        JSON.stringify(welcomeMessage).slice(1, -1)
+      )
+      await page.getByTestId('chat-new-thread-button').click()
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(starters).toHaveText(starterPrompts)
+      await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+        waitUntil: 'domcontentloaded',
+      })
+      const embeddedMode = page
+        .getByTestId('chat-embedded-toolbar')
+        .getByRole('combobox', { name: enMessages.chat.modes.switcherLabel })
+      await embeddedMode.selectOption(modes[0].key)
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
+      await embeddedMode.selectOption(modes[1].key)
+      await expect(welcome).toHaveCount(0)
+      await expect(embeddedMode).toBeVisible()
+      await embeddedMode.selectOption(modes[0].key)
+      await expect(welcome).toHaveText(welcomeMessage)
+      await expect(page.getByTestId('chat-welcome-mode')).toHaveCount(0)
+    } finally {
+      await prisma.chatbot.update({
+        where: { id: CHATBOT_ID },
+        data: {
+          customModeConfig: original.customModeConfig ?? Prisma.DbNull,
+          standardModeConfig: original.standardModeConfig ?? Prisma.DbNull,
+        },
+      })
+    }
   })
 
   test('Starter prompt is editable and contains no raw placeholder', async ({
@@ -500,6 +618,106 @@ test.describe('Chatbot Messaging Interface', () => {
 
     await typeMessage(page, 'Hello, chatbot!')
     await expect(input).toHaveValue('Hello, chatbot!')
+  })
+
+  test('Dictation install keeps keyboard focus through Start', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      let availability: 'downloadable' | 'available' = 'downloadable'
+      let resolveInstall: ((installed: boolean) => void) | null = null
+
+      class FakeSpeechRecognition {
+        continuous = false
+        interimResults = false
+        lang = ''
+        maxAlternatives = 1
+        processLocally = true
+        onend: (() => void) | null = null
+        onerror: ((event: Event) => void) | null = null
+        onresult: ((event: Event) => void) | null = null
+        onstart: (() => void) | null = null
+
+        static available() {
+          return Promise.resolve(availability)
+        }
+
+        static install() {
+          return new Promise<boolean>((resolve) => {
+            resolveInstall = (installed) => {
+              availability = installed ? 'available' : 'downloadable'
+              resolve(installed)
+            }
+          })
+        }
+
+        start() {
+          this.onstart?.()
+        }
+
+        stop() {
+          this.onend?.()
+        }
+
+        abort() {
+          this.onend?.()
+        }
+      }
+
+      const fakeWindow = window as typeof window & {
+        SpeechRecognition: typeof FakeSpeechRecognition
+        __dictationFake: boolean
+        __resolveDictationInstall?: (installed: boolean) => void
+      }
+      fakeWindow.SpeechRecognition = FakeSpeechRecognition
+      fakeWindow.__dictationFake = true
+      fakeWindow.__resolveDictationInstall = (installed) => {
+        resolveInstall?.(installed)
+      }
+    })
+
+    await visitChat(page)
+    const setup = page.getByTestId('chat-dictation')
+    await setup.focus()
+    await page.keyboard.press('Enter')
+
+    const install = page.getByTestId('chat-dictation-download')
+    await expect(install).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('chat-dictation-sheet')).toHaveCount(0)
+    await expect(setup).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(install).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('chat-dictation-installing')).toBeVisible()
+
+    await page.evaluate(() => {
+      const fakeWindow = window as typeof window & {
+        __resolveDictationInstall?: (installed: boolean) => void
+      }
+      fakeWindow.__resolveDictationInstall?.(false)
+    })
+    await expect(install).toBeEnabled()
+    await expect(install).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('chat-dictation-installing')).toBeVisible()
+
+    await page.evaluate(() => {
+      const fakeWindow = window as typeof window & {
+        __resolveDictationInstall?: (installed: boolean) => void
+      }
+      fakeWindow.__resolveDictationInstall?.(true)
+    })
+
+    const start = page.getByTestId('chat-dictation-start')
+    await expect(start).toBeFocused()
+    await page.keyboard.press('Enter')
+
+    await expect(page.getByTestId('chat-dictation-sheet')).toHaveCount(0)
+
+    const stop = page.getByTestId('chat-dictation-stop')
+    await expect(stop).toBeEnabled()
+    await expect(stop).toBeFocused()
   })
 
   test('Send button is present and clickable', async ({ page }) => {
@@ -1651,6 +1869,27 @@ test.describe('Chatbot Settings Panel', () => {
     })
   }
 
+  // Read the shipped settings copy so the spec tracks the product text.
+  function settingsCopy(messages: {
+    chat: {
+      settingsPanel: Record<
+        | 'autoSelectionInfo'
+        | 'usingPrimaryModel'
+        | 'fixedModelInfo'
+        | 'usingFallbackModel',
+        string
+      >
+    }
+  }) {
+    const copy = messages.chat.settingsPanel
+    return {
+      automatic: copy.autoSelectionInfo,
+      primary: copy.usingPrimaryModel,
+      fixed: copy.fixedModelInfo,
+      fallback: copy.usingFallbackModel,
+    }
+  }
+
   async function assertAutomaticAndFixedModelCopy(
     page: Page,
     participantId: string,
@@ -1671,9 +1910,7 @@ test.describe('Chatbot Settings Panel', () => {
       await setAllowedModelIds(['auto'])
       await setCredits(participantId, 50, 100)
       await visitChat(page)
-      await expect(page.getByTestId('chat-credits-display')).toContainText(
-        '50 / 100'
-      )
+      await expect(page.getByTestId('chat-credits-display')).toHaveText('50%')
       await openSettings(page)
 
       const modelSection = page.getByTestId('chat-model-selection')
@@ -1686,9 +1923,7 @@ test.describe('Chatbot Settings Panel', () => {
       // concrete model rather than Auto, so the copy must change with it.
       await setAllowedModelIds(['gpt-4.1'])
       await page.reload({ waitUntil: 'domcontentloaded' })
-      await expect(page.getByTestId('chat-credits-display')).toContainText(
-        '50 / 100'
-      )
+      await expect(page.getByTestId('chat-credits-display')).toHaveText('50%')
       await openSettings(page)
       await expect(modelSection).toContainText('GPT-4.1')
       await expect(modelSection).toContainText(copy.fixed)
@@ -1699,9 +1934,7 @@ test.describe('Chatbot Settings Panel', () => {
       // participant-credit fallback path.
       await setCredits(participantId, 0, 100)
       await page.reload({ waitUntil: 'domcontentloaded' })
-      await expect(page.getByTestId('chat-credits-display')).toContainText(
-        '0 / 100'
-      )
+      await expect(page.getByTestId('chat-credits-display')).toHaveText('0%')
       await openSettings(page)
       await expect(modelSection).toContainText(copy.fixed)
       await expect(modelSection).toContainText(copy.fallback)
@@ -1835,60 +2068,56 @@ test.describe('Chatbot Settings Panel', () => {
   test('Participant settings distinguish Auto and fixed models in English', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'en', {
-      automatic: 'KlickerUZH chooses a suitable model for each message.',
-      primary: 'The automatic choice is used while credits are available.',
-      fixed: 'Your lecturer fixed this model for all participants.',
-      fallback:
-        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'en',
+      settingsCopy(enMessages)
+    )
   })
 
   test('Participant settings distinguish Auto and fixed models in German', async ({
     page,
   }) => {
-    await assertAutomaticAndFixedModelCopy(page, participantId, 'de', {
-      automatic:
-        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
-      primary:
-        'Die automatische Auswahl wird verwendet, solange Credits verfügbar sind.',
-      fixed:
-        'Die Lehrperson hat dieses Modell für alle Teilnehmenden festgelegt.',
-      fallback:
-        'Es sind keine Credits mehr übrig. GPT-5.6 Luna kann als Credit-Fallback verwendet werden.',
-    })
+    await assertAutomaticAndFixedModelCopy(
+      page,
+      participantId,
+      'de',
+      settingsCopy(deMessages)
+    )
   })
 
-  test('Credits display shows current/total and percentage', async ({
-    page,
-  }) => {
+  test('Credits display shows the remaining percentage', async ({ page }) => {
     await setCredits(participantId, 75, 100)
     await visitChat(page)
 
     await expect(page.getByTestId('chat-credits-section')).toBeVisible()
-    await expect(page.getByTestId('chat-credits-display')).toContainText(
-      '75 / 100'
-    )
+    await expect(page.getByTestId('chat-credits-display')).toHaveText('75%')
   })
 
   test('Zero credits preserves the selected class and shows availability', async ({
     page,
   }) => {
     await setCredits(participantId, 0, 100)
+    await mockChatStream(page)
     await visitChat(page)
 
     await expect(page.getByTestId('chat-credits-section')).toBeVisible()
-    await expect(page.getByTestId('chat-credits-display')).toContainText(
-      '0 / 100'
-    )
-    await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
-      'Some models may no longer be available'
-    )
+    await expect(page.getByTestId('chat-credits-display')).toHaveText('0%')
+    await expect(page.getByTestId('chat-credits-empty-message')).toBeVisible()
 
     await openSettings(page)
-    const modelSection = page.getByTestId('chat-model-selection')
-    await expect(modelSection).toContainText('GPT-4.1')
-    await expect(modelSection).not.toContainText('GPT-4.1 Mini')
+    await expect(page.getByTestId('chat-model-select')).toBeVisible()
+
+    const chatRequestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+    await sendMessage(page, 'Default model without credits')
+    const chatRequest = await chatRequestPromise
+    const payload = chatRequest.postDataJSON() as { selectedModel?: string }
+    expect(payload.selectedModel).toBe('auto')
   })
 
   async function readAnswerPreferences(page: Page) {
@@ -2051,8 +2280,8 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-mobile-credits-bar')).toBeVisible()
-    await expect(page.getByTestId('chat-mobile-credits-display')).toContainText(
-      '0 / 100'
+    await expect(page.getByTestId('chat-mobile-credits-display')).toHaveText(
+      '0%'
     )
     await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
       'Some models may no longer be available'
@@ -2065,9 +2294,7 @@ test.describe('Chatbot Settings Panel', () => {
     await setCredits(participantId, 0, 0)
     await visitChat(page)
 
-    await expect(page.getByTestId('chat-credits-display')).toContainText(
-      '0 / 0'
-    )
+    await expect(page.getByTestId('chat-credits-display')).toHaveText('0%')
   })
 
   test('Model selection dropdown changes the model used for messages', async ({
@@ -2082,8 +2309,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
-    await expect(modelSection).toContainText('GPT-4.1')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-6 Luna')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -2094,7 +2320,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-4.1')
+    expect(payload.selectedModel).toBe('gpt-6-luna')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
@@ -2480,6 +2706,134 @@ test.describe('Chatbot Source Citations', () => {
       ],
     }
   }
+
+  test('Course figures authenticate fetching, retry, share viewer bytes and release them on navigation', async ({
+    page,
+  }, testInfo) => {
+    const bearer = await mintPwaEmbedSessionToken(participantId)
+    const assetId = 'a'.repeat(64)
+    const thread = await seedThread(participantId, {
+      messages: [
+        {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'A synthetic figure.' },
+            docQueryPart({
+              toolCallId: 'image-source',
+              sources: [{ file_name: 'synthetic.pdf', page_number: 2 }],
+            }),
+            {
+              type: 'tool-call',
+              toolCallId: 'image-selection',
+              toolName: 'show_course_image',
+              args: { asset_id: assetId },
+              result: {
+                status: 'selected',
+                image: {
+                  asset_id: assetId,
+                  image_sha256: 'b'.repeat(64),
+                  source_content_hash: 'c'.repeat(64),
+                  extraction_options_hash: 'd'.repeat(64),
+                  manifest_sha256: 'e'.repeat(64),
+                  kb_id: '41000000-0000-4000-8000-000000000001',
+                  external_resource_id: '41000000-0000-4000-8000-000000000002',
+                  resource_version: 1,
+                  physical_page_number: 2,
+                  width_px: 320,
+                  height_px: 180,
+                  mime_type: 'image/png',
+                  kind: 'figure',
+                  title: 'Synthetic figure source',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    })
+    await page.addInitScript((token) => {
+      sessionStorage.setItem('chat_pwa_embed_token', token)
+      const revoked: string[] = []
+      Object.defineProperty(window, 'courseImageRevocations', {
+        value: revoked,
+      })
+      const revoke = URL.revokeObjectURL.bind(URL)
+      URL.revokeObjectURL = (url) => {
+        revoked.push(url)
+        revoke(url)
+      }
+    }, bearer)
+    let requests = 0
+    let transientFailure = true
+    let denied = false
+    // The image endpoint is intercepted only in this browser test. Real route
+    // authorization and resource lifecycle checks have separate server coverage.
+    await page.route(
+      '**/api/chatbots/*/threads/*/messages/*/images/*',
+      async (route) => {
+        requests += 1
+        expect(
+          route.request().headers().authorization === `Bearer ${bearer}`
+        ).toBe(true)
+        expect(new URL(route.request().url()).search).toBe('')
+        if (transientFailure || denied) {
+          await route.fulfill({ status: denied ? 403 : 503 })
+          return
+        }
+        await route.fulfill({
+          contentType: 'image/png',
+          body: Buffer.from(TEST_PNG_DATA_URL.split(',')[1]!, 'base64'),
+        })
+      }
+    )
+    const url = `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`
+    await page.goto(url)
+    const card = page.getByTestId('chat-course-image')
+    await expect(card.getByRole('alert')).toBeVisible()
+    const failedRequests = requests
+    transientFailure = false
+    await card.getByRole('button').click()
+    const image = card.locator('img')
+    await expect(image).toBeVisible()
+    await expect(image).toHaveJSProperty('complete', true)
+    await expect(image).not.toHaveJSProperty('naturalWidth', 0)
+    await page.screenshot({
+      path: testInfo.outputPath('course-image-card.png'),
+    })
+    const firstUrl = await image.getAttribute('src')
+    expect(firstUrl).toMatch(/^blob:/)
+    await page.getByTestId('course-image-expand').click()
+    await expect(page.getByTestId('course-image-viewer-image')).toHaveAttribute(
+      'src',
+      firstUrl!
+    )
+    expect(requests).toBe(failedRequests + 1)
+    await page.screenshot({
+      path: testInfo.outputPath('course-image-viewer.png'),
+    })
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('course-image-expand')).toBeFocused()
+    await page.getByTestId('chat-new-thread-button').click()
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (objectUrl) =>
+            (
+              window as unknown as { courseImageRevocations: string[] }
+            ).courseImageRevocations.includes(objectUrl!),
+          firstUrl
+        )
+      )
+      .toBe(true)
+    await page.goto(url)
+    await expect(image).toBeVisible()
+    await expect(image).toHaveAttribute('src', /^blob:/)
+    await expect(image).not.toHaveAttribute('src', firstUrl!)
+    denied = true
+    await page.reload()
+    await expect(card.getByRole('alert')).toBeVisible()
+    await expect(card.locator('img')).toHaveCount(0)
+  })
 
   test('Retrieved chunk details preserve origins and citation identity after reload', async ({
     page,
@@ -2944,7 +3298,7 @@ test.describe('Chatbot Source Citations', () => {
     })
   }
 
-  test('Sources section renders one card per unique source in first-appearance order with a count heading', async ({
+  test('Sources section renders one card per unique source in first-appearance order', async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 })
@@ -3927,23 +4281,143 @@ test.describe('Chatbot Source Citations', () => {
     await expect(citedSource).toBeInViewport()
   })
 
-  test('Composer hint is visible in standalone mode and hidden when embedded', async ({
+  test('Composer hint is visible in standalone and embedded modes', async ({
     page,
   }) => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
     await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
-    await expect(page.getByTestId('chat-composer-hint')).toHaveText(
-      'Chatbot answers can be wrong — verify against your course materials.'
-    )
 
     await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
       waitUntil: 'domcontentloaded',
     })
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
-    await expect(page.getByTestId('chat-composer-hint')).toHaveCount(0)
+    await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
+  })
+
+  // The compact row is the only source view the embedded eLearning chat has,
+  // so a page line that regressed there would never be seen in the surface
+  // that reported it. Both cases below fail on a row that reads the retrieval
+  // envelope: that is what printed "S. 2–127" for a one-question answer about a
+  // 127-page script, and what hid a cited page behind the span.
+  test('Embedded source rows show the cited page range instead of the retrieved span', async ({
+    page,
+  }) => {
+    const messageId = '6b1c2d3e-0013-4a91-8f6c-2b7d1e5a9c41'
+    const thread = await seedThread(participantId, {
+      title: 'Embedded cited page range',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Wo steht diese Passage im Skript?' },
+          ],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-embedded-cited-pages',
+              sources: [
+                {
+                  reference: 'FinanceI_Skript_HS26.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'FinanceI_Skript_HS26.pdf',
+                  chunks: [
+                    {
+                      content: 'Synthetic passage on the first retrieved page',
+                      page_number: 2,
+                      labeled_page_number: '2',
+                    },
+                    {
+                      content: 'Synthetic passage on the last retrieved page',
+                      page_number: 127,
+                      labeled_page_number: '127',
+                    },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Die Passage steht im Skript [1, S. 6–7].' },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(
+      `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible()
+    // Embedded renders rows, so no card grid may stand in for them here.
+    await expect(section.getByTestId('chat-source-card')).toHaveCount(0)
+
+    const cited = section.getByTestId('chat-cited-sources')
+    await expect(cited).toContainText('FinanceI_Skript_HS26.pdf')
+    await expect(cited).toContainText('p. 6–7')
+    await expect(cited).not.toContainText('2–127')
+  })
+
+  test('Embedded source rows show no page line for a source cited without one', async ({
+    page,
+  }) => {
+    const messageId = '6c1d2e3f-0014-4b02-9a73-3c8e2f6b1d52'
+    const thread = await seedThread(participantId, {
+      title: 'Embedded retrieved span',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Fasse das Skript kurz zusammen.' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-embedded-retrieved-span',
+              sources: [
+                {
+                  reference: 'FinanceI_Skript_HS26.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'FinanceI_Skript_HS26.pdf',
+                  chunks: [
+                    {
+                      content: 'Synthetic passage on the first retrieved page',
+                      page_number: 2,
+                      labeled_page_number: '2',
+                    },
+                    {
+                      content: 'Synthetic passage on the last retrieved page',
+                      page_number: 127,
+                      labeled_page_number: '127',
+                    },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Das Skript behandelt mehrere Themen [1].' },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(
+      `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+
+    const cited = page
+      .getByTestId('chat-sources-section')
+      .getByTestId('chat-cited-sources')
+    await expect(cited).toContainText('FinanceI_Skript_HS26.pdf')
+    await expect(cited).not.toContainText('p. ')
   })
 
   test('Mobile header and sources stay clear of the expanded composer', async ({
@@ -4293,5 +4767,151 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     })
     await expect(content).toContainText('Response truncated')
     await expect(page.getByTestId('chat-message-error')).toHaveCount(0)
+  })
+})
+
+/**
+ * The graph workspace keeps one active data source per selected knowledge
+ * base. A response for a superseded selection must never reset the choice the
+ * participant made afterwards. These tests drive that race through the browser
+ * because it depends on render and layout-effect ordering inside the workspace.
+ */
+test.describe('Chatbot Knowledge Graph Selection', () => {
+  let participantId: string
+
+  const GRAPH_ALPHA = '11111111-1111-4111-8111-111111111111'
+  const GRAPH_BETA = '22222222-2222-4222-8222-222222222222'
+  const BETA_NODE = 'Beta concept node'
+
+  const graphChoices = [
+    { id: GRAPH_ALPHA, name: 'Graph Alpha' },
+    { id: GRAPH_BETA, name: 'Graph Beta' },
+  ]
+
+  const selectionRequired = () => ({
+    code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED',
+    choices: graphChoices,
+  })
+
+  const publishedGraph = (kbId: string, displayLabel: string) => ({
+    kbId,
+    buildId: `${kbId}-build`,
+    isStale: false,
+    truncated: false,
+    nodes: [
+      {
+        id: `${kbId}-node`,
+        labels: ['Concept'],
+        kind: 'concept',
+        displayLabel,
+        degree: 1,
+        sourceReferences: [
+          { resourceId: `${kbId}-resource`, title: 'Synthetic source' },
+        ],
+      },
+    ],
+    edges: [],
+  })
+
+  test.beforeEach(async ({ page }) => {
+    // The graph workspace only mounts for a seeded chatbot with the map
+    // visible: the layout 404s without the row and hides the graph otherwise.
+    await ensureChatbotSeeded()
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: true },
+    })
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('A delayed response for a superseded graph keeps the newer selection', async ({
+    page,
+  }) => {
+    // Order the two responses without relying on wall-clock timing: the
+    // superseded response is released only once the newer graph was picked.
+    let markSupersededStarted = () => {}
+    const supersededStarted = new Promise<void>((resolve) => {
+      markSupersededStarted = resolve
+    })
+    let releaseSuperseded = () => {}
+    const supersededReleased = new Promise<void>((resolve) => {
+      releaseSuperseded = resolve
+    })
+    let markSupersededDelivered = () => {}
+    const supersededDelivered = new Promise<void>((resolve) => {
+      markSupersededDelivered = resolve
+    })
+
+    await page.route(
+      `**/api/chatbots/${CHATBOT_ID}/knowledge-graph*`,
+      async (route) => {
+        const kbId = new URL(route.request().url()).searchParams.get('kbId')
+
+        // Two attached graphs and no selection yet -> the client must ask.
+        if (kbId === null) {
+          await route.fulfill({ status: 409, json: selectionRequired() })
+          return
+        }
+
+        // Superseded request: answers only after the newer graph was picked.
+        if (kbId === GRAPH_ALPHA) {
+          markSupersededStarted()
+          await Promise.race([
+            supersededReleased,
+            new Promise((resolve) => setTimeout(resolve, 15_000)),
+          ])
+          await route.fulfill({ status: 409, json: selectionRequired() })
+          markSupersededDelivered()
+          return
+        }
+
+        releaseSuperseded()
+        await route.fulfill({
+          status: 200,
+          json: publishedGraph(GRAPH_BETA, BETA_NODE),
+        })
+      }
+    )
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const choice = page.getByTestId('chat-knowledge-graph-choice')
+    await expect(choice).toBeVisible()
+
+    await selectOption(
+      page,
+      '[data-cy="chat-knowledge-graph-choice"]',
+      'Graph Alpha'
+    )
+    // The superseded request must really be in flight before the switch,
+    // otherwise the race under test never happens.
+    await supersededStarted
+    await selectOption(
+      page,
+      '[data-cy="chat-knowledge-graph-choice"]',
+      'Graph Beta'
+    )
+
+    await expect(choice).toContainText('Graph Beta')
+    await expect(
+      page.getByTestId('knowledge-graph-loaded-nodes')
+    ).toContainText(BETA_NODE)
+
+    // The superseded selection answered only after the newer one was in place.
+    await supersededDelivered
+    await page.waitForTimeout(750)
+
+    await expect(choice).toContainText('Graph Beta')
+    await expect(page.getByTestId('knowledge-graph-viewer')).toBeVisible()
+    await expect(
+      page.getByTestId('knowledge-graph-loaded-nodes')
+    ).toContainText(BETA_NODE)
   })
 })

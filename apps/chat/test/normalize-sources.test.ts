@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import {
+  countDocQueryDocuments,
   isDocQueryToolName,
+  normalizeResponseExampleEvidenceFromParts,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
 
@@ -93,6 +95,26 @@ describe('resource citation provenance', () => {
               reference:
                 'https://api.example.org/api/ingestion/resources/item/versions/3',
               chunks: [],
+            },
+          ],
+        }),
+      ])
+    ).toEqual([])
+  })
+
+  test('keeps an unnamed ingestion source with a chunk out of the citation list', () => {
+    const reference =
+      'https://api.example.org/api/ingestion/resources/item/versions/3'
+    // The retrieved chunks still render from the raw payload, but the entry
+    // must not gain a citation index or a participant-facing origin link.
+    expect(
+      normalizeSourcesFromParts([
+        toolCallPart('KB_doc_query', {
+          mode: 'documents',
+          sources: [
+            {
+              reference,
+              chunks: [{ content: 'Synthetic excerpt', page_number: 4 }],
             },
           ],
         }),
@@ -323,13 +345,59 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
+      id: 'url:urn:video-ingestion:sha256:video#t=42.0,59.0||0:42|42|59',
       index: 1,
       type: 'video',
       title: 'Lecture 1 — 0:42–0:59',
       labeledPage: '0:42',
       startSec: 42,
       endSec: 59,
+      videoPassages: [
+        {
+          startSec: 42,
+          endSec: 59,
+          excerpt: 'Video context',
+        },
+      ],
     })
+  })
+
+  test('retains every video passage in retrieval order', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [
+              { content: 'First passage', start_sec: 42, end_sec: 59 },
+              { content: 'Later passage', start_sec: 754, end_sec: 800 },
+              { content: 'Unknown end', start_sec: 1200 },
+              { content: 'Unsupported without a start', end_sec: 1500 },
+              { content: 'Negative start', start_sec: -1, end_sec: 10 },
+              {
+                content: 'Nonfinite start',
+                start_sec: Number.POSITIVE_INFINITY,
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]).toMatchObject({
+      startSec: 42,
+      endSec: 59,
+      excerpt: 'First passage',
+      videoPassages: [
+        { startSec: 42, endSec: 59, excerpt: 'First passage' },
+        { startSec: 754, endSec: 800, excerpt: 'Later passage' },
+        { startSec: 1200, excerpt: 'Unknown end' },
+      ],
+    })
+    expect(result[0]?.videoPassages).toHaveLength(3)
   })
 
   test('documents mode drops a reversed structured end time', () => {
@@ -362,7 +430,7 @@ describe('normalizeSourcesFromParts', () => {
     expect(result[0]?.endSec).toBeUndefined()
   })
 
-  test('structured video ranges participate in source deduplication', () => {
+  test('merges additional passages for the same original source key', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('IW_doc_query', {
         mode: 'documents',
@@ -373,21 +441,77 @@ describe('normalizeSourcesFromParts', () => {
             title: 'Lecture 1',
             chunks: [{ content: 'First', start_sec: 42, end_sec: 59 }],
           },
+        ],
+      }),
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
           {
-            reference: 'urn:video-ingestion:sha256:video#t=42.0,75.0',
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
             source_type: 'video',
             title: 'Lecture 1',
-            chunks: [{ content: 'Second', start_sec: 42, end_sec: 75 }],
+            chunks: [
+              { content: 'First', start_sec: 42, end_sec: 59 },
+              { content: 'Second', start_sec: 75, end_sec: 90 },
+            ],
           },
         ],
       }),
     ])
 
-    expect(
-      result.map(({ startSec, endSec }) => ({ startSec, endSec }))
-    ).toEqual([
-      { startSec: 42, endSec: 59 },
-      { startSec: 42, endSec: 75 },
+    expect(result.map(({ index, title }) => ({ index, title }))).toEqual([
+      { index: 1, title: 'Lecture 1' },
+    ])
+    expect(result[0]).toMatchObject({
+      startSec: 42,
+      endSec: 59,
+      excerpt: 'First',
+      videoPassages: [
+        { startSec: 42, endSec: 59, excerpt: 'First' },
+        { startSec: 75, endSec: 90, excerpt: 'Second' },
+      ],
+    })
+    expect(result[0]?.id).toBe(
+      'url:urn:video-ingestion:sha256:video#t=42.0,59.0|||42|59'
+    )
+  })
+
+  test('different first video ranges keep the original IDs and indices', () => {
+    const reference = 'urn:video-ingestion:sha256:video#t=42.0,59.0'
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference,
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [{ content: 'First', start_sec: 42, end_sec: 59 }],
+          },
+        ],
+      }),
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference,
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [{ content: 'Later', start_sec: 75, end_sec: 90 }],
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id, index }) => ({ id, index }))).toEqual([
+      {
+        id: 'url:urn:video-ingestion:sha256:video#t=42.0,59.0|||42|59',
+        index: 1,
+      },
+      {
+        id: 'url:urn:video-ingestion:sha256:video#t=42.0,59.0|||75|90',
+        index: 2,
+      },
     ])
   })
 
@@ -436,6 +560,25 @@ describe('normalizeSourcesFromParts', () => {
             expert: 'Prof. Muster',
             source_url: 'https://example.com/a.pdf',
             file_name: 'a.pdf',
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  test('does not expose response-example anchors as current answer sources', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('search_response_examples', {
+        degraded: false,
+        examples: [
+          {
+            id: '00000000-0000-4000-8000-000000000001',
+            referenceAnswer: 'Example guidance [example-source-1].',
+            sourceAnchors: [
+              { citationIndex: 1, citationAnchor: 'Synthetic page 4' },
+            ],
           },
         ],
       }),
@@ -655,6 +798,56 @@ describe('normalizeSourcesFromParts', () => {
     })
   })
 
+  test('normalizes the sanitized opaque reference in the nested envelope', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: '{"mode":"documents"}' }],
+        structuredContent: {
+          result: JSON.stringify({
+            mode: 'documents',
+            sources: [
+              {
+                reference: 'document-0123456789abcdef',
+                chunks: [{ content: 'Synthetic excerpt', page_number: 6 }],
+              },
+            ],
+          }),
+        },
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      title: 'Document',
+      page: 6,
+      excerpt: 'Synthetic excerpt',
+    })
+    expect(result[0]?.url).toBeUndefined()
+    expect(result[0]?.id).toMatch(/^url:document-[0-9a-f]{16}\|6\|$/)
+  })
+
+  test('counts documents once rather than counting chunks or rendered cards', () => {
+    expect(
+      countDocQueryDocuments({
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'document-0123456789abcdef',
+            chunks: [
+              { content: 'first', page_number: 1 },
+              { content: 'second', page_number: 2 },
+            ],
+          },
+          {
+            reference: 'document-fedcba9876543210',
+            title: 'Empty synthetic document',
+            chunks: [],
+          },
+        ],
+      })
+    ).toBe(1)
+  })
+
   test('envelope with non-JSON text content yields no sources', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', {
@@ -746,5 +939,299 @@ describe('normalizeSourcesFromParts', () => {
     ])
 
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
+  })
+
+  test('keeps display deduplication independent from capture lineage', () => {
+    const sharedLineage = {
+      source_id: '33ec1c89-f892-4ab6-97cb-27ed037ec33d',
+      chunk_id: 'chunk-7',
+      content_hash: 'b'.repeat(64),
+      citation_anchor: 'page=7',
+    }
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            ...sharedLineage,
+            file_name: 'lecture-01.pdf',
+            source_url: 'https://example.com/lecture-01.pdf',
+          },
+          {
+            ...sharedLineage,
+            file_name: 'course-notes.html',
+            source_url: 'https://example.com/course-notes.html',
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map(({ id }) => id)).toEqual([
+      'url:https://example.com/lecture-01.pdf||',
+      'url:https://example.com/course-notes.html||',
+    ])
+  })
+})
+
+describe('normalizeResponseExampleEvidenceFromParts', () => {
+  const sourceId = '33ec1c89-f892-4ab6-97cb-27ed037ec33d'
+  const contentHash = 'b'.repeat(64)
+
+  test('returns only complete lineage cited by the final Markdown answer', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        answer: 'Some answer text.',
+        sources: [
+          {
+            expert: 'Course source',
+            file_name: 'lecture-01.pdf',
+            source_id: sourceId,
+            chunk_id: 'chunk-7',
+            content_hash: contentHash,
+            citation_anchor: 'page=7',
+          },
+          {
+            expert: 'Unused source',
+            file_name: 'lecture-02.pdf',
+            source_id: 'b3ef3f06-ab00-4ff3-9ca2-c24cab723af3',
+            chunk_id: 'chunk-9',
+            content_hash: 'c'.repeat(64),
+            citation_anchor: 'page=9',
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'The relevant explanation is grounded here. [1]'
+      )
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('reads documents-mode lineage from the cited source chunk', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'lecture-01.pdf',
+            source_type: 'pdf',
+            source_id: sourceId,
+            chunks: [
+              {
+                chunk_id: 'chunk-7',
+                content_hash: contentHash,
+                citation_anchor: 'page=7',
+                content: 'Relevant excerpt',
+              },
+            ],
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toEqual([
+      {
+        citationIndex: 1,
+        sourceId,
+        chunkId: 'chunk-7',
+        contentHash,
+        citationAnchor: 'page=7',
+      },
+    ])
+  })
+
+  test('withholds capture for video locators unsupported by saved examples', () => {
+    const parts = [
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video:synthetic#t=754.0,800.0',
+            source_type: 'video',
+            source_id: sourceId,
+            chunks: [
+              {
+                chunk_id: 'earlier-chunk',
+                content_hash: contentHash,
+                citation_anchor: 'timestamp=0:00',
+                content: 'Earlier passage',
+                start_sec: 0,
+                end_sec: 754,
+              },
+              {
+                chunk_id: 'chunk-12',
+                content_hash: contentHash,
+                citation_anchor: 'timestamp=12:34',
+                content: 'Relevant video excerpt',
+                start_sec: 754,
+                end_sec: 800,
+              },
+            ],
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, '[1, T. 12:34]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, '[1] [1, t. 12:34]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(
+        parts,
+        'Literal `[1, t. 12:34]`, evidence [1].'
+      )?.[0]?.chunkId
+    ).toBe('earlier-chunk')
+  })
+
+  test('fails closed for missing lineage or an unresolved citation', () => {
+    const parts = [
+      toolCallPart('KB_doc_query', {
+        sources: [{ expert: 'Course source', file_name: 'lecture.pdf' }],
+      }),
+    ]
+
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [1]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer [2]')
+    ).toBeNull()
+    expect(
+      normalizeResponseExampleEvidenceFromParts(parts, 'Answer')
+    ).toBeNull()
+  })
+})
+
+// The retrieval payload carries no relevance score or rank, so the card has to
+// summarize what came back with the page envelope of the returned chunks.
+describe('retrieved page envelope', () => {
+  function documentSource(chunks: Array<Record<string, unknown>>) {
+    return normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'https://example.org/vorlesung-05.pdf',
+            title: 'Vorlesung 5 – Risk Measures',
+            chunks: chunks.map((chunk) => ({ content: 'Synthetic', ...chunk })),
+          },
+        ],
+      }),
+    ])
+  }
+
+  test('derives the envelope from every chunk, not only the first', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: '12' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 89,
+      labeledPage: '6',
+      labeledPageEnd: '89',
+    })
+  })
+
+  test('keeps the lowest retrieved page as the navigation anchor', () => {
+    const result = documentSource([
+      { page_number: 12, labeled_page_number: '12' },
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 89,
+      labeledPage: '6',
+      labeledPageEnd: '89',
+    })
+  })
+
+  test('keeps a single-page source single', () => {
+    const result = documentSource([
+      { page_number: 7, labeled_page_number: '7' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 7, labeledPage: '7' })
+    expect(result[0]?.pageEnd).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('collapses an envelope whose extremes tie', () => {
+    const result = documentSource([
+      { page_number: 4, labeled_page_number: '4' },
+      { page_number: 4, labeled_page_number: '4' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 4, labeledPage: '4' })
+    expect(result[0]?.pageEnd).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps a non-numeric label single', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: 'Kapitel IV' },
+      { page_number: 12, labeled_page_number: 'Kapitel VII' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 12,
+      labeledPage: 'Kapitel IV',
+    })
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps labels single when only some of them are numeric', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: 'Anhang' },
+    ])
+
+    expect(result[0]?.labeledPage).toBe('6')
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('ignores an N/A chunk label and keeps the physical envelope', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: 'N/A' },
+      { page_number: 12, labeled_page_number: 'N/A' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 6, pageEnd: 12 })
+    expect(result[0]?.labeledPage).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps the dedupe identity tied to the start page', () => {
+    const first = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+    const second = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: '12' },
+    ])
+
+    expect(first[0]?.id).toBe(second[0]?.id)
   })
 })

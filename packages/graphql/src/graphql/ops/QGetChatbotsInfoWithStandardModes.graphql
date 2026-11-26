@@ -13,6 +13,7 @@ query QGetChatbotsInfoWithStandardModes {
       tutorEnabled
       explainerEnabled
       quizzerEnabled
+      writingCoachEnabled
       courseName
       subjectDomain
       languageOfInstruction
@@ -20,6 +21,7 @@ query QGetChatbotsInfoWithStandardModes {
     }
     modelSelection
     answerPreferencesEnabled
+    interactiveExplanationsEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId
@@ -52,15 +54,9 @@ query QGetChatbotsInfoWithStandardModes {
       declinedCount
       pendingCount
     }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
+    enabledKnowledgeBase {
+      id
+      name
     }
     createdAt
     updatedAt

@@ -1,5 +1,5 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { CourseAuthType, PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   signJWT,
@@ -18,6 +18,9 @@ import {
 import type { Context } from '../src/lib/context.js'
 import {
   createParticipantAccount,
+  createParticipantToken,
+  loginParticipantForElearningChatbot,
+  loginParticipantForLtiChatbot,
   loginParticipantWithLti,
 } from '../src/services/accounts.js'
 
@@ -159,6 +162,7 @@ describe('LTI participant linking and creation', () => {
   }, 60000)
 
   afterEach(async () => {
+    vi.unstubAllEnvs()
     await cleanupTestData()
   })
 
@@ -471,5 +475,231 @@ describe('LTI participant linking and creation', () => {
       where: { username: usernameFor('cross-mode-new') },
     })
     expect(created).toBeNull()
+  })
+  it.each([
+    'issuer',
+    'scope',
+    'expired',
+    'unbound',
+    'assessment',
+    'deleted',
+    'unpublished',
+  ])('denies an invalid chatbot launch (%s) without creating participation', async (reason) => {
+    vi.stubEnv('APP_ORIGIN_LTI', 'https://lti.klicker.test')
+    const { user, course } = await createTestCourse()
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic tutor',
+        ownerId: user.id,
+        courseId: course.id,
+        status: 'PUBLISHED',
+      },
+    })
+    if (reason === 'assessment')
+      await prisma.course.update({
+        where: { id: course.id },
+        data: {
+          isAssessmentEnabled: true,
+          authType: CourseAuthType.SSO,
+          pinCode: null,
+        },
+      })
+    if (reason === 'deleted')
+      await prisma.course.update({
+        where: { id: course.id },
+        data: { deletionRequestedAt: new Date() },
+      })
+    if (reason === 'unpublished')
+      await prisma.chatbot.update({
+        where: { id: chatbot.id },
+        data: { status: 'DRAFT' },
+      })
+    const signedLtiData = await signJWT(
+      {
+        sub: ssoIdFor('denied'),
+        scope: reason === 'scope' ? 'LTI1.1' : 'LTI1.3',
+        ...(reason === 'unbound'
+          ? {}
+          : { chatbotLaunch: { courseId: course.id, chatbotId: chatbot.id } }),
+      },
+      process.env.APP_SECRET!,
+      {
+        issuer:
+          reason === 'issuer'
+            ? 'https://wrong.klicker.test'
+            : process.env.APP_ORIGIN_LTI,
+        expiresIn: reason === 'expired' ? '-1h' : '5m',
+      }
+    )
+    expect(
+      await loginParticipantForLtiChatbot(
+        { signedLtiData, courseId: course.id, chatbotId: chatbot.id },
+        createCtx()
+      )
+    ).toEqual({ status: 'DENIED' })
+    expect(
+      await prisma.participation.count({ where: { courseId: course.id } })
+    ).toBe(0)
+  })
+
+  it('reuses the current account without relinking and preserves leaderboard opt-in', async () => {
+    vi.stubEnv('APP_ORIGIN_LTI', 'https://lti.klicker.test')
+    const { user, course } = await createTestCourse()
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic tutor',
+        ownerId: user.id,
+        courseId: course.id,
+        status: 'PUBLISHED',
+      },
+    })
+    const participant = await prisma.participant.create({
+      data: { username: usernameFor('current'), password: 'unused-test-hash' },
+    })
+    const signedLtiData = await signJWT(
+      {
+        sub: ssoIdFor('unlinked'),
+        scope: 'LTI1.3',
+        chatbotLaunch: { courseId: course.id, chatbotId: chatbot.id },
+      },
+      process.env.APP_SECRET!,
+      { expiresIn: '5m', issuer: process.env.APP_ORIGIN_LTI }
+    )
+    const args = {
+      signedLtiData,
+      courseId: course.id,
+      chatbotId: chatbot.id,
+      participantToken: await createParticipantToken(participant.id),
+    }
+    expect(
+      await loginParticipantForLtiChatbot(args, createCtx())
+    ).toMatchObject({ status: 'ACCOUNT', participantId: participant.id })
+    const where = {
+      courseId_participantId: {
+        courseId: course.id,
+        participantId: participant.id,
+      },
+    }
+    expect(await prisma.participation.findUnique({ where })).toMatchObject({
+      isActive: false,
+    })
+    expect(
+      await prisma.participantAccount.count({
+        where: { participantId: participant.id },
+      })
+    ).toBe(0)
+    await prisma.participation.update({ where, data: { isActive: true } })
+    await loginParticipantForLtiChatbot(args, createCtx())
+    expect(await prisma.participation.findUnique({ where })).toMatchObject({
+      isActive: true,
+    })
+    await prisma.chatbot.delete({ where: { id: chatbot.id } })
+  })
+
+  it('logs in a linked account without a cookie and returns guest only for no match', async () => {
+    vi.stubEnv('APP_ORIGIN_LTI', 'https://lti.klicker.test')
+    const { user, course } = await createTestCourse()
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic tutor',
+        ownerId: user.id,
+        courseId: course.id,
+        status: 'PUBLISHED',
+      },
+    })
+    const participant = await prisma.participant.create({
+      data: {
+        username: usernameFor('linked-chat'),
+        password: 'unused-test-hash',
+        accounts: {
+          create: { ssoId: ssoIdFor('linked-chat'), ssoType: 'LTI1.3' },
+        },
+      },
+    })
+    const launch = (sub: string, target = chatbot.id) =>
+      signJWT(
+        {
+          sub,
+          scope: 'LTI1.3',
+          chatbotLaunch: { courseId: course.id, chatbotId: target },
+        },
+        process.env.APP_SECRET!,
+        { expiresIn: '5m', issuer: process.env.APP_ORIGIN_LTI }
+      )
+    const args = { courseId: course.id, chatbotId: chatbot.id }
+    expect(
+      await loginParticipantForLtiChatbot(
+        { ...args, signedLtiData: await launch(ssoIdFor('linked-chat')) },
+        createCtx()
+      )
+    ).toMatchObject({ status: 'ACCOUNT', participantId: participant.id })
+    expect(
+      await loginParticipantForLtiChatbot(
+        { ...args, signedLtiData: await launch(ssoIdFor('unknown')) },
+        createCtx()
+      )
+    ).toEqual({ status: 'GUEST' })
+    expect(
+      await loginParticipantForLtiChatbot(
+        {
+          ...args,
+          signedLtiData: await launch(ssoIdFor('unknown'), course.id),
+        },
+        createCtx()
+      )
+    ).toEqual({ status: 'DENIED' })
+    await prisma.chatbot.delete({ where: { id: chatbot.id } })
+  })
+  it('resolves a signed eLearning subject to its linked account or a chat-only guest', async () => {
+    vi.stubEnv('ELEARNING_CHAT_HANDOFF_SECRET', 'synthetic-handoff-secret')
+    const { user, course } = await createTestCourse()
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic tutor',
+        ownerId: user.id,
+        courseId: course.id,
+        status: 'PUBLISHED',
+      },
+    })
+    const linked = await prisma.participant.create({
+      data: {
+        username: usernameFor('elearning-linked'),
+        password: 'unused-test-hash',
+        accounts: {
+          create: { ssoId: ssoIdFor('elearning-linked'), ssoType: 'LTI1.3' },
+        },
+      },
+    })
+    const grant = (sub: string) =>
+      signJWT(
+        {
+          sub,
+          scope: 'ELEARNING_CHAT',
+          purpose: 'chat-handoff',
+          chatbotId: chatbot.id,
+          klickerCourseId: course.id,
+          elearningCourseId: '42',
+          aud: 'klicker-chat',
+        },
+        'synthetic-handoff-secret',
+        { expiresIn: '2m', issuer: 'elearning' }
+      )
+    const args = {
+      courseId: course.id,
+      chatbotId: chatbot.id,
+    }
+    expect(
+      await loginParticipantForElearningChatbot(
+        { ...args, grant: await grant(ssoIdFor('elearning-linked')) },
+        createCtx()
+      )
+    ).toMatchObject({ status: 'ACCOUNT', participantId: linked.id })
+    expect(
+      await loginParticipantForElearningChatbot(
+        { ...args, grant: await grant(ssoIdFor('elearning-unknown')) },
+        createCtx()
+      )
+    ).toEqual({ status: 'GUEST' })
+    await prisma.chatbot.delete({ where: { id: chatbot.id } })
   })
 })
