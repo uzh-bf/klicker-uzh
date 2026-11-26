@@ -1,6 +1,7 @@
 import {
   type AuditTransactionClient,
   emitCoveredParticipantEligibilityChange,
+  lockParticipationEligibility,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
 import type { AppLogger } from '@klicker-uzh/logging/node'
@@ -123,18 +124,15 @@ export async function autoAcceptInvitations(
       return 0
     }
 
-    // Concurrent sign-ins of the same participant would otherwise both see
-    // the invitations as pending and both record the eligibility change.
-    // The lock makes the second sign-in wait and then find them accepted.
-    const lockKey = `auth-invitation-accept:${matchingParticipantId}`
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
-
     // Find all pending invitations for any of the eligible emails
     const pendingInvitations = await tx.participantInvitation.findMany({
       where: {
         email: { in: normalizedInvitationEmails },
         status: 'PENDING',
       },
+      // Ascending course order keeps the per-course eligibility locks below
+      // from deadlocking against a concurrent sign-in.
+      orderBy: [{ courseId: 'asc' }, { id: 'asc' }],
     })
 
     log?.info(
@@ -152,6 +150,11 @@ export async function autoAcceptInvitations(
     let acceptedCount = 0
     for (const invitation of pendingInvitations) {
       try {
+        await lockParticipationEligibility(
+          tx,
+          invitation.courseId,
+          matchingParticipantId!
+        )
         const existingParticipation = await tx.participation.findUnique({
           where: {
             courseId_participantId: {

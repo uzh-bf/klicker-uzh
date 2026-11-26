@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   emitCoveredParticipantEligibilityChange,
+  lockParticipationEligibility,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
 import { prisma } from '@klicker-uzh/prisma'
@@ -448,6 +449,7 @@ async function autoAcceptInvitation(
         },
       })
 
+      await lockParticipationEligibility(tx, courseId, participantId)
       const previous = await tx.participation.findUnique({
         where: {
           courseId_participantId: {
@@ -526,6 +528,11 @@ export async function acceptParticipantInvitation(
   return runInAuditTransaction(
     prisma,
     async (tx, auditTx) => {
+      await lockParticipationEligibility(
+        tx,
+        input.courseId,
+        input.participantId
+      )
       const previous = await tx.participation.findUnique({
         where: {
           courseId_participantId: {
