@@ -233,8 +233,12 @@ chat:
     baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  # Metadata-only Langfuse tracing of chat turns (no prompts, answers or tool
+  # arguments/results; see docs/chat-platform.md). It starts only when
+  # secret-chat also provides LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY and
+  # LANGFUSE_BASE_URL; otherwise the pod logs a warning and stays untraced.
   telemetry:
-    enabled: false
+    enabled: true
     environment: 'production'
 
   # Offers the Tutor and Explainer the interactive-explanation tool. A chatbot
