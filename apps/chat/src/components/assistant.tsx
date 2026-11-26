@@ -74,6 +74,7 @@ interface ParticipationRequiredProps {
 
 interface DisclaimerDeclinedProps {
   readonly embedded: boolean
+  readonly assessment: boolean
   readonly disclaimer: ChatbotDisclaimer | null
   readonly showDisclaimerModal: boolean
   readonly actionError: boolean
@@ -137,6 +138,7 @@ export function Assistant({
     return (
       <DisclaimerDeclined
         embedded={embedded}
+        assessment={assessment}
         disclaimer={disclaimer}
         showDisclaimerModal={showDisclaimerModal}
         actionError={disclaimerActionError}
@@ -415,6 +417,7 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
 
 function DisclaimerDeclined({
   embedded,
+  assessment,
   disclaimer,
   showDisclaimerModal,
   actionError,
@@ -469,6 +472,7 @@ function DisclaimerDeclined({
         <DisclaimerModal
           disclaimer={disclaimer}
           isOpen={showDisclaimerModal}
+          assessment={assessment}
           onAccept={onAccept}
           onDecline={onDecline}
           errorMessage={actionError ? t('chat.disclaimer.actionError') : null}
