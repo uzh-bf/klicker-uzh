@@ -240,6 +240,9 @@ chat:
   telemetry:
     enabled: true
     environment: 'production'
+    # The keys come from secret-chat; the base URL is not secret, so it is
+    # rendered into config-chat instead of an Infisical entry.
+    baseUrl: 'https://langfuse.df-app.ch'
 
   # Offers the Tutor and Explainer the interactive-explanation tool. A chatbot
   # still needs its own setting and the owner's `interactive-explanations`
