@@ -31,7 +31,10 @@ type PromptContext = {
   'mode-tutor': Record<string, never>
   'mode-tutor-v2': Record<string, never>
   'mode-explainer': Record<string, never>
-  'mode-quizzer': Record<string, never>
+  'mode-quizzer': {
+    courseRetrievalAvailable: boolean
+    isElearningOrigin: boolean
+  }
   'mode-writing-coach': Record<string, never>
   'lecturer-guidance': { lecturerPrompt: string }
   'lecturer-custom-persona': {

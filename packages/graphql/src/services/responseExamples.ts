@@ -1,6 +1,10 @@
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
+import {
+  isSafeDocQueryBinding,
+  resolveEffectiveMCPConfigurations,
+} from '@klicker-uzh/util'
 import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
 import {
   applyResponseExampleEligibilityReconciliation,
@@ -97,6 +101,29 @@ function withChatbotModes(
       set.chatbot.mcpConfigurations
     ),
   }
+}
+
+function isResponseExampleModeAvailable(
+  chatbot: ResponseExampleSetWithRelations['chatbot'],
+  chatMode: string
+) {
+  if (
+    !extractChatbotModes(
+      chatbot.systemPrompts,
+      chatbot.standardModeConfig,
+      chatbot.mcpConfigurations
+    ).includes(chatMode)
+  ) {
+    return false
+  }
+
+  return (
+    chatMode !== 'quizzer' ||
+    resolveEffectiveMCPConfigurations(
+      chatbot.mcpConfigurations,
+      'quizzer'
+    ).some(isSafeDocQueryBinding)
+  )
 }
 
 export { computeResponseExampleSetDigest }
@@ -470,11 +497,7 @@ export async function captureResponseExample(
     if (
       chatbot.knowledgeBases.length !== 1 ||
       chatbot.knowledgeBases[0]?.kbId !== claims.kbId ||
-      !extractChatbotModes(
-        chatbot.systemPrompts,
-        chatbot.standardModeConfig,
-        chatbot.mcpConfigurations
-      ).includes(claims.chatMode)
+      !isResponseExampleModeAvailable(chatbot, claims.chatMode)
     ) {
       throw captureError(
         'This response is no longer eligible to be saved.',
@@ -621,11 +644,7 @@ async function reviewResponseExample(
 
     if (
       status === DB.ResponseExampleStatus.APPROVED &&
-      !extractChatbotModes(
-        example.set.chatbot.systemPrompts,
-        example.set.chatbot.standardModeConfig,
-        example.set.chatbot.mcpConfigurations
-      ).includes(example.chatMode)
+      !isResponseExampleModeAvailable(example.set.chatbot, example.chatMode)
     ) {
       throw new GraphQLError(
         'The response example uses a chat mode that is not available for this chatbot.',
@@ -784,13 +803,7 @@ export async function editAndApproveResponseExample(
       )
     }
 
-    if (
-      !extractChatbotModes(
-        example.set.chatbot.systemPrompts,
-        example.set.chatbot.standardModeConfig,
-        example.set.chatbot.mcpConfigurations
-      ).includes(input.chatMode)
-    ) {
+    if (!isResponseExampleModeAvailable(example.set.chatbot, input.chatMode)) {
       throw new GraphQLError(
         'The selected chat mode is not available for this chatbot.',
         { extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE } }

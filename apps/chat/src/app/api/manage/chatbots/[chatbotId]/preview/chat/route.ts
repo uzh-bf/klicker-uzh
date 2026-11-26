@@ -45,16 +45,20 @@ import {
   readBoundedJson,
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
-import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy'
+import {
+  isToolAllowed,
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+} from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
-import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
+import { resolveOwnerPreviewModeConfigurations } from '@/src/lib/server/previewAuthoringConfig'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   latestUserText,
   providerRefusalDeflection,
   providerRefusalTransform,
 } from '@/src/lib/server/providerRefusal'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import {
   issuePreviewResponseExampleReceipt,
   RESPONSE_EXAMPLE_RECEIPT_DATA_PART,
@@ -64,7 +68,6 @@ import {
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '@/src/lib/server/responseExampleRuntime'
-import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
@@ -88,7 +91,7 @@ const previewRateLimiter = createRateLimiter(20, 5 * 60 * 1000)
 const previewOptionsSchema = z.object({
   answerStyle: answerStyleSchema,
   answerTone: answerToneSchema,
-  selectedMode: z.string().trim().min(1).max(100).default('tutor'),
+  selectedMode: z.string().trim().min(1).max(100).optional(),
   selectedModel: z.string().trim().min(1).max(100).optional(),
   reasoningEffort: z.string().trim().min(1).max(100).nullable().optional(),
 })
@@ -100,6 +103,57 @@ function isRequiredMcp(parameters: unknown): boolean {
       !Array.isArray(parameters) &&
       (parameters as Record<string, unknown>).required === true
   )
+}
+
+/**
+ * Narrows one effective preview binding to document retrieval without
+ * widening what its stored allow-list permits. A required alias keeps its
+ * single raw tool name so the MCP client can expose it as `doc_query`.
+ */
+function previewDocQueryAllowedTools(configuration: {
+  allowedTools?: unknown
+  parameters?: unknown
+}): string[] | null {
+  const parameters =
+    configuration.parameters &&
+    typeof configuration.parameters === 'object' &&
+    !Array.isArray(configuration.parameters)
+      ? (configuration.parameters as Record<string, unknown>)
+      : null
+  const allowedTools = configuration.allowedTools
+
+  if (parameters?.required === true) {
+    if (parameters.toolAlias !== 'doc_query') return []
+    if (
+      Array.isArray(allowedTools) &&
+      allowedTools.length === 1 &&
+      typeof allowedTools[0] === 'string' &&
+      allowedTools[0].length > 0 &&
+      !/[*?]/.test(allowedTools[0])
+    ) {
+      return [allowedTools[0]]
+    }
+    return Array.isArray(allowedTools) &&
+      allowedTools.every((name) => typeof name === 'string') &&
+      allowedTools.length > 0 &&
+      isToolAllowed('doc_query', allowedTools)
+      ? ['doc_query']
+      : []
+  }
+
+  if (allowedTools !== undefined && allowedTools !== null) {
+    if (
+      !Array.isArray(allowedTools) ||
+      allowedTools.some((tool) => typeof tool !== 'string')
+    ) {
+      return null
+    }
+    if (allowedTools.length > 0 && !isToolAllowed('doc_query', allowedTools)) {
+      return null
+    }
+  }
+
+  return ['doc_query']
 }
 
 async function handlePOST(
@@ -209,22 +263,28 @@ async function handlePOST(
   const enabledMCPConfigurations = chatbot.mcpConfigurations.filter(
     (configuration) => configuration.isEnabled !== false
   )
+  const previewModeConfigurations =
+    resolveOwnerPreviewModeConfigurations(chatbot)
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig,
+    previewModeConfigurations.standardModeConfig,
     {
       allowUnapprovedModes: true,
-      customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
+      customModeConfig: previewModeConfigurations.customModeConfig,
     }
   )
   const selectedMode = resolveRequestedChatMode(
     modeOptions,
     options.data.selectedMode
   )
-  if (!Object.hasOwn(modeOptions, selectedMode)) {
+  if (!selectedMode || !Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
-      { error: `Unsupported chat mode: ${selectedMode}` },
+      {
+        error: options.data.selectedMode
+          ? `Unsupported chat mode: ${options.data.selectedMode}`
+          : 'No chat mode is available',
+      },
       { status: 400 }
     )
   }
@@ -305,24 +365,33 @@ async function handlePOST(
       (configuration) =>
         configuration.mcpServer.name === DOC_QUERY_MCP_SERVER_NAME
     )
-    .map((configuration) => ({
-      server: {
-        id: configuration.mcpServer.id,
-        name: configuration.mcpServer.name,
-        url: configuration.mcpServer.url,
-        authType: configuration.mcpServer.authType,
-        authSecret: configuration.mcpServer.authSecret ?? '',
-        parameters: configuration.mcpServer.parameters,
-        isActive: configuration.mcpServer.isActive,
-        passChatbotId: configuration.mcpServer.passChatbotId,
-        chatbotIdHeader: configuration.mcpServer.chatbotIdHeader ?? undefined,
-      },
-      config: {
-        allowedTools: ['doc_query'],
-        parameters: configuration.parameters,
-        priority: configuration.priority,
-      },
-    }))
+    .flatMap((configuration) => {
+      const allowedTools = previewDocQueryAllowedTools(configuration)
+      return allowedTools === null
+        ? []
+        : [
+            {
+              server: {
+                id: configuration.mcpServer.id,
+                name: configuration.mcpServer.name,
+                url: configuration.mcpServer.url,
+                authType: configuration.mcpServer.authType,
+                authSecret: configuration.mcpServer.authSecret ?? '',
+                parameters: configuration.mcpServer.parameters,
+                isActive: configuration.mcpServer.isActive,
+                passChatbotId: configuration.mcpServer.passChatbotId,
+                chatbotIdHeader:
+                  configuration.mcpServer.chatbotIdHeader ?? undefined,
+              },
+              config: {
+                allowedTools,
+                parameters: configuration.parameters,
+                priority: configuration.priority,
+              },
+            },
+          ]
+    })
+  const configuredDocumentsBinding = kbConfigurations.length > 0
 
   let mcpToolsHandle: MCPToolsHandle | undefined
   const closeMcpTools = async () => {
@@ -331,7 +400,7 @@ async function handlePOST(
     await activeHandle?.close()
   }
 
-  let tools: ToolSet
+  let tools: ToolSet = {}
   let captureKbId: string | undefined
   try {
     const kbIds = resolveMcpScope(
@@ -354,15 +423,17 @@ async function handlePOST(
       chatbot.knowledgeBases[0]?.kbId === kbIds[0]
         ? kbIds[0]
         : undefined
-    mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
-      chatbotId,
-      authMode: 'account',
-      ownerPreviewUserId: auth.userId,
-      kbIds,
-      sessionId: randomUUID(),
-      knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
-    })
-    tools = mcpToolsHandle.tools
+    if (kbConfigurations.length > 0) {
+      mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
+        chatbotId,
+        authMode: 'account',
+        ownerPreviewUserId: auth.userId,
+        kbIds,
+        sessionId: randomUUID(),
+        knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
+      })
+      tools = mcpToolsHandle.tools
+    }
   } catch (error) {
     await closeMcpTools()
     log.error(
@@ -409,7 +480,11 @@ async function handlePOST(
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
 
-    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+    if (
+      selectedMode === 'quizzer' &&
+      configuredDocumentsBinding &&
+      !quizzerDocQueryToolName
+    ) {
       await closeMcpTools()
       return NextResponse.json(
         {
@@ -442,10 +517,10 @@ async function handlePOST(
         answerTone: answerPreferencesEnabled
           ? options.data.answerTone
           : DEFAULT_ANSWER_TONE,
-        standardModeConfig: chatbot.standardModeConfig,
+        standardModeConfig: previewModeConfigurations.standardModeConfig,
         // Owner preview is an authoring surface, so it compiles the saved
         // revision's custom modes rather than the currently approved set.
-        customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
+        customModeConfig: previewModeConfigurations.customModeConfig,
       }
     )
     const effectiveSystemPrompt = responseExampleSummary
@@ -454,7 +529,7 @@ async function handlePOST(
     // Preview persists no thread and its messages carry no timestamps, so a
     // meeting clock reports zero elapsed minutes here.
     const turnSettings = getCustomModeTurnSettings(
-      resolveOwnerPreviewModeConfiguration(chatbot),
+      previewModeConfigurations.customModeConfig,
       selectedMode
     )
     const languageReminder = replyLanguageReminder(

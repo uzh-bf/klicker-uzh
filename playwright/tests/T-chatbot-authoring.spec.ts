@@ -1,11 +1,18 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Page, type TestInfo } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
+import {
+  clearChatCookies,
+  getEnrolledParticipantId,
+  mockChatStream,
+  setParticipantToken,
+} from '../util/chat.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
 import { fillEditorField } from '../util/fixtures/elements.js'
 import { mockGrowthBookFeatureFlags } from '../util/fixtures/manage.js'
+import { enMessages } from '../util/messages.js'
 import {
   COURSE_ID_TEST,
   URL_CHAT,
@@ -16,6 +23,21 @@ import {
 const CHATBOT_PREFIX = 'E2E Authoring'
 const FIRST_CHATBOT = `${CHATBOT_PREFIX} One`
 const SECOND_CHATBOT = `${CHATBOT_PREFIX} Two`
+type StandardModeSelection = {
+  tutorEnabled: boolean
+  explainerEnabled: boolean
+  quizzerEnabled: boolean
+  writingCoachEnabled: boolean
+}
+
+const STANDARD_MODE_FIELDS = [
+  ['tutor', 'tutorEnabled'],
+  ['explainer', 'explainerEnabled'],
+  ['quizzer', 'quizzerEnabled'],
+  ['writing-coach', 'writingCoachEnabled'],
+] as const satisfies ReadonlyArray<
+  readonly [string, keyof StandardModeSelection]
+>
 type PublicationChatbotStatus =
   | 'DRAFT'
   | 'REJECTED'
@@ -236,46 +258,27 @@ async function seedPublicationChatbot({
 }
 
 async function approveRevision(page: Page, id: string, version: number) {
-  const persisted = JSON.parse(
-    await readFile(
-      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
-      'utf8'
-    )
-  ) as Record<string, string>
-  // GraphQL is served by the API app, not by the manage frontend origin.
-  // The API derives the JWT from a cookie only when the request origin
-  // matches a known app subdomain, so send the session token from the
-  // browser context's cookie jar as a Bearer token instead.
-  const apiOrigin = process.env.APP_ORIGIN_API ?? 'http://127.0.0.1:3000'
-  const sessionToken = (await page.context().cookies()).find(
-    (cookie) => cookie.name === 'next-auth.session-token'
-  )?.value
-  if (!sessionToken) throw new Error('No lecturer session token in context')
-  const response = await page.request.post(`${apiOrigin}/api/graphql`, {
-    headers: {
-      'x-graphql-yoga-csrf': 'true',
-      authorization: `Bearer ${sessionToken}`,
-    },
-    data: {
-      operationName: 'MApproveChatbotRevision',
-      variables: { id, expectedRevisionVersion: version },
-      extensions: {
-        persistedQuery: {
-          version: 1,
-          sha256Hash: persisted.MApproveChatbotRevision,
-        },
-      },
-    },
-  })
-  expect(response.ok()).toBeTruthy()
-  const result = await response.json()
-  expect(result.errors).toBeUndefined()
-  expect(result.data.approveChatbotRevision).toMatchObject({
-    id,
-    status: 'PUBLISHED',
-    revisionStatus: null,
-    authoringRevision: null,
-  })
+  const review = await page.context().newPage()
+  try {
+    await review.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/admin`)
+    await review.getByTestId(`open-chatbot-review-${id}`).click()
+    await review.getByTestId(`approve-chatbot-${id}`).click()
+    const prisma = await getPrisma()
+    await expect
+      .poll(() =>
+        prisma.chatbot.findUnique({
+          where: { id },
+          select: { status: true, revisionVersion: true, revisionStatus: true },
+        })
+      )
+      .toEqual({
+        status: 'PUBLISHED',
+        revisionVersion: version + 1,
+        revisionStatus: null,
+      })
+  } finally {
+    await review.close()
+  }
 }
 
 async function fillPublicationRequest(page: Page, useCase: string) {
@@ -283,6 +286,258 @@ async function fillPublicationRequest(page: Page, useCase: string) {
   await page
     .getByTestId('chatbot-publication-expected-student-count')
     .fill('40')
+}
+
+async function setStandardModes(page: Page, selection: StandardModeSelection) {
+  for (const [mode, field] of STANDARD_MODE_FIELDS) {
+    const toggle = page.getByTestId(`chatbot-mode-switch-${mode}`)
+    await expect(toggle).toBeEnabled()
+    if ((await toggle.isChecked()) !== selection[field]) {
+      await toggle.click()
+    }
+    if (selection[field]) {
+      await expect(toggle).toBeChecked()
+    } else {
+      await expect(toggle).not.toBeChecked()
+    }
+  }
+}
+
+async function expectStandardModes(
+  page: Page,
+  selection: StandardModeSelection
+) {
+  for (const [mode, field] of STANDARD_MODE_FIELDS) {
+    const toggle = page.getByTestId(`chatbot-mode-switch-${mode}`)
+    await expect(toggle).toBeEnabled()
+    if (selection[field]) {
+      await expect(toggle).toBeChecked()
+    } else {
+      await expect(toggle).not.toBeChecked()
+    }
+  }
+}
+
+async function submitChatbotRevision(page: Page, useCase: string) {
+  await navigateToSetupStep(page, 'review')
+  await fillPublicationRequest(page, useCase)
+  const submit = page.getByTestId('request-chatbot-publication')
+  await expect(submit).toBeEnabled()
+  await submit.click()
+  await expect(
+    page.getByTestId('chatbot-details').getByTestId('chatbot-status')
+  ).toHaveText('Pending approval')
+}
+
+async function openOwnerPreview(page: Page, chatbotId: string) {
+  const [preview] = await Promise.all([
+    page.context().waitForEvent('page', { timeout: 30_000 }),
+    page.getByTestId('chatbot-owner-preview-link').click(),
+  ])
+  await expect(preview).toHaveURL(
+    `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
+  )
+  await expect(preview.getByTestId('chat-composer')).toBeVisible()
+  await expect(preview.getByTestId('chat-error')).toHaveCount(0)
+  return preview
+}
+
+async function mockPreviewChatStream(
+  page: Page,
+  chatbotId: string,
+  text: string
+) {
+  let counter = 0
+  await page.route(
+    `**/api/manage/chatbots/${chatbotId}/preview/chat`,
+    (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      counter += 1
+      const textId = `preview-text-${counter}`
+      return route.fulfill({
+        body:
+          [
+            'data: {"type":"start"}',
+            'data: {"type":"start-step"}',
+            `data: {"type":"text-start","id":"${textId}"}`,
+            `data: {"type":"text-delta","id":"${textId}","delta":${JSON.stringify(text)}}`,
+            `data: {"type":"text-end","id":"${textId}"}`,
+            'data: {"type":"finish-step"}',
+            'data: {"type":"finish"}',
+            'data: [DONE]',
+          ].join('\n\n') + '\n\n',
+        headers: {
+          'content-type': 'text/event-stream',
+          'x-vercel-ai-ui-message-stream': 'v1',
+        },
+        status: 200,
+      })
+    }
+  )
+}
+
+async function visitParticipantChat(page: Page, chatbotId: string) {
+  await clearChatCookies(page)
+  await setParticipantToken(page, await getEnrolledParticipantId())
+  await page.goto(`${process.env.URL_CHAT ?? URL_CHAT}/${chatbotId}`, {
+    waitUntil: 'domcontentloaded',
+  })
+  await page.getByTestId('chat-disclaimer-accept').click()
+  await expect(page.getByTestId('chat-disclaimer-content')).toHaveCount(0)
+  await expect(page.getByTestId('chat-composer')).toBeVisible()
+}
+
+async function sendChatMessage(page: Page, text: string) {
+  await page.getByTestId('chat-composer-input').fill(text)
+  await page.getByTestId('chat-send-button').click()
+}
+
+async function attachScreenshot(testInfo: TestInfo, page: Page, name: string) {
+  const path = testInfo.outputPath(`${name}.png`)
+  await page.screenshot({ path, animations: 'disabled' })
+  await testInfo.attach(name, { path, contentType: 'image/png' })
+}
+
+async function expectNoModeSelection(page: Page) {
+  await expect(page.getByTestId('chat-mode-switcher')).toHaveCount(0)
+  await expect(page.getByTestId('chat-welcome-mode-switcher')).toHaveCount(0)
+  await expect(
+    page.getByTestId('chat-embedded-toolbar').getByRole('combobox', {
+      name: enMessages.chat.modes.switcherLabel,
+    })
+  ).toHaveCount(0)
+}
+
+type ChatTurn = {
+  prompt: string
+  reply: string
+}
+
+type PreviewJourney = {
+  chatbotId: string
+  selectedMode: string
+  welcomeTestId: string
+  welcomeText: string
+  turn: ChatTurn
+  screenshotName: string
+}
+
+async function exerciseOwnerPreview(
+  page: Page,
+  testInfo: TestInfo,
+  journey: PreviewJourney
+) {
+  const preview = await openOwnerPreview(page, journey.chatbotId)
+  try {
+    await expectNoModeSelection(preview)
+    await expect(preview.getByTestId(journey.welcomeTestId)).toContainText(
+      journey.welcomeText
+    )
+    await mockPreviewChatStream(preview, journey.chatbotId, journey.turn.reply)
+    const request = preview.waitForRequest(
+      (candidate) =>
+        candidate.method() === 'POST' &&
+        candidate
+          .url()
+          .includes(`/api/manage/chatbots/${journey.chatbotId}/preview/chat`)
+    )
+    await sendChatMessage(preview, journey.turn.prompt)
+    expect((await request).postDataJSON()).toMatchObject({
+      selectedMode: journey.selectedMode,
+    })
+    await expect(
+      preview.getByTestId('chat-assistant-message-content')
+    ).toContainText(journey.turn.reply)
+    await attachScreenshot(testInfo, preview, journey.screenshotName)
+  } finally {
+    await preview.close()
+  }
+}
+
+type ParticipantJourney = {
+  chatbotId: string
+  selectedMode: string
+  welcomeTestId: string
+  welcomeText: string
+  standaloneTurns: readonly ChatTurn[]
+  embeddedTurn: ChatTurn
+  screenshotName: string
+}
+
+async function sendChatTurn(
+  page: Page,
+  chatbotId: string,
+  selectedMode: string,
+  turn: ChatTurn
+) {
+  const request = page.waitForRequest(
+    (candidate) =>
+      candidate.method() === 'POST' &&
+      candidate.url().endsWith(`/api/chatbots/${chatbotId}/chat`)
+  )
+  await sendChatMessage(page, turn.prompt)
+  expect((await request).postDataJSON()).toMatchObject({ selectedMode })
+  await expect(
+    page.getByTestId('chat-assistant-message-content').last()
+  ).toContainText(turn.reply)
+}
+
+async function exerciseParticipantJourney(
+  page: Page,
+  testInfo: TestInfo,
+  journey: ParticipantJourney
+) {
+  const participant = await page.context().newPage()
+  try {
+    await mockChatStream(
+      participant,
+      {
+        textByCall: [...journey.standaloneTurns, journey.embeddedTurn].map(
+          (turn) => turn.reply
+        ),
+      },
+      journey.chatbotId
+    )
+    await visitParticipantChat(participant, journey.chatbotId)
+    await expectNoModeSelection(participant)
+    await expect(participant.getByTestId(journey.welcomeTestId)).toContainText(
+      journey.welcomeText
+    )
+
+    for (const turn of journey.standaloneTurns) {
+      await sendChatTurn(
+        participant,
+        journey.chatbotId,
+        journey.selectedMode,
+        turn
+      )
+    }
+    await attachScreenshot(
+      testInfo,
+      participant,
+      `${journey.screenshotName}-standalone`
+    )
+
+    await participant.goto(
+      `${process.env.URL_CHAT ?? URL_CHAT}/${journey.chatbotId}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+    await expect(participant.getByTestId('chat-composer')).toBeVisible()
+    await expectNoModeSelection(participant)
+    await sendChatTurn(
+      participant,
+      journey.chatbotId,
+      journey.selectedMode,
+      journey.embeddedTurn
+    )
+    await attachScreenshot(
+      testInfo,
+      participant,
+      `${journey.screenshotName}-embedded`
+    )
+  } finally {
+    await participant.close()
+  }
 }
 
 test('Disabled AI beta blocks the direct authoring route before its queries', async ({
@@ -435,31 +690,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     })
     expect(previewPreferences).toEqual(['bullets', 'direct'])
 
-    await previewPage.route(
-      '**/api/manage/chatbots/*/preview/chat',
-      (route) => {
-        if (route.request().method() !== 'POST') return route.fallback()
-
-        return route.fulfill({
-          body:
-            [
-              'data: {"type":"start"}',
-              'data: {"type":"start-step"}',
-              'data: {"type":"text-start","id":"preview-text"}',
-              'data: {"type":"text-delta","id":"preview-text","delta":"Mocked reply."}',
-              'data: {"type":"text-end","id":"preview-text"}',
-              'data: {"type":"finish-step"}',
-              'data: {"type":"finish"}',
-              'data: [DONE]',
-            ].join('\n\n') + '\n\n',
-          headers: {
-            'content-type': 'text/event-stream',
-            'x-vercel-ai-ui-message-stream': 'v1',
-          },
-          status: 200,
-        })
-      }
-    )
+    await mockPreviewChatStream(previewPage, chatbotId, 'Mocked reply.')
 
     const previewRequest = previewPage.waitForRequest(
       (request) =>
@@ -891,13 +1122,26 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-mode-switch-writing-coach')
     ).not.toBeChecked()
-    await page.getByTestId('chatbot-mode-switch-tutor').click()
-    await expect(
-      page.getByTestId('chatbot-mode-switch-explainer')
-    ).toBeDisabled()
-    await page.getByTestId('chatbot-mode-switch-tutor').click()
-    await page.getByTestId('chatbot-mode-switch-explainer').click()
-    await page.getByTestId('chatbot-mode-switch-quizzer').click()
+    // Standard switches stay editable when another switch would otherwise
+    // look like the last one, including the previous explanation lock.
+    await setStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: true,
+      quizzerEnabled: true,
+      writingCoachEnabled: false,
+    })
+    await setStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: true,
+      writingCoachEnabled: false,
+    })
+    await setStandardModes(page, {
+      tutorEnabled: true,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: false,
+    })
     await expect(page.getByTestId('chatbot-section-modes')).toHaveAttribute(
       'data-status',
       'unsaved'
@@ -1150,15 +1394,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-framing')).toHaveValue(
       legacyScopeNote
     )
-    await page.getByTestId('chatbot-mode-switch-writing-coach').click()
-    await page.getByTestId('chatbot-mode-switch-tutor').click()
-    await page.getByTestId('chatbot-mode-switch-explainer').click()
-    await expect(
-      page.getByTestId('chatbot-mode-switch-writing-coach')
-    ).toBeChecked()
-    await expect(
-      page.getByTestId('chatbot-mode-switch-writing-coach')
-    ).toBeDisabled()
+    await setStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: true,
+    })
     await page.getByTestId('chatbot-section-modes-save').click()
     await expect
       .poll(() => modeConfigVariables)
@@ -1210,7 +1451,8 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
 
   test('authors a custom mode that survives save and publication', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    test.slow()
     const personaText = [
       'Challenge the participant with counter-arguments.',
       'Ask one question at a time.\nWait for the participant to respond.',
@@ -1261,6 +1503,12 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('add-chatbot-custom-mode-starter-0')
     ).toBeEnabled()
+    await setStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: false,
+    })
     await expect(page.getByTestId('chatbot-section-modes')).toHaveAttribute(
       'data-status',
       'unsaved'
@@ -1311,37 +1559,71 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-custom-mode-starter-0-2')
     ).toHaveCount(0)
+    await expectStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: false,
+    })
+
+    const prisma = await getPrisma()
+    const saved = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: { draftConfig: true },
+    })
+    const savedDraft = saved.draftConfig as {
+      customModeConfig: { modes: { key: string }[] }
+      standardModeConfig: Record<string, unknown>
+    }
+    const customMode = savedDraft.customModeConfig.modes[0]
+    if (!customMode) throw new Error('Expected the saved custom mode')
+    expect(customMode.key).toMatch(/^cm_/)
+    expect(savedDraft.standardModeConfig).toMatchObject({
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: false,
+      writingCoachEnabled: false,
+      explicitModeSelection: true,
+    })
+
+    await exerciseOwnerPreview(page, testInfo, {
+      chatbotId,
+      selectedMode: customMode.key,
+      welcomeTestId: 'chat-custom-mode-welcome',
+      welcomeText: welcomeMessage,
+      turn: {
+        prompt: 'Start the custom-only preview',
+        reply: 'Synthetic custom-only preview reply.',
+      },
+      screenshotName: 'custom-only-owner-preview',
+    })
 
     // Approval only applies to a revision that was submitted for review, so the
     // draft has to pass the publication gate before it can be approved.
     await setPublishingAuthorization(true)
     await page.reload()
-    await navigateToSetupStep(page, 'review')
-    await fillPublicationRequest(
+    await submitChatbotRevision(
       page,
       'Support students with a synthetic study aid.'
     )
-    await page.getByTestId('request-chatbot-publication').click()
-    await expect(
-      page.getByTestId('chatbot-details').getByTestId('chatbot-status')
-    ).toHaveText('Pending approval')
 
-    const prisma = await getPrisma()
     const revision = await prisma.chatbot.findUniqueOrThrow({
       where: { id: chatbotId },
       select: { revisionVersion: true, draftConfig: true },
     })
-    const customMode = (
+    const approvedCustomMode = (
       revision.draftConfig as { customModeConfig: { modes: { key: string }[] } }
     ).customModeConfig.modes[0]
     await page.goto(`${process.env.URL_MANAGE ?? URL_MANAGE}/admin`)
     await page.getByTestId(`open-chatbot-review-${chatbotId}`).click()
     await expect(
-      page.getByTestId(`chatbot-admin-review-welcome-${customMode.key}`)
+      page.getByTestId(`chatbot-admin-review-welcome-${approvedCustomMode.key}`)
     ).toContainText(welcomeMessage)
     for (const starter of starterPrompts) {
       await expect(
-        page.getByTestId(`chatbot-admin-review-starters-${customMode.key}`)
+        page.getByTestId(
+          `chatbot-admin-review-starters-${approvedCustomMode.key}`
+        )
       ).toContainText(starter)
     }
     await approveRevision(page, chatbotId, revision.revisionVersion)
@@ -1352,6 +1634,114 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-custom-mode-name-0')).toHaveValue(
       'Debate coach'
     )
+
+    await exerciseParticipantJourney(page, testInfo, {
+      chatbotId,
+      selectedMode: approvedCustomMode.key,
+      welcomeTestId: 'chat-custom-mode-welcome',
+      welcomeText: welcomeMessage,
+      standaloneTurns: [
+        {
+          prompt: 'Open the standalone custom mode',
+          reply: 'Synthetic custom-only standalone reply.',
+        },
+      ],
+      embeddedTurn: {
+        prompt: 'Open the embedded custom mode',
+        reply: 'Synthetic custom-only embedded reply.',
+      },
+      screenshotName: 'custom-only-participant',
+    })
+  })
+
+  test('publishes KB-free Quizzer alone and exercises preview plus both participant surfaces', async ({
+    page,
+  }, testInfo) => {
+    test.slow()
+    await setPublishingAuthorization(true)
+    await page.reload()
+    const chatbotId = await createChatbot(
+      page,
+      `${CHATBOT_PREFIX} Quizzer Only`
+    )
+    await navigateToSetupStep(page, 'modes')
+    await setStandardModes(page, {
+      tutorEnabled: false,
+      explainerEnabled: false,
+      quizzerEnabled: true,
+      writingCoachEnabled: false,
+    })
+    await saveSection(page, 'modes')
+
+    const prisma = await getPrisma()
+
+    await exerciseOwnerPreview(page, testInfo, {
+      chatbotId,
+      selectedMode: 'quizzer',
+      welcomeTestId: 'chat-welcome-mode',
+      welcomeText: enMessages.chat.modes.quizzer,
+      turn: {
+        prompt: 'Ask me a practice question about respiration',
+        reply: 'Synthetic preview practice question.',
+      },
+      screenshotName: 'quizzer-owner-preview',
+    })
+
+    await submitChatbotRevision(
+      page,
+      'Offer synthetic practice without a course knowledge base.'
+    )
+    const revision = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: { revisionVersion: true },
+    })
+    await approveRevision(page, chatbotId, revision.revisionVersion)
+
+    const published = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: {
+        status: true,
+        standardModeConfig: true,
+        _count: { select: { knowledgeBases: true } },
+      },
+    })
+    expect(published).toMatchObject({
+      status: 'PUBLISHED',
+      standardModeConfig: {
+        tutorEnabled: false,
+        explainerEnabled: false,
+        quizzerEnabled: true,
+        writingCoachEnabled: false,
+        explicitModeSelection: true,
+      },
+      _count: { knowledgeBases: 0 },
+    })
+
+    const question =
+      'Synthetic practice question: Which process produces most ATP?'
+    const feedback =
+      'Synthetic feedback: Correct, oxidative phosphorylation produces most ATP.'
+    await exerciseParticipantJourney(page, testInfo, {
+      chatbotId,
+      selectedMode: 'quizzer',
+      welcomeTestId: 'chat-welcome-mode',
+      welcomeText: enMessages.chat.modes.quizzer,
+      standaloneTurns: [
+        {
+          prompt: 'Ask me a practice question about cellular energy',
+          reply: question,
+        },
+        {
+          prompt: 'Oxidative phosphorylation',
+          reply: feedback,
+        },
+      ],
+      embeddedTurn: {
+        prompt: 'Ask an embedded practice question',
+        reply: 'Synthetic embedded Quizzer practice reply.',
+      },
+      screenshotName: 'quizzer-participant',
+    })
   })
 
   test('stops adding custom modes at the platform limit', async ({ page }) => {
