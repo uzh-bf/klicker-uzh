@@ -74,7 +74,10 @@ is a new purpose. Three existing mechanisms looked reusable and are not:
   limited to fixed categories: topics worked on and how it went, recurring
   difficulties, and the stated learning goal. It holds no transcripts.
 - **Memory is inferred, so the student controls it.** The student can read and
-  delete it at any time and keep personalization on.
+  delete it at any time and keep personalization on. Deleting also works while
+  the account data-use notice awaits a new acknowledgement. Changing the choice
+  follows the other data-use choices and needs the current notice acknowledged
+  first; until then nothing is used and nothing new is written.
 - **Opting out stops the use in the same write as the choice.** That write
   also raises the participant's memory epoch and records a forget request in a
   table that does not depend on the participant row. Every call to the service

@@ -59,14 +59,17 @@ export async function GET(
 /**
  * Delete the student's learning notes for this chatbot's course. The student
  * keeps their choice; later Tutor conversations start new notes. Deleting is
- * always allowed, whatever the choice or the chatbot's settings currently are.
+ * always allowed, whatever the choice or the chatbot's settings currently are,
+ * and also while the account data-use notice awaits a new acknowledgement.
  */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, {
+    allowIncompleteDataUse: true,
+  })
   if ('response' in authResult) {
     return authResult.response
   }

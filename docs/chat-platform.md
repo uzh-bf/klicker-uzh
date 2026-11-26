@@ -1573,6 +1573,9 @@ contract, the choice, eligibility and the interface.
   backend, the chat and the general Hatchet worker need the same three values.
   A deployment missing any of them has no learning notes: the notice, the
   settings and the Tutor behave as described above and no call is made.
+  The key secret must not change while the service holds records: withdrawals
+  and account deletions would then address new keys and no longer reach the
+  existing records. To change it, delete the service's database first.
 - **When notes are used.** All of: the learner context is eligible, the
   deployment is configured, the chatbot owner has a Catalyst entitlement, and
   the student's yes was recorded under the notice version that describes notes
