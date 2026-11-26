@@ -2336,11 +2336,13 @@ export async function POST(
       reasoningContent,
       rawCreditsUsed,
       phase,
+      emptyResponse = false,
     }: {
       content: ReturnType<typeof mapAssistantStepContent>
       reasoningContent: string | null
       rawCreditsUsed: number | null
       phase: 'complete' | 'abort'
+      emptyResponse?: boolean
     }) => {
       try {
         await finalizeChatTurn({
@@ -2353,10 +2355,13 @@ export async function POST(
           lifecycleAttemptId,
           parentId: userMessageId,
           ...(assessment ? { keepFailedMarker: true } : {}),
-          // Exam answers that hit a stream error or the turn deadline are kept
-          // as failed, with what was generated, so the record shows them.
+          // Exam answers that hit a stream error, the turn deadline or ended
+          // without any visible answer are kept as failed, with what was
+          // generated, so the record shows them.
           ...(assessment &&
-          (firstError || (phase === 'abort' && Date.now() >= turnDeadlineMs))
+          (firstError ||
+            emptyResponse ||
+            (phase === 'abort' && Date.now() >= turnDeadlineMs))
             ? { failed: true }
             : {}),
           content: content as Prisma.InputJsonValue,
@@ -2695,6 +2700,7 @@ export async function POST(
             reasoningContent: finishedReasoningContent,
             rawCreditsUsed,
             phase: 'complete',
+            emptyResponse,
           })
 
           if (!firstError) {

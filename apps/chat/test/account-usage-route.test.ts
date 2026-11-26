@@ -1900,6 +1900,22 @@ describe('assessment chat route', () => {
     )
   })
 
+  test('records an exam answer without visible text as failed', async () => {
+    const response = await POST(assessmentRequest(), params)
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [{ content: [{ type: 'reasoning', text: '' }] }],
+      reasoningText: '',
+      providerMetadata: null,
+    })
+
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ keepFailedMarker: true, failed: true })
+    )
+  })
+
   test('fails the turn when the question cannot be saved', async () => {
     mocks.messageUpdateMany.mockRejectedValue(new Error('db down'))
 
