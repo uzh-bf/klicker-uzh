@@ -690,13 +690,12 @@ selection shows up. A rerun with the same output resumes.
      --models gpt-6-luna,gpt-6.1-sol,gpt-6.2-sol,auto-v5
    ```
 
-3. Score with `apps/chat/scripts/model-matrix-report.mjs`. `check` applies the
-   corpus's `matrix-checks.json` (result leaks, exact results, required and
-   forbidden tool inputs, empty answers, latency, credits). `blind` writes
-   rubric batches under random ids with a separate `key.json`; give each batch
-   to a grader that writes `scores-<n>.json` as an array of
-   `{ "id", "scores": [2|1|0|"U" per rubric entry], "note" }`. `merge` joins
-   them into per-model and per-case results.
+3. Score the capture with `evaluation/scripts/model-matrix-report.mjs` in
+   `klicker-uzh-catalyst`, which holds the evaluation judge and metrics. Its
+   `check` command applies the corpus's `matrix-checks.json` (result leaks,
+   exact results, required and forbidden tool inputs, empty answers, latency,
+   credits); `blind` and `merge` run blind rubric grading. See "Model
+   comparison scoring" in that repository's `evaluation/README.md`.
 
 Fix a weakness in the shared prompt when it appears on several models. Add a
 model-specific instruction only when one model fails a rule the others follow

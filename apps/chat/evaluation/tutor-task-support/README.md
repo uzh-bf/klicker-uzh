@@ -66,7 +66,7 @@ spend cap.
 
 To compare several models on a deployed chat, run this corpus with
 `apps/chat/scripts/run-model-matrix.mjs` and score it with
-`apps/chat/scripts/model-matrix-report.mjs check --checks matrix-checks.json`.
+`klicker-uzh-catalyst`'s `evaluation/scripts/model-matrix-report.mjs check`.
 `matrix-checks.json` lists, per case, the result, the turns where stating it
 is a leak or where it must appear exactly, the turns that must use the
 calculator, and graded-task values that must not reach it. See
