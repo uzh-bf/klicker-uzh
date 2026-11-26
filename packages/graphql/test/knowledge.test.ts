@@ -19,6 +19,7 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
   type ChatbotAuthoringRevision,
 } from '@klicker-uzh/types'
+import { resolveEffectiveMCPConfigurations } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
 import { readFileSync } from 'fs'
@@ -1716,6 +1717,57 @@ describe('Integration tests for knowledge base CRUD', () => {
         )
       )
     ).toEqual([secondKb.id])
+  })
+
+  it.each([
+    true,
+    false,
+  ])('preserves Quizzer retrieval eligibility across clearing and restoring the default (enabled: %s)', async (isEnabled) => {
+    const first = await createKb({ name: 'Original source' }, userOneCtx)
+    const next = await createKb({ name: 'Replacement source' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const { id: chatbotId } = await prisma.chatbot.create({
+      data: {
+        name: 'Practice',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const quizzerScope = async () => {
+      const rows = await prisma.chatbotMCPConfig.findMany({
+        where: { chatbotId, mcpServer: { name: 'KB' } },
+        include: { mcpServer: { select: { id: true, name: true } } },
+      })
+      return resolveMcpScope(
+        rows.filter((row) => row.isEnabled),
+        'quizzer',
+        resolveEffectiveMCPConfigurations(rows, 'quizzer')
+      )
+    }
+
+    await withPluralKbWrites(async () => {
+      await attachKbToChatbot({ chatbotId, kbId: first.id }, userOneCtx)
+      await addKbLinkToChatbot({ chatbotId, kbId: next.id }, userOneCtx)
+      await prisma.chatbotMCPConfig.create({
+        data: {
+          chatbot: { connect: { id: chatbotId } },
+          mcpServer: { connect: { name: 'KB' } },
+          chatMode: 'quizzer',
+          isEnabled,
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: first.id,
+          },
+        },
+      })
+      expect(await quizzerScope()).toEqual(isEnabled ? [first.id] : undefined)
+      await setChatbotDefaultKb({ chatbotId, kbId: null }, userOneCtx)
+      expect(await quizzerScope()).toBeUndefined()
+      await setChatbotDefaultKb({ chatbotId, kbId: next.id }, userOneCtx)
+      expect(await quizzerScope()).toEqual(isEnabled ? [next.id] : undefined)
+    })
   })
 
   it('serializes concurrent default replacements to one default', async () => {

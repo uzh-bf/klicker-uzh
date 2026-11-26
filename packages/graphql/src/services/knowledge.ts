@@ -1409,6 +1409,16 @@ async function reconcileDefaultKbProjection(
     )
     .map(({ key }) => key)
   if (kbId === null) {
+    // Quizzer inherits Tutor’s document scope when it has no exact KB row.
+    // Leave explicitly disabled overrides in place so they still block inheritance.
+    await prisma.chatbotMCPConfig.deleteMany({
+      where: {
+        chatbotId,
+        mcpServerId: mcpServer.id,
+        chatMode: 'quizzer',
+        isEnabled: true,
+      },
+    })
     // An exact binding for an explicitly assigned mode is independent of the default.
     await prisma.chatbotMCPConfig.updateMany({
       where: {
