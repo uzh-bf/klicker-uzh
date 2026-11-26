@@ -109,12 +109,16 @@ const provider: CourseSourcesProvider = {
 }
 
 let prisma: DB.PrismaClient
+// The per-lecturer `lecture-video-sources` flag as GrowthBook would answer it.
+let videoFlagOn = true
+const featureFlags = {
+  isEnabled: (key: string) => key === 'lecture-video-sources' && videoFlagOn,
+}
 const userIds: string[] = []
 const kbIds: string[] = []
 
 beforeAll(async () => {
   process.env.NEXT_PUBLIC_MANAGE_URL = 'https://manage.example.org'
-  process.env.VIDEO_SOURCES_ENABLED = 'true'
   prisma = await createDisposableTestPrismaClient(process.env.DATABASE_URL!)
 })
 
@@ -160,6 +164,7 @@ async function user(
   })
   return {
     prisma,
+    featureFlags,
     user: {
       sub: id,
       role,
@@ -487,11 +492,11 @@ describe('video source approval', () => {
         provider,
       })
     ).rejects.toThrow('course directory link')
-    process.env.VIDEO_SOURCES_ENABLED = 'false'
+    videoFlagOn = false
     await expect(submitVideoSource(base, owner, { provider })).rejects.toThrow(
       'not available yet'
     )
-    process.env.VIDEO_SOURCES_ENABLED = 'true'
+    videoFlagOn = true
 
     // Nothing can be requested before an admin verified the links.
     await expect(

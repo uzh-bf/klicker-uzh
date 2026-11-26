@@ -54,8 +54,8 @@ client), `packages/prisma/src/prisma/schema/videoSource.prisma`,
 ## Flow
 
 1. A knowledge base owner adds a lecture video source in the knowledge base's
-   Add resource dialog (`submitVideoSource`, only while
-   `VIDEO_SOURCES_ENABLED=true`): a name, the recordings link (OLAT course
+   Add resource dialog (`submitVideoSource`, only for lecturers
+   the `lecture-video-sources` GrowthBook flag targets): a name, the recordings link (OLAT course
    node or MediaSpace channel) and the course directory link. With a provider
    configured, its `source-link` call validates the link, and its message is
    shown to the owner if it does not know the link. The source is stored as

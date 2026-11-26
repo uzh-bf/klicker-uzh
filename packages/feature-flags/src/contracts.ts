@@ -27,6 +27,11 @@ export const FEATURE_FLAG_DEFAULTS = {
   // Explainer chats per chatbot. Without it the Manage toggle is hidden, saving
   // the setting as enabled is denied, and chat does not offer the tool.
   'interactive-explanations': false,
+  // Lets a lecturer add lecture recordings (OLAT node or MediaSpace channel
+  // plus the course directory link) to a knowledge base they own. Without it
+  // the Video option in "Add resource" is hidden and submitting is denied.
+  // Admin review, approval links and revocation do not read it.
+  'lecture-video-sources': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

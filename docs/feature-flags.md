@@ -47,14 +47,15 @@ settlement are unaffected.
 
 ## Active flags
 
-| Key                           | Consumer                                                  | Fallback | Disabled behavior                                                                                                 |
-| ----------------------------- | --------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
-| `learning-analytics`          | Lecturer UI/Manage                                        | `false`  | Analytics controls remain visible but are not usable                                                              |
-| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout   | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                    |
-| `chatbot-response-examples`   | Response example review in Manage                         | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples              |
-| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save     | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged |
-| `question-generation`         | Question and flashcard generation in Manage and GraphQL   | `false`  | The generate entry points are hidden and every generation API call is denied                                      |
-| `interactive-explanations`    | Per-chatbot interactive explanations toggle and chat tool | `false`  | The toggle is hidden, enabling it is denied, and chat does not offer the explanation tool                         |
+| Key                           | Consumer                                                                       | Fallback | Disabled behavior                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `learning-analytics`          | Lecturer UI/Manage                                                             | `false`  | Analytics controls remain visible but are not usable                                                                       |
+| `ai-beta`                     | Server-side chatbot authoring and account-usage rollout                        | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                             |
+| `chatbot-response-examples`   | Response example review in Manage                                              | `false`  | The review is not mounted and its query does not run; the chat runtime keeps using approved examples                       |
+| `chatbot-long-custom-prompts` | Custom chat mode persona length in Manage and on save                          | `false`  | New or edited persona text is capped at 10,000 characters; stored longer text keeps compiling and saves unchanged          |
+| `question-generation`         | Question and flashcard generation in Manage and GraphQL                        | `false`  | The generate entry points are hidden and every generation API call is denied                                               |
+| `interactive-explanations`    | Per-chatbot interactive explanations toggle and chat tool                      | `false`  | The toggle is hidden, enabling it is denied, and chat does not offer the explanation tool                                  |
+| `lecture-video-sources`       | Video option in a knowledge base's Add resource dialog and `submitVideoSource` | `false`  | The Video option is hidden and submitting a lecture video source is denied; admin review and approval links are unaffected |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information

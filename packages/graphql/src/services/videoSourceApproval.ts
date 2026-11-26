@@ -8,6 +8,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import {
   CourseSourcesError,
   type CourseSourcesProvider,
@@ -150,9 +151,12 @@ function assertHttpUrl(value: string, label: string) {
   }
 }
 
-/** Whether KB owners may submit lecture video sources on this deployment. */
-export function videoSourceSubmissionEnabled(env = process.env) {
-  return env.VIDEO_SOURCES_ENABLED === 'true'
+/**
+ * Whether this lecturer may submit lecture video sources: the per-lecturer
+ * `lecture-video-sources` GrowthBook flag, failing closed.
+ */
+export function videoSourceSubmissionEnabled(ctx: ContextWithUser) {
+  return isFeatureFlagEnabled(ctx, 'lecture-video-sources')
 }
 
 const SOURCE_INCLUDE = {
@@ -176,7 +180,7 @@ export async function submitVideoSource(
   ctx: ContextWithUser,
   deps: { provider?: CourseSourcesProvider | null } = {}
 ) {
-  if (!videoSourceSubmissionEnabled()) {
+  if (!(await videoSourceSubmissionEnabled(ctx))) {
     throw new GraphQLError('Lecture video sources are not available yet', {
       extensions: { code: 'VIDEO_SOURCES_DISABLED' },
     })

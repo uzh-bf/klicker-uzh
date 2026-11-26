@@ -1666,8 +1666,8 @@ export const Query = builder.queryType({
 
       videoSourceSubmissionEnabled: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
-        resolve: () =>
-          VideoSourceApprovalService.videoSourceSubmissionEnabled(),
+        resolve: (_, __, ctx) =>
+          VideoSourceApprovalService.videoSourceSubmissionEnabled(ctx),
       }),
 
       resolveVideoSource: t.withAuth(asAdmin).field({
