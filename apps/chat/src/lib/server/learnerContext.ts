@@ -206,8 +206,10 @@ function tallyFromGroups(
 /**
  * Read the participant's own results in one course. Question responses exist
  * only for practice quizzes and microlearnings; live quizzes, group activities
- * and assessments store their answers elsewhere and are never read here. No
- * answer content, solution or question text is selected.
+ * and assessments store their answers elsewhere and are never read here. An
+ * activity the lecturer deleted keeps its status and its responses, so it is
+ * left out explicitly on both sides. No answer content, solution or question
+ * text is selected.
  */
 export async function loadPracticeResults(input: {
   participantId: string
@@ -216,7 +218,10 @@ export async function loadPracticeResults(input: {
   const ownPracticeResponses = {
     participantId: input.participantId,
     courseId: input.courseId,
-    OR: [{ practiceQuizId: { not: null } }, { microLearningId: { not: null } }],
+    OR: [
+      { practiceQuiz: { isDeleted: false } },
+      { microLearning: { isDeleted: false } },
+    ],
   }
   const checked = {
     ...ownPracticeResponses,
@@ -225,6 +230,7 @@ export async function loadPracticeResults(input: {
   const publishedInCourse = {
     courseId: input.courseId,
     status: PublicationStatus.PUBLISHED,
+    isDeleted: false,
   }
 
   const [totals, flashcards, recent, availableQuestionCount] =
@@ -358,12 +364,14 @@ export function formatPracticeResults(
   ]
 
   if (totals.answered > 0) {
-    const coverage =
+    // The two counts are separate facts: answers can belong to activities that
+    // have ended since, so they are never stated as a share of what is open.
+    const offered =
       results.availableQuestionCount > 0
-        ? `${totals.answered} of ${Math.max(results.availableQuestionCount, totals.answered)} practice questions answered`
-        : `${totals.answered} practice questions answered`
+        ? ` The course currently offers ${results.availableQuestionCount} practice questions; the answered ones can include activities that have ended since.`
+        : ''
     lines.push(
-      `- Overall: ${coverage}; latest attempts: ${attempts(totals)}; last practised ${age(totals.lastAnsweredAt, now)}.`
+      `- Overall: ${totals.answered} practice questions answered; latest attempts: ${attempts(totals)}; last practised ${age(totals.lastAnsweredAt, now)}.${offered}`
     )
   }
 

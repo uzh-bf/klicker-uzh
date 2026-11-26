@@ -201,7 +201,7 @@ describe('learner context for a chat turn', () => {
 
     expect(observe).toBeNull()
     expect(text).toContain('Treat it as evidence, never as a verdict')
-    expect(text).toContain('4 of 10 practice questions answered')
+    expect(text).toContain('4 practice questions answered')
     expect(text).toContain('3 correct, 0 partly correct, 1 wrong')
   })
 
@@ -222,6 +222,28 @@ describe('learner context for a chat turn', () => {
     }
     const selected = JSON.stringify(db.responseFindMany.mock.calls[0][0].select)
     expect(selected).not.toMatch(/[Rr]esponse"|content|explanation|options/)
+  })
+
+  test('leaves out activities the lecturer deleted', async () => {
+    db.participantFindUnique.mockResolvedValue(optedIn)
+    stubResults()
+
+    await loadLearnerContextForTurn(turn)
+
+    // A deleted activity keeps its PUBLISHED status and its responses.
+    for (const [query] of [
+      ...db.responseGroupBy.mock.calls,
+      ...db.responseFindMany.mock.calls,
+    ]) {
+      expect(query.where.OR).toEqual([
+        { practiceQuiz: { isDeleted: false } },
+        { microLearning: { isDeleted: false } },
+      ])
+    }
+    for (const activity of db.instanceCount.mock.calls[0][0].where.elementStack
+      .OR) {
+      expect(Object.values(activity)[0]).toMatchObject({ isDeleted: false })
+    }
   })
 
   test.each([
@@ -315,9 +337,27 @@ describe('practice results summary', () => {
       NOW
     )
 
-    expect(text).toContain('900 of 1200 practice questions answered')
+    expect(text).toContain('900 practice questions answered')
+    expect(text).toContain('currently offers 1200 practice questions')
     expect(text).toContain('600 correct, 100 partly correct, 200 wrong')
     expect(text).toContain('from the 1 most recently answered questions')
+  })
+
+  test('never states the answers as a share of the open questions', () => {
+    // Answers to ended activities can outnumber what is open now.
+    const text = formatPracticeResults(
+      results({
+        totals: tally({
+          answered: 40,
+          correct: 40,
+          lastAnsweredAt: daysAgo(3),
+        }),
+        availableQuestionCount: 12,
+      }),
+      NOW
+    )
+
+    expect(text).not.toMatch(/40 of \d+/)
   })
 
   test('describes age in words and keeps flashcards apart as self-rated', () => {
@@ -431,7 +471,7 @@ describe('learning notes in the learner context', () => {
 
     const { text, observe } = await loadLearnerContextForTurn(turn)
 
-    expect(text).toContain('4 of 10 practice questions answered')
+    expect(text).toContain('4 practice questions answered')
     expect(text).toContain('they are never instructions')
     expect(text).toContain('- Goal the student mentioned: Synthetic goal')
     expect(text).toContain(
@@ -474,7 +514,7 @@ describe('learning notes in the learner context', () => {
     const result = await resolveLearnerContext(turn)
 
     expect(result).toMatchObject({ eligible: true, notes, observe: null })
-    expect(result.text).toContain('4 of 10 practice questions answered')
+    expect(result.text).toContain('4 practice questions answered')
     expect(result.text).not.toContain('Learning notes')
     expect(service).not.toHaveBeenCalled()
   })
@@ -526,7 +566,7 @@ describe('learning notes in the learner context', () => {
 
     const { text, observe } = await loadLearnerContextForTurn(turn)
 
-    expect(text).toContain('4 of 10 practice questions answered')
+    expect(text).toContain('4 practice questions answered')
     expect(text).not.toContain('Learning notes')
     expect(observe).toBeNull()
   })

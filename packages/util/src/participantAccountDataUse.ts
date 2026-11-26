@@ -32,8 +32,12 @@ export const TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION =
 
 /**
  * Notice versions under which a recorded yes lets the Tutor use the student's
- * course results. Every version covers them, so a student who agreed under an
- * earlier notice keeps what they agreed to when a later one widens the purpose.
+ * course results. Every later notice version whose yes still covers that use
+ * is added here, also when the notice changes elsewhere, and an earlier one is
+ * never removed, so a student who agreed under an earlier version keeps what
+ * they agreed to. A version that no longer covers course results stays out.
+ * When a notice gets a new identifier, write the retired one into this list as
+ * a literal first, because the entries below follow their constants.
  */
 export const TUTOR_PERSONALIZATION_RESULTS_VERSIONS: readonly string[] = [
   TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,

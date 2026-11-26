@@ -3,13 +3,15 @@
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { authedFetch } from '../lib/client/authedFetch'
+import {
+  DATA_USE_CHANGED_EVENT,
+  dataUseEndpoint,
+  fetchDataUseState,
+} from '../lib/client/dataUse'
 import type { ChatDataUseState } from '../lib/dataUse'
 import { useSettingsStore } from '../stores/settingsStore'
-
-/** Fired after any data-use choice is saved, so open surfaces can re-read. */
-export const DATA_USE_CHANGED_EVENT = 'klicker-chat-data-use-changed'
 
 /**
  * "Decide later" records nothing on the account. The browser remembers it so
@@ -32,18 +34,6 @@ function postponeOffer(key: string) {
     window.localStorage.setItem(key, 'true')
   } catch {
     // Without storage the card returns on the next visit, which is harmless.
-  }
-}
-
-async function readDataUseState(
-  chatbotId: string
-): Promise<ChatDataUseState | null> {
-  try {
-    const response = await authedFetch(`/api/chatbots/${chatbotId}/data-use`)
-    if (!response.ok) return null
-    return ((await response.json()) as { state: ChatDataUseState }).state
-  } catch {
-    return null
   }
 }
 
@@ -84,8 +74,10 @@ export function TutorPersonalizationOffer({
 
     let active = true
     const load = () =>
-      readDataUseState(chatbotId).then((loaded) => {
-        if (active) setState(loaded)
+      fetchDataUseState(chatbotId).then((loaded) => {
+        // A failed re-read keeps the last known state, so an unanswered offer
+        // does not vanish on a passing error.
+        if (active && loaded) setState(loaded)
       })
     void load()
     window.addEventListener(DATA_USE_CHANGED_EVENT, load)
@@ -101,7 +93,7 @@ export function TutorPersonalizationOffer({
       setSaving(true)
       setFailed(false)
       const save = (expectedRevision: number) =>
-        authedFetch(`/api/chatbots/${chatbotId}/data-use`, {
+        authedFetch(dataUseEndpoint(chatbotId), {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -116,7 +108,7 @@ export function TutorPersonalizationOffer({
         if (response.status === 409) {
           // Another surface changed a choice meanwhile. Retry once on the
           // current revision, unless that change already answered this one.
-          const current = await readDataUseState(chatbotId)
+          const current = await fetchDataUseState(chatbotId)
           if (!current) {
             setFailed(true)
             return
@@ -317,28 +309,40 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
     'deleted' | 'pending' | 'failed' | null
   >(null)
 
+  // Two choices saved in quick succession start two reads. Only the newest
+  // one may answer, so the view never shows a state that no longer holds.
+  const latestLoad = useRef(0)
+
   const load = useCallback(async () => {
+    const current = ++latestLoad.current
+    const isLatest = () => current === latestLoad.current
     setLoading(true)
     setFailed(false)
     try {
       const response = await authedFetch(
         `/api/chatbots/${chatbotId}/learner-context`
       )
+      if (!isLatest()) return
       if (!response.ok) {
         setFailed(true)
         return
       }
-      setView((await response.json()) as LearnerContextView)
+      const loaded = (await response.json()) as LearnerContextView
+      if (isLatest()) setView(loaded)
     } catch {
-      setFailed(true)
+      if (isLatest()) setFailed(true)
     } finally {
-      setLoading(false)
+      if (isLatest()) setLoading(false)
     }
   }, [chatbotId])
 
   // A changed choice changes what the Tutor receives, so re-read while open.
   useEffect(() => {
     if (!open) return
+    // The outcome of an earlier deletion describes a state that may have
+    // changed since, so a reopened view starts from what it reads now.
+    setDeletion(null)
+    setConfirmingDeletion(false)
     void load()
     const reload = () => void load()
     window.addEventListener(DATA_USE_CHANGED_EVENT, reload)
@@ -395,6 +399,7 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
         <Button
           type="button"
           data={{ cy: 'chat-personalization-view-toggle' }}
+          aria-expanded={open}
           onClick={() => setOpen((shown) => !shown)}
         >
           {t(
@@ -461,6 +466,7 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
                   <Button
                     type="button"
                     disabled={deleting}
+                    data={{ cy: 'chat-personalization-notes-delete-cancel' }}
                     onClick={() => setConfirmingDeletion(false)}
                   >
                     {t('chat.personalization.notesDeleteCancel')}

@@ -680,18 +680,30 @@ export const Chatbot = ChatbotRef.implement({
     learnerMemoryAvailable: t.boolean({
       resolve: async (chatbot, _args, ctx) => {
         if (!isLearnerMemoryConfigured()) return false
-        const stored = await ctx.prisma.chatbot.findUnique({
-          where: { id: chatbot.id },
-          select: {
-            owner: {
-              select: { catalystInstitutional: true, catalystIndividual: true },
+        try {
+          const stored = await ctx.prisma.chatbot.findUnique({
+            where: { id: chatbot.id },
+            select: {
+              owner: {
+                select: {
+                  catalystInstitutional: true,
+                  catalystIndividual: true,
+                },
+              },
             },
-          },
-        })
-        return (
-          stored?.owner.catalystInstitutional === true ||
-          stored?.owner.catalystIndividual === true
-        )
+          })
+          return (
+            stored?.owner.catalystInstitutional === true ||
+            stored?.owner.catalystIndividual === true
+          )
+        } catch (error) {
+          // The field is non-null, so an error here would null the whole
+          // chatbot list it is selected in. The hint degrades instead.
+          console.warn('Failed to resolve learnerMemoryAvailable', {
+            errorType: error instanceof Error ? error.name : typeof error,
+          })
+          return false
+        }
       },
     }),
     allowedReasoningEffortsByModel: t.field({
