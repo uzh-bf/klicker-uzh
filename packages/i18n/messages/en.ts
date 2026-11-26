@@ -2410,6 +2410,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Adding new content to knowledge bases is temporarily disabled.',
   },
   manage: {
+    artifacts: {
+      title: 'Activity artifact',
+      unavailable: 'This artifact could not be opened.',
+      resolving: 'Resolving artifact…',
+      accessDenied:
+        'This artifact could not be opened. Sign in with a linked lecturer account and check that the artifact exists.',
+      details: '{title} · revision v{version} · digest {digest}…',
+    },
     assistant: {
       open: 'Assistant',
       title: 'KlickerUZH Assistant',
@@ -3698,6 +3706,42 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       scoringDocumentation: 'Scoring documentation',
       questionPlaceholder: 'Enter your question here...',
       contentPlaceholder: 'Enter your content here...',
+      activityArtifact: {
+        attachedTitle: 'Attached artifact',
+        attachTitle: 'Attach artifact',
+        tooltip:
+          'Attach an immutable publisher revision to this content element. Students receive only the trusted renderer.',
+        usingRevision: 'Using v{version}',
+        latestRevisionAvailable: 'v{version} available',
+        noArtifactAttached:
+          'No artifact attached. The element renders its Markdown content as before.',
+        selectedRevision:
+          'v{version} is selected. Save the element to store it.',
+        linkLabel: 'Artifact link',
+        linkPlaceholder:
+          'https://publisher.example/a/00000000-0000-4000-8000-000000000000',
+        linkHint:
+          'Paste the permanent author link shown beside the saved artifact.',
+        resolving: 'Resolving…',
+        previewLatestRevision: 'Preview latest revision',
+        attachArtifact: 'Attach artifact',
+        previewRevision: 'Preview v{version}',
+        titleVersion: '{title} · v{version}',
+        updateRevision: 'Update to v{version}',
+        attachRevision: 'Attach v{version}',
+        cancel: 'Cancel',
+        keepCurrentPin:
+          'Saving without confirming a revision keeps the current pin.',
+        selectedToast: 'v{version} is selected. Save the element to store it.',
+        errorInvalidLink:
+          'Enter a valid canonical publisher link for an artifact and try again.',
+        errorForbidden:
+          'You do not have permission to open this artifact. Sign in with an account that can access it.',
+        errorUnavailable:
+          'Activity artifacts are temporarily unavailable. Try again later.',
+        errorGeneric:
+          'The artifact could not be resolved. Check that the link is a canonical publisher link for an authorized artifact.',
+      },
       instructionsPlaceholder: 'Enter your instructions here...',
       explanationTooltip:
         'Enter a generic explanation of your question here, which will be displayed to students in practice quizzes and microlearning regardless of their answer as an explanation of the correct solution.',

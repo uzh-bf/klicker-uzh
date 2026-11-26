@@ -5,13 +5,17 @@ on:
       - 'apps/artifact-pilot/**'
       - '.github/workflows/test-activity-artifacts.yml'
   push:
-    branches: [v3-ai]
+    branches: ['v3', 'v3*']
     paths:
       - 'apps/artifact-pilot/**'
       - '.github/workflows/test-activity-artifacts.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   publisher:
@@ -28,14 +32,53 @@ jobs:
           --health-timeout 2s --health-retries 20
     steps:
       - uses: actions/checkout@v4
+      - name: Provision a disposable non-privileged database identity
+        env:
+          DATABASE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          for attempt in $(seq 1 30); do
+            if docker exec "$DATABASE_CONTAINER" psql --username postgres --dbname artifact_pilot_test \
+              --command 'SELECT 1' >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              exit 1
+            fi
+            sleep 1
+          done
+          docker exec "$DATABASE_CONTAINER" psql --username postgres --dbname postgres -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE artifact_test LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS"
+          docker exec "$DATABASE_CONTAINER" psql --username postgres --dbname postgres -v ON_ERROR_STOP=1 \
+            -c "ALTER DATABASE artifact_pilot_test OWNER TO artifact_test"
+          docker exec "$DATABASE_CONTAINER" psql --username postgres --dbname postgres -v ON_ERROR_STOP=1 \
+            -c "COMMENT ON DATABASE artifact_pilot_test IS 'klicker-disposable-test-v1'"
+      - name: Create a cache-capable Docker builder
+        run: docker buildx create --name activity-artifacts --driver docker-container --use
       - name: Build the production renderer and PostgreSQL client
-        run: docker build --file apps/artifact-pilot/Dockerfile --tag artifact-under-test .
-      - name: Check prices, access, immutable pins and concurrent admission
+        run: |
+          docker buildx build \
+            --file apps/artifact-pilot/Dockerfile \
+            --tag artifact-under-test \
+            --cache-from type=gha,scope=activity-artifacts \
+            --cache-to type=gha,mode=max,scope=activity-artifacts \
+            --load \
+            .
+      - name: Check prices, immutable pins and concurrent admission
         env:
           DATABASE_CONTAINER: ${{ job.services.database.id }}
         run: |
           docker run --rm --network "container:$DATABASE_CONTAINER" \
-            --env ARTIFACT_TEST_DATABASE_URL=postgres://postgres@127.0.0.1/artifact_pilot_test \
+            --env ARTIFACT_TEST_DATABASE_URL=postgres://artifact_test@127.0.0.1/artifact_pilot_test \
             --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/exercise.test.mjs,target=/workspace/apps/artifact-pilot/exercise.test.mjs,readonly" \
             --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/repository.test.mjs,target=/workspace/apps/artifact-pilot/repository.test.mjs,readonly" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/test-database.mjs,target=/workspace/apps/artifact-pilot/test-database.mjs,readonly" \
             artifact-under-test node --test exercise.test.mjs repository.test.mjs
+      - name: Check the publisher authorization and historical-read contract
+        env:
+          DATABASE_CONTAINER: ${{ job.services.database.id }}
+        run: |
+          docker run --rm --network "container:$DATABASE_CONTAINER" \
+            --env ARTIFACT_TEST_DATABASE_URL=postgres://artifact_test@127.0.0.1/artifact_pilot_test \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/server.test.mjs,target=/workspace/apps/artifact-pilot/server.test.mjs,readonly" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/test-database.mjs,target=/workspace/apps/artifact-pilot/test-database.mjs,readonly" \
+            artifact-under-test node --test server.test.mjs

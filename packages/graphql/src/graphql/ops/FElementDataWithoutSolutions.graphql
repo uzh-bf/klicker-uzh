@@ -142,6 +142,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       explanation
       basePoints
       pointsMultiplier
+      hasActivityArtifact
     }
   }
 }

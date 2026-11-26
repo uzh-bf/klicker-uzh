@@ -78,7 +78,7 @@ async function readBody(req) {
 
 function result(row) {
   const { html, ...revision } = row
-  const exercise = parseSource(html)
+  const exercise = parseSource(html, { strict: false })
   return {
     ...revision,
     url: publicOrigin + '/a/' + row.artifactId,

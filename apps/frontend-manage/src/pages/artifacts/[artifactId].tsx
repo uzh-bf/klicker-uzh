@@ -5,6 +5,7 @@ import ActivityArtifactFrame from '@klicker-uzh/shared-components/src/ActivityAr
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
 
 /**
@@ -16,6 +17,7 @@ import Layout from '../../components/Layout'
  * isolated trusted frame.
  */
 function ArtifactLandingPage() {
+  const t = useTranslations()
   const router = useRouter()
   const enabled = useFeatureFlag('activity-artifacts')
   const artifactId =
@@ -32,10 +34,10 @@ function ArtifactLandingPage() {
 
   if (!enabled) {
     return (
-      <Layout displayName="Activity artifact">
+      <Layout displayName={t('manage.artifacts.title')}>
         <div className="mx-auto w-full max-w-4xl p-4">
           <UserNotification type="error">
-            This artifact could not be opened.
+            {t('manage.artifacts.unavailable')}
           </UserNotification>
         </div>
       </Layout>
@@ -43,24 +45,28 @@ function ArtifactLandingPage() {
   }
 
   return (
-    <Layout displayName={artifact?.title ?? 'Activity artifact'}>
+    <Layout displayName={artifact?.title ?? t('manage.artifacts.title')}>
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
-        <H3>Activity artifact</H3>
+        <H3>{t('manage.artifacts.title')}</H3>
 
-        {loading ? <div className="text-sm">Resolving artifact…</div> : null}
+        {loading ? (
+          <div className="text-sm">{t('manage.artifacts.resolving')}</div>
+        ) : null}
 
         {!loading && !artifact ? (
           <UserNotification type="error">
-            This artifact could not be opened. Sign in with a linked lecturer
-            account and check that the artifact exists.
+            {t('manage.artifacts.accessDenied')}
           </UserNotification>
         ) : null}
 
         {artifact ? (
           <>
             <div className="text-sm text-slate-600">
-              {artifact.title} · revision v{artifact.version} · digest{' '}
-              {artifact.digest.slice(0, 12)}…
+              {t('manage.artifacts.details', {
+                title: artifact.title,
+                version: artifact.version,
+                digest: artifact.digest.slice(0, 12),
+              })}
             </div>
             <ActivityArtifactFrame
               frameUrl={artifact.frameUrl}

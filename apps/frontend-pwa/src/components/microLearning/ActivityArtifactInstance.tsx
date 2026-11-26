@@ -23,7 +23,11 @@ function ActivityArtifactInstance({
 
   useEffect(() => {
     function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') void refetch()
+      if (document.visibilityState === 'visible') {
+        // A denied or transient refresh keeps the last rendered state without
+        // producing an unhandled promise rejection when the tab returns.
+        refetch().catch(() => undefined)
+      }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)

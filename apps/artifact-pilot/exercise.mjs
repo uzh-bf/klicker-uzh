@@ -2,8 +2,10 @@ import { createHash } from 'node:crypto'
 
 export const digest = (value) =>
   createHash('sha256').update(value).digest('hex')
-const opening =
-  '<!doctype html><html lang="en"><meta charset="utf-8"><title>Bond calculator</title><main></main><script type="application/json" id="exercise">'
+const openingPrefix =
+  '<!doctype html><html lang="en"><meta charset="utf-8"><title>Bond calculator</title><main></main>'
+const dataOpening = '<script type="application/json" id="exercise">'
+const opening = openingPrefix + dataOpening
 const closeData = '</script>'
 
 function validate(exercise) {
@@ -101,18 +103,27 @@ export function sourceFor(exercise) {
   return opening + JSON.stringify(validate(exercise)) + suffix
 }
 
-export function parseSource(html) {
+export function parseSource(html, { strict = true } = {}) {
+  const dataStart = typeof html === 'string' ? html.indexOf(dataOpening) : -1
+  const dataEnd =
+    typeof html === 'string'
+      ? html.indexOf(closeData, dataStart + dataOpening.length)
+      : -1
   if (
     typeof html !== 'string' ||
     Buffer.byteLength(html) > 65536 ||
-    !html.startsWith(opening) ||
-    !html.endsWith(suffix)
+    (strict
+      ? !html.startsWith(opening) || !html.endsWith(suffix)
+      : dataStart === -1 || dataEnd === -1)
   ) {
     throw new Error(
       'Use the pilot bond calculator template and edit its exercise definition'
     )
   }
-  const json = html.slice(opening.length, -suffix.length)
+  const json = html.slice(
+    strict ? opening.length : dataStart + dataOpening.length,
+    strict ? html.length - suffix.length : dataEnd
+  )
   if (json.includes('<'))
     throw new Error('Unexpected markup in exercise definition')
   return validate(JSON.parse(json))

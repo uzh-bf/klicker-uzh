@@ -34,6 +34,20 @@ test('admission requires a closed template and bounded data', () => {
   )
   assert.throws(() => price(baseExercise, Infinity))
 })
+test('stored revisions survive renderer changes while admission stays strict', () => {
+  const historical = sourceFor(baseExercise).replace(
+    '</script></html>',
+    '\n// renderer program from a later template version\n</script></html>'
+  )
+  assert.deepEqual(parseSource(historical, { strict: false }), baseExercise)
+  assert.throws(() => parseSource(historical))
+  assert.throws(() =>
+    parseSource(
+      historical.replace('"face":1000', '"face":1000,<b>invalid</b>'),
+      { strict: false }
+    )
+  )
+})
 test('isolated frame carries only a fixed program and constrains its parents', () => {
   const { policy, html } = frame(['https://course.example'])
   assert.match(policy, /sandbox allow-scripts$/)

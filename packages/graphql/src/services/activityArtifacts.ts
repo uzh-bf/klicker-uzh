@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { ActivityArtifactPin } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import {
+  ActivityArtifactRequestError,
   type ActivityArtifactRevision,
   type ActivityArtifactRuntime,
   isActivityArtifactId,
@@ -9,7 +10,10 @@ import {
   sanitizeActivityArtifactPin,
 } from '../lib/activityArtifacts.js'
 import type { ContextWithUser } from '../lib/context.js'
-import { requireFeatureFlagAccess } from '../lib/featureFlags.js'
+import {
+  isParticipantFeatureFlagEnabled,
+  requireFeatureFlagAccess,
+} from '../lib/featureFlags.js'
 
 export type ClientActivityArtifact = ActivityArtifactRevision & {
   // Fixed trusted renderer on the configured publisher origin. No token or
@@ -22,6 +26,28 @@ function toClientActivityArtifact(
   revision: ActivityArtifactRevision
 ): ClientActivityArtifact {
   return { ...revision, frameUrl: `${runtime.frameOrigin}/frame` }
+}
+
+function toArtifactGraphQLError(error: unknown): GraphQLError {
+  if (error instanceof GraphQLError) return error
+
+  if (
+    error instanceof ActivityArtifactRequestError &&
+    typeof error.status === 'number' &&
+    [400, 403, 404, 409, 422].includes(error.status)
+  ) {
+    return new GraphQLError('Artifact link is not available', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  console.warn(
+    '[activity-artifacts] publisher request failed',
+    error instanceof Error ? error.message : 'unknown error'
+  )
+  return new GraphQLError('Artifact service is temporarily unavailable', {
+    extensions: { code: 'SERVICE_UNAVAILABLE' },
+  })
 }
 
 async function requireArtifactRuntime(ctx: ContextWithUser) {
@@ -55,10 +81,15 @@ export async function previewActivityArtifactByUrl(
     })
   }
 
-  const revision = await runtime.getLatest({
-    subject: ctx.user.sub,
-    artifactId: parsed.artifactId,
-  })
+  let revision: ActivityArtifactRevision
+  try {
+    revision = await runtime.getLatest({
+      subject: ctx.user.sub,
+      artifactId: parsed.artifactId,
+    })
+  } catch (error) {
+    throw toArtifactGraphQLError(error)
+  }
 
   return toClientActivityArtifact(runtime, revision)
 }
@@ -79,10 +110,15 @@ export async function resolveStaffActivityArtifact(
     })
   }
 
-  const revision = await runtime.getLatest({
-    subject: ctx.user.sub,
-    artifactId,
-  })
+  let revision: ActivityArtifactRevision
+  try {
+    revision = await runtime.getLatest({
+      subject: ctx.user.sub,
+      artifactId,
+    })
+  } catch (error) {
+    throw toArtifactGraphQLError(error)
+  }
 
   return toClientActivityArtifact(runtime, revision)
 }
@@ -109,27 +145,18 @@ export async function resolveContentArtifactPin(
     })
   }
 
-  const revision = await runtime.getRevision({
-    subject: ctx.user.sub,
-    artifactId,
-    revisionId,
-  })
+  let revision: ActivityArtifactRevision
+  try {
+    revision = await runtime.getRevision({
+      subject: ctx.user.sub,
+      artifactId,
+      revisionId,
+    })
+  } catch (error) {
+    throw toArtifactGraphQLError(error)
+  }
 
   return { ...revision, subject: ctx.user.sub }
-}
-
-function participantFeatureEnabled(ctx: ContextWithUser) {
-  try {
-    return (
-      ctx.featureFlags?.isEnabled('activity-artifacts', {
-        id: ctx.user.sub,
-        actorType: 'participant',
-        role: ctx.user.role,
-      }) ?? false
-    )
-  } catch {
-    return false
-  }
 }
 
 async function lecturerStillOwnsMicrolearning(
@@ -137,7 +164,7 @@ async function lecturerStillOwnsMicrolearning(
   microLearningId: string,
   lecturerSubject: string
 ) {
-  const permission = await ctx.prisma.permission.findFirst({
+  const permission = await ctx.prisma.derivedPermission.findFirst({
     where: {
       userId: lecturerSubject,
       microLearningId,
@@ -165,7 +192,7 @@ export async function getActivityArtifactForInstance(
   { elementInstanceId }: { elementInstanceId: number },
   ctx: ContextWithUser
 ): Promise<ClientActivityArtifact | null> {
-  if (!participantFeatureEnabled(ctx)) return null
+  if (!isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts')) return null
 
   const runtime = ctx.activityArtifactRuntime
   if (!runtime) return null
@@ -214,7 +241,6 @@ export async function getActivityArtifactForInstance(
         courseId: microLearning.courseId,
         participantId: ctx.user.sub,
       },
-      isActive: true,
     },
     select: { id: true },
   })

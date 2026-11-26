@@ -9,6 +9,7 @@ import {
   readAssignment,
   readRevision,
 } from './repository.mjs'
+import { requireDisposableDatabase } from './test-database.mjs'
 
 test('retries, concurrent saves and later publications preserve the original assignment', async () => {
   // This suite requires its own empty disposable database.
@@ -16,11 +17,11 @@ test('retries, concurrent saves and later publications preserve the original ass
     connectionString: process.env.ARTIFACT_TEST_DATABASE_URL,
   })
   try {
-    const info = await pool.query(
-      "SELECT current_database() AS name, to_regclass('artifact') AS previous"
+    await requireDisposableDatabase(pool)
+    const previous = await pool.query(
+      "SELECT to_regclass('artifact') AS previous"
     )
-    assert.equal(info.rows[0].name, 'artifact_pilot_test')
-    assert.equal(info.rows[0].previous, null)
+    assert.equal(previous.rows[0].previous, null)
     await initialize(pool)
     const html = sourceFor(baseExercise)
     const [first, retry] = await Promise.all(

@@ -31,17 +31,23 @@ export function toPublicActivityArtifactPin(
  */
 export const ActivityArtifactRevisionRef =
   builder.objectRef<ClientActivityArtifact>('ActivityArtifactRevision')
+
+// biome-ignore lint/suspicious/noExplicitAny: Pothos supplies this helper's type at each implementation site.
+const sharedActivityArtifactFields = (t: any) => ({
+  artifactId: t.exposeID('artifactId'),
+  revisionId: t.exposeID('revisionId'),
+  digest: t.exposeString('digest'),
+  version: t.exposeInt('version'),
+  title: t.exposeString('title'),
+  url: t.exposeString('url'),
+  renderedDigest: t.exposeString('renderedDigest'),
+  exercise: t.expose('exercise', { type: 'Json' }),
+})
+
 export const ActivityArtifactRevision = ActivityArtifactRevisionRef.implement({
   fields: (t) => ({
-    artifactId: t.exposeID('artifactId'),
-    revisionId: t.exposeID('revisionId'),
-    digest: t.exposeString('digest'),
-    version: t.exposeInt('version'),
-    title: t.exposeString('title'),
-    url: t.exposeString('url'),
-    renderedDigest: t.exposeString('renderedDigest'),
+    ...sharedActivityArtifactFields(t),
     frameUrl: t.exposeString('frameUrl'),
-    exercise: t.expose('exercise', { type: 'Json' }),
   }),
 })
 
@@ -49,14 +55,7 @@ export const ActivityArtifactPinRef =
   builder.objectRef<PublicActivityArtifactPin>('ActivityArtifactPin')
 export const ActivityArtifactPin = ActivityArtifactPinRef.implement({
   fields: (t) => ({
-    artifactId: t.exposeID('artifactId'),
-    revisionId: t.exposeID('revisionId'),
-    digest: t.exposeString('digest'),
-    version: t.exposeInt('version'),
-    title: t.exposeString('title'),
-    url: t.exposeString('url'),
-    renderedDigest: t.exposeString('renderedDigest'),
-    exercise: t.expose('exercise', { type: 'Json' }),
+    ...sharedActivityArtifactFields(t),
   }),
 })
 

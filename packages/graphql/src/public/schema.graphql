@@ -1204,7 +1204,7 @@ type ContentElementData {
   content: String!
   elementId: Int!
   explanation: String
-  hasActivityArtifact: Boolean
+  hasActivityArtifact: Boolean!
   id: ID!
   name: String!
   pointsMultiplier: Int!

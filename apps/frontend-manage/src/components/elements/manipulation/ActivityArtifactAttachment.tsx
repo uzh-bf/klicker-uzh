@@ -1,8 +1,10 @@
 import { useLazyQuery } from '@apollo/client'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
-import { PreviewActivityArtifactDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  PreviewActivityArtifactDocument,
+  type PreviewActivityArtifactQuery,
+} from '@klicker-uzh/graphql/dist/ops'
 import ActivityArtifactFrame from '@klicker-uzh/shared-components/src/ActivityArtifactFrame'
-import type { ActivityArtifactExercise } from '@klicker-uzh/types'
 import {
   Button,
   FormLabel,
@@ -11,6 +13,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import type { FormikErrors } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   ActivityArtifactFormValue,
@@ -30,16 +33,38 @@ interface ActivityArtifactAttachmentProps {
   ) => Promise<void | FormikErrors<ElementFormTypes>>
 }
 
-type ReviewedArtifact = {
-  artifactId: string
-  revisionId: string
-  digest: string
-  version: number
-  title: string
-  url: string
-  renderedDigest: string
-  frameUrl: string
-  exercise: ActivityArtifactExercise
+type ReviewedArtifact = NonNullable<
+  PreviewActivityArtifactQuery['previewActivityArtifact']
+>
+type LoadArtifactError = 'invalidLink' | 'forbidden' | 'unavailable' | 'generic'
+type LoadArtifactResult =
+  | { status: 'success'; artifact: ReviewedArtifact }
+  | { status: 'error'; reason: LoadArtifactError }
+  | null
+
+function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+
+  const extensions = (error as { extensions?: { code?: unknown } }).extensions
+  if (typeof extensions?.code === 'string') return extensions.code
+
+  const graphQLErrors = (error as { graphQLErrors?: unknown }).graphQLErrors
+  if (!Array.isArray(graphQLErrors)) return undefined
+
+  for (const graphQLError of graphQLErrors) {
+    const code = getGraphQLErrorCode(graphQLError)
+    if (code) return code
+  }
+
+  return undefined
+}
+
+function getLoadArtifactError(error: unknown): LoadArtifactError {
+  const code = getGraphQLErrorCode(error)
+  if (code === 'BAD_USER_INPUT') return 'invalidLink'
+  if (code === 'FORBIDDEN' || code === 'UNAUTHENTICATED') return 'forbidden'
+  if (code === 'SERVICE_UNAVAILABLE') return 'unavailable'
+  return 'generic'
 }
 
 /**
@@ -58,6 +83,7 @@ function ActivityArtifactAttachment({
   pendingArtifact,
   setFieldValue,
 }: ActivityArtifactAttachmentProps) {
+  const t = useTranslations()
   const enabled = useFeatureFlag('activity-artifacts')
   const [url, setUrl] = useState(currentArtifact?.url ?? '')
   const [loadPreview, { loading }] = useLazyQuery(
@@ -69,60 +95,106 @@ function ActivityArtifactAttachment({
   )
   const [preview, setPreview] = useState<ReviewedArtifact | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const requestSequence = useRef(0)
+  const reviewSequence = useRef(0)
+  const compareSequence = useRef(0)
   const currentUrl = useRef(url)
+  const mounted = useRef(false)
   const currentArtifactUrl = currentArtifact?.url
+  const compareUrl =
+    url.trim() === currentArtifactUrl ? currentArtifactUrl : undefined
 
   const loadArtifact = useCallback(
     async (
       requestedUrl: string,
-      apply: (artifact: ReviewedArtifact) => void
-    ) => {
+      requestSequence: { current: number }
+    ): Promise<LoadArtifactResult> => {
       const request = ++requestSequence.current
       const normalizedUrl = requestedUrl.trim()
-      const result = await loadPreview({
-        variables: { url: normalizedUrl },
-      })
-      const resolved = result.data?.previewActivityArtifact
+      try {
+        const result = await loadPreview({
+          variables: { url: normalizedUrl },
+        })
 
-      if (
-        request !== requestSequence.current ||
-        currentUrl.current.trim() !== normalizedUrl
-      ) {
-        return null
+        if (
+          request !== requestSequence.current ||
+          currentUrl.current.trim() !== normalizedUrl
+        ) {
+          return null
+        }
+
+        if (result.error) {
+          return {
+            status: 'error',
+            reason: getLoadArtifactError(result.error),
+          }
+        }
+
+        const artifact = result.data?.previewActivityArtifact
+        if (!artifact) return { status: 'error', reason: 'generic' }
+
+        return { status: 'success', artifact }
+      } catch (error) {
+        if (
+          request !== requestSequence.current ||
+          currentUrl.current.trim() !== normalizedUrl
+        ) {
+          return null
+        }
+
+        return { status: 'error', reason: getLoadArtifactError(error) }
       }
-
-      if (!resolved) {
-        setPreview(null)
-        setError(
-          'The artifact could not be resolved. Check that the link is a canonical publisher link for an authorized artifact.'
-        )
-        return null
-      }
-
-      const artifact = resolved as ReviewedArtifact
-      apply(artifact)
-      return artifact
     },
     [loadPreview]
   )
 
   useEffect(() => {
-    if (!enabled || !currentArtifactUrl || disabled) return
+    mounted.current = true
+
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!enabled || !compareUrl || disabled) return
 
     let active = true
-    void loadArtifact(currentArtifactUrl, (artifact) => {
-      if (active) setLatestArtifact(artifact)
+    void loadArtifact(compareUrl, compareSequence).then((result) => {
+      if (active && result?.status === 'success') {
+        setLatestArtifact(result.artifact)
+      }
     })
 
     return () => {
       active = false
     }
-  }, [currentArtifactUrl, disabled, enabled, loadArtifact])
+  }, [compareUrl, disabled, enabled, loadArtifact])
+
+  function getErrorMessage(reason: LoadArtifactError) {
+    switch (reason) {
+      case 'invalidLink':
+        return t('manage.elements.activityArtifact.errorInvalidLink')
+      case 'forbidden':
+        return t('manage.elements.activityArtifact.errorForbidden')
+      case 'unavailable':
+        return t('manage.elements.activityArtifact.errorUnavailable')
+      case 'generic':
+        return t('manage.elements.activityArtifact.errorGeneric')
+    }
+  }
 
   async function review() {
     setError(null)
-    await loadArtifact(url, setPreview)
+    const result = await loadArtifact(url, reviewSequence)
+    if (!mounted.current || !result) return
+
+    if (result.status === 'error') {
+      setPreview(null)
+      setError(getErrorMessage(result.reason))
+      return
+    }
+
+    setPreview(result.artifact)
   }
 
   async function confirm() {
@@ -136,7 +208,9 @@ function ActivityArtifactAttachment({
     })
     toast({
       type: 'success',
-      message: `v${preview.version} is selected. Save the element to store it.`,
+      message: t('manage.elements.activityArtifact.selectedToast', {
+        version: preview.version,
+      }),
     })
   }
 
@@ -154,6 +228,25 @@ function ActivityArtifactAttachment({
 
   if (!enabled) return null
 
+  let reviewButtonLabel = t('manage.elements.activityArtifact.attachArtifact')
+  if (currentArtifact) {
+    reviewButtonLabel = t(
+      'manage.elements.activityArtifact.previewLatestRevision'
+    )
+  }
+  if (loading) {
+    reviewButtonLabel = t('manage.elements.activityArtifact.resolving')
+  }
+  const latestRevisionNotice =
+    latestArtifact &&
+    currentArtifact &&
+    latestArtifact.artifactId === currentArtifact.artifactId &&
+    latestArtifact.version > currentArtifact.version
+      ? t('manage.elements.activityArtifact.latestRevisionAvailable', {
+          version: latestArtifact.version,
+        })
+      : null
+
   return (
     <div
       className="mt-4 rounded border border-slate-300 p-3"
@@ -161,38 +254,41 @@ function ActivityArtifactAttachment({
     >
       <FormLabel
         required={false}
-        label={currentArtifact ? 'Attached artifact' : 'Attach artifact'}
+        label={
+          currentArtifact
+            ? t('manage.elements.activityArtifact.attachedTitle')
+            : t('manage.elements.activityArtifact.attachTitle')
+        }
         labelType="small"
-        tooltip="Attach an immutable publisher revision to this content element. Students receive only the trusted renderer."
+        tooltip={t('manage.elements.activityArtifact.tooltip')}
       />
 
       {currentArtifact ? (
         <UserNotification type="info" className={{ root: 'mb-3' }}>
-          Using v{currentArtifact.version}
-          {latestArtifact &&
-          latestArtifact.artifactId === currentArtifact.artifactId &&
-          latestArtifact.version > currentArtifact.version
-            ? ` · v${latestArtifact.version} available`
-            : null}
+          {t('manage.elements.activityArtifact.usingRevision', {
+            version: currentArtifact.version,
+          })}
+          {latestRevisionNotice ? ' · ' : null}
+          {latestRevisionNotice}
         </UserNotification>
       ) : (
         <UserNotification type="info" className={{ root: 'mb-3' }}>
-          No artifact attached. The element renders its Markdown content as
-          before.
+          {t('manage.elements.activityArtifact.noArtifactAttached')}
         </UserNotification>
       )}
 
       {pendingArtifact ? (
         <UserNotification type="success" className={{ root: 'mb-3' }}>
-          v{pendingArtifact.version ?? ''} is selected. Save the element to
-          store it.
+          {t('manage.elements.activityArtifact.selectedRevision', {
+            version: pendingArtifact.version ?? '',
+          })}
         </UserNotification>
       ) : null}
 
       <div className="flex flex-col gap-2">
         <TextField
-          label="Artifact link"
-          placeholder="https://publisher.example/a/00000000-0000-4000-8000-000000000000"
+          label={t('manage.elements.activityArtifact.linkLabel')}
+          placeholder={t('manage.elements.activityArtifact.linkPlaceholder')}
           value={url}
           disabled={disabled}
           onChange={(value) => {
@@ -202,20 +298,18 @@ function ActivityArtifactAttachment({
             setPreview(null)
             setError(null)
           }}
+          data={{ cy: 'activity-artifact-link' }}
         />
         <div className="text-xs text-slate-500">
-          Paste the permanent author link shown beside the saved artifact.
+          {t('manage.elements.activityArtifact.linkHint')}
         </div>
         <div className="flex flex-row gap-2">
           <Button
             disabled={disabled || loading || url.trim() === ''}
             onClick={review}
+            data={{ cy: 'review-activity-artifact' }}
           >
-            {loading
-              ? 'Resolving…'
-              : currentArtifact
-                ? 'Preview latest revision'
-                : 'Attach artifact'}
+            {reviewButtonLabel}
           </Button>
         </div>
       </div>
@@ -227,12 +321,15 @@ function ActivityArtifactAttachment({
         <div className="mt-2">
           <Button
             disabled={disabled || loading}
+            data={{ cy: 'preview-latest-activity-artifact' }}
             onClick={() => {
               setError(null)
               setPreview(latestArtifact)
             }}
           >
-            Preview v{latestArtifact.version}
+            {t('manage.elements.activityArtifact.previewRevision', {
+              version: latestArtifact.version,
+            })}
           </Button>
         </div>
       ) : null}
@@ -246,7 +343,10 @@ function ActivityArtifactAttachment({
       {preview ? (
         <div className="mt-3">
           <div className="mb-1 text-sm">
-            {preview.title} · v{preview.version}
+            {t('manage.elements.activityArtifact.titleVersion', {
+              title: preview.title,
+              version: preview.version,
+            })}
           </div>
           <ActivityArtifactFrame
             frameUrl={preview.frameUrl}
@@ -266,15 +366,20 @@ function ActivityArtifactAttachment({
               data={{ cy: `confirm-activity-artifact` }}
             >
               {currentArtifact
-                ? `Update to v${preview.version}`
-                : `Attach v${preview.version}`}
+                ? t('manage.elements.activityArtifact.updateRevision', {
+                    version: preview.version,
+                  })
+                : t('manage.elements.activityArtifact.attachRevision', {
+                    version: preview.version,
+                  })}
             </Button>
             {currentArtifact ? (
               <Button
+                disabled={disabled}
                 onClick={cancelPreview}
-                data={{ cy: `cancel-activity-artifact-preview` }}
+                data={{ cy: 'cancel-activity-artifact-preview' }}
               >
-                Cancel
+                {t('manage.elements.activityArtifact.cancel')}
               </Button>
             ) : null}
           </div>
@@ -283,7 +388,7 @@ function ActivityArtifactAttachment({
 
       {elementId ? (
         <div className="mt-2 text-xs text-slate-500">
-          Saving without confirming a revision keeps the current pin.
+          {t('manage.elements.activityArtifact.keepCurrentPin')}
         </div>
       ) : null}
     </div>

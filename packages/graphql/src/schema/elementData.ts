@@ -1,6 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  DisplayMode,
   type BaseElementData,
   type CaseStudyCaseCriterionSolution as CaseStudyCaseCriterionSolutionType,
   type CaseStudyCaseSolution as CaseStudyCaseSolutionType,
@@ -8,6 +7,7 @@ import {
   type CaseStudyCriterionLabels as CaseStudyCriterionLabelsType,
   type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
+  DisplayMode,
   type ElementInstanceOptions as ElementInstanceOptionsType,
   type ElementOptionsAnswerCollectionEntry as ElementOptionsAnswerCollectionEntryType,
   type ElementOptionsAnswerCollection as ElementOptionsAnswerCollectionType,
@@ -21,6 +21,8 @@ import {
   type NumericalSolutionRange as NumericalSolutionRangeType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { isParticipantFeatureFlagEnabled } from '../lib/featureFlags.js'
+import { toPublicActivityArtifactPin } from './activityArtifact.js'
 
 export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
@@ -373,16 +375,16 @@ export const ContentElementData = builder
       // Students only learn that an artifact is attached. The validated
       // exercise is served by an authorized per-instance query.
       hasActivityArtifact: t.boolean({
-        nullable: true,
-        resolve: (element) =>
-          Boolean(
-            (
-              element.options as
-                | { activityArtifact?: unknown }
-                | null
-                | undefined
-            )?.activityArtifact
-          ),
+        resolve: (element, _args, ctx) => {
+          if (
+            ctx.user?.role === DB.UserRole.PARTICIPANT &&
+            !isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts')
+          ) {
+            return false
+          }
+
+          return toPublicActivityArtifactPin(element.options) !== null
+        },
       }),
     }),
   })

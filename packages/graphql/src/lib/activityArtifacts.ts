@@ -8,7 +8,7 @@ const UUID_PATTERN =
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 // The publisher template rejects these characters in the exercise title, so
 // the host rejects them before anything reaches a frame.
-const UNSAFE_EXERCISE_TITLE = /[<>&\u0000-\u001f]/u
+const UNSAFE_EXERCISE_TITLE = /[<>&\p{Cc}]/u
 
 const MAX_EXERCISE_TITLE_LENGTH = 100
 const MAX_EXERCISE_YEARS = 30
@@ -395,11 +395,72 @@ export interface ActivityArtifactRuntime {
 
 type FetchLike = typeof fetch
 
-class ActivityArtifactRequestError extends Error {
-  constructor(message: string) {
+export class ActivityArtifactRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number
+  ) {
     super(message)
     this.name = 'ActivityArtifactRequestError'
   }
+}
+
+async function readBoundedResponseText(response: Response): Promise<string> {
+  const declaredLength = response.headers.get('content-length')
+  const length = declaredLength === null ? null : Number(declaredLength)
+  if (
+    length !== null &&
+    Number.isSafeInteger(length) &&
+    length > MAX_RESPONSE_LENGTH
+  ) {
+    await response.body?.cancel().catch(() => undefined)
+    throw new ActivityArtifactRequestError(
+      'Artifact response exceeded limit',
+      response.status
+    )
+  }
+
+  const reader = response.body?.getReader()
+  if (!reader) {
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    if (bytes.byteLength > MAX_RESPONSE_LENGTH) {
+      throw new ActivityArtifactRequestError(
+        'Artifact response exceeded limit',
+        response.status
+      )
+    }
+    return new TextDecoder().decode(bytes)
+  }
+
+  const chunks: Uint8Array[] = []
+  let received = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      received += value.byteLength
+      if (received > MAX_RESPONSE_LENGTH) {
+        await reader.cancel().catch(() => undefined)
+        throw new ActivityArtifactRequestError(
+          'Artifact response exceeded limit',
+          response.status
+        )
+      }
+      chunks.push(value)
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => undefined)
+    throw error
+  }
+
+  const bytes = new Uint8Array(received)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
 }
 
 async function requestJson(
@@ -413,17 +474,17 @@ async function requestJson(
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MILLISECONDS),
   })
 
-  const text = await response.text()
-  if (text.length > MAX_RESPONSE_LENGTH) {
-    throw new ActivityArtifactRequestError('Artifact response exceeded limit')
-  }
+  const text = await readBoundedResponseText(response)
 
   if (text.length === 0) return { status: response.status, body: undefined }
 
   try {
     return { status: response.status, body: JSON.parse(text) }
   } catch {
-    throw new ActivityArtifactRequestError('Artifact response was not JSON')
+    throw new ActivityArtifactRequestError(
+      'Artifact response was not JSON',
+      response.status
+    )
   }
 }
 
@@ -472,6 +533,11 @@ export function createActivityArtifactRuntime({
     }
 
     if (run) {
+      if (run.participantId !== subject) {
+        throw new ActivityArtifactRequestError(
+          'Run participant does not match the authenticated subject'
+        )
+      }
       headers['x-artifact-operation'] = 'run'
       headers['x-artifact-course'] = run.courseId
       headers['x-artifact-instance'] = String(run.elementInstanceId)
@@ -494,7 +560,8 @@ export function createActivityArtifactRuntime({
 
     if (status < 200 || status > 299) {
       throw new ActivityArtifactRequestError(
-        `Artifact lookup failed with status ${status}`
+        `Artifact lookup failed with status ${status}`,
+        status
       )
     }
 
@@ -551,7 +618,8 @@ export function createActivityArtifactRuntime({
       if (status === 409) return 'conflict'
       if (status < 200 || status > 299) {
         throw new ActivityArtifactRequestError(
-          `Artifact assignment failed with status ${status}`
+          `Artifact assignment failed with status ${status}`,
+          status
         )
       }
       return 'bound'

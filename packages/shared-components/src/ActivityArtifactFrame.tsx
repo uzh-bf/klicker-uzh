@@ -27,6 +27,7 @@ function ActivityArtifactFrame({
   className,
 }: ActivityArtifactFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const lastSentPayloadRef = useRef<string | null>(null)
 
   const frameSrc = useMemo(() => {
     try {
@@ -54,13 +55,16 @@ function ActivityArtifactFrame({
       { type: 'activity-artifact', exercise },
       '*'
     )
+    lastSentPayloadRef.current = JSON.stringify(exercise)
   }, [exercise])
 
   // A fresh authorized response replaces the rendered exercise. The frame
   // re-mounts the definition on every message it accepts.
   useEffect(() => {
+    const payload = JSON.stringify(exercise)
+    if (lastSentPayloadRef.current === payload) return
     sendExercise()
-  }, [sendExercise])
+  }, [exercise, sendExercise])
 
   if (!frameSrc) return null
 

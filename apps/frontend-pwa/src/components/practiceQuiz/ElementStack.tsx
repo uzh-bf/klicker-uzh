@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   type CaseStudyCaseResponse,
-  type ElementStack as ElementStackType,
+  type ElementStack as ElementStackData,
+  ElementStackType,
   ElementType,
   FlashcardCorrectness,
   FlashcardCorrectnessType,
@@ -46,7 +47,7 @@ interface ElementStackProps {
   parentId: string
   courseId: string
   embedded?: boolean
-  stack: ElementStackType
+  stack: ElementStackData
   currentStep: number
   totalSteps: number
   setStepStatus?: ({
@@ -686,11 +687,17 @@ function ElementStack({
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
-                    renderActivityArtifact={(elementInstanceId) => (
-                      <ActivityArtifactInstance
-                        elementInstanceId={elementInstanceId}
-                      />
-                    )}
+                    renderActivityArtifact={
+                      stack.type === ElementStackType.Microlearning &&
+                      withParticipant &&
+                      !previewOnly
+                        ? (elementInstanceId) => (
+                            <ActivityArtifactInstance
+                              elementInstanceId={elementInstanceId}
+                            />
+                          )
+                        : undefined
+                    }
                     preview={
                       embedded &&
                       (focusedPresentation

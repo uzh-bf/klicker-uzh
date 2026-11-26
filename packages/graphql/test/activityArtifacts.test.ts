@@ -1,6 +1,6 @@
 import { UserRole } from '@klicker-uzh/prisma/client'
-import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  ActivityArtifactRequestError,
   createActivityArtifactRuntime,
   createActivityArtifactRuntimeFromEnv,
   parseArtifactServiceUrl,
@@ -10,10 +10,12 @@ import {
   validateActivityArtifactExercise,
   validateArtifactRevisionPayload,
 } from '../src/lib/activityArtifacts.js'
+import type { ContextWithUser } from '../src/lib/context.js'
 import {
   getActivityArtifactForInstance,
   previewActivityArtifactByUrl,
   resolveContentArtifactPin,
+  resolveStaffActivityArtifact,
 } from '../src/services/activityArtifacts.js'
 
 const publisherOrigin = 'https://publisher.example'
@@ -98,6 +100,7 @@ describe('activity artifact exercise contract', () => {
   it.each([
     ['extra field', { ...exercise, yield: 5 }],
     ['markup in title', { ...exercise, title: '<script>x</script>' }],
+    ['control character in title', { ...exercise, title: 'Bond\u0000' }],
     ['non-integer years', { ...exercise, years: 2.5 }],
     ['too many years', { ...exercise, years: 31 }],
     ['negative face', { ...exercise, face: -1 }],
@@ -409,6 +412,58 @@ describe('activity artifact runtime requests', () => {
       mismatchedRuntime.getLatest({ subject: 'lecturer-1', artifactId })
     ).rejects.toThrow()
   })
+
+  it('stops reading a streamed response once it exceeds the byte limit', async () => {
+    let cancelled = false
+    const oversizedChunk = new Uint8Array(512 * 1024 + 1)
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([123]))
+        controller.enqueue(oversizedChunk)
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
+    const runtime = createActivityArtifactRuntime({
+      publisherOrigin,
+      serviceUrl,
+      serviceToken: 'service-token',
+      fetchImpl: (async () =>
+        new Response(stream, { status: 200 })) as typeof fetch,
+    })
+
+    await expect(
+      runtime.getLatest({ subject: 'lecturer-1', artifactId })
+    ).rejects.toThrow('Artifact response exceeded limit')
+    expect(cancelled).toBe(true)
+  })
+
+  it('rejects a run claim whose participant differs from its subject', async () => {
+    const { calls, fetchImpl } = createFakeFetch(
+      () => new Response(JSON.stringify(revisionPayload), { status: 200 })
+    )
+    const runtime = createActivityArtifactRuntime({
+      publisherOrigin,
+      serviceUrl,
+      serviceToken: 'service-token',
+      fetchImpl,
+    })
+
+    await expect(
+      runtime.getRevision({
+        subject: 'participant-1',
+        artifactId,
+        revisionId,
+        run: {
+          participantId: 'participant-2',
+          courseId: 'course-1',
+          elementInstanceId: 42,
+        },
+      })
+    ).rejects.toThrow('Run participant does not match')
+    expect(calls).toHaveLength(0)
+  })
 })
 
 describe('activity artifact attach and upgrade', () => {
@@ -467,6 +522,34 @@ describe('activity artifact attach and upgrade', () => {
       subject: lecturerId,
       artifactId,
     })
+  })
+
+  it.each([
+    [403, 'BAD_USER_INPUT'],
+    [404, 'BAD_USER_INPUT'],
+    [503, 'SERVICE_UNAVAILABLE'],
+  ])('maps publisher status %i to %s', async (status, code) => {
+    const runtime = lecturerRuntime()
+    runtime.getLatest.mockRejectedValue(
+      new ActivityArtifactRequestError('publisher failure', status)
+    )
+    const { ctx } = lecturerContext(runtime)
+
+    await expect(
+      previewActivityArtifactByUrl({ url: canonicalUrl }, ctx)
+    ).rejects.toMatchObject({ extensions: { code } })
+  })
+
+  it('maps staff lookup transport failures with an actionable code', async () => {
+    const runtime = lecturerRuntime()
+    runtime.getLatest.mockRejectedValue(
+      new ActivityArtifactRequestError('publisher unavailable', 503)
+    )
+    const { ctx } = lecturerContext(runtime)
+
+    await expect(
+      resolveStaffActivityArtifact({ artifactId }, ctx)
+    ).rejects.toMatchObject({ extensions: { code: 'SERVICE_UNAVAILABLE' } })
   })
 
   it('re-resolves the exact reviewed revision on explicit confirmation', async () => {
@@ -553,16 +636,16 @@ describe('activity artifact participant access', () => {
     const findParticipation = vi
       .fn()
       .mockResolvedValue({ id: 'participation-1' })
-    const findPermission = vi.fn().mockResolvedValue({ id: 7 })
+    const findDerivedPermission = vi.fn().mockResolvedValue({ id: 7 })
 
     return {
       findUnique,
       findParticipation,
-      findPermission,
+      findDerivedPermission,
       prisma: {
         elementInstance: { findUnique },
         participation: { findUnique: findParticipation },
-        permission: { findFirst: findPermission },
+        derivedPermission: { findFirst: findDerivedPermission },
       },
     }
   }
@@ -600,7 +683,7 @@ describe('activity artifact participant access', () => {
   })
 
   it('serves only a current published Microlearning to an enrolled participant', async () => {
-    const { prisma, findUnique, findParticipation, findPermission } =
+    const { prisma, findUnique, findParticipation, findDerivedPermission } =
       allowedPrisma()
     const runtime = allowedRuntime()
     const { ctx } = participantContext({ prisma, runtime })
@@ -633,11 +716,13 @@ describe('activity artifact participant access', () => {
     expect(findParticipation).toHaveBeenCalledWith({
       where: {
         courseId_participantId: { courseId, participantId },
-        isActive: true,
       },
       select: { id: true },
     })
-    expect(findPermission).toHaveBeenCalledWith({
+    expect(findParticipation.mock.calls[0]![0].where).not.toHaveProperty(
+      'isActive'
+    )
+    expect(findDerivedPermission).toHaveBeenCalledWith({
       where: {
         userId: storedPin.subject,
         microLearningId,
@@ -654,26 +739,28 @@ describe('activity artifact participant access', () => {
     })
   })
 
-  it('returns nothing when the participant has deactivated course membership', async () => {
-    const inactive = allowedPrisma()
-    inactive.findParticipation.mockResolvedValue(null)
-    const inactiveRuntime = allowedRuntime()
-    const inactiveContext = participantContext({
-      prisma: inactive.prisma,
-      runtime: inactiveRuntime,
+  it('returns nothing when the participant has no course participation', async () => {
+    const missingParticipation = allowedPrisma()
+    missingParticipation.findParticipation.mockResolvedValue(null)
+    const missingParticipationRuntime = allowedRuntime()
+    const missingParticipationContext = participantContext({
+      prisma: missingParticipation.prisma,
+      runtime: missingParticipationRuntime,
     }).ctx
 
     await expect(
-      getActivityArtifactForInstance({ elementInstanceId: 42 }, inactiveContext)
+      getActivityArtifactForInstance(
+        { elementInstanceId: 42 },
+        missingParticipationContext
+      )
     ).resolves.toBeNull()
-    expect(inactive.findParticipation).toHaveBeenCalledWith({
+    expect(missingParticipation.findParticipation).toHaveBeenCalledWith({
       where: {
         courseId_participantId: { courseId, participantId },
-        isActive: true,
       },
       select: { id: true },
     })
-    expect(inactiveRuntime.assign).not.toHaveBeenCalled()
+    expect(missingParticipationRuntime.assign).not.toHaveBeenCalled()
   })
 
   it('returns nothing for a non-participant or a lecturer without current activity rights', async () => {
@@ -694,7 +781,7 @@ describe('activity artifact participant access', () => {
     expect(unenrolledRuntime.assign).not.toHaveBeenCalled()
 
     const stale = allowedPrisma()
-    stale.findPermission.mockResolvedValue(null)
+    stale.findDerivedPermission.mockResolvedValue(null)
     const staleRuntime = allowedRuntime()
     const staleContext = participantContext({
       prisma: stale.prisma,

@@ -208,9 +208,11 @@ function useElementFormInitialValues({
       return {
         ...sharedAttributes,
         type: ElementType.Content,
-        // Read-only view of the stored pin. A new revision is only stored
-        // after an explicit confirmation in the attachment section.
-        currentActivityArtifact: question.activityArtifact ?? null,
+        // Duplicated elements are created without a pin, so they start
+        // unattached. Edits show the stored pin for an explicit upgrade.
+        currentActivityArtifact: isDuplication
+          ? null
+          : (question.activityArtifact ?? null),
       }
     }
 
