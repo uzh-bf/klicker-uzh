@@ -453,6 +453,21 @@ async function normalizeStaleCourseDuplicationJob(
   })
 
   if (committedCourse) {
+    // The attempts may have stopped after the copy committed but before its
+    // assessment audit work finished. Leave the job stale on failure so a
+    // later sweep tries again instead of completing it without evidence.
+    try {
+      await completeCopiedAssessmentAudit(prisma, job.assessmentCopies ?? [])
+    } catch (error) {
+      log?.error(
+        {
+          event: 'course_duplication.status.audit_completion_failed',
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Copied assessment audit could not be completed for a stale job'
+      )
+      return job
+    }
     log?.warn(
       {
         event: 'course_duplication.status.reconciled',
@@ -1826,6 +1841,15 @@ async function completeCopiedAssessmentAudit(
   copiedLiveQuizSources: Iterable<[string, string]>
 ) {
   for (const [copiedLiveQuizId, sourceLiveQuizId] of copiedLiveQuizSources) {
+    // Pairs from an attempt that rolled back can name quizzes that were never
+    // created, and a copy can leave assessment mode before a retry. Neither
+    // can be activated, and a retry would not change that.
+    const copiedQuiz = await client.liveQuiz.findUnique({
+      where: { id: copiedLiveQuizId },
+      select: { isAssessmentEnabled: true },
+    })
+    if (!copiedQuiz?.isAssessmentEnabled) continue
+
     const latestScope = await client.assessmentAuditScope.findFirst({
       where: { liveQuizId: copiedLiveQuizId },
       orderBy: { lifecycleEpoch: 'desc' },
