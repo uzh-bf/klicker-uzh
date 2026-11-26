@@ -437,6 +437,10 @@ async function autoAcceptInvitation(
         return null
       }
 
+      // Lock before inserting the invitation, in the same order as manual
+      // acceptance, so the two paths cannot deadlock on the same invitation.
+      await lockParticipationEligibility(tx, courseId, participantId)
+
       // Create the invitation as ACCEPTED
       const invitation = await tx.participantInvitation.create({
         data: {
@@ -449,7 +453,6 @@ async function autoAcceptInvitation(
         },
       })
 
-      await lockParticipationEligibility(tx, courseId, participantId)
       const previous = await tx.participation.findUnique({
         where: {
           courseId_participantId: {
