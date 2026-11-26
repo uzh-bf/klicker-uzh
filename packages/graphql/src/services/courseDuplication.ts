@@ -25,10 +25,7 @@ import {
   assessmentLifecycleDraft,
   emitCoveredAssessmentAuditEvents,
 } from './assessmentAuditProducers.js'
-import {
-  activateNewAssessmentAuditIfSelected,
-  lifecycleState,
-} from './assessmentAuditRollout.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import { type CourseCreationArgs, createCourse } from './courses.js'
 import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
@@ -1909,12 +1906,6 @@ async function completeCopiedAssessmentAudit(
     await runInAuditTransaction(client, async (tx, auditTx) => {
       const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
       if (copied === null) return
-      // A retry can run after the copy was scheduled or published, so record
-      // the state it is in now rather than assuming it is still a draft.
-      const copiedState = await tx.liveQuiz.findUniqueOrThrow({
-        where: { id: copiedLiveQuizId },
-        select: { status: true, isDeleted: true, startedAt: true },
-      })
       // A stable operation per copied quiz gives every attempt the same
       // idempotency key, so a second writer cannot add a second copy event.
       const operation = assessmentAuditSystemOperation({
@@ -1934,7 +1925,9 @@ async function completeCopiedAssessmentAudit(
             eventType: 'ASSESSMENT_COPIED',
             producerOperationId: `${operation.correlationId}:copied`,
             fromState: null,
-            toState: lifecycleState(copiedState),
+            // The copy event attests creation, which the audit contract
+            // fixes as DRAFT; a later state is in the activation baseline.
+            toState: 'DRAFT',
             reasonCode: 'COURSE_DUPLICATION',
             sourceLiveQuizId,
           }),

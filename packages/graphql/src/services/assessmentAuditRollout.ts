@@ -51,8 +51,8 @@ const TERMINAL_STATES = new Set<
   RolloutBaselinePayload['observedLifecycleState']
 >(['COMPLETED', 'CANCELLED', 'DELETED'])
 
-export function lifecycleState(
-  quiz: Pick<RolloutQuiz, 'isDeleted' | 'status' | 'startedAt'>
+function lifecycleState(
+  quiz: RolloutQuiz
 ): RolloutBaselinePayload['observedLifecycleState'] {
   if (quiz.isDeleted) return 'DELETED'
   switch (quiz.status) {
