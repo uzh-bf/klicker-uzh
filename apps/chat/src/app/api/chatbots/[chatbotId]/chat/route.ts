@@ -2391,8 +2391,9 @@ export async function POST(
 
     // Each feedback attempt is a step; three attempts plus retrieval and the
     // closing text need more than the usual five. An explanation call is one
-    // step, because its writer repairs drafts inside the tool.
-    const maxSteps = explanationToolActive || feedbackToolActive ? 7 : 5
+    // step, because its writer repairs drafts inside the tool. One more step
+    // is added for the text-only answer, so it never takes a tool call's slot.
+    const maxSteps = (explanationToolActive || feedbackToolActive ? 7 : 5) + 1
 
     const startStream = () => {
       providerStreamStarted = true

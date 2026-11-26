@@ -1226,8 +1226,8 @@ describe('account usage chat route', () => {
         initialMessages: [{ role: 'user', content: 'Question' }],
         responseMessages: [],
       })
-    expect(step(3).toolChoice).toBeUndefined()
-    expect(step(4).toolChoice).toBe('none')
+    expect(step(4).toolChoice).toBeUndefined()
+    expect(step(5).toolChoice).toBe('none')
   })
 
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
