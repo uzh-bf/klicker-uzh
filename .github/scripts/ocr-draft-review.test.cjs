@@ -10,7 +10,11 @@ const {
   readPolicyBlob,
 } = require('./ocr-runtime-config.cjs')
 
-const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
+const {
+  runDraftReview,
+  singleFileOutline,
+  summarizeCoverage,
+} = require('./ocr-draft-review.cjs')
 const {
   MOAT_ADVISOR_MODEL,
   MOAT_FLASH_MODEL,
@@ -774,6 +778,36 @@ test('repository configuration is strict and frozen at the trusted policy rather
   )
 })
 
+test('outline selection uses the selected group, line churn and stock path identity', () => {
+  const key = require('node:crypto')
+    .createHash('sha256')
+    .update('a.ts')
+    .digest('hex')
+    .slice(0, 16)
+  const block = (count) =>
+    '<file path="a.ts">\ndiff --git a/a.ts b/a.ts\n@@ -1 +1,' +
+    count +
+    ' @@\n-old\n' +
+    '+x\n'.repeat(count) +
+    '</file>'
+  const plan = (group) => [
+    {
+      role: 'user',
+      content:
+        '<other_changed_files>\n</other_changed_files>\n\n' +
+        group +
+        '\n\nCurrent time in the real world: fixture',
+    },
+  ]
+  assert.equal(singleFileOutline(plan(block(498)), key), null)
+  assert.ok(singleFileOutline(plan(block(499)), key))
+  assert.equal(singleFileOutline(plan(block(499)), '0000000000000000'), null)
+  assert.equal(
+    singleFileOutline(plan(block(499) + '\n\n' + block(499)), key),
+    null
+  )
+})
+
 test('stock OCR consumes final plans and continues without truncated or empty guidance', {
   skip: !process.env.OCR_TEST_BINARY,
   timeout: 60000,
@@ -805,14 +839,27 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
   )
   git('add', '.')
   git('commit', '-m', 'test: synthetic candidate')
-  const head = git('rev-parse', 'HEAD')
+  let head = git('rev-parse', 'HEAD')
   for (const [content, finish, outcome] of [
     ['SYNTHETIC_FINAL_PLAN', 'stop', 'usable'],
     ['', 'length', 'length'],
     ['SYNTHETIC_PARTIAL_PLAN', 'length', 'length'],
     ['', 'stop', 'empty'],
     [' \n ', 'stop', 'empty'],
+    ['', 'stop', 'outline'],
   ]) {
+    const localOutline = outcome === 'outline'
+    if (localOutline) {
+      fs.appendFileSync(
+        path.join(repo, 'source.js'),
+        Array.from(
+          { length: 500 },
+          (_, i) => `export function section${i}() {}\n`
+        ).join('')
+      )
+      git('commit', '-am', 'test: large single-file change')
+      head = git('rev-parse', 'HEAD')
+    }
     const temp = fs.mkdtempSync(path.join(root, 'review-'))
     const logs = []
     let calls = 0,
@@ -835,6 +882,7 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
           (tool) => tool.function.name === 'task_done'
         )
         if (!main) {
+          assert.equal(localOutline, false)
           plans++
           assert.match(
             body.prompt_cache_key,
@@ -843,6 +891,11 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
         } else {
           reviews++
           const input = JSON.stringify(body.messages)
+          if (localOutline) {
+            assert.match(input, /value0 L1/)
+            assert.match(input, /section499 L565/)
+            assert.match(input, /-1(?:,1)? \+1,565/)
+          }
           assert.equal(
             input.includes('SYNTHETIC_FINAL_PLAN'),
             outcome === 'usable'
@@ -897,17 +950,25 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
     assert.equal(result.coverage.selected, 1)
     assert.equal(result.coverage.completed, 1)
     assert.equal(result.coverage.failed, 0)
-    assert.deepEqual([calls, plans, reviews], [2, 1, 1])
+    assert.deepEqual(
+      [calls, plans, reviews],
+      localOutline ? [1, 0, 1] : [2, 1, 1]
+    )
     const diagnostic = JSON.parse(
       fs.readFileSync(
         path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
       )
     )
-    assert.equal(diagnostic.upstream_attempts, 2)
-    assert.equal(diagnostic.responses, 2)
-    assert.equal(diagnostic.prompt_tokens, 200)
-    assert.equal(diagnostic.cached_prompt_tokens, 160)
-    assert.equal(diagnostic.completion_tokens, 16404)
+    assert.equal(diagnostic.upstream_attempts, calls)
+    assert.equal(diagnostic.responses, calls)
+    assert.equal(diagnostic.prompt_tokens, 100 * calls)
+    assert.equal(diagnostic.cached_prompt_tokens, 80 * calls)
+    assert.equal(diagnostic.completion_tokens, localOutline ? 20 : 16404)
+    if (localOutline) {
+      assert.equal(diagnostic.plan_guidance.local_outlines, 1)
+      assert.equal(diagnostic.plan_guidance.responses, 0)
+      continue
+    }
     assert.equal(diagnostic.plan_guidance.responses, 1)
     assert.equal(diagnostic.plan_guidance[outcome], 1)
     assert.match(logs.join(''), /OCR planning status=complete responses=1 /)
