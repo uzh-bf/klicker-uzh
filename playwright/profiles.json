@@ -46,6 +46,7 @@
         "T-chatbot-authoring.spec.ts",
         "Y-ai-beta-management-gate.spec.ts",
         "Y-chat.spec.ts",
+        "Y-chat-feedback-annotations.spec.ts",
         "Y-chat-knowledge-graph.spec.ts",
         "Y-chat-workspace-panel.spec.ts",
         "Y-kb-domain-selection.spec.ts",
