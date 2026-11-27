@@ -57,7 +57,9 @@ export function normalizeAssessmentAnswer(input: {
           .sort((left, right) => left - right),
       } as const
     case ElementType.NUMERICAL: {
-      const value = Number.parseFloat(String(input.response.value))
+      // Convert like validation and grading, so the evidence records the
+      // number that was graded ('0x10' is 16, not 0).
+      const value = Number(input.response.value)
       if (!Number.isFinite(value)) {
         throw new Error('Numerical response is not normalizable')
       }

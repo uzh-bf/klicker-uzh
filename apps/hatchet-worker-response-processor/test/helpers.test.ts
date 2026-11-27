@@ -140,6 +140,19 @@ describe('assessment answer normalization', () => {
     })
   })
 
+  it.each([
+    ['0x10', 16],
+    ['1e2', 100],
+  ])('records the graded value for the accepted numerical answer %s', (value, expected) => {
+    const response = { value }
+    expect(validateStudentResponse({ type: 'NUMERICAL', response }).valid).toBe(
+      true
+    )
+    expect(
+      normalizeAssessmentAnswer({ type: ElementType.NUMERICAL, response })
+    ).toMatchObject({ kind: 'NUMERICAL', value: expected })
+  })
+
   it('orders nested case-study answers deterministically', () => {
     expect(
       normalizeAssessmentAnswer({
