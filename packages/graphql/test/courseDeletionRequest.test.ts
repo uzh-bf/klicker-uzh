@@ -185,9 +185,8 @@ describe('course deletion worker', () => {
 
     await run({ ...event, loggingContext }, context)
 
-    // Diagnostic facade writes are queued off the task critical path and
-    // flushed by the worker's shutdown drain; the echo therefore only lands
-    // after an explicit drain in tests.
+    // Diagnostic facade writes run off the task critical path and are
+    // settled by the worker's shutdown drain, which the test mirrors here.
     await drainTaskLogWrites()
 
     expect(context.logger.warn).toHaveBeenCalledWith(

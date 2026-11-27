@@ -97,12 +97,14 @@ as implicit cross-process state. Hatchet's UI keeps its native task association
 and metadata, while the container line contains the full portable Pino record.
 
 Diagnostic task records (lifecycle and info-level) never block the task:
-the wrapper schedules them on an ordered, per-attempt background queue, so a
-Hatchet round trip is not added to the task's critical path — failure records
-are the exception and are awaited (bounded against a degraded API) so failure
-evidence is durable before a retry or rethrow. Workers drain the background
-queue before exiting (`drainTaskLogWrites`), so shutdown does not drop pending
-diagnostic writes.
+the wrapper starts each write without awaiting it, so a Hatchet round trip is
+not added to the task's critical path. These writes are not chained, so under
+load they may appear out of order in Hatchet's UI; the Pino records are
+unaffected. Failure records are the exception and are awaited (bounded against
+a degraded API) so failure evidence is durable before a retry or rethrow.
+Workers wait, bounded, for all pending writes before exiting
+(`drainTaskLogWrites`), so shutdown does not drop diagnostic writes that
+started before it.
 
 The audit-entry task records only that an entry was received plus validated
 diagnostic context. Its historical `info` text and any business correlation

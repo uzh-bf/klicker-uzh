@@ -346,6 +346,143 @@ describe('withHatchetTaskLogging', () => {
       'string rejection'
     )
   })
+
+  it('returns without waiting for diagnostic writes and drains them on shutdown', async () => {
+    const context = fakeHatchetContext()
+    let release!: () => void
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    context.logger.info.mockImplementation(() => blocked)
+    context.logger.warn.mockRejectedValue(new Error('log API unavailable'))
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'background-writes',
+      handler: async (_input, ctx) => {
+        await ctx.logger.warn('Degraded dependency')
+        return 'done'
+      },
+    })
+
+    await expect(
+      wrapped({ loggingContext: { correlationId: 'correlation-1' } }, context)
+    ).resolves.toBe('done')
+    expect(context.logger.info).toHaveBeenCalledTimes(2)
+
+    let drained = false
+    const drain = drainTaskLogWrites().then(() => {
+      drained = true
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(drained).toBe(false)
+    release()
+    await drain
+    expect(drained).toBe(true)
+  })
+
+  it('bounds the shutdown drain when a write never settles', async () => {
+    const context = fakeHatchetContext()
+    let release!: () => void
+    const hung = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    context.logger.info.mockImplementation(() => hung)
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'hung-log-api',
+      handler: async () => 'done',
+    })
+
+    // Without an envelope the SDK logger is used directly; its writes are
+    // still tracked by the shutdown drain.
+    await wrapped({}, context)
+    let drained = false
+    const drain = drainTaskLogWrites(50).then(() => {
+      drained = true
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(drained).toBe(false)
+    await drain
+    expect(drained).toBe(true)
+    release()
+    await drainTaskLogWrites()
+  })
+
+  it('waits for correlated error writes before continuing', async () => {
+    const context = fakeHatchetContext()
+    const releases: Array<() => void> = []
+    context.logger.error.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releases.push(resolve)
+        })
+    )
+    const failure = new Error('handler failed')
+    let continuedAfterErrorLog = false
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'correlated-error-writes',
+      handler: async (_input, ctx) => {
+        await ctx.logger.error('Response processing failed')
+        continuedAfterErrorLog = true
+        throw failure
+      },
+    })
+
+    let settled = false
+    const outcome = wrapped(
+      { loggingContext: { correlationId: 'correlation-1' } },
+      context
+    ).then(
+      () => undefined,
+      (error: unknown) => {
+        settled = true
+        return error
+      }
+    )
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+    // The handler's own error write blocks the handler.
+    await flush()
+    expect(releases).toHaveLength(1)
+    expect(continuedAfterErrorLog).toBe(false)
+    releases[0]?.()
+
+    // The failure lifecycle write blocks the rethrow.
+    await flush()
+    expect(continuedAfterErrorLog).toBe(true)
+    expect(releases).toHaveLength(2)
+    expect(settled).toBe(false)
+    releases[1]?.()
+    expect(await outcome).toBe(failure)
+  })
+
+  it('awaits the failure record before rethrowing, bounded by a timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const context = fakeHatchetContext()
+      context.logger.error.mockImplementation(() => new Promise(() => {}))
+      const failure = new Error('task failure')
+      const wrapped = withHatchetTaskLogging({
+        taskName: 'hung-failure-log',
+        handler: async () => {
+          throw failure
+        },
+      })
+
+      let settled = false
+      const outcome = wrapped({}, context).then(
+        () => undefined,
+        (error: unknown) => {
+          settled = true
+          return error
+        }
+      )
+      await vi.advanceTimersByTimeAsync(9_999)
+      expect(settled).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(await outcome).toBe(failure)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('createHatchetLoggerFactory', () => {
