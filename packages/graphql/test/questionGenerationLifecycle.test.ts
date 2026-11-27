@@ -2506,8 +2506,9 @@ describe('native question budget build lifetime', () => {
   it.each([
     [fixtures.ownerId, 'budgeted'],
     [fixtures.graphBuildId, 'unbudgeted'],
+    [undefined, 'unbudgeted'],
   ] as const)('persists the server-selected mode for actor scope %s', async (actor, mode) => {
-    const value = JSON.stringify(template)
+    const value = mode === 'unbudgeted' ? '{}' : JSON.stringify(template)
     vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_ACTOR_ID', actor)
     const h = harness(false)
     vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
@@ -2566,6 +2567,7 @@ describe('native question budget build lifetime', () => {
 
   it('uses the persisted race winner rather than the losing environment policy', async () => {
     const h = harness(false)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_ACTOR_ID', fixtures.ownerId)
     vi.stubEnv(
       'KB_QUESTION_NATIVE_BUDGET_POLICY',
       JSON.stringify({ ...template, budget_usd: '9' })
@@ -2599,6 +2601,37 @@ describe('native question budget build lifetime', () => {
     expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
     expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
     expect(h.runtime.start).not.toHaveBeenCalled()
+  })
+
+  it('refuses a legacy redispatch after a transient error cleared the retry stage', async () => {
+    const h = harness()
+    Reflect.deleteProperty(h.current.configuration, 'nativeBudget')
+    const previousSpend = vi.fn(async () => ({ id: 'first-spend' }))
+    const transaction = {
+      elementGenerationBuild: {
+        updateMany: h.ctx.prisma.elementGenerationBuild.updateMany,
+        findUniqueOrThrow: async () => h.current,
+      },
+    }
+    Object.assign(h.ctx.prisma, {
+      elementGenerationSpend: { findFirst: previousSpend },
+      $transaction: (operation: (tx: typeof transaction) => Promise<unknown>) =>
+        operation(transaction),
+    })
+    await expect(
+      getQuestionGenerationBuild(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+    })
+    expect(previousSpend).toHaveBeenCalledWith({
+      where: {
+        buildId: h.current.id,
+        dispatchAttemptId: { not: h.current.providerDispatchAttemptId },
+      },
+      select: { id: true },
+    })
+    expect(h.runtime.start).not.toHaveBeenCalled()
+    expect(h.current.errorRetryable).toBe(false)
   })
 
   it('recovers the exact existing native attempt without redispatching or changing policy', async () => {

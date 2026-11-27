@@ -613,7 +613,7 @@ backendGraphql:
     outputPrefix: 'question-builds'
     # Optional USD policy with decimal-string amounts and per-token prices.
     nativeBudgetPolicy: null
-    # Scope the required policy to one authenticated user. Null requires it for all new questions.
+    # Scope the required policy to one authenticated user. Null leaves all new questions on the ordinary unbudgeted route.
     nativeBudgetActorId: null
     # Lecturers can request a revision of one generated question only when the
     # deployed question worker supports slot specifications.

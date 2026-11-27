@@ -52,7 +52,7 @@ version 1, a positive decimal-string USD limit, per-token prompt/completion
 price ceilings keyed by model route, and an output-token ceiling. No default
 USD amount or tariff is supplied. Decimal spelling is bounded to 256 characters
 and an exponent magnitude of 1000; amounts are normalized without binary floats.
-Invalid configured policy rejects new admission before product credits or
+A missing or invalid policy rejects a new pilot request before product credits or
 provider contact. Flashcards retain their existing cost policy.
 
 Each new question build records an explicit budget mode in its existing
@@ -73,8 +73,7 @@ question library snapshot. Verify the manifest contract when changing workers.
 The server can restrict the budget to the authenticated user selected by
 `backendGraphql.elementGeneration.nativeBudgetActorId`. This actor requires a
 valid policy before the first reservation. Other admitted actors create ordinary
-unbudgeted builds. With no actor selector, all new question builds require a
-policy. An invalid selector denies new question builds. Set the selector and
+unbudgeted builds. Omitting the actor selector keeps the pilot off, even if a policy template is present. An invalid selector denies new question builds. Set the selector and
 verify its identity on each serving instance before opening pilot admission.
 
 The chart's optional `backendGraphql.elementGeneration.nativeBudgetPolicy`

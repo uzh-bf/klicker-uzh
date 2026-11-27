@@ -165,13 +165,12 @@ export function nativeBudgetForNewQuestion(
   env: Record<string, string | undefined> = process.env
 ): QuestionNativeBudgetMetadata {
   const pilot = env.KB_QUESTION_NATIVE_BUDGET_ACTOR_ID
-  if (pilot !== undefined) {
-    if (!z.uuid().safeParse(pilot).success) {
-      return configurationError('Native question budget actor is invalid')
-    }
-    if (pilot.toLowerCase() !== ownerId.toLowerCase())
-      return { mode: 'unbudgeted' }
+  if (pilot === undefined) return { mode: 'unbudgeted' }
+  if (!z.uuid().safeParse(pilot).success) {
+    return configurationError('Native question budget actor is invalid')
   }
+  if (pilot.toLowerCase() !== ownerId.toLowerCase())
+    return { mode: 'unbudgeted' }
   const budget = questionNativeBudgetFromEnv(env)
   if (budget.mode !== 'budgeted') {
     return configurationError(
