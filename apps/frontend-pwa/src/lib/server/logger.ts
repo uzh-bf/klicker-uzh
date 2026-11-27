@@ -33,8 +33,6 @@ export function createSsrRequestLogging(
   const requestContext = resolveRequestContext({
     requestId: headers['x-request-id'],
     correlationId: headers['x-correlation-id'],
-    traceId: headers['x-trace-id'],
-    spanId: headers['x-span-id'],
   })
   const log = logger.child({ ...requestContext, route })
 

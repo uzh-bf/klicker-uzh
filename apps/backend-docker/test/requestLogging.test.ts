@@ -138,11 +138,26 @@ describe('requestLoggingMiddleware', () => {
     })
   })
 
-  it('suppresses health completion records', () => {
-    const test = harness('/healthz')
-    requestLoggingMiddleware(test.root)(test.req, test.res, vi.fn())
-    ;(test.res as unknown as EventEmitter).emit('finish')
-    expect(test.records).toEqual([])
+  it('suppresses health completion records behind the mounted handler', async () => {
+    const test = harness()
+    const app = express()
+    app.use(requestLoggingMiddleware(test.root))
+    app.use('/healthz', (_req, res) => {
+      res.send('OK')
+    })
+    const server = app.listen(0, '127.0.0.1')
+    try {
+      await new Promise<void>((resolve) => server.once('listening', resolve))
+      const port = (server.address() as AddressInfo).port
+      const response = await fetch(`http://127.0.0.1:${port}/healthz`)
+      expect(response.status).toBe(200)
+      await response.text()
+      expect(test.records).toEqual([])
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      )
+    }
   })
 })
 

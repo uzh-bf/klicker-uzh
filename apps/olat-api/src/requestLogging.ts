@@ -1,5 +1,4 @@
-import type { AppLogger } from '@klicker-uzh/logging/node'
-import { resolveRequestContext } from '@klicker-uzh/logging/request'
+import { type AppLogger, startRequestLog } from '@klicker-uzh/logging/node'
 import type { NextFunction, Request, Response } from 'express'
 
 const HEALTH_PATH = '/health'
@@ -31,38 +30,20 @@ function routeTemplate(pathname: string): string | undefined {
 
 export function createRequestLoggingMiddleware(rootLogger: AppLogger) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const requestContext = resolveRequestContext({
-      requestId: req.headers['x-request-id'],
-      correlationId: req.headers['x-correlation-id'],
-    })
     const route = routeTemplate(req.path) ?? '/unmatched'
-    const log = rootLogger.child(requestContext)
-    const startedAt = performance.now()
-    res.setHeader('x-request-id', requestContext.requestId)
+    // Handled failures own their record via logRequestFailure; the completion
+    // record only covers responses without an explicit failure record.
+    const { log, startedAt } = startRequestLog(rootLogger, {
+      method: req.method,
+      headers: req.headers,
+      res,
+      message: 'OLAT API request completed',
+      route: () => route,
+      skip: () => req.path === HEALTH_PATH || !!res.locals.logFailureRecorded,
+    })
     res.locals.log = log
     res.locals.logRoute = route
     res.locals.logStartedAt = startedAt
-
-    // Handled failures own their record via logRequestFailure; the finish
-    // listener only covers responses without an explicit failure record.
-    res.once('finish', () => {
-      if (req.path === HEALTH_PATH || res.locals.logFailureRecorded) return
-      const level = res.statusCode >= 500 ? 'error' : 'info'
-      log[level](
-        {
-          event: 'http.request.completed',
-          http: {
-            method: req.method,
-            route,
-            statusCode: res.statusCode,
-            durationMs: Math.round(performance.now() - startedAt),
-          },
-          outcome: res.statusCode >= 500 ? 'failure' : 'success',
-        },
-        'OLAT API request completed'
-      )
-    })
-
     next()
   }
 }

@@ -15,8 +15,6 @@ export interface EdgeLogFields {
   event: string
   requestId?: string
   correlationId?: string
-  traceId?: string
-  spanId?: string
   audience?: string
   http?: EdgeHttpFields
   err?: Error
@@ -83,8 +81,6 @@ function approvedFields(
     ...(typeof fields.correlationId === 'string'
       ? { correlationId: fields.correlationId }
       : {}),
-    ...(typeof fields.traceId === 'string' ? { traceId: fields.traceId } : {}),
-    ...(typeof fields.spanId === 'string' ? { spanId: fields.spanId } : {}),
     ...(typeof fields.audience === 'string'
       ? { audience: fields.audience }
       : {}),

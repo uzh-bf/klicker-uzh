@@ -27,18 +27,17 @@ contracts live in `packages/logging/src/node.ts:createLogger`,
 
 Owned application records use these fields:
 
-| Field               | Requirement | Meaning                                            |
-| ------------------- | ----------- | -------------------------------------------------- |
-| `time`              | required    | Unix milliseconds                                  |
-| `level`             | required    | lowercase Pino level string                        |
-| `service`           | required    | stable runtime component name                      |
-| `event`             | required    | stable dot-separated event name                    |
-| `msg`               | required    | short human-readable description                   |
-| `requestId`         | optional    | one validated HTTP request                         |
-| `correlationId`     | optional    | one operation across process boundaries            |
-| `traceId`, `spanId` | optional    | existing real tracing identifiers only             |
-| `http`              | optional    | method, parameterized route, status, duration only |
-| `err`               | optional    | Pino-serialized application-owned error            |
+| Field           | Requirement | Meaning                                            |
+| --------------- | ----------- | -------------------------------------------------- |
+| `time`          | required    | Unix milliseconds                                  |
+| `level`         | required    | lowercase Pino level string                        |
+| `service`       | required    | stable runtime component name                      |
+| `event`         | required    | stable dot-separated event name                    |
+| `msg`           | required    | short human-readable description                   |
+| `requestId`     | optional    | one validated HTTP request                         |
+| `correlationId` | optional    | one operation across process boundaries            |
+| `http`          | optional    | method, parameterized route, status, duration only |
+| `err`           | optional    | Pino-serialized application-owned error            |
 
 Pino's default `pid` and `hostname` fields are omitted because Kubernetes owns
 process placement metadata. Event names are stable query keys; `msg` may improve

@@ -50,25 +50,17 @@ describe('resolveRequestContext', () => {
       resolveOptionalRequestContext({
         requestId: 'request-1',
         correlationId: 'invalid correlation id',
-        traceId: 'trace-1',
       })
-    ).toEqual({ requestId: 'request-1', traceId: 'trace-1' })
+    ).toEqual({ requestId: 'request-1' })
     expect(resolveOptionalRequestContext({})).toEqual({})
   })
 
-  it('preserves valid request, correlation, trace, and span IDs', () => {
+  it('preserves valid request and correlation IDs', () => {
     expect(
       resolveRequestContext({
         requestId: 'request-1',
         correlationId: 'correlation-1',
-        traceId: 'trace-1',
-        spanId: 'span-1',
       })
-    ).toEqual({
-      requestId: 'request-1',
-      correlationId: 'correlation-1',
-      traceId: 'trace-1',
-      spanId: 'span-1',
-    })
+    ).toEqual({ requestId: 'request-1', correlationId: 'correlation-1' })
   })
 })
