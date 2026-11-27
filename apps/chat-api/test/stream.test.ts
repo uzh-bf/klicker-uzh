@@ -66,6 +66,44 @@ async function read(stream: ReadableStream<Uint8Array>) {
 }
 
 describe('validated engine stream', () => {
+  test('keeps an idle writer response open without adding a chat event', async () => {
+    vi.useFakeTimers()
+    const stopped = vi.fn()
+    const upstream = new ReadableStream<Uint8Array>({ cancel: stopped })
+    const finalize = vi.fn(async () => ({
+      creditsUsed: null,
+      finalPersistenceStatus: 'not-persisted' as const,
+    }))
+    const stream = createValidatedPlatformStream(new Response(upstream), {
+      keepAlive: true,
+      metadata: () => ({
+        chatMode: 'tutor',
+        modelId: 'synthetic',
+        reasoningEffort: null,
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        creditsUsed: null,
+        finalPersistenceStatus: 'not-persisted',
+      }),
+      finalize,
+    })
+    const reader = stream.getReader()
+    try {
+      for (let i = 0; i < 5; i++) {
+        const next = reader.read()
+        await vi.advanceTimersByTimeAsync(15_000)
+        const chunk = await next
+        expect(chunk.done).toBe(false)
+        expect(new TextDecoder().decode(chunk.value)).toBe(': keep-alive\n\n')
+      }
+      expect(finalize).not.toHaveBeenCalled()
+    } finally {
+      await reader.cancel()
+      vi.useRealTimers()
+    }
+    expect(stopped).toHaveBeenCalledOnce()
+  })
+
   test('does not finalize twice when abort follows abort metadata', async () => {
     const finalize = vi.fn(async () => ({
       creditsUsed: 0.000001,

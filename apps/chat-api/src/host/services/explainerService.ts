@@ -1,4 +1,9 @@
 import {
+  engineExplanationDraftRequestSchema,
+  type EngineExplanationDraftRequest,
+  type EngineExplanationDraftResult,
+} from '@klicker-uzh/chat-engine-contract'
+import {
   generateText,
   isStepCount,
   jsonSchema,
@@ -190,11 +195,22 @@ const WRITER_TIMEOUT_MS = 180_000
  * tool reports progress while the writer works. */
 const WRITER_HEARTBEAT_MS = 15_000
 
-export type ExplanationWriter = {
-  modelId: string
-  model: LanguageModel
-  providerOptions?: Parameters<typeof generateText>[0]['providerOptions']
-}
+export type ExplanationWriter =
+  | {
+      modelId: string
+      model: LanguageModel
+      providerOptions?: Parameters<typeof generateText>[0]['providerOptions']
+    }
+  | {
+      modelId: string
+      generateDraft: (
+        input: Pick<
+          EngineExplanationDraftRequest,
+          'inputSchema' | 'systemPrompt' | 'prompt' | 'previous'
+        >,
+        signal: AbortSignal
+      ) => Promise<EngineExplanationDraftResult>
+    }
 
 export type ExplanationWriterUsage = {
   inputTokens: number
@@ -353,23 +369,26 @@ export async function writeExplanation({
   let hintsSent = false
   let last: ExplanationDraftResult | null = null
   let heldBack: Record<string, unknown> | null = null
+  const validate = async (
+    content: Record<string, unknown>
+  ): Promise<ExplanationDraftResult> => {
+    drafts++
+    // The last draft is shown if it is valid, so it gets no hints.
+    const result = await validateExplanation(content, {
+      withHints: !hintsSent && drafts < MAX_WRITER_DRAFTS,
+    }).catch(() => ({ kind: 'explanation-unavailable' as const }))
+    if ('hints' in result && result.hints.length) hintsSent = true
+    if (result.kind === 'explanation-review') heldBack = content
+    reports.push(draftReport(result))
+    last = result
+    return result
+  }
   const submit = tool({
     description: 'Submit the complete explainer/1 content object.',
     // Not validated by the SDK: the service is the gate and reports errors
     // the writer can repair.
     inputSchema: jsonSchema<Record<string, unknown>>(schema),
-    execute: async (content): Promise<ExplanationDraftResult> => {
-      drafts++
-      // The last draft is shown if it is valid, so it gets no hints.
-      const result = await validateExplanation(content, {
-        withHints: !hintsSent && drafts < MAX_WRITER_DRAFTS,
-      }).catch(() => ({ kind: 'explanation-unavailable' as const }))
-      if ('hints' in result && result.hints.length) hintsSent = true
-      if (result.kind === 'explanation-review') heldBack = content
-      reports.push(draftReport(result))
-      last = result
-      return result
-    },
+    execute: validate,
     toModelOutput: ({ output }) => ({
       type: 'text' as const,
       value: draftFeedback(output),
@@ -378,36 +397,69 @@ export async function writeExplanation({
   const signals = [AbortSignal.timeout(WRITER_TIMEOUT_MS)]
   if (abortSignal) signals.push(abortSignal)
   try {
-    await generateText({
-      model: writer.model,
-      system: renderPromptTemplate('explanation-writer', {}),
-      prompt: briefPrompt(brief),
-      tools: { submit_explanation: submit },
-      toolChoice: 'required',
-      stopWhen: [
-        isStepCount(MAX_WRITER_DRAFTS),
-        () =>
-          (last as ExplanationDraftResult | null)?.kind === 'explanation' ||
-          (last as ExplanationDraftResult | null)?.kind ===
-            'explanation-unavailable',
-      ],
-      maxOutputTokens: WRITER_MAX_OUTPUT_TOKENS,
-      providerOptions: writer.providerOptions,
-      abortSignal: AbortSignal.any(signals),
-      // Like the other auxiliary calls: the brief and drafts derive from the
-      // student's question and stay out of traces.
-      telemetry: { isEnabled: false },
-      onStepEnd: (step) =>
-        onStepUsage?.({
-          inputTokens: step.usage.inputTokens ?? 0,
-          outputTokens: step.usage.outputTokens ?? 0,
-        }),
-    })
+    if ('generateDraft' in writer) {
+      const previous: EngineExplanationDraftRequest['previous'] = []
+      const signal = AbortSignal.any(signals)
+      const inputSchema =
+        engineExplanationDraftRequestSchema.shape.inputSchema.parse(schema)
+      while (drafts < MAX_WRITER_DRAFTS) {
+        signal.throwIfAborted()
+        const next = await writer.generateDraft(
+          {
+            inputSchema,
+            prompt: briefPrompt(brief),
+            systemPrompt: renderPromptTemplate('explanation-writer', {}),
+            previous,
+          },
+          signal
+        )
+        onStepUsage?.(next.usage)
+        if (!next.draft) break
+        const outcome = await validate(next.draft)
+        if (
+          outcome.kind === 'explanation' ||
+          outcome.kind === 'explanation-unavailable'
+        )
+          break
+        previous.push({ draft: next.draft, feedback: draftFeedback(outcome) })
+      }
+    } else {
+      await generateText({
+        model: writer.model,
+        system: renderPromptTemplate('explanation-writer', {}),
+        prompt: briefPrompt(brief),
+        tools: { submit_explanation: submit },
+        toolChoice: 'required',
+        stopWhen: [
+          isStepCount(MAX_WRITER_DRAFTS),
+          () =>
+            (last as ExplanationDraftResult | null)?.kind === 'explanation' ||
+            (last as ExplanationDraftResult | null)?.kind ===
+              'explanation-unavailable',
+        ],
+        maxOutputTokens: WRITER_MAX_OUTPUT_TOKENS,
+        providerOptions: writer.providerOptions,
+        abortSignal: AbortSignal.any(signals),
+        // Like the other auxiliary calls: the brief and drafts derive from the
+        // student's question and stay out of traces.
+        telemetry: { isEnabled: false },
+        onStepEnd: (step) =>
+          onStepUsage?.({
+            inputTokens: step.usage.inputTokens ?? 0,
+            outputTokens: step.usage.outputTokens ?? 0,
+          }),
+      })
+    }
   } catch (error) {
     console.warn('Explanation writer failed', {
       modelId: writer.modelId,
       drafts,
-      error: error instanceof Error ? error.message : String(error),
+      error:
+        'generateDraft' in writer
+          ? 'engine_draft_failed'
+          : error instanceof Error
+            ? error.message
+            : String(error),
     })
     const kept = heldBack as Record<string, unknown> | null
     return {

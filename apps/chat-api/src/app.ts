@@ -27,6 +27,8 @@ import {
 } from './engine/client.js'
 import {
   type ExplanationWriter,
+  explanationWriterReasoningEffort,
+  WRITER_MAX_OUTPUT_TOKENS,
   resolveExplanationWriterConfig,
 } from './host/services/explainerService.js'
 import {
@@ -53,6 +55,8 @@ import { getModelsForChatbot } from './host/lib/server/chatModelRegistry.js'
 import {
   getCustomModeTurnSettings,
   isParticipantReasoningVisible,
+  isSafeDocQueryBinding,
+  resolveEffectiveMCPConfigurations,
   resolveEffectiveChatModeOptions,
   resolveRequestedChatMode,
 } from './host/lib/server/effectiveChatModes.js'
@@ -95,7 +99,6 @@ import {
   isFailure,
 } from './runtime/auth.js'
 import { createCodeApiAuthorization } from './runtime/codeapi.js'
-import { createExplanationWriter } from './runtime/explanationWriter.js'
 import {
   type ChatbotRecord,
   checkDisclaimer,
@@ -1197,7 +1200,6 @@ export function createChatApiApp(
         // The explanation writer is a second model call inside the tool. Its
         // options are pinned here but built only once the tool is offered, so a
         // turn without explanations never needs writer credentials.
-        let explanationWriter: ExplanationWriter | null = null
         let explanationWriterCost = 0
         let explanationWriterRate = model.cost
         const customProviderRouting =
@@ -1213,7 +1215,43 @@ export function createChatApiApp(
             messages: input.messages,
             isElearningThread: thread.origin === 'elearning',
             supportsImageAttachments: model.supportsImageAttachments,
-            getExplanationWriter: () => explanationWriter,
+            getExplanationWriter: (): ExplanationWriter | null => {
+              const generate = dependencies.engine.explanationDraft
+              if (!engineReady.explanationWriter || !generate) return null
+              const writerConfig = customProviderRouting
+                ? model
+                : resolveExplanationWriterConfig(registry, model)
+              explanationWriterRate = writerConfig.cost
+              return {
+                modelId: writerConfig.id,
+                generateDraft: (draft, signal) =>
+                  generate(
+                    {
+                      ...draft,
+                      contractVersion: 'v2',
+                      generation: {
+                        ...credential.generation,
+                        modelId: writerConfig.id,
+                        deploymentId: writerConfig.deploymentId,
+                        maxOutputTokens: WRITER_MAX_OUTPUT_TOKENS,
+                        providerApi: writerConfig.usesResponsesApi
+                          ? 'responses'
+                          : 'chat',
+                        reasoningEffort:
+                          explanationWriterReasoningEffort(writerConfig) ??
+                          'none',
+                        responseStorage:
+                          writerConfig.usesResponsesApi &&
+                          getOpenAIResponsesStore(),
+                      },
+                    },
+                    {
+                      signal,
+                      providerAuthorization: credential.providerAuthorization,
+                    }
+                  ),
+              }
+            },
             onExplanationUsage: (usage) => {
               explanationWriterCost += calculateCost(
                 explanationWriterRate,
@@ -1222,6 +1260,16 @@ export function createChatApiApp(
               )
             },
           })
+          if (
+            mode === 'quizzer' &&
+            thread.origin !== 'elearning' &&
+            resolveEffectiveMCPConfigurations(
+              chatbot.mcpConfigurations,
+              mode
+            ).some(isSafeDocQueryBinding) &&
+            !Object.keys(hostTools.tools).some(isDocQueryToolName)
+          )
+            return c.json({ code: 'REQUIRED_MCP_UNAVAILABLE' }, 503)
           if (
             Object.keys(hostTools.tools).length ||
             pythonAuthorization?.tools.length
@@ -1267,24 +1315,6 @@ export function createChatApiApp(
             return c.json({ code: 'CHAT_CAPACITY_EXHAUSTED' }, 503)
           }
           return c.json({ code: 'REQUIRED_MCP_UNAVAILABLE' }, 503)
-        }
-        if (Object.hasOwn(hostTools.tools, SHOW_EXPLANATION_TOOL_NAME)) {
-          try {
-            // A chatbot's own endpoint may not serve the writer model.
-            const writerConfig = customProviderRouting
-              ? model
-              : resolveExplanationWriterConfig(registry, model)
-            explanationWriterRate = writerConfig.cost
-            explanationWriter = createExplanationWriter({
-              chatbot,
-              customRouting: customProviderRouting,
-              writerConfig,
-              providerAllowedOrigins,
-            })
-          } catch {
-            // Without a writer the tool reports the service as unavailable,
-            // and the turn still answers in text.
-          }
         }
         const tools = hostToolSession?.tools ?? []
         const generation = modelGeneration
@@ -1559,6 +1589,11 @@ export function createChatApiApp(
             mode
           ),
           onCancel: abortIncomingEngine,
+          keepAlive: tools.some(
+            (tool) =>
+              tool.serverId === 'klicker-host' &&
+              tool.name === SHOW_EXPLANATION_TOOL_NAME
+          ),
           expected: {
             assistantMessageId,
             engineId: engineReady.engineId ?? undefined,

@@ -67,6 +67,23 @@ credential, tracing and deployment-selection decisions continue to apply.
 Direct participant routing remains default-off; source qualification does not
 authorize hosted activation or deployment.
 
+### Auxiliary explanation writer
+
+The selected engine owns the explanation writer's provider call and credentials.
+A supporting engine advertises `X-Klicker-Explanation-Writer: 1` on its v2
+manifest response. The host offers the explanation tool only after the existing
+course and lecturer checks and this capability check. The manifest JSON and
+ordinary chat requests retain their existing wire formats.
+
+For each draft the host sends the resolved writer configuration, prompt,
+validation schema and prior repair feedback to `POST /v2/explanation-draft`.
+The engine admits the same credential modes as v2 chat and makes one bounded
+provider call. It returns a structured draft and reported token counts.
+The host validates the content, records its cost, and requests at most two
+repairs within the original tool deadline. Neither side retries an ambiguous
+provider failure. Deployments can upgrade engines independently because
+engines without this capability continue serving ordinary chat turns.
+
 ## Consequences
 
 An explicit generation costs coordinated public/default/Catalyst compatibility

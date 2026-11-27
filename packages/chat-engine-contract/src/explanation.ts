@@ -44,3 +44,8 @@ export function explanationAttemptsLeft(
 ): boolean {
   return failedExplanationAttempts(steps) < MAX_EXPLANATION_ATTEMPTS
 }
+
+/** V2 reserves a final text-only step after the admitted tool steps. */
+export function chatToolStepBudget(hasExplanationOrFeedback: boolean): number {
+  return (hasExplanationOrFeedback ? EXPLANATION_TURN_MAX_STEPS : 5) + 1
+}

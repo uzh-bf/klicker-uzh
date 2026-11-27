@@ -745,6 +745,25 @@ describe('current host admission and turn lifecycle', () => {
     )
     expect(dependencies.failChatTurn).toHaveBeenCalledTimes(1)
   })
+  test('rejects a Quizzer turn when its configured retrieval tool is unavailable', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    dependencies.getChatbot = vi.fn(async () => ({
+      ...chatbot,
+      mcpConfigurations: [
+        { chatMode: 'quizzer', isEnabled: true, allowedTools: ['doc_query'] },
+      ],
+    }))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      request({ ...body, selectedMode: 'quizzer' })
+    )
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'REQUIRED_MCP_UNAVAILABLE',
+    })
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
+
   test('keeps a required course-tool outage closed before generation', async () => {
     const dependencies = baseDependencies(async () => engineSse([]))
     dependencies.prepareTools = vi.fn(async () => {

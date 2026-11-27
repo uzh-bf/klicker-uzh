@@ -49,6 +49,7 @@ export type PlatformMetadata = {
 export type ValidatedStreamOptions = {
   contractVersion?: EngineContractVersion
   showReasoning?: boolean
+  keepAlive?: boolean
   onCancel?: () => void
   expected?: {
     assistantMessageId: string
@@ -526,6 +527,13 @@ export function createValidatedPlatformStream(
 
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
+      // SSE comments keep an idle connection open while a writer tool is running.
+      const timer = options.keepAlive
+        ? setInterval(() => {
+            if (!cancelled && (controller.desiredSize ?? 0) > 0)
+              controller.enqueue(textEncoder.encode(': keep-alive\n\n'))
+          }, 15_000)
+        : undefined
       try {
         for (;;) {
           const { done, value } = await reader.read()
@@ -603,6 +611,8 @@ export function createValidatedPlatformStream(
         )
         controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
         controller.close()
+      } finally {
+        clearInterval(timer)
       }
     },
     async cancel() {

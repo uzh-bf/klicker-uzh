@@ -203,6 +203,32 @@ describe('explanation writer', () => {
     })
   })
 
+  it('reserves the writer before admitting concurrent explanation calls', async () => {
+    vi.stubGlobal('fetch', service({ ok: true, errors: [] }))
+    const doGenerate = vi.fn(async () => draft(1))
+    const model = new MockLanguageModelV4({ doGenerate })
+    const definition = await createShowExplanationTool({
+      getWriter: () => ({ modelId: 'synthetic-writer', model }),
+      onUsage: () => {},
+    })
+    const execute = async (toolCallId: string) => {
+      const results = []
+      const output = definition.execute!(brief, {
+        toolCallId,
+        messages: [],
+        context: {},
+      })
+      for await (const result of output as AsyncIterable<{ kind: string }>)
+        results.push(result.kind)
+      return results.at(-1)
+    }
+    expect(await Promise.all([execute('first'), execute('second')])).toEqual([
+      'explanation',
+      'explanation-unavailable',
+    ])
+    expect(doGenerate).toHaveBeenCalledOnce()
+  })
+
   it('reports the service as unavailable when no writer is set', async () => {
     vi.stubGlobal('fetch', service())
     const showExplanation = await createShowExplanationTool({
