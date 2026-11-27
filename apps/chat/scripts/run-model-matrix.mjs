@@ -9,6 +9,7 @@ import { existsSync } from 'node:fs'
 import { appendFile, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { historyTextFromParts } from '../src/lib/feedback.ts'
 import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
   evaluationError,
@@ -128,9 +129,12 @@ export function parseArguments(argv) {
 }
 
 // Reads the AI SDK UI message stream: text, tool inputs and outputs, and the
-// message metadata that names the served model and the credits used.
+// message metadata that names the served model and the credits used. The
+// visible answer is the history text the chat client would send for this
+// turn: its text plus any feedback card the student was actually shown.
 export function parseChatStream(body) {
   let text = ''
+  const parts = []
   const tools = []
   const errors = []
   let meta = {}
@@ -145,8 +149,12 @@ export function parseChatStream(body) {
       continue
     }
     if (event.messageMetadata) meta = { ...meta, ...event.messageMetadata }
-    if (event.type === 'text-delta') text += event.delta ?? ''
-    else if (event.type === 'tool-input-available') {
+    if (event.type === 'text-delta') {
+      text += event.delta ?? ''
+      const last = parts.at(-1)
+      if (last?.type === 'text') last.text += event.delta ?? ''
+      else parts.push({ type: 'text', text: event.delta ?? '' })
+    } else if (event.type === 'tool-input-available') {
       tools.push({
         id: event.toolCallId,
         name: event.toolName,
@@ -154,13 +162,21 @@ export function parseChatStream(body) {
       })
     } else if (event.type === 'tool-output-available') {
       const tool = tools.find((entry) => entry.id === event.toolCallId)
-      if (tool) tool.output = JSON.stringify(event.output ?? {}).slice(0, 2000)
+      if (tool) {
+        tool.output = JSON.stringify(event.output ?? {}).slice(0, 2000)
+        parts.push({
+          type: 'tool-call',
+          toolName: tool.name,
+          result: event.output,
+        })
+      }
     } else if (event.type === 'error') {
       errors.push(String(event.errorText ?? 'stream_error').slice(0, 300))
     }
   }
   return {
     text: text.trim(),
+    answer: historyTextFromParts(parts),
     tools: tools.map(({ id: _id, ...tool }) => tool),
     errors,
     servedModelId: meta.modelId ?? null,
@@ -168,43 +184,6 @@ export function parseChatStream(body) {
     creditsUsed: meta.creditsUsed ?? null,
     finishReason: meta.finishReason ?? null,
   }
-}
-
-// A Tutor turn can answer with only a show_feedback card and no text. The
-// student still sees the card, so its text counts as the visible answer.
-// Drafts the feedback gate rejected are never shown, and card input is not
-// schema-validated, so the projection skips rejected drafts and tolerates any
-// input shape.
-export function feedbackCardText(tools) {
-  const strings = (value) => (typeof value === 'string' ? [value] : [])
-  const entries = (value, fields) =>
-    Array.isArray(value)
-      ? value.flatMap((entry) =>
-          entry && typeof entry === 'object'
-            ? fields.flatMap((field) => strings(entry[field]))
-            : []
-        )
-      : []
-  return tools
-    .filter(
-      (tool) =>
-        tool.name === 'show_feedback' &&
-        !tool.output?.includes('"kind":"feedback-invalid"')
-    )
-    .flatMap(({ input }) =>
-      input && typeof input === 'object'
-        ? [
-            ...strings(input.title),
-            ...strings(input.summary),
-            ...entries(input.strengths, ['text']),
-            ...entries(input.criteria, ['label', 'comment']),
-            ...entries(input.improvements, ['label', 'comment']),
-            ...strings(input.nextStep),
-          ]
-        : []
-    )
-    .filter((value) => value.trim())
-    .join('\n')
 }
 
 async function runTurn({
@@ -239,7 +218,7 @@ async function runTurn({
   const body = await response.text()
   const parsed = response.ok
     ? parseChatStream(body)
-    : { text: '', tools: [], errors: [`http_${response.status}`] }
+    : { text: '', answer: '', tools: [], errors: [`http_${response.status}`] }
   return {
     status: response.status,
     latencyMs: Date.now() - startedAt,
@@ -266,12 +245,11 @@ async function runCase({ target, testCase, repeat, effort }) {
       message: turn.message,
       effort,
     })
-    const { userMessage, assistantMessageId, ...record } = result
+    const { userMessage, assistantMessageId, answer, ...record } = result
     turns.push({ student: turn.message, ...record })
     const servedOther =
       record.servedModelId !== null && record.servedModelId !== target.modelId
-    const answer = record.text || feedbackCardText(record.tools)
-    if (record.status !== 200 || !answer || servedOther) {
+    if (record.status !== 200 || !answer.trim() || servedOther) {
       stoppedAt = {
         turn: turns.length,
         reason:
