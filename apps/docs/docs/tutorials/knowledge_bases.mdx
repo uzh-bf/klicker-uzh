@@ -9,19 +9,25 @@ import CatalystTitle from '../../src/components/CatalystTitle'
 
 ## What is a knowledge base?
 
-A knowledge base is a collection of your teaching materials that KlickerUZH prepares for its AI features. A [course chatbot](/tutorials/chatbot/) connected to a knowledge base answers from these materials and cites them, and [AI element generation](/tutorials/question_generation/) creates question drafts from them.
+![Knowledge base page with its resources, their processing status and the connected chatbots](/img/knowledge_bases/kb_detail.png)
 
-A knowledge base belongs to your account and can be reused: you can connect the same knowledge base to several chatbots.
+A knowledge base is a collection of your teaching materials that KlickerUZH prepares for its AI features. A [course chatbot](/tutorials/chatbot/) connected to a knowledge base answers from these materials and cites them, and [AI element generation](/tutorials/question_generation/) creates question drafts from them. From the materials, KlickerUZH can also build a **knowledge graph** of the course concepts, which students can explore as a concept map in the chatbot.
+
+A knowledge base belongs to your account and can be reused: you can connect the same knowledge base to several chatbots, while each chatbot uses one knowledge base at a time.
 
 Knowledge bases are available to Catalyst lecturers with beta features enabled and AI features approved for their account (see [Who can create a chatbot?](/tutorials/chatbot/#who-can-create-a-chatbot)).
 
 ## How do I create a knowledge base?
 
-Open **Resources** → **Knowledge Bases** and choose **Create knowledge base**. Give it a name and, optionally, a description. You can also create a knowledge base directly from the **Materials** section of the chatbot setup.
+![List of knowledge bases with their resources, connected chatbots and readiness](/img/knowledge_bases/kb_list.png)
 
-In the knowledge base settings, choose the **subject area** and the **language** of your materials. They are used whenever KlickerUZH prepares the materials for question generation.
+Open **Resources** → **Knowledge Bases** and choose **Create knowledge base**. Give it a name and, optionally, a description. You can also create a knowledge base directly from the **Materials** section of the chatbot setup. The list of your knowledge bases shows for each one its subject area and language, how many resources it contains, how many chatbots are connected and whether its materials are available to the chatbot.
+
+On the page of a knowledge base, set the **subject area** and the **content language** of your materials. They are used whenever KlickerUZH prepares a knowledge graph for this knowledge base.
 
 ## How do I add materials?
+
+![Dialog to add a resource with the options document, website and video](/img/knowledge_bases/kb_add_resource.png)
 
 Choose **Add resource** and select the type:
 
@@ -29,20 +35,60 @@ Choose **Add resource** and select the type:
 - **Website:** Register the URL of a public web page.
 - **Video:** Direct video and lecture-recording import is not available yet. If your course relies on recordings, contact the KlickerUZH team.
 
-For each resource, you can set a **material category** (course content or administrative). After you add a resource, it is processed in the background. The resource list shows whether each resource is processing, ready or failed, and you can replace a file with a newer version.
+For each resource, you can set a **material category**: **Course content** or **Administrative** (for example a syllabus or organisational information). The category matters for the knowledge graph, which is only built from course content.
 
-The knowledge base overview shows how many resources it contains, how much of your storage quota is used and which chatbots are connected.
+After you add a resource, it is processed ("ingested") in the background, and you can leave the page in the meantime. The resource list shows whether each resource is queued, processing, ready or failed:
+
+- **Retry** or **Re-ingest** starts the processing of a resource again, for example after a failure.
+- **Replace file** uploads a newer version of a file. The previous version stays available to the chatbot until the new one is ready.
+- **Inspect** shows the details of a resource and its recent processing attempts.
+- Select several resources to delete them together.
 
 :::info
 Only add materials you are allowed to share with your students. A chatbot can quote and link the materials of its knowledge base in its answers.
 :::
 
-## How is a knowledge base used?
+## How do I connect a knowledge base to a chatbot?
 
-- **Chatbots:** Connect the knowledge base in the **Materials** section of a chatbot. For a published chatbot, changes to its materials apply to students immediately.
-- **Question generation:** KlickerUZH prepares the materials for question generation automatically. The knowledge base shows when it is ready for question generation.
-- **Knowledge graph:** From the prepared materials, KlickerUZH can build a knowledge graph of the concepts and their relationships. In a chatbot, you can show this graph to students as a concept map and use it to improve the search in the materials.
+You can connect a knowledge base in two places: in the **Materials** section of the chatbot setup, or in the section **Connected chatbots** on the page of the knowledge base. Connecting a chatbot that already uses another knowledge base replaces it. If you have not created a chatbot yet, **Create chatbot using this knowledge base** creates a new draft chatbot that is already connected.
+
+:::warning
+For a published chatbot, changes to its materials take effect for students immediately and without review. This includes connecting, replacing or disconnecting a knowledge base, as well as adding, replacing or deleting resources in it.
+:::
+
+## What do the advanced settings show?
+
+With the switch between **Simple settings** and **Advanced settings** at the top of the page, you can display additional information and tools:
+
+- **Usage and connections:** How many resources the knowledge base contains, how much of its storage quota is used and how many chatbots are connected. A knowledge base can hold up to 1,000 resources.
+- **Search and filters** for the resource list, and **Ingest all** to process all resources that are not yet available in their current form.
+- **Indexed sources:** Everything that is indexed in the knowledge base, including sources that the KlickerUZH team imported for you.
+- **Knowledge graph:** Building and publishing the knowledge graph (see below).
+
+## How do I build a knowledge graph?
+
+The knowledge graph connects the concepts of your course materials and their relationships. In a chatbot, you can show it to students as a **concept map** and use it to improve the search in the materials (see [How do I show the concept map to students?](/tutorials/chatbot/#how-do-i-show-the-concept-map-to-students)).
+
+![Knowledge graph panel in the advanced settings of a knowledge base with the build options, the cost and quota, and the published graph](/img/knowledge_bases/kb_graph.png)
+
+To build a graph, open the knowledge base in the **advanced settings** and choose **Configure** in the panel **Knowledge graph**:
+
+1. **Enable the knowledge graph** for this knowledge base.
+2. **Check the subject area and language.** They determine the kinds of concepts and relationships the graph contains.
+3. **Focus topic (optional):** Steers which part of the materials the graph emphasizes. The focus does not add facts, and the rest of the materials keeps its coverage.
+4. **Build quality:** Choose between standard quality (lower cost) and high quality (higher cost). The panel shows the estimated cost of the build and how much of your semester quota remains.
+5. **Build graph:** The graph is built in the background. When the build has succeeded, the graph is published and can be used by the connected chatbots.
+
+Below the build options, **Published graph** lets you explore the current graph yourself: search for a concept, zoom and check the concept types before you show the graph to students. Only resources in the category **Course content** are used for the graph. If the materials have changed since the last build, the graph is marked as **Stale**, and you can **Rebuild graph** to update it.
+
+:::info
+The knowledge graph is generated by AI and can contain errors. Students see a corresponding note in the concept map, and relationships that are only inferred from the materials, or have no recorded source, are shown with dashed lines.
+:::
+
+## How is a knowledge base used for question generation?
+
+KlickerUZH prepares the materials for [AI element generation](/tutorials/question_generation/) automatically, usually overnight. The page of the knowledge base shows when it is ready for question generation.
 
 ## How do I remove a knowledge base?
 
-You can delete individual resources or the whole knowledge base. Deleted materials are removed in the background and are no longer used by connected chatbots.
+You can delete individual resources or the whole knowledge base. Deleted materials disappear immediately and are no longer used by connected chatbots; their files are removed in the background. Deleted resources continue to count toward the storage quota until this cleanup has finished. A deletion cannot be undone.
