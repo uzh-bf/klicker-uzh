@@ -83,7 +83,6 @@ function row(overrides: Partial<PracticeResultRow> = {}): PracticeResultRow {
   return {
     activityName: 'Synthetic quiz',
     activityKind: 'practice-quiz',
-    tags: ['Synthetic topic'],
     lastCorrectness: 'CORRECT',
     lastAnsweredAt: daysAgo(1),
     ...overrides,
@@ -122,7 +121,6 @@ function stubResults() {
       lastResponseCorrectness: 'CORRECT',
       practiceQuiz: { displayName: 'Synthetic quiz' },
       microLearning: null,
-      elementInstance: { element: { tags: [{ name: 'Synthetic topic' }] } },
     },
   ])
   db.instanceCount.mockResolvedValue(10)
@@ -221,7 +219,9 @@ describe('learner context for a chat turn', () => {
       })
     }
     const selected = JSON.stringify(db.responseFindMany.mock.calls[0][0].select)
-    expect(selected).not.toMatch(/[Rr]esponse"|content|explanation|options/)
+    expect(selected).not.toMatch(
+      /[Rr]esponse"|content|explanation|options|element|tags/
+    )
   })
 
   test('leaves out activities the lecturer deleted', async () => {
@@ -383,11 +383,10 @@ describe('practice results summary', () => {
     expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/)
   })
 
-  test('bounds the number of activities and topics and the length of names', () => {
+  test('bounds the number of activities and the length of names', () => {
     const recentRows = Array.from({ length: 30 }, (_, index) =>
       row({
-        activityName: `Synthetic quiz ${index} ${'x'.repeat(200)}`,
-        tags: [`Synthetic topic ${index}\nsecond line`],
+        activityName: `Synthetic quiz ${index}\nsecond line ${'x'.repeat(200)}`,
         lastAnsweredAt: daysAgo(index),
       })
     )
@@ -403,11 +402,8 @@ describe('practice results summary', () => {
     expect(
       lines.filter((line) => line.includes('(practice quiz)'))
     ).toHaveLength(6)
-    expect(
-      lines.filter((line) => line.startsWith('  - Synthetic topic'))
-    ).toHaveLength(8)
     expect(Math.max(...lines.map((line) => line.length))).toBeLessThan(260)
-    expect(text).toContain('Synthetic topic 0 second line')
+    expect(text).toContain('Synthetic quiz 0 second line')
     expect(text.length).toBeLessThan(4000)
   })
 })

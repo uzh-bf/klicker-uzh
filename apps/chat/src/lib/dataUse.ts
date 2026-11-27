@@ -1,6 +1,5 @@
 import type { ParticipantAccountDataUseFields } from '@klicker-uzh/graphql/dist/participant-data-use'
 import {
-  coversLearnerMemory,
   isParticipantDataUseComplete,
   TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
 } from '@klicker-uzh/util/participant-account-data-use'
@@ -25,8 +24,6 @@ export interface ChatDataUseState {
   tutorPersonalizationCurrentVersion: string
   /** Whether that notice also covers learning notes. */
   tutorPersonalizationNotesOffered: boolean
-  /** Whether the recorded yes covers learning notes. */
-  tutorPersonalizationNotesAgreed: boolean
 }
 /**
  * Project the committed decisions without a second database read. The server
@@ -53,6 +50,5 @@ export function toChatDataUseState(
     tutorPersonalizationNotesOffered:
       tutorPersonalizationCurrentVersion ===
       TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
-    tutorPersonalizationNotesAgreed: coversLearnerMemory(participant),
   }
 }

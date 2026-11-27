@@ -40,7 +40,6 @@ const personalizationDataCy = {
   toggle: 'chat-data-use-personalization-toggle',
   yes: 'chat-data-use-personalization-true',
   no: 'chat-data-use-personalization-false',
-  agreeToNotes: 'chat-data-use-personalization-notes',
 }
 
 interface DataUseResponse {
@@ -409,13 +408,6 @@ export function ParticipantDataUseSettings({
                   disabled={saving}
                   consent={state.tutorPersonalizationConsent}
                   withNotes={state.tutorPersonalizationNotesOffered}
-                  onAgreeToNotes={
-                    state.tutorPersonalizationConsent === true &&
-                    state.tutorPersonalizationNotesOffered &&
-                    !state.tutorPersonalizationNotesAgreed
-                      ? () => updateChoice('personalization', true)
-                      : undefined
-                  }
                   onChange={(consent) =>
                     updateChoice('personalization', consent)
                   }

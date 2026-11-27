@@ -118,11 +118,6 @@ export default {
         'You have not agreed to personalization, so the Tutor receives nothing about you.',
       viewChatbotOff:
         'Personalization is not switched on for this chatbot, so the Tutor receives nothing about you here.',
-      reofferTitle: 'Let the Tutor keep learning notes?',
-      reofferLead:
-        'The Tutor can now also keep short notes about your learning in this course and use them in later conversations. Your agreement so far covers your practice results only. This is optional.',
-      reofferYes: 'Yes, also keep notes',
-      reofferKeep: 'Keep it as it is',
       notesEmpty: 'There are no learning notes about you in this course yet.',
       notesUnavailable:
         'Your learning notes cannot be loaded right now, so the Tutor currently works without them.',
@@ -766,12 +761,9 @@ export default {
       badgeOn: 'On',
       badgeOff: 'Off',
       notice:
-        'If you agree, the Tutor adapts its explanations and hints to you. With each message, it gets a short summary of your own practice results in this course (practice quizzes and microlearnings): the topics you practised, whether your answers were correct, when you last practised, and how much of the course you have covered. The summary is created anew for each message and is not stored. It is sent with your message to the language-model provider used for this chatbot. This applies in every course whose lecturer has switched personalization on, always with that course\'s data only. Lecturers see neither the summary nor your decision. You can see what the Tutor currently receives, and change your decision, at any time in the chat settings or under "Data use and settings". A change applies from your next message. Without your agreement the Tutor works as before.',
+        'If you agree, the Tutor adapts its explanations and hints to you. With each message, it gets a short summary of your own practice results in this course (practice quizzes and microlearnings): which practice quizzes and microlearnings you worked on, how many questions you answered, whether your answers were correct, and when you last practised. The summary is created anew for each message and is not stored. It is sent with your message to the language-model provider used for this chatbot. This applies in every course whose lecturer has switched personalization on, always with that course\'s data only. Lecturers see neither the summary nor your decision. You can see what the Tutor currently receives, and change your decision, at any time in the chat settings or under "Data use and settings". A change applies from your next message. Without your agreement the Tutor works as before.',
       noticeNotes:
         "In courses where learning notes are available, the Tutor also keeps short notes about your learning in that course: the topics you worked on and how they went, difficulties that came up repeatedly, and a goal you mentioned. To write them, your message and the Tutor's reply are sent after each Tutor reply to a notes service operated for KlickerUZH. It updates the notes with a language model and does not keep the messages. The notes are stored per course under a pseudonymous key, are given to the Tutor with your later messages in that course, and are not visible to lecturers. You can read and delete your notes at any time in the chat settings. If you withdraw your agreement or delete your account, all your notes are deleted.",
-      notesUpgradeHint:
-        'The Tutor can now also keep short learning notes. Your agreement so far covers your practice results only.',
-      notesUpgradeAction: 'Also allow learning notes',
       controlLabel: 'Your decision',
       yes: 'Yes, personalize',
       no: 'No, do not personalize',

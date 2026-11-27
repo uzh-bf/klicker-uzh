@@ -48,10 +48,9 @@ is a new purpose. Three existing mechanisms looked reusable and are not:
   and appears in its change history. It stays outside the account completion
   check, so it never blocks account or chat use.
 - **Offered where it is used.** The chatbot shows the offer once per account,
-  with yes and no at equal visual weight. An answer ends the offer for good,
-  except one re-offer when notes become available to a student who agreed to
-  the version without notes. "Decide later" leaves the choice unanswered and
-  is remembered in the browser only. A control in the chat settings and on the
+  with yes and no at equal visual weight. An answer ends the offer for good.
+  "Decide later" leaves the choice unanswered and is remembered in the browser
+  only. A control in the chat settings and on the
   data-use page changes the choice at any time.
 - **Eligibility is checked on every turn and fails closed.** The learner
   context, which is the results summary plus the memory, is sent only in Tutor

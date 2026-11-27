@@ -349,21 +349,6 @@ function DataUseSettings() {
             {t('shared.tutorPersonalization.noticeNotes')}
           </Prose>
         )}
-        {notesOffered &&
-          dataUse.tutorPersonalizationConsent === true &&
-          dataUse.tutorPersonalizationDisclosureVersion !==
-            dataUse.currentTutorPersonalizationDisclosureVersion && (
-            <div className="flex flex-col items-start gap-2 text-sm">
-              <p>{t('shared.tutorPersonalization.notesUpgradeHint')}</p>
-              <Button
-                disabled={saving || conflict || versionMismatch}
-                data={{ cy: 'participant-tutor-personalization-notes' }}
-                onClick={() => void updateTutorPersonalizationConsent(true)}
-              >
-                {t('shared.tutorPersonalization.notesUpgradeAction')}
-              </Button>
-            </div>
-          )}
       </div>
 
       <Modal

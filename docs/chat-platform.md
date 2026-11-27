@@ -1541,9 +1541,10 @@ notes kept for that student in that course.
   its length.
 - **Content** comes from `QuestionResponse`, which holds practice-quiz and
   microlearning answers only. The query filters by the authenticated
-  participant and the chatbot's course and selects no answer, solution or
-  question text. Overall counts are exact; the per-activity and per-topic
-  lines use the most recently answered questions. Flashcards are rated by the
+  participant and the chatbot's course and selects no answer, solution,
+  question text or element tag; tags are for lecturers and are never shown to
+  students. Overall counts are exact; the per-activity lines use the most
+  recently answered questions. Flashcards are rated by the
   student, so they appear on their own line. Ages are written in words because
   the model is not told the date.
 - **The student's view** (`GET /api/chatbots/:chatbotId/learner-context`, shown
@@ -1581,8 +1582,9 @@ contract, the choice, eligibility and the interface.
   the student's yes was recorded under the notice version that describes notes
   (`coversLearnerMemory`). A deployment with learner memory shows and records
   that version; a yes is accepted only under the version the deployment shows.
-  A student who agreed earlier keeps the use of practice results and is asked
-  once more about notes.
+  A yes recorded under the notice without notes keeps covering practice
+  results and never starts covering notes; the student gets notes by giving the
+  choice again under the current notice.
 - **Addressing.** The service never sees a participant id. Calls carry
   `learnerKey` (HMAC-SHA-256 of the participant id under the key secret), the
   course id and the participant's `learnerMemoryEpoch`.

@@ -18,20 +18,18 @@ import { useSettingsStore } from '../stores/settingsStore'
  * the card stays away; the choice remains available in the data-use settings.
  */
 const OFFER_LATER_KEY = 'klicker-chat-tutor-personalization-later'
-/** The same for the later question about learning notes. */
-const NOTES_OFFER_LATER_KEY = 'klicker-chat-tutor-personalization-notes-later'
 
-function offerPostponed(key: string): boolean {
+function offerPostponed(): boolean {
   try {
-    return window.localStorage.getItem(key) === 'true'
+    return window.localStorage.getItem(OFFER_LATER_KEY) === 'true'
   } catch {
     return false
   }
 }
 
-function postponeOffer(key: string) {
+function postponeOffer() {
   try {
-    window.localStorage.setItem(key, 'true')
+    window.localStorage.setItem(OFFER_LATER_KEY, 'true')
   } catch {
     // Without storage the card returns on the next visit, which is harmless.
   }
@@ -42,10 +40,6 @@ function postponeOffer(key: string) {
  * only while the choice is unanswered, in a chatbot whose lecturer switched
  * personalization on and that has the Tutor mode. Yes, no and "decide later"
  * carry equal weight, and nothing is preselected.
- *
- * A student who agreed before the deployment kept learning notes is asked
- * once more, about the notes only. Their earlier yes stays as it is unless
- * they agree; switching personalization off remains in the settings.
  */
 export function TutorPersonalizationOffer({
   chatbotId,
@@ -60,7 +54,6 @@ export function TutorPersonalizationOffer({
   )
   const [state, setState] = useState<ChatDataUseState | null>(null)
   const [postponed, setPostponed] = useState(true)
-  const [notesPostponed, setNotesPostponed] = useState(true)
   const [showNotice, setShowNotice] = useState(false)
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -69,8 +62,7 @@ export function TutorPersonalizationOffer({
 
   useEffect(() => {
     if (!offered) return
-    setPostponed(offerPostponed(OFFER_LATER_KEY))
-    setNotesPostponed(offerPostponed(NOTES_OFFER_LATER_KEY))
+    setPostponed(offerPostponed())
 
     let active = true
     const load = () =>
@@ -143,63 +135,6 @@ export function TutorPersonalizationOffer({
     ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
     : t('shared.tutorPersonalization.notice')
 
-  if (
-    state.tutorPersonalizationConsent === true &&
-    state.tutorPersonalizationNotesOffered &&
-    !state.tutorPersonalizationNotesAgreed &&
-    !notesPostponed
-  ) {
-    return (
-      <section
-        aria-labelledby="tutor-personalization-notes-offer-title"
-        data-cy="chat-personalization-notes-offer"
-        className="bg-background shrink-0 border-b px-4 py-3"
-      >
-        <div className="mx-auto flex max-w-3xl flex-col gap-2">
-          <h2
-            id="tutor-personalization-notes-offer-title"
-            className="text-base font-semibold"
-          >
-            {t('chat.personalization.reofferTitle')}
-          </h2>
-          <p className="text-sm">{t('chat.personalization.reofferLead')}</p>
-          <div className="prose prose-sm max-w-none">
-            <DynamicMarkdown
-              withLinkButtons={false}
-              content={t('shared.tutorPersonalization.noticeNotes')}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              disabled={saving}
-              data={{ cy: 'chat-personalization-notes-offer-yes' }}
-              onClick={() => void answer(true)}
-            >
-              {t('chat.personalization.reofferYes')}
-            </Button>
-            <Button
-              type="button"
-              disabled={saving}
-              data={{ cy: 'chat-personalization-notes-offer-keep' }}
-              onClick={() => {
-                postponeOffer(NOTES_OFFER_LATER_KEY)
-                setNotesPostponed(true)
-              }}
-            >
-              {t('chat.personalization.reofferKeep')}
-            </Button>
-          </div>
-          {failed && (
-            <UserNotification type="error">
-              {t('shared.generic.systemError')}
-            </UserNotification>
-          )}
-        </div>
-      </section>
-    )
-  }
-
   if (postponed || state.tutorPersonalizationConsent !== null) return null
 
   return (
@@ -268,7 +203,7 @@ export function TutorPersonalizationOffer({
             disabled={saving}
             data={{ cy: 'chat-personalization-offer-later' }}
             onClick={() => {
-              postponeOffer(OFFER_LATER_KEY)
+              postponeOffer()
               setPostponed(true)
             }}
           >
