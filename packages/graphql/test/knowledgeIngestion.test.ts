@@ -41,29 +41,6 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-function withKbResourceSnapshotPause(
-  ctx: ContextWithUser,
-  kbId: string,
-  onSnapshot: () => void,
-  continueSnapshot: Promise<void>
-): ContextWithUser {
-  const prisma = ctx.prisma.$extends({
-    query: {
-      kBResource: {
-        async findMany({ args, query }) {
-          const resources = await query(args)
-          if (args.where?.kbId === kbId) {
-            onSnapshot()
-            await continueSnapshot
-          }
-          return resources
-        },
-      },
-    },
-  })
-  return { ...ctx, prisma: prisma as unknown as PrismaClient }
-}
-
 /**
  * Seeds a URL resource directly at its pre-ingestion ADDED status, bypassing
  * the ordinary creation mutation's automatic ingestion start. This suite
@@ -365,38 +342,31 @@ describe('Integration tests for knowledge base ingestion', () => {
         kBResource: {
           findFirst: kbResource.findFirst.bind(kbResource),
         },
-        $transaction: async <T>(
-          callback: (tx: {
-            kBResource: {
-              updateMany: (
-                args: Parameters<typeof kbResource.updateMany>[0]
-              ) => Promise<{ count: number }>
-            }
-            kBIngestionRun: {
-              create: (
-                args: Parameters<typeof prisma.kBIngestionRun.create>[0]
-              ) => Promise<unknown>
-            }
-          }) => Promise<T>
-        ) => {
-          await prisma.kBResource.update({
-            where: { id: resource.id },
-            data: {
-              ingestionAttemptId: newerAttemptId,
-              statusMessage: 'Newer same-status attempt',
+        $transaction: async <T>(callback: (tx: unknown) => Promise<T>) =>
+          callback({
+            $queryRaw: vi.fn(async () => [
+              { id: created.id, ownerId: userOneCtx.user.sub },
+            ]),
+            derivedPermission: {
+              findFirst: vi.fn(async () => null),
             },
-          })
-          return prisma.$transaction(async (tx) =>
-            callback({
-              kBResource: {
-                updateMany: async (args) => tx.kBResource.updateMany(args),
+            kBResource: {
+              findFirst: kbResource.findFirst.bind(kbResource),
+              findUniqueOrThrow: vi.fn(async () => resource),
+              updateMany: async (
+                args: Parameters<typeof kbResource.updateMany>[0]
+              ) => {
+                await prisma.kBResource.update({
+                  where: { id: resource.id },
+                  data: {
+                    ingestionAttemptId: newerAttemptId,
+                    statusMessage: 'Newer same-status attempt',
+                  },
+                })
+                return kbResource.updateMany(args)
               },
-              kBIngestionRun: {
-                create: async (args) => tx.kBIngestionRun.create(args),
-              },
-            })
-          )
-        },
+            },
+          }),
       },
     } as unknown as ContextWithUser
 
@@ -772,25 +742,19 @@ describe('Integration tests for knowledge base ingestion', () => {
       'Concurrent resource',
       'https://example.com/concurrent-resource'
     )
-    const snapshotRead = createDeferred<void>()
-    const releaseSnapshot = createDeferred<void>()
-    const bulkCtx = withKbResourceSnapshotPause(
-      userOneCtx,
-      created.id,
-      snapshotRead.resolve,
-      releaseSnapshot.promise
-    )
+    const dispatchStarted = createDeferred<void>()
+    const releaseDispatch = createDeferred<void>()
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
-      .mockResolvedValue({} as never)
+      .mockImplementation(async () => {
+        dispatchStarted.resolve()
+        await releaseDispatch.promise
+        return {} as never
+      })
 
-    const bulk = ingestAllKbResources({ kbId: created.id }, bulkCtx)
-    await snapshotRead.promise
-    try {
-      await ingestKbResource({ id: resource.id }, userOneCtx)
-    } finally {
-      releaseSnapshot.resolve()
-    }
+    const single = ingestKbResource({ id: resource.id }, userOneCtx)
+    await dispatchStarted.promise
+    const bulk = ingestAllKbResources({ kbId: created.id }, userOneCtx)
 
     await expect(bulk).resolves.toEqual({
       queuedCount: 0,
@@ -799,6 +763,8 @@ describe('Integration tests for knowledge base ingestion', () => {
       alreadyInProgressCount: 1,
       queueFailureCount: 0,
     })
+    releaseDispatch.resolve()
+    await expect(single).resolves.toMatchObject({ status: 'QUEUED' })
     expect(runNoWait).toHaveBeenCalledTimes(1)
     await expect(
       prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
