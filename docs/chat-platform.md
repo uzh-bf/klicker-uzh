@@ -1238,10 +1238,18 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. The conversation shares its row with one workspace panel that
-shows either the knowledge graph or an interactive explanation, never both
-(`src/components/workspace/`). `ChatWorkspaceProvider` owns which item is shown
-and its size; `ChatWorkspaceLayout` is the shell for both kinds in standalone
+header grid. The conversation shares its row with one workspace panel, the
+canvas, that shows either the knowledge graph or one artifact of the thread,
+such as an interactive explanation, never two at once
+(`src/components/workspace/`). An artifact is identified by its type and tool
+call id. A new artifact type adds its data to `ChatCanvasArtifactData` and its
+open size in `chat-workspace-context.tsx`, and its panel (title, actions,
+content, stored-width key) to `WORKSPACE_PANELS` in `chat-workspace-layout.tsx`;
+its message card registers through `artifacts.register` and marks its root and
+open control with `data-canvas-artifact`, `data-canvas-artifact-id` and
+`data-canvas-artifact-open`, which give stepping its thread order and closing
+its focus target. `ChatWorkspaceProvider` owns which item is shown
+and its size; `ChatWorkspaceLayout` is the shell for every kind in standalone
 and embedded layouts: resize handle with a per-kind stored width, an expanded
 size that keeps the conversation in a narrow docked column with a usable
 composer, and fullscreen. Fullscreen covers the chatbot, makes background

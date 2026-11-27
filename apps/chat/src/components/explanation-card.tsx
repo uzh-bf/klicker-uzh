@@ -16,7 +16,8 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ExplanationToolResult } from '@/src/lib/explanations'
 import {
-  type ChatWorkspaceItem,
+  type ChatCanvasArtifact,
+  canvasArtifactCardSelector,
   useChatWorkspace,
   useOptionalChatWorkspace,
 } from './workspace/chat-workspace-context'
@@ -217,19 +218,19 @@ export function ExplanationCard({
     content && typeof content.title === 'string'
       ? content.title
       : t('fallbackTitle')
-  const register = workspace?.explanations.register
+  const register = workspace?.artifacts.register
   useEffect(() => {
     if (!register || html === null) return
-    return register(id, { title, html })
+    return register('explanation', id, { title, html })
   }, [register, id, title, html])
 
   const showingExplanation = workspace?.item?.kind === 'explanation'
-  const openInPanel = workspace?.explanations.open
+  const openInPanel = workspace?.artifacts.open
   // biome-ignore lint/correctness/useExhaustiveDependencies: Only the arrival of the page decides; later panel changes do not.
   useEffect(() => {
     if (html === null || !arrivedLive.current || !openInPanel) return
     arrivedLive.current = false
-    if (showingExplanation) openInPanel(id, { title, html })
+    if (showingExplanation) openInPanel('explanation', id, { title, html })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html])
 
@@ -256,13 +257,16 @@ export function ExplanationCard({
       />
     )
 
-  const inPanel = workspace?.explanations.activeId === id
+  const active = workspace?.artifacts.active
+  const inPanel = active?.kind === 'explanation' && active.id === id
   return (
     // The marker lets the message widen past the text column, so the
     // visualization gets the full thread width.
     <div
       data-explanation-card
       data-explanation-id={id}
+      data-canvas-artifact="explanation"
+      data-canvas-artifact-id={id}
       data-in-panel={inPanel}
       className="my-3 w-full overflow-hidden rounded-md border border-slate-200 bg-white"
     >
@@ -273,13 +277,14 @@ export function ExplanationCard({
         <button
           type="button"
           data-cy="explanation-open"
+          data-canvas-artifact-open
           className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-2 py-1 hover:bg-slate-100 disabled:opacity-50"
           disabled={html === null}
           onClick={() => {
             if (html === null) return
             if (workspace) {
               if (inPanel) workspace.close()
-              else workspace.explanations.open(id, { title, html })
+              else workspace.artifacts.open('explanation', id, { title, html })
               return
             }
             setDialogOpen(true)
@@ -364,7 +369,7 @@ export function ExplanationCard({
   )
 }
 
-type ExplanationItem = Extract<ChatWorkspaceItem, { kind: 'explanation' }>
+type ExplanationItem = ChatCanvasArtifact<'explanation'>
 
 /** The explanation's heading in the shared workspace panel toolbar. */
 export function ExplanationPanelTitle({ item }: { item: ExplanationItem }) {
@@ -389,16 +394,16 @@ export function ExplanationPanelActions({
 }) {
   const t = useTranslations('chat.thread.explanation')
   const workspace = useChatWorkspace()
-  const ordered = workspace.explanations.ordered()
+  const ordered = workspace.artifacts.ordered('explanation')
   const index = ordered.findIndex((entry) => entry.id === item.id)
   const previous = index > 0 ? ordered[index - 1] : undefined
   const next =
     index >= 0 && index < ordered.length - 1 ? ordered[index + 1] : undefined
   const open = (entry: (typeof ordered)[number] | undefined) => {
     if (!entry) return
-    workspace.explanations.open(entry.id, entry)
+    workspace.artifacts.open('explanation', entry.id, entry)
     document
-      .querySelector(`[data-explanation-id="${CSS.escape(entry.id)}"]`)
+      .querySelector(canvasArtifactCardSelector('explanation', entry.id))
       ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }
   return (
