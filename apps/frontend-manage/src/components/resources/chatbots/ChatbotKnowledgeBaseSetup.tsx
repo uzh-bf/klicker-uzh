@@ -7,7 +7,7 @@ import {
   DetachKbFromChatbotByBindingDocument,
   GetKbResourcesWithFailureDetailDocument,
   GetUserCoursesDocument,
-  GetUserKbsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   KbIngestionStatus,
   KbResourceType,
   QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
@@ -289,9 +289,12 @@ function ChatbotKnowledgeBaseSetup({
   const [unconnectedKb, setUnconnectedKb] = useState<
     { id: string; name: string; available: true } | undefined
   >()
-  const { data, error, refetch } = useQuery(GetUserKbsDocument, {
-    variables: { first: KB_LIST_PAGE_SIZE },
-  })
+  const { data, error, refetch } = useQuery(
+    GetUserKbsWithPermissionLevelDocument,
+    {
+      variables: { first: KB_LIST_PAGE_SIZE },
+    }
+  )
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
     fetchPolicy: 'cache-first',
   })

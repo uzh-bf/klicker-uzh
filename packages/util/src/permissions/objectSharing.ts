@@ -189,9 +189,10 @@ export async function recomputeSharedObjectPermissionsObject(
   },
   prisma: PrismaTransactionClient
 ) {
+  const objectDeleted = Boolean(grants.deletedAt)
   const userAccess = getMaxAccessLevelCombined({
-    directPermissions: grants.deletedAt ? [] : grants.directPermissions,
-    objectDeleted: grants.deletedAt !== null,
+    directPermissions: objectDeleted ? [] : grants.directPermissions,
+    objectDeleted,
     ownerId: grants.ownerId,
   })
 

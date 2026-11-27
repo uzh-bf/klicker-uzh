@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteKbDocument,
-  type GetUserKbsQuery,
+  type GetUserKbsWithPermissionLevelQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -9,7 +9,7 @@ import React from 'react'
 import { refreshAfterMutation } from '../refreshAfterMutation'
 
 type KnowledgeBaseSummary =
-  GetUserKbsQuery['getUserKbsConnection']['items'][number]
+  GetUserKbsWithPermissionLevelQuery['getUserKbsConnection']['items'][number]
 
 function DeleteKnowledgeBaseModal({
   knowledgeBase,

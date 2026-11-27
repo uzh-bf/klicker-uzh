@@ -1,11 +1,11 @@
-import type { GetUserKbsQuery } from '@klicker-uzh/graphql/dist/ops'
+import type { GetUserKbsWithPermissionLevelQuery } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
 const SUPPORT_EMAIL = 'klicker@df.uzh.ch'
 
 type QuestionPreparation = NonNullable<
-  GetUserKbsQuery['getUserKbsConnection']['items'][number]['questionPreparation']
+  GetUserKbsWithPermissionLevelQuery['getUserKbsConnection']['items'][number]['questionPreparation']
 >
 
 /**

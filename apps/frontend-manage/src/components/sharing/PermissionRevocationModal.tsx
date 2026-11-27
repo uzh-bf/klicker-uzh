@@ -17,6 +17,22 @@ interface PermissionRevocationModalProps {
   userGroup?: string
 }
 
+type KbRemovalPreviewStatus = 'loading' | 'unavailable' | 'survives' | 'lost'
+
+function getKbRemovalPreviewStatus({
+  loading,
+  hasError,
+  readSurvives,
+}: {
+  loading: boolean
+  hasError: boolean
+  readSurvives?: boolean | null
+}): KbRemovalPreviewStatus {
+  if (loading) return 'loading'
+  if (hasError || typeof readSurvives !== 'boolean') return 'unavailable'
+  return readSurvives ? 'survives' : 'lost'
+}
+
 function PermissionRevocationModal({
   objectId,
   permissionId,
@@ -40,6 +56,17 @@ function PermissionRevocationModal({
     fetchPolicy: 'network-only',
   })
   const accessPreview = previewData?.getObjectPermissionRemovalPreview
+  const previewStatus = getKbRemovalPreviewStatus({
+    loading: previewLoading,
+    hasError: Boolean(previewError),
+    readSurvives: accessPreview?.readSurvives,
+  })
+  const previewMessage = {
+    loading: t('manage.sharing.knowledgeBaseOverlapChecking'),
+    unavailable: t('manage.sharing.knowledgeBaseOverlapUnavailable'),
+    survives: t('manage.sharing.knowledgeBaseOverlapSurvives'),
+    lost: t('manage.sharing.knowledgeBaseOverlapLost'),
+  }[previewStatus]
 
   const handleRevocation = async () => {
     if (previewLoading) return
@@ -101,25 +128,9 @@ function PermissionRevocationModal({
           <p
             className="mt-2 text-sm text-gray-600"
             aria-live="polite"
-            data-cy={
-              previewLoading
-                ? 'kb-revocation-overlap-loading'
-                : previewError
-                  ? 'kb-revocation-overlap-unavailable'
-                  : accessPreview?.readSurvives === true
-                    ? 'kb-revocation-overlap-survives'
-                    : accessPreview?.readSurvives === false
-                      ? 'kb-revocation-overlap-lost'
-                      : 'kb-revocation-overlap-unavailable'
-            }
+            data-cy={`kb-revocation-overlap-${previewStatus}`}
           >
-            {previewLoading
-              ? t('manage.sharing.knowledgeBaseOverlapChecking')
-              : previewError || accessPreview?.readSurvives == null
-                ? t('manage.sharing.knowledgeBaseOverlapUnavailable')
-                : accessPreview.readSurvives
-                  ? t('manage.sharing.knowledgeBaseOverlapSurvives')
-                  : t('manage.sharing.knowledgeBaseOverlapLost')}
+            {previewMessage}
           </p>
         ) : null}
         {revokingKnowledgeBase && userGroup ? (
