@@ -21,7 +21,10 @@ import {
   normalizeSourcesFromParts,
   sourceCitationIndices,
 } from '../src/host/lib/sources/normalizeSources.js'
-import { createShowFeedbackTool } from '../src/host/services/feedbackTool.js'
+import {
+  createHostFeedbackTool,
+  createShowFeedbackTool,
+} from '../src/host/services/feedbackTool.js'
 import { createHostExplanationTool } from '../src/host/services/explainerService.js'
 import {
   createHostToolDispatcher,
@@ -91,11 +94,15 @@ function fixture() {
 }
 
 test('registers the feedback tool on the v2 engine wire', async () => {
+  const legacy = createShowFeedbackTool({ learnerMessages: [] })
+  const feedback = createHostFeedbackTool([])
+  expect(feedback.instructions).toBe(legacy.description)
+  expect(feedback.definition.description).not.toBe(feedback.instructions)
   const session = await register(createHostToolDispatcher(), {
     signal: signal(),
     tools: {
       ...fixture().prepared,
-      tools: { show_feedback: createShowFeedbackTool({ learnerMessages: [] }) },
+      tools: { show_feedback: feedback.definition },
     },
   })
   expect(session.tools.map((entry) => entry.name)).toEqual(['show_feedback'])

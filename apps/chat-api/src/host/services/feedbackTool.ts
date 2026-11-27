@@ -11,6 +11,7 @@ import {
   normalizeForQuote,
   SHOW_FEEDBACK_TOOL_NAME,
 } from '../lib/feedback.js'
+import { renderPromptTemplate } from '../lib/server/promptTemplates.js'
 
 /** Standard modes in which learners ask for feedback on their own work. */
 const FEEDBACK_MODES = new Set(['tutor', 'quizzer', 'writing-coach'])
@@ -106,11 +107,13 @@ export function validateFeedback(
 
 export function createShowFeedbackTool({
   learnerMessages,
+  description = renderPromptTemplate('feedback-card-tool', {}),
 }: {
+  description?: string
   learnerMessages: readonly string[]
 }): Tool<Record<string, unknown>, FeedbackToolResult> {
   return tool({
-    description: 'Show structured feedback on the learner’s own text.',
+    description,
     // Not validated by the SDK: `validateFeedback` is the gate and reports
     // errors the model can repair.
     inputSchema: jsonSchema<Record<string, unknown>>(feedbackInputSchema()),
@@ -124,6 +127,16 @@ export function createShowFeedbackTool({
           : `The feedback was not shown. Fix every error and call ${SHOW_FEEDBACK_TOOL_NAME} again with the complete object:\n${output.errors.join('\n')}`,
     }),
   })
+}
+
+export function createHostFeedbackTool(learnerMessages: readonly string[]) {
+  return {
+    definition: createShowFeedbackTool({
+      learnerMessages,
+      description: 'Show structured feedback on the learner’s own text.',
+    }),
+    instructions: renderPromptTemplate('feedback-card-tool', {}),
+  }
 }
 
 /** The dialect marker is not part of a tool input schema. */
