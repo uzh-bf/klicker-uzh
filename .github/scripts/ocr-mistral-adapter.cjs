@@ -1820,11 +1820,11 @@ async function startAdapter(options = {}) {
           'completion was truncated'
         )
       }
-      const draftScope =
-        options.draftToolContinuation &&
+      const mainTaskScope =
         main &&
         conversation &&
         /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key)
+      const draftScope = options.draftToolContinuation && mainTaskScope
       const continuation = draftScope && draftContinuations.get(conversation)
       let extraContinuation = false
       if (main && !choice.message.tool_calls?.length) {
@@ -1835,7 +1835,7 @@ async function startAdapter(options = {}) {
         const firstFinalStop =
           options.finalReviewContinuation &&
           choice.finish_reason === 'stop' &&
-          /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
+          mainTaskScope &&
           conversations.get(conversation)?.main_no_tool_responses === 1
         if (
           continuation?.toolTurn &&

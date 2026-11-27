@@ -1075,7 +1075,7 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
           reasoning_content: ' x'.repeat(12000),
           tool_calls: [
             sawSummary
-              ? toolCall('task_done', { state: 'DONE' })
+              ? toolCall('task_done', {})
               : toolCall('file_find', { pattern: 'source.js' }),
           ],
         }

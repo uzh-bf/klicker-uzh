@@ -3084,7 +3084,8 @@ test('draft length recovery needs a matched tool result and survives compaction 
   assert.equal((await send(progress)).status, 422)
   assert.equal((await send(compact)).status, 422)
 
-  reply = () => toolTurn('task_done', 'tool_calls', '{"state":"DONE"}')
+  // Stock OCR also completes a pass when task_done omits the state.
+  reply = () => toolTurn('task_done', 'tool_calls')
   assert.equal((await send(progress)).status, 200)
   const nextPass = [{ role: 'user', content: 'next pass' }]
   reply = () => response({}, 'length')
