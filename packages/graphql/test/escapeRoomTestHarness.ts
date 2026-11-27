@@ -28,6 +28,12 @@ import {
   startEscapeRoomAttempt,
 } from '../src/services/escapeRooms.js'
 import {
+  getGradingGroupActivity,
+  getGroupActivityDetails,
+  manipulateGroupActivity,
+  submitGroupActivityDecisions,
+} from '../src/services/groups.js'
+import {
   getMicroLearningData,
   manipulateMicroLearning,
 } from '../src/services/microLearning.js'
@@ -135,6 +141,14 @@ function scResponse(instanceId: number, selectedIx: 0 | 1) {
   }
 }
 
+function groupScResponse(instanceId: number, selectedIx: 0 | 1) {
+  return {
+    instanceId,
+    type: DB.ElementType.SC,
+    choicesResponse: [{ ix: selectedIx, selected: true }],
+  }
+}
+
 function qrResponse(instanceId: number, code: string) {
   return {
     instanceId,
@@ -229,6 +243,98 @@ async function seedEscapeRoomPracticeQuiz(
   })
 
   return practiceQuiz
+}
+
+async function seedEscapeRoomGroupActivity(
+  {
+    elements,
+    courseId,
+    participantIds,
+    timeLimit,
+    lockoutSeconds,
+  }: {
+    elements: DB.Element[]
+    courseId: string
+    participantIds: string[]
+    timeLimit?: number
+    lockoutSeconds?: number
+  },
+  ctx: ContextWithUser
+) {
+  const latestGroup = await ctx.prisma.participantGroup.findFirst({
+    where: { courseId },
+    orderBy: { code: 'desc' },
+    select: { code: true },
+  })
+  const group = await ctx.prisma.participantGroup.create({
+    data: {
+      name: uuidv4(),
+      code: (latestGroup?.code ?? 0) + 1,
+      courseId,
+      participants: { connect: participantIds.map((id) => ({ id })) },
+    },
+  })
+
+  const groupActivity = await ctx.prisma.groupActivity.create({
+    data: {
+      name: uuidv4(),
+      displayName: uuidv4(),
+      description: uuidv4(),
+      courseId,
+      status: DB.PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(Date.now() - 60_000),
+      scheduledEndAt: new Date(Date.now() + 3_600_000),
+      ownerId: ctx.user.sub,
+      stacks: {
+        create: {
+          order: 0,
+          type: DB.ElementStackType.GROUP_ACTIVITY,
+          elements: {
+            create: elements.map((element, index) => {
+              const elementData = processElementData(element)
+              const results = getInitialInstanceResults(elementData)
+              return {
+                order: index,
+                elementId: element.id,
+                type: DB.ElementInstanceType.GROUP_ACTIVITY,
+                elementType: element.type,
+                options: {},
+                elementData,
+                results,
+                anonymousResults: results,
+                ownerId: ctx.user.sub,
+              }
+            }),
+          },
+        },
+      },
+      escapeRoomConfig: {
+        create: {
+          timeLimit: timeLimit ?? 3600,
+          lockoutSeconds: lockoutSeconds ?? 5,
+        },
+      },
+    },
+    include: {
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
+    },
+  })
+
+  const activityInstance = await ctx.prisma.groupActivityInstance.create({
+    data: {
+      groupId: group.id,
+      groupActivityId: groupActivity.id,
+    },
+  })
+  const attempt = await ctx.prisma.escapeRoomAttempt.create({
+    data: {
+      groupId: group.id,
+      groupActivityId: groupActivity.id,
+      timeLimit: timeLimit ?? 3600,
+    },
+  })
+
+  return { group, groupActivity, activityInstance, attempt }
 }
 
 async function seedEscapeRoomMicroLearning(
@@ -390,10 +496,14 @@ export {
   getEscapeRoomHints,
   getEscapeRoomProgress,
   getEscapeRoomRemainingSeconds,
+  getGradingGroupActivity,
+  getGroupActivityDetails,
   getMicroLearningData,
   getPracticeQuizData,
+  groupScResponse,
   handlePruneEscapeRooms,
   lecturerCtx,
+  manipulateGroupActivity,
   manipulateMicroLearning,
   manipulatePracticeQuiz,
   participantCtx,
@@ -409,12 +519,14 @@ export {
   schema,
   scResponse,
   seedCourse,
+  seedEscapeRoomGroupActivity,
   seedEscapeRoomMicroLearning,
   seedEscapeRoomPracticeQuiz,
   seedEscapeRoomQuiz,
   seedParticipant,
   StackFeedbackStatus,
   startEscapeRoomAttempt,
+  submitGroupActivityDecisions,
   TEST_PREFIX,
 }
 export type {

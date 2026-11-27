@@ -8,10 +8,12 @@ import {
   ElementInstanceInput as ElementInstanceInputType,
   ElementStackInput as ElementStackInputType,
   FlashcardCorrectness,
+  type GroupActivityDecision as GroupActivityDecisionType,
   StackFeedbackStatus as StackFeedbackStatusType,
   StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { parseGroupEscapeRoomStageResponses } from '../services/groupEscapeRoomSubmissions.js'
 import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
   EscapeRoomHintResult as IEscapeRoomHintResult,
@@ -25,6 +27,7 @@ import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
 import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
+import { GroupActivityDecisionRef } from './groupActivity.js'
 import { IStackFeedback } from './evaluation.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
@@ -316,9 +319,23 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     status: t.expose('status', { type: EscapeRoomStatus }),
     completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
     lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
+    // Group Activity escape rooms: the team's answers to cleared stages.
+    // Only group escape rooms clear ordered stages; other attempts return null.
+    stageDecisions: t.field({
+      type: [GroupActivityDecisionRef],
+      nullable: true,
+      resolve: (parent) =>
+        parent.groupId
+          ? parseGroupEscapeRoomStageResponses(parent.stageResponses).map(
+              (entry) => entry.response as GroupActivityDecisionType
+            )
+          : null,
+    }),
     participantId: t.exposeString('participantId', { nullable: true }),
+    groupId: t.exposeString('groupId', { nullable: true }),
     practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     microLearningId: t.exposeString('microLearningId', { nullable: true }),
+    groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
   }),
 })
 
@@ -341,6 +358,7 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
     fields: (t) => ({
       id: t.exposeString('id', { nullable: true }),
       participantId: t.exposeString('participantId', { nullable: true }),
+      groupId: t.exposeString('groupId', { nullable: true }),
       displayName: t.exposeString('displayName'),
       avatar: t.exposeString('avatar', { nullable: true }),
       status: t.expose('status', { type: EscapeRoomProgressStatus }),
