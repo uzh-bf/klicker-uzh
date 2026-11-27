@@ -996,6 +996,134 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
   }
 })
 
+test('stock OCR retains draft evidence after an empty tool-call compression and consumes the next visible summary', {
+  skip: !process.env.OCR_TEST_BINARY,
+  timeout: 60000,
+}, async (t) => {
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-visible-compression-')
+  )
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  git('commit', '--allow-empty', '-m', 'test: base')
+  const from = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(root, 'source.js'), 'export const value = 1\n')
+  git('add', 'source.js')
+  git('commit', '-m', 'test: candidate')
+
+  let compressions = 0,
+    mainTurns = 0,
+    sawSummary = false,
+    preservedEvidence = false
+  let upstreamCalls = 0
+  const logs = []
+  const result = await runDraftReview({
+    repo: root,
+    temp: root,
+    from,
+    head: git('rev-parse', 'HEAD'),
+    executable: process.env.OCR_TEST_BINARY,
+    apiKey: 'synthetic',
+    write: (line) => logs.push(line),
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(init.body)
+      const input = JSON.stringify(body.messages)
+      assert.equal(body.reasoning_effort, 'max')
+      assert.equal(body.max_tokens, 16384)
+      let message, finish
+      const toolCall = (name, args) => ({
+        id: 'call-' + upstreamCalls,
+        type: 'function',
+        function: { name, arguments: JSON.stringify(args) },
+      })
+      if (body.prompt_cache_key?.includes('-memory_compression_task-')) {
+        compressions++
+        if (compressions === 1) {
+          assert.ok(input.includes('EARLY_EVIDENCE'))
+          message = {
+            content: '',
+            reasoning_content: 'UNFINISHED_PRIVATE_SUMMARY',
+            tool_calls: [toolCall('unexpected', {})],
+          }
+          finish = 'tool_calls'
+        } else {
+          preservedEvidence ||= input.includes('EARLY_EVIDENCE')
+          message = {
+            content: 'VISIBLE_COMPLETE_SUMMARY',
+            reasoning_content: 'UNFINISHED_PRIVATE_SUMMARY',
+          }
+          finish = 'stop'
+        }
+      } else {
+        mainTurns++
+        assert.ok(mainTurns <= 35)
+        assert.ok(!input.includes('UNFINISHED_PRIVATE_SUMMARY'))
+        sawSummary ||= input.includes('VISIBLE_COMPLETE_SUMMARY')
+        // Grow actual stock history past its compression threshold using
+        // synthetic turns within the existing per-response ceiling.
+        message = {
+          content: mainTurns === 1 ? 'EARLY_EVIDENCE' : '',
+          reasoning_content: ' x'.repeat(12000),
+          tool_calls: [
+            sawSummary
+              ? toolCall('task_done', { state: 'DONE' })
+              : toolCall('file_find', { pattern: 'source.js' }),
+          ],
+        }
+        finish = 'tool_calls'
+      }
+      upstreamCalls++
+      return new Response(
+        JSON.stringify({
+          model: MOAT_FLASH_MODEL,
+          choices: [
+            {
+              index: 0,
+              finish_reason: finish,
+              message: { role: 'assistant', ...message },
+            },
+          ],
+          usage: {
+            prompt_tokens: 20,
+            completion_tokens: 12050,
+            total_tokens: 12070,
+            prompt_tokens_details: { cached_tokens: 10 },
+          },
+        })
+      )
+    },
+  })
+  assert.equal(result.coverage.completed, 1)
+  assert.ok(preservedEvidence && sawSummary)
+  const diag = JSON.parse(
+    fs.readFileSync(
+      path.join(root, 'draft-ai-review-adapter-diagnostics.jsonl')
+    )
+  )
+  assert.equal(diag.upstream_attempts, upstreamCalls)
+  assert.equal(diag.responses, upstreamCalls)
+  assert.equal(diag.completion_tokens, 12050 * upstreamCalls)
+  assert.equal(diag.draft_compression.skipped, 1)
+  assert.ok(diag.draft_compression.usable >= 1)
+  const { usable, skipped, repeat_skips } = diag.draft_compression
+  assert.ok(
+    logs
+      .join('')
+      .includes(
+        `OCR draft compression usable=${usable} skipped=${skipped} repeat_skips=${repeat_skips}`
+      )
+  )
+})
+
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {
   skip: !process.env.OCR_TEST_BINARY,
   timeout: 60000,

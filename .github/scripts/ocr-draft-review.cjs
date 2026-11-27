@@ -459,6 +459,7 @@ async function runDraftReview(options) {
     adapter = await startAdapter({
       availability,
       finalPlanGuidance: true,
+      guardDraftCompression: true,
       singleFileOutline,
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
@@ -735,12 +736,18 @@ async function runDraftReview(options) {
     appendSummary(summarizeDocs(toolsState.docs), write, options.summary)
     await advisor?.close()
     await adapter?.close()
-    if (adapter)
+    if (adapter) {
+      const diagnostics = adapter.diagnostics()
+      appendSummary(summarizePlanGuidance(diagnostics), write, options.summary)
+      const compression = diagnostics.draft_compression
       appendSummary(
-        summarizePlanGuidance(adapter.diagnostics()),
+        compression
+          ? `OCR draft compression usable=${compression.usable} skipped=${compression.skipped} repeat_skips=${compression.repeat_skips}`
+          : 'OCR draft compression status=unavailable',
         write,
         options.summary
       )
+    }
     if (resultFd !== undefined) fs.closeSync(resultFd)
     if (stderrFd !== undefined) fs.closeSync(stderrFd)
     fs.rmSync(home, { recursive: true, force: true })

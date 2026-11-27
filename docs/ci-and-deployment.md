@@ -563,8 +563,11 @@ tool turn may instead match within its validated conversation key; cross-task
 and ambiguous matches remain rejected. Main-review requests offering
 `task_done` force tool use with `tool_choice: required`; a length-limited
 response without a tool call may enter OCR's existing continuation loop once per
-replayed chain, retaining its native history and billable usage. A finished
-tool-free response or another tool-free turn in that chain still fails closed.
+replayed chain, retaining its native history and billable usage. For manual
+MOAT final code reviews, the first tool-free main response may also finish with
+`stop`. OCR asks for a real tool call on the next iteration under the same
+limits. Empty text and prose carry no verdict. Another tool-free `stop` in that
+scope fails closed even if compression has removed the earlier turn.
 Auxiliary grouping, planning, filtering and compression requests remain
 unchanged. Manual jobs retain seven-day aggregate execution counters for request
 counts, input/output usage, missing tools, length finishes and history
@@ -793,6 +796,16 @@ keys or response content. The CLI's `phase_completed phase=planning` progress
 event records that its planning request returned; it alone does not prove usable
 guidance. Raw usage journals retain the original response sizes and finish reason
 before the compatibility projection, and aggregate accounting remains unchanged.
+
+For stock draft memory compression, the adapter returns summary text only when
+the provider finishes with `stop`, supplies visible text and requests no tools.
+An unusable answer returns empty text, so OCR keeps its working history. A
+repeat of a recently skipped, identical compression request returns empty
+locally. The adapter retains only request digests for this check.
+`OCR draft compression` reports usable replies, skipped replies and local repeat
+skips. These counters describe what the adapter sent to the CLI. The CLI decides
+whether to install a summary in a continuing review. Paid responses keep
+their original usage receipts.
 
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
