@@ -11,7 +11,7 @@ GraphQL API and does not depend on the import/export PR stack.
 - Keep the seven element tabs, row 6 headers, and row 8 data start unchanged.
   Any combination of element tabs may contain data. The Instructions sheet is
   optional; its A1 marker may be absent or contain any text.
-- At most 500 elements total and 5 MiB per file. SC and MC support ten answer slots;
+- At most 2,000 elements total and 5 MiB per file. SC and MC support ten answer slots;
   gaps are accepted and populated answers keep their order. Every populated answer
   needs a correctness value when sample solutions are enabled. Feedback needs
   a sample solution and feedback for each answer; `-` is accepted as literal text.

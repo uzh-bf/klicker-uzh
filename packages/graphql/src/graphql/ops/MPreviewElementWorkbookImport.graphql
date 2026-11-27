@@ -1,0 +1,22 @@
+mutation PreviewElementWorkbookImport($uploadId: String!) {
+  previewElementWorkbookImport(uploadId: $uploadId) {
+    previewToken
+    rows {
+      sheet
+      row
+      name
+      type
+      action
+      existingElementId
+      existingElementName
+      firstRow
+    }
+    imagesToCopy
+    error {
+      code
+      sheet
+      row
+      column
+    }
+  }
+}

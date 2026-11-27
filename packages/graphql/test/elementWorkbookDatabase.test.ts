@@ -10,12 +10,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   executeImport,
   previewImport,
-} from '../src/scripts/elementWorkbook/database.js'
+} from '../src/lib/elementWorkbook/database.js'
 import {
   ELEMENT_WORKBOOK_HEADERS,
   parseElementWorkbook,
   type WorkbookElement,
-} from '../src/scripts/elementWorkbook/parse.js'
+} from '../src/lib/elementWorkbook/parse.js'
 
 // Opt in only with the repository's marked, non-privileged disposable database.
 describe.skipIf(process.env.RUN_ELEMENT_WORKBOOK_DB_TESTS !== 'true')(

@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   ELEMENT_WORKBOOK_DATA_ROW,
   ELEMENT_WORKBOOK_HEADERS,
+  MAX_ELEMENT_WORKBOOK_BYTES,
+  MAX_ELEMENT_WORKBOOK_ELEMENTS,
   type MultipleChoiceOptions,
   parseElementWorkbook,
-} from '../src/scripts/elementWorkbook/parse.js'
+} from '../src/lib/elementWorkbook/parse.js'
 
 async function workbookBuffer(populate?: (workbook: ExcelJS.Workbook) => void) {
   const workbook = new ExcelJS.Workbook()
@@ -494,9 +496,9 @@ describe('parseElementWorkbook', () => {
     })
   })
 
-  it('enforces the 500-element bound without a fixture file', async () => {
+  it('enforces the element bound without a fixture file', async () => {
     const allowed = await workbookBuffer((workbook) => {
-      for (let index = 0; index < 500; index++) {
+      for (let index = 0; index < MAX_ELEMENT_WORKBOOK_ELEMENTS; index++) {
         setRow(
           workbook,
           'Flashcards',
@@ -505,10 +507,12 @@ describe('parseElementWorkbook', () => {
         )
       }
     })
-    await expect(parseElementWorkbook(allowed)).resolves.toHaveLength(500)
+    await expect(parseElementWorkbook(allowed)).resolves.toHaveLength(
+      MAX_ELEMENT_WORKBOOK_ELEMENTS
+    )
 
     const rejected = await workbookBuffer((workbook) => {
-      for (let index = 0; index < 501; index++) {
+      for (let index = 0; index <= MAX_ELEMENT_WORKBOOK_ELEMENTS; index++) {
         setRow(
           workbook,
           'Flashcards',
@@ -522,7 +526,7 @@ describe('parseElementWorkbook', () => {
     )
 
     await expect(
-      parseElementWorkbook(Buffer.alloc(5 * 1024 * 1024 + 1))
+      parseElementWorkbook(Buffer.alloc(MAX_ELEMENT_WORKBOOK_BYTES + 1))
     ).rejects.toThrow('WORKBOOK_TOO_LARGE')
   })
 })

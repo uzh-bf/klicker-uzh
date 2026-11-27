@@ -25,6 +25,9 @@ export * from './auth.js'
 // export everything from the crypto module
 export * from './crypto.js'
 
+// export Blob Storage endpoint resolution
+export * from './blobStorage.js'
+
 // export everything from the identity module
 export * from './identity.js'
 

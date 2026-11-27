@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "include": [
     "src/scripts/importElementWorkbook.ts",
-    "src/scripts/elementWorkbook/**/*.ts",
+    "src/lib/elementWorkbook/**/*.ts",
     "test/elementWorkbook*.test.ts"
   ],
   "exclude": ["node_modules", "dist"],
