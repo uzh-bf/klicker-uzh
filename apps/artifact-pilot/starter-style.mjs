@@ -16,4 +16,4 @@ export const artifactCandidates = [
   ...new Set(
     Object.values(artifactClasses).flatMap((classes) => classes.split(/\s+/))
   ),
-].sort()
+]
