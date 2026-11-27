@@ -2541,7 +2541,7 @@ const AssistantMessage: FC<{
           'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
             ? 'col-start-2 my-0.5 max-w-full text-sm leading-6'
-            : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)] has-[[data-explanation-card]]:max-w-none'
+            : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)] has-[[data-explanation-card]]:max-w-none has-[[data-feedback-card]]:max-w-none'
         )}
       >
         {isPendingEmpty && <ThinkingDots />}

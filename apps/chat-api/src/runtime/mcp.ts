@@ -55,8 +55,15 @@ import {
 import { withVideoFrameTool } from '../host/lib/server/videoFrameTools.js'
 import {
   createHostExplanationTool,
+  type ExplanationWriter,
+  type ExplanationWriterUsage,
   shouldOfferExplanationTool,
 } from '../host/services/explainerService.js'
+import {
+  createShowFeedbackTool,
+  isFeedbackToolEnabled,
+} from '../host/services/feedbackTool.js'
+import { SHOW_FEEDBACK_TOOL_NAME } from '../host/lib/feedback.js'
 import { getAggregatedMCPTools } from '../host/services/mcpClients.js'
 import { resolveMcpScope } from '../host/services/mcpScope.js'
 import {
@@ -80,6 +87,10 @@ export type HostToolInput = {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
   isElearningThread: boolean
   supportsImageAttachments?: boolean
+  /** Reads the explanation writer once the turn's model options are known. */
+  getExplanationWriter?: () => ExplanationWriter | null
+  /** Receives the writer's tokens per finished draft step. */
+  onExplanationUsage?: (usage: ExplanationWriterUsage) => void
 }
 
 export type HostToolSet = {
@@ -245,16 +256,33 @@ export async function prepareHostTools(
       })
     ) {
       try {
-        const { definition, instructions } = await createHostExplanationTool()
+        const { definition, instructions } = await createHostExplanationTool({
+          getWriter: input.getExplanationWriter ?? (() => null),
+          onUsage: input.onExplanationUsage ?? (() => undefined),
+        })
         tools = { ...tools, [SHOW_EXPLANATION_TOOL_NAME]: definition }
         promptContext.push(instructions)
       } catch {
         // A schema outage keeps optional explanations off for this turn.
       }
     }
+    // Structured feedback cards quote the learner's own messages, so the tool
+    // is fixed to the turn's user messages.
+    const learnerMessages = input.messages
+      .filter((message) => message.role === 'user')
+      .map((message) => message.content)
+    const withCalculator = withCalculatorTool(input.mode, tools)
+    const modelTools = isFeedbackToolEnabled(input.mode)
+      ? {
+          ...withCalculator,
+          [SHOW_FEEDBACK_TOOL_NAME]: createShowFeedbackTool({
+            learnerMessages,
+          }),
+        }
+      : withCalculator
     return {
       courseImageVision,
-      tools: withCalculatorTool(input.mode, tools),
+      tools: modelTools,
       promptToolNames,
       promptContext: promptContext.join('\n\n'),
       close: handle.close,
@@ -269,6 +297,52 @@ export type HostToolSession = {
   tools: EngineV2ChatRequest['tools']
   executionToken: string
   close: () => Promise<void>
+}
+
+/** Progress chunks a tool streams while it is still working. */
+const PENDING_TOOL_OUTPUT_KINDS = new Set(['explanation-pending'])
+
+function isAsyncIterable(value: unknown): value is AsyncIterable<unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Symbol.asyncIterator in value &&
+    typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] ===
+      'function'
+  )
+}
+
+/**
+ * A host tool may stream progress chunks and end with its result, as the
+ * explanation tool does while its writer drafts. The model sees only the final
+ * value; aborting the call stops the producer through the same signal.
+ */
+async function toolResultValue(
+  output: unknown,
+  signal: AbortSignal
+): Promise<unknown> {
+  if (!isAsyncIterable(output)) return output
+  const iterator = output[Symbol.asyncIterator]()
+  let final: unknown
+  let pending = false
+  try {
+    for (;;) {
+      signal.throwIfAborted()
+      const next = await iterator.next()
+      signal.throwIfAborted()
+      if (next.done) break
+      final = next.value
+      pending =
+        typeof final === 'object' &&
+        final !== null &&
+        PENDING_TOOL_OUTPUT_KINDS.has((final as { kind?: string }).kind ?? '')
+    }
+  } catch (error) {
+    await iterator.return?.().catch(() => undefined)
+    throw error
+  }
+  // A stream that stops while still working leaves no result to show.
+  return pending ? { kind: 'explanation-unavailable' } : final
 }
 
 type Session = {
@@ -481,12 +555,15 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
             } else {
               if (!entry.definition.execute)
                 throw new Error('Tool execution is unavailable')
-              output = await entry.definition.execute(validatedInput, {
-                toolCallId: body.toolCallId,
-                messages: [] as ModelMessage[],
-                abortSignal: callSignal,
-                context: {},
-              })
+              output = await toolResultValue(
+                await entry.definition.execute(validatedInput, {
+                  toolCallId: body.toolCallId,
+                  messages: [] as ModelMessage[],
+                  abortSignal: callSignal,
+                  context: {},
+                }),
+                callSignal
+              )
             }
             callSignal.throwIfAborted()
             const rawOutput = JSON.stringify(output)

@@ -20,6 +20,7 @@ type PromptContext = {
   }
   'numeric-precision': Record<string, never>
   'explanation-tool': Record<string, never>
+  'explanation-writer': Record<string, never>
   'feedback-card-tool': Record<string, never>
   'feedback-check': Record<string, never>
   'quiz-feedback-check': Record<string, never>
@@ -31,7 +32,10 @@ type PromptContext = {
   'mode-tutor': Record<string, never>
   'mode-tutor-v2': Record<string, never>
   'mode-explainer': Record<string, never>
-  'mode-quizzer': Record<string, never>
+  'mode-quizzer': {
+    courseRetrievalAvailable: boolean
+    isElearningOrigin: boolean
+  }
   'mode-writing-coach': Record<string, never>
   'lecturer-guidance': { lecturerPrompt: string }
   'lecturer-custom-persona': {

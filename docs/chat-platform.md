@@ -122,9 +122,9 @@ Custom modes defined only in the authored preview configuration remain
 previewable, but capture is unavailable until the review mode contract supports
 them. Legacy prompt-key modes retain their existing review support.
 
-Quizzer selection and approval in response-example review use its standard-mode
-setting and the same effective document-query binding resolver as participant
-Chat. A disabled exact Quizzer binding blocks inheritance on that server.
+An enabled Quizzer appears in the mode list even without a knowledge base.
+Capturing or approving a source-backed Quizzer example also requires an effective
+document-query binding. A disabled exact Quizzer binding blocks inheritance on that server.
 Existing examples remain visible for inspection and rejection when their mode
 becomes unavailable; availability does not erase the lecturer's review record.
 
@@ -302,7 +302,7 @@ type, and content unless the lecturer asks for related metadata, and SC/MC
 drafts must keep every option-feedback pair consistent with the stem and answer
 key. The live evaluator measures these behaviors through E3 grounding and E4
 proposal-quality judge cases; the current DeepEval 4.1.5 / `gpt-5.6-luna`
-baseline is recorded in `evaluation/manage-assistant/README.md`.
+baseline is recorded in `apps/chat/evaluation/manage-assistant/README.md`.
 
 ## Student practice MCP (`apps/mcp-student`)
 
@@ -609,25 +609,25 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
 checks streamed text against saved text, and requires successful `KB_doc_query`
 completion on the first turn. Follow-up turns may use existing context; any
 emitted retrieval must still complete with matching call IDs in stream and
-persistence. Disagreement between streamed and saved credits stops the run. `evaluation/data/trajectories/tutor-attribution.json` contains
+persistence. Disagreement between streamed and saved credits stops the run. `apps/chat/evaluation/trajectories/tutor-attribution.json` contains
 synthetic English/German scenarios and behavioral rubrics. These rubrics need
 assessment of meaning; exact response wording is not a test contract.
 
 For the revised fixture and numerical checks, use
-`evaluation/data/trajectories/tutor-attribution-v2.json` with its
+`apps/chat/evaluation/trajectories/tutor-attribution-v2.json` with its
 `tutor-attribution-v2-numeric.json` sidecar. The sidecar binds numerical
 obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
+`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -649,9 +649,9 @@ The default model is the fixed `gpt-6-luna` selection. Auto routing remains
 unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node evaluation/run-tutor-trajectories.mjs \
-  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
-  --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus apps/chat/evaluation/trajectories/tutor-attribution-v2.json \
+  --numeric apps/chat/evaluation/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
   --budget-file project/_local/tutor-budget.json
 ```
@@ -671,6 +671,53 @@ Freeze candidate, corpus and rubric before comparing outputs. Evaluate support
 qualification separately from answer correctness and checkpoint timing. A small
 synthetic pass does not establish learning effectiveness, production retrieval
 quality or unaided work outside the visible conversation.
+
+### Comparing models on a deployed chat
+
+The local runner above measures one fixed model behind the spend guard. Compare
+several models on the deployed path instead when a model or router exists only
+in the deployed gateway (Auto versions with their own classifier, new Azure
+deployments), or when the question is how the models behave for students.
+`apps/chat/scripts/run-model-matrix.mjs` runs a version-1 trajectory corpus
+once per model and repeat in fresh threads, in parallel across models per case.
+It logs in with the persisted login mutation, sends the chatbot's default
+reasoning effort unless `--effort <model>=<level>` overrides it, and records
+text, tool inputs, the served model, credits and latency as JSONL. A case stops
+at a failed request, an empty answer, or a turn served by another model than
+requested, which is how a zero-credit fallback or a chatbot without model
+selection shows up. A rerun with the same output resumes.
+
+1. Use a test chatbot and a synthetic test participant on staging. The chatbot
+   must allow every compared model and have model selection on; restore both
+   afterwards. Give the participant enough credits for the run on that chatbot:
+   an Auto turn costs a few hundredths of a credit and a Sol turn up to a
+   tenth, so 19 turns × 3 repeats per model need several credits per model.
+2. Run the matrix with the participant credentials injected through
+   `rs-infisical-operator` as `KLICKER_MATRIX_PARTICIPANT_USERNAME` and
+   `KLICKER_MATRIX_PARTICIPANT_PASSWORD`, plus `KLICKER_MATRIX_API_ORIGIN`,
+   `KLICKER_MATRIX_CHAT_ORIGIN`, `KLICKER_MATRIX_ALLOWED_ORIGINS` (both
+   origins) and `KLICKER_MATRIX_CHATBOT_ID`:
+
+   ```sh
+   node apps/chat/scripts/run-model-matrix.mjs \
+     --corpus apps/chat/evaluation/tutor-task-support/corpus.json \
+     --output project/_local/matrix.jsonl --repeats 3 \
+     --models gpt-6-luna,gpt-6.1-sol,gpt-6.2-sol,auto-v5
+   ```
+
+3. Score the capture with `evaluation/scripts/model-matrix-report.mjs` in
+   `klicker-uzh-catalyst`, which holds the evaluation judge and metrics. Its
+   `check` command applies the corpus's `matrix-checks.json` (result leaks,
+   exact results, required and forbidden tool inputs, empty answers, latency,
+   credits); `blind` and `merge` run blind rubric grading. See "Model
+   comparison scoring" in that repository's `evaluation/README.md`.
+
+Fix a weakness in the shared prompt when it appears on several models. Add a
+model-specific instruction only when one model fails a rule the others follow
+and the shared fix would hurt them; Auto can switch models between turns of one
+thread, so a model-specific prompt also changes the conversation mid-thread.
+Staging retrieval uses real course material, so results are not comparable with
+runs on the synthetic local fixture. Keep captures and grades outside Git.
 
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
@@ -790,16 +837,15 @@ custom modes use their configured description.
 defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and the
 approved custom-mode configuration. Participant paths offer only the custom-mode keys the chatbot
 carries as approved configuration; the owner preview may additionally offer saved but unapproved
-modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
-Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
-knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
+modes. A draft may turn off every standard mode. Submission and approval require at least one
+participant-selectable standard or custom mode. Any standard mode can stand alone. A missing or malformed value derives all three flags from legacy `enabled: false`
 opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
 derives Quizzer from its legacy opt-out/default. Custom-mode flags remain
 legacy-controlled. The resolver never suppresses a mode chatbot-wide: a mode with
 no retrieval binding of its own stays offered, and a mode whose declared
 required binding is unavailable fails closed at request time instead of
-disappearing. Quizzer remains the capability-gated exception and appears only
-with a provably restricted course `doc_query` binding. Exact Quizzer
+disappearing. Quizzer can practise a course topic or use learner-supplied material without a KB.
+An eLearning-origin conversation always follows its materials-only policy. Exact Quizzer
 configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
 required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
@@ -811,7 +857,7 @@ instead of allowing requests the server would reject.
 
 Platform standard-mode contract changes apply automatically to every chatbot that exposes that
 mode. Stored standard-mode text remains lower-priority lecturer guidance rather than replacing
-the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
+the contract; no stored prompt migration is required. With a retrieval tool, Quizzer chooses one specific grounded
 practice topic when the student's request is unclear and asks for simple confirmation rather than
 presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
 presents one concise, exam-style course question at a time from retrieved course material without a
@@ -828,9 +874,8 @@ identified from the visible attempts and grounded material, it does not issue th
 checkpoint. This checkpoint is explicitly a short-round snapshot, not a claim that the topic is
 complete, and it does not use grades, proficiency, mastery, or other broad ability claims. Quizzer
 never infers coverage from retrieval exhaustion or a partial list of retrieved topics. It does not
-present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course retrieval
-binding do not expose
-Quizzer. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
+present questions as lecturer-authored or exam-equivalent. Without retrieval, ordinary chat and owner preview use the learner’s topic or passage
+for practice and avoid claims about official course material. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
 returns the required-tool-unavailable response instead of generating an ungrounded question. Once
 discovered, the route requires that document-query tool on Quizzer's first model step, then restores
 automatic tool selection for later steps. Optional retrieval outages can still degrade gracefully in
@@ -1208,14 +1253,38 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. A single graph icon in the header toggles a graph dock without
-navigation or replacing the mounted conversation. Desktop shows it on the right;
-compact viewports stack graph above chat. Fullscreen expands the same graph over
-the chatbot, makes background controls inert and contains keyboard focus. Escape
-restores the dock; closing unmounts the graph and returns focus to its toggle.
-Legacy `/graph` links open the dock on entry. Reopening starts an overview.
-`ChatKnowledgeGraphPanel.tsx` owns this presentation in both standalone and
-embedded layouts. Node and relationship details can append a localized, editable
+header grid. The conversation shares its row with one workspace panel, the
+canvas, that shows either the knowledge graph or one artifact of the thread,
+such as an interactive explanation, never two at once
+(`src/components/workspace/`). An artifact is identified by its type and tool
+call id. A new artifact type adds its data to `ChatCanvasArtifactData` and its
+open size in `chat-workspace-context.tsx`, and its panel (title, actions,
+content, stored-width key) to `WORKSPACE_PANELS` in `chat-workspace-layout.tsx`;
+its message card registers through `artifacts.register` and marks its root and
+open control with `data-canvas-artifact`, `data-canvas-artifact-id` and
+`data-canvas-artifact-open`, which give stepping its thread order and closing
+its focus target. Feedback cards (`show_feedback`, `feedback/1`) are the second
+artifact type. The card finds the reviewed passage in the learner's earlier
+messages on the client, with the same quote normalization the server uses to
+accept quotes (`src/lib/feedback.ts`), so stored cards need no extra data: it
+marks the quotes in that passage and keeps the remarks without a found quote as
+notes. Without a found quote it shows its list layout. `ChatWorkspaceProvider` owns which item is shown
+and its size; `ChatWorkspaceLayout` is the shell for every kind in standalone
+and embedded layouts: resize handle with a per-kind stored width, an expanded
+size that keeps the conversation in a narrow docked column with a usable
+composer, and fullscreen. Fullscreen covers the chatbot, makes background
+controls inert and contains keyboard focus; Escape returns to the previous size,
+and closing unmounts the item and returns focus to the control that opened it.
+Below `lg` the panel replaces the conversation. The graph icon in the header
+toggles the graph without navigation or replacing the mounted conversation;
+legacy `/graph` links open it on entry, and reopening starts an overview.
+An explanation's "Open beside the chat" action opens it expanded. Only one live
+copy of an explanation frame runs: while the panel shows it, its inline card
+collapses to a marker, because two copies would drift apart and narration would
+play twice. The panel steps between the thread's explanations in DOM order,
+keyed by tool call id, and an explanation arriving in a streamed answer replaces
+the one shown. Without the provider (owner preview) the card keeps its modal
+dialog. Node and relationship details can append a localized, editable
 question to the current composer, preserving its draft and attachments. The
 callback carries only bounded display labels (200 characters each), never raw
 properties or graph identifiers. Asking never sends or creates a thread; mobile
@@ -1413,8 +1482,7 @@ an existing conversation. Published chatbots continue using their live configura
 saved revision is approved. Context changes do not alter a response already in flight or
 earlier messages.
 
-Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. At
-least one of Tutor, Explainer, or Writing Coach must remain enabled; Quizzer alone is invalid.
+Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. Any single standard mode or eligible custom mode can satisfy the publication rule.
 Missing historical flags normalize to false. An older mutation that omits the new flag preserves
 the stored choice. `saveChatbotRevision` locks the chatbot row and checks
 `expectedRevisionVersion`; if the revision version has advanced, it rejects the save as an edit
@@ -1512,7 +1580,7 @@ without the solution-scope and closing-check rules, bulleted and prior-knowledge
 the Tutor's closing question and some options worked out corrected results the default left to the
 student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
 were removed afterwards. The sample was small; repeat it when the template or model changes.
-`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
+`apps/chat/scripts/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
 A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
 (`Chatbot.answerPreferencesEnabled`, default on, saved through `saveChatbotRevision` in `modelPolicy` and promoted on approval). The chat
@@ -1861,7 +1929,7 @@ PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from t
 
 Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
 
-Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default is disabled; staging and production enable it, and each environment reads its Langfuse keys and base URL from `secret-chat` (use a separate Langfuse project per environment). `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 

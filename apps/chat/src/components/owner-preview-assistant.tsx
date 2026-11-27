@@ -376,7 +376,7 @@ function OwnerPreviewConversation({
       new AssistantChatTransport({
         api: `/api/manage/chatbots/${encodeURIComponent(chatbot.id)}/preview/chat`,
         body: {
-          selectedMode: effectiveMode || 'tutor',
+          ...(effectiveMode ? { selectedMode: effectiveMode } : {}),
           ...(conversation.modelId
             ? { selectedModel: conversation.modelId }
             : {}),

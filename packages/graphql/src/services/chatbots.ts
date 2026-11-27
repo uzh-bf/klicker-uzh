@@ -10,13 +10,16 @@ import {
   CHAT_BASE_MODEL_ID,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  getAvailableChatbotCustomModeKeys,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  getEffectiveChatbotStandardModeFlags,
   isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
   parseChatbotCustomModeConfigInput,
-  parseChatbotStandardModeConfigInput,
+  parseChatbotStandardModeConfigForStorage,
+  parseStoredChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -1120,14 +1123,27 @@ function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
 
 function validateCompleteRevision(
   revision: ChatbotAuthoringRevision,
-  requirePublicationFields: boolean
+  requirePublicationFields: boolean,
+  systemPrompts: unknown
 ) {
   if (revision.name.trim().length === 0) {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
   if (revision.standardModeConfig !== null) {
-    parseRevisionStandardModeConfig(revision.standardModeConfig)
+    try {
+      parseStoredChatbotStandardModeConfig(
+        revision.standardModeConfig,
+        systemPrompts
+      )
+    } catch (error) {
+      throw chatbotError(
+        error instanceof Error
+          ? error.message
+          : 'Invalid standard mode configuration',
+        'BAD_USER_INPUT'
+      )
+    }
   }
 
   if (revision.customModeConfig !== null) {
@@ -1163,6 +1179,22 @@ function validateCompleteRevision(
   }
 
   if (requirePublicationFields) {
+    const standardFlags = getEffectiveChatbotStandardModeFlags(
+      revision.standardModeConfig,
+      systemPrompts
+    )
+    const hasStandardMode = Object.values(standardFlags).some(Boolean)
+    const customModeKeys = getAvailableChatbotCustomModeKeys(
+      revision.customModeConfig,
+      systemPrompts
+    )
+    if (!hasStandardMode && customModeKeys.length === 0) {
+      throw chatbotError(
+        'Enable at least one chat mode before publication',
+        'CHATBOT_MODE_REQUIRED'
+      )
+    }
+
     const useCase = normalizedRevision.publicationUseCase
     if (
       typeof useCase !== 'string' ||
@@ -1652,7 +1684,7 @@ function parseRevisionStandardModeConfig(
   input: ChatbotStandardModeConfigInput
 ) {
   try {
-    return parseChatbotStandardModeConfigInput(input)
+    return parseChatbotStandardModeConfigForStorage(input)
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1714,7 +1746,11 @@ export async function submitChatbotRevision(
     const revision = getRevisionSnapshot(chatbot)
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.systemPrompts
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1877,7 +1913,11 @@ export async function approveChatbotRevision(
     }
 
     const revision = getRevisionSnapshot(chatbot)
-    const completeRevision = validateCompleteRevision(revision, true)
+    const completeRevision = validateCompleteRevision(
+      revision,
+      true,
+      chatbot.systemPrompts
+    )
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,

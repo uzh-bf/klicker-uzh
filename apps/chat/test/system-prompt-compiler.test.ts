@@ -8,12 +8,13 @@ vi.mock(
 
     return {
       ...actual,
-      renderPromptTemplate: (name: string, context: unknown) =>
+      renderPromptTemplate: vi.fn((name: string, context: unknown) =>
         name === 'citation-contract'
           ? '<SYNTHETIC-CITATION-CONTRACT>'
           : name === 'course-images' || name === 'course-image-vision'
             ? JSON.stringify({ template: name, context })
-            : actual.renderPromptTemplate(name as never, context as never),
+            : actual.renderPromptTemplate(name as never, context as never)
+      ),
     }
   }
 )
@@ -379,6 +380,27 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
   })
 
+  test.each([
+    { retrieval: false, elearning: false },
+    { retrieval: true, elearning: false },
+    { retrieval: false, elearning: true },
+    { retrieval: true, elearning: true },
+  ])('selects the Quizzer template for retrieval=$retrieval, eLearning=$elearning', ({
+    retrieval,
+    elearning,
+  }) => {
+    vi.mocked(renderPromptTemplate).mockClear()
+    compileSystemPrompt(null, 'quizzer', {
+      courseDisplayName: COURSE_DISPLAY_NAME,
+      toolNames: retrieval ? [DOC_TOOL] : [],
+      isElearningOrigin: elearning,
+    })
+    expect(renderPromptTemplate).toHaveBeenCalledWith('mode-quizzer', {
+      courseRetrievalAvailable: retrieval,
+      isElearningOrigin: elearning,
+    })
+  })
+
   test('keeps fixed platform contracts out of the mode contract text', () => {
     for (const { prompt } of Object.values(DEFAULT_PROMPT)) {
       expect(prompt).not.toContain('## Course data')
@@ -446,23 +468,18 @@ describe('compileSystemPrompt', () => {
   })
 
   test('compiles the approved custom-mode persona with the platform sections last', () => {
+    const modeKey = `cm_${crypto.randomUUID()}`
     const approved = {
       modes: [
         {
-          key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+          key: modeKey,
           name: 'Ethik-Rollenspiel',
           description: 'Practises ethical reasoning in a role play.',
           personaText: 'APPROVED-CUSTOM-PERSONA',
         },
       ],
     }
-    const result = compilePrompt(
-      null,
-      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
-      [DOC_TOOL],
-      null,
-      approved
-    )
+    const result = compilePrompt(null, modeKey, [DOC_TOOL], null, approved)
 
     expect(result.startsWith(COURSE_DATA_MARK)).toBe(true)
     expect(result).toContain(CUSTOM_PERSONA_MARK)

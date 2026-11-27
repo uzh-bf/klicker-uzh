@@ -1,3 +1,4 @@
+import { MockLanguageModelV4 } from 'ai/test'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
@@ -296,6 +297,30 @@ describe('admitted-turn host tool capabilities', () => {
 
   test('keeps Catalyst validation and structured explanation output behind the host capability', async () => {
     const content = { label: 'synthetic', value: 2 }
+    const brief = {
+      locale: 'en',
+      topic: 'Test',
+      brief: 'Show the relationship.',
+    }
+    const model = new MockLanguageModelV4({
+      doGenerate: {
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'submit',
+            toolName: 'submit_explanation',
+            input: JSON.stringify(content),
+          },
+        ],
+        finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
+        usage: {
+          inputTokens: { total: 7, noCache: 7, cacheRead: 0, cacheWrite: 0 },
+          outputTokens: { total: 4, text: 4, reasoning: 0 },
+        },
+        warnings: [],
+      },
+    })
+    const onUsage = vi.fn()
     const fetchExplainer = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/schema')) {
         return Response.json({
@@ -323,7 +348,12 @@ describe('admitted-turn host tool capabilities', () => {
           ...prepared,
           tools: {
             ...prepared.tools,
-            [name]: (await createHostExplanationTool()).definition,
+            [name]: (
+              await createHostExplanationTool({
+                getWriter: () => ({ modelId: 'synthetic-writer', model }),
+                onUsage,
+              })
+            ).definition,
           },
         },
         signal: signal(),
@@ -336,47 +366,23 @@ describe('admitted-turn host tool capabilities', () => {
         )
       ).rejects.toThrow()
       expect(fetchExplainer).toHaveBeenCalledTimes(1)
-      expect(
-        await dispatcher.execute(
+      await expect(
+        dispatcher.execute(
           capability.executionToken,
-          request('first', { label: 'synthetic' }, name),
+          request('malformed', content, name),
           signal()
         )
-      ).toMatchObject({
-        output: {
-          kind: 'explanation-invalid',
-          errors: ['synthetic missing field'],
-        },
-        modelOutput: { type: 'text' },
-      })
+      ).rejects.toThrow()
+      expect(onUsage).not.toHaveBeenCalled()
       const completed = await dispatcher.execute(
         capability.executionToken,
-        request('second', content, name),
+        request('valid-brief', brief, name),
         signal()
       )
       expect(completed?.output).toEqual({ kind: 'explanation', content })
       expect(completed?.modelOutput).toMatchObject({ type: 'text' })
-      expect(fetchExplainer).toHaveBeenCalledTimes(3)
-
-      const burst = await Promise.all(
-        Array.from({ length: 6 }, (_, index) =>
-          dispatcher.execute(
-            capability.executionToken,
-            request(`burst-${index}`, { label: 'synthetic' }, name),
-            signal()
-          )
-        )
-      )
-      expect(burst.map((result) => result?.output)).toEqual([
-        ...Array.from({ length: 2 }, () => ({
-          kind: 'explanation-invalid',
-          errors: ['synthetic missing field'],
-        })),
-        ...Array.from({ length: 4 }, () => ({
-          kind: 'explanation-unavailable',
-        })),
-      ])
-      expect(fetchExplainer).toHaveBeenCalledTimes(5)
+      expect(onUsage).toHaveBeenCalledWith({ inputTokens: 7, outputTokens: 4 })
+      expect(fetchExplainer).toHaveBeenCalledTimes(2)
     } finally {
       vi.unstubAllEnvs()
       vi.unstubAllGlobals()

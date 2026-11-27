@@ -218,6 +218,10 @@ chat:
     enabled: true
     serviceUrl: 'http://explainer-service.stg-explainer.svc.cluster.local:3018'
 
+  # Structured feedback cards in Tutor, Quizzer and Writing Coach.
+  feedback:
+    enabled: true
+
   # Account usage has two independent switches: lifecycle writes record attempt
   # markers and credit counters, and enforcement rejects a participant request
   # before the provider call when the selected class has no available budget.

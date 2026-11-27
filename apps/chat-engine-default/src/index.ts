@@ -61,6 +61,35 @@ import {
 const DEFAULT_ENGINE_ID = 'public-ai-sdk'
 const DEFAULT_PORT = 3015
 
+/** Host tools whose budget changes the number of steps a turn may use. */
+const SHOW_FEEDBACK_TOOL_NAME = 'show_feedback'
+/** Failed feedback attempts per turn; the host tool counts the same cap. */
+const MAX_FEEDBACK_ATTEMPTS = 3
+
+type StepPart = { type: string; toolName?: string; output?: unknown }
+
+/**
+ * A feedback attempt is one step. After the cap the tool is withdrawn, so a
+ * model that cannot produce valid feedback answers in text instead.
+ */
+function feedbackAttemptsLeft(
+  steps: ReadonlyArray<{ content: ReadonlyArray<StepPart> }>
+): boolean {
+  let failed = 0
+  for (const step of steps)
+    for (const part of step.content) {
+      if (part.toolName !== SHOW_FEEDBACK_TOOL_NAME) continue
+      if (
+        part.type === 'tool-error' ||
+        (part.type === 'tool-result' &&
+          (part.output as { kind?: string } | undefined)?.kind ===
+            'feedback-invalid')
+      )
+        failed++
+    }
+  return failed < MAX_FEEDBACK_ATTEMPTS
+}
+
 export type ToolExecutionContext = {
   tool: ApprovedTool
   toolCallId: string
@@ -922,11 +951,28 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
             tool.serverId === 'klicker-host' &&
             tool.name === SHOW_EXPLANATION_TOOL_NAME
         )
+      const feedbackToolActive =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2 &&
+        request.tools.some(
+          (tool) =>
+            tool.serverId === 'klicker-host' &&
+            tool.name === SHOW_FEEDBACK_TOOL_NAME
+        )
+      // Each feedback attempt is a step; three attempts plus retrieval and the
+      // closing text need more than the usual five. An explanation call is one
+      // step, because its writer repairs drafts inside the tool. One more step
+      // is added for the text-only answer, so it never takes a tool call's slot.
+      const finalTextStep =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2 && !!tools
+      const maxSteps =
+        (explanationToolActive || feedbackToolActive
+          ? EXPLANATION_TURN_MAX_STEPS
+          : 5) + (finalTextStep ? 1 : 0)
       const result = streamText({
         model,
         system: request.systemPrompt,
         messages: toModelMessages(request.messages),
-        ...(stepPolicy || explanationToolActive
+        ...(stepPolicy || finalTextStep
           ? {
               allowSystemInMessages: true,
               prepareStep: async ({
@@ -940,20 +986,35 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
                     ? await projectToolResults(responseMessages)
                     : responseMessages
                 return {
-                  ...(explanationToolActive && !explanationAttemptsLeft(steps)
+                  ...((explanationToolActive &&
+                    !explanationAttemptsLeft(steps)) ||
+                  (feedbackToolActive && !feedbackAttemptsLeft(steps))
                     ? {
                         activeTools: Object.keys(tools ?? {}).filter(
-                          (name) => name !== SHOW_EXPLANATION_TOOL_NAME
+                          (name) =>
+                            !(
+                              (name === SHOW_EXPLANATION_TOOL_NAME &&
+                                explanationToolActive &&
+                                !explanationAttemptsLeft(steps)) ||
+                              (name === SHOW_FEEDBACK_TOOL_NAME &&
+                                feedbackToolActive &&
+                                !feedbackAttemptsLeft(steps))
+                            )
                         ),
                       }
                     : {}),
+                  // The last allowed step must write the answer. Without this,
+                  // a turn that spends every step on tool calls ends with no
+                  // text at all.
                   toolChoice:
                     stepNumber === 0 && stepPolicy?.firstToolName
                       ? {
                           type: 'tool' as const,
                           toolName: stepPolicy.firstToolName,
                         }
-                      : ('auto' as const),
+                      : stepNumber === maxSteps - 1
+                        ? ('none' as const)
+                        : ('auto' as const),
                   messages: [
                     ...initialMessages,
                     ...projectedMessages,
@@ -978,9 +1039,7 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
           ? {
               tools,
               toolChoice: 'auto' as const,
-              stopWhen: isStepCount(
-                explanationToolActive ? EXPLANATION_TURN_MAX_STEPS : 5
-              ),
+              stopWhen: isStepCount(maxSteps),
             }
           : {}),
         ...('stepPolicy' in request &&

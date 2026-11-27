@@ -18,6 +18,9 @@ export default {
       unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
       retry: 'Bild erneut laden',
     },
+    workspace: {
+      toolbar: 'Bedienelemente des Bereichs',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       aiGenerated: 'KI-generiert',
@@ -33,6 +36,8 @@ export default {
       resize: 'Grösse des Wissensgraphen ändern',
       resizeHint:
         'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      enlarge: 'Graph neben dem Chat vergrössern',
+      shrink: 'Graph wieder schmal anzeigen',
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
@@ -50,8 +55,10 @@ export default {
       quizEdgePrompt:
         'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
       inferredRelation:
-        'Abgeleitet: Für diese Beziehung ist keine belegende Quelle erfasst.',
-      inferredRelationLegend: 'Gestrichelt: abgeleitet, ohne Quelle',
+        'Abgeleitet: Diese Beziehung ist aus den Kursunterlagen erschlossen und wird dort nicht direkt genannt.',
+      unsourcedRelation:
+        'Für diese Beziehung ist keine belegende Quelle erfasst.',
+      inferredRelationLegend: 'Gestrichelt: abgeleitet oder ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },
@@ -455,6 +462,21 @@ export default {
         openLarge: 'Gross öffnen',
         close: 'Schliessen',
         loading: 'Wird geladen...',
+        openInPanel: 'Neben dem Chat öffnen',
+        closePanel: 'Erklärungsbereich schliessen',
+        shownInPanel: 'wird neben dem Chat angezeigt',
+        aiDraft: 'KI-generierter Entwurf',
+        previous: 'Vorherige Erklärung',
+        next: 'Nächste Erklärung',
+        position: '{current} von {total}',
+        reload: 'Erklärung neu starten',
+        enlarge: 'Erklärung neben dem Chat vergrössern',
+        shrink: 'Erklärung schmaler anzeigen',
+        fullscreen: 'Erklärung im Vollbild anzeigen',
+        restore: 'Chat wieder neben der Erklärung anzeigen',
+        resize: 'Grösse der Erklärung ändern',
+        resizeHint:
+          'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
       },
       feedback: {
         preparing: 'Feedback wird vorbereitet...',
@@ -471,6 +493,30 @@ export default {
           partial: 'teilweise erfüllt',
           missing: 'fehlt',
         },
+        rollup: '{met} von {total} erfüllt',
+        notes: 'Allgemeine Hinweise',
+        viewLabel: 'Darstellung des Feedbacks',
+        viewAnnotated: 'In deinem Text',
+        viewList: 'Als Liste',
+        textGap: 'Hier ist ein Teil deines Textes ausgelassen',
+        markLabel: 'Hinweise zu: {text}',
+        comments: 'Hinweise',
+        closeComment: 'Hinweis schliessen',
+        previousComment: 'Vorheriger Hinweis',
+        nextComment: 'Nächster Hinweis',
+        position: '{current} von {total}',
+        improvementNumber: 'Punkt {number}',
+        openInPanel: 'Neben dem Chat öffnen',
+        close: 'Schliessen',
+        shownInPanel: 'Feedback wird neben dem Chat angezeigt',
+        closePanel: 'Feedback-Bereich schliessen',
+        enlarge: 'Feedback neben dem Chat vergrössern',
+        shrink: 'Feedback schmaler anzeigen',
+        fullscreen: 'Feedback im Vollbild anzeigen',
+        restore: 'Chat wieder neben dem Feedback anzeigen',
+        resize: 'Grösse des Feedbacks ändern',
+        resizeHint:
+          'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
       },
       learningContext: {
         refreshUnavailable:
@@ -5422,8 +5468,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryModesNone: 'Kein Lernmodus ist aktiv.',
       chatbotSummaryModesExtras:
         '{framing, select, set {Es gibt eine Rahmung} other {Es gibt keine Rahmung}} und {custom, plural, =0 {keine eigenen Modi} one {einen eigenen Modus} other {# eigene Modi}}.',
-      chatbotSummaryModesQuizzerNeedsKb:
-        'Quizzer braucht eine Wissensdatenbank, deshalb sehen Studierende ihn noch nicht.',
       chatbotSummaryModelFixed: 'Studierende nutzen {model}.',
       chatbotSummaryModelFixedReasoning:
         'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
@@ -5520,7 +5564,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Der Quizzer benötigt Zugriff auf Kursmaterialien.',
+        'Wählen Sie die Lernmodi für die Teilnehmenden aus. Sie können auch ausschliesslich eigene Modi anbieten.',
       chatbotModeWritingCoach: 'Schreibcoach',
       chatbotModeWritingCoachDescription:
         'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
@@ -5534,9 +5578,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeQuizzerDescription:
         'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
       chatbotModeInvariant:
-        'Tutor, Erklärer oder Schreibcoach muss aktiviert bleiben.',
+        'Aktivieren Sie vor der Veröffentlichung mindestens einen Standardmodus oder fügen Sie einen eigenen Modus hinzu.',
       chatbotModeQuizzerCapabilityNote:
-        'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
+        'Mit einer Wissensdatenbank übt der Quizzer anhand der Kursmaterialien. Ohne Wissensdatenbank können Studierende ein Kursthema oder einen Text zum Üben angeben.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
       chatbotCustomModesTitle: 'Eigene Modi',

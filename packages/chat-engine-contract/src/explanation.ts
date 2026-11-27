@@ -1,8 +1,8 @@
 /** Host-owned tool used to render interactive explanations in Chat. */
 export const SHOW_EXPLANATION_TOOL_NAME = 'show_explanation'
 
-/** Attempts per turn, counting the first call and two repairs. */
-export const MAX_EXPLANATION_ATTEMPTS = 3
+/** Failed writer calls per turn. The writer repairs drafts within each call. */
+export const MAX_EXPLANATION_ATTEMPTS = 1
 
 export type ExplanationToolResult =
   | { kind: 'explanation'; content: Record<string, unknown> }

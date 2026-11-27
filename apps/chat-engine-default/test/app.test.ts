@@ -1282,8 +1282,8 @@ describe('default chat engine', () => {
   })
 
   test.each([
-    { invalid: true, calls: 3, steps: 4 },
-    { invalid: false, calls: 7, steps: 7 },
+    { invalid: true, calls: 1, steps: 2 },
+    { invalid: false, calls: 7, steps: 8 },
   ])('bounds interactive explanation turns ($invalid)', async ({
     invalid,
     calls,
@@ -1299,17 +1299,19 @@ describe('default chat engine', () => {
     }))
     let sequence = 0
     const model = new MockLanguageModelV3({
-      doStream: async ({ tools }) => ({
-        stream: tools?.some((tool) => 'name' in tool && tool.name === name)
-          ? toolStream([
-              {
-                type: 'tool-call',
-                toolCallId: String(++sequence),
-                toolName: name,
-                input: '{}',
-              },
-            ])
-          : mockStream(),
+      doStream: async ({ tools, toolChoice }) => ({
+        stream:
+          toolChoice?.type !== 'none' &&
+          tools?.some((tool) => 'name' in tool && tool.name === name)
+            ? toolStream([
+                {
+                  type: 'tool-call',
+                  toolCallId: String(++sequence),
+                  toolName: name,
+                  input: '{}',
+                },
+              ])
+            : mockStream(),
       }),
     })
     const app = createDefaultEngineApp({
@@ -1340,8 +1342,9 @@ describe('default chat engine', () => {
     expect(
       parts.filter((part) => part.type === 'tool-output-available')
     ).toHaveLength(calls)
-    if (invalid)
-      expect(parts.some((part) => part.type === 'text-delta')).toBe(true)
+    expect(parts.some((part) => part.type === 'text-delta')).toBe(true)
+    if (!invalid)
+      expect(model.doStreamCalls.at(-1)?.toolChoice?.type).toBe('none')
   })
 
   test.each([

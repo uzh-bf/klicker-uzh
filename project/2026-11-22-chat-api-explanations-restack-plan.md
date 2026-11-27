@@ -33,3 +33,10 @@ The target also added structured feedback cards. Preserve the legacy tool and re
 Keep the target's collapsed trace for rejected drafts and its calculator availability in Explainer through the shared calculator implementation. Verify the rejected trace and the usable explanation separately. Close the test page before deleting its synthetic course and accounts.
 
 Preserve the target's status-only calculator label in the shared Chat renderer and keep the updated course policy in the shared prompt assets. Verify that a calculator call succeeds while the label exposes no arguments or result in either browser route after reload.
+
+
+## Artifact canvas and writer integration
+
+The current Chat implementation delegates explanation drafts and repairs to its configured writer. This supersedes the earlier turn-level draft format and token allowance. Preserve writer selection for fallback and custom endpoints, account for its usage, and keep the existing admission checks. Carry the current feedback validation, custom-only modes, Quizzer retrieval selection and final text step across both routes. Keep the authenticated explanation page fetch when opening a saved artifact in the canvas.
+
+Verify the writer through the real default engine with deterministic local providers, then exercise feedback attachment, opening and reopening an explanation, frame interaction and scroll position on both browser routes. Run signed LTI guest, eLearning and PWA launches with distinct application and API hostnames. Require an independent source review and full hosted checks on each published layer before the separate merge decision.
