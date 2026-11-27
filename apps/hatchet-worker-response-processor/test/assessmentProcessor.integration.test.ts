@@ -2,10 +2,8 @@ import type {
   DurableContext,
   UnknownInputType,
 } from '@hatchet-dev/typescript-sdk'
-import { NonRetryableError } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   dispatchAssessmentAuditOutbox,
-  PrismaAuditMonitorRepository,
   PrismaAuditOutboxRepository,
 } from '@klicker-uzh/audit'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
@@ -22,10 +20,8 @@ import {
   it,
   vi,
 } from 'vitest'
-import {
-  processAssessmentResponse,
-  resolveTriggeringHatchetEventId,
-} from '../src/processors/assessmentProcessor.js'
+import { getTerminalStageForCommand } from '../src/processors/assessmentAudit.js'
+import { processAssessmentResponse } from '../src/processors/assessmentProcessor.js'
 
 const USER_ID = '10000000-0000-4000-8000-000000000001'
 const COURSE_ID = '10000000-0000-4000-8000-000000000002'
@@ -34,7 +30,7 @@ const PARTICIPANT_ID = '10000000-0000-4000-8000-000000000004'
 const UNKNOWN_PARTICIPANT_ID = '10000000-0000-4000-8000-000000000099'
 const BASELINE_ID = '10000000-0000-4000-8000-000000000005'
 const SUBMISSION_ID = '10000000-0000-4000-8000-000000000006'
-const HATCHET_EVENT_ID = 'hatchet-assessment-event-1'
+const SECOND_SUBMISSION_ID = '10000000-0000-4000-8000-000000000008'
 
 type ProcessorContext = DurableContext<UnknownInputType, {}>
 
@@ -197,7 +193,7 @@ describe.runIf(runDatabaseTests)(
       }
     }
 
-    function harness(hatchetEventId = HATCHET_EVENT_ID) {
+    function harness(submissionId = SUBMISSION_ID) {
       const push = vi.fn().mockResolvedValue({ eventId: 'aggregation-event' })
       const info = {
         type: 'SC',
@@ -217,6 +213,7 @@ describe.runIf(runDatabaseTests)(
         hsetnx: vi.fn().mockResolvedValue(1),
       }
       const context = {
+        additionalMetadata: () => ({ submissionId }),
         retryCount: () => 0,
         logger: {
           info: vi.fn(),
@@ -232,7 +229,6 @@ describe.runIf(runDatabaseTests)(
           client: prisma,
           redis,
           now: () => new Date('2026-08-12T12:00:01.000Z'),
-          resolveHatchetEventId: vi.fn().mockResolvedValue(hatchetEventId),
         },
       }
     }
@@ -267,64 +263,6 @@ describe.runIf(runDatabaseTests)(
       ).toBe(true)
     })
 
-    it('persists a covered submission using the real Hatchet receipt resolver', async () => {
-      const testHarness = harness()
-      const workflowRunId = '10000000-0000-4000-8000-000000000007'
-      const list = vi.fn(
-        async (
-          query: Parameters<ProcessorContext['v1']['events']['list']>[0]
-        ) => ({
-          rows:
-            query?.workflowIds === undefined &&
-            query?.additionalMetadata?.includes(`submissionId:${SUBMISSION_ID}`)
-              ? [
-                  {
-                    metadata: { id: 'another-resend-event' },
-                    triggeredRuns: [{ workflowRunId: 'another-run' }],
-                  },
-                  {
-                    metadata: { id: HATCHET_EVENT_ID },
-                    triggeredRuns: [{ workflowRunId }],
-                  },
-                ]
-              : [],
-        })
-      )
-      const context = {
-        ...testHarness.context,
-        additionalMetadata: () => ({ submissionId: SUBMISSION_ID }),
-        workflowRunId: () => workflowRunId,
-        v1: { events: { push: testHarness.push, list } },
-      } as unknown as ProcessorContext
-
-      const result = await processAssessmentResponse(command(), context, {
-        ...testHarness.dependencies,
-        resolveHatchetEventId: resolveTriggeringHatchetEventId,
-      })
-
-      expect(result.status).toBe(200)
-      expect(
-        await prisma.liveQuizResponse.count({
-          where: { submissionId: SUBMISSION_ID },
-        })
-      ).toBe(1)
-      const events = await prisma.assessmentAuditOutboxEvent.findMany({
-        where: { liveQuizId: LIVE_QUIZ_ID },
-        orderBy: { eventType: 'asc' },
-      })
-      expect(events.map(({ eventType }) => eventType)).toEqual([
-        'SUBMISSION_PERSISTED',
-        'SUBMISSION_SCORED',
-        'SUBMISSION_SERVER_ACCEPTED',
-        'SUBMISSION_VALIDATED',
-      ])
-      for (const event of events) {
-        expect(JSON.parse(event.canonicalEnvelope).hatchetEventId).toBe(
-          HATCHET_EVENT_ID
-        )
-      }
-    })
-
     it('preserves submission processing without audit provenance outside coverage', async () => {
       await prisma.assessmentAuditScope.delete({
         where: {
@@ -344,9 +282,6 @@ describe.runIf(runDatabaseTests)(
         )
 
         expect(result.status).toBe(200)
-        expect(
-          testHarness.dependencies.resolveHatchetEventId
-        ).not.toHaveBeenCalled()
         expect(
           await prisma.liveQuizResponse.count({
             where: { submissionId: SUBMISSION_ID },
@@ -527,15 +462,20 @@ describe.runIf(runDatabaseTests)(
       }
     })
 
-    it('is idempotent for a Hatchet retry and records a second command as duplicate', async () => {
-      const first = harness(HATCHET_EVENT_ID)
+    it('is idempotent for a resend and records a second submission as duplicate', async () => {
+      const first = harness()
       await processAssessmentResponse(
         command(),
         first.context,
         first.dependencies
       )
+      // A resend of the same submission is a new Hatchet event with later
+      // receipt times; it keeps the submission's audit identity.
       await processAssessmentResponse(
-        command(),
+        command({
+          receivedAt: '2026-08-12T12:00:00.500Z',
+          transportAttemptedAt: '2026-08-12T12:00:00.600Z',
+        }),
         first.context,
         first.dependencies
       )
@@ -566,11 +506,14 @@ describe.runIf(runDatabaseTests)(
         })
       ).toBe(1)
 
-      const resend = harness('hatchet-assessment-event-2')
+      const second = harness(SECOND_SUBMISSION_ID)
       const duplicate = await processAssessmentResponse(
-        command(),
-        resend.context,
-        resend.dependencies
+        command({
+          submissionId: SECOND_SUBMISSION_ID,
+          correlationId: SECOND_SUBMISSION_ID,
+        }),
+        second.context,
+        second.dependencies
       )
       expect(duplicate.status).toBe(208)
       expect(
@@ -583,15 +526,15 @@ describe.runIf(runDatabaseTests)(
       ).toBe(1)
     })
 
-    it('rejects reuse of a submission ID with a different answer', async () => {
-      const first = harness(HATCHET_EVENT_ID)
+    it('quarantines reuse of a submission ID with a different answer', async () => {
+      const first = harness()
       await processAssessmentResponse(
         command(),
         first.context,
         first.dependencies
       )
 
-      const changedAnswer = harness('hatchet-assessment-event-2')
+      const changedAnswer = harness()
       await expect(
         processAssessmentResponse(
           command({ response: { choices: [{ ix: 1, selected: true }] } }),
@@ -612,18 +555,29 @@ describe.runIf(runDatabaseTests)(
             eventType: 'SUBMISSION_REJECTED',
           },
         })
-      ).toBe(1)
+      ).toBe(0)
+      const quarantine =
+        await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            eventType: 'AUDIT_DELIVERY_QUARANTINED',
+          },
+          select: { canonicalEnvelope: true },
+        })
+      expect(JSON.parse(quarantine.canonicalEnvelope).payload).toMatchObject({
+        reasonCode: 'SUBMISSION_ID_ANSWER_MISMATCH',
+      })
     })
 
-    it('rejects reuse of a submission ID in a different instance scope', async () => {
-      const first = harness(HATCHET_EVENT_ID)
+    it('quarantines reuse of a submission ID in a different instance scope', async () => {
+      const first = harness()
       await processAssessmentResponse(
         command(),
         first.context,
         first.dependencies
       )
 
-      const changedScope = harness('hatchet-assessment-event-2')
+      const changedScope = harness()
       await expect(
         processAssessmentResponse(
           command({ instanceId: '999999999' }),
@@ -644,7 +598,18 @@ describe.runIf(runDatabaseTests)(
             eventType: 'SUBMISSION_REJECTED',
           },
         })
-      ).toBe(1)
+      ).toBe(0)
+      const quarantine =
+        await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            eventType: 'AUDIT_DELIVERY_QUARANTINED',
+          },
+          select: { canonicalEnvelope: true },
+        })
+      expect(JSON.parse(quarantine.canonicalEnvelope).payload).toMatchObject({
+        reasonCode: 'SUBMISSION_ID_SCOPE_MISMATCH',
+      })
     })
 
     it('rejects a missing authoritative instance before persistence', async () => {
@@ -905,6 +870,57 @@ describe.runIf(runDatabaseTests)(
       )
     })
 
+    it('persists an on-time original after its late resend was rejected first', async () => {
+      await prisma.elementBlock.update({
+        where: { id: blockId },
+        data: { closedAt: new Date('2026-08-12T12:00:00.250Z') },
+      })
+      const testHarness = harness()
+      const resend = command({
+        responseTimestamp: Date.parse('2026-08-12T12:00:00.500Z'),
+        receivedAt: '2026-08-12T12:00:00.500Z',
+        transportAttemptedAt: '2026-08-12T12:00:00.600Z',
+      })
+      await expect(
+        processAssessmentResponse(
+          resend,
+          testHarness.context,
+          testHarness.dependencies
+        )
+      ).rejects.toThrow('SUBMISSION_AFTER_BLOCK_CLOSE')
+
+      const original = command()
+      for (let delivery = 0; delivery < 2; delivery++) {
+        // The second delivery is a Hatchet retry of the persisted original.
+        const result = await processAssessmentResponse(
+          original,
+          testHarness.context,
+          testHarness.dependencies
+        )
+        expect(result.status).toBe(200)
+      }
+
+      expect(
+        await prisma.liveQuizResponse.count({
+          where: { submissionId: SUBMISSION_ID },
+        })
+      ).toBe(1)
+      expect(
+        await getTerminalStageForCommand({ tx: prisma, message: original })
+      ).toBe('SUBMISSION_PERSISTED')
+      const persisted =
+        await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
+          where: {
+            liveQuizId: LIVE_QUIZ_ID,
+            eventType: 'SUBMISSION_PERSISTED',
+          },
+          select: { canonicalEnvelope: true },
+        })
+      expect(JSON.parse(persisted.canonicalEnvelope).receivedAt).toBe(
+        original.receivedAt
+      )
+    })
+
     it('accepts a participant who opted out of the leaderboard', async () => {
       const testHarness = harness()
       // isActive is the leaderboard opt-in and must not gate assessment access.
@@ -976,11 +992,8 @@ describe.runIf(runDatabaseTests)(
       ).toBe(1)
     })
 
-    it('quarantines metadata when Hatchet provenance is permanently invalid', async () => {
-      const testHarness = harness()
-      testHarness.dependencies.resolveHatchetEventId.mockRejectedValueOnce(
-        new NonRetryableError('SUBMISSION_METADATA_MISMATCH')
-      )
+    it('quarantines a command whose Hatchet metadata names another submission', async () => {
+      const testHarness = harness(SECOND_SUBMISSION_ID)
 
       await expect(
         processAssessmentResponse(
@@ -1002,51 +1015,6 @@ describe.runIf(runDatabaseTests)(
       expect(quarantine.canonicalEnvelope).toContain(
         'SUBMISSION_METADATA_MISMATCH'
       )
-    })
-
-    it('records failure evidence when the Hatchet event cannot be resolved', async () => {
-      const testHarness = harness()
-      const workflowRunId = '10000000-0000-4000-8000-000000000099'
-      const context = {
-        ...testHarness.context,
-        workflowRunId: () => workflowRunId,
-      } as unknown as ProcessorContext
-      testHarness.dependencies.resolveHatchetEventId.mockRejectedValueOnce(
-        new Error('Hatchet triggering event is not yet available')
-      )
-
-      await expect(
-        processAssessmentResponse(command(), context, testHarness.dependencies)
-      ).rejects.toThrow('Hatchet triggering event is not yet available')
-
-      // The receipt is not left without evidence, and the monitor sees the
-      // submission as a gap until an outcome is recorded.
-      const failure = await prisma.assessmentAuditOutboxEvent.findFirstOrThrow({
-        where: {
-          liveQuizId: LIVE_QUIZ_ID,
-          eventType: 'SUBMISSION_PROCESSING_FAILED',
-        },
-        select: { canonicalEnvelope: true, correlationId: true },
-      })
-      expect(failure.correlationId).toBe(SUBMISSION_ID)
-      expect(JSON.parse(failure.canonicalEnvelope)).toMatchObject({
-        hatchetEventId: `unresolved-run:${workflowRunId}`,
-        payload: { reasonCode: 'HATCHET_EVENT_UNRESOLVED' },
-      })
-      const monitor = new PrismaAuditMonitorRepository(prisma)
-      expect(
-        (await monitor.readCounts()).coveredSubmissionWithoutTerminalCount
-      ).toBe(1)
-
-      const result = await processAssessmentResponse(
-        command(),
-        testHarness.context,
-        testHarness.dependencies
-      )
-      expect(result).toMatchObject({ status: 200 })
-      expect(
-        (await monitor.readCounts()).coveredSubmissionWithoutTerminalCount
-      ).toBe(0)
     })
 
     it('records recovery when a retry succeeds after transient processing failure', async () => {

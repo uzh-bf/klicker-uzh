@@ -87,11 +87,10 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
           FROM (
             SELECT accepted."recordedAt"
             FROM (
-              SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId')
+              SELECT DISTINCT ON (accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId")
                 accepted."liveQuizId",
                 accepted."lifecycleEpoch",
                 accepted."correlationId",
-                accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId' AS "hatchetEventId",
                 accepted."recordedAt"
               FROM "AssessmentAuditOutboxEvent" accepted
               INNER JOIN "AssessmentAuditScope" scope
@@ -99,7 +98,7 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
                 AND scope."lifecycleEpoch" = accepted."lifecycleEpoch"
                 AND scope."coverageState" = 'COVERED'
               WHERE accepted."eventType" = 'SUBMISSION_SERVER_ACCEPTED'
-              ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."canonicalEnvelope"::jsonb ->> 'hatchetEventId', accepted."recordedAt", accepted."eventId"
+              ORDER BY accepted."liveQuizId", accepted."lifecycleEpoch", accepted."correlationId", accepted."recordedAt", accepted."eventId"
             ) accepted
             WHERE NOT EXISTS (
               SELECT 1
@@ -107,7 +106,6 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
               WHERE terminal."liveQuizId" = accepted."liveQuizId"
                 AND terminal."lifecycleEpoch" = accepted."lifecycleEpoch"
                 AND terminal."correlationId" = accepted."correlationId"
-                AND terminal."canonicalEnvelope"::jsonb ->> 'hatchetEventId' = accepted."hatchetEventId"
                 AND terminal."eventType" IN (
                   'SUBMISSION_REJECTED',
                   'SUBMISSION_DUPLICATE',
@@ -115,10 +113,10 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
                 )
             )
             UNION ALL
-            -- A submission can fail before it is accepted, e.g. when its
-            -- Hatchet event cannot be resolved. Its failure evidence is then
-            -- the only trace of the receipt, so it is a gap until any accepted
-            -- or terminal outcome for the submission appears.
+            -- A submission can fail before it is accepted. Its failure
+            -- evidence is then the only trace of the receipt, so it is a gap
+            -- until any accepted or terminal outcome for the submission
+            -- appears.
             SELECT failed."recordedAt"
             FROM (
               SELECT DISTINCT ON (failed."liveQuizId", failed."lifecycleEpoch", failed."correlationId")

@@ -678,7 +678,7 @@ export type EventRegistration = Omit<FamilyDefinition, 'events'> & {
   payloadSchemas: Readonly<Partial<Record<number, z.ZodTypeAny>>>
   requiresParticipantScope: boolean
   requiresSubmissionId: boolean
-  requiresHatchetEventId: boolean
+  requiresTransportAttempt: boolean
   requiresClientProvenance: boolean
 }
 
@@ -716,7 +716,7 @@ const submissionEvents = new Set<EventType>([
   'SUBMISSION_PROCESSING_RECOVERED',
 ])
 
-const hatchetEvents = new Set<EventType>([
+const transportEvents = new Set<EventType>([
   'SUBMISSION_SERVER_ACCEPTED',
   'SUBMISSION_VALIDATED',
   'SUBMISSION_REJECTED',
@@ -755,7 +755,7 @@ for (const family of EVENT_FAMILIES) {
       }),
       requiresParticipantScope: participantScopedEvents.has(eventType),
       requiresSubmissionId: submissionEvents.has(eventType),
-      requiresHatchetEventId: hatchetEvents.has(eventType),
+      requiresTransportAttempt: transportEvents.has(eventType),
       requiresClientProvenance: clientProvenanceEvents.has(eventType),
     })
     stableEventTypes.push(eventType)

@@ -123,23 +123,14 @@ Hatchet returns an event ID. A failed push returns `503`; it never reports a
 successful submission. No raw answer, correlation token, cookie, or transport
 error is written to application logs.
 
-The response processor resolves the triggering Hatchet event through the
-workflow-run association exposed by Hatchet. It lists assessment events using
-the server-stamped `submissionId` metadata, scans all matching pages, and selects
-the event whose `triggeredRuns` contains the exact workflow run ID. Hatchet's
-[`workflowIds` event-list filter](https://github.com/hatchet-dev/hatchet/blob/v0.101.0/pkg/repository/sqlcv1/olap.sql#L1853-L1877)
-targets workflow definitions, despite the pinned
-SDK's misleading description; passing a run ID excludes the triggering event.
-Resends share submission metadata, so that metadata alone is not sufficient to
-identify the event. The lookup does not filter by event key because Hatchet may
-namespace pushed keys. The lookup backs off for about three seconds before an
-attempt fails. Missing associations remain retryable and ambiguous matches
-fail rather than inventing provenance. Acceptance and outcome evidence never
-substitute the workflow run ID for the event ID. Only the failure evidence of an
-attempt whose event stayed unresolved is keyed by the explicitly prefixed
-`unresolved-run:<workflowRunId>` with reason `HATCHET_EVENT_UNRESOLVED`, so a
-receipt is never left without evidence. This provenance lookup occurs only after the quiz is
-confirmed as covered, so deliberately uncovered quizzes retain their existing
+The response processor keys all submission evidence on `submissionId` alone.
+Operation IDs, terminal-stage, duplicate, and failure lookups, and recovery use
+no Hatchet event ID, so a Hatchet retry and a PWA resend of the same submission
+produce the same evidence identity. New envelopes omit `hatchetEventId`; the
+optional field stays in the contract so stored events still verify. Once the
+quiz is confirmed as covered, the processor checks that the server-stamped
+`submissionId` Hatchet metadata matches the command and otherwise records a
+metadata-only quarantine. Deliberately uncovered quizzes retain their existing
 processing path without an audit-only dependency. For covered assessments it
 records server acceptance and validation before terminal completion. Rejection
 and duplicate evidence use an audit-only transaction; response creation,
@@ -161,12 +152,32 @@ authority.
 
 `LiveQuizResponse.submissionId` is an optional unique UUID. Existing and
 non-assessment responses remain valid with `NULL`; an assessment response stores
-the stable ID so a retry of the same Hatchet command can be distinguished from
-a second transport command or a genuinely different duplicate response. Audit
-idempotency for Lane 2 includes both `submissionId` and the actual Hatchet event
-ID. This matters after a lost HTTP response: a resend may create another Hatchet
-command with the same submission ID, which materializes as a durable duplicate
-without creating a second authoritative response.
+the stable ID so a retry or resend of the same submission can be distinguished
+from a genuinely different duplicate response. After a lost HTTP response, a
+resend creates another Hatchet command with the same submission ID; it replays
+the existing evidence and creates no second authoritative response. The
+Response API does not detect reuse of a submission ID. The processor does: a
+command whose answer or scope differs from the evidence already bound to its
+`submissionId` fails without retry and records a metadata-only
+`AUDIT_DELIVERY_QUARANTINED` event with reason `SUBMISSION_ID_ANSWER_MISMATCH`
+or `SUBMISSION_ID_SCOPE_MISMATCH` instead of a second outcome. When no evidence
+is bound yet but a stored response with that ID differs, the command receives
+the terminal rejection `SUBMISSION_ID_SCOPE_MISMATCH`.
+
+Every transaction that checks and records a terminal outcome first takes a
+PostgreSQL transaction advisory lock on the `submissionId`, so concurrent
+deliveries of one submission decide their outcomes one at a time. A delivery
+that finds a recorded `SUBMISSION_REJECTED` fails with
+`SUBMISSION_PREVIOUSLY_REJECTED` and records nothing more. One exception keeps
+an on-time answer: when a later-received resend was rejected first for a
+time-based reason (`SUBMISSION_AFTER_BLOCK_CLOSE`,
+`SUBMISSION_BLOCK_EXECUTION_CHANGED`, or `SUBMISSION_LIFECYCLE_CHANGED`), an
+earlier-received delivery of the same submission may still persist. That applies only when every recorded terminal is
+such a time-based rejection with a later envelope `receivedAt`. The trail then
+holds both events, and `SUBMISSION_PERSISTED` is the outcome. Its envelope
+`receivedAt` shows the on-time receipt; acceptance and validation evidence may
+carry the resend's later receipt because they are recorded once per submission.
+The rule covers only the direction where the earlier receipt is the valid one.
 
 ## Contract and identity
 
@@ -552,9 +563,7 @@ weeks. Production capacity and growth values are supplied through
 positive when monitoring is enabled.
 
 The non-terminal submission query is a PostgreSQL anti-join scoped by quiz,
-lifecycle epoch, and correlation ID. The anti-join also matches the canonical envelope's
-`hatchetEventId`. Two transport commands sharing a submission UUID each need
-their own terminal outcome. The same count includes submissions whose only
+lifecycle epoch, and correlation ID, which is the submission ID. The same count includes submissions whose only
 evidence is `SUBMISSION_PROCESSING_FAILED`, until any acceptance or terminal
 outcome for the submission appears in that epoch. A migration-owned partial index covers
 `SUBMISSION_SERVER_ACCEPTED` rows, and a companion composite index accelerates

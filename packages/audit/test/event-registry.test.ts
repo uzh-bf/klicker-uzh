@@ -130,7 +130,7 @@ describe('assessment audit event registry', () => {
     )
   })
 
-  it('declares participant, submission, Hatchet, and client provenance requirements', () => {
+  it('declares participant, submission, transport, and client provenance requirements', () => {
     expect(EVENT_REGISTRY.RESPONSE_ANSWER_CHANGED).toMatchObject({
       requiresParticipantScope: true,
       requiresClientProvenance: true,
@@ -138,13 +138,13 @@ describe('assessment audit event registry', () => {
     expect(EVENT_REGISTRY.SUBMISSION_PERSISTED).toMatchObject({
       requiresParticipantScope: true,
       requiresSubmissionId: true,
-      requiresHatchetEventId: true,
+      requiresTransportAttempt: true,
       requiresClientProvenance: false,
     })
     expect(EVENT_REGISTRY.ASSESSMENT_STARTED).toMatchObject({
       requiresParticipantScope: false,
       requiresSubmissionId: false,
-      requiresHatchetEventId: false,
+      requiresTransportAttempt: false,
       requiresClientProvenance: false,
     })
     expect(EVENT_REGISTRY.ASSESSMENT_SESSION_STARTED).toMatchObject({

@@ -1,3 +1,4 @@
+import { NonRetryableError } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   type AuditEventDraft,
   type AuditTransactionClient,
@@ -8,8 +9,7 @@ import {
   hashCanonicalValue,
   recordStandaloneAuditEvents,
 } from '@klicker-uzh/audit'
-import type { Prisma } from '@klicker-uzh/prisma/client'
-import { ElementType } from '@klicker-uzh/prisma/client'
+import { ElementType, Prisma } from '@klicker-uzh/prisma/client'
 import type {
   AssessmentResponseCommand,
   LiveQuizResponseInput,
@@ -187,17 +187,12 @@ export async function findCoveredAssessmentScope(
   })
 }
 
-function producerOperationId(
-  message: SubmissionCommand,
-  hatchetEventId: string,
-  suffix: string
-) {
-  return `assessment-submission:${message.submissionId}:${hatchetEventId}:${suffix}`
+function producerOperationId(message: SubmissionCommand, suffix: string) {
+  return `assessment-submission:${message.submissionId}:${suffix}`
 }
 
 export function submissionDraft(
   message: SubmissionCommand,
-  hatchetEventId: string,
   draft: Omit<
     SubmissionDraft,
     'producerOperationId' | 'submissionId' | 'hatchetEventId'
@@ -208,13 +203,8 @@ export function submissionDraft(
   const { operationSuffix, ...event } = draft
   return {
     ...event,
-    producerOperationId: producerOperationId(
-      message,
-      hatchetEventId,
-      operationSuffix
-    ),
+    producerOperationId: producerOperationId(message, operationSuffix),
     submissionId: message.submissionId,
-    hatchetEventId,
     scope: {
       participantId: message.participantId,
       elementInstanceId: Number(message.instanceId),
@@ -239,7 +229,6 @@ function assertExistingEventMatches(
   input: {
     message: SubmissionCommand
     scope: CoveredAssessmentScope
-    hatchetEventId: string
     draft: SubmissionDraft
   }
 ) {
@@ -256,7 +245,6 @@ function assertExistingEventMatches(
     row.participantId !== input.message.participantId ||
     row.correlationId !== input.message.submissionId ||
     envelope.submissionId !== input.message.submissionId ||
-    envelope.hatchetEventId !== input.hatchetEventId ||
     row.payloadHash !== hashCanonicalValue(input.draft.payload)
   ) {
     throw new Error(`Audit idempotency conflict for ${row.eventId}`)
@@ -268,7 +256,6 @@ export async function emitSubmissionAuditEvents(input: {
   auditTx: AuditTransactionClient
   message: SubmissionCommand
   scope: CoveredAssessmentScope
-  hatchetEventId: string
   courseId?: string
   recordedAt: Date
   drafts: readonly SubmissionDraft[]
@@ -303,7 +290,6 @@ export async function emitSubmissionAuditEvents(input: {
     assertExistingEventMatches(row, {
       message: input.message,
       scope: input.scope,
-      hatchetEventId: input.hatchetEventId,
       draft,
     })
     return []
@@ -344,32 +330,88 @@ export async function emitSubmissionAuditEvents(input: {
   return emitAuditEvents(input.auditTx, context, missing)
 }
 
-export async function assertTerminalStageAvailable(input: {
-  tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
+// Rejections that depend on when this delivery was received. A resend of the
+// same submission can receive a time-based rejection that an earlier, on-time
+// receipt of that submission would not.
+const TIME_BASED_REJECTION_REASONS: ReadonlySet<string> = new Set([
+  'SUBMISSION_AFTER_BLOCK_CLOSE',
+  'SUBMISSION_BLOCK_EXECUTION_CHANGED',
+  'SUBMISSION_LIFECYCLE_CHANGED',
+])
+
+// Serializes every transaction that checks and records audit evidence for one
+// submissionId. It must run before the first read so READ COMMITTED reads see
+// the evidence a concurrent delivery committed. Without it, two matching
+// resends can both miss the stored event and the second insert fails as an
+// idempotency conflict, because its receipt and recording times differ.
+export async function lockSubmissionOutcome(
+  tx: Pick<Prisma.TransactionClient, '$executeRaw'>,
   message: SubmissionCommand
-  hatchetEventId: string
-  intendedEventType: (typeof TERMINAL_EVENT_TYPES)[number]
-}) {
-  const terminalRows = await input.tx.assessmentAuditOutboxEvent.findMany({
+) {
+  await tx.$executeRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${message.submissionId}::text, 0))`
+  )
+}
+
+async function findSubmissionEvents(
+  tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>,
+  message: SubmissionCommand,
+  eventTypes: readonly string[]
+) {
+  return tx.assessmentAuditOutboxEvent.findMany({
     where: {
-      liveQuizId: input.message.liveQuizId,
-      correlationId: input.message.submissionId,
-      eventType: { in: [...TERMINAL_EVENT_TYPES] },
+      liveQuizId: message.liveQuizId,
+      correlationId: message.submissionId,
+      eventType: { in: [...eventTypes] },
     },
     select: { eventType: true, canonicalEnvelope: true },
   })
-  const forCommand = terminalRows.filter((row) => {
-    try {
-      const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: string
-      }
-      return envelope.hatchetEventId === input.hatchetEventId
-    } catch {
-      throw new Error('Stored terminal submission evidence is not valid JSON')
-    }
-  })
-  if (forCommand.some((row) => row.eventType !== input.intendedEventType)) {
-    throw new Error(
+}
+
+// A time-based rejection recorded for a later receipt does not block an
+// earlier receipt of the same submission that was on time.
+function isSupersededByEarlierReceipt(
+  row: { eventType: string; canonicalEnvelope: string },
+  message: SubmissionCommand
+) {
+  if (row.eventType !== 'SUBMISSION_REJECTED') return false
+  let envelope: { receivedAt?: unknown; payload?: { reasonCode?: unknown } }
+  try {
+    envelope = JSON.parse(row.canonicalEnvelope)
+  } catch {
+    throw new Error('Stored terminal submission evidence is not valid JSON')
+  }
+  const reasonCode = envelope.payload?.reasonCode
+  return (
+    typeof reasonCode === 'string' &&
+    TIME_BASED_REJECTION_REASONS.has(reasonCode) &&
+    typeof envelope.receivedAt === 'string' &&
+    Date.parse(envelope.receivedAt) > Date.parse(message.receivedAt)
+  )
+}
+
+export async function assertTerminalStageAvailable(input: {
+  tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
+  message: SubmissionCommand
+  intendedEventType: (typeof TERMINAL_EVENT_TYPES)[number]
+}) {
+  const rows = await findSubmissionEvents(
+    input.tx,
+    input.message,
+    TERMINAL_EVENT_TYPES
+  )
+  const conflicting = rows.filter(
+    (row) =>
+      row.eventType !== input.intendedEventType &&
+      !(
+        input.intendedEventType === 'SUBMISSION_PERSISTED' &&
+        isSupersededByEarlierReceipt(row, input.message)
+      )
+  )
+  if (conflicting.length > 0) {
+    // A resend of an already decided submission must not retry into failure
+    // evidence for an outcome that is already recorded.
+    throw new NonRetryableError(
       'Submission command already has a conflicting terminal stage'
     )
   }
@@ -378,61 +420,40 @@ export async function assertTerminalStageAvailable(input: {
 export async function getTerminalStageForCommand(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
-  hatchetEventId: string
 }) {
-  const terminalRows = await input.tx.assessmentAuditOutboxEvent.findMany({
-    where: {
-      liveQuizId: input.message.liveQuizId,
-      correlationId: input.message.submissionId,
-      eventType: { in: [...TERMINAL_EVENT_TYPES] },
-    },
-    select: { eventType: true, canonicalEnvelope: true },
-  })
-  const stages = terminalRows.flatMap((row) => {
-    try {
-      const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: string
-      }
-      return envelope.hatchetEventId === input.hatchetEventId
-        ? [row.eventType]
-        : []
-    } catch {
-      throw new Error('Stored terminal submission evidence is not valid JSON')
-    }
-  })
-  if (stages.length > 1) {
-    throw new Error('Submission command has multiple terminal stages')
+  const rows = await findSubmissionEvents(
+    input.tx,
+    input.message,
+    TERMINAL_EVENT_TYPES
+  )
+  const stages = new Set(rows.map((row) => row.eventType))
+  // PERSISTED wins: an on-time earlier receipt may persist after a later
+  // receipt was rejected for timing, and older evidence can pair PERSISTED
+  // with DUPLICATE for one submission.
+  if (stages.has('SUBMISSION_PERSISTED')) return 'SUBMISSION_PERSISTED'
+  // Evidence keyed per Hatchet event could record both a rejection and a
+  // duplicate for one submission. The rejection decides, so a resend ends as
+  // previously rejected instead of retrying into failure evidence.
+  if (stages.has('SUBMISSION_REJECTED')) return 'SUBMISSION_REJECTED'
+  if (stages.size > 1) {
+    throw new NonRetryableError(
+      'Submission command has multiple terminal stages'
+    )
   }
-  return stages[0]
+  return [...stages][0]
 }
 
 export async function commandHasRecordedFailure(input: {
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditOutboxEvent'>
   message: SubmissionCommand
-  hatchetEventId: string
 }) {
-  const failures = await input.tx.assessmentAuditOutboxEvent.findMany({
-    where: {
-      liveQuizId: input.message.liveQuizId,
-      correlationId: input.message.submissionId,
-      eventType: 'SUBMISSION_PROCESSING_FAILED',
-    },
-    select: { canonicalEnvelope: true },
-  })
-  return failures.some((row) => {
-    try {
-      const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: string
-      }
-      return envelope.hatchetEventId === input.hatchetEventId
-    } catch {
-      throw new Error('Stored submission failure evidence is not valid JSON')
-    }
-  })
+  const failures = await findSubmissionEvents(input.tx, input.message, [
+    'SUBMISSION_PROCESSING_FAILED',
+  ])
+  return failures.length > 0
 }
 
 export type AcceptedSubmissionBinding = {
-  hatchetEventId: string
   elementBlockExecution: number
   answerStateHash: string
   participantId: string | null
@@ -459,7 +480,6 @@ export async function findAcceptedSubmissionBindings(input: {
   return accepted.flatMap((row): AcceptedSubmissionBinding[] => {
     try {
       const envelope = JSON.parse(row.canonicalEnvelope) as {
-        hatchetEventId?: unknown
         payload?: { answerStateHash?: unknown; elementBlockExecution?: unknown }
         scope?: { elementInstanceId?: unknown }
       }
@@ -467,8 +487,6 @@ export async function findAcceptedSubmissionBindings(input: {
       const elementBlockExecution = envelope.payload?.elementBlockExecution
       if (
         typeof answerStateHash !== 'string' ||
-        typeof envelope.hatchetEventId !== 'string' ||
-        !envelope.hatchetEventId ||
         typeof elementBlockExecution !== 'number' ||
         !Number.isSafeInteger(elementBlockExecution) ||
         elementBlockExecution < 0
@@ -477,7 +495,6 @@ export async function findAcceptedSubmissionBindings(input: {
       const elementInstanceId = envelope.scope?.elementInstanceId
       return [
         {
-          hatchetEventId: envelope.hatchetEventId,
           elementBlockExecution,
           answerStateHash,
           participantId: row.participantId,
