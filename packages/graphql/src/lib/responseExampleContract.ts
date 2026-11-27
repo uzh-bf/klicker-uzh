@@ -1,9 +1,7 @@
 import { ResponseExampleStyle as DBResponseExampleStyle } from '@klicker-uzh/prisma/client'
 import {
   type ChatModeMCPConfiguration,
-  isSafeDocQueryBinding,
   normalizeChatbotStandardModeConfig,
-  resolveEffectiveMCPConfigurations,
 } from '@klicker-uzh/util'
 import { hasCompleteResponseExampleCitationParity } from '@klicker-uzh/util/response-example-eligibility'
 import { z } from 'zod'
@@ -39,7 +37,7 @@ export function canApplyResponseExampleAction(
 export function extractChatbotModes(
   systemPrompts: unknown,
   standardModeConfig: unknown = null,
-  mcpConfigurations: readonly ChatModeMCPConfiguration[] = []
+  _mcpConfigurations: readonly ChatModeMCPConfiguration[] = []
 ): string[] {
   const standard = normalizeChatbotStandardModeConfig(
     standardModeConfig,
@@ -55,13 +53,7 @@ export function extractChatbotModes(
   for (const [mode, enabled] of [
     ['tutor', standard.tutorEnabled],
     ['explainer', standard.explainerEnabled],
-    [
-      'quizzer',
-      standard.quizzerEnabled &&
-        resolveEffectiveMCPConfigurations(mcpConfigurations, 'quizzer').some(
-          isSafeDocQueryBinding
-        ),
-    ],
+    ['quizzer', standard.quizzerEnabled],
   ] as const) {
     if (enabled) modes.add(mode)
     else modes.delete(mode)

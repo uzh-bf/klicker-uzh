@@ -39,6 +39,18 @@ export function isSymmetricRelationType(
 }
 
 /**
+ * A relationship is tentative when the graph build inferred it as a
+ * pedagogical judgement or when no source supports it. Views draw tentative
+ * relationships dashed so the map does not look more certain than its
+ * sources are.
+ */
+export function isTentativeRelation(edge: KnowledgeGraphEdge): boolean {
+  return (
+    edge.relationStatus === 'inferred' || edge.sourceReferences.length === 0
+  )
+}
+
+/**
  * Generated edges carry no label of their own, so their label falls back to
  * the relationship type (`RELATED`). Such edges show their relation type.
  */
@@ -103,12 +115,17 @@ export function conceptDefinition(
   return `${window.slice(0, wordEnd > 0 ? wordEnd : undefined).trimEnd()}…`
 }
 
-/** Shows merged graph descriptions as separate paragraphs. */
+/**
+ * Shows merged graph descriptions as separate paragraphs. A graph merge can
+ * store the same fragment more than once; each fragment is shown once.
+ */
 export function readableDescription(text: string): string {
   return text
     .split(MERGED_DESCRIPTION_SEPARATOR)
     .map((part) => part.trim())
-    .filter((part) => part.length > 0)
+    .filter(
+      (part, index, parts) => part.length > 0 && parts.indexOf(part) === index
+    )
     .join('\n\n')
 }
 

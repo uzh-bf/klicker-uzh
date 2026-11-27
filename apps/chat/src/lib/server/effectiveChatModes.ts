@@ -3,7 +3,6 @@ import {
   type ChatModeMCPConfiguration,
   isChatbotCustomModeKey,
   isChatbotStandardModeKey,
-  isSafeDocQueryBinding,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
   resolveEffectiveMCPConfigurations,
@@ -20,8 +19,8 @@ export {
 
 export interface EffectiveChatModeOptions {
   /**
-   * The chatbot's live custom modes. Callers pass the live column, never the
-   * revision snapshot, which prefers a pending draft over the approved value.
+   * The custom modes this surface may offer. Participant routes pass the live
+   * approved column; owner preview passes the saved authoring snapshot.
    */
   customModeConfig?: unknown
   /**
@@ -39,8 +38,13 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 export function resolveRequestedChatMode(
   modeOptions: Record<string, unknown>,
-  requestedMode: string
-): string {
+  requestedMode?: string
+): string | null {
+  if (requestedMode === undefined) {
+    if (Object.hasOwn(modeOptions, 'tutor')) return 'tutor'
+    return Object.keys(modeOptions)[0] ?? null
+  }
+
   if (Object.hasOwn(modeOptions, requestedMode)) return requestedMode
 
   const normalizedMode = requestedMode.toLowerCase()
@@ -166,7 +170,7 @@ function getCustomModeOption(mode: ChatbotCustomMode): ChatModeOption {
 
 export function resolveEffectiveChatModeOptions(
   systemPrompts: unknown,
-  mcpConfigurations: readonly ChatModeMCPConfiguration[],
+  _mcpConfigurations: readonly ChatModeMCPConfiguration[],
   standardModeConfig: unknown = null,
   options: EffectiveChatModeOptions = {}
 ): ChatModeOptions {
@@ -175,7 +179,7 @@ export function resolveEffectiveChatModeOptions(
   const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
   const storedModes =
     options.allowUnapprovedModes && storedPrompts
-      ? Object.keys(storedPrompts)
+      ? Object.keys(storedPrompts).filter((key) => !isChatbotCustomModeKey(key))
       : []
   const candidates = Array.from(
     new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
@@ -189,17 +193,6 @@ export function resolveEffectiveChatModeOptions(
     }
 
     const customMode = customModesByKey.get(mode)
-    const effectiveConfigurations = resolveEffectiveMCPConfigurations(
-      mcpConfigurations,
-      mode
-    )
-    if (
-      mode === 'quizzer' &&
-      !effectiveConfigurations.some(isSafeDocQueryBinding)
-    ) {
-      continue
-    }
-
     modeOptions[mode] = customMode
       ? getCustomModeOption(customMode)
       : { description: getModeDescription(systemPrompts, mode) }

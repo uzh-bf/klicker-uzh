@@ -17,7 +17,7 @@ import { expect, test } from '../util/fixtures.js'
 test('CLEANUP', cleanupTest)
 
 test.describe('AI beta management navigation gate', () => {
-  test('opens Knowledge Bases and Chatbots from Resources and generates elements from the library', async ({
+  test('opens Chatbots from the header, Knowledge Bases from Resources, and generation from the library', async ({
     loginLecturer,
     page,
   }) => {
@@ -26,6 +26,7 @@ test.describe('AI beta management navigation gate', () => {
 
     const navigation = page.getByTestId('navigation')
     await expect(navigation.getByTestId('ai')).not.toBeAttached()
+    await expect(navigation.getByTestId('chatbots')).toBeVisible()
     await page.getByTestId('generate-elements').click()
     await expect(page).toHaveURL(/\/elements\/generate$/)
     await navigation.getByTestId('library').click()
@@ -35,19 +36,20 @@ test.describe('AI beta management navigation gate', () => {
     await expect(page.getByTestId('answer-collections')).toBeVisible()
     await expect(page.getByTestId('element-generation')).not.toBeAttached()
     await expect(page.getByTestId('knowledge-bases')).toBeVisible()
-    await expect(page.getByTestId('chatbots')).toBeVisible()
 
-    // Both entries navigate to their existing routes.
     await page.getByTestId('knowledge-bases').click()
     await expect(page).toHaveURL(/\/resources\/knowledgeBases$/)
     await expect(page.getByTestId('knowledge-base-list')).toBeVisible()
 
-    await page.getByTestId('resources').click()
-    await page.getByTestId('chatbots').click()
+    const chatbots = navigation.getByTestId('chatbots')
+    await chatbots.press('Enter')
     await expect(page).toHaveURL(
       (url) => url.pathname === '/resources/chatbots'
     )
+    await expect(chatbots).toHaveAttribute('aria-current', 'page')
     await expect(page.getByTestId('chatbot-list')).toBeVisible()
+    await page.getByTestId('create-chatbot').click()
+    await expect(page.getByTestId('create-chatbot-name')).toBeVisible()
   })
 
   test('revoking AI approval denies knowledge bases and chatbots but keeps the assistant', async ({
@@ -73,9 +75,9 @@ test.describe('AI beta management navigation gate', () => {
       await expect(page.getByTestId('homepage')).toBeVisible()
 
       const navigation = page.getByTestId('navigation')
+      await expect(navigation.getByTestId('chatbots')).not.toBeAttached()
       await navigation.getByTestId('resources').click()
       await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
-      await expect(page.getByTestId('chatbots')).not.toBeAttached()
       await expect(page.getByTestId('generate-elements')).not.toBeAttached()
       await expect(page.getByTestId('manage-assistant-open')).toBeVisible()
 

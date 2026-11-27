@@ -2,6 +2,119 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.101](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.100...v3.4.0-alpha.101) (2026-11-25)
+
+
+### Features
+
+* **chat:** show explanations and the knowledge graph in one docked workspace panel ([#7006](https://github.com/uzh-bf/klicker-uzh/issues/7006)) ([0945bca](https://github.com/uzh-bf/klicker-uzh/commit/0945bca6e448f43f6009b2ef06835a8d6de0b008))
+
+
+### Bug Fixes
+
+* **chat:** keep the reader's place when an explanation opens in a new frame ([#7014](https://github.com/uzh-bf/klicker-uzh/issues/7014)) ([75cb00f](https://github.com/uzh-bf/klicker-uzh/commit/75cb00fdfe61080e0694673aa7e5ec77ce8cfa67))
+* **ci:** match the sync controller trigger by workflow path ([#6962](https://github.com/uzh-bf/klicker-uzh/issues/6962)) ([75df954](https://github.com/uzh-bf/klicker-uzh/commit/75df954687ea57a32353873fb485c998efaacc92))
+* **ci:** promote staging runs after re-runs and stop the course pin flake ([#7005](https://github.com/uzh-bf/klicker-uzh/issues/7005)) ([4a75f71](https://github.com/uzh-bf/klicker-uzh/commit/4a75f71bc45e12f84ce19b3a23b46b7cb8541487))
+* **ci:** run required check suites for pull requests into any branch ([#7019](https://github.com/uzh-bf/klicker-uzh/issues/7019)) ([a01d779](https://github.com/uzh-bf/klicker-uzh/commit/a01d7798df4dbb9f53613df505645a7e1799aaaa))
+* **control:** keep translations when a page arrives without messages ([#6848](https://github.com/uzh-bf/klicker-uzh/issues/6848)) ([2012f2d](https://github.com/uzh-bf/klicker-uzh/commit/2012f2da574962317f94c9e2993ab54b1fcd9620))
+* **deploy:** align the staging explainer URL ([#6978](https://github.com/uzh-bf/klicker-uzh/issues/6978)) ([0554f67](https://github.com/uzh-bf/klicker-uzh/commit/0554f67c28682f5de991c1811101a2be6186930b))
+
+
+### Deployment
+
+* **prd:** offer interactive explanations in the chat ([#6988](https://github.com/uzh-bf/klicker-uzh/issues/6988)) ([bb5e668](https://github.com/uzh-bf/klicker-uzh/commit/bb5e668dffd9bacd69446561124f94d9ad64f60e))
+* **prd:** promote alpha.100 for chat only ([#7003](https://github.com/uzh-bf/klicker-uzh/issues/7003)) ([1c266f7](https://github.com/uzh-bf/klicker-uzh/commit/1c266f7cf30365c84bdd2e382c1a3d3c514d9477))
+* **prd:** promote alpha.97 application images ([#6956](https://github.com/uzh-bf/klicker-uzh/issues/6956)) ([0e15aaf](https://github.com/uzh-bf/klicker-uzh/commit/0e15aafc407568c4e9faf7d68e0d1010750068f0))
+* **prd:** promote alpha.98 for chat only ([#6986](https://github.com/uzh-bf/klicker-uzh/issues/6986)) ([f55554d](https://github.com/uzh-bf/klicker-uzh/commit/f55554da32f15d0e59d36e58660df716add9e902))
+* **prd:** promote alpha.99 for chat only ([#6994](https://github.com/uzh-bf/klicker-uzh/issues/6994)) ([b709b91](https://github.com/uzh-bf/klicker-uzh/commit/b709b91b70fd602ddd3fea7275e26a468c77cb0b))
+
+
+### Refactors
+
+* **eval:** move evaluation to klicker-uzh-catalyst ([#6845](https://github.com/uzh-bf/klicker-uzh/issues/6845)) ([ff9c37b](https://github.com/uzh-bf/klicker-uzh/commit/ff9c37b362f57d6ca4c054b177811b7e3581ad0a))
+
+
+### Enhancements
+
+* **chat:** add Sol and Astra 6.2 and Auto v5 ([#6947](https://github.com/uzh-bf/klicker-uzh/issues/6947)) ([bb84a1c](https://github.com/uzh-bf/klicker-uzh/commit/bb84a1cbb3e2f27a2827c9ca0e031220849c2023))
+* **chat:** allow custom-only chatbots and Quizzer without a knowledge base ([#7022](https://github.com/uzh-bf/klicker-uzh/issues/7022)) ([4774f53](https://github.com/uzh-bf/klicker-uzh/commit/4774f533e353e0ced92c7a63237ba244f5d8fdf4))
+* **manage:** add Chatbots to the main navigation ([#7007](https://github.com/uzh-bf/klicker-uzh/issues/7007)) ([6b7337f](https://github.com/uzh-bf/klicker-uzh/commit/6b7337f41db954c65467fe8c9705a521a71fd51d))
+
+
+### Build and CI
+
+* repin the check executor to the sync merge and regenerate the envelopes ([1ebdcb7](https://github.com/uzh-bf/klicker-uzh/commit/1ebdcb7b1f361647325c6ca9913fb6ed30c7f873))
+
+## [3.4.0-alpha.100](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.99...v3.4.0-alpha.100) (2026-11-23)
+
+
+### Bug Fixes
+
+* **chat:** dash inferred concept map relations ([#6991](https://github.com/uzh-bf/klicker-uzh/issues/6991)) ([2792982](https://github.com/uzh-bf/klicker-uzh/commit/2792982427bd27279fc5c66b741ef1a062c311cf))
+* **chat:** keep a tapped concept visible above the details sheet ([#6999](https://github.com/uzh-bf/klicker-uzh/issues/6999)) ([b1aa06c](https://github.com/uzh-bf/klicker-uzh/commit/b1aa06c4d2ffb4341fe612e856d0b998f8733728))
+* **chat:** show a repeated concept map description once ([#6996](https://github.com/uzh-bf/klicker-uzh/issues/6996)) ([5e202a9](https://github.com/uzh-bf/klicker-uzh/commit/5e202a9997509f4acf24a3004735eca00ac8fda9))
+
+
+### Enhancements
+
+* **chat:** write interactive explanations with a pinned writer model ([#6995](https://github.com/uzh-bf/klicker-uzh/issues/6995)) ([2c0d9c6](https://github.com/uzh-bf/klicker-uzh/commit/2c0d9c6e044729626c85dfa7c3b0d7edd269a0db))
+
+## [3.4.0-alpha.99](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.98...v3.4.0-alpha.99) (2026-11-23)
+
+
+### Bug Fixes
+
+* **chat:** show the preparing state while an interactive explanation is generated ([#6992](https://github.com/uzh-bf/klicker-uzh/issues/6992)) ([dc62235](https://github.com/uzh-bf/klicker-uzh/commit/dc622352b7bcf990891e4e02c2a7a4fe448b65b5))
+* **chat:** stop treating exam practice as assessed work ([#6982](https://github.com/uzh-bf/klicker-uzh/issues/6982)) ([5e74bdb](https://github.com/uzh-bf/klicker-uzh/commit/5e74bdbe0228acbc9833fbc6b7591bfbe65a86e6))
+
+
+### Enhancements
+
+* **chat:** keep rejected feedback drafts in the collapsed tool-call trace ([#6981](https://github.com/uzh-bf/klicker-uzh/issues/6981)) ([f107c56](https://github.com/uzh-bf/klicker-uzh/commit/f107c5670f2e076e1fd7868f8147214982f50cd0))
+* **chat:** show only that a calculation ran in the calculator chip ([#6983](https://github.com/uzh-bf/klicker-uzh/issues/6983)) ([a619d09](https://github.com/uzh-bf/klicker-uzh/commit/a619d09f4120d82459233aa835e12eef3381fc46))
+
+
+### Other
+
+* **chat:** pin the feedback tool flag off in the chat route tests ([#6987](https://github.com/uzh-bf/klicker-uzh/issues/6987)) ([4fcff15](https://github.com/uzh-bf/klicker-uzh/commit/4fcff15a199556580fb0f81af3e6ee5046d25be6))
+
+
+### Deployment
+
+* **prd:** offer interactive explanations in the chat ([#6989](https://github.com/uzh-bf/klicker-uzh/issues/6989)) ([d3aa58a](https://github.com/uzh-bf/klicker-uzh/commit/d3aa58a8cb36d4efc9eae4356ecf15f72925f829))
+
+## [3.4.0-alpha.98](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.97...v3.4.0-alpha.98) (2026-11-22)
+
+
+### Features
+
+* **chat:** prototype structured feedback cards ([#6964](https://github.com/uzh-bf/klicker-uzh/issues/6964)) ([d0f141d](https://github.com/uzh-bf/klicker-uzh/commit/d0f141daffbca2c7dec504cf888b082a667d6c4d))
+
+
+### Bug Fixes
+
+* **chat:** distinct concept type shapes and no overlaps after expanding in the concept map ([#6974](https://github.com/uzh-bf/klicker-uzh/issues/6974)) ([d9bf1d5](https://github.com/uzh-bf/klicker-uzh/commit/d9bf1d5974922409668b3df4f22912ffb486d39a))
+* **chat:** hide raw relationship properties from students in the concept map ([#6968](https://github.com/uzh-bf/klicker-uzh/issues/6968)) ([0819227](https://github.com/uzh-bf/klicker-uzh/commit/0819227f4e38c90134c6ae0393e274ea8b023f98))
+* **chat:** hide the new-tab button in the embedded chat layout ([#6967](https://github.com/uzh-bf/klicker-uzh/issues/6967)) ([2a02f19](https://github.com/uzh-bf/klicker-uzh/commit/2a02f1946cd65591432ccfd419cc2b4c074a7147))
+* **chat:** let guarded evaluations run against local chat ([#6971](https://github.com/uzh-bf/klicker-uzh/issues/6971)) ([cf440c0](https://github.com/uzh-bf/klicker-uzh/commit/cf440c007d59071371558739cafc0c8f9a10857a))
+* **devcontainer:** route graph blob sources through devrouter so worktree stacks stop colliding ([#6969](https://github.com/uzh-bf/klicker-uzh/issues/6969)) ([b392cb7](https://github.com/uzh-bf/klicker-uzh/commit/b392cb7f3ae9f500f782ecae3e76f0064f74f62d))
+* **manage:** show Writing Coach in chatbot approval summary ([#6959](https://github.com/uzh-bf/klicker-uzh/issues/6959)) ([dab67ff](https://github.com/uzh-bf/klicker-uzh/commit/dab67ff18a7d67ad4a95f6d19292788631d344de))
+
+
+### Other
+
+* **chat:** check declared model registry policy ([#6966](https://github.com/uzh-bf/klicker-uzh/issues/6966)) ([8503d60](https://github.com/uzh-bf/klicker-uzh/commit/8503d602c0ed1318bbc420b2ca7ad8766ba00349))
+
+
+### Enhancements
+
+* **chat:** add Sol and Astra 6.2 and Auto v5 ([#6948](https://github.com/uzh-bf/klicker-uzh/issues/6948)) ([14e2b4e](https://github.com/uzh-bf/klicker-uzh/commit/14e2b4ed9a8f8c3ad4906851efcc232194d0c9ca))
+* **chat:** give the Explainer the calculator for stated numbers ([#6979](https://github.com/uzh-bf/klicker-uzh/issues/6979)) ([271e0b0](https://github.com/uzh-bf/klicker-uzh/commit/271e0b0d0dbe107a9e702b3348cf9babec338ca8))
+* **chat:** keep rejected explanation drafts in the collapsed tool-call trace ([#6977](https://github.com/uzh-bf/klicker-uzh/issues/6977)) ([b1cff3b](https://github.com/uzh-bf/klicker-uzh/commit/b1cff3b66709d04bb1c5e114f3b3e27fe4dea500))
+* **chat:** let lecturers turn on interactive explanations per chatbot behind a feature flag ([#6957](https://github.com/uzh-bf/klicker-uzh/issues/6957)) ([310292d](https://github.com/uzh-bf/klicker-uzh/commit/310292d04bf67f599b59f5db92748d69bc7a171c))
+* **chat:** open framed chat in a new tab with a session handoff ([#6958](https://github.com/uzh-bf/klicker-uzh/issues/6958)) ([7e69ecb](https://github.com/uzh-bf/klicker-uzh/commit/7e69ecbb8308fdcd8c5b31876340bd01b02c8e3a))
+* **chat:** tighten the Writing Coach coaching contract ([#6953](https://github.com/uzh-bf/klicker-uzh/issues/6953)) ([23efe76](https://github.com/uzh-bf/klicker-uzh/commit/23efe763b186497e26dd5854f9bf1765a73d0b47))
+
 ## [3.4.0-alpha.97](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.96...v3.4.0-alpha.97) (2026-11-22)
 
 

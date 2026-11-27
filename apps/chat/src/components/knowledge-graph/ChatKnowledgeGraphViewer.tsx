@@ -49,6 +49,7 @@ export function ChatKnowledgeGraphViewer({
           quiz: t('quiz'),
           allConnectionsShown: t('allConnectionsShown'),
           inferredRelation: t('inferredRelation'),
+          unsourcedRelation: t('unsourcedRelation'),
           ask: t('ask'),
           missingEndpoint: t('missingEndpoint'),
           aiGeneratedNote: t('aiGeneratedNote'),

@@ -70,6 +70,7 @@ import {
 import {
   getCustomModeTurnSettings,
   isParticipantReasoningVisible,
+  isSafeDocQueryBinding,
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
@@ -168,7 +169,10 @@ import {
 } from '@/src/services/studentPracticeMcp'
 import {
   createShowExplanationTool,
+  type ExplanationWriter,
   explanationAttemptsLeft,
+  explanationWriterReasoningEffort,
+  resolveExplanationWriterConfig,
   shouldOfferExplanationTool,
 } from '@/src/services/explainerService'
 import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
@@ -604,7 +608,7 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z.string().optional().default('tutor'),
+    selectedMode: z.string().optional(),
     reasoningEffort: z.string().min(1).optional().default('none'),
     answerStyle: answerStyleSchema,
     answerTone: answerToneSchema,
@@ -812,9 +816,13 @@ export async function POST(
     { customModeConfig: chatbot.customModeConfig }
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
-  if (!Object.hasOwn(modeOptions, selectedMode)) {
+  if (!selectedMode || !Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
-      { error: `Unsupported chat mode: ${requestedMode}` },
+      {
+        error: requestedMode
+          ? `Unsupported chat mode: ${requestedMode}`
+          : 'No chat mode is available',
+      },
       { status: 400 }
     )
   }
@@ -998,6 +1006,9 @@ export async function POST(
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
+  )
+  const configuredQuizzerRetrieval = selectedMCPConfigurations.some(
+    isSafeDocQueryBinding
   )
 
   let scopedKbIds: string[] | undefined
@@ -1521,6 +1532,10 @@ export async function POST(
     // Prototype: interactive explanations validated by the Catalyst explainer
     // service. Without the service the chat continues in text.
     const explanationTools: Record<string, any> = {}
+    // Set once the turn's model options are known, before the model runs.
+    let explanationWriter: ExplanationWriter | null = null
+    let explanationWriterCost = 0
+    let explanationWriterRate = selectedModelConfig.cost
     if (
       await shouldOfferExplanationTool({
         chatMode: selectedMode,
@@ -1531,7 +1546,16 @@ export async function POST(
     ) {
       try {
         explanationTools[SHOW_EXPLANATION_TOOL_NAME] =
-          await createShowExplanationTool()
+          await createShowExplanationTool({
+            getWriter: () => explanationWriter,
+            onUsage: ({ inputTokens, outputTokens }) => {
+              explanationWriterCost += calcCost(
+                explanationWriterRate,
+                inputTokens,
+                outputTokens
+              )
+            },
+          })
       } catch (error) {
         console.warn('Explainer service unavailable; tool not offered', {
           error: error instanceof Error ? error.message : String(error),
@@ -1591,7 +1615,11 @@ export async function POST(
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
 
-    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+    if (
+      selectedMode === 'quizzer' &&
+      configuredQuizzerRetrieval &&
+      !quizzerDocQueryToolName
+    ) {
       if (!isElearningThread) {
         await failOrDiscardUnstartedClaim('mcp.quizzer')
         return NextResponse.json(
@@ -1623,6 +1651,7 @@ export async function POST(
         answerStyle: appliedAnswerStyle,
         answerTone: appliedAnswerTone,
         customModeConfig: chatbot.customModeConfig,
+        ...(isElearningThread ? { isElearningOrigin: true } : {}),
         ...(imageVisionEnabled ? { courseImageVision: true } : {}),
       }
     )
@@ -1699,11 +1728,7 @@ export async function POST(
       )
     )
 
-    // One explanation is about 5-6k output tokens, more than the registry's
-    // 4096 cap; the prototype lifts the cap only while the tool is offered.
-    const maxOutputTokens = explanationToolActive
-      ? Math.max(selectedModelConfig.maxOutputTokens ?? 0, 16_384)
-      : selectedModelConfig.maxOutputTokens
+    const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
     const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
       selectedModelConfig,
@@ -1744,6 +1769,32 @@ export async function POST(
       threadId: owningThread.id,
       routingSource: routing.source,
     })
+
+    if (explanationToolActive) {
+      // A chatbot's own endpoint may not serve the writer model.
+      const writerConfig =
+        routing.source === 'default'
+          ? resolveExplanationWriterConfig(modelRegistry, selectedModelConfig)
+          : selectedModelConfig
+      const writerEffort = explanationWriterReasoningEffort(writerConfig)
+      explanationWriterRate = writerConfig.cost
+      explanationWriter = {
+        modelId: writerConfig.id,
+        model: getChatModel(chatbot, writerConfig).model,
+        providerOptions: {
+          openai: {
+            ...openAIProviderOptions,
+            ...(writerConfig.usesResponsesApi && {
+              store: getOpenAIResponsesStore(),
+            }),
+            ...(writerEffort && {
+              forceReasoning: true,
+              reasoningEffort: writerEffort,
+            }),
+          },
+        },
+      }
+    }
 
     const resolvedImages = await Promise.all(
       normalizedImages.map((image) => ensureImagePreviewBase64(image))
@@ -2338,6 +2389,12 @@ export async function POST(
       history: modelMessages as ModelMessage[],
     })
 
+    // Each feedback attempt is a step; three attempts plus retrieval and the
+    // closing text need more than the usual five. An explanation call is one
+    // step, because its writer repairs drafts inside the tool. One more step
+    // is added for the text-only answer, so it never takes a tool call's slot.
+    const maxSteps = (explanationToolActive || feedbackToolActive ? 7 : 5) + 1
+
     const startStream = () => {
       providerStreamStarted = true
       return streamText({
@@ -2400,6 +2457,11 @@ export async function POST(
           responseMessages,
         }) => {
           const prepared = {
+            // The last allowed step must write the answer. Without this, a turn
+            // that spends every step on tool calls ends with no text at all.
+            ...(stepNumber === maxSteps - 1
+              ? { toolChoice: 'none' as const }
+              : {}),
             // Standard platform modes retrieve first, so the answer is grounded
             // before it is written. Custom modes keep the retrieval tool offered
             // but choose for themselves, so attaching a knowledge base never
@@ -2444,11 +2506,7 @@ export async function POST(
                 .then(({ messages }) => ({ ...prepared, messages }))
             : prepared
         },
-        // Each explanation or feedback attempt is a step; three attempts plus
-        // retrieval and the closing text need more than the usual five.
-        stopWhen: isStepCount(
-          explanationToolActive || feedbackToolActive ? 7 : 5
-        ),
+        stopWhen: isStepCount(maxSteps),
         // A provider's canned, unbilled refusal is replaced with a neutral
         // platform line, so no mode shows it and a persona keeps its role.
         experimental_transform: providerRefusalTransform(
@@ -2525,7 +2583,9 @@ export async function POST(
                 selectedModelConfig.cost,
                 result.usage.inputTokens || 0,
                 result.usage.outputTokens || 0
-              ) + imageDescriptionCost
+              ) +
+              imageDescriptionCost +
+              explanationWriterCost
             : null
           const { rawCreditsUsed, creditsUsed } = normalizeCredits(
             computedRawCreditsUsed,
@@ -2618,8 +2678,11 @@ export async function POST(
               }
             }
 
-            if (hasUsage) {
-              rawCreditsUsed = totalCost + imageDescriptionCost
+            // Writer drafts are charged even when the turn stopped before
+            // finishing a step of its own.
+            if (hasUsage || explanationWriterCost > 0) {
+              rawCreditsUsed =
+                totalCost + imageDescriptionCost + explanationWriterCost
             }
           }
           const { rawCreditsUsed: normalizedRawCreditsUsed, creditsUsed } =
@@ -2826,7 +2889,9 @@ export async function POST(
               selectedModelConfig.cost,
               part.totalUsage.inputTokens || 0,
               part.totalUsage.outputTokens || 0
-            ) + imageDescriptionCost
+            ) +
+            imageDescriptionCost +
+            explanationWriterCost
           : null
         const { creditsUsed } = normalizeCredits(
           computedRawCreditsUsed,

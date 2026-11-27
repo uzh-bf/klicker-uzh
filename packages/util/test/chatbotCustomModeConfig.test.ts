@@ -7,6 +7,7 @@ import {
   CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_COUNT,
   CHATBOT_CUSTOM_MODE_STARTER_PROMPT_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_WELCOME_MESSAGE_MAX_LENGTH,
+  getAvailableChatbotCustomModeKeys,
   normalizeChatbotCustomModeConfig,
   parseChatbotCustomModeConfigInput,
 } from '../src/chatbotCustomModeConfig.js'
@@ -536,5 +537,21 @@ describe('chatbot custom mode configuration', () => {
         },
       ],
     })
+    const stored = {
+      modes: [
+        { key: 'cm_keep', name: 'Keep me' },
+        { key: 'cm_keep', name: 'Duplicate key' },
+        { key: 'cm_duplicate_name', name: 'keep me' },
+        { key: '   ', name: 'Blank key' },
+        { key: 'cm_reserved', name: 'Tutor' },
+        { key: 'cm_bad_name', name: '' },
+      ],
+    }
+    expect(getAvailableChatbotCustomModeKeys(stored)).toEqual(['cm_keep'])
+    expect(
+      getAvailableChatbotCustomModeKeys(stored, {
+        cm_keep: { enabled: false },
+      })
+    ).toEqual([])
   })
 })

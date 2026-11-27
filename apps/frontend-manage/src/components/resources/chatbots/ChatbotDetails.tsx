@@ -1471,8 +1471,20 @@ function ChatbotDetails({
   }
 
   const savedModes = getStandardModeFormValues(chatbot)
-  const savedCustomModeCount = getCustomModeFormValues(chatbot).modes.length
+  const savedCustomModes = getCustomModeFormValues(chatbot).modes
+  const enabledModeNames = [
+    savedModes.tutorEnabled ? t('manage.resources.chatbotModeTutor') : null,
+    savedModes.explainerEnabled
+      ? t('manage.resources.chatbotModeExplainer')
+      : null,
+    savedModes.quizzerEnabled ? t('manage.resources.chatbotModeQuizzer') : null,
+    savedModes.writingCoachEnabled
+      ? t('manage.resources.chatbotModeWritingCoach')
+      : null,
+    ...savedCustomModes.map((mode) => mode.name),
+  ].filter((name): name is string => name !== null)
   const modesStatus = resolveSectionStatus({
+    invalid: enabledModeNames.length === 0,
     unsaved: behaviorNavigationState.dirty,
     notSubmitted: unsubmitted(
       getModeComparison(
@@ -1486,16 +1498,9 @@ function ChatbotDetails({
     ),
     isDefault: isDefaultModes({
       ...savedModes,
-      customModeCount: savedCustomModeCount,
+      customModeCount: savedCustomModes.length,
     }),
   })
-  const enabledModeNames = [
-    savedModes.tutorEnabled ? t('manage.resources.chatbotModeTutor') : null,
-    savedModes.explainerEnabled
-      ? t('manage.resources.chatbotModeExplainer')
-      : null,
-    savedModes.quizzerEnabled ? t('manage.resources.chatbotModeQuizzer') : null,
-  ].filter((name): name is string => name !== null)
   const modesSummary = [
     enabledModeNames.length > 0
       ? t('manage.resources.chatbotSummaryModesOn', {
@@ -1503,13 +1508,10 @@ function ChatbotDetails({
           count: enabledModeNames.length,
         })
       : t('manage.resources.chatbotSummaryModesNone'),
-    // Quizzer only appears to students once a knowledge base is connected.
-    savedModes.quizzerEnabled && !connectedKnowledgeBase
-      ? t('manage.resources.chatbotSummaryModesQuizzerNeedsKb')
-      : t('manage.resources.chatbotSummaryModesExtras', {
-          framing: hasModeFraming(savedModes) ? 'set' : 'none',
-          custom: savedCustomModeCount,
-        }),
+    t('manage.resources.chatbotSummaryModesExtras', {
+      framing: hasModeFraming(savedModes) ? 'set' : 'none',
+      custom: savedCustomModes.length,
+    }),
   ].join(' ')
 
   // Mirrors getNewChatbotModelId on the server: a new chatbot uses GPT-6 Luna

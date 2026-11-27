@@ -11,6 +11,10 @@ const {
 } = require('./ocr-runtime-config.cjs')
 
 const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
+const {
+  MOAT_ADVISOR_MODEL,
+  MOAT_FLASH_MODEL,
+} = require('./ocr-mistral-adapter.cjs')
 const RUNNER = path.join(__dirname, 'ocr-draft-review.cjs')
 
 test('draft coverage distinguishes selected files from completed work without exposing model fields', () => {
@@ -71,16 +75,16 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       path.join(directory, 'draft-ai-review-adapter-diagnostics.jsonl'),
       JSON.stringify({
         ...receipt,
-        provider: 'mistral-deepseek',
-        model: 'deepseek-v4-1-flash-1017',
+        provider: 'moat-flash',
+        model: MOAT_FLASH_MODEL,
       })
     )
     fs.writeFileSync(
       advisorPath,
       JSON.stringify({
         ...receipt,
-        provider: 'mistral',
-        model: 'zai-glm-5-3',
+        provider: 'moat-advisor',
+        model: MOAT_ADVISOR_MODEL,
       })
     )
     fs.writeFileSync(
@@ -297,9 +301,9 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       )
     assert.ok(totals)
     for (const [index, expected] of [
-      [1, 1.09525],
-      [2, 2.26],
-      [3, 1.16475],
+      [1, 0.37775],
+      [2, 0.704],
+      [3, 0.32625],
     ])
       assert.ok(Math.abs(Number(totals[index]) - expected) < 0.000051)
     fs.writeFileSync(
@@ -327,8 +331,8 @@ test('combined cost estimates use both provider rates and withhold totals for mi
       advisorPath,
       JSON.stringify({
         ...receipt,
-        provider: 'mistral-deepseek',
-        model: 'deepseek-v4-1-flash-1017',
+        provider: 'moat-flash',
+        model: MOAT_FLASH_MODEL,
       })
     )
     assert.match(
@@ -343,7 +347,7 @@ test('combined cost estimates use both provider rates and withhold totals for mi
     assert.equal(draftOnly.status, 0, draftOnly.stderr)
     assert.match(
       draftOnly.stdout,
-      /^OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=0\.2002 estimated_without_cache_usd=0\.4200 estimated_savings_usd=0\.2198 /m
+      /^OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=0\.0330 estimated_without_cache_usd=0\.0600 estimated_savings_usd=0\.0270 /m
     )
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
@@ -534,11 +538,11 @@ process.exitCode=7
     const child = JSON.parse(fs.readFileSync(record, 'utf8'))
     assert.equal(child.env.GITHUB_TOKEN, undefined)
     assert.equal(child.env.OPENROUTER_API_KEY, undefined)
-    assert.equal(child.env.MISTRAL_API_KEY, undefined)
+    assert.equal(child.env.CMD_API_KEY, undefined)
     assert.equal(child.env.CONTEXT7_API_KEY, undefined)
     assert.equal(child.env.OCR_NO_UPDATE, '1')
     assert.equal(child.env.OCR_LLM_TIMEOUT, '480')
-    assert.equal(child.env.OCR_LLM_MODEL, 'deepseek-v4-1-flash-1017')
+    assert.equal(child.env.OCR_LLM_MODEL, MOAT_FLASH_MODEL)
     assert.deepEqual(child.args.slice(0, 9), [
       'review',
       '--from',
@@ -651,7 +655,7 @@ test('draft preflight rejects missing blobs before provider dispatch and strips 
     path.join(wrapper, 'git'),
     `#!${process.execPath}
 const fs=require('node:fs'),{spawnSync}=require('node:child_process')
-fs.appendFileSync(${JSON.stringify(receipt)},JSON.stringify({secret:process.env.MISTRAL_API_KEY,token:process.env.GITHUB_TOKEN,docs:process.env.CONTEXT7_API_KEY})+'\\n')
+fs.appendFileSync(${JSON.stringify(receipt)},JSON.stringify({secret:process.env.CMD_API_KEY,token:process.env.GITHUB_TOKEN,docs:process.env.CONTEXT7_API_KEY})+'\\n')
 const result=spawnSync(${JSON.stringify(realGit)},process.argv.slice(2),{stdio:'inherit'})
 process.exit(result.status??1)
 `,
@@ -664,7 +668,7 @@ process.exit(result.status??1)
       RUNNER_TEMP: repo,
       REVIEW_FROM: policy,
       HEAD_SHA: policy,
-      MISTRAL_API_KEY: 'PRIVATE_SENTINEL',
+      CMD_API_KEY: 'PRIVATE_SENTINEL',
       GITHUB_TOKEN: 'PRIVATE_SENTINEL',
       CONTEXT7_API_KEY: 'PRIVATE_SENTINEL',
     },
@@ -851,7 +855,7 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
         return new Response(
           JSON.stringify({
             id: `synthetic-${calls}`,
-            model: 'deepseek-v4-1-flash-1017',
+            model: MOAT_FLASH_MODEL,
             choices: [
               {
                 index: 0,
@@ -1002,7 +1006,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
     head,
     policy,
     executable: process.env.OCR_TEST_BINARY,
-    apiKey: 'synthetic-mistral',
+    apiKey: 'synthetic-moat',
     advisorApiKey: 'synthetic-advisor',
     context7ApiKey: 'synthetic-docs',
     write: (text) => logs.push(text),
@@ -1018,7 +1022,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
       )
       if (!names.includes('task_done'))
         return response(
-          'deepseek-v4-1-flash-1017',
+          MOAT_FLASH_MODEL,
           {
             role: 'assistant',
             content: JSON.stringify([{ label: 'source', files: [0] }]),
@@ -1053,7 +1057,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
                 }
               : { state: 'DONE' }
       return response(
-        'deepseek-v4-1-flash-1017',
+        MOAT_FLASH_MODEL,
         {
           role: 'assistant',
           content: [
@@ -1079,7 +1083,7 @@ test('pinned OCR registers and invokes reviewer tools with trusted rules and com
       assert.equal(body.max_tokens, 16384)
       calls++
       return response(
-        'zai-glm-5-3',
+        MOAT_ADVISOR_MODEL,
         {
           role: 'assistant',
           content: '',

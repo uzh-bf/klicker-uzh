@@ -11,6 +11,7 @@ import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import type { AuthMode } from '@/src/lib/server/ltiGuest'
 import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import {
+  isToolAllowed,
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
@@ -431,27 +432,6 @@ export async function createMCPClient(
     })
     throw error
   }
-}
-
-/**
- * Checks if a tool name matches any of the allowed patterns
- * Supports wildcard patterns like "search*", "*plot*", "execute_*"
- */
-function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
-  if (!allowedTools || allowedTools.length === 0) {
-    return true // If no filters specified, allow all tools
-  }
-
-  return allowedTools.some((pattern) => {
-    // Escape regex syntax so only the documented wildcards stay special.
-    const regexPattern = pattern
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*/g, '.*') // Replace * with .*
-      .replace(/\?/g, '.') // Replace ? with .
-
-    const regex = new RegExp(`^${regexPattern}$`, 'i')
-    return regex.test(toolName)
-  })
 }
 
 /**

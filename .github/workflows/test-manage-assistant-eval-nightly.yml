@@ -1,6 +1,6 @@
 name: Nightly manage-assistant eval (judge-based dimensions)
 
-# Runs the manage-assistant eval harness (evaluation/manage-assistant, see
+# Runs the manage-assistant eval harness (apps/chat/evaluation/manage-assistant, see
 # its README) against a live, already-running apps/chat deployment. Unlike
 # every other workflow in this directory, this one deliberately does NOT
 # spin up Postgres/mcp-lecturer/chat service containers from scratch --
@@ -92,7 +92,7 @@ jobs:
                 echo "- \`MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY\`"
               fi
               echo ""
-              echo "See evaluation/manage-assistant/README.md (\"Environment variables\") for the full list this harness reads, and src/manage_assistant_eval/judge.py for why these two specifically gate every judge-based check."
+              echo "See apps/chat/evaluation/manage-assistant/README.md (\"Environment variables\") for the full list this harness reads, and src/manage_assistant_eval/judge.py for why these two specifically gate every judge-based check."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -111,12 +111,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
-          working-directory: evaluation/manage-assistant
+          working-directory: apps/chat/evaluation/manage-assistant
           python-version: '3.12'
           enable-cache: true
 
       - name: Install harness dependencies
-        working-directory: evaluation/manage-assistant
+        working-directory: apps/chat/evaluation/manage-assistant
         run: uv sync --locked
 
       # Idempotent: creates the E6 indirect-injection collaborator fixtures
@@ -129,7 +129,7 @@ jobs:
       # `python -m` does not. Without this the step dies on
       # `ModuleNotFoundError: No module named 'manage_assistant_eval'`.
       - name: Seed E6 indirect-injection fixtures
-        working-directory: evaluation/manage-assistant
+        working-directory: apps/chat/evaluation/manage-assistant
         run: PYTHONPATH=src uv run python -m manage_assistant_eval.seed --seed
         env:
           DATABASE_URL: ${{ secrets.MANAGE_ASSISTANT_EVAL_DATABASE_URL }}
@@ -139,7 +139,7 @@ jobs:
       # judge-based dimensions) -- not just the new dimensions -- so a
       # nightly regression in the older judge-free checks is caught too.
       - name: Run manage-assistant eval suite
-        working-directory: evaluation/manage-assistant
+        working-directory: apps/chat/evaluation/manage-assistant
         run: uv run pytest -v
         env:
           # Turns "target unreachable" and "zero cases recorded" from a clean
