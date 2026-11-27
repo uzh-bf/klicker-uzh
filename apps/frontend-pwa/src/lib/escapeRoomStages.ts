@@ -4,6 +4,11 @@
 // the last stage when the rules grant bonus time (see hasBonusStage); it is
 // never required to complete the room.
 
+import {
+  type EscapeRoomSessionTiming,
+  getEscapeRoomActiveSeconds,
+} from '@klicker-uzh/types'
+
 export type EscapeRoomStageKind = 'regular' | 'bonus'
 
 export type EscapeRoomStageState =
@@ -234,18 +239,19 @@ export function getEscapeRankedSeconds({
   penaltySeconds,
   bonusSeconds,
   bonusOutcome,
+  session,
 }: {
   startedAt?: string | null
   completedAt?: string | null
   penaltySeconds?: number | null
   bonusSeconds?: number | null
   bonusOutcome?: string | null
+  // Group Activity session clock: pauses do not count as play time.
+  session?: EscapeRoomSessionTiming | null
 }): number | null {
   if (!startedAt || !completedAt) return null
   const elapsed = Math.max(
-    Math.round(
-      (new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000
-    ),
+    Math.round(getEscapeRoomActiveSeconds(startedAt, completedAt, session)),
     0
   )
   const credit = bonusOutcome === 'BONUS_CORRECT' ? (bonusSeconds ?? 0) : 0

@@ -1,14 +1,17 @@
 query GetEscapeRoomProjector(
+  $groupActivityId: String
   $liveQuizId: String
   $elementBlockId: Int
   $digest: String
 ) {
   escapeRoomProjector(
+    groupActivityId: $groupActivityId
     liveQuizId: $liveQuizId
     elementBlockId: $elementBlockId
     digest: $digest
   ) {
     phase
+    paused
     serverNow
     closesAt
     timeLimit

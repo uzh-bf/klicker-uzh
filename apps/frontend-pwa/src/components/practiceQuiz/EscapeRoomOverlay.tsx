@@ -9,12 +9,18 @@ import {
   faHourglassEnd,
   faLayerGroup,
   faLightbulb,
+  faPause,
   faStar,
   faTriangleExclamation,
   faTrophy,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { EscapeRoomSessionPhase } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import {
+  type EscapeRoomSessionTiming,
+  getEscapeRoomActiveSeconds,
+} from '@klicker-uzh/types'
 import {
   type EscapeRoomStages,
   type EscapeRoomStageView,
@@ -82,6 +88,12 @@ interface EscapeRoomOverlayProps {
   // p-4 padding, including the sticky offset, which is measured from the
   // padding-free content edge) instead of sitting inside it
   flush?: boolean
+  // Group Activity session clock: the lecturer-driven phase and the pauses
+  // that do not count as play time. Omitted without a session clock.
+  session?: {
+    phase: EscapeRoomSessionPhase | null
+    timing?: EscapeRoomSessionTiming | null
+  }
   // set when the room has a bonus stage that follows completion; the bonus
   // question is answered once while the clock still runs
   bonus?: {
@@ -344,6 +356,7 @@ export default function EscapeRoomOverlay({
   introText,
   exit,
   flush = false,
+  session,
   bonus,
 }: EscapeRoomOverlayProps) {
   const t = useTranslations()
@@ -368,13 +381,19 @@ export default function EscapeRoomOverlay({
   const penaltySeconds = attempt?.penaltySeconds ?? 0
   const escapeSeconds =
     attempt?.startedAt && attempt?.completedAt
-      ? (new Date(attempt.completedAt).getTime() -
-          new Date(attempt.startedAt).getTime()) /
-        1000
+      ? getEscapeRoomActiveSeconds(
+          attempt.startedAt,
+          attempt.completedAt,
+          session?.timing
+        )
       : null
+  const sessionEnded = session?.phase === EscapeRoomSessionPhase.Ended
+  const sessionWaiting =
+    session?.phase === EscapeRoomSessionPhase.Lobby ||
+    session?.phase === EscapeRoomSessionPhase.Paused
 
   // Full page block overlays for start, completed, expired states
-  if (!isStarted) {
+  if (!isStarted && !sessionEnded) {
     const rows: RuleRow[] = []
     if (typeof totalStacks === 'number' && totalStacks > 0) {
       rows.push({
@@ -539,14 +558,26 @@ export default function EscapeRoomOverlay({
           />
           <p>
             {isGroup
-              ? t('pwa.practiceQuiz.escapeRoomStartWarningGroup')
+              ? session
+                ? t('pwa.practiceQuiz.escapeRoomStartWarningGroupSession')
+                : t('pwa.practiceQuiz.escapeRoomStartWarningGroup')
               : t('pwa.practiceQuiz.escapeRoomStartWarning')}
           </p>
         </div>
+        {sessionWaiting && (
+          <p
+            className={twMerge('text-sm leading-relaxed', FRAME.muted)}
+            data-cy="escape-room-session-waiting"
+          >
+            {session?.phase === EscapeRoomSessionPhase.Lobby
+              ? t('pwa.practiceQuiz.escapeRoomSessionWaiting')
+              : t('pwa.practiceQuiz.escapeRoomSessionPausedNoStart')}
+          </p>
+        )}
         <div className="space-y-2">
           <Button
             primary
-            disabled={loading}
+            disabled={loading || sessionWaiting}
             className={{ root: 'h-11 w-full text-lg font-bold' }}
             onClick={onStart}
             data={{ cy: 'escape-room-start' }}
@@ -554,7 +585,9 @@ export default function EscapeRoomOverlay({
             <Button.Label>
               {loading
                 ? t('shared.generic.loading')
-                : t('pwa.practiceQuiz.escapeRoomStartButton')}
+                : sessionWaiting
+                  ? t('pwa.practiceQuiz.escapeRoomSessionWaitingButton')
+                  : t('pwa.practiceQuiz.escapeRoomStartButton')}
             </Button.Label>
           </Button>
           {exit && (
@@ -576,24 +609,29 @@ export default function EscapeRoomOverlay({
     )
   }
 
-  if (isExpired) {
+  if (isExpired || (!isStarted && sessionEnded)) {
     return (
       <DialogShell
         key="expired"
         labelledBy={headingId}
         className="space-y-5 border-red-900/50 text-center"
         data-cy="escape-room-expired"
+        data-session-ended={sessionEnded ? 'true' : undefined}
       >
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-3xl text-white">
           <FontAwesomeIcon icon={faHourglassEnd} aria-hidden="true" />
         </div>
         <div id={headingId}>
           <H3 className={{ root: 'text-2xl font-bold text-red-400' }}>
-            {t('pwa.practiceQuiz.escapeRoomExpiredTitle')}
+            {sessionEnded
+              ? t('pwa.practiceQuiz.escapeRoomSessionEndedTitle')
+              : t('pwa.practiceQuiz.escapeRoomExpiredTitle')}
           </H3>
         </div>
         <p className="text-sm leading-relaxed text-slate-300">
-          {t('pwa.practiceQuiz.escapeRoomExpiredDesc')}
+          {sessionEnded
+            ? t('pwa.practiceQuiz.escapeRoomSessionEndedDesc')
+            : t('pwa.practiceQuiz.escapeRoomExpiredDesc')}
         </p>
         {typeof totalStacks === 'number' &&
           totalStacks > 0 &&
@@ -602,10 +640,12 @@ export default function EscapeRoomOverlay({
               className="text-sm font-semibold text-amber-400"
               data-cy="escape-room-expired-progress"
             >
-              {t('pwa.practiceQuiz.escapeRoomClearedProgress', {
-                cleared: clearedStacks,
-                total: totalStacks,
-              })}
+              {t(
+                sessionEnded
+                  ? 'pwa.practiceQuiz.escapeRoomSessionClearedProgress'
+                  : 'pwa.practiceQuiz.escapeRoomClearedProgress',
+                { cleared: clearedStacks, total: totalStacks }
+              )}
             </p>
           )}
         {stages && <StageRecap stages={stages} ended />}
@@ -619,9 +659,45 @@ export default function EscapeRoomOverlay({
             <Button.Label>{exit.label}</Button.Label>
           </Button>
         )}
-        <p className="text-xs leading-relaxed text-slate-400">
-          {t('pwa.practiceQuiz.escapeRoomContactLecturer')}
+        {/* a reset is no longer possible once the lecturer ended the session */}
+        {!sessionEnded && (
+          <p className="text-xs leading-relaxed text-slate-400">
+            {t('pwa.practiceQuiz.escapeRoomContactLecturer')}
+          </p>
+        )}
+      </DialogShell>
+    )
+  }
+
+  // The server freezes every clock and hides the stages during a pause, so the
+  // dialog only has to say so and show the frozen countdown.
+  if (session?.phase === EscapeRoomSessionPhase.Paused) {
+    return (
+      <DialogShell
+        key="paused"
+        labelledBy={headingId}
+        className="space-y-5 text-center"
+        data-cy="escape-room-paused"
+      >
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-600 text-3xl text-white">
+          <FontAwesomeIcon icon={faPause} aria-hidden="true" />
+        </div>
+        <div id={headingId}>
+          <H3 className={{ root: 'text-2xl font-bold text-amber-400' }}>
+            {t('pwa.practiceQuiz.escapeRoomPausedTitle')}
+          </H3>
+        </div>
+        <p className="text-sm leading-relaxed text-slate-300">
+          {t('pwa.practiceQuiz.escapeRoomPausedDesc')}
         </p>
+        {remainingSeconds !== null && (
+          <div
+            className="font-mono text-4xl font-bold text-white"
+            data-cy="escape-room-paused-timer"
+          >
+            {formatTime(remainingSeconds)}
+          </div>
+        )}
       </DialogShell>
     )
   }
@@ -648,6 +724,7 @@ export default function EscapeRoomOverlay({
           penaltySeconds: attempt?.penaltySeconds,
           bonusSeconds: bonus?.seconds ?? rules.bonusSeconds,
           bonusOutcome: bonus?.outcome,
+          session: session?.timing,
         })
     const headlineSeconds = plainLive
       ? escapeSeconds !== null

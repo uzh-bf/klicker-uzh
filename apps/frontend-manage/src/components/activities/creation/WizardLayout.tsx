@@ -128,6 +128,7 @@ export interface GroupActivityFormValues extends CommonFormValues {
   startDate: Date
   endDate: Date
   clues: GroupActivityClueFormValues[]
+  escapeRoomSessionClock?: boolean
 }
 
 export type CreationFormValues =

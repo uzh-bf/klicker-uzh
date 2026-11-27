@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  EscapeRoomSessionPhase,
   EscapeRoomStatus,
   GroupActivityDetailsDocument,
   GroupActivityGrading,
@@ -86,6 +87,7 @@ function GroupActivityDetails() {
     isExpired,
     remainingSeconds,
     lockoutRemaining,
+    sessionPhase,
     startAttempt,
     loading: attemptLoading,
     refetch: refetchEscapeRoom,
@@ -164,6 +166,7 @@ function GroupActivityDetails() {
   const bonusAvailable =
     bonusInstanceId !== undefined &&
     isCompleted &&
+    sessionPhase !== EscapeRoomSessionPhase.Ended &&
     !bonusAnswered &&
     remainingSeconds !== null &&
     remainingSeconds > 0
@@ -203,6 +206,18 @@ function GroupActivityDetails() {
             }
           }
           flush
+          session={
+            escapeRoomConfig?.sessionClock
+              ? {
+                  phase: sessionPhase,
+                  timing: {
+                    sessionClock: escapeRoomConfig.sessionClock,
+                    sessionPauses: escapeRoomConfig.sessionPauses,
+                    sessionPausedAt: escapeRoomConfig.sessionPausedAt,
+                  },
+                }
+              : undefined
+          }
           exit={{
             label: t('pwa.practiceQuiz.escapeRoomBackToCourse'),
             onClick: () => router.push(`/course/${groupActivity.course.id}`),

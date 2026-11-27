@@ -1,11 +1,16 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   EscapeRoomAttempt,
+  EscapeRoomSessionPhase,
   EscapeRoomStatus,
+  GetEscapeRoomSessionPhaseDocument,
   StartEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { getEscapeRoomLockoutRemainingSeconds } from '@lib/escapeRoomLockout'
 import { useEffect, useRef, useState } from 'react'
+
+// How often a group in a session-clock escape room asks for the session phase.
+const SESSION_PHASE_POLL_MS = 3000
 
 // Minimal shape the hook actually reads off an escape-room-capable activity.
 // Pick ties the attempt fields to the generated schema so a rename breaks here.
@@ -14,6 +19,10 @@ type EscapeRoomActivityInput = {
   escapeRoomConfig?: {
     bonusSeconds?: number | null
     lockoutSeconds?: number | null
+    // Group Activity session clock; the stored phase is the fallback until the
+    // first poll answers.
+    sessionClock?: boolean
+    sessionPhase?: EscapeRoomSessionPhase
   } | null
   escapeRoomAttempts?: Array<
     Pick<
@@ -31,7 +40,11 @@ type EscapeRoomActivityInput = {
       | 'penaltySeconds'
       | 'hintsUsed'
       | 'stageOutcomes'
-    >
+    > &
+      // selected by the Group Activity details only
+      Partial<
+        Pick<EscapeRoomAttempt, 'lockoutRemainingSeconds' | 'sessionPhase'>
+      >
   > | null
 }
 
@@ -116,11 +129,51 @@ export function useEscapeRoom({
   const attempt = attempts.length > 0 ? attempts[attempts.length - 1] : null
 
   const isEscapeRoom = !!activity?.escapeRoomConfig
+  const isGroup = activityType === 'groupActivity'
+  const hasSessionClock =
+    isGroup && !!groupId && !!activity?.escapeRoomConfig?.sessionClock
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
   const [expiresInSeconds, setExpiresInSeconds] = useState<number | null>(null)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
   // Guard so the expiry refetch fires exactly once per attempt, not every tick.
   const expiryHandledAttemptIdRef = useRef<string | null>(null)
+
+  // Cheap phase poll for the lobby and pauses; the full activity details are
+  // refetched only when the phase changes. Null without a session clock.
+  const { data: phaseData, stopPolling } = useQuery(
+    GetEscapeRoomSessionPhaseDocument,
+    {
+      variables: {
+        groupActivityId: activity?.id ?? '',
+        groupId: groupId ?? '',
+      },
+      skip: !hasSessionClock || !activity,
+      pollInterval: SESSION_PHASE_POLL_MS,
+      fetchPolicy: 'network-only',
+    }
+  )
+  const detailsPhase =
+    attempt?.sessionPhase ?? activity?.escapeRoomConfig?.sessionPhase ?? null
+  const polledPhase = hasSessionClock
+    ? (phaseData?.escapeRoomSessionPhase ?? null)
+    : null
+  const sessionPhase: EscapeRoomSessionPhase | null = hasSessionClock
+    ? (polledPhase ?? detailsPhase)
+    : null
+  const knownPhaseRef = useRef<EscapeRoomSessionPhase | null>(null)
+  useEffect(() => {
+    if (!polledPhase) return
+    const known = knownPhaseRef.current ?? detailsPhase
+    knownPhaseRef.current = polledPhase
+    if (known && known !== polledPhase) void refetch()
+    // the end is final, so nothing is left to poll for
+    if (polledPhase === EscapeRoomSessionPhase.Ended) stopPolling()
+  }, [polledPhase, detailsPhase, refetch, stopPolling])
+
+  // The countdown only advances while the session runs; without a session
+  // clock it always does.
+  const clockAdvances =
+    !hasSessionClock || sessionPhase === EscapeRoomSessionPhase.Running
 
   const startAttempt = async () => {
     if (!activity) return
@@ -160,7 +213,9 @@ export function useEscapeRoom({
     // cannot add or remove time between refetches.
     const receivedAt = performance.now()
     const calculateRemaining = () => {
-      const elapsed = (performance.now() - receivedAt) / 1000
+      const elapsed = clockAdvances
+        ? (performance.now() - receivedAt) / 1000
+        : 0
       const remaining = Math.max(
         0,
         Math.ceil(attempt.remainingSeconds - elapsed)
@@ -173,31 +228,41 @@ export function useEscapeRoom({
       setExpiresInSeconds(expiresIn)
       // the lockout comes from the same server snapshot, never the device clock
       setLockoutRemaining(
-        getEscapeRoomLockoutRemainingSeconds({
-          lockoutUntil: attempt.lockoutUntil,
-          startedAt: attempt.startedAt,
-          timeLimit: attempt.timeLimit,
-          remainingSeconds: attempt.remainingSeconds,
-          lockoutSeconds: activity?.escapeRoomConfig?.lockoutSeconds ?? 0,
-          receivedAtMs: receivedAt,
-          nowMs: performance.now(),
-        })
+        isGroup && typeof attempt.lockoutRemainingSeconds === 'number'
+          ? Math.max(0, Math.ceil(attempt.lockoutRemainingSeconds - elapsed))
+          : getEscapeRoomLockoutRemainingSeconds({
+              lockoutUntil: attempt.lockoutUntil,
+              startedAt: attempt.startedAt,
+              timeLimit: attempt.timeLimit,
+              remainingSeconds: attempt.remainingSeconds,
+              lockoutSeconds: activity?.escapeRoomConfig?.lockoutSeconds ?? 0,
+              receivedAtMs: receivedAt,
+              nowMs: performance.now(),
+            })
       )
 
       // On local expiry, refetch ONCE to sync the server-side status; without
       // the guard this fired every second while status stayed InProgress.
-      if (expiresIn <= 0 && expiryHandledAttemptIdRef.current !== attempt.id) {
+      if (
+        clockAdvances &&
+        expiresIn <= 0 &&
+        expiryHandledAttemptIdRef.current !== attempt.id
+      ) {
         expiryHandledAttemptIdRef.current = attempt.id
         void refetch()
       }
     }
 
     calculateRemaining()
+    if (!clockAdvances) return
+
     const interval = setInterval(calculateRemaining, 1000)
 
     return () => clearInterval(interval)
   }, [
     isEscapeRoom,
+    isGroup,
+    clockAdvances,
     attempt,
     activity?.escapeRoomConfig?.bonusSeconds,
     activity?.escapeRoomConfig?.lockoutSeconds,
@@ -220,6 +285,7 @@ export function useEscapeRoom({
     isExpired,
     remainingSeconds,
     lockoutRemaining,
+    sessionPhase,
     startAttempt,
     loading: starting,
     refetch,

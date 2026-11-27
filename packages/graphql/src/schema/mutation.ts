@@ -50,7 +50,11 @@ import {
   TemplateBlockInput,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
-import { EscapeRoomRulesInputRef } from './escapeRoomConfig.js'
+import {
+  EscapeRoomConfigRef,
+  EscapeRoomRulesInputRef,
+  EscapeRoomSessionPhase,
+} from './escapeRoomConfig.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -3636,6 +3640,7 @@ export const Mutation = builder.mutationType({
               type: EscapeRoomRulesInputRef,
               required: false,
             }),
+            escapeRoomSessionClock: t.arg.boolean({ required: false }),
           },
           resolve: async (_, args, ctx) => {
             return await GroupService.manipulateGroupActivity(args, ctx)
@@ -3666,6 +3671,7 @@ export const Mutation = builder.mutationType({
               type: EscapeRoomRulesInputRef,
               required: false,
             }),
+            escapeRoomSessionClock: t.arg.boolean({ required: false }),
           },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
@@ -3798,6 +3804,28 @@ export const Mutation = builder.mutationType({
           return await EscapeRoomService.startEscapeRoomAttempt(args, ctx)
         },
       }),
+
+      // Lecturer control of the session clock of a Group Activity escape room.
+      setEscapeRoomSessionPhase: t
+        .withAuth(asUserFullAccessForStandardActivities)
+        .field({
+          nullable: true,
+          type: EscapeRoomConfigRef,
+          args: {
+            groupActivityId: t.arg.string({ required: true }),
+            phase: t.arg({ type: EscapeRoomSessionPhase, required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.groupActivityId }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await EscapeRoomService.setEscapeRoomSessionPhase(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
 
       resetEscapeRoomAttempt: t.withAuth({ authenticated: true }).boolean({
         args: {

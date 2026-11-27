@@ -280,6 +280,7 @@ function GroupActivityWizard({
     escapeRoomTimeLimit: '60',
     escapeRoomHintPenalty: '0',
     escapeRoomIntroText: '',
+    escapeRoomSessionClock: false,
     ...getEscapeRoomRulesFormValues(),
   }
 
@@ -371,6 +372,9 @@ function GroupActivityWizard({
     escapeRoomIntroText:
       initialValues?.escapeRoomConfig?.introText ??
       formDefaultValues.escapeRoomIntroText,
+    escapeRoomSessionClock:
+      initialValues?.escapeRoomConfig?.sessionClock ??
+      formDefaultValues.escapeRoomSessionClock,
     ...getEscapeRoomRulesFormValues(initialValues?.escapeRoomConfig),
   })
 

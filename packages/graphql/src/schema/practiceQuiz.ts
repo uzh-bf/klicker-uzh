@@ -27,7 +27,9 @@ import type {
   EscapeRoomStageProgress as IEscapeRoomStageProgress,
 } from '../services/escapeRooms.js'
 import {
+  getEscapeRoomAttemptSession,
   getEscapeRoomExpiresInSeconds,
+  getEscapeRoomLockoutRemainingSeconds,
   getEscapeRoomRemainingSeconds,
 } from '../services/escapeRooms.js'
 import { CourseRef, type ICourse } from './course.js'
@@ -37,6 +39,7 @@ import {
   EscapeRoomConfigRef,
   EscapeRoomHintEntryInputRef,
   EscapeRoomRulesInputRef,
+  EscapeRoomSessionPhase,
 } from './escapeRoomConfig.js'
 import { GroupActivityDecisionRef } from './groupActivity.js'
 import { IStackFeedback } from './evaluation.js'
@@ -340,11 +343,40 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     startedAt: t.expose('startedAt', { type: 'Date' }),
     timeLimit: t.exposeInt('timeLimit'),
     penaltySeconds: t.exposeInt('penaltySeconds'),
+    // Group Activity attempts with a session clock exclude paused time; the
+    // other modes measure wall-clock time.
     remainingSeconds: t.int({
-      resolve: (attempt) => getEscapeRoomRemainingSeconds(attempt),
+      resolve: async (attempt, _args, ctx) =>
+        getEscapeRoomRemainingSeconds(
+          attempt,
+          undefined,
+          (await getEscapeRoomAttemptSession(attempt, ctx))?.config
+        ),
     }),
     expiresInSeconds: t.int({
-      resolve: (attempt) => getEscapeRoomExpiresInSeconds(attempt),
+      resolve: async (attempt, _args, ctx) =>
+        getEscapeRoomExpiresInSeconds(
+          attempt,
+          undefined,
+          (await getEscapeRoomAttemptSession(attempt, ctx))?.config
+        ),
+    }),
+    // Server-computed, so clients need not derive server time from their
+    // own clock; frozen while the session is paused.
+    lockoutRemainingSeconds: t.int({
+      resolve: async (attempt, _args, ctx) =>
+        getEscapeRoomLockoutRemainingSeconds(
+          attempt,
+          undefined,
+          (await getEscapeRoomAttemptSession(attempt, ctx))?.config
+        ),
+    }),
+    // Effective session phase; null without a Group Activity session clock.
+    sessionPhase: t.field({
+      type: EscapeRoomSessionPhase,
+      nullable: true,
+      resolve: async (attempt, _args, ctx) =>
+        (await getEscapeRoomAttemptSession(attempt, ctx))?.phase ?? null,
     }),
     hintsUsed: t.field({
       type: ['String'],
@@ -487,6 +519,7 @@ export const EscapeRoomProjectorRef = builder.objectRef<IEscapeRoomProjector>(
 export const EscapeRoomProjector = EscapeRoomProjectorRef.implement({
   fields: (t) => ({
     phase: t.expose('phase', { type: EscapeRoomProjectorPhase }),
+    paused: t.exposeBoolean('paused'),
     serverNow: t.expose('serverNow', { type: 'Date' }),
     closesAt: t.expose('closesAt', { type: 'Date', nullable: true }),
     timeLimit: t.exposeInt('timeLimit'),

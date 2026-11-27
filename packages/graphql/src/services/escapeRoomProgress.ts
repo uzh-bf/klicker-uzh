@@ -8,6 +8,7 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getEscapeRoomActiveSeconds,
   isEscapeRoomExpired,
 } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
@@ -19,6 +20,11 @@ import {
   isClearedWithoutAnswer,
   parseEscapeRoomStageOutcomes,
 } from './escapeRoomStageOutcomes.js'
+import {
+  getEscapeRoomEffectivePhase,
+  getEscapeRoomRemainingSeconds,
+  getGroupEscapeRoomSession,
+} from './escapeRooms.js'
 import {
   getGroupEscapeRoomStages,
   parseGroupEscapeRoomStageResponses,
@@ -213,7 +219,8 @@ export interface EscapeRoomProgress {
   activityId: string
   totalStacks: number
   timeLimit: number
-  // Digest that opens the classroom projector of a Live Quiz block.
+  // Digest that opens the classroom projector of a Live Quiz block or a Group
+  // Activity.
   projectorDigest: string | null
   attempts: EscapeRoomAttemptProgress[]
   stages: EscapeRoomStageProgress[]
@@ -298,7 +305,9 @@ export async function getEscapeRoomProgress(
     include: {
       practiceQuiz: { select: { courseId: true } },
       microLearning: { select: { courseId: true } },
-      groupActivity: { select: { courseId: true } },
+      groupActivity: {
+        select: { courseId: true, status: true, scheduledEndAt: true },
+      },
       elementBlock: {
         select: { liveQuiz: { select: { courseId: true } } },
       },
@@ -379,12 +388,23 @@ export async function getEscapeRoomProgress(
       })
     )?.status === DB.ElementBlockStatus.EXECUTED
 
+  // Pauses of a Group Activity session clock do not count as play time, and a
+  // session that ended (or whose activity closed) ends every running attempt.
+  const groupSession = getGroupEscapeRoomSession(config)
+  const sessionEnded =
+    groupSession != null &&
+    config.groupActivity != null &&
+    getEscapeRoomEffectivePhase(config, config.groupActivity) ===
+      DB.EscapeRoomSessionPhase.ENDED
+
   const now = Date.now()
   const elapsedAttemptIds = attempts
     .filter(
       (attempt) =>
         attempt.status === DB.EscapeRoomStatus.IN_PROGRESS &&
-        (blockClosed || isEscapeRoomExpired(attempt, now))
+        (blockClosed ||
+          sessionEnded ||
+          isEscapeRoomExpired(attempt, now, groupSession))
     )
     .map((attempt) => attempt.id)
   if (elapsedAttemptIds.length > 0) {
@@ -533,7 +553,11 @@ export async function getEscapeRoomProgress(
 
     const timeSpentSeconds = attempt.completedAt
       ? Math.round(
-          (attempt.completedAt.getTime() - attempt.startedAt.getTime()) / 1000
+          getEscapeRoomActiveSeconds(
+            attempt.startedAt,
+            attempt.completedAt,
+            groupSession
+          )
         )
       : null
     const activeLockoutUntil =
@@ -561,6 +585,7 @@ export async function getEscapeRoomProgress(
         startedAt: attempt.startedAt,
         penaltySeconds: attempt.penaltySeconds,
         stages: getScoredStages(attempt, liveQuizStageIds.length),
+        session: groupSession,
       }),
     }
   }
@@ -786,9 +811,13 @@ export async function getEscapeRoomProgress(
     timeLimit: config.timeLimit,
     projectorDigest:
       // Without a secret the cockpit omits the projector link.
-      elementBlockId != null && liveQuizId && process.env.APP_SECRET
-        ? getEscapeRoomProjectorDigest(liveQuizId, elementBlockId)
-        : null,
+      !process.env.APP_SECRET
+        ? null
+        : elementBlockId != null && liveQuizId
+          ? getEscapeRoomProjectorDigest(liveQuizId, elementBlockId)
+          : groupActivityId
+            ? getEscapeRoomGroupProjectorDigest(groupActivityId)
+            : null,
     attempts: progress.map((entry, index) => ({
       ...entry,
       rank: ranks.get(index) ?? null,
@@ -826,6 +855,32 @@ export function isValidEscapeRoomProjectorDigest(
   )
 }
 
+// Digest that opens the projector of one Group Activity. Its message differs
+// from the Live Quiz block digest, so neither opens the other's projector.
+export function getEscapeRoomGroupProjectorDigest(
+  groupActivityId: string
+): string {
+  const secret = process.env.APP_SECRET
+  if (!secret) throw new GraphQLError('Projector access is not configured')
+  return createHmac('sha256', secret)
+    .update(`escape-projector:groupActivity:${groupActivityId}`)
+    .digest('hex')
+}
+
+export function isValidEscapeRoomGroupProjectorDigest(
+  groupActivityId: string,
+  digest: string | null | undefined
+): boolean {
+  if (!digest) return false
+  const expected = Buffer.from(
+    getEscapeRoomGroupProjectorDigest(groupActivityId)
+  )
+  const received = Buffer.from(digest)
+  return (
+    received.length === expected.length && timingSafeEqual(received, expected)
+  )
+}
+
 export type EscapeRoomProjectorPhase = 'LOBBY' | 'RUNNING' | 'CLOSED'
 
 // One listed participant on the projector. It carries no attempt, participant
@@ -846,6 +901,8 @@ export interface EscapeRoomProjectorRow {
 
 export interface EscapeRoomProjector {
   phase: EscapeRoomProjectorPhase
+  // A paused Group Activity session shows as RUNNING with the clocks frozen.
+  paused: boolean
   serverNow: Date
   closesAt: Date | null
   timeLimit: number
@@ -865,6 +922,118 @@ const PROJECTOR_PHASES: Record<
   EXECUTED: 'CLOSED',
 }
 
+const GROUP_ACTIVITY_PROJECTOR_PHASES: Partial<
+  Record<DB.PublicationStatus, EscapeRoomProjectorPhase>
+> = {
+  DRAFT: 'LOBBY',
+  SCHEDULED: 'LOBBY',
+  PUBLISHED: 'RUNNING',
+  ENDED: 'CLOSED',
+  GRADED: 'CLOSED',
+}
+
+// Group Activity projector. Every group that started is listed under its
+// course group name; there is no opt-in or profile rule for course groups.
+async function getGroupActivityProjector(
+  groupActivityId: string,
+  digest: string | null | undefined,
+  ctx: Context
+): Promise<EscapeRoomProjector> {
+  const hasAccess =
+    isValidEscapeRoomGroupProjectorDigest(groupActivityId, digest) ||
+    (ctx.user != null &&
+      (await checkAccess(
+        [{ groupActivityId, minimumPermissionLevel: DB.PermissionLevel.READ }],
+        ctx as ContextWithUser
+      )))
+  if (!hasAccess) throw new GraphQLError('Not authorized')
+
+  const config = await ctx.prisma.escapeRoomConfig.findUnique({
+    where: { groupActivityId },
+    include: {
+      groupActivity: { select: { status: true, scheduledEndAt: true } },
+    },
+  })
+  // The progress service reads and expires attempts on behalf of the lecturer;
+  // access was decided above.
+  const progress = config
+    ? await getEscapeRoomProgress({ groupActivityId }, ctx as ContextWithUser)
+    : null
+  if (!config?.groupActivity || !progress) {
+    throw new GraphQLError('Escape room not found')
+  }
+
+  const session = getGroupEscapeRoomSession(config)
+  const sessionPhase = session
+    ? getEscapeRoomEffectivePhase(config, config.groupActivity)
+    : null
+  const phase: EscapeRoomProjectorPhase = sessionPhase
+    ? sessionPhase === DB.EscapeRoomSessionPhase.LOBBY
+      ? 'LOBBY'
+      : sessionPhase === DB.EscapeRoomSessionPhase.ENDED
+        ? 'CLOSED'
+        : 'RUNNING'
+    : (GROUP_ACTIVITY_PROJECTOR_PHASES[config.groupActivity.status] ?? 'CLOSED')
+  const paused = sessionPhase === DB.EscapeRoomSessionPhase.PAUSED
+
+  const now = Date.now()
+  const started = progress.attempts.filter(
+    (attempt) => attempt.status !== 'NOT_STARTED'
+  )
+  const rows = rankEscapeRoomScores(started).map((attempt) => ({
+    rank: attempt.rank,
+    displayName: attempt.displayName,
+    avatar: null,
+    clearedStages: attempt.clearedStacks,
+    solvedStages: attempt.solvedStages,
+    revealedStages: attempt.revealedStages,
+    skippedStages: attempt.skippedStages,
+    bonusCorrect: attempt.bonusCorrect,
+    rankedSeconds: attempt.rankedSeconds,
+    status: attempt.status,
+    endsAt:
+      attempt.status === DB.EscapeRoomStatus.IN_PROGRESS && attempt.startedAt
+        ? new Date(
+            now +
+              getEscapeRoomRemainingSeconds(
+                { startedAt: attempt.startedAt, timeLimit: progress.timeLimit },
+                now,
+                session
+              ) *
+                1000
+          )
+        : null,
+  }))
+
+  return {
+    phase,
+    paused,
+    serverNow: new Date(now),
+    // Groups are timed from their own start, so the headline countdown follows
+    // the group that plays longest; the activity window can be days away.
+    // While paused the countdown is hidden behind the pause notice.
+    closesAt:
+      phase === 'RUNNING' && !paused
+        ? rows.reduce<Date | null>(
+            (latest, row) =>
+              row.endsAt && (!latest || row.endsAt > latest)
+                ? row.endsAt
+                : latest,
+            null
+          )
+        : null,
+    timeLimit: progress.timeLimit,
+    totalStages: progress.totalStacks,
+    startedCount: started.length,
+    rankedCount: rows.filter((row) => row.rank !== null).length,
+    rows,
+    stages: progress.stages.map((stage) => ({
+      ...stage,
+      debrief: phase === 'CLOSED' ? stage.debrief : null,
+    })),
+  }
+}
+
 /**
  * Classroom projector view of a Live Quiz escape block. Access is either READ
  * permission on the quiz or the block's projector digest. Participants are
@@ -877,13 +1046,24 @@ export async function getEscapeRoomProjector(
 ): Promise<EscapeRoomProjector> {
   const { liveQuizId, elementBlockId, digest } = args
   if (
+    args.groupActivityId &&
+    !liveQuizId &&
+    elementBlockId == null &&
+    !args.practiceQuizId &&
+    !args.microLearningId
+  ) {
+    return getGroupActivityProjector(args.groupActivityId, digest, ctx)
+  }
+  if (
     !liveQuizId ||
     elementBlockId == null ||
     args.practiceQuizId ||
     args.microLearningId ||
     args.groupActivityId
   ) {
-    throw new GraphQLError('The projector supports Live Quiz blocks only')
+    throw new GraphQLError(
+      'The projector supports Live Quiz blocks and Group Activities only'
+    )
   }
 
   const hasAccess =
@@ -989,6 +1169,7 @@ export async function getEscapeRoomProjector(
 
   return {
     phase,
+    paused: false,
     serverNow: new Date(),
     closesAt: block.expiresAt,
     timeLimit: progress.timeLimit,
