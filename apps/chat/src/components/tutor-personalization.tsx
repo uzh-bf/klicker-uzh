@@ -9,6 +9,7 @@ import {
   DATA_USE_CHANGED_EVENT,
   dataUseEndpoint,
   fetchDataUseState,
+  shownTutorNotice,
 } from '../lib/client/dataUse'
 import type { ChatDataUseState } from '../lib/dataUse'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -131,9 +132,14 @@ export function TutorPersonalizationOffer({
 
   if (!offered || !state?.complete) return null
 
-  const notice = state.tutorPersonalizationNotesOffered
-    ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
-    : t('shared.tutorPersonalization.notice')
+  // A notice this page has no text for is not offered; the settings explain
+  // that the page needs a reload.
+  const shown = shownTutorNotice(state.tutorPersonalizationCurrentVersion)
+  if (!shown) return null
+  const notice =
+    shown === 'notes'
+      ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
+      : t('shared.tutorPersonalization.notice')
 
   if (postponed || state.tutorPersonalizationConsent !== null) return null
 
@@ -152,7 +158,7 @@ export function TutorPersonalizationOffer({
         </h2>
         <p className="text-sm">
           {t(
-            state.tutorPersonalizationNotesOffered
+            shown === 'notes'
               ? 'chat.personalization.offerLeadNotes'
               : 'chat.personalization.offerLead'
           )}
@@ -221,11 +227,102 @@ export function TutorPersonalizationOffer({
 }
 
 type LearnerContextView =
-  | { active: true; text: string; notes: string }
-  | { active: false; reason: string }
+  | { active: true; text: string; notes: string; notesDeletable: boolean }
+  | { active: false; reason: string; notesDeletable: boolean }
 
-/** Notes exist, or may exist, for this student in this chatbot's course. */
-const NOTES_IN_USE = ['present', 'empty', 'unavailable']
+type NotesDeletionOutcome = 'deleted' | 'pending' | 'failed'
+
+/**
+ * Deletes the student's learning notes for the chatbot's course after an
+ * inline confirmation. It is shown wherever notes may exist, independent of
+ * whether the Tutor may currently use them, so a student can always delete.
+ */
+export function LearnerNotesDeletion({
+  chatbotId,
+  onStart,
+  onSettled,
+}: {
+  chatbotId: string
+  /** Called when the student asks to delete, before confirming. */
+  onStart?: () => void
+  onSettled: (outcome: NotesDeletionOutcome) => void
+}) {
+  const t = useTranslations()
+  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function deleteNotes() {
+    setDeleting(true)
+    let outcome: NotesDeletionOutcome = 'failed'
+    try {
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/learner-context`,
+        { method: 'DELETE' }
+      )
+      const status = response.ok
+        ? ((await response.json()) as { status: string }).status
+        : null
+      if (status === 'deleted' || status === 'pending') outcome = status
+    } catch {
+      outcome = 'failed'
+    } finally {
+      setDeleting(false)
+      setConfirming(false)
+    }
+    onSettled(outcome)
+  }
+
+  if (!confirming) {
+    return (
+      <div>
+        <Button
+          type="button"
+          data={{ cy: 'chat-personalization-notes-delete' }}
+          onClick={() => {
+            onStart?.()
+            setConfirming(true)
+          }}
+        >
+          {t('chat.personalization.notesDelete')}
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded border p-2">
+      <p>{t('chat.personalization.notesDeleteConfirm')}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          disabled={deleting}
+          data={{ cy: 'chat-personalization-notes-delete-confirm' }}
+          onClick={() => void deleteNotes()}
+        >
+          {t('chat.personalization.notesDeleteYes')}
+        </Button>
+        <Button
+          type="button"
+          disabled={deleting}
+          data={{ cy: 'chat-personalization-notes-delete-cancel' }}
+          onClick={() => setConfirming(false)}
+        >
+          {t('chat.personalization.notesDeleteCancel')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** The message for a finished deletion request. */
+export function useNotesDeletionMessage() {
+  const t = useTranslations()
+  return (outcome: NotesDeletionOutcome) =>
+    outcome === 'deleted'
+      ? t('chat.personalization.notesDeleted')
+      : outcome === 'pending'
+        ? t('chat.personalization.notesDeletePending')
+        : t('shared.generic.systemError')
+}
 
 /**
  * Lets the student read what the Tutor would receive about them with their
@@ -238,11 +335,8 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const [open, setOpen] = useState(false)
-  const [confirmingDeletion, setConfirmingDeletion] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [deletion, setDeletion] = useState<
-    'deleted' | 'pending' | 'failed' | null
-  >(null)
+  const [deletion, setDeletion] = useState<NotesDeletionOutcome | null>(null)
+  const deletionMessage = useNotesDeletionMessage()
 
   // Two choices saved in quick succession start two reads. Only the newest
   // one may answer, so the view never shows a state that no longer holds.
@@ -277,39 +371,11 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
     // The outcome of an earlier deletion describes a state that may have
     // changed since, so a reopened view starts from what it reads now.
     setDeletion(null)
-    setConfirmingDeletion(false)
     void load()
     const reload = () => void load()
     window.addEventListener(DATA_USE_CHANGED_EVENT, reload)
     return () => window.removeEventListener(DATA_USE_CHANGED_EVENT, reload)
   }, [open, load])
-
-  const deleteNotes = useCallback(async () => {
-    setDeleting(true)
-    setDeletion(null)
-    try {
-      const response = await authedFetch(
-        `/api/chatbots/${chatbotId}/learner-context`,
-        { method: 'DELETE' }
-      )
-      const status = response.ok
-        ? ((await response.json()) as { status: string }).status
-        : null
-      setDeletion(
-        status === 'deleted'
-          ? 'deleted'
-          : status === 'pending'
-            ? 'pending'
-            : 'failed'
-      )
-      setConfirmingDeletion(false)
-      await load()
-    } catch {
-      setDeletion('failed')
-    } finally {
-      setDeleting(false)
-    }
-  }, [chatbotId, load])
 
   const notes = view?.active ? view.notes : null
   const notesMessage =
@@ -376,52 +442,19 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
           )}
           {deletion && (
             <p data-cy="chat-personalization-notes-deletion">
-              {deletion === 'deleted'
-                ? t('chat.personalization.notesDeleted')
-                : deletion === 'pending'
-                  ? t('chat.personalization.notesDeletePending')
-                  : t('shared.generic.systemError')}
+              {deletionMessage(deletion)}
             </p>
           )}
-          {!failed &&
-            notes !== null &&
-            NOTES_IN_USE.includes(notes) &&
-            (confirmingDeletion ? (
-              <div className="flex flex-col gap-2 rounded border p-2">
-                <p>{t('chat.personalization.notesDeleteConfirm')}</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    disabled={deleting}
-                    data={{ cy: 'chat-personalization-notes-delete-confirm' }}
-                    onClick={() => void deleteNotes()}
-                  >
-                    {t('chat.personalization.notesDeleteYes')}
-                  </Button>
-                  <Button
-                    type="button"
-                    disabled={deleting}
-                    data={{ cy: 'chat-personalization-notes-delete-cancel' }}
-                    onClick={() => setConfirmingDeletion(false)}
-                  >
-                    {t('chat.personalization.notesDeleteCancel')}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <Button
-                  type="button"
-                  data={{ cy: 'chat-personalization-notes-delete' }}
-                  onClick={() => {
-                    setDeletion(null)
-                    setConfirmingDeletion(true)
-                  }}
-                >
-                  {t('chat.personalization.notesDelete')}
-                </Button>
-              </div>
-            ))}
+          {!failed && view?.notesDeletable && (
+            <LearnerNotesDeletion
+              chatbotId={chatbotId}
+              onStart={() => setDeletion(null)}
+              onSettled={(outcome) => {
+                setDeletion(outcome)
+                void load()
+              }}
+            />
+          )}
         </div>
       )}
     </div>

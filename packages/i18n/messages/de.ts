@@ -100,6 +100,8 @@ export default {
       settingsLoading: 'Einstellungen zur Datennutzung werden geladen…',
       settingsChangedElsewhere:
         'Deine Auswahl wurde in einem anderen Fenster geändert. Prüfe sie unten und wähle bei Bedarf erneut.',
+      notesDeletionHint:
+        'Falls der Tutor in diesem Kurs Lernnotizen über Dich angelegt hat, kannst Du sie hier löschen, ohne fortzufahren.',
     },
     personalization: {
       offerTitle: 'Tutor personalisieren?',

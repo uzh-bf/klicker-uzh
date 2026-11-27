@@ -1614,7 +1614,15 @@ contract, the choice, eligibility and the interface.
 /api/chatbots/:chatbotId/learner-context`) writes a request with the database
   time and sends it at once. The service drops later updates that started
   before that time. While any request for the learner and course is
-  unconfirmed, the chat neither reads nor updates the notes.
+  unconfirmed, the chat neither reads nor updates the notes. The delete
+  control appears whenever the deployment keeps notes, independent of the
+  lecturer switch, the owner's entitlement and the student's choice, and also
+  on the account-notice screen for a student who must acknowledge a new
+  notice.
+- **Notice versions in the browser.** The notice texts are bundled with the
+  page. The offer card and the settings record an answer only under a version
+  the page has text for; a newer version hides the offer and blocks the
+  settings choice with the reload message.
 - **Retries.** The Hatchet task `retry-learner-memory-forgets` runs every five
   minutes, sends unconfirmed requests and removes confirmed ones after 30 days.
   A stale-epoch answer counts as confirmed, because a later deletion already

@@ -99,6 +99,8 @@ export default {
       settingsLoading: 'Loading your data use settings…',
       settingsChangedElsewhere:
         'Your choices were changed in another window. Check them below and choose again if needed.',
+      notesDeletionHint:
+        'If the Tutor kept learning notes about you in this course, you can delete them here without continuing.',
     },
     personalization: {
       offerTitle: 'Personalize the Tutor?',

@@ -1,4 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { isLearnerMemoryConfigured } from '@klicker-uzh/util/learner-memory'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { resolveLearnerContext } from '@/src/lib/server/learnerContext'
@@ -59,10 +60,19 @@ export async function GET(
       },
       'view'
     )
+    // Deletion depends only on whether this deployment keeps notes, never on
+    // the switch, the entitlement or the choice, so stored notes stay
+    // deletable when the Tutor may no longer use them.
+    const keepsNotes = isLearnerMemoryConfigured()
     return NextResponse.json(
       result.eligible
-        ? { active: true, text: result.text, notes: result.notes }
-        : { active: false, reason: result.reason },
+        ? {
+            active: true,
+            text: result.text,
+            notes: result.notes,
+            notesDeletable: keepsNotes && result.notes !== 'deleting',
+          }
+        : { active: false, reason: result.reason, notesDeletable: keepsNotes },
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (error) {
