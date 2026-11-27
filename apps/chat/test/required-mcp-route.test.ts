@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
 
 const mocks = vi.hoisted(() => ({
+  authorizeIdentityForChatbot: vi.fn(),
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   findUnique: vi.fn(),
@@ -27,6 +28,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
+  authorizeIdentityForChatbot: mocks.authorizeIdentityForChatbot,
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
@@ -161,6 +163,9 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    courseId: 'course-1',
+    status: 'ACTIVE',
+    knowledgeGraphRetrievalEnabled: false,
     owner: {
       aiFeaturesEnabled: true,
       aiSubscriptionTier: 'ADVANCED',
@@ -171,7 +176,12 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
     modelSelection: true,
     answerPreferencesEnabled: true,
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
-    knowledgeBases: [],
+    knowledgeBases: [
+      {
+        kb: { knowledgeGraphEnabled: false, ownerId: 'owner-1' },
+        kbId: KB_ID,
+      },
+    ],
     standardModeConfig: null,
     customModeConfig: null,
     mcpConfigurations: [createMcpConfiguration()],
@@ -187,6 +197,11 @@ describe('required MCP chat preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode: 'account',
+      chatbot: { courseId: 'course-1' },
+    })
+    mocks.authorizeIdentityForChatbot.mockResolvedValue({
       participantId: 'participant-1',
       authMode: 'account',
       chatbot: { courseId: 'course-1' },
@@ -261,6 +276,12 @@ describe('required MCP chat preflight', () => {
     )
     mocks.findUnique.mockResolvedValue(
       createChatbot({
+        knowledgeBases: [
+          {
+            kb: { knowledgeGraphEnabled: false, ownerId: 'owner-1' },
+            kbId: figure.kb_id,
+          },
+        ],
         mcpConfigurations: [
           createMcpConfiguration({
             allowedTools: ['doc_query'],
@@ -387,7 +408,9 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
+        courseId: 'course-1',
         kbIds: undefined,
+        knowledgeGraphRetrievalEnabled: false,
         sessionId: 'thread-1',
       }
     )
@@ -450,6 +473,8 @@ describe('required MCP chat preflight', () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
       ownerId: 'owner-1',
+      courseId: 'course-1',
+      knowledgeGraphRetrievalEnabled: false,
       owner: {
         aiFeaturesEnabled: true,
         aiSubscriptionTier: 'ADVANCED',
@@ -498,7 +523,9 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
+        courseId: 'course-1',
         kbIds: [KB_ID],
+        knowledgeGraphRetrievalEnabled: false,
         sessionId: 'thread-1',
       }
     )
@@ -749,7 +776,9 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
+        courseId: 'course-1',
         kbIds: [KB_ID],
+        knowledgeGraphRetrievalEnabled: false,
         sessionId: 'thread-1',
       }
     )
@@ -966,7 +995,9 @@ describe('required MCP chat preflight', () => {
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
         authMode: 'account',
+        courseId: 'course-1',
         kbIds: undefined,
+        knowledgeGraphRetrievalEnabled: false,
         sessionId: 'thread-1',
       }
     )

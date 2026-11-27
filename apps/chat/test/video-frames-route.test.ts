@@ -17,14 +17,20 @@ vi.mock('@klicker-uzh/prisma', () => ({
     chatbot: { findUnique: mocks.chatbot },
   },
 }))
-vi.mock('@/src/lib/server/apiGuards', () => ({ withChatbotAuth: mocks.auth }))
+vi.mock('@/src/lib/server/apiGuards', () => ({
+  withChatbotAuth: mocks.auth,
+  authorizeIdentityForChatbot: mocks.auth,
+}))
 vi.mock('@/src/lib/server/effectiveChatModes', () => ({
   resolveEffectiveMCPConfigurations: (configs: unknown) => configs,
 }))
 vi.mock('@/src/lib/server/videoFrameStore', () => ({
   readVideoFrame: mocks.read,
 }))
-vi.mock('@/src/services/mcpScope', () => ({ resolveMcpScope: mocks.scope }))
+vi.mock('@/src/services/mcpScope', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/services/mcpScope')>()),
+  resolveMcpScope: mocks.scope,
+}))
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/frames/[assetId]/route'
 
@@ -47,7 +53,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.auth.mockResolvedValue({
     participantId: 'student',
-    chatbot: { courseId: 'course' },
+    authMode: 'account',
+    chatbot: { courseId: 'course', knowledgeGraphVisible: false },
   })
   mocks.message.mockResolvedValue({
     chatMode: 'tutor',
@@ -59,7 +66,19 @@ beforeEach(() => {
       },
     ],
   })
-  mocks.chatbot.mockResolvedValue({ mcpConfigurations: [] })
+  mocks.chatbot.mockResolvedValue({
+    ownerId: 'owner',
+    courseId: 'course',
+    status: 'PUBLISHED',
+    knowledgeGraphRetrievalEnabled: false,
+    mcpConfigurations: [],
+    knowledgeBases: [
+      {
+        kbId: frame.kb_id,
+        kb: { ownerId: 'owner', knowledgeGraphEnabled: false },
+      },
+    ],
+  })
   mocks.scope.mockReturnValue([frame.kb_id])
   mocks.read.mockResolvedValue(Buffer.from('jpeg'))
 })

@@ -1577,13 +1577,17 @@ describe('response-example foundation', () => {
     )
   })
 
-  it('checks the original binding count before resolving an eligible source', async () => {
-    const { chatbot, currentResource, set } = await seedResponseExampleSet()
+  it('rejects evidence from a disabled KB after replacement with an unreadable KB', async () => {
+    const { chatbot, currentResource, kb, set } = await seedResponseExampleSet()
     const hiddenKb = await prisma.kB.create({
       data: {
         name: 'Unavailable second knowledge base',
         ownerId: userTwoCtx.user.sub,
       },
+    })
+    await prisma.kBChatbot.update({
+      where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+      data: { isEnabled: false },
     })
     await prisma.kBChatbot.create({
       data: { kbId: hiddenKb.id, chatbotId: chatbot.id, isEnabled: true },
@@ -1610,7 +1614,7 @@ describe('response-example foundation', () => {
       prisma.kBChatbot.count({
         where: { chatbotId: chatbot.id, isEnabled: true },
       })
-    ).resolves.toBe(2)
+    ).resolves.toBe(1)
   })
 
   it('cascades the set, entries, and evidence when a chatbot is deleted', async () => {
