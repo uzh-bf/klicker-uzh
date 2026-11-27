@@ -288,7 +288,7 @@ export default {
       modelUnavailable: 'No model is available for this chatbot.',
       toolLimitsTitle: 'Preview limits',
       toolLimitsNotice:
-        'Preview supports document queries only. Attachments and other tools are unavailable.',
+        'Preview supports document queries and feedback cards. Attachments and other tools are unavailable.',
       loginTitle: 'Lecturer login required',
       loginMessage:
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',

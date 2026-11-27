@@ -295,7 +295,7 @@ export default {
       modelUnavailable: 'Für diesen Chatbot ist kein Modell verfügbar.',
       toolLimitsTitle: 'Vorschau-Limits',
       toolLimitsNotice:
-        'Die Vorschau unterstützt nur Dokumentabfragen. Anhänge und andere Tools sind nicht verfügbar.',
+        'Die Vorschau unterstützt Dokumentabfragen und Feedbackkarten. Anhänge und andere Tools sind nicht verfügbar.',
       loginTitle: 'Anmeldung für Dozierende erforderlich',
       loginMessage:
         'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
