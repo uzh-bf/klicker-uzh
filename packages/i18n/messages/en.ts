@@ -2588,6 +2588,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'For some of the elements included in this template, newer versions are available in the library. This happens when you modify an elements without enabling updates in templates.<ul><li>To update outdated versions of elements, re-create the template.</li><li>Alternatively, when modifying the corresponding elements, you can also choose to update the instances included in templates.</li><li>To get a list of all outdated instances, please check out the template information by clicking on the template title in the overview.</li></ul>',
       automaticPublicationAt: 'Automatic publication at {date}',
       availability: 'Availability: {startDate} - {endDate}',
+      publicationDelayed:
+        'Publication is delayed. Return this microlearning to draft, then publish it again once the activity artifact service and feature flag are available.',
       removeActivity: 'Remove Activity',
       confirmActivityRemoval:
         'Please confirm the following consequences of removing the activity <b>{name}</b> from your user account.',
@@ -5074,7 +5076,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       confirmPublishingMicrolearning:
         'Please confirm that you want to publish the microlearning <b>{name}</b>. This action will make it available to all participants in the following time window:',
       microlearningPublishingHint:
-        'This process can only be undone if the start time is in the future. Changes to the content of contained elements are no longer possible after publishing.',
+        'A scheduled microlearning can be returned to draft until it has been published, including after its start time. Changes to the content of contained elements are no longer possible after publishing.',
       publishArtifactForbidden:
         'This activity cannot be published with its attached activity artifact. Check that activity artifacts are enabled for the linked artifact owner and that you may administer this activity, then try again.',
       publishArtifactInvalid:

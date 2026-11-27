@@ -2631,6 +2631,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für einige der in dieser Vorlage enthaltenen Elemente sind neuere Versionen in der Bibliothek verfügbar. Dies passiert, wenn Sie ein Element editieren, ohne die Aktualisierungen in Vorlagen zu aktivieren.<ul><li>Um veraltete Versionen von Elementen zu aktualisieren, erstellen Sie die Vorlage erneut.</li><li>Alternativ können Sie beim Ändern der entsprechenden Elemente auch wählen, die in Vorlagen enthaltenen Instanzen zu aktualisieren.</li><li>Um eine Liste aller veralteten Instanzen zu erhalten, öffnen Sie bitte die Übersicht, indem Sie auf den Titel der Vorlage in der Liste klicken.</li></ul>',
       automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
       availability: 'Verfügbarkeit: {startDate} - {endDate}',
+      publicationDelayed:
+        'Die Veröffentlichung ist verzögert. Setzen Sie dieses Microlearning auf Entwurf zurück und veröffentlichen Sie es erneut, sobald der Aktivitätsartefakt-Dienst und das Feature-Flag wieder verfügbar sind.',
       removeActivity: 'Aktivität entfernen',
       confirmActivityRemoval:
         'Bitte bestätigen Sie die folgenden Konsequenzen der Entfernung der Aktivität <b>{name}</b> aus Ihrem Benutzerkonto.',
@@ -5187,7 +5189,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmPublishingMicrolearning:
         'Bitte bestätigen Sie, dass Sie das Microlearning <b>{name}</b> veröffentlichen möchten. Diese Aktion macht es für alle Teilnehmenden im folgenden Zeitfenster verfügbar:',
       microlearningPublishingHint:
-        'Dieser Prozess kann nur rückgängig gemacht werden, wenn das Startdatum in der Zukunft liegt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
+        'Ein geplantes Microlearning kann bis zur Veröffentlichung auf Entwurf zurückgesetzt werden, auch nach dem Startzeitpunkt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
       publishArtifactForbidden:
         'Diese Aktivität kann mit dem angehängten Aktivitätsartefakt nicht veröffentlicht werden. Prüfen Sie, ob Aktivitätsartefakte für die verknüpfte Erstellerin oder den verknüpften Ersteller aktiviert sind und ob Sie diese Aktivität verwalten dürfen, und versuchen Sie es anschliessend erneut.',
       publishArtifactInvalid:

@@ -1089,10 +1089,24 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
         globalCtx.featureFlags,
         globalCtx.prisma
       )
-      await globalCtx.prisma.microLearning.update({
-        where: { id: microLearningId },
+      // Publish only while the row is still scheduled at the start time this
+      // worker observed. A lecturer returning the activity to draft or
+      // rescheduling it concurrently must win over the worker's stale read.
+      const publication = await globalCtx.prisma.microLearning.updateMany({
+        where: {
+          id: microLearningId,
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledStartAt: microLearning.scheduledStartAt,
+        },
         data: { status: DB.PublicationStatus.PUBLISHED },
       })
+
+      if (publication.count === 0) {
+        console.warn(
+          `Microlearning ${microLearningId} is no longer scheduled at the expected start time; skipping publication`
+        )
+        return false
+      }
 
       // send a teams notification
       await sendTeamsNotification({

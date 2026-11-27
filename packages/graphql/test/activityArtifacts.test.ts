@@ -1440,6 +1440,7 @@ describe('activity artifact publication binding', () => {
       id: microLearningId,
       status: PublicationStatus.PUBLISHED,
     })
+    const updateManyMicroLearning = vi.fn().mockResolvedValue({ count: 1 })
 
     return {
       findMicroLearning,
@@ -1447,10 +1448,12 @@ describe('activity artifact publication binding', () => {
       findPermissions,
       findUsers,
       updateMicroLearning,
+      updateManyMicroLearning,
       prisma: {
         microLearning: {
           findUnique: findMicroLearning,
           update: updateMicroLearning,
+          updateMany: updateManyMicroLearning,
         },
         elementInstance: { findMany: findInstances },
         derivedPermission: { findMany: findPermissions },
@@ -1779,7 +1782,7 @@ describe('activity artifact publication binding', () => {
   })
 
   it('binds before the scheduled worker publishes the activity', async () => {
-    const { prisma, updateMicroLearning } = publicationPrisma()
+    const { prisma, updateManyMicroLearning } = publicationPrisma()
     prisma.microLearning.findUnique.mockResolvedValue({
       id: microLearningId,
       status: PublicationStatus.SCHEDULED,
@@ -1799,12 +1802,47 @@ describe('activity artifact publication binding', () => {
 
     expect(runtime.assign).toHaveBeenCalledTimes(1)
     expect(runtime.assign.mock.invocationCallOrder[0]).toBeLessThan(
-      updateMicroLearning.mock.invocationCallOrder[0]!
+      updateManyMicroLearning.mock.invocationCallOrder[0]!
     )
   })
 
+  it('skips publication when the activity left the scheduled state first', async () => {
+    const { prisma, updateManyMicroLearning } = publicationPrisma()
+    const scheduledStartAt = new Date(Date.now() - 60_000)
+    prisma.microLearning.findUnique.mockResolvedValue({
+      id: microLearningId,
+      status: PublicationStatus.SCHEDULED,
+      scheduledStartAt,
+    })
+    updateManyMicroLearning.mockResolvedValue({ count: 0 })
+    const runtime = publicationRuntime()
+    const emitter = { emit: vi.fn() }
+
+    const published = await handlePublishScheduledMicroLearning(
+      { microLearningId },
+      {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(),
+        emitter,
+      } as unknown as Parameters<typeof handlePublishScheduledMicroLearning>[1],
+      {} as Parameters<typeof handlePublishScheduledMicroLearning>[2]
+    )
+
+    expect(published).toBe(false)
+    expect(updateManyMicroLearning).toHaveBeenCalledWith({
+      where: {
+        id: microLearningId,
+        status: PublicationStatus.SCHEDULED,
+        scheduledStartAt,
+      },
+      data: { status: PublicationStatus.PUBLISHED },
+    })
+    expect(emitter.emit).not.toHaveBeenCalled()
+  })
+
   it('leaves a scheduled activity unpublished for retry while the owner flag is off', async () => {
-    const { prisma, updateMicroLearning } = publicationPrisma()
+    const { prisma, updateManyMicroLearning } = publicationPrisma()
     prisma.microLearning.findUnique.mockResolvedValue({
       id: microLearningId,
       status: PublicationStatus.SCHEDULED,
@@ -1831,7 +1869,7 @@ describe('activity artifact publication binding', () => {
     })
 
     expect(runtime.assign).not.toHaveBeenCalled()
-    expect(updateMicroLearning).not.toHaveBeenCalled()
+    expect(updateManyMicroLearning).not.toHaveBeenCalled()
   })
 })
 

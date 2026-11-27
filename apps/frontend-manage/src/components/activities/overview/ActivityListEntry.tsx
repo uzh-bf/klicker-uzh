@@ -63,6 +63,12 @@ function ActivityListEntry({
   const disabled =
     activity.status !== PublicationStatus.Draft &&
     activity.status !== PublicationStatus.Scheduled
+  const publicationDelayed =
+    activity.type === ActivityType.MicroLearning &&
+    activity.status === PublicationStatus.Scheduled &&
+    !!activity.scheduledStartAt &&
+    dayjs(activity.scheduledStartAt).isBefore(dayjs())
+
   const publicationStatusMap: Record<PublicationStatus, React.ReactNode> = {
     [PublicationStatus.Draft]: (
       <FontAwesomeIcon
@@ -246,6 +252,15 @@ function ActivityListEntry({
                 className={{ root: 'text-sm' }}
               />
             </div>
+            {publicationDelayed && (
+              <div
+                className="mt-1 ml-[1.65rem] flex flex-row items-center gap-1.5 text-sm text-orange-700"
+                data-cy={`publication-delayed-${activity.name}`}
+              >
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+                <span>{t('manage.activities.publicationDelayed')}</span>
+              </div>
+            )}
           </div>
           <div className="gap-4.5 flex flex-col items-end">
             <div className="-mt-1 flex flex-row items-center">
