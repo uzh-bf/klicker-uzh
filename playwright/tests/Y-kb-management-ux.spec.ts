@@ -545,7 +545,10 @@ test.describe('Knowledge base management workspace', () => {
           return
         }
 
-        if (operationName === 'GetKb' && failNextKbMetricsRefresh) {
+        if (
+          operationName === 'GetKbWithPermissionLevel' &&
+          failNextKbMetricsRefresh
+        ) {
           failNextKbMetricsRefresh = false
           await route.fulfill({
             status: 200,
