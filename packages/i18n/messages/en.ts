@@ -6275,7 +6275,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       infoSharingCHATBOT:
         'Share the setup of <b>{objectName}</b> with lecturers or user groups.',
       infoSharingKB:
-        'This view allows you to share the knowledge base "<b>{objectName}</b>" with other lecturers or user groups. Read access lets recipients inspect the knowledge base and its source material. Write access also lets them maintain the source material. Admin access also lets them grant, change and revoke access. Owners keep lifecycle and deletion controls.',
+        'This view allows you to share the knowledge base "<b>{objectName}</b>" with other lecturers or user groups. Read access lets recipients inspect the source material and use the knowledge base in their own chatbots. Write access also lets them maintain the source material. Admin access also lets them grant, change and revoke access. Owners keep lifecycle and deletion controls.',
       propagatedPermissions: 'Propagated Permissions',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',

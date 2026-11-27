@@ -6424,9 +6424,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       infoSharingELEMENT:
         'Diese Ansicht erlaubt es Ihnen, das Element "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Element bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCHATBOT:
-        'Teile die Einstellungen von <b>{objectName}</b> mit Dozierenden oder Benutzergruppen.',
+        'Hier können Sie die Einstellungen von <b>{objectName}</b> mit Dozierenden oder Nutzergruppen teilen.',
       infoSharingKB:
-        'In dieser Ansicht können Sie die Wissensdatenbank "<b>{objectName}</b>" mit anderen Dozierenden oder Nutzergruppen teilen. Leserechte erlauben Einsicht in die Wissensdatenbank und ihr Quellenmaterial. Schreibrechte erlauben zusätzlich die Bearbeitung des Quellenmaterials. Adminrechte erlauben zusätzlich das Erteilen, Ändern und Entziehen von Zugriff. Eigentümerrechte umfassen weiterhin den Lebenszyklus und das Löschen.',
+        'In dieser Ansicht können Sie die Wissensdatenbank "<b>{objectName}</b>" mit anderen Dozierenden oder Nutzergruppen teilen. Mit Leserechten können Sie das Quellenmaterial einsehen und die Wissensdatenbank in Ihren eigenen Chatbots verwenden. Schreibrechte erlauben zusätzlich die Bearbeitung des Quellenmaterials. Adminrechte erlauben zusätzlich das Erteilen, Ändern und Entziehen von Zugriff. Eigentümerrechte umfassen weiterhin den Lebenszyklus und das Löschen.',
       propagatedPermissions: 'Abgeleitete Berechtigungen',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',

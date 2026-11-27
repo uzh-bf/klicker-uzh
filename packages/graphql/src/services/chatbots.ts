@@ -2679,5 +2679,5 @@ export async function createChatbot(
     },
   })
 
-  return shapeChatbotResponse(created)
+  return shapeChatbotResponse(created, { viewerId: ctx.user.sub })
 }
