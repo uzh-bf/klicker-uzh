@@ -101,6 +101,7 @@ import {
   ActivitySummary,
   ElementStack,
   EscapeRoomProgress,
+  EscapeRoomProjector,
   PracticeQuiz,
   PublicationStatus,
   ReviewStatus,
@@ -700,6 +701,23 @@ export const Query = builder.queryType({
             return await EscapeRoomService.getEscapeRoomProgress(args, ctx)
           }
         ),
+      }),
+
+      // Open to anonymous callers holding the block's projector digest;
+      // lecturers with READ access on the quiz need no digest.
+      escapeRoomProjector: t.field({
+        type: EscapeRoomProjector,
+        args: {
+          practiceQuizId: t.arg.string({ required: false }),
+          microLearningId: t.arg.string({ required: false }),
+          groupActivityId: t.arg.string({ required: false }),
+          liveQuizId: t.arg.string({ required: false }),
+          elementBlockId: t.arg.int({ required: false }),
+          digest: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await EscapeRoomService.getEscapeRoomProjector(args, ctx)
+        },
       }),
 
       escapeRoomHints: t.withAuth(asUser).field({

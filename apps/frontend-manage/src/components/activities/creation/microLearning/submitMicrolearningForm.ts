@@ -85,6 +85,9 @@ async function submitMicrolearningForm({
           escapeRoomHints: values.isEscapeRoom
             ? getEscapeRoomHintsInput(element.escapeRoomHint)
             : undefined,
+          escapeRoomDebrief: values.isEscapeRoom
+            ? (element.escapeRoomDebrief ?? undefined)
+            : undefined,
         })),
       })),
       startDate: dayjs(values.startDate).utc().format(),

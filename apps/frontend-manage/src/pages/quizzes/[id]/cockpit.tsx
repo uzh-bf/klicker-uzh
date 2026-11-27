@@ -2,13 +2,14 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivateLiveQuizBlockDocument,
   DeactivateLiveQuizBlockDocument,
+  ElementBlockStatus,
   EndLiveQuizDocument,
   GetCockpitQuizDocument,
   GetEscapeRoomProgressDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -62,11 +63,20 @@ function Cockpit() {
     pollInterval: 2000,
     skip: !router.query.id,
   })
+  // while no block is active, the table of the most recently executed escape
+  // block (highest block order) stays visible
   const activeEscapeBlock = cockpitData?.cockpitQuiz?.blocks?.find(
     (block) =>
       block.id === cockpitData.cockpitQuiz?.activeBlock?.id &&
       !!block.escapeRoomConfig
   )
+  const lastExecutedEscapeBlock = cockpitData?.cockpitQuiz?.blocks
+    ?.filter(
+      (block) =>
+        block.status === ElementBlockStatus.Executed && !!block.escapeRoomConfig
+    )
+    .at(-1)
+  const escapeBlock = activeEscapeBlock ?? lastExecutedEscapeBlock
   const {
     data: escapeRoomData,
     error: escapeRoomError,
@@ -74,9 +84,9 @@ function Cockpit() {
   } = useQuery(GetEscapeRoomProgressDocument, {
     variables: {
       liveQuizId: router.query.id as string,
-      elementBlockId: activeEscapeBlock?.id,
+      elementBlockId: escapeBlock?.id,
     },
-    skip: !router.query.id || !activeEscapeBlock,
+    skip: !router.query.id || !escapeBlock,
     pollInterval: activeEscapeBlock ? 2000 : 0,
     fetchPolicy: 'network-only',
   })
@@ -138,6 +148,16 @@ function Cockpit() {
               // high stakes mutation where cache updates are hard due to cached and db data
               refetchQueries: [
                 { query: GetCockpitQuizDocument, variables: { id } },
+                // the kept escape table stops polling once the block closes,
+                // so load its final state once
+                ...(escapeBlock?.id === blockId
+                  ? [
+                      {
+                        query: GetEscapeRoomProgressDocument,
+                        variables: { liveQuizId: id, elementBlockId: blockId },
+                      },
+                    ]
+                  : []),
               ],
             })
           }}
@@ -156,16 +176,38 @@ function Cockpit() {
         quizId={id}
         liveQuizName={name}
       />
-      {activeEscapeBlock && escapeRoomData?.escapeRoomProgress && (
-        <EscapeRoomProgress
-          activityType="liveQuiz"
-          activityId={String(activeEscapeBlock.id)}
-          progress={escapeRoomData.escapeRoomProgress}
-          onReset={refetchEscapeRoom}
-          canReset={canResetEscapeRoom ?? false}
-        />
+      {escapeBlock && escapeRoomData?.escapeRoomProgress && (
+        // the layout is a flex column; without shrink-0 the table collapses
+        // into a thin scrolling strip below the audience panels
+        <div className="mt-6 shrink-0">
+          {escapeRoomData.escapeRoomProgress.projectorDigest && (
+            <div className="mx-auto flex max-w-5xl justify-end px-4">
+              <Button
+                onClick={() =>
+                  window.open(
+                    `/quizzes/${id}/escape-projector/${escapeBlock.id}?digest=${encodeURIComponent(escapeRoomData.escapeRoomProgress!.projectorDigest!)}`,
+                    '_blank',
+                    'noopener'
+                  )
+                }
+                data={{ cy: 'escape-room-open-projector' }}
+              >
+                <Button.Label>
+                  {t('manage.cockpit.escapeRoomProjector')}
+                </Button.Label>
+              </Button>
+            </div>
+          )}
+          <EscapeRoomProgress
+            activityType="liveQuiz"
+            activityId={String(escapeBlock.id)}
+            progress={escapeRoomData.escapeRoomProgress}
+            onReset={refetchEscapeRoom}
+            canReset={canResetEscapeRoom ?? false}
+          />
+        </div>
       )}
-      {activeEscapeBlock && escapeRoomError ? (
+      {escapeBlock && escapeRoomError ? (
         <UserNotification
           type="error"
           message={t('shared.generic.systemError')}

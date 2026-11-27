@@ -13,6 +13,7 @@ import {
   SC2,
   captureEvidence,
   expect,
+  joinCourseLeaderboard,
   messages,
 } from './shared.js'
 
@@ -83,6 +84,7 @@ export function registerEscapeRoomRulesTests() {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await loginStudent(page)
+    await joinCourseLeaderboard(page)
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${RULES_QUIZ.displayName}`).click()
     await page.getByTestId('escape-room-start').click()

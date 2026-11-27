@@ -1,0 +1,13 @@
+query GetLiveQuizEscapeBlocks($quizId: String!) {
+  liveQuiz(id: $quizId) {
+    id
+    blocks {
+      id
+      order
+      status
+      escapeRoomConfig {
+        id
+      }
+    }
+  }
+}

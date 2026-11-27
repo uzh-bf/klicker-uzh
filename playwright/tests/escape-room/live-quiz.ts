@@ -17,6 +17,7 @@ import {
   createStudentPage,
   deMessages,
   expect,
+  joinCourseLeaderboard,
   messages,
   setLocale,
 } from './shared.js'
@@ -253,6 +254,11 @@ export function registerLiveQuizEscapeRoomTests() {
     await page.getByTestId('escape-room-max-wrong-attempts').fill('2')
     await page.getByTestId('escape-room-time-limit').fill('45')
     await page.getByTestId('close-block-countdown').click()
+    // the debrief shows on the projector once the block is closed
+    await page
+      .locator('[data-cy^="escape-room-debrief-block-"]')
+      .first()
+      .fill('Debrief for the first stage')
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
 
@@ -271,6 +277,7 @@ export function registerLiveQuizEscapeRoomTests() {
       await loginStudentPassword(student, {
         username: env('STUDENT_USERNAME'),
       })
+      await joinCourseLeaderboard(student)
       await openStudentLiveQuiz(student, LIVE_RULES.displayName)
       await acceptGamifiedLiveQuizAccountPrompt(
         student,
@@ -334,6 +341,78 @@ export function registerLiveQuizEscapeRoomTests() {
       await expect(
         page.locator(`[data-cy="escape-room-rank-${env('STUDENT_USERNAME')}"]`)
       ).toHaveText('1', { timeout: 30_000 })
+      await page
+        .getByTestId('escape-room-open-projector')
+        .evaluate((element) => element.scrollIntoView({ block: 'start' }))
+      await captureEvidence(page, 'live-insights-cockpit-en-desktop.png')
+
+      // the projector opens in a new tab and ranks the running block
+      const [projector] = await Promise.all([
+        page.waitForEvent('popup'),
+        page.getByTestId('escape-room-open-projector').click(),
+      ])
+      await expect(projector.getByTestId('escape-projector')).toHaveAttribute(
+        'data-phase',
+        'RUNNING',
+        { timeout: 30_000 }
+      )
+      await expect(
+        projector.getByTestId('escape-projector-ranking')
+      ).toBeVisible()
+      await expect(
+        projector.getByTestId('escape-projector-row').first()
+      ).toBeVisible()
+      await expect(
+        projector.getByTestId('escape-projector-debrief')
+      ).not.toBeAttached()
+      await captureEvidence(projector, 'live-projector-running-en-desktop.png')
+
+      // the projector link also opens on a classroom screen without a login
+      const classroom = await createStudentPage(browser)
+      try {
+        await classroom.goto(projector.url())
+        await expect(classroom.getByTestId('escape-projector')).toHaveAttribute(
+          'data-phase',
+          'RUNNING',
+          { timeout: 30_000 }
+        )
+        expect(classroom.url()).not.toContain('/login')
+      } finally {
+        await classroom.context().close()
+      }
+
+      // closing the block switches the projector to the closed state, which
+      // carries the debrief
+      await page.getByTestId('next-block-timeline').click()
+      await expect(projector.getByTestId('escape-projector')).toHaveAttribute(
+        'data-phase',
+        'CLOSED',
+        { timeout: 30_000 }
+      )
+      await expect(
+        projector.getByTestId('escape-projector-debrief').first()
+      ).toBeVisible()
+      await captureEvidence(projector, 'live-projector-closed-en-desktop.png')
+      await projector.close()
+
+      // the evaluation page keeps the table of the executed block
+      const evaluationLink = page
+        .getByTestId('evaluation-results-cockpit')
+        .locator('xpath=ancestor::a[1]')
+      const href = await evaluationLink.getAttribute('href')
+      if (!href || !href.includes('/evaluation')) {
+        throw new Error(`Unexpected evaluation link: ${href}`)
+      }
+      await page.goto(
+        href.startsWith('http') ? href : `${env('URL_MANAGE')}${href}`
+      )
+      await page.getByTestId('evaluation-escape-room').click()
+      await expect(page.getByTestId('escape-room-progress-table')).toBeVisible({
+        timeout: 30_000,
+      })
+      await expect(page.getByTestId('escape-room-stage-table')).toBeVisible()
+      await page.getByTestId('escape-room-stage-table').scrollIntoViewIfNeeded()
+      await captureEvidence(page, 'live-evaluation-en-desktop.png')
     } finally {
       await student.context().close()
     }

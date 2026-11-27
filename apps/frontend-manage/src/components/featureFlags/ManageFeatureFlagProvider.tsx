@@ -23,8 +23,10 @@ function ManageFeatureFlagProvider({
 }: ManageFeatureFlagProviderProps) {
   const router = useRouter()
   const skipUserProfile =
-    router.pathname === '/quizzes/[id]/evaluation' &&
-    (!router.isReady || router.query.hmac !== undefined)
+    (router.pathname === '/quizzes/[id]/evaluation' &&
+      (!router.isReady || router.query.hmac !== undefined)) ||
+    // the escape-room projector opens on classroom screens without a login
+    router.pathname === '/quizzes/[id]/escape-projector/[blockId]'
   const { data } = useQuery(ManageFeaturePreferencesDocument, {
     fetchPolicy: 'cache-and-network',
     // HMAC evaluation links are public. An identity query on those links would

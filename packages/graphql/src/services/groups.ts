@@ -8,6 +8,7 @@ import type {
 import { ActivityType, ResponseCorrectness } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomDebriefUpdate,
   getEscapeRoomHintUpdate,
   type PrismaTransactionClient,
   propagateActivityToElements,
@@ -1170,6 +1171,9 @@ export async function manipulateGroupActivity(
             ...getEscapeRoomHintUpdate(
               persistentInputs.get(instance.id)?.escapeRoomHint,
               persistentInputs.get(instance.id)?.escapeRoomHints
+            ),
+            ...getEscapeRoomDebriefUpdate(
+              persistentInputs.get(instance.id)?.escapeRoomDebrief
             ),
             pointsMultiplier: multiplier * elementMultiplier,
           },

@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import deMessages from '../../../packages/i18n/messages/de.js'
 import { enMessages as messages } from '../../util/messages.js'
+import { env } from '../../util/workflow.js'
 
 export const evidenceDir = process.env.ESCAPE_ROOM_EVIDENCE_DIR
 
@@ -34,6 +35,18 @@ export async function createStudentPage(browser: Browser) {
     viewport: { width: 1440, height: 900 },
   })
   return context.newPage()
+}
+
+// Seeded participants start outside the course leaderboard; only members get
+// a rank and appear on the projector of a gamified course.
+export async function joinCourseLeaderboard(page: Page) {
+  await page.getByTestId(`course-button-${COURSE}`).click()
+  const join = page.getByTestId('student-course-join-leaderboard')
+  const leave = page.getByTestId('leave-leaderboard')
+  await expect(join.or(leave)).toBeVisible()
+  if (await join.isVisible()) await join.click()
+  await expect(leave).toBeVisible()
+  await page.goto(env('URL_STUDENT'))
 }
 
 export function timerSeconds(value: string) {
