@@ -262,6 +262,9 @@ export function ParticipantDataUseSettings({
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
   const [conflict, setConflict] = useState(false)
+  // Set when a change was not saved because another window changed the
+  // choices first; the dialog then shows the saved choices instead.
+  const [changedElsewhere, setChangedElsewhere] = useState(false)
   // The dialog is rendered into the document body. Inside the sidebar it would
   // share the sidebar's stacking context and sit behind the message composer.
   const [portalReady, setPortalReady] = useState(false)
@@ -304,6 +307,7 @@ export function ParticipantDataUseSettings({
     setSaving(true)
     setFailed(false)
     setConflict(false)
+    setChangedElsewhere(false)
     try {
       const response = await authedFetch(dataUseEndpoint(chatbotId), {
         method: 'PATCH',
@@ -320,8 +324,9 @@ export function ParticipantDataUseSettings({
       })
       if (!response.ok) {
         if (response.status === 409) {
-          // Retrying with the stale revision can only fail again, so adopt the
-          // revision the server just reported instead of reporting a failure.
+          // Retrying with the stale revision can only fail again, so show the
+          // saved choices and tell the participant that this change was not
+          // saved, so they can choose again.
           const reloaded = await fetchDataUseState(chatbotId)
           if (reloaded) {
             setState(reloaded)
@@ -329,6 +334,7 @@ export function ParticipantDataUseSettings({
             window.dispatchEvent(new Event(DATA_USE_CHANGED_EVENT))
             setConflict(false)
             setFailed(false)
+            setChangedElsewhere(true)
             return
           }
           setConflict(true)
@@ -413,6 +419,14 @@ export function ParticipantDataUseSettings({
                   }
                   dataCy={personalizationDataCy}
                 />
+                {changedElsewhere && (
+                  <UserNotification
+                    type="warning"
+                    data={{ cy: 'chat-data-use-changed-elsewhere' }}
+                  >
+                    {t('chat.dataUse.settingsChangedElsewhere')}
+                  </UserNotification>
+                )}
                 <TutorLearnerContextView chatbotId={chatbotId} />
                 {failed && (
                   <UserNotification type="error">

@@ -1543,13 +1543,16 @@ notes kept for that student in that course.
   microlearning answers only. The query filters by the authenticated
   participant and the chatbot's course and selects no answer, solution,
   question text or element tag; tags are for lecturers and are never shown to
-  students. Overall counts are exact; the per-activity lines use the most
-  recently answered questions. Flashcards are rated by the
+  students. Only questions with a sample solution count: without one, every
+  answer is saved as correct, so it says nothing about the student. Overall
+  counts are exact; the per-activity lines use the most recently answered
+  questions and keep activities with the same name apart. Flashcards are rated by the
   student, so they appear on their own line. Ages are written in words because
   the model is not told the date.
 - **The student's view** (`GET /api/chatbots/:chatbotId/learner-context`, shown
   in the data-use dialog) runs the same resolution and shows the text
-  unchanged, so it cannot drift from what a turn sends.
+  unchanged, so it cannot drift from what a turn sends. It is rate-limited per
+  participant because every view runs the summary queries.
 - **The offer** is a card above the thread. It appears only while the choice is
   unanswered, in a chatbot with the switch on and the Tutor mode available.
   "Decide later" records nothing on the account; the browser remembers it.

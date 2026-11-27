@@ -9,6 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_RESULTS_VERSIONS,
 } from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
@@ -57,6 +58,14 @@ function DataUseSettings() {
   const versionMismatch =
     dataUse != null &&
     dataUse.currentDisclosureVersion !== PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+  // The Tutor notices are bundled the same way. The page shows the notice
+  // that matches the server's version and records answers under it, so a
+  // version this page has no text for blocks the choice until it is reloaded.
+  const tutorNoticeOutdated =
+    dataUse != null &&
+    !TUTOR_PERSONALIZATION_RESULTS_VERSIONS.includes(
+      dataUse.currentTutorPersonalizationDisclosureVersion
+    )
 
   async function reloadDataUse() {
     setReloading(true)
@@ -156,7 +165,14 @@ function DataUseSettings() {
   }
 
   async function updateTutorPersonalizationConsent(consent: boolean) {
-    if (!dataUse || saving || conflict || versionMismatch) return
+    if (
+      !dataUse ||
+      saving ||
+      conflict ||
+      versionMismatch ||
+      tutorNoticeOutdated
+    )
+      return
 
     try {
       const result = await setTutorPersonalizationConsent({
@@ -255,7 +271,7 @@ function DataUseSettings() {
         </Prose>
       </div>
 
-      {(conflict || versionMismatch) && (
+      {(conflict || versionMismatch || tutorNoticeOutdated) && (
         <UserNotification type="error">
           <div className="flex flex-col items-start gap-2">
             <span>{t('pwa.profile.dataUseConflict')}</span>
@@ -324,7 +340,9 @@ function DataUseSettings() {
       <div className="flex flex-col gap-2 rounded border bg-white p-3">
         <Switch
           checked={dataUse.tutorPersonalizationConsent === true}
-          disabled={saving || conflict || versionMismatch}
+          disabled={
+            saving || conflict || versionMismatch || tutorNoticeOutdated
+          }
           onCheckedChange={(consent) =>
             void updateTutorPersonalizationConsent(consent)
           }
