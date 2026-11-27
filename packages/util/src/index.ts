@@ -38,3 +38,6 @@ export * from './chatModelRegistry.js'
 export * from './chatbotStandardModeConfig.js'
 
 export * from './participantAccountDataUse.js'
+
+// export the live quiz response admission helpers (response limit)
+export * from './liveQuizResponseAdmission.js'
