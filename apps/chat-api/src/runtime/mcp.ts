@@ -6,14 +6,13 @@ import {
   CHAT_ENGINE_MAX_V2_DISPATCHER_CACHE_BYTES,
   CHAT_ENGINE_MAX_V2_TOOL_CACHE_BYTES,
   CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES,
-  CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS,
   CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES,
   type EngineToolExecutionV2Request,
   type EngineToolExecutionV2Result,
   type EngineToolProjectionV2Result,
   type EngineV2ChatRequest,
   type EngineV2Message,
-  EXPLANATION_TURN_MAX_STEPS,
+  chatToolStepBudget,
   engineToolExecutionV2RequestSchema,
   engineToolExecutionV2ResultSchema,
   engineToolProjectionV2RequestSchema,
@@ -256,12 +255,15 @@ export async function prepareHostTools(
       })
     ) {
       try {
-        const { definition, instructions } = await createHostExplanationTool({
-          getWriter: input.getExplanationWriter ?? (() => null),
-          onUsage: input.onExplanationUsage ?? (() => undefined),
-        })
-        tools = { ...tools, [SHOW_EXPLANATION_TOOL_NAME]: definition }
-        promptContext.push(instructions)
+        const writer = input.getExplanationWriter?.()
+        if (writer) {
+          const { definition, instructions } = await createHostExplanationTool({
+            getWriter: () => writer,
+            onUsage: input.onExplanationUsage ?? (() => undefined),
+          })
+          tools = { ...tools, [SHOW_EXPLANATION_TOOL_NAME]: definition }
+          promptContext.push(instructions)
+        }
       } catch {
         // A schema outage keeps optional explanations off for this turn.
       }
@@ -436,12 +438,11 @@ export function createHostToolDispatcher(now: () => number = Date.now) {
       input.signal.throwIfAborted()
       if (sessions.size >= 128)
         throw new ToolSessionCapacityError('Tool session capacity reached')
-      const maxProjectionRequests = Object.hasOwn(
-        input.tools.tools,
-        SHOW_EXPLANATION_TOOL_NAME
-      )
-        ? EXPLANATION_TURN_MAX_STEPS - 1
-        : CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS
+      const maxProjectionRequests =
+        chatToolStepBudget(
+          Object.hasOwn(input.tools.tools, SHOW_EXPLANATION_TOOL_NAME) ||
+            Object.hasOwn(input.tools.tools, SHOW_FEEDBACK_TOOL_NAME)
+        ) - 1
       const controller = new AbortController()
       const signal = AbortSignal.any([input.signal, controller.signal])
       const calls = new Map<

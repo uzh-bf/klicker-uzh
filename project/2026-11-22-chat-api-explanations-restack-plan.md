@@ -39,4 +39,6 @@ Preserve the target's status-only calculator label in the shared Chat renderer a
 
 The current Chat implementation delegates explanation drafts and repairs to its configured writer. This supersedes the earlier turn-level draft format and token allowance. Preserve writer selection for fallback and custom endpoints, account for its usage, and keep the existing admission checks. Carry the current feedback validation, custom-only modes, Quizzer retrieval selection and final text step across both routes. Keep the authenticated explanation page fetch when opening a saved artifact in the canvas.
 
+On the direct route, the selected engine generates each draft. The API host validates drafts, requests bounded repairs and records reported usage. Engines advertise writer support on their authenticated v2 manifest. Qualify both the default engine and the Catalyst adapter, including ordinary chat when the writer is unavailable.
+
 Verify the writer through the real default engine with deterministic local providers, then exercise feedback attachment, opening and reopening an explanation, frame interaction and scroll position on both browser routes. Run signed LTI guest, eLearning and PWA launches with distinct application and API hostnames. Require an independent source review and full hosted checks on each published layer before the separate merge decision.

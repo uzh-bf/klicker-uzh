@@ -196,6 +196,73 @@ function modelToolResults(prompt: Array<{ role: string; content: unknown }>) {
 }
 
 describe('default chat engine', () => {
+  test('serves a forced single explanation draft with real usage', async () => {
+    const doGenerate = vi.fn(
+      async (_options: { toolChoice?: unknown; maxOutputTokens?: number }) => ({
+        content: [
+          {
+            type: 'tool-call' as const,
+            toolCallId: 'call-1',
+            toolName: 'submit_explanation',
+            input: JSON.stringify({ title: 'draft' }),
+          },
+        ],
+        finishReason: { unified: 'tool-calls' as const, raw: 'tool_calls' },
+        usage: {
+          inputTokens: { total: 11, noCache: 11, cacheRead: 0, cacheWrite: 0 },
+          outputTokens: { total: 7, text: 7, reasoning: 0 },
+        },
+        warnings: [],
+      })
+    )
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      modelFactory: () => new MockLanguageModelV3({ doGenerate }),
+    })
+    const headers = {
+      authorization: 'Bearer service-secret',
+      'content-type': 'application/json',
+    }
+    const body = JSON.stringify({
+      contractVersion: 'v2',
+      generation: conformanceV2Request.generation,
+      systemPrompt: 'system',
+      prompt: 'write',
+      inputSchema: {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+      },
+      previous: [{ draft: { title: 1 }, feedback: 'title must be a string' }],
+    })
+    expect(
+      (await app.request('/v2/explanation-draft', { method: 'POST', body }))
+        .status
+    ).toBe(401)
+    const response = await app.request('/v2/explanation-draft', {
+      method: 'POST',
+      headers,
+      body,
+    })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      draft: { title: 'draft' },
+      usage: { inputTokens: 11, outputTokens: 7 },
+    })
+    const call = doGenerate.mock.calls[0]![0]
+    expect(call.toolChoice).toEqual({
+      type: 'tool',
+      toolName: 'submit_explanation',
+    })
+    expect(call.maxOutputTokens).toBe(20_000)
+    const manifest = await app.request('/v2/manifest', { headers })
+    expect(manifest.headers.get('x-klicker-explanation-writer')).toBe('1')
+    expect(
+      (await app.request('/v1/manifest')).headers.get(
+        'x-klicker-explanation-writer'
+      )
+    ).toBeNull()
+  })
+
   test.each([
     [0, 0, 'test-provider-reply', 'test-replacement'],
     [null, null, 'test-provider-reply', 'test-provider-reply'],

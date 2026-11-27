@@ -15,6 +15,9 @@ export type EngineContractVersion =
   | typeof CHAT_ENGINE_CONTRACT_VERSION
   | typeof CHAT_ENGINE_CONTRACT_V2
 export const MCP_EXECUTION_TOKEN_HEADER = 'x-mcp-execution-token'
+/** Set on an authenticated v2 manifest when the engine serves explanation drafts. */
+export const EXPLANATION_WRITER_CAPABILITY_HEADER =
+  'x-klicker-explanation-writer'
 export const TRACEPARENT_HEADER = 'traceparent'
 export const TRACESTATE_HEADER = 'tracestate'
 
@@ -862,6 +865,48 @@ export const engineV2ManifestSchema = engineManifestSchema
     }),
   })
   .strict()
+
+const jsonObjectSchema = z.record(z.string(), jsonValueSchema)
+
+/** One single-shot draft by the selected engine; the host owns repair, retries and accounting. */
+export const engineExplanationDraftRequestSchema = z
+  .object({
+    contractVersion: z.literal(CHAT_ENGINE_CONTRACT_V2),
+    generation: resolvedV2GenerationSchema,
+    systemPrompt: z.string().min(1).max(200_000),
+    prompt: z.string().min(1).max(1_000_000),
+    inputSchema: jsonObjectSchema,
+    previous: z
+      .array(
+        z
+          .object({
+            draft: jsonObjectSchema,
+            feedback: z.string().max(50_000),
+          })
+          .strict()
+      )
+      .max(2),
+  })
+  .strict()
+
+export const engineExplanationDraftResultSchema = z
+  .object({
+    draft: jsonObjectSchema.nullable(),
+    usage: z
+      .object({
+        inputTokens: z.number().int().nonnegative(),
+        outputTokens: z.number().int().nonnegative(),
+      })
+      .strict(),
+  })
+  .strict()
+
+export type EngineExplanationDraftRequest = z.infer<
+  typeof engineExplanationDraftRequestSchema
+>
+export type EngineExplanationDraftResult = z.infer<
+  typeof engineExplanationDraftResultSchema
+>
 
 export type ImageAttachment = z.infer<typeof imageAttachmentSchema>
 export type ImageV2Attachment = z.infer<typeof imageV2AttachmentSchema>

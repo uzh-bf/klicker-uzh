@@ -967,19 +967,27 @@ describe('admitted-turn host tool capabilities', () => {
     expect(execute).toHaveBeenCalledTimes(1)
   })
 
-  test('limits projection requests to five including identical repeats', async () => {
+  test.each([
+    { extra: null, limit: CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS },
+    { extra: 'show_explanation', limit: 7 },
+    { extra: 'show_feedback', limit: 7 },
+  ])('bounds projections with $extra at $limit per turn', async ({
+    extra,
+    limit,
+  }) => {
     const dispatcher = createHostToolDispatcher()
     const { prepared, execute } = fixture()
     const session = await register(dispatcher, {
-      tools: prepared,
+      tools: extra
+        ? {
+            ...prepared,
+            tools: { ...prepared.tools, [extra]: prepared.tools.search },
+          }
+        : prepared,
       signal: signal(),
     })
     await dispatcher.execute(session.executionToken, request('call'), signal())
-    for (
-      let count = 0;
-      count < CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUESTS;
-      count++
-    ) {
+    for (let count = 0; count < limit; count++) {
       expect(
         (
           await dispatcher.project(

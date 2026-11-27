@@ -811,9 +811,6 @@ importers:
       '@ai-sdk/mcp':
         specifier: 2.0.25
         version: 2.0.25(zod@4.6.6)
-      '@ai-sdk/openai':
-        specifier: 4.0.30
-        version: 4.0.30(zod@4.6.6)
       '@azure/identity':
         specifier: 4.13.0
         version: 4.13.0(supports-color@8.1.1)

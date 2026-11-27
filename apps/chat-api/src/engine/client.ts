@@ -1,6 +1,13 @@
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
   type EngineContractVersion,
+  type EngineExplanationDraftRequest,
+  type EngineExplanationDraftResult,
+  engineExplanationDraftRequestSchema,
+  engineExplanationDraftResultSchema,
+  EXPLANATION_WRITER_CAPABILITY_HEADER,
+  CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+  CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES,
   MCP_EXECUTION_TOKEN_HEADER,
   parseEngineManifest,
   type SupportedEngineChatRequest,
@@ -10,7 +17,13 @@ import {
 } from '@klicker-uzh/chat-engine-contract'
 
 export type EngineClient = {
-  manifest(options?: { signal?: AbortSignal }): Promise<SupportedEngineManifest>
+  manifest(options?: {
+    signal?: AbortSignal
+  }): Promise<SupportedEngineManifest & { explanationWriter?: true }>
+  explanationDraft?(
+    request: EngineExplanationDraftRequest,
+    options: { providerAuthorization?: string; signal: AbortSignal }
+  ): Promise<EngineExplanationDraftResult>
   chat(
     request: SupportedEngineChatRequest,
     options: {
@@ -71,7 +84,67 @@ export function createEngineClient(
       if (!response.ok) {
         throw new Error(`Engine manifest returned HTTP ${response.status}.`)
       }
-      return parseEngineManifest(await response.json(), contractVersion)
+      const manifest = parseEngineManifest(
+        await response.json(),
+        contractVersion
+      )
+      if (
+        contractVersion === 'v2' &&
+        response.headers.get(EXPLANATION_WRITER_CAPABILITY_HEADER) === '1'
+      )
+        return { ...manifest, explanationWriter: true }
+      return manifest
+    },
+
+    async explanationDraft(input, { providerAuthorization, signal }) {
+      if (contractVersion !== 'v2')
+        throw new Error('Explanation drafts require a v2 engine.')
+      signal.throwIfAborted()
+      const body = JSON.stringify(
+        engineExplanationDraftRequestSchema.parse(input)
+      )
+      if (Buffer.byteLength(body) > CHAT_ENGINE_MAX_V2_REQUEST_BYTES)
+        throw new Error('Writer request too large.')
+      const headers = new Headers({
+        ...serviceHeaders(serviceToken),
+        'content-type': 'application/json',
+      })
+      if (providerAuthorization)
+        headers.set('provider-authorization', providerAuthorization)
+      const response = await request(
+        `${requireBaseUrl()}/v2/explanation-draft`,
+        {
+          method: 'POST',
+          redirect: 'error',
+          headers,
+          body,
+          signal,
+        }
+      )
+      if (!response.ok || !response.body) {
+        await response.body?.cancel()
+        throw new Error(`Explanation engine returned HTTP ${response.status}.`)
+      }
+      const reader = response.body.getReader()
+      const chunks: Uint8Array[] = []
+      let bytes = 0
+      try {
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          bytes += value.byteLength
+          if (bytes > CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES) {
+            await reader.cancel()
+            throw new Error('Writer response too large.')
+          }
+          chunks.push(value)
+        }
+      } finally {
+        reader.releaseLock()
+      }
+      return engineExplanationDraftResultSchema.parse(
+        JSON.parse(Buffer.concat(chunks).toString('utf8'))
+      )
     },
 
     async chat(engineRequest, chatOptions) {
@@ -133,6 +206,7 @@ export type EngineReadiness = {
   engineId: string | null
   reason: string | null
   features?: SupportedEngineManifest['features']
+  explanationWriter?: true
 }
 
 export class EngineReadinessProbe {
@@ -186,6 +260,9 @@ export class EngineReadinessProbe {
         contractVersion: manifest.contractVersion,
         engineId: manifest.engineId,
         features: manifest.features,
+        ...(manifest.explanationWriter
+          ? { explanationWriter: true as const }
+          : {}),
         reason: compatible
           ? null
           : 'Engine identity or contract version is incompatible.',

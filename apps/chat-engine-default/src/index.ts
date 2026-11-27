@@ -8,13 +8,17 @@ import {
   CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES,
   CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES,
   CHAT_ENGINE_V2_TOOL_PROJECTION_TIMEOUT_MS,
+  EXPLANATION_WRITER_CAPABILITY_HEADER,
+  engineExplanationDraftRequestSchema,
+  engineExplanationDraftResultSchema,
   type SupportedEngineChatRequest as EngineChatRequest,
   type EngineContractVersion,
   type SupportedEngineFinishMetadata as EngineFinishMetadata,
   type EngineManifest,
   type SupportedEngineMessage as EngineMessage,
+  type EngineExplanationDraftRequest,
   type EngineUsage,
-  EXPLANATION_TURN_MAX_STEPS,
+  chatToolStepBudget,
   engineChatRequestSchema,
   engineManifestSchema,
   engineToolExecutionV2RequestSchema,
@@ -35,9 +39,11 @@ import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   dynamicTool,
+  tool as defineTool,
   isStepCount,
   type JSONValue,
   jsonSchema,
+  generateText,
   type LanguageModel,
   type LanguageModelUsage,
   type ModelMessage,
@@ -60,6 +66,9 @@ import {
 
 const DEFAULT_ENGINE_ID = 'public-ai-sdk'
 const DEFAULT_PORT = 3015
+
+const EXPLANATION_DRAFT_TOOL_NAME = 'submit_explanation'
+const EXPLANATION_DRAFT_MAX_OUTPUT_TOKENS = 20_000
 
 /** Host tools whose budget changes the number of steps a turn may use. */
 const SHOW_FEEDBACK_TOOL_NAME = 'show_feedback'
@@ -699,6 +708,159 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
     })
   )
 
+  app.use('/v2/explanation-draft', async (c, next) => {
+    if (!serviceAuthorized(c.req.raw, serviceToken)) {
+      return jsonError(
+        401,
+        'ENGINE_AUTH_REQUIRED',
+        'Engine service authentication is required.',
+        false,
+        CHAT_ENGINE_CONTRACT_V2
+      )
+    }
+    await next()
+  })
+  app.use(
+    '/v2/explanation-draft',
+    bodyLimit({
+      maxSize: CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+      onError: () =>
+        jsonError(
+          413,
+          'ENGINE_REQUEST_TOO_LARGE',
+          'The engine request exceeds its byte limit.',
+          false,
+          CHAT_ENGINE_CONTRACT_V2
+        ),
+    })
+  )
+  app.post('/v2/explanation-draft', async (c) => {
+    const fail = (
+      status: number,
+      code: string,
+      message: string,
+      retryable = false
+    ) => jsonError(status, code, message, retryable, CHAT_ENGINE_CONTRACT_V2)
+
+    let request: EngineExplanationDraftRequest
+    try {
+      request = engineExplanationDraftRequestSchema.parse(await c.req.json())
+    } catch {
+      return fail(
+        400,
+        'INVALID_ENGINE_REQUEST',
+        'The engine request is invalid.'
+      )
+    }
+    const provider = resolveProviderKey(
+      c.req.raw,
+      request.generation,
+      options,
+      options.modelFactory ? 'model-factory' : undefined
+    )
+    if ('error' in provider) return fail(400, provider.code, provider.error)
+
+    let model: LanguageModel
+    try {
+      model = options.modelFactory
+        ? options.modelFactory(request.generation, provider.providerApiKey)
+        : createProviderModel(
+            request.generation,
+            provider.providerApiKey,
+            options
+          )
+    } catch {
+      return fail(
+        503,
+        'ENGINE_NOT_CONFIGURED',
+        'The selected engine is not configured.',
+        true
+      )
+    }
+
+    const messages: ModelMessage[] = [{ role: 'user', content: request.prompt }]
+    for (const [index, attempt] of request.previous.entries()) {
+      const toolCallId = `previous-${index}`
+      messages.push(
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId,
+              toolName: EXPLANATION_DRAFT_TOOL_NAME,
+              input: attempt.draft,
+            },
+          ],
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId,
+              toolName: EXPLANATION_DRAFT_TOOL_NAME,
+              output: { type: 'error-text', value: attempt.feedback },
+            },
+          ],
+        }
+      )
+    }
+
+    try {
+      const result = await generateText({
+        model,
+        system: request.systemPrompt,
+        messages,
+        tools: {
+          [EXPLANATION_DRAFT_TOOL_NAME]: defineTool({
+            description: 'Submit the explanation draft.',
+            inputSchema: jsonSchema(request.inputSchema as never),
+          }),
+        },
+        toolChoice: {
+          type: 'tool' as const,
+          toolName: EXPLANATION_DRAFT_TOOL_NAME,
+        },
+        // Only the forced tool call is wanted; never run the tool or loop.
+        stopWhen: isStepCount(1),
+        maxOutputTokens: EXPLANATION_DRAFT_MAX_OUTPUT_TOKENS,
+        providerOptions: providerOptionsForGeneration(request.generation),
+        maxRetries: 0,
+        abortSignal: c.req.raw.signal,
+      })
+      const call = result.toolCalls[0]
+      const body = engineExplanationDraftResultSchema.parse({
+        draft:
+          result.toolCalls.length === 1 &&
+          call?.toolName === EXPLANATION_DRAFT_TOOL_NAME &&
+          !call.invalid
+            ? call.input
+            : null,
+        usage: {
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+        },
+      })
+      if (
+        Buffer.byteLength(JSON.stringify(body)) >
+        CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES
+      )
+        return fail(
+          502,
+          'ENGINE_DRAFT_FAILED',
+          'Explanation draft exceeds the result limit.'
+        )
+      return c.json(body)
+    } catch {
+      return fail(
+        502,
+        'ENGINE_DRAFT_FAILED',
+        'The selected engine could not complete the draft.'
+      )
+    }
+  })
+
   for (const version of [
     CHAT_ENGINE_CONTRACT_VERSION,
     CHAT_ENGINE_CONTRACT_V2,
@@ -715,7 +877,14 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       message: string,
       retryable = false
     ) => jsonError(status, code, message, retryable, version)
-    app.get(`/${version}/manifest`, (c) => c.json(manifest))
+    app.get(`/${version}/manifest`, (c) => {
+      if (
+        version === CHAT_ENGINE_CONTRACT_V2 &&
+        serviceAuthorized(c.req.raw, serviceToken)
+      )
+        c.header(EXPLANATION_WRITER_CAPABILITY_HEADER, '1')
+      return c.json(manifest)
+    })
     app.post(`/${version}/chat`, async (c) => {
       if (!serviceAuthorized(c.req.raw, serviceToken)) {
         return fail(
@@ -964,10 +1133,9 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       // is added for the text-only answer, so it never takes a tool call's slot.
       const finalTextStep =
         request.contractVersion === CHAT_ENGINE_CONTRACT_V2 && !!tools
-      const maxSteps =
-        (explanationToolActive || feedbackToolActive
-          ? EXPLANATION_TURN_MAX_STEPS
-          : 5) + (finalTextStep ? 1 : 0)
+      const maxSteps = finalTextStep
+        ? chatToolStepBudget(explanationToolActive || feedbackToolActive)
+        : 5
       const result = streamText({
         model,
         system: request.systemPrompt,
