@@ -8,6 +8,7 @@ import { resolveCitationSource } from '@/src/lib/sources/normalizeSources'
 import { useMessageSourcesContext } from './message-sources-context'
 import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { useOptionalChatWorkspace } from './workspace/chat-workspace-context'
 
 // Exported so `test/citation-chip.test.ts` can assert the wrap contract
 // below against this exact character instead of a hand-copied duplicate
@@ -27,6 +28,7 @@ export const CITATION_CHIP_JOINER = '\u2060'
 export function CitationChip({ index }: { index: number }) {
   const t = useTranslations()
   const { messageId, registerCitation, sources } = useMessageSourcesContext()
+  const workspace = useOptionalChatWorkspace()
   const source = resolveCitationSource(index, sources)
   const sourceIndex = source?.index
 
@@ -48,7 +50,8 @@ export function CitationChip({ index }: { index: number }) {
 
   const handleClick = (event: MouseEvent) => {
     event.preventDefault()
-    const target = document.getElementById(`src-${messageId}-${source.index}`)
+    const cardId = `src-${messageId}-${source.index}`
+    const target = document.getElementById(cardId)
     if (!target) return
     // A cited card beyond the preview limit sits inside the collapsed "Other
     // retrieved material" disclosure, which has to be open before the scroll
@@ -57,6 +60,26 @@ export function CitationChip({ index }: { index: number }) {
     if (disclosure && !disclosure.open) {
       disclosure.open = true
     }
+    // A chip in the side panel can point at a card the panel covers: on a
+    // phone the conversation is hidden, and in fullscreen it is inert. Close
+    // the panel first, then go to the card once the conversation is back.
+    if (
+      workspace?.item &&
+      (target.closest('[inert]') || !target.checkVisibility())
+    ) {
+      workspace.close()
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const card = document.getElementById(cardId)
+          if (card) goToCard(card)
+        })
+      )
+      return
+    }
+    goToCard(target)
+  }
+
+  const goToCard = (target: HTMLElement) => {
     target.scrollIntoView({ behavior: 'smooth', block: 'center' })
     // `preventScroll` avoids fighting the smooth scroll above: `.focus()`
     // would otherwise jump the card into view instantly on its own.

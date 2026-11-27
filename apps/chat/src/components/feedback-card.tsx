@@ -893,18 +893,18 @@ export function FeedbackPanelContent({
   const [view, setView] = useState<'annotated' | 'list'>('annotated')
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-white">
-      {/* The panel toolbar already names the feedback. */}
-      <FeedbackHeader
-        content={item.content}
-        title={item.title}
-        showTitle={false}
-      />
-      {item.annotation ? (
-        <div className="px-4 pt-3">
-          <ViewToggle view={view} onChange={setView} />
-        </div>
-      ) : null}
       <MessageSourcesProvider value={item.sources}>
+        {/* The panel toolbar already names the feedback. */}
+        <FeedbackHeader
+          content={item.content}
+          title={item.title}
+          showTitle={false}
+        />
+        {item.annotation ? (
+          <div className="px-4 pt-3">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
+        ) : null}
         <FeedbackBody
           content={item.content}
           annotation={item.annotation}

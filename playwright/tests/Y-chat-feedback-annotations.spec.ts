@@ -180,3 +180,68 @@ test('feedback on an attached document marks the document text', async ({
   await openThreadWithFeedback(page, withDocument)
   await expect(page.locator('[data-feedback-mark]')).toHaveCount(3)
 })
+
+test('on a phone a citation in the panel leads to its source', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const thread = await seedThread(await getEnrolledParticipantId(), {
+    title: 'Feedback with a source',
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: LEARNER_MESSAGE }] },
+      {
+        role: 'assistant',
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'call-docs',
+            toolName: 'KB_doc_query',
+            args: { query: 'diversification' },
+            result: {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    mode: 'documents',
+                    sources: [
+                      {
+                        reference: 'https://example.test/risk.pdf',
+                        source_type: 'document',
+                        reference_type: 'pdf',
+                        title: 'Synthetic risk notes',
+                        chunks: [{ content: 'Correlation', page_number: 2 }],
+                      },
+                    ],
+                  }),
+                },
+              ],
+            },
+          },
+          {
+            ...feedbackCall,
+            result: {
+              ...feedbackCall.result,
+              content: {
+                ...feedbackCall.result.content,
+                summary: 'A clear claim with a good reason [1].',
+              },
+            },
+          },
+          { type: 'text', text: 'Here is my feedback.' },
+        ],
+      },
+    ],
+  })
+  await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+  await page
+    .locator('[data-feedback-card]')
+    .getByTestId('feedback-open')
+    .click()
+  const panel = page.getByTestId('chat-feedback-panel')
+  const citation = panel.getByTestId('chat-citation')
+  await expect(citation).toHaveCount(1)
+  const target = await citation.getAttribute('href')
+  await citation.click()
+  await expect(panel).toHaveCount(0)
+  await expect(page.locator(target ?? '')).toBeFocused()
+})
