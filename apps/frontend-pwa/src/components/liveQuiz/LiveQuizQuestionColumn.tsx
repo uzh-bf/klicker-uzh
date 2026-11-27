@@ -24,12 +24,14 @@ interface LiveQuizQuestionColumnProps {
   selectedBlock: number | null
   onSelectBlock: (value: number) => void
   isGamificationEnabled: boolean
+  isAssessmentEnabled?: boolean
   handleNewResponse: (params: {
     liveQuizId: string
     instanceId: number
     type: ElementType
     answer: any
     correlationKey?: string | null
+    isFirstResponse?: boolean
   }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   className?: string
 }
@@ -44,6 +46,7 @@ function LiveQuizQuestionColumn({
   selectedBlock,
   onSelectBlock,
   isGamificationEnabled,
+  isAssessmentEnabled = false,
   handleNewResponse,
   className,
 }: LiveQuizQuestionColumnProps) {
@@ -135,6 +138,7 @@ function LiveQuizQuestionColumn({
           isBlockActive
           quizId={quizId}
           gamificationEnabled={isGamificationEnabled}
+          isAssessmentEnabled={isAssessmentEnabled}
           expiresAt={activeBlock.expiresAt}
           instances={activeBlock.elements ?? []}
           handleNewResponse={handleNewResponse}
@@ -151,6 +155,7 @@ function LiveQuizQuestionColumn({
           key={`question-area-${blocks[selectedBlock]?.id}-inactive`}
           quizId={quizId}
           gamificationEnabled={isGamificationEnabled}
+          isAssessmentEnabled={isAssessmentEnabled}
           instances={blocks[selectedBlock]?.elements ?? []}
           execution={blocks[selectedBlock]?.execution ?? 0}
           handleNewResponse={async () => ({ statusCode: 0 })}
