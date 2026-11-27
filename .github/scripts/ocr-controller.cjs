@@ -76,8 +76,8 @@ function verifyRelease(root = ROOT) {
   )
   if (
     !isDeepStrictEqual(manifest.draft.profile, runner.DRAFT_PROFILE) ||
-    manifest.draft.model !== adapter.MISTRAL_DEEPSEEK_MODEL ||
-    manifest.draft.advisor_model !== adapter.MISTRAL_MODEL ||
+    manifest.draft.model !== adapter.MOAT_FLASH_MODEL ||
+    manifest.draft.advisor_model !== adapter.MOAT_ADVISOR_MODEL ||
     manifest.draft.package !== '@alibaba-group/open-code-review@1.13.0' ||
     manifest.draft.publisher.repository !== 'alibaba/open-code-review' ||
     manifest.draft.publisher.revision !==
@@ -273,8 +273,8 @@ async function runCommand(command, options) {
   let credentials
   if (command === 'run') {
     credentials = {
-      apiKey: process.env.MISTRAL_API_KEY,
-      advisorApiKey: process.env.MISTRAL_API_KEY,
+      apiKey: process.env.CMD_API_KEY,
+      advisorApiKey: process.env.CMD_API_KEY,
       context7ApiKey: process.env.CONTEXT7_API_KEY,
     }
     for (const name of Object.keys(process.env)) {
@@ -443,7 +443,7 @@ function checkCaller(workflow, options) {
       (name) => !['OCR_NO_UPDATE', 'OCR_ADAPTER_PROVIDER'].includes(name)
     ) ||
     (job?.env?.OCR_ADAPTER_PROVIDER !== undefined &&
-      job.env.OCR_ADAPTER_PROVIDER !== 'mistral-deepseek') ||
+      job.env.OCR_ADAPTER_PROVIDER !== 'moat-flash') ||
     !Array.isArray(steps) ||
     steps.length !== 1 ||
     steps[0].uses !==
@@ -452,7 +452,7 @@ function checkCaller(workflow, options) {
       (key) => !['name', 'uses', 'with'].includes(key)
     ) ||
     !isDeepStrictEqual(steps[0].with, {
-      'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
+      'cmd-api-key': '${{ secrets.CMD_API_KEY }}',
       'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
       'github-token': '${{ github.token }}',
       'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
