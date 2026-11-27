@@ -1,5 +1,8 @@
 import {
   applyEscapeRoomWrongAnswer,
+  areEscapeRoomRegularStagesCleared,
+  getEscapeRoomRulesFromConfig,
+  resolveEscapeRoomAnswerableStage,
   getEscapeRoomHintPenalty,
   isEscapeRoomBonusStage,
   rankEscapeRoomScores,
@@ -93,5 +96,94 @@ describe('escape room rules', () => {
       ['e', 4],
       ['d', null],
     ])
+  })
+})
+
+describe('escape room answerable stage', () => {
+  const stages = ['a', 'b', 'c']
+  const base = {
+    stages,
+    rules: { bonusSeconds: null },
+    status: 'IN_PROGRESS',
+    expired: false,
+    outcomes: [],
+    clearedKeys: new Set<string>(),
+  }
+
+  it('offers only the first uncleared stage', () => {
+    expect(
+      resolveEscapeRoomAnswerableStage({ ...base, stageKey: 'a' }).ok
+    ).toBe(true)
+    expect(
+      resolveEscapeRoomAnswerableStage({ ...base, stageKey: 'b' })
+    ).toEqual({ ok: false, reason: 'locked' })
+  })
+
+  it('treats a stored outcome as cleared even when the set misses it', () => {
+    const outcomes = [
+      {
+        stageKey: 'a',
+        wrongAttempts: 2,
+        outcome: 'REVEALED' as const,
+        at: 'x',
+      },
+    ]
+    expect(
+      resolveEscapeRoomAnswerableStage({ ...base, outcomes, stageKey: 'a' })
+    ).toEqual({ ok: false, reason: 'cleared' })
+    expect(
+      resolveEscapeRoomAnswerableStage({ ...base, outcomes, stageKey: 'b' }).ok
+    ).toBe(true)
+  })
+
+  it('offers the unanswered bonus stage of a completed attempt in time', () => {
+    const bonus = {
+      ...base,
+      rules: { bonusSeconds: 30 },
+      status: 'COMPLETED',
+      clearedKeys: new Set(['a', 'b']),
+      stageKey: 'c',
+    }
+    expect(resolveEscapeRoomAnswerableStage(bonus)).toEqual({
+      ok: true,
+      stageKey: 'c',
+      isBonus: true,
+    })
+    expect(
+      resolveEscapeRoomAnswerableStage({ ...bonus, expired: true })
+    ).toEqual({ ok: false, reason: 'expired' })
+    expect(
+      resolveEscapeRoomAnswerableStage({
+        ...bonus,
+        outcomes: [
+          {
+            stageKey: 'c',
+            wrongAttempts: 0,
+            outcome: 'BONUS_WRONG' as const,
+            at: 'x',
+          },
+        ],
+      })
+    ).toEqual({ ok: false, reason: 'bonus_answered' })
+  })
+
+  it('excludes the bonus from regular completion', () => {
+    const args = {
+      stages,
+      rules: { bonusSeconds: 30 },
+      outcomes: [],
+      clearedKeys: new Set(['a', 'b']),
+    }
+    expect(areEscapeRoomRegularStagesCleared(args)).toBe(true)
+    expect(
+      areEscapeRoomRegularStagesCleared({
+        ...args,
+        rules: { bonusSeconds: null },
+      })
+    ).toBe(false)
+  })
+
+  it('maps a missing config to rules that are all off', () => {
+    expect(getEscapeRoomRulesFromConfig(null).maxWrongAttempts).toBeNull()
   })
 })

@@ -1,6 +1,8 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
+import { getEscapeRoomLifecycleClaimKey } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
+import { skipEscapeRoomStage } from '../src/services/escapeRooms.js'
 import {
   activateLiveQuizBlock,
   courseId,
@@ -199,13 +201,24 @@ describe('LiveQuiz block attempt start/reset contract', () => {
             escapeRoomTimeLimit: 420,
             escapeRoomHintPenalty: 45,
             escapeRoomIntroText: 'Find the key.',
+            escapeRoomRules: {
+              hintPenalties: [10, 20],
+              wrongAnswerPenalty: 5,
+              maxWrongAttempts: 3,
+              revealPenalty: 60,
+              skipPenalty: 90,
+              bonusSeconds: 120,
+            },
             elements: [
               {
                 elementId: scElement.id,
                 order: 0,
                 existingInstanceId: null,
                 duplicateInstance: false,
-                escapeRoomHint: 'Look closely.',
+                escapeRoomHints: [
+                  { text: 'Look closely.' },
+                  { text: 'Check the second shelf.' },
+                ],
               },
             ],
           },
@@ -223,10 +236,17 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       timeLimit: 420,
       hintPenalty: 45,
       introText: 'Find the key.',
+      hintPenalties: [10, 20],
+      wrongAnswerPenalty: 5,
+      maxWrongAttempts: 3,
+      revealPenalty: 60,
+      skipPenalty: 90,
+      bonusSeconds: 120,
     })
-    expect(createdBlock.elements[0]?.options.escapeRoomHint).toBe(
-      'Look closely.'
-    )
+    expect(createdBlock.elements[0]?.options.escapeRoomHints).toMatchObject([
+      { text: 'Look closely.' },
+      { text: 'Check the second shelf.' },
+    ])
 
     await manipulateLiveQuiz(
       {
@@ -240,13 +260,24 @@ describe('LiveQuiz block attempt start/reset contract', () => {
             escapeRoomTimeLimit: 600,
             escapeRoomHintPenalty: 30,
             escapeRoomIntroText: 'Open the vault.',
+            escapeRoomRules: {
+              hintPenalties: [15, 25],
+              wrongAnswerPenalty: 8,
+              maxWrongAttempts: 2,
+              revealPenalty: 70,
+              skipPenalty: 80,
+              bonusSeconds: 100,
+            },
             elements: [
               {
                 elementId: scElement.id,
                 order: 0,
                 existingInstanceId: createdBlock.elements[0]!.id,
                 duplicateInstance: false,
-                escapeRoomHint: 'Try the first digit.',
+                escapeRoomHints: [
+                  { text: 'Try the first digit.' },
+                  { text: 'Check the second shelf.' },
+                ],
               },
             ],
           },
@@ -263,7 +294,17 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       timeLimit: 600,
       hintPenalty: 30,
       introText: 'Open the vault.',
+      hintPenalties: [15, 25],
+      wrongAnswerPenalty: 8,
+      maxWrongAttempts: 2,
+      revealPenalty: 70,
+      skipPenalty: 80,
+      bonusSeconds: 100,
     })
+    expect(editedBlock.elements[0]?.options.escapeRoomHints).toMatchObject([
+      { text: 'Try the first digit.' },
+      { text: 'Check the second shelf.' },
+    ])
     expect(editedBlock.elements[0]?.options.escapeRoomHint).toBe(
       'Try the first digit.'
     )
@@ -560,6 +601,119 @@ describe('LiveQuiz block attempt start/reset contract', () => {
   })
 })
 
+describe('LiveQuiz block ranking in the cockpit progress', () => {
+  it('ranks Live attempts by solved stages, penalties and bonus credit, with legacy attempts by completion time', async () => {
+    const { liveQuiz, block } = await seedEscapeRoomLiveQuiz({
+      includeSecondInstance: true,
+    })
+    const [first, second] = block.elements.map((element) => String(element.id))
+    const startedAt = new Date('2026-01-01T10:00:00.000Z')
+    const at = (seconds: number) =>
+      new Date(startedAt.getTime() + seconds * 1000).toISOString()
+    const outcome = (
+      stageKey: string,
+      value: string,
+      seconds: number,
+      creditSeconds?: number
+    ) => ({
+      stageKey,
+      wrongAttempts: 0,
+      outcome: value,
+      at: at(seconds),
+      ...(creditSeconds ? { creditSeconds } : {}),
+    })
+    const seedAttempt = async (
+      name: string,
+      penaltySeconds: number,
+      stageOutcomes: unknown[] | undefined,
+      completedSeconds: number
+    ) => {
+      const participant = await seedParticipant(name)
+      await prisma.escapeRoomAttempt.create({
+        data: {
+          participantId: participant.id,
+          elementBlockId: block.id,
+          status: DB.EscapeRoomStatus.COMPLETED,
+          timeLimit: 300,
+          startedAt,
+          completedAt: new Date(at(completedSeconds)),
+          penaltySeconds,
+          ...(stageOutcomes ? { stageOutcomes: stageOutcomes as any } : {}),
+        },
+      })
+      return participant.id
+    }
+
+    const fastest = await seedAttempt(
+      'rank-live-fastest',
+      0,
+      [outcome(first!, 'SOLVED', 60), outcome(second!, 'SOLVED', 120)],
+      120
+    )
+    const bonus = await seedAttempt(
+      'rank-live-bonus',
+      20,
+      [
+        outcome(first!, 'SOLVED', 100),
+        outcome(second!, 'BONUS_CORRECT', 150, 50),
+      ],
+      100
+    )
+    const bonusWrong = await seedAttempt(
+      'rank-live-bonus-wrong',
+      0,
+      [outcome(first!, 'SOLVED', 80), outcome(second!, 'BONUS_WRONG', 140)],
+      80
+    )
+    const assisted = await seedAttempt(
+      'rank-live-assisted',
+      15,
+      [outcome(first!, 'REVEALED', 20), outcome(second!, 'SKIPPED', 30)],
+      30
+    )
+    const legacy = await seedAttempt('rank-live-legacy', 10, undefined, 200)
+
+    const progress = await getEscapeRoomProgress(
+      { liveQuizId: liveQuiz.id, elementBlockId: block.id },
+      lecturerCtx
+    )
+    const byParticipant = (id: string) =>
+      progress?.attempts.find((entry) => entry.participantId === id)
+
+    expect(byParticipant(fastest)).toMatchObject({
+      rank: 1,
+      solvedStages: 2,
+      rankedSeconds: 120,
+    })
+    expect(byParticipant(legacy)).toMatchObject({
+      rank: 2,
+      solvedStages: 2,
+      rankedSeconds: 210,
+    })
+    // The bonus credit puts the slower attempt ahead of the one with a wrong
+    // bonus answer.
+    expect(byParticipant(bonus)).toMatchObject({
+      rank: 3,
+      solvedStages: 1,
+      bonusCorrect: true,
+      rankedSeconds: 70,
+    })
+    expect(byParticipant(bonusWrong)).toMatchObject({
+      rank: 4,
+      solvedStages: 1,
+      bonusCorrect: false,
+      rankedSeconds: 80,
+    })
+    expect(byParticipant(assisted)).toMatchObject({
+      rank: 5,
+      solvedStages: 0,
+      revealedStages: 1,
+      skippedStages: 1,
+      rankedSeconds: 45,
+    })
+  })
+})
+
 // ! SEC#1: status gate on escape attempt start/hint
 // #region
 describe('escape attempt status gate (SEC#1)', () => {
@@ -800,5 +954,226 @@ describe('escape-room configuration validation', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'BAD_USER_INPUT' },
     })
+  })
+})
+
+// A Redis stand-in with the commands the escape-room skip uses: the lifecycle
+// claim, the block's response slot (rejected while the block is closing) and
+// the participant's cleared set.
+function createLiveRedis() {
+  const values = new Map<string, string>()
+  const cleared = new Set<string>()
+  const state = { closing: false }
+  const redisExec = {
+    set: vi.fn(async (key: string, token: string) => {
+      if (values.has(key)) return null
+      values.set(key, token)
+      return 'OK'
+    }),
+    get: vi.fn(async (key: string) => values.get(key) ?? null),
+    del: vi.fn(async (key: string) => (values.delete(key) ? 1 : 0)),
+    eval: vi.fn(async (script: string, _keys: number, ...args: string[]) => {
+      if (script.includes('escape-room-response-acquire')) {
+        return state.closing ? 0 : 1
+      }
+      if (script.includes('escape-room-response-')) return 0
+      if (values.get(args[0]!) !== args[1]) return 0
+      values.delete(args[0]!)
+      return 1
+    }),
+    zrem: vi.fn(async () => 1),
+    smembers: vi.fn(async () => [...cleared]),
+    sadd: vi.fn(async (_key: string, member: string) => {
+      cleared.add(member)
+      return 1
+    }),
+    expire: vi.fn(async () => 1),
+  }
+  return { redisExec, cleared, values, state }
+}
+
+let liveSkipSeeds = 0
+
+async function seedSkippableLiveQuiz({
+  skipPenalty = 40,
+  bonusSeconds = null,
+}: {
+  skipPenalty?: number | null
+  bonusSeconds?: number | null
+} = {}) {
+  const seeded = await seedEscapeRoomLiveQuiz({ includeSecondInstance: true })
+  await prisma.escapeRoomConfig.update({
+    where: { elementBlockId: seeded.block.id },
+    data: { skipPenalty, bonusSeconds },
+  })
+  const participant = await seedParticipant(`live-skip-${++liveSkipSeeds}`)
+  const redis = createLiveRedis()
+  const ctx = { ...participantCtx(participant.id), redisExec: redis.redisExec }
+  const attempt = await startEscapeRoomAttempt(
+    { elementBlockId: seeded.block.id },
+    ctx as any
+  )
+  return { ...seeded, participant, redis, ctx: ctx as any, attempt }
+}
+
+describe('LiveQuiz escape-room skip', () => {
+  it('charges the skip penalty, records the outcome and completes with the last regular stage', async () => {
+    const { block, attempt, redis, ctx } = await seedSkippableLiveQuiz()
+    const [first, second] = block.elements
+
+    const afterFirst = await skipEscapeRoomStage(
+      { elementBlockId: block.id },
+      ctx
+    )
+    expect(afterFirst).toMatchObject({
+      status: DB.EscapeRoomStatus.IN_PROGRESS,
+      penaltySeconds: 40,
+    })
+    expect(afterFirst.stageOutcomes).toMatchObject([
+      { stageKey: String(first!.id), outcome: 'SKIPPED' },
+    ])
+    expect(redis.cleared).toEqual(new Set([String(first!.id)]))
+
+    const afterSecond = await skipEscapeRoomStage(
+      { elementBlockId: block.id },
+      ctx
+    )
+    expect(afterSecond).toMatchObject({
+      status: DB.EscapeRoomStatus.COMPLETED,
+      penaltySeconds: 80,
+    })
+    expect(afterSecond.completedAt).not.toBeNull()
+    expect(redis.cleared).toEqual(
+      new Set([String(first!.id), String(second!.id)])
+    )
+    expect(
+      (
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).penaltySeconds
+    ).toBe(80)
+  })
+
+  it('refuses to skip when skipping is off', async () => {
+    const { block, ctx, attempt } = await seedSkippableLiveQuiz({
+      skipPenalty: null,
+    })
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_SKIP_DISABLED' },
+    })
+    expect(
+      (
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).penaltySeconds
+    ).toBe(0)
+  })
+
+  it('rejects a skip while another response holds the lifecycle claim', async () => {
+    const { block, participant, redis, ctx, attempt } =
+      await seedSkippableLiveQuiz()
+    const claimKey = getEscapeRoomLifecycleClaimKey(
+      'liveQuizBlock',
+      block.id,
+      participant.id
+    )
+    await redis.redisExec.set(claimKey, 'in-flight-response')
+
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_RESPONSE_PROCESSING' },
+    })
+    const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+      where: { id: attempt.id },
+    })
+    expect(persisted.penaltySeconds).toBe(0)
+    expect(redis.cleared.size).toBe(0)
+    // The holder's claim survives the rejected skip.
+    expect(redis.values.get(claimKey)).toBe('in-flight-response')
+  })
+
+  it('rejects a skip once the block is closing and releases the claim', async () => {
+    const { block, participant, redis, ctx, attempt } =
+      await seedSkippableLiveQuiz()
+    redis.state.closing = true
+
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_BLOCK_CLOSED' },
+    })
+    expect(
+      (
+        await prisma.escapeRoomAttempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+        })
+      ).penaltySeconds
+    ).toBe(0)
+    expect(
+      redis.values.has(
+        getEscapeRoomLifecycleClaimKey(
+          'liveQuizBlock',
+          block.id,
+          participant.id
+        )
+      )
+    ).toBe(false)
+  })
+
+  it('does not skip the bonus stage and shows it only after completion', async () => {
+    const { liveQuiz, block, ctx, redis } = await seedSkippableLiveQuiz({
+      bonusSeconds: 60,
+    })
+    const [regular, bonus] = block.elements
+
+    const running = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+    expect(running?.activeBlock?.elements?.map(({ id }) => id)).toEqual([
+      regular!.id,
+    ])
+
+    const completed = await skipEscapeRoomStage(
+      { elementBlockId: block.id },
+      ctx
+    )
+    // Skipping the only regular stage completes the attempt; the bonus is
+    // still unanswered and is not skippable.
+    expect(completed.status).toBe(DB.EscapeRoomStatus.COMPLETED)
+    expect(redis.cleared).toEqual(new Set([String(regular!.id)]))
+    await expect(
+      skipEscapeRoomStage({ elementBlockId: block.id }, ctx)
+    ).rejects.toMatchObject({ extensions: { code: 'ESCAPE_ROOM_GATED' } })
+
+    const bonusOffer = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+    expect(bonusOffer?.activeBlock?.elements?.map(({ id }) => id)).toEqual([
+      bonus!.id,
+    ])
+    expect(bonusOffer?.activeBlock).toMatchObject({
+      escapeRoomTotalInstances: 2,
+      escapeRoomClearedInstances: 1,
+    })
+
+    // Once the bonus is answered it is no longer offered.
+    await prisma.escapeRoomAttempt.update({
+      where: { id: completed.id },
+      data: {
+        stageOutcomes: [
+          ...(completed.stageOutcomes as any[]),
+          {
+            stageKey: String(bonus!.id),
+            wrongAttempts: 0,
+            outcome: 'BONUS_WRONG',
+            at: new Date().toISOString(),
+            creditSeconds: 0,
+          },
+        ],
+      },
+    })
+    const answered = await getRunningLiveQuiz({ id: liveQuiz.id }, ctx)
+    expect(answered?.activeBlock?.elements).toEqual([])
   })
 })

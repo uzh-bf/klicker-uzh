@@ -1327,6 +1327,7 @@ input ElementBlockInput {
   elements: [ElementInstanceInput!]!
   escapeRoomHintPenalty: Int
   escapeRoomIntroText: String
+  escapeRoomRules: EscapeRoomRulesInput
   escapeRoomTimeLimit: Int
   isEscapeRoom: Boolean
   order: Int!
@@ -2325,7 +2326,7 @@ type Mutation {
   setResearchConsent(consent: Boolean!, disclosureVersion: String!, expectedRevision: Int!): ParticipantDataUse
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
-  skipEscapeRoomStage(groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
+  skipEscapeRoomStage(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startEscapeRoomAttempt(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

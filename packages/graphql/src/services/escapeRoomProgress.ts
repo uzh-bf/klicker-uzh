@@ -64,11 +64,17 @@ const UNSCORED = {
   rankedSeconds: null,
 } as const
 
-function getScoredStages(attempt: {
-  groupId: string | null
-  stageResponses: unknown
-  stageOutcomes: unknown
-}): EscapeRoomScoredStage[] {
+function getScoredStages(
+  attempt: {
+    groupId: string | null
+    status: DB.EscapeRoomStatus
+    completedAt: Date | null
+    stageResponses: unknown
+    stageOutcomes: unknown
+  },
+  // Number of stages of a Live Quiz block; 0 for the other modes.
+  liveQuizStageCount = 0
+): EscapeRoomScoredStage[] {
   if (attempt.groupId) {
     return parseGroupEscapeRoomStageResponses(attempt.stageResponses).flatMap(
       (entry) =>
@@ -83,17 +89,32 @@ function getScoredStages(attempt: {
             ]
     )
   }
-  return parseEscapeRoomStageOutcomes(attempt.stageOutcomes).flatMap((entry) =>
-    entry.outcome && entry.at
-      ? [
-          {
-            outcome: entry.outcome,
-            at: entry.at,
-            creditSeconds: entry.creditSeconds,
-          },
-        ]
-      : []
+  const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes).flatMap(
+    (entry) =>
+      entry.outcome && entry.at
+        ? [
+            {
+              outcome: entry.outcome,
+              at: entry.at,
+              creditSeconds: entry.creditSeconds,
+            },
+          ]
+        : []
   )
+  // Live Quiz attempts completed before outcomes were recorded count as
+  // solved at their completion time; their recorded penalties still apply.
+  if (
+    outcomes.length === 0 &&
+    liveQuizStageCount > 0 &&
+    attempt.status === DB.EscapeRoomStatus.COMPLETED &&
+    attempt.completedAt
+  ) {
+    return Array.from({ length: liveQuizStageCount }, () => ({
+      outcome: 'SOLVED' as const,
+      at: attempt.completedAt as Date,
+    }))
+  }
+  return outcomes
 }
 
 export interface EscapeRoomProgress {
@@ -272,10 +293,23 @@ export async function getEscapeRoomProgress(
     const stageIds = new Set(liveQuizStageIds)
     runningLiveQuizAttempts.forEach((attempt, ix) => {
       const [error, members] = results[ix] ?? [null, []]
-      const cleared = !error && Array.isArray(members) ? members : []
+      const cleared = new Set(
+        (!error && Array.isArray(members) ? members : []).map(String)
+      )
+      // A reveal or skip is stored before the Redis write, so a stage counts
+      // as cleared when either store says so.
+      for (const entry of parseEscapeRoomStageOutcomes(attempt.stageOutcomes)) {
+        if (
+          entry.outcome === 'SOLVED' ||
+          entry.outcome === 'REVEALED' ||
+          entry.outcome === 'SKIPPED'
+        ) {
+          cleared.add(entry.stageKey)
+        }
+      }
       liveQuizClearedByAttempt.set(
         attempt.id,
-        cleared.filter((id) => stageIds.has(String(id))).length
+        [...cleared].filter((id) => stageIds.has(id)).length
       )
     })
   }
@@ -389,7 +423,7 @@ export async function getEscapeRoomProgress(
       ...scoreEscapeRoomAttempt({
         startedAt: attempt.startedAt,
         penaltySeconds: attempt.penaltySeconds,
-        stages: getScoredStages(attempt),
+        stages: getScoredStages(attempt, liveQuizStageIds.length),
       }),
     }
   }

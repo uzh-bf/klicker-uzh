@@ -236,6 +236,79 @@ describe('live escape room stages', () => {
   })
 })
 
+describe('live escape room outcomes', () => {
+  it('places solved, revealed and skipped outcomes in stage order', () => {
+    const result = getLiveEscapeRoomStages({
+      clearedCount: 3,
+      totalCount: 5,
+      stageOutcomes: [
+        { stageKey: '11', outcome: 'SOLVED', wrongAttempts: 1 },
+        { stageKey: '12', outcome: 'REVEALED', wrongAttempts: 3 },
+        { stageKey: '13', outcome: 'SKIPPED' },
+        // wrong attempts on the current stage are not an outcome yet
+        { stageKey: '14', outcome: null, wrongAttempts: 1 },
+      ],
+    })
+    assert.deepEqual(states(result), [
+      'solved',
+      'revealed',
+      'skipped',
+      'current',
+      'open',
+    ])
+    assert.equal(result.stages[0]?.wrongAttempts, 1)
+    assert.equal(result.clearedCount, 3)
+  })
+
+  it('keeps the bonus stage pending until every regular stage is cleared', () => {
+    const outcomes = [
+      { stageKey: '11', outcome: 'SOLVED' },
+      { stageKey: '12', outcome: 'SKIPPED' },
+    ]
+    const open = getLiveEscapeRoomStages({
+      clearedCount: 1,
+      totalCount: 3,
+      hasBonus: true,
+      stageOutcomes: outcomes.slice(0, 1),
+    })
+    assert.deepEqual(states(open), ['solved', 'current', 'open'])
+
+    const pending = getLiveEscapeRoomStages({
+      clearedCount: 2,
+      totalCount: 3,
+      hasBonus: true,
+      stageOutcomes: outcomes,
+    })
+    assert.deepEqual(states(pending), ['solved', 'skipped', 'current'])
+    assert.equal(pending.requiredCount, 2)
+    assert.equal(pending.bonusCount, 1)
+    assert.equal(pending.clearedCount, 2)
+  })
+
+  it('records a correct and a wrong bonus answer on the last stage', () => {
+    const regular = [
+      { stageKey: '11', outcome: 'SOLVED' },
+      { stageKey: '12', outcome: 'REVEALED' },
+    ]
+    const correct = getLiveEscapeRoomStages({
+      clearedCount: 2,
+      totalCount: 3,
+      hasBonus: true,
+      stageOutcomes: [...regular, { stageKey: '13', outcome: 'BONUS_CORRECT' }],
+    })
+    assert.deepEqual(states(correct), ['solved', 'revealed', 'bonusCorrect'])
+
+    const wrong = getLiveEscapeRoomStages({
+      clearedCount: 2,
+      totalCount: 3,
+      hasBonus: true,
+      stageOutcomes: [...regular, { stageKey: '13', outcome: 'BONUS_WRONG' }],
+    })
+    assert.deepEqual(states(wrong), ['solved', 'revealed', 'bonusWrong'])
+    assert.equal(wrong.clearedCount, 2)
+  })
+})
+
 describe('escape ranked seconds', () => {
   const base = {
     startedAt: '2026-01-01T10:00:00.000Z',
