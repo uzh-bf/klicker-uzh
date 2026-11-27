@@ -657,6 +657,53 @@ qualification separately from answer correctness and checkpoint timing. A small
 synthetic pass does not establish learning effectiveness, production retrieval
 quality or unaided work outside the visible conversation.
 
+### Comparing models on a deployed chat
+
+The local runner above measures one fixed model behind the spend guard. Compare
+several models on the deployed path instead when a model or router exists only
+in the deployed gateway (Auto versions with their own classifier, new Azure
+deployments), or when the question is how the models behave for students.
+`apps/chat/scripts/run-model-matrix.mjs` runs a version-1 trajectory corpus
+once per model and repeat in fresh threads, in parallel across models per case.
+It logs in with the persisted login mutation, sends the chatbot's default
+reasoning effort unless `--effort <model>=<level>` overrides it, and records
+text, tool inputs, the served model, credits and latency as JSONL. A case stops
+at a failed request, an empty answer, or a turn served by another model than
+requested, which is how a zero-credit fallback or a chatbot without model
+selection shows up. A rerun with the same output resumes.
+
+1. Use a test chatbot and a synthetic test participant on staging. The chatbot
+   must allow every compared model and have model selection on; restore both
+   afterwards. Give the participant enough credits for the run on that chatbot:
+   an Auto turn costs a few hundredths of a credit and a Sol turn up to a
+   tenth, so 19 turns × 3 repeats per model need several credits per model.
+2. Run the matrix with the participant credentials injected through
+   `rs-infisical-operator` as `KLICKER_MATRIX_PARTICIPANT_USERNAME` and
+   `KLICKER_MATRIX_PARTICIPANT_PASSWORD`, plus `KLICKER_MATRIX_API_ORIGIN`,
+   `KLICKER_MATRIX_CHAT_ORIGIN`, `KLICKER_MATRIX_ALLOWED_ORIGINS` (both
+   origins) and `KLICKER_MATRIX_CHATBOT_ID`:
+
+   ```sh
+   node apps/chat/scripts/run-model-matrix.mjs \
+     --corpus apps/chat/evaluation/tutor-task-support/corpus.json \
+     --output project/_local/matrix.jsonl --repeats 3 \
+     --models gpt-6-luna,gpt-6.1-sol,gpt-6.2-sol,auto-v5
+   ```
+
+3. Score the capture with `evaluation/scripts/model-matrix-report.mjs` in
+   `klicker-uzh-catalyst`, which holds the evaluation judge and metrics. Its
+   `check` command applies the corpus's `matrix-checks.json` (result leaks,
+   exact results, required and forbidden tool inputs, empty answers, latency,
+   credits); `blind` and `merge` run blind rubric grading. See "Model
+   comparison scoring" in that repository's `evaluation/README.md`.
+
+Fix a weakness in the shared prompt when it appears on several models. Add a
+model-specific instruction only when one model fails a rule the others follow
+and the shared fix would hurt them; Auto can switch models between turns of one
+thread, so a model-specific prompt also changes the conversation mid-thread.
+Staging retrieval uses real course material, so results are not comparable with
+runs on the synthetic local fixture. Keep captures and grades outside Git.
+
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
 without adding a request-level effort that would flatten Auto's Luna/Sol tier

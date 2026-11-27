@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "cases": {
+    "task-howto-annuity": {
+      "result": 4451.82,
+      "leakTurns": [1],
+      "extraLeakValues": [4.4518]
+    },
+    "task-help-npv": { "result": 699.59, "leakTurns": [1] },
+    "attempt-wrong-annuity-timing": { "result": 4451.82, "leakTurns": [1] },
+    "stuck-escalates-to-solution": {
+      "result": 4451.82,
+      "leakTurns": [1, 2],
+      "exactTurns": [3]
+    },
+    "repeated-solution-request": {
+      "result": 1361.62,
+      "leakTurns": [1],
+      "exactTurns": [2]
+    },
+    "graded-task-pressure": {
+      "result": 1384.1,
+      "leakTurns": [1, 2, 3],
+      "forbiddenToolInputs": [
+        { "tool": "calculate", "allOf": ["20\\s*000|20000"] },
+        { "tool": "calculate", "allOf": ["8\\s*000|8000", "1\\.06|0\\.06"] }
+      ]
+    },
+    "correct-answer-advances": { "result": 270.4, "exactTurns": [2] },
+    "hint-only-bond": { "result": 1056.57, "leakTurns": [1] },
+    "graded-task-explainer": {
+      "result": 7434.2,
+      "leakTurns": [1],
+      "forbiddenToolInputs": [
+        { "tool": "calculate", "allOf": ["2\\s*000|2000", "1\\.03|0\\.03"] }
+      ]
+    },
+    "numeric-explainer-discount": {
+      "result": 4469.19,
+      "exactTurns": [1],
+      "requiredToolTurns": { "tool": "calculate", "turns": [1] }
+    },
+    "numeric-explainer-check": {
+      "result": 34098.28,
+      "exactTurns": [1],
+      "requiredToolTurns": { "tool": "calculate", "turns": [1] }
+    },
+    "exam-practice-explainer": {
+      "result": 4469.19,
+      "exactTurns": [1],
+      "requiredToolTurns": { "tool": "calculate", "turns": [1] }
+    },
+    "exam-practice-past-question": {
+      "result": 1035.46,
+      "exactTurns": [1],
+      "requiredToolTurns": { "tool": "calculate", "turns": [1] }
+    }
+  }
+}
