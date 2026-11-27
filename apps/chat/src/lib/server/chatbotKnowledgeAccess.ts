@@ -73,6 +73,7 @@ export async function assertCurrentChatbotKnowledgeAccess(
     select: {
       ownerId: true,
       courseId: true,
+      status: true,
       knowledgeGraphRetrievalEnabled: true,
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },

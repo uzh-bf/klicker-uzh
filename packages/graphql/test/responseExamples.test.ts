@@ -192,7 +192,7 @@ describe('response-example foundation', () => {
       },
     })
     if (ownerReadUserId && ownerReadUserId !== kbOwnerId) {
-      await prisma.derivedPermission.create({
+      await prisma.permission.create({
         data: {
           kbId: kb.id,
           userId: ownerReadUserId,
@@ -523,7 +523,7 @@ describe('response-example foundation', () => {
     ).resolves.toBeNull()
   })
 
-  it('accepts capture while the chatbot owner has a current KB Read grant', async () => {
+  it('accepts capture while the chatbot owner has a live KB Read grant', async () => {
     const capture = await buildCaptureInput({
       kbOwnerId: userTwoCtx.user.sub,
       ownerReadUserId: userOneCtx.user.sub,
@@ -554,7 +554,7 @@ describe('response-example foundation', () => {
       kbOwnerId: userTwoCtx.user.sub,
       ownerReadUserId: userOneCtx.user.sub,
     })
-    await prisma.derivedPermission.deleteMany({
+    await prisma.permission.deleteMany({
       where: {
         kbId: capture.kb.id,
         userId: userOneCtx.user.sub,
@@ -575,6 +575,32 @@ describe('response-example foundation', () => {
         },
       })
     ).resolves.toBe(0)
+  })
+
+  it('rejects capture when only a stale derived KB Read grant remains', async () => {
+    const capture = await buildCaptureInput({
+      kbOwnerId: userTwoCtx.user.sub,
+      ownerReadUserId: userOneCtx.user.sub,
+    })
+    await prisma.permission.deleteMany({
+      where: {
+        kbId: capture.kb.id,
+        userId: userOneCtx.user.sub,
+      },
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        kbId: capture.kb.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+    })
   })
 
   it.each([

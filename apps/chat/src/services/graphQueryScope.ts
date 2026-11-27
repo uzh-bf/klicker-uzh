@@ -1,4 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { ChatbotStatus } from '@klicker-uzh/prisma/client'
 import { assertCurrentChatbotKnowledgeAccess } from '@/src/lib/server/chatbotKnowledgeAccess'
 import { isChatbotGraphRetrievalEnabled } from '@/src/lib/server/featureFlags'
 import {
@@ -6,6 +7,7 @@ import {
   type PublishedKnowledgeGraph,
   readKnowledgeGraphSearchHints,
 } from '@/src/lib/server/knowledgeGraphRuntime'
+import { GUEST_ACCOUNT_TYPE } from '@/src/lib/server/ltiGuest'
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 import type { GraphQueryDependencies } from './graphAssistedDocQuery'
 import type { MCPRequestContext } from './mcpClients'
@@ -18,6 +20,24 @@ export function graphQueryDependencies(
     async validateScope() {
       if (!context.kbIds?.length)
         throw new RequiredMCPUnavailableError('scope_violation')
+      if (!context.ownerPreviewUserId) {
+        if (!context.participantId)
+          throw new RequiredMCPUnavailableError('scope_violation')
+        const participant = await prisma.participant.findUnique({
+          where: { id: context.participantId },
+          select: { isActive: true, accounts: { select: { type: true } } },
+        })
+        const guest = participant?.accounts.some(
+          (account) => account.type === GUEST_ACCOUNT_TYPE
+        )
+        if (
+          !participant ||
+          (context.authMode === 'account'
+            ? !participant.isActive || guest
+            : !guest)
+        )
+          throw new RequiredMCPUnavailableError('scope_violation')
+      }
       const chatbot = await assertCurrentChatbotKnowledgeAccess({
         ...context,
         kbIds: context.kbIds,
@@ -26,6 +46,8 @@ export function graphQueryDependencies(
         chatbot.knowledgeBases.map((binding) => binding.kbId).sort() ?? []
       const expected = [...(context.kbIds ?? [])].sort()
       if (
+        (context.ownerPreviewUserId &&
+          chatbot.status === ChatbotStatus.PAUSED) ||
         actual.length === 0 ||
         actual.length !== expected.length ||
         actual.some((id, index) => id !== expected[index])
