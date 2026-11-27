@@ -35,6 +35,7 @@ import type {
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { validateElementDifficultyLevel } from '../lib/validateElementDifficultyLevel.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { assertActivityArtifactElementDataAccessible } from './activityArtifacts.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
@@ -1877,6 +1878,26 @@ export async function updateElementInstances(
     return acc
   }, [])
 
+  const refreshedContentElementData =
+    element.type === DB.ElementType.CONTENT &&
+    instanceData.some(
+      ({ microLearningId }) => typeof microLearningId !== 'undefined'
+    )
+      ? processElementData(element)
+      : undefined
+
+  if (refreshedContentElementData) {
+    await assertActivityArtifactElementDataAccessible(
+      instanceData.flatMap(({ microLearningId }) =>
+        microLearningId ? [microLearningId] : []
+      ),
+      refreshedContentElementData,
+      prisma
+    )
+  }
+
+  let artifactAccessError: GraphQLError | undefined
+
   // keep track of answer collections for which the assignment / link to a template was modified
   // --> update of derived permissions is required
   let touchedAnswerCollectionIds: number[] = []
@@ -1942,13 +1963,36 @@ export async function updateElementInstances(
                 // replacing a pin written after that refresh observed the
                 // instance. The shared row lock keeps publication from
                 // committing between the editable check and the write.
-                const lockedRows = await tx.$queryRaw<{ id: string }[]>`
-                SELECT "id" FROM "public"."MicroLearning"
+                const lockedRows = await tx.$queryRaw<
+                  { id: string; pointsMultiplier: number }[]
+                >`
+                SELECT "id", "pointsMultiplier" FROM "public"."MicroLearning"
                 WHERE "id" = ${microLearningId}::uuid
                   AND "status"::text = ANY(${acceptedStatusValues}::text[])
                 FOR SHARE
               `
-                if (lockedRows.length !== 1) return null
+                const lockedRow = lockedRows[0]
+                if (lockedRows.length !== 1 || !lockedRow) return null
+
+                const currentInstance = await tx.elementInstance.findUnique({
+                  where: { id: instanceId },
+                  select: { options: true },
+                })
+                if (!currentInstance) return null
+
+                try {
+                  await assertActivityArtifactElementDataAccessible(
+                    [microLearningId],
+                    newElementData,
+                    tx
+                  )
+                } catch (error) {
+                  if (error instanceof GraphQLError) {
+                    artifactAccessError ??= error
+                    return null
+                  }
+                  throw error
+                }
 
                 const [updatedInstance] =
                   await tx.elementInstance.updateManyAndReturn({
@@ -1971,7 +2015,15 @@ export async function updateElementInstances(
                         },
                       ],
                     },
-                    data: instanceUpdateData,
+                    data: {
+                      ...instanceUpdateData,
+                      options: {
+                        ...currentInstance.options,
+                        basePoints: element.basePoints,
+                        pointsMultiplier:
+                          lockedRow.pointsMultiplier * element.pointsMultiplier,
+                      },
+                    },
                   })
 
                 return updatedInstance ?? null
@@ -2224,6 +2276,10 @@ export async function updateElementInstances(
     if (result.status !== 'fulfilled' || !result.value) return []
     return result.value
   })
+
+  if (artifactAccessError) {
+    throw artifactAccessError
+  }
 
   if (includeTemplates) {
     // reduce the list of touched answer collections to unique values

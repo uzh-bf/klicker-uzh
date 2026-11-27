@@ -691,10 +691,10 @@ describe('activity artifact participant access', () => {
     }
   }
 
-  function allowedPrisma() {
+  function allowedPrisma(pin = storedPin) {
     const findUnique = vi.fn().mockResolvedValue({
       id: 42,
-      elementData: { options: { activityArtifact: storedPin } },
+      elementData: { options: { activityArtifact: pin } },
       elementStack: {
         microLearning: { id: microLearningId, courseId },
       },
@@ -821,6 +821,48 @@ describe('activity artifact participant access', () => {
       digest: storedPin.digest,
       renderedDigest: 'c'.repeat(64),
     })
+  })
+
+  it('compares canonical exercise fields while preserving cashflow order', async () => {
+    const orderedExercise = {
+      ...clientRevision.exercise,
+      cashflows: [
+        { when: 'year-end' as const, amount: 40 },
+        { when: 'maturity' as const, amount: 'face' as const },
+      ],
+    }
+    const orderedPin = sanitizeActivityArtifactPin({
+      ...revisionPayload,
+      exercise: orderedExercise,
+      subject: 'lecturer-1',
+    })!
+    const { prisma } = allowedPrisma(orderedPin)
+    const runtime = allowedRuntime()
+    runtime.getRevision.mockResolvedValueOnce({
+      ...clientRevision,
+      exercise: {
+        cashflows: orderedExercise.cashflows,
+        face: orderedExercise.face,
+        years: orderedExercise.years,
+        title: orderedExercise.title,
+      },
+    })
+    const { ctx } = participantContext({ prisma, runtime })
+
+    await expect(
+      getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
+    ).resolves.toMatchObject({ revisionId })
+
+    runtime.getRevision.mockResolvedValueOnce({
+      ...clientRevision,
+      exercise: {
+        ...orderedExercise,
+        cashflows: [...orderedExercise.cashflows].reverse(),
+      },
+    })
+    await expect(
+      getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
+    ).resolves.toBeNull()
   })
 
   it('denies a pinned revision when its source digest changes', async () => {
@@ -999,10 +1041,10 @@ describe('activity artifact placement access', () => {
     expect(findPermissions).toHaveBeenCalledWith({
       where: {
         userId: { in: [contentArtifactPin.subject] },
-        microLearningId: 'microlearning-1',
+        microLearningId: { in: ['microlearning-1'] },
         permissionLevel: { in: ['ADMIN', 'OWNER'] },
       },
-      select: { userId: true },
+      select: { userId: true, microLearningId: true },
     })
   })
 
@@ -1026,6 +1068,8 @@ describe('activity artifact content updates', () => {
     type: ElementType.CONTENT,
     name: 'Pinned content',
     content: '<p>Before</p>',
+    basePoints: true,
+    pointsMultiplier: 1,
     options: { activityArtifact: contentArtifactPin },
     answerCollectionId: null,
     answerCollectionItems: [],
@@ -1059,9 +1103,17 @@ describe('activity artifact content updates', () => {
   function microLearningGuardContext({
     activityStatus,
     conditionalResult = 'decline',
+    activityMultiplier = 1,
+    artifactSubject = contentArtifactPin.subject,
+    artifactAccessible = true,
+    currentOptions = {},
   }: {
     activityStatus: PublicationStatus
     conditionalResult?: 'pass' | 'decline'
+    activityMultiplier?: number
+    artifactSubject?: string
+    artifactAccessible?: boolean
+    currentOptions?: Record<string, unknown>
   }) {
     const microLearningId = 'microlearning-1'
     const instanceId = 42
@@ -1073,6 +1125,9 @@ describe('activity artifact content updates', () => {
     const element = {
       ...previousElement,
       version: 1,
+      options: {
+        activityArtifact: { ...contentArtifactPin, subject: artifactSubject },
+      },
       answerCollection: null,
       elementInstances: [
         {
@@ -1098,6 +1153,22 @@ describe('activity artifact content updates', () => {
         conditionalResult === 'pass' ? [{ id: instanceId }] : []
       )
     const directUpdate = vi.fn()
+    const findPermissions = vi.fn(
+      async ({
+        where,
+      }: {
+        where: {
+          userId: { in: string[] }
+          microLearningId: { in: string[] }
+        }
+      }) =>
+        artifactAccessible
+          ? where.microLearningId.in.map((id) => ({
+              userId: where.userId.in[0],
+              microLearningId: id,
+            }))
+          : []
+    )
     const prisma = {
       element: {
         findUnique: vi
@@ -1109,12 +1180,13 @@ describe('activity artifact content updates', () => {
         findUnique: vi.fn().mockResolvedValue({
           id: instanceId,
           elementData: observedElementData,
-          options: {},
+          options: currentOptions,
         }),
         findMany: vi.fn().mockResolvedValue([]),
         updateManyAndReturn: conditionalUpdate,
         update: directUpdate,
       },
+      derivedPermission: { findMany: findPermissions },
       $queryRaw: vi.fn(
         async (
           _strings: TemplateStringsArray,
@@ -1123,7 +1195,7 @@ describe('activity artifact content updates', () => {
         ) => {
           guardedStatuses.push(...statuses)
           return statuses.includes(activityStatus)
-            ? [{ id: microLearningId }]
+            ? [{ id: microLearningId, pointsMultiplier: activityMultiplier }]
             : []
         }
       ),
@@ -1136,7 +1208,9 @@ describe('activity artifact content updates', () => {
 
     return {
       conditionalUpdate,
+      currentOptions,
       directUpdate,
+      findPermissions,
       guardedStatuses,
       instanceId,
       microLearningId,
@@ -1234,6 +1308,72 @@ describe('activity artifact content updates', () => {
       PublicationStatus.DRAFT,
       PublicationStatus.SCHEDULED,
     ])
+  })
+
+  it('uses the locked activity multiplier and current instance options', async () => {
+    const { conditionalUpdate, currentOptions, prisma } =
+      microLearningGuardContext({
+        activityStatus: PublicationStatus.SCHEDULED,
+        conditionalResult: 'pass',
+        activityMultiplier: 2,
+        currentOptions: { pointsMultiplier: 2, retained: 'newer' },
+      })
+
+    await expect(
+      updateElementInstances(
+        { elementId: previousElement.id, includeTemplates: false },
+        prisma as never,
+        { emit: vi.fn() } as never,
+        'lecturer-1'
+      )
+    ).resolves.toHaveLength(1)
+
+    expect(conditionalUpdate.mock.calls[0]![0].data.options).toEqual({
+      ...currentOptions,
+      basePoints: true,
+      pointsMultiplier: 2,
+    })
+  })
+
+  it('rejects a replacement pin when the guarded recheck finds no activity access', async () => {
+    const {
+      conditionalUpdate,
+      directUpdate,
+      findPermissions,
+      guardedStatuses,
+      microLearningId,
+      prisma,
+    } = microLearningGuardContext({
+      activityStatus: PublicationStatus.SCHEDULED,
+      conditionalResult: 'pass',
+      artifactSubject: 'lecturer-without-admin-access',
+      artifactAccessible: true,
+    })
+    findPermissions
+      .mockResolvedValueOnce([
+        {
+          userId: 'lecturer-without-admin-access',
+          microLearningId,
+        },
+      ])
+      .mockResolvedValueOnce([])
+
+    await expect(
+      updateElementInstances(
+        { elementId: previousElement.id, includeTemplates: false },
+        prisma as never,
+        { emit: vi.fn() } as never,
+        'lecturer-1'
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    expect(findPermissions).toHaveBeenCalledTimes(2)
+    expect(guardedStatuses).toEqual([
+      PublicationStatus.DRAFT,
+      PublicationStatus.SCHEDULED,
+    ])
+    expect(conditionalUpdate).not.toHaveBeenCalled()
+    expect(directUpdate).not.toHaveBeenCalled()
   })
 
   it('allows a template refresh when templates are included', async () => {

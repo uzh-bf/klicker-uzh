@@ -16,7 +16,8 @@ FROM node:24.21.0-bookworm-slim
 WORKDIR /workspace/apps/artifact-pilot
 COPY --from=dependencies /workspace/node_modules /workspace/node_modules
 COPY --from=dependencies /workspace/apps/artifact-pilot/node_modules ./node_modules
-COPY apps/artifact-pilot/exercise.mjs apps/artifact-pilot/repository.mjs apps/artifact-pilot/server.mjs apps/artifact-pilot/starter-style.mjs apps/artifact-pilot/styles.css ./
+COPY apps/artifact-pilot/exercise.mjs apps/artifact-pilot/repository.mjs apps/artifact-pilot/server.mjs apps/artifact-pilot/starter-style.mjs ./
+COPY --from=styles-check /workspace/apps/artifact-pilot/styles.css ./styles.css
 USER node
 EXPOSE 8080
 CMD ["node", "server.mjs"]

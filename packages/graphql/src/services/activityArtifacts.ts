@@ -9,6 +9,7 @@ import {
   isActivityArtifactId,
   parseCanonicalArtifactUrl,
   sanitizeActivityArtifactPin,
+  validateActivityArtifactExercise,
 } from '../lib/activityArtifacts.js'
 import type { ContextWithUser } from '../lib/context.js'
 import {
@@ -214,28 +215,82 @@ export async function assertActivityArtifactPinsAccessible(
     )
     if (pin) pinSubjects.add(pin.subject)
   }
-  if (pinSubjects.size === 0) return
+
+  await assertPinSubjectsAccessible(
+    [...pinSubjects].map((subject) => ({ microLearningId, subject })),
+    prisma
+  )
+}
+
+async function assertPinSubjectsAccessible(
+  requirements: { microLearningId: string; subject: string }[],
+  prisma: Pick<PrismaTransactionClient, 'derivedPermission'>
+) {
+  if (requirements.length === 0) return
+
+  const activityIds = [
+    ...new Set(requirements.map(({ microLearningId }) => microLearningId)),
+  ]
+  const subjects = [...new Set(requirements.map(({ subject }) => subject))]
 
   const permissions = await prisma.derivedPermission.findMany({
     where: {
-      userId: { in: [...pinSubjects] },
-      microLearningId,
+      userId: { in: subjects },
+      microLearningId: { in: activityIds },
       permissionLevel: {
         in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
       },
     },
-    select: { userId: true },
+    select: { userId: true, microLearningId: true },
   })
-  const permittedSubjects = new Set(
-    permissions.flatMap(({ userId }) => (userId ? [userId] : []))
-  )
+  const permitted = new Map<string, Set<string>>()
+  for (const { userId, microLearningId } of permissions) {
+    if (!userId || !microLearningId) continue
+    const permittedSubjects =
+      permitted.get(microLearningId) ?? new Set<string>()
+    permittedSubjects.add(userId)
+    permitted.set(microLearningId, permittedSubjects)
+  }
 
-  if ([...pinSubjects].some((subject) => !permittedSubjects.has(subject))) {
+  if (
+    requirements.some(
+      ({ microLearningId, subject }) =>
+        !permitted.get(microLearningId)?.has(subject)
+    )
+  ) {
     throw new GraphQLError(
       'The attached activity artifact must be confirmed by a lecturer who administers this microlearning',
       { extensions: { code: 'BAD_USER_INPUT' } }
     )
   }
+}
+
+/**
+ * A refresh replaces the pin stored on every affected instance. Validate that
+ * replacement against the target activities before any write, using the same
+ * ADMIN or OWNER requirement as placement and publication.
+ */
+export async function assertActivityArtifactElementDataAccessible(
+  microLearningIds: string[],
+  elementData: unknown,
+  prisma: Pick<PrismaTransactionClient, 'derivedPermission'>
+) {
+  const activityIds = [...new Set(microLearningIds)]
+  if (activityIds.length === 0) return
+
+  const pin = sanitizeActivityArtifactPin(
+    (elementData as { options?: { activityArtifact?: unknown } } | null)
+      ?.options?.activityArtifact
+  )
+  if (!pin) return
+
+  await assertPinSubjectsAccessible(
+    activityIds.map((microLearningId) => ({
+      microLearningId,
+      subject: pin.subject,
+    })),
+    prisma
+  )
 }
 
 /**
@@ -353,6 +408,22 @@ export async function getActivityArtifactForInstance(
     if (revision.digest !== pin.digest) {
       console.warn(
         '[activity-artifacts] pinned revision digest mismatch; denying run'
+      )
+      return null
+    }
+
+    // Canonicalize both values into the validator's fixed field shape.
+    // Object property order is irrelevant, while cashflow array order remains
+    // meaningful.
+    const servedExercise = validateActivityArtifactExercise(revision.exercise)
+    const pinnedExercise = validateActivityArtifactExercise(pin.exercise)
+    if (
+      !servedExercise ||
+      !pinnedExercise ||
+      JSON.stringify(servedExercise) !== JSON.stringify(pinnedExercise)
+    ) {
+      console.warn(
+        '[activity-artifacts] pinned revision exercise mismatch; denying run'
       )
       return null
     }
