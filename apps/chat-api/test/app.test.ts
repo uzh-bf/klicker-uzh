@@ -1,6 +1,7 @@
 import {
   CHAT_ENGINE_CONTRACT_V2,
   conformanceV2Manifest,
+  engineExplanationDraftRequestSchema,
   type EngineV2ChatRequest,
 } from '@klicker-uzh/chat-engine-contract'
 import { prisma } from '@klicker-uzh/prisma'
@@ -1015,6 +1016,53 @@ test('starts no auxiliary work when saving the admitted question fails', async (
   expect(dependencies.prepareAttachmentContext).not.toHaveBeenCalled()
   expect(dependencies.engine.chat).not.toHaveBeenCalled()
   expect(dependencies.failChatTurn).toHaveBeenCalledOnce()
+})
+
+test('sends a valid engine draft request for a reasoning writer', async ({
+  onTestFinished,
+}) => {
+  vi.stubEnv('CHAT_EXPLANATION_WRITER_MODEL_ID', 'gpt-6.1-sol')
+  onTestFinished(() => {
+    vi.unstubAllEnvs()
+  })
+  const dependencies = baseDependencies(() => engineSse([]))
+  dependencies.previewCredits = async () => ({ current: 100, total: 100 })
+  dependencies.getCredits = async () => ({ current: 100, total: 100 })
+  dependencies.readiness = {
+    get: async () => ({ ...(await ready.get()), explanationWriter: true }),
+  }
+  const draft = vi.fn<NonNullable<typeof dependencies.engine.explanationDraft>>(
+    async () => ({ draft: null, usage: { inputTokens: 3, outputTokens: 1 } })
+  )
+  dependencies.engine.explanationDraft = draft
+  const originalPrepare = dependencies.prepareTools
+  dependencies.prepareTools = async (input) => {
+    const writer = input.getExplanationWriter?.()
+    if (!writer || !('generateDraft' in writer))
+      throw new Error('Missing engine writer')
+    await writer.generateDraft(
+      {
+        prompt: 'A sample',
+        systemPrompt: 'Explain',
+        inputSchema: { type: 'object' },
+        previous: [],
+      },
+      new AbortController().signal
+    )
+    return originalPrepare(input)
+  }
+  const response = await createChatApiApp(dependencies).request(
+    '/api/chatbots/chatbot-1/chat',
+    request({ ...body, selectedModel: 'auto' })
+  )
+  expect(draft).toHaveBeenCalledOnce()
+  const { generation } = engineExplanationDraftRequestSchema.parse(
+    draft.mock.calls[0]?.[0]
+  )
+  expect(generation.reasoningEffort).not.toBe('none')
+  expect(generation.reasoningSummary).toBe('auto')
+  expect(response.status).toBe(200)
+  await response.body?.cancel()
 })
 
 test.each([

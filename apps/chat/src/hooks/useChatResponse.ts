@@ -513,7 +513,7 @@ export function useChatResponse(
             buffer = lines.pop() || '' // keep incomplete line in buffer for next chunk
 
             for (const line of lines) {
-              if (!line.trim()) continue
+              if (!line.trim() || line.startsWith(':')) continue
               if (line === 'data: [DONE]') continue
 
               try {

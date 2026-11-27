@@ -1230,16 +1230,16 @@ export function createChatApiApp(
                       ...draft,
                       contractVersion: 'v2',
                       generation: {
-                        ...credential.generation,
+                        ...withReasoning(
+                          credential.generation,
+                          explanationWriterReasoningEffort(writerConfig) ?? null
+                        ),
                         modelId: writerConfig.id,
                         deploymentId: writerConfig.deploymentId,
                         maxOutputTokens: WRITER_MAX_OUTPUT_TOKENS,
                         providerApi: writerConfig.usesResponsesApi
                           ? 'responses'
                           : 'chat',
-                        reasoningEffort:
-                          explanationWriterReasoningEffort(writerConfig) ??
-                          'none',
                         responseStorage:
                           writerConfig.usesResponsesApi &&
                           getOpenAIResponsesStore(),
