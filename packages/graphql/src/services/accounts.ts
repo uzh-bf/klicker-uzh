@@ -24,6 +24,7 @@ import {
   initialParticipantDataUseData,
   validateInitialParticipantDataUse,
 } from './participantAccountDataUse.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -1646,7 +1647,9 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
             randomSelection,
             elements: {
               create: questions.map((element, elementIx) => {
-                const elementData = processElementData(element)
+                const elementData = renderInstanceElementData(
+                  processElementData(element)
+                )
                 const initialResults = getInitialInstanceResults(elementData)
 
                 return {

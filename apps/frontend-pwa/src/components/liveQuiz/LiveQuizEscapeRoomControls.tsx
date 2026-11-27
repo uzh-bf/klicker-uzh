@@ -157,6 +157,13 @@ export function LiveQuizEscapeRoomQuestionControls({
           })}
           data={{ cy: 'escape-room-revealed-notice' }}
         />
+        {controller.mistake && (
+          <UserNotification
+            type="warning"
+            message={`${controller.mistake.label}: ${controller.mistake.feedback}`}
+            data={{ cy: 'escape-room-mistake-feedback' }}
+          />
+        )}
         {items.length > 0 && (
           <div
             className="rounded-md border border-slate-300 bg-slate-50 p-3 text-sm"
@@ -218,6 +225,14 @@ export function LiveQuizEscapeRoomQuestionControls({
               />
             </div>
           </>
+        )}
+        {controller.mistake && (
+          <UserNotification
+            type="warning"
+            className={{ root: 'mt-2' }}
+            message={`${controller.mistake.label}: ${controller.mistake.feedback}`}
+            data={{ cy: 'escape-room-mistake-feedback' }}
+          />
         )}
       </div>
       {isRunning && currentInstance.options?.hasHint && (

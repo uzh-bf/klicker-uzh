@@ -58,6 +58,7 @@ import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { checkAccess } from './sharing.js'
 import { computeStackEvaluation } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -494,6 +495,7 @@ export async function manipulateLiveQuiz(
               duplicationInstances,
               elementMap,
               userId: ctx.user.sub,
+              renderElementData: renderInstanceElementData,
             })
           ),
         },
@@ -1404,6 +1406,28 @@ export async function activateLiveQuizBlock(
               : elementData.options.solutionRanges
                 ? JSON.stringify(elementData.options.solutionRanges)
                 : undefined,
+          // typical mistakes of escape room stages, matched by the Response API
+          ...(updatedQuiz.activeBlock!.escapeRoomConfig &&
+          elementData.options.mistakeRanges?.length
+            ? {
+                mistakes: JSON.stringify(
+                  elementData.options.mistakeRanges.flatMap((range) => {
+                    const mistake = elementData.options.mistakes?.find(
+                      (entry) => entry.key === range.key
+                    )
+                    return mistake
+                      ? [
+                          {
+                            ...range,
+                            label: mistake.label,
+                            feedback: mistake.feedback,
+                          },
+                        ]
+                      : []
+                  })
+                ),
+              }
+            : {}),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,

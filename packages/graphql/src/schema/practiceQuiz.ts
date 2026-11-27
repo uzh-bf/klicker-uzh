@@ -24,6 +24,7 @@ import type {
   EscapeRoomProgress as IEscapeRoomProgress,
   EscapeRoomProjector as IEscapeRoomProjector,
   EscapeRoomProjectorRow as IEscapeRoomProjectorRow,
+  EscapeRoomStageMistakeCount as IEscapeRoomStageMistakeCount,
   EscapeRoomStageProgress as IEscapeRoomStageProgress,
 } from '../services/escapeRooms.js'
 import {
@@ -184,6 +185,16 @@ export const StackResponseInput = StackResponseInputRef.implement({
   }),
 })
 
+// Feedback for a wrong answer that matches a typical mistake.
+export const EscapeRoomMistakeFeedback = builder
+  .objectRef<{ label: string; feedback: string }>('EscapeRoomMistakeFeedback')
+  .implement({
+    fields: (t) => ({
+      label: t.exposeString('label'),
+      feedback: t.exposeString('feedback'),
+    }),
+  })
+
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')
   .implement({
@@ -193,6 +204,10 @@ export const StackFeedback = builder
       score: t.exposeInt('score', { nullable: true }),
       evaluations: t.expose('evaluations', {
         type: [InstanceEvaluation],
+        nullable: true,
+      }),
+      mistakes: t.expose('mistakes', {
+        type: [EscapeRoomMistakeFeedback],
         nullable: true,
       }),
     }),
@@ -457,6 +472,16 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
   }
 )
 
+export const EscapeRoomStageMistakeCount = builder
+  .objectRef<IEscapeRoomStageMistakeCount>('EscapeRoomStageMistakeCount')
+  .implement({
+    fields: (t) => ({
+      key: t.exposeString('key'),
+      label: t.exposeString('label'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
 export const EscapeRoomStageProgressRef =
   builder.objectRef<IEscapeRoomStageProgress>('EscapeRoomStageProgress')
 export const EscapeRoomStageProgress = EscapeRoomStageProgressRef.implement({
@@ -473,6 +498,7 @@ export const EscapeRoomStageProgress = EscapeRoomStageProgressRef.implement({
     hintsUsed: t.exposeInt('hintsUsed'),
     bonusCorrect: t.exposeInt('bonusCorrect'),
     bonusWrong: t.exposeInt('bonusWrong'),
+    mistakes: t.expose('mistakes', { type: [EscapeRoomStageMistakeCount] }),
     debrief: t.exposeString('debrief', { nullable: true }),
   }),
 })

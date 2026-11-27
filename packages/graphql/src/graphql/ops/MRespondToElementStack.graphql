@@ -13,6 +13,10 @@ mutation RespondToElementStack(
     id
     status
     score
+    mistakes {
+      label
+      feedback
+    }
     ...StackFeedbackEvaluations
   }
 }

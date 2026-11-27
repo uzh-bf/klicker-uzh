@@ -35,6 +35,7 @@ export interface IStackFeedback {
   status: StackFeedbackStatusType
   score?: number
   evaluations?: IInstanceEvaluation[]
+  mistakes?: { label: string; feedback: string }[]
 }
 
 export interface IStackEvaluation {

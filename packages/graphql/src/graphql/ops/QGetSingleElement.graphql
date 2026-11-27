@@ -67,6 +67,34 @@ query GetSingleElement($id: Int!) {
         }
         exactSolutions
       }
+      parametrization {
+        variables {
+          name
+          kind
+          min
+          max
+          step
+          values
+          decimals
+        }
+        derived {
+          name
+          formula
+          decimals
+        }
+        solution {
+          formula
+          tolerance
+        }
+        numberFormat
+      }
+      mistakes {
+        key
+        label
+        feedback
+        formula
+        tolerance
+      }
 
       tags {
         id

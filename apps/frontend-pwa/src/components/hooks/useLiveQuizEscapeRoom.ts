@@ -38,6 +38,8 @@ export type LiveQuizEscapeRoomResponse = {
   revealedSolution?: unknown
   penaltySeconds?: number
   bonus?: 'correct' | 'wrong' | null
+  // typical mistake matched by a wrong or revealing answer
+  mistake?: { label: string; feedback: string } | null
 }
 
 // Rules of the block's escape room as selected for the student
@@ -114,6 +116,12 @@ export function useLiveQuizEscapeRoom({
     solution: unknown
   } | null>(null)
   const [bonusResult, setBonusResult] = useState<string | null>(null)
+  // Typical mistake of the latest answer, kept for the stage it applies to
+  const [mistake, setMistake] = useState<{
+    instanceId: number
+    label: string
+    feedback: string
+  } | null>(null)
   const serverAttemptProjection = initialAttempt
     ? [
         initialAttempt.id,
@@ -278,6 +286,7 @@ export function useLiveQuizEscapeRoom({
     await refetch?.()
     setReveal(null)
     setTriesLeft(null)
+    setMistake(null)
   }, [refetch])
 
   const lockoutSeconds = config?.lockoutSeconds ?? 0
@@ -285,6 +294,7 @@ export function useLiveQuizEscapeRoom({
     (result: LiveQuizEscapeRoomResponse, instanceId?: number) => {
       if (result.completed) setIsCompleted(true)
       if (instanceId !== undefined) {
+        setMistake(result.mistake ? { instanceId, ...result.mistake } : null)
         if (result.revealed) {
           setReveal({ instanceId, solution: result.revealedSolution ?? null })
         } else if (typeof result.attemptsLeft === 'number') {
@@ -367,6 +377,8 @@ export function useLiveQuizEscapeRoom({
     bonusPending,
     wrongAttempts: currentOutcome?.wrongAttempts ?? 0,
     triesLeft: currentTriesLeft,
+    mistake:
+      mistake && mistake.instanceId === currentInstance?.id ? mistake : null,
     skipping,
     skipStage,
     continueAfterReveal,

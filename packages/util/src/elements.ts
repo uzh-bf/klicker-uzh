@@ -391,6 +391,7 @@ export function getActivityInstanceConnectOrCreate({
   elementMap,
   userId,
   additionalInstanceOptions,
+  renderElementData = (data) => data,
 }: {
   instance: ElementInstanceInput
   instanceType: PrismaElementInstanceType
@@ -400,6 +401,9 @@ export function getActivityInstanceConnectOrCreate({
   elementMap: Record<number, Element>
   userId: string
   additionalInstanceOptions?: Record<string, any>
+  // turns templates of a new instance into concrete data, e.g. draws the
+  // numbers of a parametrized numerical element
+  renderElementData?: (data: ElementData) => ElementData
 }) {
   // ! Case 1: (edit mode) keep existing instance without modification
   if (instance.existingInstanceId !== null && !instance.duplicateInstance) {
@@ -501,7 +505,7 @@ export function getActivityInstanceConnectOrCreate({
       )
     }
 
-    const elementData = processElementData(element)
+    const elementData = renderElementData(processElementData(element))
     const initialResults = getInitialInstanceResults(elementData)
 
     return {

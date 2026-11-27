@@ -4,6 +4,7 @@ import {
   type EscapeRoomStageOutcome,
   getEscapeRoomBonusCredit,
   isEscapeRoomBonusStage,
+  matchNumericalMistake,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
@@ -29,6 +30,7 @@ import {
   getGroupEscapeRoomSession,
   getRemainingSecondsUntil,
   releaseEscapeRoomLifecycleClaim,
+  renderEscapeRoomElementForAttempt,
 } from './escapeRooms.js'
 import {
   getEscapeRoomRules,
@@ -137,13 +139,23 @@ function invalidResponseSet() {
 
 async function updateAndGradeResponse({
   prisma,
-  instance,
+  instance: storedInstance,
   response,
+  attemptId,
 }: {
   prisma: DB.Prisma.TransactionClient
   instance: GroupEscapeRoomInstance
   response: StackResponseInput
+  attemptId: string
 }) {
+  // A parametrized numerical stage is graded against the group's own
+  // numbers and stays out of the shared instance results.
+  const instance = renderEscapeRoomElementForAttempt(
+    storedInstance,
+    attemptId,
+    false
+  )
+  const perAttemptNumbers = instance !== storedInstance
   const elementData = instance.elementData
   if (!elementData || elementData.type !== response.type) {
     throw invalidResponseSet()
@@ -242,11 +254,36 @@ async function updateAndGradeResponse({
   if (!updatedResults?.modified || correctness === null) {
     throw unsupportedResponse()
   }
-  await prisma.elementInstance.update({
-    where: { id: instance.id },
-    data: { results: updatedResults.results },
-  })
-  return correctness === 1
+  if (!perAttemptNumbers) {
+    await prisma.elementInstance.update({
+      where: { id: instance.id },
+      data: { results: updatedResults.results },
+    })
+  }
+
+  const mistakeKey =
+    correctness !== 1 && elementData.type === DB.ElementType.NUMERICAL
+      ? matchNumericalMistake({
+          response: Number(response.numericalResponse),
+          mistakeRanges: elementData.options.mistakeRanges,
+        })
+      : null
+  const mistake = mistakeKey
+    ? elementData.type === DB.ElementType.NUMERICAL
+      ? elementData.options.mistakes?.find((entry) => entry.key === mistakeKey)
+      : undefined
+    : undefined
+
+  return {
+    correct: correctness === 1,
+    mistake: mistake
+      ? {
+          key: `${instance.id}:${mistake.key}`,
+          label: mistake.label,
+          feedback: mistake.feedback,
+        }
+      : null,
+  }
 }
 
 export async function submitEscapeRoomGroupActivityDecisions(
@@ -443,11 +480,29 @@ export async function submitEscapeRoomGroupActivityDecisions(
           throw invalidResponseSet()
         }
 
-        const correct = await updateAndGradeResponse({
+        const { correct, mistake } = await updateAndGradeResponse({
           prisma,
           instance: currentStage,
           response,
+          attemptId: attempt.id,
         })
+        // the bonus stage has one try and no feedback loop
+        const mistakeFeedback =
+          mistake && !isBonus
+            ? { label: mistake.label, feedback: mistake.feedback }
+            : null
+        const mistakes =
+          mistake && !isBonus
+            ? {
+                mistakes: [
+                  ...(getStageOutcome(
+                    parseEscapeRoomStageOutcomes(attempt.stageOutcomes),
+                    currentStage.id
+                  ).mistakes ?? []),
+                  mistake.key,
+                ],
+              }
+            : {}
         const now = new Date()
 
         if (isBonus) {
@@ -490,6 +545,7 @@ export async function submitEscapeRoomGroupActivityDecisions(
               stageOutcomes: setStageOutcome(outcomes, {
                 ...currentOutcome,
                 wrongAttempts: wrong.wrongAttempts,
+                ...mistakes,
               }) as unknown as DB.Prisma.InputJsonValue,
               ...(wrong.penaltySeconds > 0
                 ? { penaltySeconds: { increment: wrong.penaltySeconds } }
@@ -499,7 +555,11 @@ export async function submitEscapeRoomGroupActivityDecisions(
                 .toDate(),
             },
           })
-          return { kind: 'wrong' as const, attemptsLeft: wrong.attemptsLeft }
+          return {
+            kind: 'wrong' as const,
+            attemptsLeft: wrong.attemptsLeft,
+            mistake: mistakeFeedback,
+          }
         }
 
         const nextStages: GroupEscapeRoomStageResponse[] = [
@@ -528,6 +588,7 @@ export async function submitEscapeRoomGroupActivityDecisions(
                   stageOutcomes: setStageOutcome(outcomes, {
                     ...currentOutcome,
                     wrongAttempts: wrong.wrongAttempts,
+                    ...mistakes,
                     outcome: 'REVEALED',
                     at: now.toISOString(),
                   }) as unknown as DB.Prisma.InputJsonValue,
@@ -543,7 +604,9 @@ export async function submitEscapeRoomGroupActivityDecisions(
           await completeGroupEscapeRoomDecisions(prisma, activityId, nextStages)
         }
 
-        return { kind: wrong ? ('revealed' as const) : ('correct' as const) }
+        return wrong
+          ? { kind: 'revealed' as const, mistake: mistakeFeedback }
+          : { kind: 'correct' as const }
       },
       { isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable }
     )
@@ -559,13 +622,19 @@ export async function submitEscapeRoomGroupActivityDecisions(
           code: 'ESCAPE_ROOM_LOCKOUT',
           lockoutRemainingSeconds: lockoutSeconds,
           attemptsLeft: result.attemptsLeft,
+          ...(result.mistake ? { mistake: result.mistake } : {}),
         },
       })
     }
     if (result.kind === 'revealed') {
       throw new GraphQLError(
         'Too many incorrect answers. The solution was revealed.',
-        { extensions: { code: 'ESCAPE_ROOM_REVEALED' } }
+        {
+          extensions: {
+            code: 'ESCAPE_ROOM_REVEALED',
+            ...(result.mistake ? { mistake: result.mistake } : {}),
+          },
+        }
       )
     }
     return activityId

@@ -26,6 +26,7 @@ import { manipulateElement } from './elements.js'
 import { validateEscapeRoomConfig } from './escapeRooms.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 // ! Helper functions
 // #region
@@ -1974,7 +1975,9 @@ export async function createLiveQuizFromTemplate(
                 : undefined,
               elements: {
                 create: block.elements.map((entry) => {
-                  const elementData = processElementData(entry.element)
+                  const elementData = renderInstanceElementData(
+                    processElementData(entry.element)
+                  )
                   const initialResults = getInitialInstanceResults(elementData)
 
                   return {

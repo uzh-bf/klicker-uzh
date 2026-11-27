@@ -20,6 +20,7 @@ import {
   getEscapeRoomInstanceHints,
   getEscapeRoomLifecycleClaimKey,
   isEscapeRoomExpired,
+  type NumericalElementData,
 } from '@klicker-uzh/types'
 import {
   acquireEscapeRoomResponseSlot,
@@ -29,6 +30,10 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { randomUUID } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  isParametrizedNumerical,
+  renderNumericalElementData,
+} from '../lib/numericalParametrization.js'
 import type { IEscapeRoomRulesInput } from '../schema/escapeRoomConfig.js'
 import {
   type EscapeRoomStageOutcomeEntry,
@@ -406,6 +411,73 @@ export function restoreUsedEscapeRoomHints<
       }
     }),
   }))
+}
+
+// Prepares escape room stage data for one attempt: a parametrized numerical
+// element shows the attempt's own numbers, and the explanation of a stage
+// that is still open is withheld because it gives the solution away.
+export function renderEscapeRoomElementForAttempt<
+  T extends { elementType: DB.ElementType; elementData: unknown },
+>(element: T, attemptId: string | undefined, stageOpen: boolean): T {
+  let elementData = element.elementData as NumericalElementData
+  if (
+    attemptId &&
+    element.elementType === DB.ElementType.NUMERICAL &&
+    isParametrizedNumerical(elementData.options)
+  ) {
+    elementData = renderNumericalElementData(
+      elementData,
+      `${attemptId}:${elementData.elementId}`
+    )
+  }
+  if (stageOpen) {
+    elementData = { ...elementData, explanation: null }
+  }
+  return elementData === element.elementData
+    ? element
+    : { ...element, elementData }
+}
+
+// A completed attempt still accepts its one bonus answer until the time runs
+// out, so an unanswered bonus stage stays open and keeps its explanation
+// hidden.
+function isEscapeRoomAttemptAnswerable(attempt: DB.EscapeRoomAttempt) {
+  return (
+    attempt.status === DB.EscapeRoomStatus.IN_PROGRESS ||
+    (attempt.status === DB.EscapeRoomStatus.COMPLETED &&
+      !isEscapeRoomExpired(attempt))
+  )
+}
+
+export function renderEscapeRoomStacksForAttempt<
+  T extends {
+    id: number
+    elements: Array<{
+      elementType: DB.ElementType
+      elementData: unknown
+      responses?: Array<{
+        lastResponseCorrectness: DB.ResponseCorrectness | null
+      }>
+    }>
+  },
+>(stacks: T[], attempt: DB.EscapeRoomAttempt | null): T[] {
+  if (!attempt) return stacks
+  const outcomes = parseEscapeRoomStageOutcomes(attempt.stageOutcomes)
+  const answerable = isEscapeRoomAttemptAnswerable(attempt)
+  return stacks.map((stack) => {
+    const stageOpen =
+      answerable &&
+      !isEscapeRoomStackCleared(
+        stack.elements,
+        getStageOutcome(outcomes, stack.id)
+      )
+    return {
+      ...stack,
+      elements: stack.elements.map((element) =>
+        renderEscapeRoomElementForAttempt(element, attempt.id, stageOpen)
+      ),
+    }
+  })
 }
 
 export function isEscapeRoomStackCleared(
@@ -1942,6 +2014,7 @@ export type {
   EscapeRoomProgress,
   EscapeRoomProjector,
   EscapeRoomProjectorRow,
+  EscapeRoomStageMistakeCount,
   EscapeRoomStageProgress,
 } from './escapeRoomProgress.js'
 export {

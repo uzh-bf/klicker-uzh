@@ -13,6 +13,8 @@ export interface EscapeRoomStageOutcomeEntry {
   outcome: EscapeRoomStageOutcome | null
   at: string | null
   creditSeconds?: number
+  // keys of matched typical mistakes, in answer order
+  mistakes?: string[]
 }
 
 const OUTCOMES = new Set<string>([
@@ -46,6 +48,13 @@ export function parseEscapeRoomStageOutcomes(
         at: typeof candidate.at === 'string' ? candidate.at : null,
         ...(typeof candidate.creditSeconds === 'number'
           ? { creditSeconds: candidate.creditSeconds }
+          : {}),
+        ...(Array.isArray(candidate.mistakes)
+          ? {
+              mistakes: candidate.mistakes.filter(
+                (key): key is string => typeof key === 'string'
+              ),
+            }
           : {}),
       },
     ]

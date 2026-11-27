@@ -49,6 +49,8 @@ const CHOICES_ELEMENT_TYPES = [
 
 interface ElementStackProps {
   parentId: string
+  // key of the answers cached in the browser; defaults to parentId
+  storageId?: string
   courseId: string
   embedded?: boolean
   stack: ElementStackType
@@ -101,6 +103,7 @@ interface ElementStackProps {
 
 function ElementStack({
   parentId,
+  storageId = parentId,
   courseId,
   embedded = false,
   stack,
@@ -160,7 +163,7 @@ function ElementStack({
 
   const [stackStorage, setStackStorage] =
     useLocalStorage<StackStudentResponseType>(
-      `qi-${parentId}-${stack.id}`,
+      `qi-${storageId}-${stack.id}`,
       undefined
     )
 
@@ -170,6 +173,10 @@ function ElementStack({
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
   const [lastGradedStatus, setLastGradedStatus] =
     useState<StackFeedbackStatus>()
+  // typical mistakes matched by the last escape-room answer
+  const [lastMistakes, setLastMistakes] = useState<
+    { label: string; feedback: string }[]
+  >([])
 
   // Escape-room lockout: a wrong answer sets a server-side lockout window, and
   // the next submit throws ESCAPE_ROOM_LOCKOUT carrying lockoutUntil. Track it
@@ -750,6 +757,7 @@ function ElementStack({
     const grading = result.data?.respondToElementStack
     await escapeRoom?.onStateChanged()
     setLastGradedStatus(grading.status)
+    setLastMistakes(grading.mistakes ?? [])
     setStudentResponse({})
 
     if (typeof setStepStatus !== 'undefined') {
@@ -1008,6 +1016,17 @@ function ElementStack({
                 data={{ cy: 'escape-room-incorrect-notice' }}
               />
             )}
+
+          {!previewOnly &&
+            lastMistakes.map((mistake) => (
+              <UserNotification
+                key={mistake.label}
+                type="warning"
+                className={{ root: 'mt-2' }}
+                message={`${mistake.label}: ${mistake.feedback}`}
+                data={{ cy: 'escape-room-mistake-feedback' }}
+              />
+            ))}
 
           {effectiveLockoutRemaining > 0 && (
             <div aria-live="off">

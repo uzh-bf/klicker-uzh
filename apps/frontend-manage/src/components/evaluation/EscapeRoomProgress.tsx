@@ -530,6 +530,23 @@ function EscapeRoomProgress({
                             <Markdown content={stage.debrief} />
                           </details>
                         )}
+                        {stage.mistakes.length > 0 && (
+                          <div
+                            className="mt-1 text-xs text-gray-700"
+                            data-cy={`escape-room-stage-mistakes-${index + 1}`}
+                          >
+                            <div className="font-bold">
+                              {t('manage.evaluation.escapeRoomStageMistakes')}
+                            </div>
+                            <ul className="list-inside list-disc">
+                              {stage.mistakes.map((mistake) => (
+                                <li key={mistake.key}>
+                                  {mistake.label}: {mistake.count}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </td>
                       {stage.isBonus ? (
                         <td className="p-2 text-right" colSpan={3}>

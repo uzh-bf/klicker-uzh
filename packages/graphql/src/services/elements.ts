@@ -10,6 +10,7 @@ import {
   ActivityLogModificationFieldType,
   ActivityType,
   ElementManipulationInput,
+  type ElementOptionsNumerical,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
@@ -34,6 +35,10 @@ import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
+import {
+  renderInstanceElementData,
+  validateNumericalParametrization,
+} from '../lib/numericalParametrization.js'
 
 export async function getUserElements(
   {
@@ -395,7 +400,7 @@ export async function getArtificialElementInstance(
 
   if (!element) return null
 
-  const elementData = processElementData(element)
+  const elementData = renderInstanceElementData(processElementData(element))
   const initialResults = getInitialInstanceResults(elementData)
 
   return {
@@ -494,7 +499,34 @@ export async function manipulateElement(
     basePoints,
     pointsMultiplier,
   })
-  const processedOptions = validateAndProcessElementOptions(type, options)
+  // Numerical templates: an edit that does not send them keeps the stored
+  // ones, and null removes them.
+  let mergedOptions = options
+  if (
+    type === DB.ElementType.NUMERICAL &&
+    typeof id === 'number' &&
+    options &&
+    (typeof options.parametrization === 'undefined' ||
+      typeof options.mistakes === 'undefined')
+  ) {
+    const stored = await ctx.prisma.element.findUnique({
+      where: { id, isDeleted: false },
+      select: { options: true },
+    })
+    const storedOptions = stored?.options as ElementOptionsNumerical | null
+    mergedOptions = {
+      ...options,
+      parametrization:
+        typeof options.parametrization === 'undefined'
+          ? (storedOptions?.parametrization ?? null)
+          : options.parametrization,
+      mistakes:
+        typeof options.mistakes === 'undefined'
+          ? (storedOptions?.mistakes ?? null)
+          : options.mistakes,
+    }
+  }
+  const processedOptions = validateAndProcessElementOptions(type, mergedOptions)
 
   // if the provided information is not valid for the element creation / editing, return null
   if (!validInputs || processedOptions === null) {
@@ -517,6 +549,35 @@ export async function manipulateElement(
   // before any option processing can overwrite another element shape.
   if (elementPrev && elementPrev.type !== type) {
     return null
+  }
+
+  // Numerical templates must render for every tested draw before the element
+  // is saved.
+  if (type === DB.ElementType.NUMERICAL) {
+    const numericalOptions = processedOptions as ElementOptionsNumerical
+    for (const key of ['parametrization', 'mistakes'] as const) {
+      if (!numericalOptions[key]) delete numericalOptions[key]
+    }
+    if (numericalOptions.parametrization) {
+      numericalOptions.hasSampleSolution = true
+      delete numericalOptions.solutionRanges
+      delete numericalOptions.exactSolutions
+    }
+
+    const errors = validateNumericalParametrization({
+      content: content ?? elementPrev?.content ?? '',
+      explanation:
+        typeof explanation === 'undefined'
+          ? elementPrev?.explanation
+          : explanation,
+      options: numericalOptions,
+    })
+    if (errors.length > 0) {
+      throw new GraphQLError(
+        `Invalid variables or typical mistakes: ${errors.join('; ')}`,
+        { extensions: { code: 'INVALID_NUMERICAL_PARAMETRIZATION', errors } }
+      )
+    }
   }
 
   // determine which tags have been deconnected
@@ -1825,7 +1886,9 @@ export async function updateElementInstances(
           if (!oldInstance) return null
 
           // prepare new element data objects
-          const newElementData = processElementData(element)
+          const newElementData = renderInstanceElementData(
+            processElementData(element)
+          )
 
           // prepare new results objects
           const newResults = getInitialInstanceResults(newElementData)

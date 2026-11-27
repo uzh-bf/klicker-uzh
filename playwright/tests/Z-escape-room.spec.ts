@@ -18,6 +18,7 @@ import {
   registerGroupSessionClockTests,
 } from './escape-room/group.js'
 import { registerLiveQuizEscapeRoomTests } from './escape-room/live-quiz.js'
+import { registerEscapeRoomNumbersTests } from './escape-room/numbers.js'
 import {
   registerMicrolearningCreationTest,
   registerMicrolearningFlowTest,
@@ -72,6 +73,7 @@ test.describe.serial('Escape room workflows', () => {
 
   registerPracticeEscapeRoomTests()
   registerEscapeRoomRulesTests()
+  registerEscapeRoomNumbersTests()
   registerMicrolearningCreationTest()
   registerQrFallbackTest()
   registerMicrolearningFlowTest()

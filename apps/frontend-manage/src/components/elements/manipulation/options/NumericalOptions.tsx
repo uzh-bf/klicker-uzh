@@ -2,6 +2,11 @@ import { FormikNumberField, FormikTextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementFormTypesNumerical } from '../types'
 import NumericalExactSolutionsInput from './NumericalExactSolutionsInput'
+import NumericalMistakesInput from './NumericalMistakesInput'
+import {
+  NumericalParametrizationInput,
+  NumericalTemplatePreview,
+} from './NumericalParametrizationInput'
 import NumericalSolutionRangesInput from './NumericalSolutionRangesInput'
 import NumericalSolutionTypeSwitch from './NumericalSolutionTypeSwitch'
 
@@ -71,6 +76,25 @@ function NumericalOptions({ inputsDisabled, values }: NumericalOptionsProps) {
             precision={values.options.accuracy}
           />
         )}
+      {values.options.hasSampleSolution &&
+        values.options.solutionType === 'formula' && (
+          <NumericalParametrizationInput
+            disabled={inputsDisabled}
+            parametrization={values.options.parametrization}
+          />
+        )}
+      {values.options.hasSampleSolution && (
+        <>
+          <NumericalMistakesInput
+            disabled={inputsDisabled}
+            mistakes={values.options.mistakes}
+          />
+          {(values.options.solutionType === 'formula' ||
+            (values.options.mistakes?.length ?? 0) > 0) && (
+            <NumericalTemplatePreview />
+          )}
+        </>
+      )}
     </div>
   )
 }

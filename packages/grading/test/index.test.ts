@@ -9,6 +9,7 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
   gradeQuestionSelection,
+  matchNumericalMistake,
 } from '../src/index.js'
 
 describe('@klicker-uzh/grading', () => {
@@ -1521,5 +1522,27 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0,
     })
     expect(xp3).toEqual(0)
+  })
+})
+
+describe('matchNumericalMistake', () => {
+  const mistakeRanges = [
+    { key: 'sign', min: -11, max: -9 },
+    { key: 'factor', min: 99, max: 101 },
+  ]
+
+  it('returns the key of the range containing the response, edges included', () => {
+    expect(matchNumericalMistake({ response: -11, mistakeRanges })).toBe('sign')
+    expect(matchNumericalMistake({ response: 101, mistakeRanges })).toBe(
+      'factor'
+    )
+  })
+
+  it('returns null outside every range and without ranges', () => {
+    expect(matchNumericalMistake({ response: 50, mistakeRanges })).toBeNull()
+    expect(
+      matchNumericalMistake({ response: Number.NaN, mistakeRanges })
+    ).toBeNull()
+    expect(matchNumericalMistake({ response: -10 })).toBeNull()
   })
 })

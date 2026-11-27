@@ -1,4 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import type {
+  NumericalPreviewSample,
+  previewNumericalElement,
+} from '../lib/numericalParametrization.js'
 import {
   ActivityType as ActivityTypeEnum,
   SortByType as SortByTypeEnum,
@@ -29,6 +33,10 @@ import {
   type OptionsCaseStudyInput as OptionsCaseStudyInputType,
   type OptionsChoicesInput as OptionsChoicesInputType,
   type OptionsFreeTextInput as OptionsFreeTextInputType,
+  type NumericalDerivedValue as NumericalDerivedValueType,
+  type NumericalMistake as NumericalMistakeType,
+  type NumericalParametrization as NumericalParametrizationType,
+  type NumericalVariable as NumericalVariableType,
   type OptionsNumericalInput as OptionsNumericalInputType,
   type OptionsSelectionInput as OptionsSelectionInputType,
   type ResponseInput as ResponseInputType,
@@ -126,6 +134,83 @@ export const SolutionRangeInput = SolutionRangeInputRef.implement({
   }),
 })
 
+export const NumericalVariableKindEnum = builder.enumType(
+  'NumericalVariableKind',
+  { values: ['INTEGER', 'RANGE', 'PICK'] as const }
+)
+
+export const NumericalNumberFormatEnum = builder.enumType(
+  'NumericalNumberFormat',
+  { values: ['APOSTROPHE', 'COMMA'] as const }
+)
+
+export const NumericalVariableInput = builder.inputType(
+  'NumericalVariableInput',
+  {
+    fields: (t) => ({
+      name: t.string({ required: true }),
+      kind: t.field({ type: NumericalVariableKindEnum, required: true }),
+      min: t.float({ required: false }),
+      max: t.float({ required: false }),
+      step: t.float({ required: false }),
+      values: t.floatList({ required: false }),
+      decimals: t.int({ required: false }),
+    }),
+  }
+)
+
+export const NumericalDerivedValueInput = builder.inputType(
+  'NumericalDerivedValueInput',
+  {
+    fields: (t) => ({
+      name: t.string({ required: true }),
+      formula: t.string({ required: true }),
+      decimals: t.int({ required: false }),
+    }),
+  }
+)
+
+export const NumericalFormulaSolutionInput = builder.inputType(
+  'NumericalFormulaSolutionInput',
+  {
+    fields: (t) => ({
+      formula: t.string({ required: true }),
+      tolerance: t.float({ required: true }),
+    }),
+  }
+)
+
+export const NumericalParametrizationInput = builder.inputType(
+  'NumericalParametrizationInput',
+  {
+    fields: (t) => ({
+      variables: t.field({ type: [NumericalVariableInput], required: true }),
+      derived: t.field({ type: [NumericalDerivedValueInput], required: false }),
+      solution: t.field({
+        type: NumericalFormulaSolutionInput,
+        required: true,
+      }),
+      numberFormat: t.field({
+        type: NumericalNumberFormatEnum,
+        required: false,
+      }),
+    }),
+  }
+)
+
+export const NumericalMistakeInput = builder.inputType(
+  'NumericalMistakeInput',
+  {
+    fields: (t) => ({
+      key: t.string({ required: true }),
+      label: t.string({ required: true }),
+      feedback: t.string({ required: true }),
+      formula: t.string({ required: true }),
+      tolerance: t.float({ required: true }),
+    }),
+  }
+)
+
 export const OptionsNumericalInputRef =
   builder.inputRef<OptionsNumericalInputType>('OptionsNumericalInput')
 export const OptionsNumericalInput = OptionsNumericalInputRef.implement({
@@ -144,6 +229,11 @@ export const OptionsNumericalInput = OptionsNumericalInputRef.implement({
     }),
     exactSolutions: t.floatList({ required: false }),
     feedback: t.string({ required: false }),
+    parametrization: t.field({
+      type: NumericalParametrizationInput,
+      required: false,
+    }),
+    mistakes: t.field({ type: [NumericalMistakeInput], required: false }),
   }),
 })
 
@@ -744,12 +834,123 @@ export const ChoicesElement = builder
 export interface INumericalElement extends IBaseElementProps {
   options: ElementOptionsNumericalType
 }
+export const NumericalVariable = builder
+  .objectRef<NumericalVariableType>('NumericalVariable')
+  .implement({
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      kind: t.expose('kind', { type: NumericalVariableKindEnum }),
+      min: t.exposeFloat('min', { nullable: true }),
+      max: t.exposeFloat('max', { nullable: true }),
+      step: t.exposeFloat('step', { nullable: true }),
+      values: t.exposeFloatList('values', { nullable: true }),
+      decimals: t.exposeInt('decimals', { nullable: true }),
+    }),
+  })
+
+export const NumericalDerivedValue = builder
+  .objectRef<NumericalDerivedValueType>('NumericalDerivedValue')
+  .implement({
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      formula: t.exposeString('formula'),
+      decimals: t.exposeInt('decimals', { nullable: true }),
+    }),
+  })
+
+export const NumericalFormulaSolution = builder
+  .objectRef<NumericalParametrizationType['solution']>(
+    'NumericalFormulaSolution'
+  )
+  .implement({
+    fields: (t) => ({
+      formula: t.exposeString('formula'),
+      tolerance: t.exposeFloat('tolerance'),
+    }),
+  })
+
+export const NumericalParametrization = builder
+  .objectRef<NumericalParametrizationType>('NumericalParametrization')
+  .implement({
+    fields: (t) => ({
+      variables: t.expose('variables', { type: [NumericalVariable] }),
+      derived: t.expose('derived', {
+        type: [NumericalDerivedValue],
+        nullable: true,
+      }),
+      solution: t.expose('solution', { type: NumericalFormulaSolution }),
+      numberFormat: t.expose('numberFormat', {
+        type: NumericalNumberFormatEnum,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const NumericalMistake = builder
+  .objectRef<NumericalMistakeType>('NumericalMistake')
+  .implement({
+    fields: (t) => ({
+      key: t.exposeString('key'),
+      label: t.exposeString('label'),
+      feedback: t.exposeString('feedback'),
+      formula: t.exposeString('formula'),
+      tolerance: t.exposeFloat('tolerance'),
+    }),
+  })
+
+type NumericalPreviewMistakeType = NumericalPreviewSample['mistakes'][number]
+export const NumericalPreviewMistake = builder
+  .objectRef<NumericalPreviewMistakeType>('NumericalPreviewMistake')
+  .implement({
+    fields: (t) => ({
+      key: t.exposeString('key'),
+      label: t.exposeString('label'),
+      min: t.exposeFloat('min'),
+      max: t.exposeFloat('max'),
+    }),
+  })
+
+export const NumericalPreviewSampleRef = builder
+  .objectRef<NumericalPreviewSample>('NumericalPreviewSample')
+  .implement({
+    fields: (t) => ({
+      content: t.exposeString('content'),
+      explanation: t.exposeString('explanation', { nullable: true }),
+      solutionMin: t.exposeFloat('solutionMin', { nullable: true }),
+      solutionMax: t.exposeFloat('solutionMax', { nullable: true }),
+      mistakes: t.expose('mistakes', { type: [NumericalPreviewMistake] }),
+    }),
+  })
+
+type NumericalPreviewType = ReturnType<typeof previewNumericalElement>
+export const NumericalPreview = builder
+  .objectRef<NumericalPreviewType>('NumericalPreview')
+  .implement({
+    fields: (t) => ({
+      errors: t.exposeStringList('errors'),
+      samples: t.expose('samples', { type: [NumericalPreviewSampleRef] }),
+    }),
+  })
+
+// Templates for per-attempt numbers and typical mistakes are lecturer data.
+// They hang off the lecturer element type, not off the options type shared
+// with participant element data, so participant operations cannot select them.
 export const NumericalElement = builder
   .objectRef<INumericalElement>('NumericalElement')
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
       options: t.expose('options', { type: NumericalElementOptions }),
+      parametrization: t.field({
+        type: NumericalParametrization,
+        nullable: true,
+        resolve: (element) => element.options.parametrization ?? null,
+      }),
+      mistakes: t.field({
+        type: [NumericalMistake],
+        nullable: true,
+        resolve: (element) => element.options.mistakes ?? null,
+      }),
     }),
   })
 

@@ -674,7 +674,8 @@ export async function createQuestionNR(page: Page, args: any) {
     pointsMultiplier: args.multiplier,
     isArchived: args.isArchived ?? false,
     options: {
-      hasSampleSolution: !!args.solutionRanges?.length,
+      hasSampleSolution:
+        !!args.solutionRanges?.length || !!args.parametrization,
       unit: args.unit,
       accuracy: args.accuracy ? Number.parseFloat(args.accuracy) : undefined,
       restrictions:
@@ -691,6 +692,9 @@ export async function createQuestionNR(page: Page, args: any) {
       exactSolutions: args.exactSolutions?.map((value: string) =>
         Number.parseFloat(value)
       ),
+      // per-attempt numbers and typical mistakes, stored like the editor does
+      parametrization: args.parametrization,
+      mistakes: args.mistakes,
     },
     owner: { connect: { id: args.userId } },
   })

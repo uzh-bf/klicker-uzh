@@ -9,6 +9,7 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
   gradeQuestionSelection,
+  matchNumericalMistake,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
@@ -68,6 +69,10 @@ import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import type { Context } from '../lib/context.js'
+import {
+  isParametrizedNumerical,
+  renderNumericalElementData,
+} from '../lib/numericalParametrization.js'
 import type {
   CaseStudyCaseResponse,
   CaseStudyElementOptions,
@@ -79,6 +84,7 @@ import {
   prepareEscapeRoomStackSubmission,
   releaseEscapeRoomStackSubmission,
 } from './escapeRoomStackSubmissions.js'
+import { renderEscapeRoomElementForAttempt } from './escapeRooms.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
@@ -2635,6 +2641,7 @@ export async function respondToQuestion(
     answerTime,
     participation,
     skipTracking,
+    attemptSeed,
   }: {
     id: number
     courseId: string
@@ -2642,11 +2649,14 @@ export async function respondToQuestion(
     answerTime: number
     participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
+    // escape room attempt whose own numbers a parametrized numerical
+    // element is graded against
+    attemptSeed?: string
   },
   ctx: Context
 ) {
   const result = await ctx.prisma.$transaction(async (prisma) => {
-    const existingInstance = await getValidateElementInstance({
+    let existingInstance = await getValidateElementInstance({
       prisma,
       id,
       participantId:
@@ -2656,6 +2666,25 @@ export async function respondToQuestion(
     // if the instance does not exist or the elementData is not defined, return early
     if (!existingInstance || !existingInstance?.elementData) {
       return null
+    }
+
+    // A parametrized numerical stage is graded against the attempt's own
+    // numbers. Its answers stay out of the shared instance statistics, which
+    // would otherwise mix different numbers.
+    const numericalOptions =
+      existingInstance.elementType === DB.ElementType.NUMERICAL
+        ? (existingInstance.elementData.options as ElementOptionsNumerical)
+        : undefined
+    const perAttemptNumbers =
+      !!attemptSeed && isParametrizedNumerical(numericalOptions)
+    if (perAttemptNumbers) {
+      existingInstance = {
+        ...existingInstance,
+        elementData: renderNumericalElementData(
+          existingInstance.elementData as NumericalElementData,
+          `${attemptSeed}:${existingInstance.elementData.elementId}`
+        ),
+      }
     }
 
     const existingResponse =
@@ -2712,19 +2741,20 @@ export async function respondToQuestion(
     })
 
     // update the element instance
-    const updatedInstance = !skipTracking
-      ? await prisma.elementInstance.update({
-          where: { id },
-          data: {
-            results: participation ? results : undefined,
-            anonymousResults: participation ? undefined : results,
-            instanceStatistics: statisticsUpdate,
-          },
-          include: {
-            elementStack: true,
-          },
-        })
-      : existingInstance
+    const updatedInstance =
+      !skipTracking && !perAttemptNumbers
+        ? await prisma.elementInstance.update({
+            where: { id },
+            data: {
+              results: participation ? results : undefined,
+              anonymousResults: participation ? undefined : results,
+              instanceStatistics: statisticsUpdate,
+            },
+            include: {
+              elementStack: true,
+            },
+          })
+        : existingInstance
 
     // compute question evaluation
     const questionEval = computeQuestionEvaluation({
@@ -2755,6 +2785,27 @@ export async function respondToQuestion(
           ? StackFeedbackStatus.CORRECT
           : StackFeedbackStatus.PARTIAL
 
+    // typical mistake matched by a wrong numerical answer, if any
+    const mistakeKey =
+      numericalOptions && correctness !== 1
+        ? matchNumericalMistake({
+            response: Number(response.value),
+            mistakeRanges: (
+              existingInstance.elementData.options as ElementOptionsNumerical
+            ).mistakeRanges,
+          })
+        : null
+    const matchedMistake = mistakeKey
+      ? numericalOptions?.mistakes?.find((entry) => entry.key === mistakeKey)
+      : undefined
+    const mistake = matchedMistake
+      ? {
+          key: matchedMistake.key,
+          label: matchedMistake.label,
+          feedback: matchedMistake.feedback,
+        }
+      : null
+
     // if participant is not logged in, return early and return the evaluation
     if (
       !effectiveEvaluation ||
@@ -2774,6 +2825,7 @@ export async function respondToQuestion(
             }
           : undefined,
         status,
+        mistake,
       }
     }
 
@@ -2903,6 +2955,7 @@ export async function respondToQuestion(
         newXpFrom,
       },
       status,
+      mistake,
     }
   })
 
@@ -2918,16 +2971,19 @@ async function respondToElement({
   courseId,
   answerTime,
   skipTracking = false,
+  attemptSeed,
 }: {
   ctx: Context
   response: StackResponseInput
   courseId: string
   answerTime: number
   skipTracking?: boolean
+  attemptSeed?: string
 }): Promise<{
   grading: StackFeedbackStatus | null
   score: number | null
   evaluation: InstanceEvaluation | null
+  mistake?: { key: string; label: string; feedback: string } | null
 }> {
   const participation =
     ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
@@ -3052,6 +3108,7 @@ async function respondToElement({
         answerTime,
         participation,
         skipTracking,
+        attemptSeed,
       },
       ctx
     )
@@ -3064,6 +3121,7 @@ async function respondToElement({
           instanceId: response.instanceId,
           ...result.evaluation,
         } as InstanceEvaluation,
+        mistake: result.mistake,
       }
     } else {
       return {
@@ -3224,15 +3282,28 @@ export async function respondToElementStack(
     // compute average answer time per element / question by dividing the
     // answer time for the entire stack through the number of responses
     const elementAnswerTime = round(stackAnswerTime / responses.length)
+    const escapeRoomAttemptId =
+      escapeRoomState.kind === 'escape-room'
+        ? escapeRoomState.attemptId
+        : undefined
+    const mistakes: { key: string; label: string; feedback: string }[] = []
 
     for (const response of responses) {
-      const { grading, score, evaluation } = await respondToElement({
+      const { grading, score, evaluation, mistake } = await respondToElement({
         ctx,
         response,
         courseId,
         answerTime: elementAnswerTime,
         skipTracking: escapeRoomState.isOwner,
+        attemptSeed: escapeRoomAttemptId,
       })
+      if (mistake && escapeRoomAttemptId) {
+        // a stage is a whole stack, so keys carry the instance they belong to
+        mistakes.push({
+          ...mistake,
+          key: `${response.instanceId}:${mistake.key}`,
+        })
+      }
 
       if (grading) {
         stackFeedback = combineStackStatus({
@@ -3252,12 +3323,17 @@ export async function respondToElementStack(
     const stageOpen = await finalizeEscapeRoomStackSubmission(
       escapeRoomState,
       stackFeedback,
-      ctx
+      ctx,
+      mistakes.map((mistake) => mistake.key)
     )
+    const mistakeFeedback =
+      mistakes.length > 0
+        ? mistakes.map(({ label, feedback }) => ({ label, feedback }))
+        : undefined
 
     // an escape room stage that stays open must not reveal its solution
     if (stageOpen) {
-      return { id: stackId, status: stackFeedback }
+      return { id: stackId, status: stackFeedback, mistakes: mistakeFeedback }
     }
 
     return {
@@ -3265,6 +3341,7 @@ export async function respondToElementStack(
       status: stackFeedback,
       score: stackScore,
       evaluations: evaluationsArr,
+      mistakes: mistakeFeedback,
     }
   } finally {
     await releaseEscapeRoomStackSubmission(escapeRoomState, ctx)
@@ -4241,7 +4318,7 @@ export async function getPreviousStackEvaluation(
     return null
   }
 
-  const stack = await ctx.prisma.elementStack.findUnique({
+  const loadedStack = await ctx.prisma.elementStack.findUnique({
     where: { id: stackId, type: DB.ElementStackType.MICROLEARNING },
     include: {
       elements: {
@@ -4255,6 +4332,28 @@ export async function getPreviousStackEvaluation(
       },
     },
   })
+
+  // an escape room participant sees the evaluation of their own numbers
+  const attempt = loadedStack?.microLearningId
+    ? await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          participantId_microLearningId: {
+            participantId: ctx.user.sub,
+            microLearningId: loadedStack.microLearningId,
+          },
+        },
+        select: { id: true },
+      })
+    : null
+  const stack =
+    loadedStack && attempt
+      ? {
+          ...loadedStack,
+          elements: loadedStack.elements.map((element) =>
+            renderEscapeRoomElementForAttempt(element, attempt.id, false)
+          ),
+        }
+      : loadedStack
 
   // if no previous response exists, return null
   if (

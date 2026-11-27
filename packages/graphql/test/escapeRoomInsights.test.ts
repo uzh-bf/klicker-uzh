@@ -23,12 +23,19 @@ import {
 
 const STAGES = 4
 
-// One logical run: stage 0 solved after one wrong attempt, stage 1 revealed,
-// stage 2 skipped after one hint, stage 3 untouched.
-function outcomeRecords(stageKeys: string[]) {
+// One logical run: stage 0 solved after one wrong attempt that matched a
+// typical mistake, stage 1 revealed, stage 2 skipped after one hint, stage 3
+// untouched.
+function outcomeRecords(stageKeys: string[], mistakeInstanceId: number) {
   const at = new Date().toISOString()
   return [
-    { stageKey: stageKeys[0], wrongAttempts: 1, outcome: 'SOLVED', at },
+    {
+      stageKey: stageKeys[0],
+      wrongAttempts: 1,
+      outcome: 'SOLVED',
+      at,
+      mistakes: [`${mistakeInstanceId}:whole`],
+    },
     { stageKey: stageKeys[1], wrongAttempts: 0, outcome: 'REVEALED', at },
     { stageKey: stageKeys[2], wrongAttempts: 0, outcome: 'SKIPPED', at },
   ]
@@ -41,7 +48,38 @@ function numbersOnly(
       : never
     : never
 ) {
-  return stages.map(({ stageKey: _key, title: _title, ...rest }) => rest)
+  return stages.map(({ stageKey: _key, title: _title, mistakes, ...rest }) => ({
+    ...rest,
+    mistakes: mistakes.map(({ key: _mistakeKey, ...mistake }) => mistake),
+  }))
+}
+
+// Gives an instance a labelled typical mistake, as instance creation does.
+async function labelMistake(instanceId: number) {
+  const instance = await prisma.elementInstance.findUniqueOrThrow({
+    where: { id: instanceId },
+  })
+  const elementData = (instance.elementData ?? {}) as any
+  await prisma.elementInstance.update({
+    where: { id: instanceId },
+    data: {
+      elementData: {
+        ...elementData,
+        options: {
+          ...elementData.options,
+          mistakes: [
+            {
+              key: 'whole',
+              label: 'Whole amount',
+              feedback: 'Subtract what is there.',
+              formula: '1',
+              tolerance: 0,
+            },
+          ],
+        },
+      },
+    },
+  })
 }
 
 describe('per-stage escape room insights', () => {
@@ -55,10 +93,14 @@ describe('per-stage escape room insights', () => {
         practiceQuizId: quiz.id,
         participantId: participant.id,
         timeLimit: 3600,
-        stageOutcomes: outcomeRecords(quiz.stacks.map((s) => String(s.id))),
+        stageOutcomes: outcomeRecords(
+          quiz.stacks.map((s) => String(s.id)),
+          quiz.stacks[0]!.elements[0]!.id
+        ),
         hintsUsed: [String(quiz.stacks[2]!.elements[0]!.id)],
       },
     })
+    await labelMistake(quiz.stacks[0]!.elements[0]!.id)
     const practice = await getEscapeRoomProgress(
       { practiceQuizId: quiz.id },
       lecturerCtx
@@ -77,10 +119,14 @@ describe('per-stage escape room insights', () => {
         microLearningId: micro.id,
         participantId: participant.id,
         timeLimit: 3600,
-        stageOutcomes: outcomeRecords(micro.stacks.map((s) => String(s.id))),
+        stageOutcomes: outcomeRecords(
+          micro.stacks.map((s) => String(s.id)),
+          micro.stacks[0]!.elements[0]!.id
+        ),
         hintsUsed: [String(micro.stacks[2]!.elements[0]!.id)],
       },
     })
+    await labelMistake(micro.stacks[0]!.elements[0]!.id)
     const microProgress = await getEscapeRoomProgress(
       { microLearningId: micro.id },
       lecturerCtx
@@ -98,7 +144,7 @@ describe('per-stage escape room insights', () => {
     )
     const groupInstances = groupActivity.stacks[0]!.elements
     const groupKeys = groupInstances.map((i) => String(i.id))
-    const groupRecords = outcomeRecords(groupKeys)
+    const groupRecords = outcomeRecords(groupKeys, groupInstances[0]!.id)
     await prisma.escapeRoomAttempt.update({
       where: { id: attempt.id },
       data: {
@@ -112,6 +158,7 @@ describe('per-stage escape room insights', () => {
         hintsUsed: [String(groupInstances[2]!.id)],
       },
     })
+    await labelMistake(groupInstances[0]!.id)
     const group = await getEscapeRoomProgress(
       { groupActivityId: groupActivity.id },
       lecturerCtx
@@ -155,7 +202,10 @@ describe('per-stage escape room insights', () => {
         elementBlockId: block.id,
         participantId: participant.id,
         timeLimit: 300,
-        stageOutcomes: outcomeRecords(block.elements.map((e) => String(e.id))),
+        stageOutcomes: outcomeRecords(
+          block.elements.map((e) => String(e.id)),
+          block.elements[0]!.id
+        ),
         hintsUsed: [String(block.elements[2]!.id)],
       },
     })
@@ -165,13 +215,21 @@ describe('per-stage escape room insights', () => {
         exec: vi.fn().mockResolvedValue([[null, []]]),
       }),
     }
+    await labelMistake(block.elements[0]!.id)
     const live = await getEscapeRoomProgress(
       { elementBlockId: block.id, liveQuizId: liveQuiz.id },
       { ...lecturerCtx, redisExec } as any
     )
 
     const expected = [
-      { solved: 1, wrongAttempts: 1, hintsUsed: 0 },
+      {
+        solved: 1,
+        wrongAttempts: 1,
+        hintsUsed: 0,
+        mistakes: [
+          expect.objectContaining({ label: 'Whole amount', count: 1 }),
+        ],
+      },
       { revealed: 1 },
       { skipped: 1, hintsUsed: 1 },
       { notReached: 1 },

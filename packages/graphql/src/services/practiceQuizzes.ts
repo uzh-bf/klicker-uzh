@@ -27,6 +27,7 @@ import {
 import {
   getEscapeRoomRulesData,
   isEscapeRoomStackCleared,
+  renderEscapeRoomStacksForAttempt,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
@@ -37,6 +38,7 @@ import {
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -122,7 +124,10 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       isOwner,
-      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
+      stacks: restoreUsedEscapeRoomHints(
+        renderEscapeRoomStacksForAttempt(filteredStacks, attempt),
+        attempt?.hintsUsed
+      ),
       numOfStacks: orderedStacks.length,
     }
   }
@@ -375,6 +380,7 @@ export async function manipulatePracticeQuiz(
               elementMap,
               userId: ctx.user.sub,
               additionalInstanceOptions: { resetTimeDays },
+              renderElementData: renderInstanceElementData,
             })
           ),
         },

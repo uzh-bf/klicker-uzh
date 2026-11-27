@@ -1,6 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  type ElementOptionsNumerical,
+} from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
+import { previewNumericalElement } from '../lib/numericalParametrization.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
@@ -65,6 +69,8 @@ import {
   ElementInstanceVersionInfo,
   ElementSummary,
   InstanceUpdateActivityInfo,
+  NumericalPreview,
+  OptionsNumericalInput,
   QrScanPrintData,
   SortByType,
   Tag,
@@ -983,6 +989,24 @@ export const Query = builder.queryType({
             return await ElementService.getSingleElement(args, ctx)
           }
         ),
+      }),
+
+      // Validates a numerical draft and renders sample draws for the editor.
+      // It reads no stored data, so it needs no element permission.
+      previewNumericalElement: t.withAuth(asUser).field({
+        type: NumericalPreview,
+        args: {
+          content: t.arg.string({ required: true }),
+          explanation: t.arg.string({ required: false }),
+          options: t.arg({ type: OptionsNumericalInput, required: true }),
+        },
+        resolve(_, args) {
+          return previewNumericalElement({
+            content: args.content,
+            explanation: args.explanation,
+            options: args.options as ElementOptionsNumerical,
+          })
+        },
       }),
 
       qrScanPrintData: t.withAuth(asUser).field({

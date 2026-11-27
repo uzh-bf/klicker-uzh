@@ -26,6 +26,7 @@ import {
 import {
   getEscapeRoomRulesData,
   isEscapeRoomStackCleared,
+  renderEscapeRoomStacksForAttempt,
   restoreUsedEscapeRoomHints,
   validateEscapeRoomConfig,
 } from './escapeRooms.js'
@@ -36,6 +37,7 @@ import {
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
+import { renderInstanceElementData } from '../lib/numericalParametrization.js'
 
 export async function getMicroLearningData(
   { id }: { id: string },
@@ -116,7 +118,10 @@ export async function getMicroLearningData(
     return {
       ...microLearning,
       isOwner,
-      stacks: restoreUsedEscapeRoomHints(filteredStacks, attempt?.hintsUsed),
+      stacks: restoreUsedEscapeRoomHints(
+        renderEscapeRoomStacksForAttempt(filteredStacks, attempt),
+        attempt?.hintsUsed
+      ),
       // escape rooms mask locked stacks, so the total is reported separately
       numOfStacks: orderedStacks.length,
     }
@@ -409,6 +414,7 @@ export async function manipulateMicroLearning(
                 duplicationInstances,
                 elementMap,
                 userId: ctx.user.sub,
+                renderElementData: renderInstanceElementData,
               })
             ),
           },

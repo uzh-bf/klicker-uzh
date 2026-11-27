@@ -279,6 +279,8 @@ export type OptionsNumericalInput = {
   solutionRanges?: SolutionRangeInput[] | null
   exactSolutions?: number[] | null
   feedback?: string | null
+  parametrization?: NumericalParametrization | null
+  mistakes?: NumericalMistake[] | null
 }
 
 export type FreeTextRestrictionsInput = {
@@ -660,6 +662,55 @@ export interface ElementOptionsChoices extends BaseElementOptions {
   displayMode: DisplayMode
 }
 
+// How a variable of a parametrized numerical element is drawn: an integer
+// between min and max multiplied by step, a uniform value between min and max
+// rounded to step, or one entry of values.
+export type NumericalVariableKind = 'INTEGER' | 'RANGE' | 'PICK'
+
+export interface NumericalVariable {
+  name: string
+  kind: NumericalVariableKind
+  min?: number | null
+  max?: number | null
+  step?: number | null
+  values?: number[] | null
+  decimals?: number | null
+}
+
+export interface NumericalDerivedValue {
+  name: string
+  formula: string
+  decimals?: number | null
+}
+
+// Thousands separator used when values are rendered into content:
+// 12'345 (APOSTROPHE, the default) or 12,345 (COMMA).
+export type NumericalNumberFormat = 'APOSTROPHE' | 'COMMA'
+
+export interface NumericalParametrization {
+  variables: NumericalVariable[]
+  derived?: NumericalDerivedValue[] | null
+  solution: { formula: string; tolerance: number }
+  numberFormat?: NumericalNumberFormat | null
+}
+
+// A typical wrong answer: an answer within tolerance of the value formula
+// gets the feedback, and the key is counted in the escape room debrief.
+export interface NumericalMistake {
+  key: string
+  label: string
+  feedback: string
+  formula: string
+  tolerance: number
+}
+
+// Concrete range of a mistake for one set of drawn numbers.
+export interface NumericalMistakeRange {
+  key: string
+  min: number
+  max: number
+}
+
 export interface ElementOptionsNumerical extends BaseElementOptions {
   unit?: string | null
   accuracy?: number | null
@@ -667,6 +718,16 @@ export interface ElementOptionsNumerical extends BaseElementOptions {
   restrictions?: NumericalRestrictions | null
   solutionRanges?: NumericalSolutionRange[] | null
   exactSolutions?: number[] | null
+  // Templates for per-attempt numbers. Instances keep them next to the
+  // concrete numbers drawn at instance creation; they are never exposed to
+  // participants.
+  parametrization?: NumericalParametrization | null
+  mistakes?: NumericalMistake[] | null
+  mistakeRanges?: NumericalMistakeRange[] | null
+  // content and explanation with placeholders, kept when an instance's
+  // content is filled with its fixed draw
+  contentTemplate?: string | null
+  explanationTemplate?: string | null
 }
 
 export type FreeTextRestrictions = {

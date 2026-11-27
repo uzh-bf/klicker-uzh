@@ -1,0 +1,25 @@
+query PreviewNumericalElement(
+  $content: String!
+  $explanation: String
+  $options: OptionsNumericalInput!
+) {
+  previewNumericalElement(
+    content: $content
+    explanation: $explanation
+    options: $options
+  ) {
+    errors
+    samples {
+      content
+      explanation
+      solutionMin
+      solutionMax
+      mistakes {
+        key
+        label
+        min
+        max
+      }
+    }
+  }
+}
