@@ -52,17 +52,18 @@ jobs:
             -c "ALTER DATABASE artifact_pilot_test OWNER TO artifact_test"
           docker exec "$DATABASE_CONTAINER" psql --username postgres --dbname postgres -v ON_ERROR_STOP=1 \
             -c "COMMENT ON DATABASE artifact_pilot_test IS 'klicker-disposable-test-v1'"
-      - name: Create a cache-capable Docker builder
-        run: docker buildx create --name activity-artifacts --driver docker-container --use
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Check generated starter stylesheet
+        run: docker build --file apps/artifact-pilot/Dockerfile --target styles-check .
       - name: Build the production renderer and PostgreSQL client
-        run: |
-          docker buildx build \
-            --file apps/artifact-pilot/Dockerfile \
-            --tag artifact-under-test \
-            --cache-from type=gha,scope=activity-artifacts \
-            --cache-to type=gha,mode=max,scope=activity-artifacts \
-            --load \
-            .
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: apps/artifact-pilot/Dockerfile
+          tags: artifact-under-test
+          load: true
+          cache-from: type=gha,scope=activity-artifacts
+          cache-to: type=gha,mode=max,scope=activity-artifacts
       - name: Check prices, immutable pins and concurrent admission
         env:
           DATABASE_CONTAINER: ${{ job.services.database.id }}

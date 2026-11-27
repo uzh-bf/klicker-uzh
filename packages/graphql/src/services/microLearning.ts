@@ -1,14 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  HatchetHandlers,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -19,6 +19,7 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import { assertActivityArtifactPinsAccessible } from './activityArtifacts.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -404,6 +405,7 @@ export async function manipulateMicroLearning(
       { microLearningId: upsertedMicrolearning.id },
       prisma
     )
+    await assertActivityArtifactPinsAccessible(upsertedMicrolearning.id, prisma)
 
     return upsertedMicrolearning
   }
@@ -476,7 +478,15 @@ export async function publishMicroLearning(
     return null
   }
 
-  if (microLearning.scheduledStartAt > new Date()) {
+  const now = new Date()
+  const schedulePublication = microLearning.scheduledStartAt > now
+  const endPublication = microLearning.scheduledEndAt < now
+
+  if (schedulePublication || !endPublication) {
+    await assertActivityArtifactPinsAccessible(id, ctx.prisma)
+  }
+
+  if (schedulePublication) {
     // schedule the task to publish the microlearning at the scheduled start date (as well as a completion task)
     try {
       // schedule hatchet task for automated publication
@@ -510,7 +520,7 @@ export async function publishMicroLearning(
       console.error(`Failed to schedule task for microlearning ${id}:`, error)
       return null
     }
-  } else if (microLearning.scheduledEndAt < new Date()) {
+  } else if (endPublication) {
     // if the scheduled end date is in the past, set the status to ended
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
       where: { id },
@@ -1004,7 +1014,10 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
         )
       }
 
-      // publish the microlearning
+      await assertActivityArtifactPinsAccessible(
+        microLearningId,
+        globalCtx.prisma
+      )
       await globalCtx.prisma.microLearning.update({
         where: { id: microLearningId },
         data: { status: DB.PublicationStatus.PUBLISHED },

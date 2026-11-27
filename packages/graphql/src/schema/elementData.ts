@@ -376,12 +376,9 @@ export const ContentElementData = builder
       // exercise is served by an authorized per-instance query.
       hasActivityArtifact: t.boolean({
         resolve: (element, _args, ctx) => {
-          if (
-            ctx.user?.role === DB.UserRole.PARTICIPANT &&
-            !isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts')
-          ) {
+          if (ctx.user?.role !== DB.UserRole.PARTICIPANT) return false
+          if (!isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts'))
             return false
-          }
 
           return toPublicActivityArtifactPin(element.options) !== null
         },

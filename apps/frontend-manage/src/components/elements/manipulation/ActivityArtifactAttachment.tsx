@@ -297,6 +297,9 @@ function ActivityArtifactAttachment({
             setLatestArtifact(null)
             setPreview(null)
             setError(null)
+            if (pendingArtifact) {
+              void setFieldValue('pendingActivityArtifact', undefined)
+            }
           }}
           data={{ cy: 'activity-artifact-link' }}
         />
@@ -373,15 +376,13 @@ function ActivityArtifactAttachment({
                     version: preview.version,
                   })}
             </Button>
-            {currentArtifact ? (
-              <Button
-                disabled={disabled}
-                onClick={cancelPreview}
-                data={{ cy: 'cancel-activity-artifact-preview' }}
-              >
-                {t('manage.elements.activityArtifact.cancel')}
-              </Button>
-            ) : null}
+            <Button
+              disabled={disabled}
+              onClick={cancelPreview}
+              data={{ cy: 'cancel-activity-artifact-preview' }}
+            >
+              {t('manage.elements.activityArtifact.cancel')}
+            </Button>
           </div>
         </div>
       ) : null}

@@ -1,5 +1,5 @@
 import type { ActivityArtifactExercise } from '@klicker-uzh/types'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 
 interface ActivityArtifactFrameProps {
   frameUrl: string
@@ -32,10 +32,12 @@ function ActivityArtifactFrame({
   const exercisePayload = useMemo(() => JSON.stringify(exercise), [exercise])
   const exercisePayloadRef = useRef(exercisePayload)
 
-  // Keep the event listener stable without allowing a prop update to race a
-  // port handshake. JavaScript delivers the message after the current render.
-  exerciseRef.current = exercise
-  exercisePayloadRef.current = exercisePayload
+  // Publish the committed exercise before the handshake or payload effect
+  // reads these refs.
+  useLayoutEffect(() => {
+    exerciseRef.current = exercise
+    exercisePayloadRef.current = exercisePayload
+  }, [exercise, exercisePayload])
 
   const frameSrc = useMemo(() => {
     try {

@@ -1,9 +1,27 @@
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { artifactClasses, artifactRootClass } from './starter-style.mjs'
 
 export const digest = (value) =>
   createHash('sha256').update(value).digest('hex')
+export const stylesheet = readFileSync(
+  new URL('./styles.css', import.meta.url),
+  'utf8'
+)
+export const styleHash = createHash('sha256')
+  .update(stylesheet)
+  .digest('base64')
+const styleElement = '<style>' + stylesheet + '</style>'
+const bodyClass = artifactRootClass + ' ' + artifactClasses.body
+const mainClass = artifactClasses.main
 const openingPrefix =
-  '<!doctype html><html lang="en"><meta charset="utf-8"><title>Bond calculator</title><main></main>'
+  '<!doctype html><html lang="en" data-klicker-activity-artifact="1"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bond calculator</title>' +
+  styleElement +
+  '</head><body class="' +
+  bodyClass +
+  '"><main class="' +
+  mainClass +
+  '"></main>'
 const dataOpening = '<script type="application/json" id="exercise">'
 const opening = openingPrefix + dataOpening
 const closeData = '</script>'
@@ -26,7 +44,7 @@ function validate(exercise) {
     typeof exercise.title === 'string' &&
       exercise.title.trim().length > 0 &&
       exercise.title.length <= 100 &&
-      !/[<>&\u0000-\u001f]/u.test(exercise.title)
+      !/[<>&\p{Cc}]/u.test(exercise.title)
   )
   requireValue(
     Number.isInteger(exercise.years) &&
@@ -74,10 +92,13 @@ function price(exercise, percent) {
 function mount(exercise) {
   const main = document.querySelector('main')
   const heading = document.createElement('h1')
+  heading.className = artifactClasses.heading
   heading.textContent = exercise.title
   const label = document.createElement('label')
+  label.className = artifactClasses.label
   label.textContent = 'Yield (%) '
   const input = document.createElement('input')
+  input.className = artifactClasses.input
   input.type = 'number'
   input.min = '0'
   input.max = '100'
@@ -85,6 +106,7 @@ function mount(exercise) {
   input.value = '5'
   label.append(input)
   const result = document.createElement('output')
+  result.className = artifactClasses.result
   function update() {
     result.textContent =
       input.value !== '' && input.validity.valid
@@ -96,11 +118,15 @@ function mount(exercise) {
   update()
 }
 
-const library = [validate, price, mount].map((fn) => fn.toString()).join('\n')
+const library =
+  'const artifactClasses = ' +
+  JSON.stringify(artifactClasses) +
+  ';\n' +
+  [validate, price, mount].map((fn) => fn.toString()).join('\n')
 const standalone =
   library +
   '\nmount(validate(JSON.parse(document.getElementById("exercise").textContent)))'
-const suffix = closeData + '<script>' + standalone + '</script></html>'
+const suffix = closeData + '<script>' + standalone + '</script></body></html>'
 
 export function sourceFor(exercise) {
   return opening + JSON.stringify(validate(exercise)) + suffix
@@ -188,11 +214,19 @@ export function frame(parents) {
   const hash = createHash('sha256').update(script).digest('base64')
   return {
     html:
-      '<!doctype html><html lang="en"><meta charset="utf-8"><title>Activity calculator</title><main></main><script>' +
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Activity calculator</title>' +
+      styleElement +
+      '</head><body class="' +
+      bodyClass +
+      '"><main class="' +
+      mainClass +
+      '"></main><script>' +
       script +
-      '</script></html>',
+      '</script></body></html>',
     policy:
-      "default-src 'none'; script-src 'sha256-" +
+      "default-src 'none'; style-src 'sha256-" +
+      styleHash +
+      "'; script-src 'sha256-" +
       hash +
       "'; form-action 'none'; base-uri 'none'; frame-ancestors " +
       parents.join(' ') +

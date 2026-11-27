@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { ActivityArtifactPin } from '@klicker-uzh/types'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import {
   ActivityArtifactRequestError,
@@ -139,7 +140,11 @@ export async function resolveContentArtifactPin(
   const runtime = await requireArtifactRuntime(ctx)
 
   const parsed = parseCanonicalArtifactUrl(url, runtime.publisherOrigin)
-  if (!parsed || parsed.artifactId !== artifactId) {
+  if (
+    !parsed ||
+    parsed.artifactId !== artifactId ||
+    !isActivityArtifactId(revisionId)
+  ) {
     throw new GraphQLError('Invalid artifact link', {
       extensions: { code: 'BAD_USER_INPUT' },
     })
@@ -176,6 +181,61 @@ async function lecturerStillOwnsMicrolearning(
   })
 
   return permission !== null
+}
+
+/**
+ * Placement and publication must fail before participants receive a silent
+ * null when the stored pin names a lecturer who cannot administer the target
+ * activity.
+ */
+export async function assertActivityArtifactPinsAccessible(
+  microLearningId: string,
+  prisma: Pick<PrismaTransactionClient, 'derivedPermission' | 'elementInstance'>
+) {
+  const instances = await prisma.elementInstance.findMany({
+    where: {
+      elementType: DB.ElementType.CONTENT,
+      elementStack: { microLearningId },
+      elementData: {
+        path: ['options', 'activityArtifact'],
+        not: DB.Prisma.DbNull,
+      },
+    },
+    select: { elementData: true },
+  })
+
+  const pinSubjects = new Set<string>()
+  for (const instance of instances) {
+    const elementData = instance.elementData as {
+      options?: { activityArtifact?: unknown }
+    } | null
+    const pin = sanitizeActivityArtifactPin(
+      elementData?.options?.activityArtifact
+    )
+    if (pin) pinSubjects.add(pin.subject)
+  }
+  if (pinSubjects.size === 0) return
+
+  const permissions = await prisma.derivedPermission.findMany({
+    where: {
+      userId: { in: [...pinSubjects] },
+      microLearningId,
+      permissionLevel: {
+        in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+      },
+    },
+    select: { userId: true },
+  })
+  const permittedSubjects = new Set(
+    permissions.flatMap(({ userId }) => (userId ? [userId] : []))
+  )
+
+  if ([...pinSubjects].some((subject) => !permittedSubjects.has(subject))) {
+    throw new GraphQLError(
+      'The attached activity artifact must be confirmed by a lecturer who administers this microlearning',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
 }
 
 /**
@@ -287,13 +347,10 @@ export async function getActivityArtifactForInstance(
       },
     })
 
-    // An immutable revision must return the digest captured at attach time.
-    // A different digest means the publisher changed pinned content, so the
-    // run is denied rather than rendered.
-    if (
-      revision.digest !== pin.digest ||
-      revision.renderedDigest !== pin.renderedDigest
-    ) {
+    // `digest` covers the stored HTML and stays fixed for the revision.
+    // `renderedDigest` also covers the current frame shell, so a renderer-only
+    // deployment changes it without changing the pinned source.
+    if (revision.digest !== pin.digest) {
       console.warn(
         '[activity-artifacts] pinned revision digest mismatch; denying run'
       )

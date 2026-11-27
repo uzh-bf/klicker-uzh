@@ -548,6 +548,16 @@ export async function manipulateElement(
     return null
   }
 
+  // A generic CONTENT mutation may pass empty options. Leave the stored
+  // options untouched unless it supplies a replacement artifact pin; creation
+  // still persists the empty object for a new, unpinned content element.
+  const shouldPersistOptions =
+    type !== DB.ElementType.CONTENT
+      ? !!options
+      : !!options &&
+        'activityArtifact' in options &&
+        typeof options.activityArtifact !== 'undefined'
+
   // fetch the existing element to compare before/after state
   const isNewElement = typeof id === 'undefined' || id === null
   const elementPrev = !isNewElement
@@ -689,7 +699,7 @@ export async function manipulateElement(
       difficultyLevel:
         typeof difficultyLevel === 'undefined' ? undefined : difficultyLevel,
       version: { increment: 1 },
-      options: options ? processedOptions : undefined,
+      options: shouldPersistOptions ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags
@@ -1780,6 +1790,7 @@ export async function updateElementInstances(
       groupActivityId: string | undefined
       templateId: string | undefined
       reviewStatus: DB.ReviewStatus | undefined
+      observedElementData: DB.Prisma.JsonValue
     }[]
   >((acc, instance) => {
     if (
@@ -1805,6 +1816,8 @@ export async function updateElementInstances(
         groupActivityId: undefined,
         templateId: instance.elementBlock.liveQuiz.templateInfo?.id,
         reviewStatus: instance.elementBlock.liveQuiz.reviewStatus,
+        observedElementData:
+          instance.elementData as unknown as DB.Prisma.JsonValue,
       })
 
       return acc
@@ -1821,6 +1834,8 @@ export async function updateElementInstances(
         groupActivityId: undefined,
         templateId: instance.elementStack.microLearning.templateInfo?.id,
         reviewStatus: instance.elementStack.microLearning.reviewStatus,
+        observedElementData:
+          instance.elementData as unknown as DB.Prisma.JsonValue,
       })
 
       return acc
@@ -1837,6 +1852,8 @@ export async function updateElementInstances(
         groupActivityId: undefined,
         templateId: instance.elementStack.practiceQuiz.templateInfo?.id,
         reviewStatus: instance.elementStack.practiceQuiz.reviewStatus,
+        observedElementData:
+          instance.elementData as unknown as DB.Prisma.JsonValue,
       })
 
       return acc
@@ -1850,6 +1867,8 @@ export async function updateElementInstances(
         groupActivityId: instance.elementStack.groupActivity.id,
         templateId: instance.elementStack.groupActivity.templateInfo?.id,
         reviewStatus: instance.elementStack.groupActivity.reviewStatus,
+        observedElementData:
+          instance.elementData as unknown as DB.Prisma.JsonValue,
       })
 
       return acc
@@ -1875,6 +1894,7 @@ export async function updateElementInstances(
           groupActivityId,
           templateId,
           reviewStatus,
+          observedElementData,
         }) => {
           const oldInstance = await prisma.elementInstance.findUnique({
             where: { id: instanceId },
@@ -1888,20 +1908,94 @@ export async function updateElementInstances(
           // prepare new results objects
           const newResults = getInitialInstanceResults(newElementData)
 
-          const instance = await prisma.elementInstance.update({
-            where: { id: instanceId },
-            data: {
-              elementData: newElementData,
-              results: newResults,
-              anonymousResults: newResults,
-              // keep previous options where possible and update them only where required
-              options: {
-                ...oldInstance.options,
-                basePoints: element.basePoints,
-                pointsMultiplier: multiplier * element.pointsMultiplier,
-              },
-            },
-          })
+          const updatedOptions = {
+            ...oldInstance.options,
+            basePoints: element.basePoints,
+            pointsMultiplier: multiplier * element.pointsMultiplier,
+          }
+
+          const needsMicroLearningContentGuard =
+            element.type === DB.ElementType.CONTENT &&
+            typeof microLearningId !== 'undefined'
+
+          const instanceUpdateData = {
+            elementData: newElementData,
+            results: newResults,
+            anonymousResults: newResults,
+            // keep previous options where possible and update them only where required
+            options: updatedOptions,
+          }
+
+          const updateInstance =
+            async (): Promise<DB.ElementInstance | null> => {
+              if (!needsMicroLearningContentGuard) {
+                return await prisma.elementInstance.update({
+                  where: { id: instanceId },
+                  data: instanceUpdateData,
+                })
+              }
+
+              const updateWhileEditable = async (
+                tx: PrismaTransactionClient
+              ): Promise<DB.ElementInstance | null> => {
+                // The snapshot comparison prevents an older content refresh from
+                // replacing a pin written after that refresh observed the
+                // instance. The shared row lock keeps publication from
+                // committing between the editable check and the write.
+                const lockedRows = await tx.$queryRaw<{ id: string }[]>`
+                SELECT "id" FROM "public"."MicroLearning"
+                WHERE "id" = ${microLearningId}::uuid
+                  AND "status"::text = ANY(${acceptedStatusValues}::text[])
+                FOR SHARE
+              `
+                if (lockedRows.length !== 1) return null
+
+                const [updatedInstance] =
+                  await tx.elementInstance.updateManyAndReturn({
+                    where: {
+                      id: instanceId,
+                      AND: [
+                        {
+                          elementData: {
+                            equals:
+                              observedElementData as DB.Prisma.InputJsonValue,
+                          },
+                        },
+                        {
+                          elementStack: {
+                            microLearning: {
+                              id: microLearningId,
+                              status: { in: acceptedStatusValues },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    data: instanceUpdateData,
+                  })
+
+                return updatedInstance ?? null
+              }
+
+              const transactionRunner = (
+                prisma as typeof prisma & {
+                  $transaction?: (
+                    callback: (
+                      tx: PrismaTransactionClient
+                    ) => Promise<DB.ElementInstance | null>
+                  ) => Promise<DB.ElementInstance | null>
+                }
+              ).$transaction
+
+              // Direct callers receive a new short transaction. Calls already
+              // inside a transaction remain nested within that transaction.
+              return transactionRunner
+                ? await transactionRunner.call(prisma, updateWhileEditable)
+                : await updateWhileEditable(prisma)
+            }
+
+          const instance = await updateInstance()
+          if (!instance) return null
 
           // if the previous activity status was set to reviewed, update it to indicated that the content was modified
           if (reviewStatus === DB.ReviewStatus.REVIEWED) {

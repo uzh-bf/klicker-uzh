@@ -84,10 +84,16 @@ after(async () => {
 test('publisher routes keep admission strict and stored history readable', async (t) => {
   const sourceId = `source-${randomUUID()}`
   const source = sourceFor(baseExercise)
-  const historical = source.replace(
-    '</script></html>',
-    '\n// renderer program from a later template version\n</script></html>'
+  const rendererEnd = source.lastIndexOf('</script>')
+  assert.ok(
+    rendererEnd > 0,
+    'expected a renderer script in the canonical source'
   )
+  const historical =
+    source.slice(0, rendererEnd) +
+    '\n// renderer program from a later template version\n' +
+    source.slice(rendererEnd)
+  assert.notEqual(historical, source)
 
   await t.test('bearer and subject gates reject publisher writes', async () => {
     const noBearer = await request('/v1/revisions', {
