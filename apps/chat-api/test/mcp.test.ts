@@ -21,6 +21,7 @@ import {
   normalizeSourcesFromParts,
   sourceCitationIndices,
 } from '../src/host/lib/sources/normalizeSources.js'
+import { createShowFeedbackTool } from '../src/host/services/feedbackTool.js'
 import { createHostExplanationTool } from '../src/host/services/explainerService.js'
 import {
   createHostToolDispatcher,
@@ -88,6 +89,17 @@ function fixture() {
     },
   }
 }
+
+test('registers the feedback tool on the v2 engine wire', async () => {
+  const session = await register(createHostToolDispatcher(), {
+    signal: signal(),
+    tools: {
+      ...fixture().prepared,
+      tools: { show_feedback: createShowFeedbackTool({ learnerMessages: [] }) },
+    },
+  })
+  expect(session.tools.map((entry) => entry.name)).toEqual(['show_feedback'])
+})
 
 async function pausedProjectionFixture() {
   const gate = deferred<void>()

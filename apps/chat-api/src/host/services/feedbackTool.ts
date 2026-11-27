@@ -11,7 +11,6 @@ import {
   normalizeForQuote,
   SHOW_FEEDBACK_TOOL_NAME,
 } from '../lib/feedback.js'
-import { renderPromptTemplate } from '../lib/server/promptTemplates.js'
 
 /** Standard modes in which learners ask for feedback on their own work. */
 const FEEDBACK_MODES = new Set(['tutor', 'quizzer', 'writing-coach'])
@@ -111,7 +110,7 @@ export function createShowFeedbackTool({
   learnerMessages: readonly string[]
 }): Tool<Record<string, unknown>, FeedbackToolResult> {
   return tool({
-    description: renderPromptTemplate('feedback-card-tool', {}),
+    description: 'Show structured feedback on the learner’s own text.',
     // Not validated by the SDK: `validateFeedback` is the gate and reports
     // errors the model can repair.
     inputSchema: jsonSchema<Record<string, unknown>>(feedbackInputSchema()),
