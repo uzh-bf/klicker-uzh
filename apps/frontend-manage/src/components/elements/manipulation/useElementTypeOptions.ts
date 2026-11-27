@@ -93,6 +93,15 @@ function useElementTypeOptions() {
       },
     },
     {
+      value: ElementType.QrScan,
+      label: t(`shared.${ElementType.QrScan}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.QrScan}.typeLabel`
+        )}`,
+      },
+    },
+    {
       value: ElementType.Content,
       label: optionLabel(
         t(`shared.${ElementType.Content}.typeLabel`),

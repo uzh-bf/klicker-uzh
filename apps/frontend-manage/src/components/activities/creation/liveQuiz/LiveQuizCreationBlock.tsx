@@ -15,7 +15,6 @@ import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
-import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../../elements/Element'
 import DropElementsStack from '../DropElementsStack'
@@ -189,21 +188,29 @@ function LiveQuizCreationBlock({
         replace={replace}
         error={error}
         selectionActive={
-          (selection && Object.keys(selection).length > 0) ?? false
+          selection
+            ? Object.values(selection).some((question) =>
+                acceptedTypes.includes(question.type)
+              )
+            : false
         }
         outdatedInstances={outdatedInstances}
         refetchOutdatedInstances={refetchOutdatedInstances}
       />
 
-      {selection && !isEmpty(selection) && (
-        <PasteSelectionButton
-          index={blockIx}
-          selection={selection}
-          resetSelection={resetSelection}
-          stack={block}
-          replace={replace}
-        />
-      )}
+      {selection &&
+        Object.values(selection).some((question) =>
+          acceptedTypes.includes(question.type)
+        ) && (
+          <PasteSelectionButton
+            index={blockIx}
+            selection={selection}
+            resetSelection={resetSelection}
+            acceptedTypes={acceptedTypes}
+            stack={block}
+            replace={replace}
+          />
+        )}
       <DropElementsStack
         type="block"
         drop={drop}

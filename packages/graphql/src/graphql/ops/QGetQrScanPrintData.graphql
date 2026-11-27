@@ -1,0 +1,9 @@
+query GetQrScanPrintData($elementId: Int!, $decoyCount: Int!) {
+  qrScanPrintData(elementId: $elementId, decoyCount: $decoyCount) {
+    elementId
+    name
+    content
+    code
+    decoys
+  }
+}
