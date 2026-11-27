@@ -53,6 +53,10 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
+vi.mock('@/src/lib/server/chatbotKnowledgeAccess', () => ({
+  assertCurrentChatbotKnowledgeAccess: vi.fn(async () => {}),
+}))
+
 vi.mock('@/src/services/disclaimers', () => ({
   DisclaimersService: {
     checkDisclaimerStatus: mocks.checkDisclaimerStatus,
@@ -1120,7 +1124,7 @@ describe('account usage chat route', () => {
       mode: 'documents',
       sources: [{ reference: 'urn:source:a', chunks: [] }],
     }
-    const output = prepareStep({
+    const output = await prepareStep({
       stepNumber: 1,
       initialMessages,
       steps: [

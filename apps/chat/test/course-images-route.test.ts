@@ -19,11 +19,17 @@ vi.mock('@klicker-uzh/prisma', () => ({
     kBResource: { findFirst: mocks.resource },
   },
 }))
-vi.mock('@/src/lib/server/apiGuards', () => ({ withChatbotAuth: mocks.auth }))
+vi.mock('@/src/lib/server/apiGuards', () => ({
+  withChatbotAuth: mocks.auth,
+  authorizeIdentityForChatbot: mocks.auth,
+}))
 vi.mock('@/src/lib/server/courseImageStore', () => ({
   readCourseImage: mocks.read,
 }))
-vi.mock('@/src/services/mcpScope', () => ({ resolveMcpScope: mocks.scope }))
+vi.mock('@/src/services/mcpScope', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/services/mcpScope')>()),
+  resolveMcpScope: mocks.scope,
+}))
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/images/[assetId]/route'
 
@@ -45,7 +51,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.auth.mockResolvedValue({
     participantId: 'student',
-    chatbot: { courseId: 'course' },
+    authMode: 'account',
+    chatbot: { courseId: 'course', knowledgeGraphVisible: false },
   })
   mocks.message.mockResolvedValue({
     chatMode: 'tutor',
@@ -57,7 +64,19 @@ beforeEach(() => {
       },
     ],
   })
-  mocks.chatbot.mockResolvedValue({ mcpConfigurations: [] })
+  mocks.chatbot.mockResolvedValue({
+    ownerId: 'owner',
+    courseId: 'course',
+    status: 'PUBLISHED',
+    knowledgeGraphRetrievalEnabled: false,
+    mcpConfigurations: [],
+    knowledgeBases: [
+      {
+        kbId: image.kb_id,
+        kb: { ownerId: 'owner', knowledgeGraphEnabled: false },
+      },
+    ],
+  })
   mocks.resource.mockResolvedValue({ id: image.external_resource_id })
   mocks.scope.mockReturnValue([image.kb_id])
   mocks.read.mockResolvedValue(Buffer.from('png'))
@@ -84,6 +103,19 @@ it('scopes the persisted message lookup to this participant and chatbot', async 
       },
     })
   )
+})
+it('revokes access when the participant identity is no longer authorized', async () => {
+  mocks.auth
+    .mockResolvedValueOnce({
+      participantId: 'student',
+      authMode: 'account',
+      chatbot: { courseId: 'course', knowledgeGraphVisible: false },
+    })
+    .mockResolvedValueOnce({
+      response: NextResponse.json({}, { status: 403 }),
+    })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
 })
 it('does not serve another participant message or an arbitrary image id', async () => {
   mocks.message.mockResolvedValue(null)
@@ -125,6 +157,16 @@ it('uses all configurations to resolve mode inheritance while scoping enabled co
   })
   mocks.chatbot.mockResolvedValue({
     mcpConfigurations: [enabled, disabled],
+    ownerId: 'owner',
+    courseId: 'course',
+    status: 'PUBLISHED',
+    knowledgeGraphRetrievalEnabled: false,
+    knowledgeBases: [
+      {
+        kbId: image.kb_id,
+        kb: { ownerId: 'owner', knowledgeGraphEnabled: false },
+      },
+    ],
   })
   const response = await GET(req, { params })
   expect(response.status).toBe(200)

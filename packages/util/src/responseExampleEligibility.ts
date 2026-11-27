@@ -134,14 +134,35 @@ export async function loadCurrentResponseExampleResources(
                 kb."ownerId" = owner."ownerId"
                 OR EXISTS (
                   SELECT 1
-                  FROM "public"."DerivedPermission" AS permission
+                  FROM "public"."Permission" AS permission
                   WHERE permission."kbId" = binding."kbId"
-                    AND permission."userId" = owner."ownerId"
                     AND permission."permissionLevel" IN (
                       'READ',
                       'WRITE',
-                      'ADMIN',
-                      'OWNER'
+                      'ADMIN'
+                    )
+                    AND (
+                      permission."userId" = owner."ownerId"
+                      OR EXISTS (
+                        SELECT 1
+                        FROM "public"."UserGroup" AS user_group
+                        WHERE user_group."id" = permission."userGroupId"
+                          AND (
+                            user_group."ownerId" = owner."ownerId"
+                            OR EXISTS (
+                              SELECT 1
+                              FROM "public"."_UserGroupMembers" AS membership
+                              WHERE membership."A" = owner."ownerId"
+                                AND membership."B" = user_group."id"
+                            )
+                            OR EXISTS (
+                              SELECT 1
+                              FROM "public"."_UserGroupAdmins" AS admin
+                              WHERE admin."A" = owner."ownerId"
+                                AND admin."B" = user_group."id"
+                            )
+                          )
+                      )
                     )
                 )
               )
