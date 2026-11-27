@@ -1366,6 +1366,7 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
   for (const file of [
     '.github/scripts/install-patched-ocr.cjs',
     '.github/open-code-review/ocr-compression.patch',
+    '.github/open-code-review/ocr-second-pass.patch',
     '.github/workflows/check.yml',
     '.github/workflows/check-ocr-final-review.yml',
   ])
@@ -1376,6 +1377,7 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
   for (const name of [
     'Set up pinned OCR build toolchain',
     'Qualify the pinned OCR compression engine',
+    'Qualify the pinned draft review engine',
   ]) {
     const gate = steps.find((step) => step.name === name).if
     assert.equal(

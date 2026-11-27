@@ -1,0 +1,94 @@
+--- a/internal/agent/agent.go
++++ b/internal/agent/agent.go
+@@ -1473,0 +1474,3 @@
++		if round == 2 {
++			confirmedText += "\n[ocr:second-pass-closure] Second pass: check each selected file for a concrete failure mode not covered by the confirmed findings. Before each lookup, identify the candidate and what evidence would verify or rule it out. Submit verified findings immediately with code_comment. Drop ruled-out candidates. When all selected files are checked and no concrete candidate remains, call task_done."
++		}
+@@ -1488 +1491 @@
+-			completed, stop, err := a.runner.RunMainTask(ctx, messages, groupKey)
++			completed, stop, err := a.runner.RunReviewRound(ctx, messages, groupKey, round)
+--- a/internal/llmloop/loop.go
++++ b/internal/llmloop/loop.go
+@@ -374,0 +375,8 @@
++	return r.RunReviewRound(ctx, messages, taskKey, 0)
++}
++
++// RunReviewRound uses the calling group's deadline for the second-pass reminder.
++func (r *Runner) RunReviewRound(ctx context.Context, messages []llm.Message, taskKey string, round int) (bool, MainLoopStop, error) {
++	deadline, hasDeadline := ctx.Deadline()
++	remind := round == 2 && hasDeadline
++
+@@ -412,0 +421,6 @@
++
++		if remind && time.Until(deadline) <= 4*time.Minute {
++			messages = append(messages, llm.NewTextMessage("user",
++				"[ocr:second-pass-wrap-up] Four minutes or less remain in this review group. Finish checking the current candidate and report any verified finding with code_comment. Once the selected files are checked, call task_done. Avoid starting another broad search."))
++			remind = false
++		}
+--- a/internal/llmloop/loop_test.go
++++ b/internal/llmloop/loop_test.go
+@@ -10,0 +11,2 @@
++	"testing/synctest"
++	"time"
+@@ -105,0 +108,61 @@
++	}
++}
++
++type deadlineFixture struct {
++	fakeClient
++}
++
++func (f *deadlineFixture) CompletionsWithCtx(ctx context.Context, req llm.ChatRequest) (*llm.ChatResponse, error) {
++	if f.calls == 0 {
++		// The first request begins outside the window, and crosses it in flight.
++		time.Sleep(time.Minute)
++	}
++	return f.fakeClient.CompletionsWithCtx(ctx, req)
++}
++
++func TestDraftSecondPassClosure(t *testing.T) {
++	for _, tc := range []struct {
++		name    string
++		round   int
++		finding bool
++	}{{"verified", 2, true}, {"ruled out", 2, false}, {"first pass", 1, false}} {
++		t.Run(tc.name, func(t *testing.T) {
++			synctest.Test(t, func(t *testing.T) {
++				client := &deadlineFixture{}
++				deps := newTestDeps(client)
++				deps.Tools.Register(&tool.CodeCommentProvider{Collector: deps.CommentCollector})
++
++				client.responses = append(client.responses, fileReadToolCallResponse("read", `{"path":"main.go"}`))
++				if tc.finding {
++					report := taskDoneResponseWithArguments(`{"comments":[{"path":"main.go","existing_code":"package main","content":"Synthetic verified finding"}]}`)
++					report.Choices[0].Message.ToolCalls[0].Function.Name = "code_comment"
++					client.responses = append(client.responses, report)
++				}
++				client.responses = append(client.responses, taskDoneResponse())
++				ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
++				defer cancel()
++				done, _, err := NewRunner(deps).RunReviewRound(ctx, []llm.Message{llm.NewTextMessage("user", "Review main.go")}, "main.go", tc.round)
++				if err != nil || !done || len(client.requests) != len(client.responses) {
++					t.Fatalf("done=%v calls=%d err=%v", done, len(client.requests), err)
++				}
++				for i, req := range client.requests {
++					last := req.Messages[len(req.Messages)-1]
++					reminded := last.Role == "user" && strings.HasPrefix(last.Content.(string), "[ocr:second-pass-wrap-up]")
++					count := 0
++					for _, message := range req.Messages {
++						if text, ok := message.Content.(string); ok && message.Role == "user" && strings.HasPrefix(text, "[ocr:second-pass-wrap-up]") {
++							count++
++						}
++					}
++					if count > 1 {
++						t.Fatal("duplicate wrap-up reminder")
++					}
++					if reminded != (tc.round == 2 && i == 1) {
++						t.Errorf("request %d reminded=%v", i, reminded)
++					}
++				}
++				if got := len(deps.CommentCollector.CommentsForPath("main.go")); got != len(client.responses)-2 {
++					t.Fatalf("collected %d findings", got)
++				}
++			})
++		})

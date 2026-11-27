@@ -868,6 +868,7 @@ async function main(options = {}) {
       encoding: 'utf8',
       timeout: 5000,
     })
+    require('./install-patched-ocr.cjs').verifyDraftVersion(version)
     const publisher = fs.readFileSync(
       path.join(
         options.publisherRoot ?? path.join(repo, '.ocr-upstream'),
@@ -875,7 +876,6 @@ async function main(options = {}) {
       )
     )
     if (
-      !/^open-code-review v?1\.13\.0(?: \(|\s|$)/.test(version) ||
       require('node:crypto')
         .createHash('sha256')
         .update(publisher)

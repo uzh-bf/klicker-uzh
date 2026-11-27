@@ -14,21 +14,25 @@ const PATCH_PATH = path.resolve(
   __dirname,
   '../open-code-review/ocr-compression.patch'
 )
+const DRAFT_PATCH_PATH = path.resolve(
+  __dirname,
+  '../open-code-review/ocr-second-pass.patch'
+)
 const digest = (bytes) =>
   crypto.createHash('sha256').update(bytes).digest('hex')
 
-function commitTag(patch) {
-  return `${SOURCE_COMMIT.slice(0, 12)}+compression-${digest(patch).slice(0, 12)}`
+function commitTag(patch, role = 'compression') {
+  return `${SOURCE_COMMIT.slice(0, 12)}+${role}-${digest(patch).slice(0, 12)}`
 }
 
-function expectedVersion(patch = fs.readFileSync(PATCH_PATH)) {
-  return `open-code-review v1.13.0 (${commitTag(patch)}) `
+function expectedVersion(patch = fs.readFileSync(PATCH_PATH), role) {
+  return `open-code-review v1.13.0 (${commitTag(patch, role)}) `
 }
 
-function verifyVersion(version, patch) {
+function verifyVersion(version, patch, role) {
   if (
     typeof version !== 'string' ||
-    !version.startsWith(expectedVersion(patch))
+    !version.startsWith(expectedVersion(patch, role))
   ) {
     throw new Error('OCR executable does not match the pinned source and patch')
   }
@@ -40,7 +44,14 @@ function verifyArchive(bytes) {
   }
 }
 
-function install(directory, archive) {
+function verifyDraftVersion(version) {
+  verifyVersion(version, fs.readFileSync(DRAFT_PATCH_PATH), 'draft')
+}
+
+function install(directory, archive, mode = 'final') {
+  const draft = mode === 'draft' || mode === 'qualify-draft'
+  const patchPath = draft ? DRAFT_PATCH_PATH : PATCH_PATH
+  const role = draft ? 'draft' : 'compression'
   if (!directory || !path.isAbsolute(directory)) {
     throw new Error('An absolute installation directory is required')
   }
@@ -87,16 +98,18 @@ function install(directory, archive) {
   run('tar', ['-xzf', archivePath, '--strip-components=1', '-C', source], {
     timeout: 30000,
   })
-  run('patch', ['--batch', '--fuzz=0', '-p1', '--input', PATCH_PATH], {
+  run('patch', ['--batch', '--fuzz=0', '-p1', '--input', patchPath], {
     cwd: source,
     timeout: 30000,
   })
-  run('go', ['test', '-race', './internal/llmloop', './internal/agent'], {
-    cwd: source,
-  })
-  const patchBytes = fs.readFileSync(PATCH_PATH)
+  if (mode !== 'draft') {
+    run('go', ['test', '-race', './internal/llmloop', './internal/agent'], {
+      cwd: source,
+    })
+  }
+  const patchBytes = fs.readFileSync(patchPath)
   const patchDigest = digest(patchBytes)
-  const commit = commitTag(patchBytes)
+  const commit = commitTag(patchBytes, role)
   const binary = path.join(directory, 'ocr')
   run(
     'go',
@@ -117,7 +130,7 @@ function install(directory, archive) {
     encoding: 'utf8',
     timeout: 30000,
   })
-  verifyVersion(version)
+  verifyVersion(version, patchBytes, role)
   fs.writeFileSync(
     path.join(directory, 'provenance.json'),
     JSON.stringify({
@@ -135,6 +148,7 @@ function install(directory, archive) {
 module.exports = {
   expectedVersion,
   verifyVersion,
+  verifyDraftVersion,
   verifyArchive,
   install,
   SOURCE_COMMIT,
@@ -144,5 +158,7 @@ module.exports = {
 
 if (require.main === module) {
   if (process.argv[2] === 'verify-version') verifyVersion(process.argv[3])
+  else if (['draft', 'qualify-draft'].includes(process.argv[2]))
+    install(process.argv[3], process.argv[4], process.argv[2])
   else install(process.argv[2], process.argv[3])
 }

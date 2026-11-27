@@ -1845,7 +1845,15 @@ async function startAdapter(options = {}) {
         ) {
           // restoreMessages has already authenticated the replayed assistant.
           // Require a tool receipt from its latest issued turn in this pass.
-          const messages = mistralBody.messages
+          // The pinned draft CLI may append its deadline notice after genuine
+          // receipts. It neither supplies a result nor invalidates those receipts.
+          const tail = mistralBody.messages.at(-1)
+          const messages =
+            tail?.role === 'user' &&
+            typeof tail.content === 'string' &&
+            tail.content.startsWith('[ocr:second-pass-wrap-up] ')
+              ? mistralBody.messages.slice(0, -1)
+              : mistralBody.messages
           const last = messages.findLastIndex((entry) => entry.role !== 'tool')
           const calls = messages[last]?.tool_calls
           extraContinuation =

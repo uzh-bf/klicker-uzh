@@ -3077,7 +3077,9 @@ test('draft length recovery needs a matched tool result and survives compaction 
   reply = () => response({}, 'stop')
   assert.equal((await send(progress)).status, 422)
   reply = () => response({}, 'length')
-  const resumed = await send(progress)
+  const reminder = { role: 'user', content: '[ocr:second-pass-wrap-up] fixture' }
+  assert.equal((await send([...echoed, reminder])).status, 422)
+  const resumed = await send([...progress, reminder])
   assert.equal(resumed.status, 200)
   assert.equal(resumed.json.choices[0].finish_reason, 'length')
   assert.equal(resumed.json.choices[0].message.tool_calls, undefined)
