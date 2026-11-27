@@ -10,6 +10,13 @@ const CHATBOT_ID = '00000000-0000-4000-8000-000000000003'
 const READABLE_KB_ID = '00000000-0000-4000-8000-000000000004'
 
 type MockPermission = {
+  id: number
+  userId: string
+  permissionLevel: PermissionLevel
+  userGroup: null
+}
+
+type MockPermissionInput = {
   userId: string
   permissionLevel: PermissionLevel
 }
@@ -19,7 +26,7 @@ type MockKnowledgeBase = {
   name: string
   ownerId: string
   deletedAt: Date | null
-  permissions: MockPermission[]
+  directPermissions: MockPermission[]
 }
 
 type MockKnowledgeBaseBinding = {
@@ -49,9 +56,20 @@ function knowledgeBase(
   id: string,
   name: string,
   ownerId: string,
-  permissions: MockPermission[] = []
+  permissions: MockPermissionInput[] = []
 ): MockKnowledgeBase {
-  return { id, name, ownerId, deletedAt: null, permissions }
+  return {
+    id,
+    name,
+    ownerId,
+    deletedAt: null,
+    directPermissions: permissions.map((permission, index) => ({
+      id: index + 1,
+      userId: permission.userId,
+      permissionLevel: permission.permissionLevel,
+      userGroup: null,
+    })),
+  }
 }
 
 function binding(id: string, kb: MockKnowledgeBase): MockKnowledgeBaseBinding {
@@ -99,9 +117,6 @@ function createReaderContext(
   readableKnowledgeBase: MockKnowledgeBase
 ) {
   const chatbotFindMany = vi.fn(async (args: ChatbotFindManyArgs) => {
-    if (args.select?.ownerId && Object.keys(args.select).length === 1) {
-      return [{ ownerId: chatbot.ownerId }]
-    }
     if (args.select?.knowledgeBases?.where?.isEnabled !== true) {
       throw new Error(
         'Reader must filter disabled knowledge-base bindings before redaction'
@@ -124,7 +139,14 @@ function createReaderContext(
           storageLimitMiB: null,
         }))
       }
-      return pickerKnowledgeBases
+      return [
+        ...new Map(
+          [
+            ...chatbot.knowledgeBases.map(({ kb }) => kb),
+            ...pickerKnowledgeBases,
+          ].map((kb) => [kb.id, kb])
+        ).values(),
+      ]
     }
   )
 
@@ -149,7 +171,7 @@ function createReaderContext(
         })),
       },
       kB: {
-        findFirst: vi.fn(async () => ({
+        findUnique: vi.fn(async () => ({
           ...readableKnowledgeBase,
           id: READABLE_KB_ID,
         })),
@@ -268,6 +290,6 @@ describe('Chatbot knowledge-base reader projections', () => {
       enabledKbId: null,
       enabledKbName: null,
     })
-    expect(chatbotFindMany).toHaveBeenCalledTimes(3)
+    expect(chatbotFindMany).toHaveBeenCalledTimes(2)
   })
 })

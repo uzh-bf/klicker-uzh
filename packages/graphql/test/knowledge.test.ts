@@ -213,7 +213,7 @@ function withLockedChatbotSignal(
   const prisma = ctx.prisma.$extends({
     query: {
       chatbot: {
-        async findFirst({ args, query }) {
+        async findUnique({ args, query }) {
           const result = await query(args)
           // The FOR UPDATE lock precedes this read in the service. A result
           // therefore proves that the transaction acquired the chatbot row.
@@ -1405,7 +1405,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         courseId: course.id,
       },
     })
-    await prisma.derivedPermission.createMany({
+    await prisma.permission.createMany({
       data: [
         {
           chatbotId: chatbot.id,
@@ -1434,8 +1434,15 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
     ])
 
-    await prisma.derivedPermission.deleteMany({
+    await prisma.permission.deleteMany({
       where: { kbId: kb.id, userId: userTwoCtx.user.sub },
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        kbId: kb.id,
+        userId: userTwoCtx.user.sub,
+        permissionLevel: PermissionLevel.READ,
+      },
     })
     const [revoked] = (await getChatbotsInfo(userOneCtx)) ?? []
     expect(revoked?.enabledKnowledgeBases).toEqual([
@@ -1450,12 +1457,15 @@ describe('Integration tests for knowledge base CRUD', () => {
       { id: kb.id, name: kb.name, available: false },
     ])
 
-    await prisma.derivedPermission.create({
+    await prisma.permission.create({
       data: {
         kbId: kb.id,
         userId: userTwoCtx.user.sub,
         permissionLevel: PermissionLevel.READ,
       },
+    })
+    await prisma.derivedPermission.deleteMany({
+      where: { kbId: kb.id, userId: userTwoCtx.user.sub },
     })
     const [restored] = (await getChatbotsInfo(userOneCtx)) ?? []
     expect(restored?.enabledKnowledgeBases).toEqual([
@@ -1465,6 +1475,84 @@ describe('Integration tests for knowledge base CRUD', () => {
         available: true,
       }),
     ])
+  })
+
+  it('uses live direct and group grants while ignoring overlapping stale derived access', async () => {
+    const kb = await createKb({ name: 'Group shared KB' }, userTwoCtx)
+    const course = await seedCourse({}, userTwoCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Group shared chatbot',
+        ownerId: userTwoCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'KB chatbot collaborators',
+        ownerId: userTwoCtx.user.sub,
+        members: { connect: { id: userOneCtx.user.sub } },
+      },
+    })
+    const directChatbotPermission = await prisma.permission.create({
+      data: {
+        chatbotId: chatbot.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        chatbotId: chatbot.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const directKbPermission = await prisma.permission.create({
+      data: {
+        kbId: kb.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        kbId: kb.id,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    await expect(
+      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      enabledKbs: [expect.objectContaining({ canEdit: true })],
+    })
+
+    await prisma.permission.delete({ where: { id: directKbPermission.id } })
+    await prisma.derivedPermission.create({
+      data: {
+        kbId: kb.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const [projected] = (await getChatbotsInfo(userOneCtx)) ?? []
+    expect(projected?.enabledKnowledgeBases).toEqual([
+      expect.objectContaining({ id: kb.id, available: true, canEdit: false }),
+    ])
+
+    await prisma.permission.delete({
+      where: { id: directChatbotPermission.id },
+    })
+    const [binding] = await getKbChatbotBindings({ kbId: kb.id }, userOneCtx)
+    expect(binding).toMatchObject({
+      chatbotId: chatbot.id,
+      enabledKbId: kb.id,
+    })
+    await expect(
+      detachKbFromChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).resolves.toBe(true)
   })
 
   it('requires the chatbot owner to retain KB Read when a shared editor attaches it', async () => {
@@ -1477,7 +1565,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         courseId: course.id,
       },
     })
-    await prisma.derivedPermission.create({
+    await prisma.permission.create({
       data: {
         chatbotId: chatbot.id,
         userId: userOneCtx.user.sub,
@@ -1508,7 +1596,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     const binding = await prisma.kBChatbot.create({
       data: { kbId: kb.id, chatbotId: chatbot.id, isEnabled: true },
     })
-    await prisma.derivedPermission.create({
+    await prisma.permission.create({
       data: {
         chatbotId: chatbot.id,
         userId: userOneCtx.user.sub,
