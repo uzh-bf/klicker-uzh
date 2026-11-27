@@ -1075,11 +1075,17 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
           reasoning_content: ' x'.repeat(12000),
           tool_calls: [
             sawSummary
-              ? toolCall('task_done', { state: 'DONE' })
+              ? toolCall('task_done', {})
               : toolCall('file_find', { pattern: 'source.js' }),
           ],
         }
         finish = 'tool_calls'
+        // The stock CLI must echo the intervening file_find result before
+        // the adapter admits the second empty response.
+        if (mainTurns === 2 || mainTurns === 4) {
+          message = { content: '', reasoning_content: 'unfinished' }
+          finish = 'length'
+        }
       }
       upstreamCalls++
       return new Response(
@@ -1109,6 +1115,8 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
       path.join(root, 'draft-ai-review-adapter-diagnostics.jsonl')
     )
   )
+  assert.equal(diag.main_no_tool_responses, 2)
+  assert.equal(diag.failures.length_no_tool, 0)
   assert.equal(diag.upstream_attempts, upstreamCalls)
   assert.equal(diag.responses, upstreamCalls)
   assert.equal(diag.completion_tokens, 12050 * upstreamCalls)

@@ -902,6 +902,20 @@ function translateMistralRequest(
   return translated
 }
 
+// Only a complete checkpoint can start a fresh draft pass. OCR can return
+// an ordinary tool error for a malformed task_done and continue the same pass.
+function isDraftCheckpoint(call) {
+  if (call.function.name !== 'task_done') return false
+  try {
+    const args = JSON.parse(call.function.arguments)
+    return (
+      isPlainObject(args) && [undefined, 'DONE', 'FAILED'].includes(args.state)
+    )
+  } catch {
+    return false
+  }
+}
+
 function hasCompletionTool(body) {
   return (
     Array.isArray(body.tools) &&
@@ -1423,6 +1437,8 @@ async function startAdapter(options = {}) {
   const draftCompression = options.guardDraftCompression
     ? { usable: 0, skipped: 0, repeat_skips: 0 }
     : null
+  // A main-task key spans both review passes and survives history compression.
+  const draftContinuations = new Map()
   const skippedSnapshots = new Set()
   const pendingRequests = new Set()
   const active = new Set()
@@ -1804,6 +1820,13 @@ async function startAdapter(options = {}) {
           'completion was truncated'
         )
       }
+      const mainTaskScope =
+        main &&
+        conversation &&
+        /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key)
+      const draftScope = options.draftToolContinuation && mainTaskScope
+      const continuation = draftScope && draftContinuations.get(conversation)
+      let extraContinuation = false
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
         // OCR prompts for a real tool call on its next budgeted loop iteration.
@@ -1812,15 +1835,40 @@ async function startAdapter(options = {}) {
         const firstFinalStop =
           options.finalReviewContinuation &&
           choice.finish_reason === 'stop' &&
-          /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
+          mainTaskScope &&
           conversations.get(conversation)?.main_no_tool_responses === 1
-        const canContinue =
+        if (
+          continuation?.toolTurn &&
+          !continuation.extraUsed &&
+          choice.finish_reason === 'length' &&
+          !choice.message.content.trim()
+        ) {
+          // restoreMessages has already authenticated the replayed assistant.
+          // Require a tool receipt from its latest issued turn in this pass.
+          const messages = mistralBody.messages
+          const last = messages.findLastIndex((entry) => entry.role !== 'tool')
+          const calls = messages[last]?.tool_calls
+          extraContinuation =
+            messages[last]?.role === 'assistant' &&
+            calls?.length > 0 &&
+            continuation.toolTurn === hashIdentity(calls) &&
+            messages
+              .slice(last + 1)
+              .some(
+                (result) =>
+                  typeof result.tool_call_id === 'string' &&
+                  result.tool_call_id.length > 0 &&
+                  calls.some((call) => call.id === result.tool_call_id)
+              )
+        }
+        const firstContinuation =
+          !continuation?.inPass &&
           (choice.finish_reason === 'length' || firstFinalStop) &&
           !body.messages.some(
             (message) =>
               message.role === 'assistant' && !message.tool_calls?.length
           )
-        if (!canContinue) {
+        if (!firstContinuation && !extraContinuation) {
           fail(
             choice.finish_reason === 'length'
               ? 'length_no_tool'
@@ -1834,6 +1882,23 @@ async function startAdapter(options = {}) {
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message, body.prompt_cache_key)
+      if (draftScope) {
+        if (!choice.message.tool_calls?.length) {
+          draftContinuations.set(conversation, {
+            extraUsed: extraContinuation || Boolean(continuation?.extraUsed),
+            inPass: true,
+            toolTurn: null,
+          })
+        } else if (continuation?.inPass) {
+          const calls = choice.message.tool_calls
+          continuation.toolTurn = null
+          if (choice.finish_reason === 'tool_calls') {
+            if (calls.some(isDraftCheckpoint)) continuation.inPass = false
+            else if (calls.every((call) => call.function.name !== 'task_done'))
+              continuation.toolTurn = hashIdentity(message.tool_calls)
+          }
+        }
+      }
       if (planScope) {
         const outcome =
           choice.finish_reason === 'length'

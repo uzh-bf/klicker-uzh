@@ -460,6 +460,7 @@ async function runDraftReview(options) {
       availability,
       finalPlanGuidance: true,
       guardDraftCompression: true,
+      draftToolContinuation: true,
       singleFileOutline,
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
