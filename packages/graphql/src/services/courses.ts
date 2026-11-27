@@ -1,6 +1,7 @@
 import {
   type AuditEventDraft,
   emitCoveredParticipantEligibilityChange,
+  lockParticipationEligibility,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
@@ -134,6 +135,7 @@ export async function joinCourseLeaderboard(
   const { participation, lbEntry } = await runInAuditTransaction(
     ctx.prisma,
     async (tx, auditTx) => {
+      await lockParticipationEligibility(tx, courseId, ctx.user.sub)
       const previous = await tx.participation.findUnique({
         where: {
           courseId_participantId: {
