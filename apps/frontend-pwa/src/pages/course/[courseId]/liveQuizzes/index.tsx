@@ -1,3 +1,4 @@
+import { preserveLtiQuery } from '@lib/participantRedirect'
 import { GetServerSidePropsContext } from 'next'
 
 function LiveQuizOverviewRedirected() {
@@ -16,7 +17,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return {
     redirect: {
-      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${ctx.params.courseId}/liveQuizzes/overview`,
+      destination: preserveLtiQuery(
+        `${ctx.locale ? `/${ctx.locale}` : ''}/course/${ctx.params.courseId}/liveQuizzes/overview`,
+        ctx.query
+      ),
       permanent: false,
     },
   }

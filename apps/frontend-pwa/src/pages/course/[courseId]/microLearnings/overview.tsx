@@ -3,38 +3,60 @@ import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { GetCoursePublishedMicroLearningsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
+import {
+  participantPageProps,
+  participantRedirect,
+} from '@lib/participantRedirect'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
+import ParticipantRedirect from '../../../../components/ParticipantRedirect'
 
 function MicroLearningsOverview({
   isInactive,
   courseId,
   participantToken,
   cookiesAvailable,
+  tokenSource,
+  redirectTo,
 }: {
   isInactive: boolean
   courseId: string
-  participantToken?: string
+  participantToken?: string | null
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
+  redirectTo?: string
 }) {
   const t = useTranslations()
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { data, loading } = useQuery(GetCoursePublishedMicroLearningsDocument, {
     variables: { courseId },
-    skip: isInactive,
+    skip: isInactive || !!redirectTo,
   })
+
+  if (redirectTo && participantToken) {
+    return (
+      <ParticipantRedirect
+        participantToken={participantToken}
+        redirectTo={redirectTo}
+        cookiesAvailable={cookiesAvailable}
+        tokenSource={tokenSource}
+      />
+    )
+  }
 
   if (loading) {
     return (
@@ -110,6 +132,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+    const auth = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+    const props = {
+      courseId: ctx.params.courseId,
+      ...(await participantPageProps(auth, ctx.locale)),
+    }
     const result = await apolloClient.query({
       query: GetCoursePublishedMicroLearningsDocument,
       variables: {
@@ -120,51 +151,22 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     // if there is no result (e.g., the shortname is not valid)
     const course = result.data.getCoursePublishedMicroLearnings?.[0]?.course
     if (!result?.data?.getCoursePublishedMicroLearnings || !course) {
-      return {
-        props: {
-          isInactive: true,
-          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-            .default,
-        },
-      }
+      return { props: { ...props, isInactive: true } }
     }
 
     // if only a single live quiz is running, redirect directly to the corresponding quiz page
     // or if linkTo is set, redirect to the specified link
     if (result.data.getCoursePublishedMicroLearnings.length === 1) {
-      return {
-        redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${course.id}/microLearnings/${result.data.getCoursePublishedMicroLearnings[0].id}`,
-          permanent: false,
-        },
-      }
+      return participantRedirect({
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${course.id}/microLearnings/${result.data.getCoursePublishedMicroLearnings[0].id}`,
+        ...auth,
+        locale: ctx.locale,
+      })
     }
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
-
-    if (participantToken) {
-      return {
-        props: {
-          participantToken,
-          cookiesAvailable,
-          courseId: ctx.params.courseId,
-          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-            .default,
-        },
-      }
-    }
-
-    return addApolloState(apolloClient, {
-      props: {
-        courseId: ctx.params.courseId,
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
-      },
-    })
+    return auth.participantToken
+      ? { props }
+      : addApolloState(apolloClient, { props })
   } catch (error) {
     console.error(
       'Error in getServerSideProps on microlearnings overview page:',
