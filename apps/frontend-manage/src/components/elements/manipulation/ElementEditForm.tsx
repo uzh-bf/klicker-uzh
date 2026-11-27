@@ -340,6 +340,7 @@ function ElementEditForm({
                         <ActivityArtifactAttachment
                           elementId={elementId}
                           disabled={inputsDisabled}
+                          hasStoredArtifact={values.hasActivityArtifact}
                           currentArtifact={values.currentActivityArtifact}
                           pendingArtifact={values.pendingActivityArtifact}
                           setFieldValue={setFieldValue}

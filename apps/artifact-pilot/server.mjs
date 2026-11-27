@@ -1,13 +1,15 @@
 import { createServer } from 'node:http'
 import { timingSafeEqual } from 'node:crypto'
 import { Pool } from 'pg'
-import { digest, frame, parseSource } from './exercise.mjs'
+import { digest, frame, parseSource, sourceFor } from './exercise.mjs'
 import {
   bindAssignment,
+  completeAuthorRequest,
   initialize,
   publish,
   readAssignment,
   readRevision,
+  reserveAuthorRequest,
 } from './repository.mjs'
 
 function config(name) {
@@ -59,14 +61,14 @@ function authorized(header, token) {
 function fail(status, message) {
   throw Object.assign(new Error(message), { status })
 }
-async function readBody(req) {
+async function readBody(req, limit = 150000) {
   if (req.headers['content-type']?.split(';')[0] !== 'application/json')
     fail(415, 'JSON required')
   const parts = []
   let size = 0
   for await (const chunk of req) {
     size += chunk.length
-    if (size > 150000) fail(413, 'Request too large')
+    if (size > limit) fail(413, 'Request too large')
     parts.push(chunk)
   }
   try {
@@ -108,6 +110,132 @@ function viewerFrame(req, res) {
 function redirectArtifact(req, res, { artifactId }) {
   res.writeHead(303, { Location: manage + '/artifacts/' + artifactId })
   res.end()
+}
+
+const authorBaseUrl = 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
+const authorModel = 'aibuddy/azure/gpt-6-luna'
+const authorKey = process.env.PILOT_AUTHORING_LITELLM_KEY
+const authorEnabled =
+  process.env.PILOT_AUTHORING_ENABLED === 'true' &&
+  process.env.PILOT_AUTHORING_LITELLM_BASE_URL === authorBaseUrl &&
+  process.env.PILOT_AUTHORING_MODEL === authorModel &&
+  typeof authorKey === 'string' &&
+  authorKey.length >= 32 &&
+  !/\s/.test(authorKey) &&
+  authorKey !== lcKey &&
+  authorKey !== klickerKey
+
+const inputTokens = 4096
+const completionTokens = 768
+// Admission ceilings in USD per million tokens. Operators verify the deployed
+// route against both ceilings before activation. Keep the full debit on success.
+const reserveCents = Math.ceil(
+  (inputTokens * 25 + completionTokens * 100) / 10000
+)
+const instruction =
+  'Return one JSON object for a bond calculator with exactly title, years, face and cashflows. ' +
+  'Use a plain title of 1-100 characters, 1-30 whole years and a positive face value up to 1000000. ' +
+  'Include 1-8 cashflows, each with when (maturity or year-end) and amount (the string face or a number from 0 to 1000000).'
+
+async function generateAuthorSource(messages) {
+  const response = await fetch(authorBaseUrl + '/chat/completions', {
+    method: 'POST',
+    redirect: 'error',
+    signal: AbortSignal.timeout(Math.min(30000, expiry - Date.now())),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + authorKey,
+    },
+    body: JSON.stringify({
+      model: authorModel,
+      messages,
+      max_completion_tokens: completionTokens,
+      response_format: { type: 'json_object' },
+      num_retries: 0,
+      disable_fallbacks: true,
+      stream: false,
+      n: 1,
+    }),
+  })
+  if (
+    response.status !== 200 ||
+    !response.body ||
+    ['x-litellm-attempted-retries', 'x-litellm-attempted-fallbacks'].some(
+      (header) => ![null, '0'].includes(response.headers.get(header))
+    )
+  ) {
+    await response.body?.cancel()
+    throw new Error('Unexpected completion response')
+  }
+  const chunks = []
+  let bytes = 0
+  for await (const chunk of response.body) {
+    bytes += chunk.length
+    if (bytes > 16384) throw new Error('Completion too large')
+    chunks.push(chunk)
+  }
+  const { choices, usage } = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+  if (
+    !Number.isSafeInteger(usage?.prompt_tokens) ||
+    usage.prompt_tokens <= 0 ||
+    usage.prompt_tokens > inputTokens ||
+    !Number.isSafeInteger(usage.completion_tokens) ||
+    usage.completion_tokens <= 0 ||
+    usage.completion_tokens > completionTokens ||
+    !Array.isArray(choices) ||
+    choices.length !== 1 ||
+    choices[0]?.finish_reason !== 'stop' ||
+    choices[0].message?.role !== 'assistant' ||
+    typeof choices[0].message.content !== 'string'
+  )
+    throw new Error('Invalid completion')
+  return sourceFor(JSON.parse(choices[0].message.content))
+}
+
+async function authorExercise(req, res) {
+  if (!authorized(req.headers.authorization, lcKey)) fail(403, 'Forbidden')
+  const body = await readBody(req, 8192)
+  if (body?.subject !== lecturer) fail(403, 'Forbidden')
+  if (!authorEnabled) fail(503, 'Authoring unavailable')
+  const { requestId, prompt } = body
+  if (
+    Object.keys(body).length !== 3 ||
+    typeof requestId !== 'string' ||
+    !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(
+      requestId
+    ) ||
+    typeof prompt !== 'string' ||
+    !prompt.trim() ||
+    Buffer.byteLength(prompt) > 2048
+  )
+    fail(422, 'Invalid authoring request')
+  const messages = [
+    { role: 'system', content: instruction },
+    { role: 'user', content: prompt },
+  ]
+  // UTF-8 bytes bound byte-level input tokens. Leave room for the model's
+  // message framing and JSON mode overhead on the attested route.
+  if (Buffer.byteLength(JSON.stringify(messages)) + 1024 > inputTokens)
+    fail(422, 'Authoring input too large')
+  if (Date.now() >= expiry) fail(403, 'Pilot closed')
+  const replay = await reserveAuthorRequest(
+    pool,
+    requestId,
+    digest(JSON.stringify([lecturer, prompt])),
+    reserveCents
+  )
+  if (Date.now() >= expiry) fail(403, 'Pilot closed')
+  if (replay !== null) return json(res, 200, { html: replay })
+  let html
+  try {
+    html = await generateAuthorSource(messages)
+  } catch {
+    // A dispatched request can be billed even when no valid response arrives.
+    fail(502, 'Authoring did not complete')
+  }
+  if (Date.now() >= expiry) fail(403, 'Pilot closed')
+  await completeAuthorRequest(pool, requestId, html)
+  json(res, 200, { html })
 }
 
 async function publishRevision(req, res) {
@@ -193,6 +321,7 @@ async function readArtifact(req, res, { artifactId, revisionId }) {
 const routes = new Map([
   ['GET /health', health],
   ['GET /frame', viewerFrame],
+  ['POST /v1/author', authorExercise],
   ['POST /v1/revisions', publishRevision],
   ['POST /v1/assignments', assignRevision],
 ])

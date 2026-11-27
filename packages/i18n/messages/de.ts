@@ -1651,6 +1651,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetAnswers: 'Antworten zurücksetzen',
       markAllAsRead: 'Alle als gelesen markieren',
       read: 'Gelesen',
+      activityArtifactUnavailable:
+        'Dieser Inhalt enthält ein Aktivitätsartefakt, das derzeit nicht verfügbar ist.',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
       flagElement: 'Fehler melden',
@@ -3780,6 +3782,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         attachTitle: 'Aktivitätsartefakt anhängen',
         tooltip:
           'Hängen Sie diesem Inhaltselement eine unveränderliche Revision aus dem Publisher an. Lernende erhalten ausschliesslich die vertrauenswürdige Darstellung.',
+        unavailableTitle: 'Aktivitätsartefakt nicht verfügbar',
+        unavailableNotice:
+          'Diesem Element ist ein Artefakt zugeordnet, seine Steuerung und Details sind derzeit jedoch nicht verfügbar. Die bestehende Verknüpfung bleibt unverändert.',
         usingRevision: 'Aktuell verwendet: v{version}',
         latestRevisionAvailable: 'v{version} verfügbar',
         noArtifactAttached:

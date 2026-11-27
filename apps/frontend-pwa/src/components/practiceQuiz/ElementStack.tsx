@@ -690,7 +690,8 @@ function ElementStack({
                     renderActivityArtifact={
                       stack.type === ElementStackType.Microlearning &&
                       withParticipant &&
-                      !previewOnly
+                      !previewOnly &&
+                      element.checkActivityArtifact
                         ? (elementInstanceId) => (
                             <ActivityArtifactInstance
                               elementInstanceId={elementInstanceId}

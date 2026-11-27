@@ -166,6 +166,8 @@ const tasks = prepareHatchetTasks({
   redisCache,
   redisExec,
   redisAssessmentExec,
+  activityArtifactRuntime,
+  featureFlags,
   handlers,
   getKBGraphTerminalResult,
   settleKBGraphTerminalResult: ({

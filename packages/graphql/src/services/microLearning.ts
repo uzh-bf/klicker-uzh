@@ -19,7 +19,13 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
-import { assertActivityArtifactPinsAccessible } from './activityArtifacts.js'
+import {
+  assertActivityArtifactPinsAccessible,
+  assertActivityArtifactPinsPublishable,
+  assignActivityArtifactPinsForPublication,
+  getActivityArtifactCheckInstanceIds,
+  hasActivityArtifactPin,
+} from './activityArtifacts.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -57,17 +63,65 @@ export async function getMicroLearningData(
     },
   })
 
-  return microLearning
-    ? {
-        ...microLearning,
-        isOwner:
-          ctx.user?.sub &&
-          (ctx.user.role === DB.UserRole.USER ||
-            ctx.user.role === DB.UserRole.ADMIN)
-            ? ctx.user.sub === microLearning.ownerId
-            : false,
-      }
-    : null
+  if (!microLearning) return null
+
+  const now = new Date()
+  const checkInstances = microLearning.stacks.flatMap((stack) =>
+    stack.elements.map((instance) => ({
+      id: instance.id,
+      microLearningId: microLearning.id,
+      elementType: instance.elementType,
+      elementData: instance.elementData,
+    }))
+  )
+  let checkInstanceIds = new Set<number>()
+
+  if (
+    ctx.user?.role === DB.UserRole.PARTICIPANT &&
+    ctx.activityArtifactRuntime &&
+    microLearning.status === DB.PublicationStatus.PUBLISHED &&
+    !microLearning.isDeleted &&
+    microLearning.scheduledStartAt <= now &&
+    microLearning.scheduledEndAt >= now &&
+    hasActivityArtifactPin(checkInstances)
+  ) {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: microLearning.courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      select: { id: true },
+    })
+    if (participation) {
+      checkInstanceIds = await getActivityArtifactCheckInstanceIds(
+        checkInstances,
+        ctx.prisma
+      )
+    }
+  }
+
+  return {
+    ...microLearning,
+    stacks:
+      checkInstanceIds.size > 0
+        ? microLearning.stacks.map((stack) => ({
+            ...stack,
+            elements: stack.elements.map((instance) =>
+              checkInstanceIds.has(instance.id)
+                ? { ...instance, checkActivityArtifact: true }
+                : instance
+            ),
+          }))
+        : microLearning.stacks,
+    isOwner:
+      ctx.user?.sub &&
+      (ctx.user.role === DB.UserRole.USER ||
+        ctx.user.role === DB.UserRole.ADMIN)
+        ? ctx.user.sub === microLearning.ownerId
+        : false,
+  }
 }
 
 export async function getMicroLearningEvaluation(
@@ -482,8 +536,13 @@ export async function publishMicroLearning(
   const schedulePublication = microLearning.scheduledStartAt > now
   const endPublication = microLearning.scheduledEndAt < now
 
-  if (schedulePublication || !endPublication) {
-    await assertActivityArtifactPinsAccessible(id, ctx.prisma)
+  if (schedulePublication) {
+    await assertActivityArtifactPinsPublishable(
+      id,
+      ctx.activityArtifactRuntime,
+      ctx.featureFlags,
+      ctx.prisma
+    )
   }
 
   if (schedulePublication) {
@@ -530,6 +589,16 @@ export async function publishMicroLearning(
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning
   }
+
+  // Bind pinned revisions before scheduling completion or publishing the
+  // activity. The publisher accepts a same-pin retry after a failed database
+  // update; a different pin fails instead of publishing an unbound instance.
+  await assignActivityArtifactPinsForPublication(
+    id,
+    ctx.activityArtifactRuntime,
+    ctx.featureFlags,
+    ctx.prisma
+  )
 
   // if the start date is in the past, but the end date is in the future, schedule the completion task
   const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
@@ -1014,8 +1083,10 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
         )
       }
 
-      await assertActivityArtifactPinsAccessible(
+      await assignActivityArtifactPinsForPublication(
         microLearningId,
+        globalCtx.activityArtifactRuntime,
+        globalCtx.featureFlags,
         globalCtx.prisma
       )
       await globalCtx.prisma.microLearning.update({

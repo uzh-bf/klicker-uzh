@@ -1628,6 +1628,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       resetAnswers: 'Reset answers',
       markAllAsRead: 'Mark all as read',
       read: 'Read',
+      activityArtifactUnavailable:
+        'This content includes an activity artifact that is currently unavailable.',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       feedbackRequired: 'Please add a text to your feedback.',
       flagElement: 'Report element',
@@ -3711,6 +3713,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         attachTitle: 'Attach artifact',
         tooltip:
           'Attach an immutable publisher revision to this content element. Students receive only the trusted renderer.',
+        unavailableTitle: 'Activity artifact unavailable',
+        unavailableNotice:
+          'An artifact is attached to this element, but its controls and details are currently unavailable. The existing attachment will remain unchanged.',
         usingRevision: 'Using v{version}',
         latestRevisionAvailable: 'v{version} available',
         noArtifactAttached:

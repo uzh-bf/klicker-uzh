@@ -4,8 +4,8 @@ import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import * as AccountService from '../services/accounts.js'
-import * as ActivityArtifactService from '../services/activityArtifacts.js'
 import * as ActivityService from '../services/activities.js'
+import * as ActivityArtifactService from '../services/activityArtifacts.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
@@ -34,7 +34,10 @@ import {
   CourseActivityList,
   UserActivityList,
 } from './activities.js'
-import { ActivityArtifactRevision } from './activityArtifact.js'
+import {
+  ActivityArtifactInstanceResult,
+  ActivityArtifactRevision,
+} from './activityArtifact.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -1073,10 +1076,11 @@ export const Query = builder.queryType({
 
       // Participant run read. Participant, course and instance are derived
       // server-side; the pinned revision is served only after enrollment and
-      // activity checks.
+      // activity checks. An authorized pinned instance retains a generic
+      // unavailable result while the pilot flag is off.
       activityArtifactForInstance: t.withAuth(asParticipant).field({
         nullable: true,
-        type: ActivityArtifactRevision,
+        type: ActivityArtifactInstanceResult,
         args: {
           elementInstanceId: t.arg.int({ required: true }),
         },

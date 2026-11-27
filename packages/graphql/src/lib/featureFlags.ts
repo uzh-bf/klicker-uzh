@@ -69,7 +69,7 @@ export interface FeatureFlagAccount {
 // attributes come from the account row, and evaluation fails closed exactly
 // like the session path.
 export function isFeatureFlagEnabledForAccount(
-  featureFlags: FeatureFlagEvaluator | undefined,
+  featureFlags: Pick<FeatureFlagEvaluator, 'isEnabled'> | undefined,
   account: FeatureFlagAccount,
   key: FeatureFlagKey
 ): boolean {

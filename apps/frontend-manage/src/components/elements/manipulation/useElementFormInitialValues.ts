@@ -1,5 +1,5 @@
 import {
-  Element,
+  type Element,
   ElementDisplayMode,
   ElementStatus,
   ElementType,
@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { sort } from 'remeda'
 import { ElementEditMode } from './ElementEditModal'
-import {
+import type {
   ElementFormTypes,
   ElementFormTypesCaseStudySolution,
   ElementFormTypesCaseStudySolutions,
@@ -208,6 +208,8 @@ function useElementFormInitialValues({
       return {
         ...sharedAttributes,
         type: ElementType.Content,
+        hasActivityArtifact:
+          !isDuplication && Boolean(question.hasActivityArtifact),
         // Duplicated elements are created without a pin, so they start
         // unattached. Edits show the stored pin for an explicit upgrade.
         currentActivityArtifact: isDuplication

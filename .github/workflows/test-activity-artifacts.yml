@@ -3,11 +3,19 @@ on:
   pull_request:
     paths:
       - 'apps/artifact-pilot/**'
+      - 'apps/frontend-manage/src/globals.css'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/test-activity-artifacts.yml'
   push:
     branches: ['v3', 'v3*']
     paths:
       - 'apps/artifact-pilot/**'
+      - 'apps/frontend-manage/src/globals.css'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/test-activity-artifacts.yml'
 
 permissions:
@@ -66,7 +74,7 @@ jobs:
         env:
           DATABASE_CONTAINER: ${{ job.services.database.id }}
         run: |
-          docker run --rm --network "container:$DATABASE_CONTAINER" \
+          docker run --rm --user 65532:65532 --read-only --cap-drop ALL --security-opt no-new-privileges --network "container:$DATABASE_CONTAINER" \
             --env ARTIFACT_TEST_DATABASE_URL=postgres://artifact_test@127.0.0.1/artifact_pilot_test \
             --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/exercise.test.mjs,target=/workspace/apps/artifact-pilot/exercise.test.mjs,readonly" \
             --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/repository.test.mjs,target=/workspace/apps/artifact-pilot/repository.test.mjs,readonly" \
@@ -76,7 +84,7 @@ jobs:
         env:
           DATABASE_CONTAINER: ${{ job.services.database.id }}
         run: |
-          docker run --rm --network "container:$DATABASE_CONTAINER" \
+          docker run --rm --user 65532:65532 --read-only --cap-drop ALL --security-opt no-new-privileges --network "container:$DATABASE_CONTAINER" \
             --env ARTIFACT_TEST_DATABASE_URL=postgres://artifact_test@127.0.0.1/artifact_pilot_test \
             --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/server.test.mjs,target=/workspace/apps/artifact-pilot/server.test.mjs,readonly" \
             --mount "type=bind,source=$GITHUB_WORKSPACE/apps/artifact-pilot/test-database.mjs,target=/workspace/apps/artifact-pilot/test-database.mjs,readonly" \

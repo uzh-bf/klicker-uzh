@@ -51,6 +51,23 @@ export const ActivityArtifactRevision = ActivityArtifactRevisionRef.implement({
   }),
 })
 
+export const ActivityArtifactInstanceResultRef = builder.objectRef<{
+  available: boolean
+  artifact: ClientActivityArtifact | null
+}>('ActivityArtifactInstanceResult')
+
+export const ActivityArtifactInstanceResult =
+  ActivityArtifactInstanceResultRef.implement({
+    fields: (t) => ({
+      available: t.exposeBoolean('available'),
+      artifact: t.field({
+        type: ActivityArtifactRevision,
+        nullable: true,
+        resolve: (result) => result.artifact,
+      }),
+    }),
+  })
+
 export const ActivityArtifactPinRef =
   builder.objectRef<PublicActivityArtifactPin>('ActivityArtifactPin')
 export const ActivityArtifactPin = ActivityArtifactPinRef.implement({

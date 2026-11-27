@@ -1,13 +1,16 @@
 query ActivityArtifactForInstance($elementInstanceId: Int!) {
   activityArtifactForInstance(elementInstanceId: $elementInstanceId) {
-    artifactId
-    revisionId
-    digest
-    version
-    title
-    url
-    renderedDigest
-    frameUrl
-    exercise
+    available
+    artifact {
+      artifactId
+      revisionId
+      digest
+      version
+      title
+      url
+      renderedDigest
+      frameUrl
+      exercise
+    }
   }
 }

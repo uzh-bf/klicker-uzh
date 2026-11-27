@@ -6,13 +6,15 @@ import {
   ActivityArtifactRequestError,
   type ActivityArtifactRevision,
   type ActivityArtifactRuntime,
+  getActivityArtifactBindingInstanceId,
   isActivityArtifactId,
   parseCanonicalArtifactUrl,
   sanitizeActivityArtifactPin,
   validateActivityArtifactExercise,
 } from '../lib/activityArtifacts.js'
-import type { ContextWithUser } from '../lib/context.js'
+import type { ContextWithUser, FeatureFlagEvaluator } from '../lib/context.js'
 import {
+  isFeatureFlagEnabledForAccount,
   isParticipantFeatureFlagEnabled,
   requireFeatureFlagAccess,
 } from '../lib/featureFlags.js'
@@ -21,6 +23,11 @@ export type ClientActivityArtifact = ActivityArtifactRevision & {
   // Fixed trusted renderer on the configured publisher origin. No token or
   // artifact data travels in the frame URL.
   frameUrl: string
+}
+
+export type ActivityArtifactInstanceResult = {
+  available: boolean
+  artifact: ClientActivityArtifact | null
 }
 
 function toClientActivityArtifact(
@@ -38,9 +45,16 @@ function toArtifactGraphQLError(error: unknown): GraphQLError {
     typeof error.status === 'number' &&
     [400, 403, 404, 409, 422].includes(error.status)
   ) {
-    return new GraphQLError('Artifact link is not available', {
-      extensions: { code: 'BAD_USER_INPUT' },
-    })
+    return new GraphQLError(
+      error.status === 403
+        ? 'You do not have permission to access this artifact'
+        : 'Artifact link is not available',
+      {
+        extensions: {
+          code: error.status === 403 ? 'FORBIDDEN' : 'BAD_USER_INPUT',
+        },
+      }
+    )
   }
 
   console.warn(
@@ -228,6 +242,24 @@ async function assertPinSubjectsAccessible(
 ) {
   if (requirements.length === 0) return
 
+  const permitted = await loadPermittedPinSubjects(requirements, prisma)
+  if (
+    requirements.some(
+      ({ microLearningId, subject }) =>
+        !permitted.get(microLearningId)?.has(subject)
+    )
+  ) {
+    throw new GraphQLError(
+      'The attached activity artifact must be confirmed by a lecturer who administers this microlearning',
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+}
+
+async function loadPermittedPinSubjects(
+  requirements: { microLearningId: string; subject: string }[],
+  prisma: Pick<PrismaTransactionClient, 'derivedPermission'>
+) {
   const activityIds = [
     ...new Set(requirements.map(({ microLearningId }) => microLearningId)),
   ]
@@ -252,17 +284,86 @@ async function assertPinSubjectsAccessible(
     permitted.set(microLearningId, permittedSubjects)
   }
 
-  if (
-    requirements.some(
-      ({ microLearningId, subject }) =>
-        !permitted.get(microLearningId)?.has(subject)
+  return permitted
+}
+
+type ActivityArtifactCheckInstance = {
+  id: number
+  microLearningId: string
+  elementType: DB.ElementType
+  elementData: unknown
+}
+
+export function hasActivityArtifactPin(
+  instances: Pick<
+    ActivityArtifactCheckInstance,
+    'elementType' | 'elementData'
+  >[]
+) {
+  return instances.some(
+    ({ elementType, elementData }) =>
+      elementType === DB.ElementType.CONTENT &&
+      sanitizeActivityArtifactPin(
+        (
+          elementData as {
+            options?: { activityArtifact?: unknown }
+          } | null
+        )?.options?.activityArtifact
+      ) !== null
+  )
+}
+
+/**
+ * Returns only pinned instances that the requesting participant may attempt to
+ * render. Callers establish current enrollment and pass only active
+ * Microlearning instances. The single permission lookup applies to every
+ * candidate and keeps ordinary CONTENT elements out of the artifact path.
+ */
+export async function getActivityArtifactCheckInstanceIds(
+  instances: ActivityArtifactCheckInstance[],
+  prisma: Pick<PrismaTransactionClient, 'derivedPermission'>
+) {
+  const requirements: { microLearningId: string; subject: string }[] = []
+  const candidates: {
+    instanceId: number
+    microLearningId: string
+    pinSubject: string
+  }[] = []
+
+  for (const instance of instances) {
+    if (instance.elementType !== DB.ElementType.CONTENT) continue
+
+    const pin = sanitizeActivityArtifactPin(
+      (
+        instance.elementData as {
+          options?: { activityArtifact?: unknown }
+        } | null
+      )?.options?.activityArtifact
     )
-  ) {
-    throw new GraphQLError(
-      'The attached activity artifact must be confirmed by a lecturer who administers this microlearning',
-      { extensions: { code: 'BAD_USER_INPUT' } }
-    )
+    if (!pin) continue
+
+    candidates.push({
+      instanceId: instance.id,
+      microLearningId: instance.microLearningId,
+      pinSubject: pin.subject,
+    })
+    requirements.push({
+      microLearningId: instance.microLearningId,
+      subject: pin.subject,
+    })
   }
+
+  if (candidates.length === 0) return new Set<number>()
+
+  const permitted = await loadPermittedPinSubjects(requirements, prisma)
+  return new Set(
+    candidates
+      .filter(
+        ({ microLearningId, pinSubject }) =>
+          permitted.get(microLearningId)?.has(pinSubject) === true
+      )
+      .map(({ instanceId }) => instanceId)
+  )
 }
 
 /**
@@ -293,6 +394,189 @@ export async function assertActivityArtifactElementDataAccessible(
   )
 }
 
+type ActivityArtifactPublicationBinding = {
+  instanceId: number
+  courseId: string
+  pin: ActivityArtifactPin
+}
+
+async function loadActivityArtifactPinsForPublication(
+  microLearningId: string,
+  featureFlags: Pick<FeatureFlagEvaluator, 'isEnabled'> | undefined,
+  prisma: Pick<
+    PrismaTransactionClient,
+    'derivedPermission' | 'elementInstance' | 'user'
+  >
+): Promise<ActivityArtifactPublicationBinding[]> {
+  const instances = await prisma.elementInstance.findMany({
+    where: {
+      elementType: DB.ElementType.CONTENT,
+      elementStack: { microLearningId },
+      elementData: {
+        path: ['options', 'activityArtifact'],
+        not: DB.Prisma.DbNull,
+      },
+    },
+    select: {
+      id: true,
+      elementData: true,
+      elementStack: {
+        select: {
+          microLearning: { select: { courseId: true } },
+        },
+      },
+    },
+  })
+
+  const bindings: ActivityArtifactPublicationBinding[] = []
+  for (const instance of instances) {
+    const pin = sanitizeActivityArtifactPin(
+      (
+        instance.elementData as {
+          options?: { activityArtifact?: unknown }
+        } | null
+      )?.options?.activityArtifact
+    )
+    const courseId = instance.elementStack?.microLearning?.courseId
+    if (!pin || !courseId) {
+      throw new GraphQLError('The attached activity artifact is invalid', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      })
+    }
+
+    bindings.push({ instanceId: instance.id, courseId, pin })
+  }
+
+  if (bindings.length === 0) return bindings
+
+  const subjects = [...new Set(bindings.map(({ pin }) => pin.subject))]
+  const accounts = await prisma.user.findMany({
+    where: { id: { in: subjects } },
+    select: {
+      id: true,
+      role: true,
+      catalystInstitutional: true,
+      catalystIndividual: true,
+      betaEnabled: true,
+    },
+  })
+  const accountsById = new Map(accounts.map((account) => [account.id, account]))
+  for (const { pin } of bindings) {
+    const account = accountsById.get(pin.subject)
+    if (!account) {
+      throw new GraphQLError('The attached activity artifact is invalid', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      })
+    }
+    if (
+      !isFeatureFlagEnabledForAccount(
+        featureFlags,
+        account,
+        'activity-artifacts'
+      )
+    ) {
+      throw new GraphQLError(
+        'Re-enable activity artifacts for the linked artifact owner before publishing',
+        { extensions: { code: 'FORBIDDEN' } }
+      )
+    }
+  }
+
+  await assertPinSubjectsAccessible(
+    bindings.map(({ pin }) => ({
+      microLearningId,
+      subject: pin.subject,
+    })),
+    prisma
+  )
+
+  return bindings
+}
+
+function requirePublicationArtifactRuntime(
+  runtime: Pick<ActivityArtifactRuntime, 'assign'> | undefined
+): Pick<ActivityArtifactRuntime, 'assign'> {
+  if (!runtime) {
+    throw new GraphQLError('Activity artifacts are not configured', {
+      extensions: { code: 'SERVICE_UNAVAILABLE' },
+    })
+  }
+
+  return runtime
+}
+
+/**
+ * Checks every pinned instance before a publication side effect. Scheduled
+ * publications use this without creating a remote binding; the worker repeats
+ * the checks when the activity actually becomes visible.
+ */
+export async function assertActivityArtifactPinsPublishable(
+  microLearningId: string,
+  runtime: Pick<ActivityArtifactRuntime, 'assign'> | undefined,
+  featureFlags: Pick<FeatureFlagEvaluator, 'isEnabled'> | undefined,
+  prisma: Pick<
+    PrismaTransactionClient,
+    'derivedPermission' | 'elementInstance' | 'user'
+  >
+) {
+  const bindings = await loadActivityArtifactPinsForPublication(
+    microLearningId,
+    featureFlags,
+    prisma
+  )
+  if (bindings.length > 0) requirePublicationArtifactRuntime(runtime)
+}
+
+/**
+ * Establishes the immutable publisher binding for every pinned instance in a
+ * Microlearning. This runs at the publication boundary, before the activity
+ * becomes visible. A failed database update can be retried because the
+ * publisher accepts the same binding idempotently.
+ */
+export async function assignActivityArtifactPinsForPublication(
+  microLearningId: string,
+  runtime: Pick<ActivityArtifactRuntime, 'assign'> | undefined,
+  featureFlags: Pick<FeatureFlagEvaluator, 'isEnabled'> | undefined,
+  prisma: Pick<
+    PrismaTransactionClient,
+    'derivedPermission' | 'elementInstance' | 'user'
+  >
+) {
+  const bindings = await loadActivityArtifactPinsForPublication(
+    microLearningId,
+    featureFlags,
+    prisma
+  )
+  if (bindings.length === 0) return
+
+  const artifactRuntime = requirePublicationArtifactRuntime(runtime)
+
+  for (const { instanceId, courseId, pin } of bindings) {
+    let assignment: 'bound' | 'conflict'
+    try {
+      assignment = await artifactRuntime.assign({
+        subject: pin.subject,
+        courseId,
+        instanceId: getActivityArtifactBindingInstanceId(
+          instanceId,
+          pin.revisionId
+        ),
+        artifactId: pin.artifactId,
+        revisionId: pin.revisionId,
+      })
+    } catch (error) {
+      throw toArtifactGraphQLError(error)
+    }
+
+    if (assignment === 'conflict') {
+      throw new GraphQLError(
+        'The attached activity artifact no longer matches this instance',
+        { extensions: { code: 'BAD_USER_INPUT' } }
+      )
+    }
+  }
+}
+
 /**
  * Participant run read. Participant, course and activity instance all come
  * from the session and the persisted instance; nothing here is supplied by
@@ -300,17 +584,15 @@ export async function assertActivityArtifactElementDataAccessible(
  * participant, the course and the instance, and answers with the exact pinned
  * revision.
  *
- * Any denial returns null so a participant cannot distinguish a missing
- * artifact from a missing activity.
+ * Any access denial returns null so a participant cannot distinguish a missing
+ * artifact from a missing activity. An authorized participant with a stored
+ * pin receives only a generic unavailable result while the pilot is off.
  */
 export async function getActivityArtifactForInstance(
   { elementInstanceId }: { elementInstanceId: number },
   ctx: ContextWithUser
-): Promise<ClientActivityArtifact | null> {
-  if (!isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts')) return null
-
-  const runtime = ctx.activityArtifactRuntime
-  if (!runtime) return null
+): Promise<ActivityArtifactInstanceResult | null> {
+  const enabled = isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts')
 
   const now = new Date()
   const instance = await ctx.prisma.elementInstance.findUnique({
@@ -369,38 +651,62 @@ export async function getActivityArtifactForInstance(
   )
   if (!pin) return null
 
+  // The stored pin names the lecturer it was resolved for. Serving it to a
+  // run requires that this lecturer still administers the activity. Perform
+  // this authorization check before returning any availability state.
+  let lecturerStillOwnsActivity = false
   try {
-    // The stored pin names the lecturer it was resolved for. Serving it to a
-    // run requires that this lecturer still administers the activity.
-    if (
-      !(await lecturerStillOwnsMicrolearning(
-        ctx,
-        microLearning.id,
-        pin.subject
-      ))
-    ) {
-      return null
+    lecturerStillOwnsActivity = await lecturerStillOwnsMicrolearning(
+      ctx,
+      microLearning.id,
+      pin.subject
+    )
+  } catch {
+    return null
+  }
+  if (!lecturerStillOwnsActivity) {
+    return null
+  }
+
+  if (!enabled) return { available: false, artifact: null }
+
+  const runtime = ctx.activityArtifactRuntime
+  if (!runtime) return { available: false, artifact: null }
+
+  try {
+    const run = {
+      participantId: ctx.user.sub,
+      courseId: microLearning.courseId,
+      elementInstanceId: instance.id,
+      bindingInstanceId: getActivityArtifactBindingInstanceId(
+        instance.id,
+        pin.revisionId
+      ),
     }
 
-    const assignment = await runtime.assign({
-      subject: pin.subject,
-      courseId: microLearning.courseId,
-      instanceId: String(instance.id),
-      artifactId: pin.artifactId,
-      revisionId: pin.revisionId,
-    })
-    if (assignment === 'conflict') return null
+    const readRevision = (bindingInstanceId: string) =>
+      runtime.getRevision({
+        subject: ctx.user.sub,
+        artifactId: pin.artifactId,
+        revisionId: pin.revisionId,
+        run: { ...run, bindingInstanceId },
+      })
 
-    const revision = await runtime.getRevision({
-      subject: ctx.user.sub,
-      artifactId: pin.artifactId,
-      revisionId: pin.revisionId,
-      run: {
-        participantId: ctx.user.sub,
-        courseId: microLearning.courseId,
-        elementInstanceId: instance.id,
-      },
-    })
+    let revision: ActivityArtifactRevision
+    try {
+      revision = await readRevision(run.bindingInstanceId)
+    } catch (error) {
+      // Bindings created before revision qualification used the numeric
+      // instance id. Keep those published activities readable without writing
+      // on a participant request or replacing the immutable publisher binding.
+      if (
+        !(error instanceof ActivityArtifactRequestError) ||
+        error.status !== 404
+      ) {
+        throw error
+      }
+      revision = await readRevision(String(instance.id))
+    }
 
     // `digest` covers the stored HTML and stays fixed for the revision.
     // `renderedDigest` also covers the current frame shell, so a renderer-only
@@ -409,7 +715,7 @@ export async function getActivityArtifactForInstance(
       console.warn(
         '[activity-artifacts] pinned revision digest mismatch; denying run'
       )
-      return null
+      return { available: false, artifact: null }
     }
 
     // Canonicalize both values into the validator's fixed field shape.
@@ -425,15 +731,18 @@ export async function getActivityArtifactForInstance(
       console.warn(
         '[activity-artifacts] pinned revision exercise mismatch; denying run'
       )
-      return null
+      return { available: false, artifact: null }
     }
 
-    return toClientActivityArtifact(runtime, revision)
+    return {
+      available: true,
+      artifact: toClientActivityArtifact(runtime, revision),
+    }
   } catch (error) {
     console.warn(
       '[activity-artifacts] participant read failed; denying run',
       error instanceof Error ? error.message : 'unknown error'
     )
-    return null
+    return { available: false, artifact: null }
   }
 }

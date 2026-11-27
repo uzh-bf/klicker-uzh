@@ -8,9 +8,11 @@ import {
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
+  ActivityArtifactAssignmentRuntime,
   BuildKBGraphInput,
   CourseDeletionEvent,
   DeleteKBResourceInput,
+  HatchetHandlerGlobalContext,
   HatchetHandlers,
   IngestKBResourceInput,
   PreparedHatchetTasks,
@@ -69,6 +71,8 @@ export function prepareHatchetTasks({
   kbGraphDispatchEnabled = true,
   settleKBGraphTerminalResult,
   runKBGraphPreparationSweep,
+  activityArtifactRuntime,
+  featureFlags,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -92,6 +96,8 @@ export function prepareHatchetTasks({
     tasks: PreparedHatchetTasks
     logger: Context<unknown>['logger']
   }) => Promise<JsonObject>
+  activityArtifactRuntime?: ActivityArtifactAssignmentRuntime
+  featureFlags?: HatchetHandlerGlobalContext['featureFlags']
 }) {
   let preparedTasks: PreparedHatchetTasks | undefined
   const globalContext = {
@@ -102,6 +108,8 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
+    activityArtifactRuntime,
+    featureFlags,
     get tasks() {
       if (!preparedTasks) {
         throw new Error(

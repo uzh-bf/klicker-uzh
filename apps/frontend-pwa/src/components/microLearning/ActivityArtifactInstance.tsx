@@ -2,6 +2,8 @@ import { useQuery } from '@apollo/client'
 import { ActivityArtifactForInstanceDocument } from '@klicker-uzh/graphql/dist/ops'
 import ActivityArtifactFrame from '@klicker-uzh/shared-components/src/ActivityArtifactFrame'
 import type { ActivityArtifactExercise } from '@klicker-uzh/types'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 
 /**
@@ -16,6 +18,7 @@ function ActivityArtifactInstance({
 }: {
   elementInstanceId: number
 }) {
+  const t = useTranslations()
   const { data, refetch } = useQuery(ActivityArtifactForInstanceDocument, {
     variables: { elementInstanceId },
     fetchPolicy: 'no-cache',
@@ -35,15 +38,23 @@ function ActivityArtifactInstance({
       document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [refetch])
 
-  const artifact = data?.activityArtifactForInstance
-  if (!artifact) return null
+  const result = data?.activityArtifactForInstance
+  if (!result) return null
+
+  if (!result.available || !result.artifact) {
+    return (
+      <UserNotification type="info">
+        {t('pwa.practiceQuiz.activityArtifactUnavailable')}
+      </UserNotification>
+    )
+  }
 
   return (
     <ActivityArtifactFrame
-      frameUrl={artifact.frameUrl}
-      canonicalUrl={artifact.url}
-      title={artifact.title}
-      exercise={artifact.exercise as ActivityArtifactExercise}
+      frameUrl={result.artifact.frameUrl}
+      canonicalUrl={result.artifact.url}
+      title={result.artifact.title}
+      exercise={result.artifact.exercise as ActivityArtifactExercise}
       className="h-[420px] w-full rounded border border-slate-300"
     />
   )

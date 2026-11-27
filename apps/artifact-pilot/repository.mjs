@@ -13,6 +13,11 @@ export async function initialize(pool) {
       digest text NOT NULL, html text NOT NULL CHECK (octet_length(html) <= 65536),
       UNIQUE (artifact_id, version), UNIQUE (artifact_id, digest), UNIQUE (artifact_id, id)
     );
+    CREATE TABLE IF NOT EXISTS artifact_author_request (
+      id uuid PRIMARY KEY, request_digest text NOT NULL,
+      reserved_cents integer NOT NULL CHECK (reserved_cents > 0),
+      html text CHECK (octet_length(html) <= 65536)
+    );
     CREATE TABLE IF NOT EXISTS artifact_assignment (
       course_id text NOT NULL, instance_id text NOT NULL,
       artifact_id uuid NOT NULL, revision_id uuid NOT NULL,
@@ -129,4 +134,63 @@ export async function readAssignment(
     [courseId, instanceId, artifactId, revisionId]
   )
   return rows[0]
+}
+
+export async function reserveAuthorRequest(pool, id, requestDigest, cents) {
+  const db = await pool.connect()
+  try {
+    await db.query('BEGIN')
+    // All authoring callers share this ledger. Commit the debit before dispatch.
+    await db.query(
+      'LOCK TABLE artifact_author_request IN SHARE ROW EXCLUSIVE MODE'
+    )
+    const {
+      rows: [existing],
+    } = await db.query(
+      'SELECT request_digest, html FROM artifact_author_request WHERE id = $1',
+      [id]
+    )
+    if (existing) {
+      if (existing.request_digest !== requestDigest || existing.html === null)
+        throw Object.assign(new Error('Authoring request conflict'), {
+          status: 409,
+        })
+      await db.query('COMMIT')
+      return existing.html
+    }
+    const {
+      rows: [usage],
+    } = await db.query(
+      `SELECT coalesce(sum(reserved_cents), 0)::integer AS cents,
+              count(*) FILTER (WHERE html IS NULL)::integer AS outstanding
+         FROM artifact_author_request`
+    )
+    if (usage.outstanding > 0)
+      throw Object.assign(new Error('An authoring request is outstanding'), {
+        status: 409,
+      })
+    if (usage.cents + cents > 200)
+      throw Object.assign(new Error('Authoring allowance reached'), {
+        status: 429,
+      })
+    await db.query(
+      'INSERT INTO artifact_author_request (id, request_digest, reserved_cents) VALUES ($1, $2, $3)',
+      [id, requestDigest, cents]
+    )
+    await db.query('COMMIT')
+    return null
+  } catch (error) {
+    await db.query('ROLLBACK')
+    throw error
+  } finally {
+    db.release()
+  }
+}
+
+export async function completeAuthorRequest(pool, id, html) {
+  const result = await pool.query(
+    'UPDATE artifact_author_request SET html = $2 WHERE id = $1 AND html IS NULL',
+    [id, html]
+  )
+  if (result.rowCount !== 1) throw new Error('Missing authoring reservation')
 }

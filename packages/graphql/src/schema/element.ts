@@ -1,7 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityType as ActivityTypeEnum,
-  SortByType as SortByTypeEnum,
+  type ActivityType as ActivityTypeEnum,
   type CaseStudyCaseInput as CaseStudyCaseInputType,
   type CaseStudyCriteriaSolutionInput as CaseStudyCriteriaSolutionInputType,
   type CaseStudyCriterionInput as CaseStudyCriterionInputType,
@@ -44,15 +43,17 @@ import {
   type SingleQuestionResponseValue as SingleQuestionResponseValueType,
   type SingleSelectionResponse as SingleSelectionResponseType,
   type SolutionRangeInput as SolutionRangeInputType,
+  SortByType as SortByTypeEnum,
   type TemplateBlockElementInput as TemplateBlockElementInputType,
   type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { ActivityType, ElementFeedbackRef } from './analytics.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import {
   ActivityArtifactPin,
   toPublicActivityArtifactPin,
 } from './activityArtifact.js'
+import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
   CaseStudyCaseSolution,
   CaseStudyElementOptions,
@@ -858,7 +859,44 @@ export const ContentElement = builder
       activityArtifact: t.field({
         type: ActivityArtifactPin,
         nullable: true,
-        resolve: (element) => toPublicActivityArtifactPin(element.options),
+        resolve: async (element, _args, ctx) => {
+          const pin = toPublicActivityArtifactPin(element.options)
+          if (!pin) return null
+          const user = ctx.user
+          if (
+            !user ||
+            (user.role !== DB.UserRole.USER && user.role !== DB.UserRole.ADMIN)
+          ) {
+            return null
+          }
+          if (
+            !(await isFeatureFlagEnabled(
+              { ...ctx, user },
+              'activity-artifacts'
+            ))
+          ) {
+            return null
+          }
+
+          return pin
+        },
+      }),
+
+      // Authorized lecturers can tell that an attachment exists while the
+      // artifact details are unavailable. Participants never receive this
+      // staff-facing marker.
+      hasActivityArtifact: t.boolean({
+        nullable: true,
+        resolve: (element, _args, ctx) => {
+          if (
+            ctx.user?.role !== DB.UserRole.USER &&
+            ctx.user?.role !== DB.UserRole.ADMIN
+          ) {
+            return false
+          }
+
+          return toPublicActivityArtifactPin(element.options) !== null
+        },
       }),
     }),
   })
@@ -938,6 +976,7 @@ export interface IElementInstance
   extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
   correlationKey?: string | null
+  checkActivityArtifact?: boolean
 }
 export const ElementInstanceRef =
   builder.objectRef<IElementInstance>('ElementInstance')
@@ -952,6 +991,15 @@ export const ElementInstance = ElementInstanceRef.implement({
     elementData: t.field({
       type: ElementData,
       resolve: (q) => q.elementData,
+    }),
+
+    // Set once by the authorized participant activity query after checking
+    // enrollment and current lecturer rights. Ordinary elements resolve to null
+    // so the client does not request an artifact for every CONTENT instance.
+    checkActivityArtifact: t.boolean({
+      nullable: true,
+      resolve: (instance) =>
+        instance.checkActivityArtifact === true ? true : null,
     }),
 
     options: t.expose('options', {

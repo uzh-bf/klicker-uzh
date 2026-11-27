@@ -1,4 +1,5 @@
 fragment ElementDataWithoutSolutions on ElementInstance {
+  checkActivityArtifact
   elementData {
     ... on ChoicesElementData {
       __typename
@@ -142,7 +143,6 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       explanation
       basePoints
       pointsMultiplier
-      hasActivityArtifact
     }
   }
 }

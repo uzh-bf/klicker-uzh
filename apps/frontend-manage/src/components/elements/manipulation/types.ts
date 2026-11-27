@@ -1,4 +1,4 @@
-import {
+import type {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
@@ -152,6 +152,7 @@ export interface ElementFormTypesFlashcard extends SharedQuestionFormProps {
 
 export interface ElementFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
+  hasActivityArtifact?: boolean
   currentActivityArtifact?: ActivityArtifactPinSummary | null
   pendingActivityArtifact?: ActivityArtifactFormValue
 }

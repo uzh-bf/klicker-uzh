@@ -19,6 +19,7 @@ import {
   validateArtifactRevisionPayload,
 } from '../src/lib/activityArtifacts.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { ContentElement } from '../src/schema/element.js'
 import { ContentElementData } from '../src/schema/elementData.js'
 import {
   assertActivityArtifactPinsAccessible,
@@ -31,6 +32,12 @@ import {
   manipulateElement,
   updateElementInstances,
 } from '../src/services/elements.js'
+import {
+  handlePublishScheduledMicroLearning,
+  getMicroLearningData,
+  publishMicroLearning,
+} from '../src/services/microLearning.js'
+import { getBookmarkedElementStacks } from '../src/services/participants.js'
 
 vi.mock('@klicker-uzh/util', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@klicker-uzh/util')>()
@@ -75,19 +82,25 @@ const contentArtifactPin = sanitizeActivityArtifactPin({
   subject: 'lecturer-1',
 })!
 
+const contentElementWithArtifact = {
+  id: 'content-1',
+  elementId: 1,
+  type: ElementType.CONTENT,
+  name: 'Pinned content',
+  content: '<p>Content</p>',
+  pointsMultiplier: 1,
+  options: { activityArtifact: contentArtifactPin },
+}
+
 builder.queryType({
   fields: (t) => ({
     contentElementWithArtifact: t.field({
       type: ContentElementData,
-      resolve: () => ({
-        id: 'content-1',
-        elementId: 1,
-        type: ElementType.CONTENT,
-        name: 'Pinned content',
-        content: '<p>Content</p>',
-        pointsMultiplier: 1,
-        options: { activityArtifact: contentArtifactPin },
-      }),
+      resolve: () => contentElementWithArtifact,
+    }),
+    lecturerContentElementWithArtifact: t.field({
+      type: ContentElement,
+      resolve: () => contentElementWithArtifact as never,
     }),
   }),
 })
@@ -578,7 +591,7 @@ describe('activity artifact attach and upgrade', () => {
   })
 
   it.each([
-    [403, 'BAD_USER_INPUT'],
+    [403, 'FORBIDDEN'],
     [404, 'BAD_USER_INPUT'],
     [503, 'SERVICE_UNAVAILABLE'],
   ])('maps publisher status %i to %s', async (status, code) => {
@@ -727,20 +740,31 @@ describe('activity artifact participant access', () => {
     }
   }
 
-  it('denies a disabled participant flag before reading activity data', async () => {
-    const prisma = new Proxy(
-      {},
-      {
-        get() {
-          throw new Error('Prisma must not be read while the flag is off')
-        },
-      }
-    )
-    const { ctx, isEnabled } = participantContext({ enabled: false, prisma })
+  it('returns only a generic unavailable result to an enrolled participant while the flag is off', async () => {
+    const { prisma, findParticipation, findDerivedPermission } = allowedPrisma()
+    const runtime = allowedRuntime()
+    const { ctx, isEnabled } = participantContext({
+      enabled: false,
+      prisma,
+      runtime,
+    })
 
-    await expect(
-      getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
-    ).resolves.toBeNull()
+    const result = await getActivityArtifactForInstance(
+      { elementInstanceId: 42 },
+      ctx
+    )
+
+    expect(result).toEqual({ available: false, artifact: null })
+    expect(Object.keys(result ?? {})).toEqual(['available', 'artifact'])
+    expect(findParticipation).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: { courseId, participantId },
+      },
+      select: { id: true },
+    })
+    expect(findDerivedPermission).toHaveBeenCalled()
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(runtime.getRevision).not.toHaveBeenCalled()
     expect(isEnabled).toHaveBeenCalledWith('activity-artifacts', {
       id: participantId,
       actorType: 'participant',
@@ -757,8 +781,11 @@ describe('activity artifact participant access', () => {
     await expect(
       getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
     ).resolves.toMatchObject({
-      revisionId,
-      frameUrl: `${publisherOrigin}/frame`,
+      available: true,
+      artifact: {
+        revisionId,
+        frameUrl: `${publisherOrigin}/frame`,
+      },
     })
 
     const instanceQuery = findUnique.mock.calls[0]![0]
@@ -796,13 +823,99 @@ describe('activity artifact participant access', () => {
       },
       select: { id: true },
     })
-    expect(runtime.assign).toHaveBeenCalledWith({
-      subject: storedPin.subject,
-      courseId,
-      instanceId: '42',
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(runtime.getRevision).toHaveBeenCalledWith({
+      subject: participantId,
       artifactId,
       revisionId,
+      run: {
+        participantId,
+        courseId,
+        elementInstanceId: 42,
+        bindingInstanceId: `42:${revisionId}`,
+      },
     })
+  })
+
+  it('restores the same stored revision after the participant flag is re-enabled', async () => {
+    const { prisma } = allowedPrisma()
+    const runtime = allowedRuntime()
+    const isEnabled = vi
+      .fn()
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+    const ctx = {
+      user: { sub: participantId, role: UserRole.PARTICIPANT },
+      featureFlags: { isEnabled },
+      prisma,
+      activityArtifactRuntime: runtime,
+    } as unknown as ContextWithUser
+
+    await expect(
+      getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
+    ).resolves.toEqual({ available: false, artifact: null })
+    await expect(
+      getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
+    ).resolves.toMatchObject({
+      available: true,
+      artifact: { revisionId, digest, url: canonicalUrl },
+    })
+
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(runtime.getRevision).toHaveBeenCalledTimes(1)
+    expect(runtime.getRevision).toHaveBeenCalledWith({
+      subject: participantId,
+      artifactId,
+      revisionId,
+      run: {
+        participantId,
+        courseId,
+        elementInstanceId: 42,
+        bindingInstanceId: `42:${revisionId}`,
+      },
+    })
+  })
+
+  it('reads a historical numeric binding without replacing it', async () => {
+    const { prisma } = allowedPrisma()
+    const runtime = allowedRuntime()
+    runtime.getRevision
+      .mockRejectedValueOnce(
+        new ActivityArtifactRequestError('binding unavailable', 404)
+      )
+      .mockResolvedValueOnce(clientRevision)
+    const { ctx } = participantContext({ prisma, runtime })
+
+    await expect(
+      getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
+    ).resolves.toMatchObject({
+      available: true,
+      artifact: { revisionId, digest, url: canonicalUrl },
+    })
+
+    expect(runtime.getRevision).toHaveBeenNthCalledWith(1, {
+      subject: participantId,
+      artifactId,
+      revisionId,
+      run: {
+        participantId,
+        courseId,
+        elementInstanceId: 42,
+        bindingInstanceId: `42:${revisionId}`,
+      },
+    })
+    expect(runtime.getRevision).toHaveBeenNthCalledWith(2, {
+      subject: participantId,
+      artifactId,
+      revisionId,
+      run: {
+        participantId,
+        courseId,
+        elementInstanceId: 42,
+        bindingInstanceId: '42',
+      },
+    })
+    expect(runtime.assign).not.toHaveBeenCalled()
   })
 
   it('keeps a pinned revision readable after the renderer shell changes', async () => {
@@ -817,9 +930,12 @@ describe('activity artifact participant access', () => {
     await expect(
       getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
     ).resolves.toMatchObject({
-      revisionId,
-      digest: storedPin.digest,
-      renderedDigest: 'c'.repeat(64),
+      available: true,
+      artifact: {
+        revisionId,
+        digest: storedPin.digest,
+        renderedDigest: 'c'.repeat(64),
+      },
     })
   })
 
@@ -851,7 +967,7 @@ describe('activity artifact participant access', () => {
 
     await expect(
       getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
-    ).resolves.toMatchObject({ revisionId })
+    ).resolves.toMatchObject({ artifact: { revisionId } })
 
     runtime.getRevision.mockResolvedValueOnce({
       ...clientRevision,
@@ -862,7 +978,7 @@ describe('activity artifact participant access', () => {
     })
     await expect(
       getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
-    ).resolves.toBeNull()
+    ).resolves.toEqual({ available: false, artifact: null })
   })
 
   it('denies a pinned revision when its source digest changes', async () => {
@@ -876,7 +992,7 @@ describe('activity artifact participant access', () => {
 
     await expect(
       getActivityArtifactForInstance({ elementInstanceId: 42 }, ctx)
-    ).resolves.toBeNull()
+    ).resolves.toEqual({ available: false, artifact: null })
   })
 
   it('returns nothing when the participant has no course participation', async () => {
@@ -901,6 +1017,7 @@ describe('activity artifact participant access', () => {
       select: { id: true },
     })
     expect(missingParticipationRuntime.assign).not.toHaveBeenCalled()
+    expect(missingParticipationRuntime.getRevision).not.toHaveBeenCalled()
   })
 
   it('returns nothing for a non-participant or a lecturer without current activity rights', async () => {
@@ -919,6 +1036,7 @@ describe('activity artifact participant access', () => {
       )
     ).resolves.toBeNull()
     expect(unenrolledRuntime.assign).not.toHaveBeenCalled()
+    expect(unenrolledRuntime.getRevision).not.toHaveBeenCalled()
 
     const stale = allowedPrisma()
     stale.findDerivedPermission.mockResolvedValue(null)
@@ -932,38 +1050,217 @@ describe('activity artifact participant access', () => {
       getActivityArtifactForInstance({ elementInstanceId: 42 }, staleContext)
     ).resolves.toBeNull()
     expect(staleRuntime.assign).not.toHaveBeenCalled()
+    expect(staleRuntime.getRevision).not.toHaveBeenCalled()
   })
 })
 
-describe('activity artifact marker audience', () => {
-  const markerQuery = '{ contentElementWithArtifact { hasActivityArtifact } }'
+describe('activity artifact check marker', () => {
+  const microLearningId = 'microlearning-marker'
+  const courseId = 'course-marker'
+  const participantId = 'participant-marker'
+  const ordinaryInstance = {
+    id: 41,
+    elementType: ElementType.CONTENT,
+    elementData: { options: {} },
+  }
+  const pinnedInstance = {
+    id: 42,
+    elementType: ElementType.CONTENT,
+    elementData: { options: { activityArtifact: contentArtifactPin } },
+  }
+  const otherLecturerPin = sanitizeActivityArtifactPin({
+    ...contentArtifactPin,
+    subject: 'lecturer-2',
+  })!
+  const otherLecturerInstance = {
+    id: 43,
+    elementType: ElementType.CONTENT,
+    elementData: { options: { activityArtifact: otherLecturerPin } },
+  }
+
+  function microLearningResult(elements: unknown[]) {
+    return {
+      id: microLearningId,
+      ownerId: 'activity-owner',
+      courseId,
+      status: PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      scheduledStartAt: new Date(Date.now() - 60_000),
+      scheduledEndAt: new Date(Date.now() + 60_000),
+      course: { id: courseId },
+      stacks: [
+        {
+          id: 7,
+          type: 'MICROLEARNING',
+          elements,
+        },
+      ],
+    }
+  }
+
+  function markerContext({
+    elements,
+    participation = { id: 'participation-marker' },
+    permissions = [{ userId: 'lecturer-1', microLearningId }],
+    runtime = {},
+  }: {
+    elements: unknown[]
+    participation?: { id: string } | null
+    permissions?: { userId: string; microLearningId: string }[]
+    runtime?: unknown
+  }) {
+    const findMicroLearning = vi
+      .fn()
+      .mockResolvedValue(microLearningResult(elements))
+    const findParticipation = vi.fn().mockResolvedValue(participation)
+    const findPermissions = vi.fn().mockResolvedValue(permissions)
+
+    return {
+      findMicroLearning,
+      findParticipation,
+      findPermissions,
+      ctx: {
+        user: { sub: participantId, role: UserRole.PARTICIPANT },
+        featureFlags: { isEnabled: vi.fn().mockReturnValue(false) },
+        activityArtifactRuntime: runtime,
+        prisma: {
+          microLearning: { findUnique: findMicroLearning },
+          participation: { findUnique: findParticipation },
+          derivedPermission: { findMany: findPermissions },
+        },
+      } as unknown as ContextWithUser,
+    }
+  }
+
+  it('adds no artifact reads for ordinary CONTENT elements', async () => {
+    const { ctx, findMicroLearning, findParticipation, findPermissions } =
+      markerContext({ elements: [ordinaryInstance] })
+
+    const result = await getMicroLearningData({ id: microLearningId }, ctx)
+
+    expect(findMicroLearning).toHaveBeenCalledTimes(1)
+    expect(findParticipation).not.toHaveBeenCalled()
+    expect(findPermissions).not.toHaveBeenCalled()
+    expect(result?.stacks[0]?.elements[0]).not.toHaveProperty(
+      'checkActivityArtifact'
+    )
+  })
+
+  it('marks only pinned instances whose lecturer still administers the activity', async () => {
+    const { ctx, findParticipation, findPermissions } = markerContext({
+      elements: [ordinaryInstance, pinnedInstance, otherLecturerInstance],
+    })
+
+    const result = await getMicroLearningData({ id: microLearningId }, ctx)
+    const elements = result?.stacks[0]?.elements ?? []
+
+    expect(findParticipation).toHaveBeenCalledTimes(1)
+    expect(findPermissions).toHaveBeenCalledTimes(1)
+    expect(findPermissions).toHaveBeenCalledWith({
+      where: {
+        userId: { in: ['lecturer-1', 'lecturer-2'] },
+        microLearningId: { in: [microLearningId] },
+        permissionLevel: { in: ['ADMIN', 'OWNER'] },
+      },
+      select: { userId: true, microLearningId: true },
+    })
+    expect(elements[0]).not.toHaveProperty('checkActivityArtifact')
+    expect(elements[1]).toHaveProperty('checkActivityArtifact', true)
+    expect(elements[2]).not.toHaveProperty('checkActivityArtifact')
+  })
+
+  it('does not expose the marker to outsiders or hosts without artifact configuration', async () => {
+    const outsider = markerContext({
+      elements: [pinnedInstance],
+      participation: null,
+    })
+    const outsiderResult = await getMicroLearningData(
+      { id: microLearningId },
+      outsider.ctx
+    )
+
+    expect(outsiderResult?.stacks[0]?.elements[0]).not.toHaveProperty(
+      'checkActivityArtifact'
+    )
+    expect(outsider.findPermissions).not.toHaveBeenCalled()
+
+    const unconfigured = markerContext({
+      elements: [pinnedInstance],
+      runtime: null,
+    })
+    const unconfiguredResult = await getMicroLearningData(
+      { id: microLearningId },
+      unconfigured.ctx
+    )
+
+    expect(unconfiguredResult?.stacks[0]?.elements[0]).not.toHaveProperty(
+      'checkActivityArtifact'
+    )
+    expect(unconfigured.findParticipation).not.toHaveBeenCalled()
+    expect(unconfigured.findPermissions).not.toHaveBeenCalled()
+  })
+
+  it('marks bookmarked pinned elements without another participation lookup', async () => {
+    const findParticipation = vi.fn().mockResolvedValue({
+      bookmarkedElementStacks: [
+        {
+          id: 7,
+          type: 'MICROLEARNING',
+          elements: [ordinaryInstance, pinnedInstance],
+          microLearning: {
+            id: microLearningId,
+            status: PublicationStatus.PUBLISHED,
+            isDeleted: false,
+            scheduledStartAt: new Date(Date.now() - 60_000),
+            scheduledEndAt: new Date(Date.now() + 60_000),
+          },
+        },
+      ],
+    })
+    const findPermissions = vi
+      .fn()
+      .mockResolvedValue([{ userId: 'lecturer-1', microLearningId }])
+    const ctx = {
+      user: { sub: participantId, role: UserRole.PARTICIPANT },
+      activityArtifactRuntime: {},
+      prisma: {
+        participation: { findFirst: findParticipation },
+        derivedPermission: { findMany: findPermissions },
+      },
+    } as unknown as ContextWithUser
+
+    const stacks = await getBookmarkedElementStacks({ courseId }, ctx)
+
+    expect(findParticipation).toHaveBeenCalledTimes(1)
+    expect(findPermissions).toHaveBeenCalledTimes(1)
+    expect(stacks[0]?.elements[0]).not.toHaveProperty('checkActivityArtifact')
+    expect(stacks[0]?.elements[1]).toHaveProperty('checkActivityArtifact', true)
+  })
+})
+
+describe('lecturer ContentElement artifact projection', () => {
+  const query = `{
+    lecturerContentElementWithArtifact {
+      hasActivityArtifact
+      activityArtifact { artifactId revisionId title url }
+    }
+  }`
 
   it.each([
-    ['anonymous', undefined, true, false],
+    ['anonymous outsider', undefined],
     [
-      'temporary participant',
+      'participant outsider',
+      { sub: 'participant-1', role: UserRole.PARTICIPANT },
+    ],
+    [
+      'temporary participant outsider',
       { sub: 'temporary-1', role: UserRole.TEMPORARY_PARTICIPANT },
-      true,
-      false,
     ],
-    ['staff', { sub: 'lecturer-1', role: UserRole.USER }, true, false],
-    [
-      'participant with the pilot off',
-      { sub: 'participant-1', role: UserRole.PARTICIPANT },
-      false,
-      false,
-    ],
-    [
-      'participant with the pilot on',
-      { sub: 'participant-1', role: UserRole.PARTICIPANT },
-      true,
-      true,
-    ],
-  ])('controls the student-facing marker for %s', async (_label, user, enabled, expected) => {
-    const isEnabled = vi.fn().mockReturnValue(enabled)
+  ])('returns no artifact metadata to an %s', async (_label, user) => {
+    const isEnabled = vi.fn().mockReturnValue(true)
     const result = await graphql({
       schema: artifactMarkerSchema,
-      source: markerQuery,
+      source: query,
       contextValue: {
         user,
         featureFlags: { isEnabled },
@@ -984,27 +1281,50 @@ describe('activity artifact marker audience', () => {
     })
 
     expect(result.errors).toBeUndefined()
-    expect(
-      (
-        result.data as
-          | {
-              contentElementWithArtifact?: {
-                hasActivityArtifact: boolean
-              }
-            }
-          | undefined
-      )?.contentElementWithArtifact?.hasActivityArtifact
-    ).toBe(expected)
+    expect(result.data?.lecturerContentElementWithArtifact).toEqual({
+      hasActivityArtifact: false,
+      activityArtifact: null,
+    })
+    expect(isEnabled).not.toHaveBeenCalled()
+  })
 
-    if (user?.role === UserRole.PARTICIPANT) {
-      expect(isEnabled).toHaveBeenCalledWith('activity-artifacts', {
-        id: user.sub,
-        actorType: 'participant',
-        role: UserRole.PARTICIPANT,
-      })
-    } else {
-      expect(isEnabled).not.toHaveBeenCalled()
+  it.each([
+    ['lecturer with the flag off', UserRole.USER, false, true],
+    ['lecturer with the flag on', UserRole.USER, true, false],
+    ['administrator with the flag off', UserRole.ADMIN, false, true],
+  ])('gates metadata for an authorized %s', async (_label, role, enabled, hidden) => {
+    const isEnabled = vi.fn().mockReturnValue(enabled)
+    const user = {
+      sub: 'staff-1',
+      role,
+      catalystInstitutional: false,
+      catalystIndividual: false,
     }
+    const result = await graphql({
+      schema: artifactMarkerSchema,
+      source: query,
+      contextValue: {
+        user,
+        featureFlags: { isEnabled },
+        betaPreference: {
+          userId: user.sub,
+          value: Promise.resolve(false),
+        },
+      },
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.lecturerContentElementWithArtifact).toMatchObject({
+      hasActivityArtifact: true,
+      activityArtifact: hidden ? null : { artifactId, revisionId },
+    })
+    expect(isEnabled).toHaveBeenCalledWith('activity-artifacts', {
+      id: user.sub,
+      actorType: 'user',
+      catalyst: false,
+      role,
+      betaEnabled: false,
+    })
   })
 })
 
@@ -1059,6 +1379,331 @@ describe('activity artifact placement access', () => {
     await assertActivityArtifactPinsAccessible('microlearning-1', prisma)
 
     expect(findPermissions).not.toHaveBeenCalled()
+  })
+})
+
+describe('activity artifact publication binding', () => {
+  const microLearningId = 'microlearning-1'
+  const courseId = 'course-1'
+  const lecturerId = 'lecturer-1'
+
+  function publicationRuntime() {
+    return {
+      publisherOrigin,
+      serviceUrl,
+      frameOrigin: publisherOrigin,
+      getLatest: vi.fn(),
+      getRevision: vi.fn(),
+      assign: vi.fn().mockResolvedValue('bound'),
+    }
+  }
+
+  function publicationFeatureFlags(enabled = true) {
+    return { isEnabled: vi.fn().mockReturnValue(enabled) }
+  }
+
+  function publicationPrisma() {
+    const scheduledStartAt = new Date(Date.now() - 60_000)
+    const scheduledEndAt = new Date(Date.now() + 60_000)
+    const findMicroLearning = vi.fn().mockResolvedValue({
+      id: microLearningId,
+      status: PublicationStatus.DRAFT,
+      scheduledStartAt,
+      scheduledEndAt,
+    })
+    const findInstances = vi.fn().mockResolvedValue([
+      {
+        id: 42,
+        elementData: { options: { activityArtifact: contentArtifactPin } },
+        elementStack: { microLearning: { courseId } },
+      },
+    ])
+    const findPermissions = vi
+      .fn()
+      .mockResolvedValue([{ userId: lecturerId, microLearningId }])
+    const findUsers = vi.fn().mockResolvedValue([
+      {
+        id: lecturerId,
+        role: UserRole.USER,
+        catalystInstitutional: false,
+        catalystIndividual: false,
+        betaEnabled: false,
+      },
+    ])
+    const updateMicroLearning = vi.fn().mockResolvedValue({
+      id: microLearningId,
+      status: PublicationStatus.PUBLISHED,
+    })
+
+    return {
+      findMicroLearning,
+      findInstances,
+      findPermissions,
+      findUsers,
+      updateMicroLearning,
+      prisma: {
+        microLearning: {
+          findUnique: findMicroLearning,
+          update: updateMicroLearning,
+        },
+        elementInstance: { findMany: findInstances },
+        derivedPermission: { findMany: findPermissions },
+        user: { findMany: findUsers },
+      },
+    }
+  }
+
+  it('binds each pinned instance before an immediate publish update', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    const runtime = publicationRuntime()
+    const scheduleCompletion = vi.fn().mockResolvedValue({
+      metadata: { id: 'completion-task' },
+    })
+
+    await publishMicroLearning({ id: microLearningId }, {
+      prisma,
+      activityArtifactRuntime: runtime,
+      featureFlags: publicationFeatureFlags(),
+      tasks: {
+        endExpiredMicroLearning: { schedule: scheduleCompletion },
+      },
+      emitter: { emit: vi.fn() },
+    } as unknown as ContextWithUser)
+
+    expect(runtime.assign).toHaveBeenCalledWith({
+      subject: lecturerId,
+      courseId,
+      instanceId: `42:${revisionId}`,
+      artifactId,
+      revisionId,
+    })
+    expect(runtime.assign.mock.invocationCallOrder[0]).toBeLessThan(
+      updateMicroLearning.mock.invocationCallOrder[0]!
+    )
+  })
+
+  it('does not publish or schedule completion after a binding conflict', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    const runtime = publicationRuntime()
+    runtime.assign.mockResolvedValue('conflict')
+    const scheduleCompletion = vi.fn()
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(),
+        tasks: {
+          endExpiredMicroLearning: { schedule: scheduleCompletion },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    expect(scheduleCompletion).not.toHaveBeenCalled()
+    expect(updateMicroLearning).not.toHaveBeenCalled()
+  })
+
+  it('allows a same-pin retry after the database update fails', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    updateMicroLearning
+      .mockRejectedValueOnce(new Error('database unavailable'))
+      .mockResolvedValueOnce({
+        id: microLearningId,
+        status: PublicationStatus.PUBLISHED,
+      })
+    const runtime = publicationRuntime()
+    const ctx = {
+      prisma,
+      activityArtifactRuntime: runtime,
+      featureFlags: publicationFeatureFlags(),
+      tasks: {
+        endExpiredMicroLearning: {
+          schedule: vi.fn().mockResolvedValue({
+            metadata: { id: 'completion-task' },
+          }),
+        },
+      },
+      emitter: { emit: vi.fn() },
+    } as unknown as ContextWithUser
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, ctx)
+    ).rejects.toThrow('database unavailable')
+    await expect(
+      publishMicroLearning({ id: microLearningId }, ctx)
+    ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+
+    expect(runtime.assign).toHaveBeenCalledTimes(2)
+    expect(runtime.assign.mock.calls[1]).toEqual(runtime.assign.mock.calls[0])
+    expect(runtime.assign.mock.calls[0]![0]).toMatchObject({
+      instanceId: `42:${revisionId}`,
+    })
+  })
+
+  it('blocks a pinned publish before remote or local side effects while the owner flag is off', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    const runtime = publicationRuntime()
+    const scheduleCompletion = vi.fn()
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(false),
+        tasks: {
+          endExpiredMicroLearning: { schedule: scheduleCompletion },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).rejects.toMatchObject({
+      message:
+        'Re-enable activity artifacts for the linked artifact owner before publishing',
+      extensions: { code: 'FORBIDDEN' },
+    })
+
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(scheduleCompletion).not.toHaveBeenCalled()
+    expect(updateMicroLearning).not.toHaveBeenCalled()
+  })
+
+  it('publishes an activity without artifacts while the pilot is off', async () => {
+    const { prisma, findInstances, updateMicroLearning } = publicationPrisma()
+    findInstances.mockResolvedValue([])
+    const scheduleCompletion = vi.fn().mockResolvedValue({
+      metadata: { id: 'completion-task' },
+    })
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        featureFlags: publicationFeatureFlags(false),
+        tasks: {
+          endExpiredMicroLearning: { schedule: scheduleCompletion },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+
+    expect(scheduleCompletion).toHaveBeenCalledTimes(1)
+    expect(updateMicroLearning).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks scheduling a pinned activity before either worker task is created while the owner flag is off', async () => {
+    const { prisma, findMicroLearning, updateMicroLearning } =
+      publicationPrisma()
+    findMicroLearning.mockResolvedValue({
+      id: microLearningId,
+      status: PublicationStatus.DRAFT,
+      scheduledStartAt: new Date(Date.now() + 60_000),
+      scheduledEndAt: new Date(Date.now() + 120_000),
+    })
+    const runtime = publicationRuntime()
+    const schedulePublication = vi.fn()
+    const scheduleCompletion = vi.fn()
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(false),
+        tasks: {
+          publishScheduledMicroLearning: { schedule: schedulePublication },
+          endExpiredMicroLearning: { schedule: scheduleCompletion },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(schedulePublication).not.toHaveBeenCalled()
+    expect(scheduleCompletion).not.toHaveBeenCalled()
+    expect(updateMicroLearning).not.toHaveBeenCalled()
+  })
+
+  it('uses a new binding key after an upgraded pin replaces a failed publication', async () => {
+    const { prisma, findInstances, updateMicroLearning } = publicationPrisma()
+    const nextRevisionId = 'b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+    const nextPin = sanitizeActivityArtifactPin({
+      ...contentArtifactPin,
+      revisionId: nextRevisionId,
+    })!
+    findInstances
+      .mockResolvedValueOnce([
+        {
+          id: 42,
+          elementData: { options: { activityArtifact: contentArtifactPin } },
+          elementStack: { microLearning: { courseId } },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 42,
+          elementData: { options: { activityArtifact: nextPin } },
+          elementStack: { microLearning: { courseId } },
+        },
+      ])
+    updateMicroLearning
+      .mockRejectedValueOnce(new Error('database unavailable'))
+      .mockResolvedValueOnce({
+        id: microLearningId,
+        status: PublicationStatus.PUBLISHED,
+      })
+    const runtime = publicationRuntime()
+    const ctx = {
+      prisma,
+      activityArtifactRuntime: runtime,
+      featureFlags: publicationFeatureFlags(),
+      tasks: {
+        endExpiredMicroLearning: {
+          schedule: vi.fn().mockResolvedValue({
+            metadata: { id: 'completion-task' },
+          }),
+        },
+      },
+      emitter: { emit: vi.fn() },
+    } as unknown as ContextWithUser
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, ctx)
+    ).rejects.toThrow('database unavailable')
+    await expect(
+      publishMicroLearning({ id: microLearningId }, ctx)
+    ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+
+    expect(runtime.assign.mock.calls[0]![0]).toMatchObject({
+      revisionId,
+      instanceId: `42:${revisionId}`,
+    })
+    expect(runtime.assign.mock.calls[1]![0]).toMatchObject({
+      revisionId: nextRevisionId,
+      instanceId: `42:${nextRevisionId}`,
+    })
+  })
+
+  it('binds before the scheduled worker publishes the activity', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    prisma.microLearning.findUnique.mockResolvedValue({
+      id: microLearningId,
+      status: PublicationStatus.SCHEDULED,
+    })
+    const runtime = publicationRuntime()
+
+    await handlePublishScheduledMicroLearning(
+      { microLearningId },
+      {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(),
+        emitter: { emit: vi.fn() },
+      } as unknown as Parameters<typeof handlePublishScheduledMicroLearning>[1],
+      {} as Parameters<typeof handlePublishScheduledMicroLearning>[2]
+    )
+
+    expect(runtime.assign).toHaveBeenCalledTimes(1)
+    expect(runtime.assign.mock.invocationCallOrder[0]).toBeLessThan(
+      updateMicroLearning.mock.invocationCallOrder[0]!
+    )
   })
 })
 

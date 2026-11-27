@@ -26,12 +26,6 @@ function ContentElement({
 }: ContentelementProps) {
   const t = useTranslations()
 
-  // Older instances carry no artifact field at all, so presence is checked
-  // defensively and only the attached case asks the server for a render.
-  const hasActivityArtifact =
-    'hasActivityArtifact' in element.elementData &&
-    element.elementData.hasActivityArtifact === true
-
   return (
     <div
       className="mb-4 flex flex-col"
@@ -52,7 +46,7 @@ function ContentElement({
             data={{ cy: `content-element-md-${elementIx}` }}
             className={{ root: 'p-2' }}
           />
-          {hasActivityArtifact && renderActivityArtifact ? (
+          {renderActivityArtifact ? (
             <div className="p-2">{renderActivityArtifact(element.id)}</div>
           ) : null}
         </div>

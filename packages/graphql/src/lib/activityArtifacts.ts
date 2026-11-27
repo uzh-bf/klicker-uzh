@@ -370,6 +370,19 @@ export type ActivityArtifactRunClaim = {
   participantId: string
   courseId: string
   elementInstanceId: number
+  bindingInstanceId?: string
+}
+
+/**
+ * A binding names one immutable instance-and-revision publication. Including
+ * the revision lets a later explicit upgrade form a new binding instead of
+ * colliding with an orphaned binding left by an earlier failed publication.
+ */
+export function getActivityArtifactBindingInstanceId(
+  elementInstanceId: number,
+  revisionId: string
+) {
+  return `${elementInstanceId}:${revisionId}`
 }
 
 export interface ActivityArtifactRuntime {
@@ -543,7 +556,8 @@ export function createActivityArtifactRuntime({
       }
       headers['x-artifact-operation'] = 'run'
       headers['x-artifact-course'] = run.courseId
-      headers['x-artifact-instance'] = String(run.elementInstanceId)
+      headers['x-artifact-instance'] =
+        run.bindingInstanceId ?? String(run.elementInstanceId)
       headers['x-artifact-expires'] = String(
         Math.floor(now() / 1000) + RUN_CLAIM_TTL_SECONDS
       )

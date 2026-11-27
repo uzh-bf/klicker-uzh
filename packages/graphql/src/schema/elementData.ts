@@ -21,8 +21,6 @@ import {
   type NumericalSolutionRange as NumericalSolutionRangeType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { isParticipantFeatureFlagEnabled } from '../lib/featureFlags.js'
-import { toPublicActivityArtifactPin } from './activityArtifact.js'
 
 export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
@@ -371,18 +369,6 @@ export const ContentElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
-
-      // Students only learn that an artifact is attached. The validated
-      // exercise is served by an authorized per-instance query.
-      hasActivityArtifact: t.boolean({
-        resolve: (element, _args, ctx) => {
-          if (ctx.user?.role !== DB.UserRole.PARTICIPANT) return false
-          if (!isParticipantFeatureFlagEnabled(ctx, 'activity-artifacts'))
-            return false
-
-          return toPublicActivityArtifactPin(element.options) !== null
-        },
-      }),
     }),
   })
 

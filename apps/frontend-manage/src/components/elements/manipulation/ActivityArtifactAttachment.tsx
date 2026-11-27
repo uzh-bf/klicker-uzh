@@ -24,6 +24,7 @@ import type {
 interface ActivityArtifactAttachmentProps {
   elementId?: number
   disabled?: boolean
+  hasStoredArtifact?: boolean
   currentArtifact?: ActivityArtifactPinSummary | null
   pendingArtifact?: ActivityArtifactFormValue
   setFieldValue: (
@@ -79,6 +80,7 @@ function getLoadArtifactError(error: unknown): LoadArtifactError {
 function ActivityArtifactAttachment({
   elementId,
   disabled = false,
+  hasStoredArtifact = false,
   currentArtifact,
   pendingArtifact,
   setFieldValue,
@@ -226,7 +228,25 @@ function ActivityArtifactAttachment({
     }
   }
 
-  if (!enabled) return null
+  if (!enabled) {
+    if (!hasStoredArtifact) return null
+
+    return (
+      <div
+        className="mt-4 rounded border border-slate-300 p-3"
+        data-cy="activity-artifact-unavailable"
+      >
+        <FormLabel
+          required={false}
+          label={t('manage.elements.activityArtifact.unavailableTitle')}
+          labelType="small"
+        />
+        <UserNotification type="info" className={{ root: 'mb-0' }}>
+          {t('manage.elements.activityArtifact.unavailableNotice')}
+        </UserNotification>
+      </div>
+    )
+  }
 
   let reviewButtonLabel = t('manage.elements.activityArtifact.attachArtifact')
   if (currentArtifact) {

@@ -14,6 +14,11 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityArtifactInstanceResult {
+  artifact: ActivityArtifactRevision
+  available: Boolean!
+}
+
 type ActivityArtifactPin {
   artifactId: ID!
   digest: String!
@@ -1178,6 +1183,7 @@ type ContentElement {
   derivedAccess: Boolean
   difficultyLevel: Int
   explanation: String
+  hasActivityArtifact: Boolean
   id: Int!
   isArchived: Boolean
   isDeleted: Boolean
@@ -1204,7 +1210,6 @@ type ContentElementData {
   content: String!
   elementId: Int!
   explanation: String
-  hasActivityArtifact: Boolean!
   id: ID!
   name: String!
   pointsMultiplier: Int!
@@ -1803,6 +1808,7 @@ type ElementGenerationWarning {
 }
 
 type ElementInstance {
+  checkActivityArtifact: Boolean
   correlationKey: String
   elementData: ElementData!
   elementType: ElementType!
@@ -3596,7 +3602,7 @@ type PushSubscription {
 }
 
 type Query {
-  activityArtifactForInstance(elementInstanceId: Int!): ActivityArtifactRevision
+  activityArtifactForInstance(elementInstanceId: Int!): ActivityArtifactInstanceResult
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
