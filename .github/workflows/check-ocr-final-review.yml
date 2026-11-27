@@ -315,7 +315,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '2700'
-      OCR_ADAPTER_PROVIDER: mistral-deepseek
+      OCR_ADAPTER_PROVIDER: moat-flash
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -412,7 +412,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Configure ephemeral Mistral access
+      - name: Configure ephemeral MOAT access
         id: configure
         if: needs.start.outputs.run_review == 'true'
         env:
@@ -428,24 +428,24 @@ jobs:
           node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
-      - name: Verify Mistral tool access
+      - name: Verify MOAT tool access
         id: preflight
         if: needs.start.outputs.run_review == 'true'
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CMD_API_KEY: ${{ secrets.CMD_API_KEY }}
           TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-review-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
-          node .github/scripts/final-ai-review.js verify-mistral-tools
+          node .github/scripts/final-ai-review.js verify-moat-tools
 
       - name: Run final review
         id: run_review
         if: needs.start.outputs.run_review == 'true'
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CMD_API_KEY: ${{ secrets.CMD_API_KEY }}
           TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
@@ -467,7 +467,7 @@ jobs:
             local version
             local exit_code=0
             if version=$(
-              unset MISTRAL_API_KEY
+              unset CMD_API_KEY
               ocr version 2>/dev/null
             ); then
               if ! node .github/scripts/install-patched-ocr.cjs verify-version "${version}"; then
@@ -482,7 +482,7 @@ jobs:
               return "${exit_code}"
             fi
             local prompt_limit=200000
-            if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
+            if ! (unset CMD_API_KEY; timeout --kill-after=10 120 ocr review --preview \
               --from "${REVIEW_FROM}" --to "${HEAD_SHA}" \
               --max-tokens "${prompt_limit}" --format json --audience agent \
               --rule .github/open-code-review/final-review-rules.json) \
@@ -611,7 +611,7 @@ jobs:
             echo 'The rejected input is retained as a restricted one-day artifact.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
-      - name: Remove ephemeral Mistral access
+      - name: Remove ephemeral MOAT access
         id: cleanup
         if: always() && needs.start.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
@@ -964,7 +964,7 @@ jobs:
     env:
       OCR_NO_UPDATE: '1'
       OCR_LLM_TIMEOUT: '1800'
-      OCR_ADAPTER_PROVIDER: mistral-deepseek
+      OCR_ADAPTER_PROVIDER: moat-flash
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&
@@ -1076,7 +1076,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Configure ephemeral Mistral access
+      - name: Configure ephemeral MOAT access
         id: configure
         if: needs.start_stack.outputs.run_review == 'true'
         env:
@@ -1092,24 +1092,24 @@ jobs:
           node .github/scripts/final-ai-review.js configure-ocr
           test -s "${HOME}/.opencodereview/config.json"
 
-      - name: Verify Mistral tool access
+      - name: Verify MOAT tool access
         id: preflight
         if: needs.start_stack.outputs.run_review == 'true'
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CMD_API_KEY: ${{ secrets.CMD_API_KEY }}
           TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
         run: |
           set -euo pipefail
-          node .github/scripts/final-ai-review.js verify-mistral-tools
+          node .github/scripts/final-ai-review.js verify-moat-tools
 
       - name: Run cumulative code review
         id: code_review
         if: needs.start_stack.outputs.run_review == 'true'
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CMD_API_KEY: ${{ secrets.CMD_API_KEY }}
           TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           BACKGROUND: ${{ needs.start_stack.outputs.background }}
           HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}
@@ -1138,7 +1138,7 @@ jobs:
             local version
             local exit_code=0
             if version=$(
-              unset MISTRAL_API_KEY
+              unset CMD_API_KEY
               ocr version 2>/dev/null
             ); then
               if ! node .github/scripts/install-patched-ocr.cjs verify-version "${version}"; then
@@ -1153,7 +1153,7 @@ jobs:
               return "${exit_code}"
             fi
             local prompt_limit=200000
-            if ! (unset MISTRAL_API_KEY; timeout --kill-after=10 120 ocr review --preview \
+            if ! (unset CMD_API_KEY; timeout --kill-after=10 120 ocr review --preview \
               --from "${review_from}" --to "${review_to}" \
               --max-tokens "${prompt_limit}" --format json --audience agent \
               --rule .github/open-code-review/final-review-rules.json) \
@@ -1288,7 +1288,7 @@ jobs:
             echo 'Raw provider and result output is suppressed.'
           } >>"${GITHUB_STEP_SUMMARY}"
 
-      - name: Remove ephemeral Mistral access after code review
+      - name: Remove ephemeral MOAT access after code review
         id: cleanup
         if: always() && needs.start_stack.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
@@ -1298,7 +1298,7 @@ jobs:
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
           OCR_PROVIDER_PAUSED: ${{ vars.OCR_PROVIDER_PAUSED }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          CMD_API_KEY: ${{ secrets.CMD_API_KEY }}
           TRUSTED_SHA: ${{ needs.authorize_stack.outputs.trusted_sha }}
           OCR_ADAPTER_DIAGNOSTICS_PATH: ${{ runner.temp }}/final-ai-stack-adapter-diagnostics.jsonl
           HEAD_SHA: ${{ needs.authorize_stack.outputs.head_sha }}

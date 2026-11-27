@@ -435,3 +435,23 @@ export function normalizeChatbotCustomModeConfig(
 
   return { modes }
 }
+
+/**
+ * Returns the stable custom-mode keys the participant resolver offers. A
+ * legacy prompt entry explicitly disables one key without hiding the others.
+ */
+export function getAvailableChatbotCustomModeKeys(
+  value: unknown,
+  systemPrompts: unknown = null
+): string[] {
+  const prompts = isRecord(systemPrompts) ? systemPrompts : null
+  return (normalizeChatbotCustomModeConfig(value)?.modes ?? [])
+    .filter((mode) => {
+      const promptConfig = prompts?.[mode.key]
+      return (
+        !RESERVED_MODE_NAMES.has(mode.key) &&
+        !(isRecord(promptConfig) && promptConfig.enabled === false)
+      )
+    })
+    .map((mode) => mode.key)
+}

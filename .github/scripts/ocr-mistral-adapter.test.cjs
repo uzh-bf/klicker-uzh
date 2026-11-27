@@ -15,6 +15,8 @@ const {
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
   MISTRAL_DEEPSEEK_MODEL,
+  MOAT_FLASH_MODEL,
+  MOAT_ADVISOR_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
@@ -637,6 +639,8 @@ test('observed context results are isolated by conversation and deduplicate hist
 })
 
 for (const [provider, model] of [
+  ['moat-flash', MOAT_FLASH_MODEL],
+  ['moat-advisor', MOAT_ADVISOR_MODEL],
   ['mistral-flash', MISTRAL_FLASH_MODEL],
   ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
 ])
@@ -658,7 +662,10 @@ for (const [provider, model] of [
     assert.equal(translated.provider, undefined)
     assert.equal(translated.max_tokens, 16384)
     assert.equal(translated.prompt_cache_key, 'synthetic-session')
-    assert.equal(translated.tool_choice, 'any')
+    assert.equal(
+      translated.tool_choice,
+      provider.startsWith('moat-') ? 'required' : 'any'
+    )
     for (const [change, code] of [
       [{ reasoning_effort: 'high' }, 'invalid_request'],
       [{ model: MISTRAL_MODEL }, 'model_mismatch'],
@@ -4999,6 +5006,7 @@ test('callMistral wraps raw fetch failures instead of leaking them', async () =>
 
 const RUN_SCRIPT =
   'process.stdout.write(JSON.stringify({' +
+  ' moatKey: process.env.CMD_API_KEY ?? null,' +
   ' key: process.env.MISTRAL_API_KEY ?? null,' +
   ' routerKey: process.env.OPENROUTER_API_KEY ?? null,' +
   ' url: process.env.OCR_LLM_URL ?? null,' +
@@ -5122,9 +5130,11 @@ test('run completes the existing OCR config per attempt and restores it on every
   }
 })
 
-test('run strips both upstream keys and injects only the selected loopback model', async () => {
+test('run strips upstream keys and injects only the selected loopback model', async () => {
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
+    ['moat-flash', MOAT_FLASH_MODEL],
+    ['moat-advisor', MOAT_ADVISOR_MODEL],
     ['mistral-flash', MISTRAL_FLASH_MODEL],
     ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
@@ -5132,6 +5142,7 @@ test('run strips both upstream keys and injects only the selected loopback model
     const result = await runCli(
       ['run', '--', process.execPath, '-e', RUN_SCRIPT],
       {
+        CMD_API_KEY: 'synthetic-moat-key',
         MISTRAL_API_KEY: 'sk-synthetic-run',
         OPENROUTER_API_KEY: 'sk-synthetic-router',
         OCR_ADAPTER_PROVIDER: provider,
@@ -5140,6 +5151,7 @@ test('run strips both upstream keys and injects only the selected loopback model
     assert.equal(result.code, 0)
     const seen = JSON.parse(result.stdout)
     assert.equal(seen.key, null)
+    assert.equal(seen.moatKey, null)
     assert.equal(seen.routerKey, null)
     assert.match(seen.url, /^http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions$/)
     assert.equal(seen.token, true)
@@ -5784,7 +5796,7 @@ test('direct DeepSeek calls retain native tool reasoning, usage identity and the
   )
 })
 
-test('final summary prices DeepSeek and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
+test('final summary prices MOAT Flash and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-cost-'))
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
   const mainPath = path.join(directory, 'main.jsonl')
@@ -5794,14 +5806,16 @@ test('final summary prices DeepSeek and advisor lifetimes once and preserves mis
     mainPath,
     JSON.stringify(
       costReceipt({
-        provider: 'mistral-deepseek',
-        model: MISTRAL_DEEPSEEK_MODEL,
+        provider: 'moat-flash',
+        model: MOAT_FLASH_MODEL,
       })
     )
   )
   fs.writeFileSync(
     advisorPath,
-    JSON.stringify(costReceipt({ provider: 'mistral', model: MISTRAL_MODEL }))
+    JSON.stringify(
+      costReceipt({ provider: 'moat-advisor', model: MOAT_ADVISOR_MODEL })
+    )
   )
   fs.writeFileSync(
     `${advisorPath}.expected.json`,
@@ -5812,21 +5826,20 @@ test('final summary prices DeepSeek and advisor lifetimes once and preserves mis
   )
   const run = () =>
     runCli(['final-summary', mainPath, 'adapter=1'], {
-      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADAPTER_PROVIDER: 'moat-flash',
       OCR_ADVISOR_DIAGNOSTICS_PATH: advisorPath,
       GITHUB_STEP_SUMMARY: summary,
     })
   const complete = await run()
   assert.equal(complete.code, 0)
-  assert.match(complete.stdout, /scope=deepseek_main status=complete/)
+  assert.match(complete.stdout, /scope=glm_flash_main status=complete/)
   const cachedRate = /\$([0-9.]+) cached input/.exec(complete.stdout)
-  assert.equal(Number(cachedRate?.[1]), 0.007)
+  assert.equal(Number(cachedRate?.[1]), 0.009)
   assert.match(complete.stdout, /scope=glm_advisor status=complete/)
   assert.match(complete.stdout, /scope=final_and_advisor status=complete/)
   const sum =
-    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-deepseek')
-      .withCache +
-    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'mistral').withCache
+    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'moat-flash').withCache +
+    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'moat-advisor').withCache
   assert.ok(
     complete.stdout.includes(
       `scope=final_and_advisor status=complete estimated_with_cache_usd=${sum.toFixed(4)}`
@@ -5893,13 +5906,13 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
   const head = git('rev-parse', 'HEAD')
   const config = path.join(directory, 'config.json')
   const original = JSON.stringify({
-    llm: { model: MISTRAL_DEEPSEEK_MODEL, protocol: 'openai' },
+    llm: { model: MOAT_FLASH_MODEL, protocol: 'openai' },
   })
   fs.writeFileSync(config, original, { mode: 0o600 })
   const output = path.join(directory, 'child.json')
   const previous = Object.fromEntries(
     [
-      'MISTRAL_API_KEY',
+      'CMD_API_KEY',
       'OPENROUTER_API_KEY',
       'OCR_ADAPTER_PROVIDER',
       'OCR_ADVISOR_STATE_PATH',
@@ -5914,9 +5927,9 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
   try {
     process.chdir(directory)
     Object.assign(process.env, {
-      MISTRAL_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
+      CMD_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
       OPENROUTER_API_KEY: 'ROUTER_PRIVATE_SENTINEL',
-      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADAPTER_PROVIDER: 'moat-flash',
       OCR_ADVISOR_STATE_PATH: path.join(directory, 'state.json'),
       OCR_ADVISOR_DIAGNOSTICS_PATH: path.join(directory, 'advisor.jsonl'),
       HEAD_SHA: head,
@@ -5927,7 +5940,7 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
       res.writeHead(500)
       res.end()
     })
-    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.MISTRAL_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
+    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.CMD_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
     const result = await transport.__commandRun(
       [
         '--ocr-config',

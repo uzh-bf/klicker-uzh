@@ -9,8 +9,8 @@
       "taskTimeout": "15",
       "concurrency": "4"
     },
-    "model": "deepseek-v4-1-flash-1017",
-    "advisor_model": "zai-glm-5-3",
+    "model": "z-ai/glm-5.3-flash",
+    "advisor_model": "zai-org/GLM-5.3",
     "publisher": {
       "repository": "alibaba/open-code-review",
       "revision": "1672852136fc87748249d22bce0819f33419ea79",
@@ -25,14 +25,14 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "ab884ba5fffe7f8d6caba4c8ea999f9a5ab43d8d903047c8fc8ac95a3625d1ba",
-    ".github/scripts/ocr-controller.cjs": "9fabb089393c0557019fa94b19c7953b5f09f4c6892f233a821093bf6b1c0a1e",
-    ".github/scripts/ocr-draft-review.cjs": "06432cbdf12efdcddd09c14795dbf0830517ef4c493feeee770a130a89e9fc48",
-    ".github/scripts/ocr-mistral-adapter.cjs": "6d58d7b0a42d241023d4563e0b0266a5dcbeb898842253b57cb1951d03dcebda",
-    ".github/scripts/ocr-review-tools.cjs": "270673dca9d80417158b0a45f3a0d65e910ea605d73ff6f00291b0282c398970",
+    ".github/actions/ocr-review/action.yml": "d9b4cfcee9bad56df845b0a774404726799d18e2e0f795ab635d077b6a344e17",
+    ".github/scripts/ocr-controller.cjs": "38ca838cea70067b613f6ae9374ccb89ad75906fa23d9c708b1583c303e5dfa5",
+    ".github/scripts/ocr-draft-review.cjs": "f662fa13e266039ce34da601676dc48fd132b7aa1e8ccf58ac3c43eef5fa6a98",
+    ".github/scripts/ocr-mistral-adapter.cjs": "8bfc0592ce2e200de806561a44fc1c05cecdf9adaf52ea6c09a74e2ee035129a",
+    ".github/scripts/ocr-review-tools.cjs": "c8ed6a34dd280613ab7c5b72a0d43caacceaa6246a10f55f3b5c894f93f389b4",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
-    ".github/scripts/install-patched-ocr.cjs": "4a74aeb596b0252cb1182660d28ff8a196c51e501b69397ca94713d2d59a5eea",
+    ".github/scripts/install-patched-ocr.cjs": "b01194ff744f8c12426cc6bfb3a2fda45a9668dfae9a8b7a8074d6297420f309",
     ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
     ".agents/skills/ocr-reviewer/SKILL.md": "9e68df11891aebbec0e32439c05d6a66f429f693318d30ae94b3639097b29685"
   }

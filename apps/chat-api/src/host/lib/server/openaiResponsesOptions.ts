@@ -8,3 +8,5 @@ export function parseOpenAIResponsesStore(value: string | undefined): boolean {
 export function getOpenAIResponsesStore(): boolean {
   return parseOpenAIResponsesStore(process.env.CHAT_OPENAI_STORE_RESPONSES)
 }
+
+export { createOpenAIFetch } from '@klicker-uzh/chat-engine-contract'

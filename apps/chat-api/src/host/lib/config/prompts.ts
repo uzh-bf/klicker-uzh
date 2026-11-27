@@ -10,6 +10,11 @@ const TUTOR_TEMPLATE =
 export const DEFAULT_PROMPT: Record<string, { prompt: string }> = {
   tutor: { prompt: renderPromptTemplate(TUTOR_TEMPLATE, {}) },
   explainer: { prompt: renderPromptTemplate('mode-explainer', {}) },
-  quizzer: { prompt: renderPromptTemplate('mode-quizzer', {}) },
+  quizzer: {
+    prompt: renderPromptTemplate('mode-quizzer', {
+      courseRetrievalAvailable: false,
+      isElearningOrigin: false,
+    }),
+  },
   'writing-coach': { prompt: renderPromptTemplate('mode-writing-coach', {}) },
 }

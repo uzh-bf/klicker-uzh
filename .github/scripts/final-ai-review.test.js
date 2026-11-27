@@ -27,7 +27,7 @@ const {
   buildIndividualCleanEvidenceMetadata,
   buildOCRConfig,
   buildOCRResultDiagnostic,
-  buildMistralToolCanaryRequest,
+  buildMoatToolCanaryRequest,
   buildReviewPlan,
   buildPlanContext,
   buildReviewBackground,
@@ -55,7 +55,7 @@ const {
   startFinalReview,
   validateOCRResult,
   validateOCRPreview,
-  verifyMistralToolAccess,
+  verifyMoatToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
 
@@ -297,7 +297,7 @@ function executeExtractedOCRAttempt({
     LC_ALL: 'C',
     OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
     OCR_LLM_TIMEOUT: jobEnv.OCR_LLM_TIMEOUT,
-    MISTRAL_API_KEY: 'synthetic-upstream-key',
+    CMD_API_KEY: 'synthetic-upstream-key',
     OCR_CALLS_PATH: callsPath,
     OCR_ARGS_PATH: argsPath,
     OCR_REVIEW_STATUS: String(reviewStatus),
@@ -345,7 +345,7 @@ function executeExtractedOCRAttempt({
     '    return',
     '  fi',
     '  [[ "$1" == .github/scripts/ocr-mistral-adapter.cjs && "$2" == run && "$3" == --ocr-config && "$4" == "${HOME}/.opencodereview/config.json" && "$5" == -- && "$6" == ocr ]] || return 99',
-    '  [[ "${MISTRAL_API_KEY-}" == synthetic-upstream-key ]] || return 98',
+    '  [[ "${CMD_API_KEY-}" == synthetic-upstream-key ]] || return 98',
     '  [[ "${OCR_ADAPTER_PROGRESS_FD-}" == 3 ]] || return 96',
     '  [[ "$(tail -n 1 "$GITHUB_OUTPUT")" == "adapter_lifetimes=${OCR_ADAPTER_LIFETIMES}" ]] || return 95',
     "  printf 'OCR progress event=tool_started tool=file_read\\n' >&3",
@@ -356,7 +356,7 @@ function executeExtractedOCRAttempt({
     '  local command="${1:-}"',
     '  case "${command}" in',
     '    version)',
-    '      [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
+    '      [[ -z "${CMD_API_KEY+x}" ]] || return 97',
     '      printf \'version no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
     '      if [[ "${OCR_VERSION_MODE}" == \'fail\' ]]; then',
     '        printf \'%s\' "${OCR_VERSION_STDERR}" >&2',
@@ -366,7 +366,7 @@ function executeExtractedOCRAttempt({
     '      ;;',
     '    review)',
     '      if [[ " $* " == *" --preview "* ]]; then',
-    '        [[ -z "${MISTRAL_API_KEY+x}" ]] || return 97',
+    '        [[ -z "${CMD_API_KEY+x}" ]] || return 97',
     '        local prompt_limit audience',
     '        while (($#)); do',
     '          if [[ "$1" == --max-tokens ]]; then prompt_limit="$2"; fi',
@@ -438,7 +438,7 @@ test('final setup resolves advisor paths on the runner and preserves them for la
       Object.values(jobEnv).every((value) => !value.includes('runner.'))
     )
     const setup = job.slice(
-      job.indexOf('      - name: Configure ephemeral Mistral access')
+      job.indexOf('      - name: Configure ephemeral MOAT access')
     )
     const setupEnv = {}
     for (const line of setup
@@ -460,7 +460,7 @@ test('final setup resolves advisor paths on the runner and preserves them for la
           '  mkdir -p "$HOME/.opencodereview"',
           '  printf "{}" >"$HOME/.opencodereview/config.json"',
           '}',
-          extractWorkflowStepScript(job, 'Configure ephemeral Mistral access'),
+          extractWorkflowStepScript(job, 'Configure ephemeral MOAT access'),
         ].join('\n'),
       ],
       {
@@ -1299,7 +1299,7 @@ test('writes secretless max-reasoning OCR config with mode 0600', () => {
 function toolCanaryResponse({
   args = { marker: 'KLICKER_FINAL_REVIEW_TOOL_CANARY' },
   model = FINAL_REVIEW_MODEL,
-  provider = 'Mistral',
+  provider = 'moat-flash',
   toolName = 'final_review_probe',
   usage,
 } = {}) {
@@ -1353,16 +1353,19 @@ function readDiagnosticsReceipts(diagnosticsPath) {
     .map((line) => JSON.parse(line))
 }
 
-test('verifies the exact public Mistral tool contract', async (t) => {
+test('verifies the exact public MOAT tool contract', async (t) => {
   const diagnosticsPath = prepareDiagnosticsReceipt(t)
   const token = 'dummy-canary-token'
   let fetchCalls = 0
   let request
-  const result = await verifyMistralToolAccess({
+  const result = await verifyMoatToolAccess({
     token,
     fetchImpl: async (url, options) => {
       fetchCalls += 1
-      assert.equal(url, 'https://api.mistral.ai/v1/chat/completions')
+      assert.equal(
+        url,
+        'https://api.commandcode.ai/inference/v1/chat/completions'
+      )
       assert.equal(options.headers.authorization, `Bearer ${token}`)
       request = JSON.parse(options.body)
       return new Response(
@@ -1380,13 +1383,13 @@ test('verifies the exact public Mistral tool contract', async (t) => {
     },
   })
 
-  assert.deepEqual(request, buildMistralToolCanaryRequest())
+  assert.deepEqual(request, buildMoatToolCanaryRequest())
   assert.equal(request.model, FINAL_REVIEW_MODEL)
   assert.equal(request.max_tokens, 16_384)
   assert.equal(request.reasoning_effort, 'max')
   assert.equal(Object.hasOwn(request, 'prompt_cache_key'), false)
   assert.equal(Object.hasOwn(request, 'provider'), false)
-  assert.deepEqual(result, { provider: 'Mistral' })
+  assert.deepEqual(result, { provider: 'moat-flash' })
   assert.equal(fetchCalls, 1)
 
   const receipts = readDiagnosticsReceipts(diagnosticsPath)
@@ -1395,7 +1398,7 @@ test('verifies the exact public Mistral tool contract', async (t) => {
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'preflight',
-    provider: 'mistral-deepseek',
+    provider: 'moat-flash',
     model: FINAL_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
@@ -1413,7 +1416,7 @@ test('verifies the exact public Mistral tool contract', async (t) => {
   })
 })
 
-test('rejects malformed successful Mistral tool responses', async () => {
+test('rejects malformed successful MOAT tool responses', async () => {
   for (const payload of [
     { model: FINAL_REVIEW_MODEL, choices: [] },
     toolCanaryResponse({ args: { marker: 'wrong' } }),
@@ -1424,7 +1427,7 @@ test('rejects malformed successful Mistral tool responses', async () => {
     toolCanaryResponse({ toolName: 'unexpected_tool' }),
   ]) {
     await assert.rejects(
-      verifyMistralToolAccess({
+      verifyMoatToolAccess({
         token: 'dummy-canary-token',
         fetchImpl: async () => new Response(JSON.stringify(payload)),
       }),
@@ -1448,14 +1451,14 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
     toolCanaryResponse({ toolName: 'unexpected_tool', usage }),
   ]) {
     await assert.rejects(
-      verifyMistralToolAccess({
+      verifyMoatToolAccess({
         token,
         fetchImpl: async () => {
           fetchCalls += 1
           return new Response(JSON.stringify(payload))
         },
       }),
-      /Mistral tool canary did not return the expected tool call/
+      /Moat tool canary did not return the expected tool call/
     )
   }
   assert.equal(fetchCalls, 2)
@@ -1465,7 +1468,7 @@ test('retains preflight usage when a successful canary answer is rejected', asyn
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'preflight',
-      provider: 'mistral-deepseek',
+      provider: 'moat-flash',
       model: FINAL_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,
@@ -1488,7 +1491,7 @@ test('keeps the canary deadline and records the aborted preflight attempt', asyn
   const diagnosticsPath = prepareDiagnosticsReceipt(t)
   t.mock.timers.enable({ apis: ['setTimeout'] })
   let fetchCalls = 0
-  const pending = verifyMistralToolAccess({
+  const pending = verifyMoatToolAccess({
     token: 'dummy-canary-token',
     fetchImpl: (_url, options) => {
       fetchCalls += 1
@@ -1509,10 +1512,10 @@ test('keeps the canary deadline and records the aborted preflight attempt', asyn
   assert.equal(receipts[0].responses, 0)
 })
 
-test('suppresses Mistral tool-canary error bodies and credentials', async () => {
+test('suppresses MOAT tool-canary error bodies and credentials', async () => {
   const token = 'dummy-secret-token'
   await assert.rejects(
-    verifyMistralToolAccess({
+    verifyMoatToolAccess({
       token,
       fetchImpl: async () =>
         new Response(
@@ -1547,7 +1550,13 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
       ?.length,
     2
   )
-  assert.equal(source.match(/verify-mistral-tools/g)?.length, 2)
+  assert.equal(source.match(/verify-moat-tools/g)?.length, 2)
+  assert.equal(
+    source.match(/CMD_API_KEY: \$\{\{ secrets\.CMD_API_KEY \}\}/g)?.length,
+    5
+  )
+  assert.doesNotMatch(source, /OCR_ADAPTER_PROVIDER: moat-advisor/)
+  assert.doesNotMatch(source, /MISTRAL_API_KEY/)
   assert.equal(source.match(/--effort low/g)?.length, 2)
   assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
   assert.doesNotMatch(source, /ocr llm test/)
@@ -1559,10 +1568,15 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
 
   for (const name of ['review', 'review_stack']) {
     const block = job(name)
+    const jobEnv = extractWorkflowJobEnv(source, name)
+    assert.equal(jobEnv.OCR_ADAPTER_PROVIDER, 'moat-flash')
+    assert.equal(Object.hasOwn(jobEnv, 'MOAT_URL'), false)
+    assert.equal(Object.hasOwn(jobEnv, 'MOAT_FLASH_MODEL'), false)
+    assert.equal(Object.hasOwn(jobEnv, 'MOAT_ADVISOR_MODEL'), false)
     assert.match(block, /runs-on: ubuntu-latest/)
     assert.ok(
-      block.indexOf('configure-ocr') < block.indexOf('verify-mistral-tools') &&
-        block.indexOf('verify-mistral-tools') < block.indexOf('ocr review')
+      block.indexOf('configure-ocr') < block.indexOf('verify-moat-tools') &&
+        block.indexOf('verify-moat-tools') < block.indexOf('ocr review')
     )
     assert.match(
       block,
@@ -3033,7 +3047,7 @@ test('runs OCR validation after resume and gates individual publication', () => 
     '      - name: Summarize rejected final review result'
   )
   const cleanupIndex = workflow.indexOf(
-    '      - name: Remove ephemeral Mistral access'
+    '      - name: Remove ephemeral MOAT access'
   )
   assert.ok(runIndex >= 0)
   assert.ok(validateIndex > runIndex)
@@ -3324,7 +3338,7 @@ test('accepts a trusted clean status without requiring a review body', async () 
     { evidence_digest: 'e'.repeat(64) },
     { policy_digest: 'e'.repeat(64) },
     { background_digest: 'e'.repeat(64) },
-    { model: 'zai-glm-5-3-flash' },
+    { model: 'zai-org/GLM-5.3' },
   ]) {
     state.checkRuns[0] = {
       ...trustedCheck,
@@ -3343,7 +3357,7 @@ test('accepts a trusted clean status without requiring a review body', async () 
     ...trustedStatus,
     description: trustedStatus.description.replace(
       FINAL_REVIEW_CLEAN_STATUS_PREFIX,
-      'zai-glm-5-3-flash final review clean; evidence='
+      'zai-org/GLM-5.3 final review clean; evidence='
     ),
   }
   assert.equal(

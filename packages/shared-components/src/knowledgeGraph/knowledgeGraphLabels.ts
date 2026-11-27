@@ -20,6 +20,7 @@ export type KnowledgeGraphDetailsLabels = {
   aiGeneratedNote: string
   quiz: string
   inferredRelation: string
+  unsourcedRelation: string
   from: string
   to: string
   concepts: string
@@ -125,7 +126,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   resetLayout: 'Reset layout',
   legendAriaLabel: 'Concept type legend',
   conceptTypes: 'Concept types',
-  inferredRelationLegend: 'Dashed: inferred, no source',
+  inferredRelationLegend: 'Dashed: inferred or without a source',
   shapeCircle: 'circle',
   shapeDiamond: 'diamond',
   shapeRoundedSquare: 'rounded square',
@@ -176,7 +177,9 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     aiGeneratedNote: 'AI-generated from course materials. Check the sources.',
     quiz: 'Quiz me on this',
     inferredRelation:
-      'Inferred: no supporting source is recorded for this relationship.',
+      'Inferred: this relationship is drawn from the course materials but not stated in them directly.',
+    unsourcedRelation:
+      'No supporting source is recorded for this relationship.',
     from: 'From',
     to: 'To',
     concepts: 'Concepts',

@@ -4,7 +4,6 @@ import {
   CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
   CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_REQUEST_BYTES,
   type EngineV2ChatRequest,
-  EXPLANATION_TURN_MIN_OUTPUT_TOKENS,
   engineV2ChatRequestSchema,
   type ImageAttachment,
   imageAttachmentSchema,
@@ -26,6 +25,10 @@ import {
   type EngineReadiness,
   EngineReadinessProbe,
 } from './engine/client.js'
+import {
+  type ExplanationWriter,
+  resolveExplanationWriterConfig,
+} from './host/services/explainerService.js'
 import {
   createValidatedPlatformStream,
   type PlatformMetadata,
@@ -92,6 +95,7 @@ import {
   isFailure,
 } from './runtime/auth.js'
 import { createCodeApiAuthorization } from './runtime/codeapi.js'
+import { createExplanationWriter } from './runtime/explanationWriter.js'
 import {
   type ChatbotRecord,
   checkDisclaimer,
@@ -147,7 +151,7 @@ const bodySchema = z.object({
     .max(500),
   threadId: z.string().min(1).max(128),
   selectedModel: z.string().min(1).max(128),
-  selectedMode: z.string().min(1).max(64).default('tutor'),
+  selectedMode: z.string().min(1).max(64).optional(),
   reasoningEffort: z.string().min(1).max(32).default('none'),
   parentId: z.string().min(1).max(128).nullable().optional(),
   assistantMessageId: z.string().min(1).max(128),
@@ -889,9 +893,16 @@ export function createChatApiApp(
           { customModeConfig: chatbot.customModeConfig }
         )
         const mode = resolveRequestedChatMode(modes, input.selectedMode)
-        if (!Object.hasOwn(modes, mode))
-          return c.json({ code: 'MODE_NOT_AVAILABLE' }, 400)
-        input.selectedMode = mode
+        if (!mode || !Object.hasOwn(modes, mode))
+          return c.json(
+            {
+              error: input.selectedMode
+                ? `Unsupported chat mode: ${input.selectedMode}`
+                : 'No chat mode is available',
+              code: 'MODE_NOT_AVAILABLE',
+            },
+            400
+          )
         const lastMessage = input.messages[input.messages.length - 1]
         if (lastMessage?.role !== 'user') {
           return c.json(
@@ -1118,7 +1129,7 @@ export function createChatApiApp(
         const pythonAuthorization = dependencies.authorizeTools
           ? await dependencies.authorizeTools({
               chatbot,
-              mode: input.selectedMode,
+              mode,
               participantId: auth.participantId,
               runId,
             })
@@ -1183,10 +1194,18 @@ export function createChatApiApp(
             lifecycleAttemptId: claim.lifecycleAttemptId,
           }))
         releaseUnstartedClaim = failClaim
+        // The explanation writer is a second model call inside the tool. Its
+        // options are pinned here but built only once the tool is offered, so a
+        // turn without explanations never needs writer credentials.
+        let explanationWriter: ExplanationWriter | null = null
+        let explanationWriterCost = 0
+        let explanationWriterRate = model.cost
+        const customProviderRouting =
+          credential.generation.credentialMode.mode === 'gateway'
         try {
           hostTools = await dependencies.prepareTools({
             chatbot,
-            mode: input.selectedMode,
+            mode,
             participantId: auth.participantId,
             authMode: auth.authMode ?? 'account',
             runId,
@@ -1194,6 +1213,14 @@ export function createChatApiApp(
             messages: input.messages,
             isElearningThread: thread.origin === 'elearning',
             supportsImageAttachments: model.supportsImageAttachments,
+            getExplanationWriter: () => explanationWriter,
+            onExplanationUsage: (usage) => {
+              explanationWriterCost += calculateCost(
+                explanationWriterRate,
+                usage.inputTokens,
+                usage.outputTokens
+              )
+            },
           })
           if (
             Object.keys(hostTools.tools).length ||
@@ -1241,20 +1268,26 @@ export function createChatApiApp(
           }
           return c.json({ code: 'REQUIRED_MCP_UNAVAILABLE' }, 503)
         }
+        if (Object.hasOwn(hostTools.tools, SHOW_EXPLANATION_TOOL_NAME)) {
+          try {
+            // A chatbot's own endpoint may not serve the writer model.
+            const writerConfig = customProviderRouting
+              ? model
+              : resolveExplanationWriterConfig(registry, model)
+            explanationWriterRate = writerConfig.cost
+            explanationWriter = createExplanationWriter({
+              chatbot,
+              customRouting: customProviderRouting,
+              writerConfig,
+              providerAllowedOrigins,
+            })
+          } catch {
+            // Without a writer the tool reports the service as unavailable,
+            // and the turn still answers in text.
+          }
+        }
         const tools = hostToolSession?.tools ?? []
-        const generation = tools.some(
-          (tool) =>
-            tool.serverId === 'klicker-host' &&
-            tool.name === SHOW_EXPLANATION_TOOL_NAME
-        )
-          ? {
-              ...modelGeneration,
-              maxOutputTokens: Math.max(
-                modelGeneration.maxOutputTokens ?? 0,
-                EXPLANATION_TURN_MIN_OUTPUT_TOKENS
-              ),
-            }
-          : modelGeneration
+        const generation = modelGeneration
         if (
           (images.length > 0 && !engineReady.features?.images) ||
           (tools.length > 0 && !engineReady.features?.tools)
@@ -1286,7 +1319,7 @@ export function createChatApiApp(
         )
         const turnSettings = getCustomModeTurnSettings(
           chatbot.customModeConfig,
-          input.selectedMode
+          mode
         )
         const turnStartedAt = new Date()
         const meetingClockStartedAt = turnSettings.meetingClock
@@ -1294,7 +1327,7 @@ export function createChatApiApp(
             turnStartedAt)
           : null
         const stepReminder = trailingStepMessage(
-          input.selectedMode,
+          mode,
           input.messages,
           replyLanguageReminder(
             turnSettings.replyLanguage ?? null,
@@ -1305,7 +1338,7 @@ export function createChatApiApp(
             )
           )
         )
-        const firstToolName = Object.hasOwn(DEFAULT_PROMPT, input.selectedMode)
+        const firstToolName = Object.hasOwn(DEFAULT_PROMPT, mode)
           ? tools.find((tool) => isDocQueryToolName(tool.name))?.name
           : undefined
         const engineRequest: EngineV2ChatRequest = {
@@ -1331,9 +1364,10 @@ export function createChatApiApp(
                   entry.length <= 16
               ) ??
             'en',
-          systemPrompt: getSystemPrompt(chatbot, input.selectedMode, {
+          systemPrompt: getSystemPrompt(chatbot, mode, {
             toolNames: hostTools.promptToolNames,
             ...(hostTools.courseImageVision ? { courseImageVision: true } : {}),
+            isElearningOrigin: thread.origin === 'elearning',
             answerStyle: chatbot.answerPreferencesEnabled
               ? input.answerStyle
               : DEFAULT_ANSWER_STYLE,
@@ -1392,7 +1426,7 @@ export function createChatApiApp(
             messageId: userMessageId,
             parentId: input.parentId ?? null,
             content: lastMessage.content,
-            chatMode: input.selectedMode,
+            chatMode: mode,
             modelId: model.id,
             reasoningEffort: appliedReasoningEffort,
             attachments,
@@ -1446,7 +1480,7 @@ export function createChatApiApp(
             threadId: input.threadId,
             assistantMessageId,
             userMessageId,
-            chatMode: input.selectedMode,
+            chatMode: mode,
             modelId: model.id,
             reasoningEffort: appliedReasoningEffort,
             reasoningContent: null,
@@ -1472,7 +1506,7 @@ export function createChatApiApp(
             threadId: input.threadId,
             assistantMessageId,
             userMessageId,
-            chatMode: input.selectedMode,
+            chatMode: mode,
             modelId: model.id,
             reasoningEffort: appliedReasoningEffort,
             reasoningContent: null,
@@ -1522,7 +1556,7 @@ export function createChatApiApp(
           contractVersion: CHAT_ENGINE_CONTRACT_V2,
           showReasoning: isParticipantReasoningVisible(
             chatbot.customModeConfig,
-            input.selectedMode
+            mode
           ),
           onCancel: abortIncomingEngine,
           expected: {
@@ -1534,7 +1568,7 @@ export function createChatApiApp(
             deploymentId: model.deploymentId,
           },
           metadata: (state): PlatformMetadata => ({
-            chatMode: input.selectedMode,
+            chatMode: mode,
             modelId: model.id,
             reasoningEffort: appliedReasoningEffort,
             userMessageId,
@@ -1554,15 +1588,22 @@ export function createChatApiApp(
             c.req.raw.signal.removeEventListener('abort', abortIncomingEngine)
             try {
               const usage = usageIsChargeable(state.usage) ? state.usage : null
-              const creditsUsed = usage
-                ? calculateCost(
-                    model.cost,
-                    usage.inputTokens!,
-                    usage.outputTokens!
-                  ) + attachmentContext.creditsUsed
-                : attachmentContext.creditsUsed > 0
-                  ? attachmentContext.creditsUsed
-                  : null
+              // Writer drafts are charged even when the turn ends without a
+              // chargeable step of its own.
+              const creditsUsed =
+                usage || explanationWriterCost > 0
+                  ? (usage
+                      ? calculateCost(
+                          model.cost,
+                          usage.inputTokens!,
+                          usage.outputTokens!
+                        )
+                      : 0) +
+                    attachmentContext.creditsUsed +
+                    explanationWriterCost
+                  : attachmentContext.creditsUsed > 0
+                    ? attachmentContext.creditsUsed
+                    : null
               const content =
                 state.status === 'aborted'
                   ? [
@@ -1584,7 +1625,7 @@ export function createChatApiApp(
                       threadId: input.threadId,
                       assistantMessageId,
                       userMessageId,
-                      chatMode: input.selectedMode,
+                      chatMode: mode,
                       modelId: model.id,
                       reasoningEffort: appliedReasoningEffort,
                       reasoningContent:

@@ -23,6 +23,8 @@ export type SystemPromptCompilationContext = {
   answerStyle?: AnswerStyle
   answerTone?: AnswerTone
   courseImageVision?: boolean
+  /** eLearning-origin turns stay limited to supplied and retrieved evidence. */
+  isElearningOrigin?: boolean
   /**
    * The custom modes the calling surface should compile. Participant routes
    * pass the live column; owner preview passes the saved revision so it
@@ -112,12 +114,26 @@ function compilesCustomPersona(
   )
 }
 
+function platformModePrompt(
+  selectedMode: string,
+  context: SystemPromptCompilationContext
+): string | undefined {
+  if (selectedMode === 'quizzer') {
+    return renderPromptTemplate('mode-quizzer', {
+      courseRetrievalAvailable: context.toolNames.some(isDocQueryToolName),
+      isElearningOrigin: context.isElearningOrigin === true,
+    })
+  }
+
+  return DEFAULT_PROMPT[selectedMode]?.prompt
+}
+
 function modeSections(
   systemPrompts: unknown,
   selectedMode: string,
   context: SystemPromptCompilationContext
 ): string[] {
-  const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
+  const platformMode = platformModePrompt(selectedMode, context)
   const lecturerPrompt = lecturerModePrompt(
     systemPrompts,
     selectedMode,

@@ -201,7 +201,7 @@ test('the OCR runtime pin is fetched and qualified before contract tests', () =>
     assert.equal(call.options.env.GIT_CONFIG_KEY_1, 'credential.helper')
     assert.equal(call.options.env.GIT_CONFIG_VALUE_1, '')
     assert.equal(call.options.env.GITHUB_TOKEN, undefined)
-    assert.equal(call.options.env.MISTRAL_API_KEY, undefined)
+    assert.equal(call.options.env.CMD_API_KEY, undefined)
     assert.equal(call.options.env.CONTEXT7_API_KEY, undefined)
   }
   assert.throws(
@@ -342,7 +342,7 @@ function caller() {
           {
             uses: `synthetic/runtime/.github/actions/ocr-review@${REVISION}`,
             with: {
-              'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
+              'cmd-api-key': '${{ secrets.CMD_API_KEY }}',
               'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
               'github-token': '${{ github.token }}',
               'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
@@ -419,7 +419,7 @@ test('preparation freezes caller objects and release identity; fetch credentials
     assert.equal(env.GIT_NO_REPLACE_OBJECTS, '1')
     assert.equal(env.GIT_CONFIG_GLOBAL, os.devNull)
     assert.equal(env.GITHUB_TOKEN, undefined)
-    assert.equal(env.MISTRAL_API_KEY, undefined)
+    assert.equal(env.CMD_API_KEY, undefined)
     assert.equal(Boolean(env.GIT_CONFIG_VALUE_0), args[0] === 'fetch')
   }
   const receipt = fs.readFileSync(
@@ -553,7 +553,7 @@ test('controller preserves failed review exit and sanitized child environment be
   fs.mkdirSync(bin)
   fs.writeFileSync(
     path.join(bin, 'ocr'),
-    `#!${process.execPath}\nconst args=process.argv.slice(2); if(process.env.GITHUB_TOKEN || process.env.MISTRAL_API_KEY || process.env.CONTEXT7_API_KEY) process.exit(99); process.stdout.write(JSON.stringify(${JSON.stringify(result(f.head))})); process.exitCode=7\n`,
+    `#!${process.execPath}\nconst args=process.argv.slice(2); if(process.env.GITHUB_TOKEN || process.env.CMD_API_KEY || process.env.CONTEXT7_API_KEY) process.exit(99); process.stdout.write(JSON.stringify(${JSON.stringify(result(f.head))})); process.exitCode=7\n`,
     { mode: 0o700 }
   )
   const ran = spawnSync(
@@ -565,7 +565,7 @@ test('controller preserves failed review exit and sanitized child environment be
         PATH: `${bin}${path.delimiter}${process.env.PATH}`,
         GITHUB_WORKSPACE: f.repo,
         RUNNER_TEMP: f.temp,
-        MISTRAL_API_KEY: 'synthetic-provider',
+        CMD_API_KEY: 'synthetic-provider',
         GITHUB_TOKEN: 'synthetic-publication',
         CONTEXT7_API_KEY: 'synthetic-docs',
       },
@@ -710,7 +710,7 @@ test('the shared caller check rejects mutated pins, execution, credentials, poli
       w.env = { GITHUB_TOKEN: 'synthetic-leak' }
     },
     (w) => {
-      w.jobs['ocr-review'].steps[0].env = { MISTRAL_API_KEY: 'synthetic-leak' }
+      w.jobs['ocr-review'].steps[0].env = { CMD_API_KEY: 'synthetic-leak' }
     },
     (w) => {
       delete w.jobs['ocr-review'].steps[0].with['provider-paused']
@@ -841,13 +841,13 @@ test('the composite preserves failure, cancellation, validation, artifact and su
   assert.notEqual(artifacts['continue-on-error'], true)
   assert.equal(summary['continue-on-error'], true)
   const review = steps.find((step) => step.id === 'review')
-  assert.equal(review.env.MISTRAL_API_KEY, '${{ inputs.mistral-api-key }}')
+  assert.equal(review.env.CMD_API_KEY, '${{ inputs.cmd-api-key }}')
   assert.equal(review.env.OCR_NO_UPDATE, '1')
-  assert.equal(publication.env.MISTRAL_API_KEY, undefined)
+  assert.equal(publication.env.CMD_API_KEY, undefined)
   assert.equal(publication.env.OCR_ACTION_PATH, '${{ github.action_path }}')
   for (const step of steps) {
     if (step !== review) {
-      assert.equal(step.env?.MISTRAL_API_KEY, undefined)
+      assert.equal(step.env?.CMD_API_KEY, undefined)
       assert.equal(step.env?.CONTEXT7_API_KEY, undefined)
     }
   }

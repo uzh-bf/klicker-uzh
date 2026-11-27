@@ -132,6 +132,7 @@ export function getSystemPrompt(
     answerStyle?: AnswerStyle
     answerTone?: AnswerTone
     courseImageVision?: boolean
+    isElearningOrigin?: boolean
   }
 ): string {
   return compileSystemPrompt(chatbot.systemPrompts, mode, {

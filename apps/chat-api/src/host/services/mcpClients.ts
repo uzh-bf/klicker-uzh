@@ -1,15 +1,16 @@
+import { SHOW_EXPLANATION_TOOL_NAME } from '@klicker-uzh/chat-engine-contract'
 import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
-import { SHOW_EXPLANATION_TOOL_NAME } from '@klicker-uzh/chat-engine-contract'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '../lib/config/toolNames.js'
-import type { AuthMode } from '../lib/server/chatGuestToken.js'
 import { signDocQueryScopeToken } from '../lib/server/docQueryScopeToken.js'
+import type { AuthMode } from '../lib/server/chatGuestToken.js'
 import { mintParticipantMcpJwt } from '../lib/server/mcpAuthMint.js'
 import {
+  isToolAllowed,
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '../lib/server/mcpRuntimePolicy.js'
@@ -430,27 +431,6 @@ export async function createMCPClient(
     })
     throw error
   }
-}
-
-/**
- * Checks if a tool name matches any of the allowed patterns
- * Supports wildcard patterns like "search*", "*plot*", "execute_*"
- */
-function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
-  if (!allowedTools || allowedTools.length === 0) {
-    return true // If no filters specified, allow all tools
-  }
-
-  return allowedTools.some((pattern) => {
-    // Escape regex syntax so only the documented wildcards stay special.
-    const regexPattern = pattern
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*/g, '.*') // Replace * with .*
-      .replace(/\?/g, '.') // Replace ? with .
-
-    const regex = new RegExp(`^${regexPattern}$`, 'i')
-    return regex.test(toolName)
-  })
 }
 
 /**

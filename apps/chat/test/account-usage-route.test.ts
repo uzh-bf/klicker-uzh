@@ -286,6 +286,8 @@ describe('account usage chat route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // The devcontainer turns the feedback tool on; these tests assume it off.
+    vi.stubEnv('CHAT_FEEDBACK_TOOL', '')
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
@@ -1203,6 +1205,29 @@ describe('account usage chat route', () => {
     ).toEqual({
       messages: [initialMessages[0], toolMessage, STEP_REMINDER],
     })
+  })
+
+  test('makes the last allowed step write text instead of calling tools', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+      steps: unknown[]
+      initialMessages: unknown[]
+      responseMessages: unknown[]
+    }) => { toolChoice?: unknown }
+    const step = (stepNumber: number) =>
+      prepareStep({
+        stepNumber,
+        steps: [],
+        initialMessages: [{ role: 'user', content: 'Question' }],
+        responseMessages: [],
+      })
+    expect(step(4).toolChoice).toBeUndefined()
+    expect(step(5).toolChoice).toBe('none')
   })
 
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {

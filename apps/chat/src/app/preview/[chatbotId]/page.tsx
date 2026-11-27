@@ -15,7 +15,7 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
 import { getOwnerPreviewAccess } from '@/src/lib/server/ownerPreviewAuth'
-import { resolveOwnerPreviewModeConfiguration } from '@/src/lib/server/previewAuthoringConfig'
+import { resolveOwnerPreviewModeConfigurations } from '@/src/lib/server/previewAuthoringConfig'
 
 type OwnerPreviewPageProps = {
   params: Promise<{ chatbotId: string }>
@@ -66,13 +66,15 @@ export default async function OwnerPreviewPage({
   })
   if (!chatbot || chatbot.status === ChatbotStatus.PAUSED) notFound()
 
+  const previewModeConfigurations =
+    resolveOwnerPreviewModeConfigurations(chatbot)
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig,
+    previewModeConfigurations.standardModeConfig,
     {
       allowUnapprovedModes: true,
-      customModeConfig: resolveOwnerPreviewModeConfiguration(chatbot),
+      customModeConfig: previewModeConfigurations.customModeConfig,
     }
   )
   const availableModels = getModelsForChatbot(chatbot)

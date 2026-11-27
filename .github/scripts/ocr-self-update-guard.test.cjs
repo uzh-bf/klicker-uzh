@@ -143,9 +143,9 @@ test('preserves draft cancellation, publication and diagnostics policy', () => {
 
 test('routes every main review through Flash while retaining separate advisor credentials', () => {
   const { job, actionStep, action, manifest } = loadPinnedDraftPolicy()
-  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'mistral-deepseek')
+  assert.equal(job.env.OCR_ADAPTER_PROVIDER, 'moat-flash')
   assert.deepEqual(actionStep.with, {
-    'mistral-api-key': '${{ secrets.MISTRAL_API_KEY }}',
+    'cmd-api-key': '${{ secrets.CMD_API_KEY }}',
     'context7-api-key': '${{ secrets.CONTEXT7_API_KEY }}',
     'github-token': '${{ github.token }}',
     'provider-paused': '${{ vars.OCR_PROVIDER_PAUSED }}',
@@ -165,10 +165,10 @@ test('routes every main review through Flash while retaining separate advisor cr
   assert.equal(trustedCheckout.with['sparse-checkout'], undefined)
   assert.equal(trustedCheckout.with.filter, undefined)
   const run = action.runs.steps.find((step) => step.id === 'review')
-  assert.equal(run.env.MISTRAL_API_KEY, '${{ inputs.mistral-api-key }}')
+  assert.equal(run.env.CMD_API_KEY, '${{ inputs.cmd-api-key }}')
   assert.equal(run.env.OPENROUTER_API_KEY, undefined)
   assert.equal(run.env.CONTEXT7_API_KEY, '${{ inputs.context7-api-key }}')
-  assert.equal(run.env.OCR_ADAPTER_PROVIDER, 'mistral-deepseek')
+  assert.equal(run.env.OCR_ADAPTER_PROVIDER, 'moat-flash')
   const publisher = action.runs.steps.find(
     (step) => step.with?.repository === 'alibaba/open-code-review'
   )
@@ -201,7 +201,7 @@ test('routes every main review through Flash while retaining separate advisor cr
   for (const [name, finalJob] of Object.entries(manual.jobs)) {
     assert.equal(
       finalJob.env?.OCR_ADAPTER_PROVIDER,
-      ['review', 'review_stack'].includes(name) ? 'mistral-deepseek' : undefined
+      ['review', 'review_stack'].includes(name) ? 'moat-flash' : undefined
     )
     for (const step of finalJob.steps ?? [])
       assert.equal(step.env?.OCR_ADAPTER_PROVIDER, undefined)
