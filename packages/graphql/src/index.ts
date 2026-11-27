@@ -54,6 +54,7 @@ import {
 } from './services/groups.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handleCloseExpiredLiveQuizBlock,
   handlePublishScheduledLiveQuiz,
   handleStandardLiveQuizBlockClosureAggregation,
 } from './services/liveQuizzes.js'
@@ -87,6 +88,7 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledPracticeQuiz,
   handlePublishScheduledGroupActivity,
   handlePublishScheduledMicroLearning,
+  handleCloseExpiredLiveQuizBlock,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
   handleProcessCourseDuplication,
