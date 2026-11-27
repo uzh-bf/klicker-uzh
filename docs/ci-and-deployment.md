@@ -808,7 +808,9 @@ reports a verified defect immediately and closes a ruled-out case once the files
 are checked. On the first model dispatch with four minutes or less left on the
 group deadline, the CLI appends one reminder to finish the
 current candidate. An in-flight request receives the reminder on its next turn
-if time remains. The reviewer still has to call the completion tool itself.
+if time remains. The draft adapter receipt records the first request that
+dispatched the reminder in `first_wrap_up_dispatch`, or `null` if none did.
+The reviewer still has to call the completion tool itself.
 
 For stock draft memory compression, the adapter returns summary text only when
 the provider finishes with `stop`, supplies visible text and requests no tools.

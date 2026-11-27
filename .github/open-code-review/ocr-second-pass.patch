@@ -4,9 +4,16 @@
 +		if round == 2 {
 +			confirmedText += "\n[ocr:second-pass-closure] Second pass: check each selected file for a concrete failure mode not covered by the confirmed findings. Before each lookup, identify the candidate and what evidence would verify or rule it out. Submit verified findings immediately with code_comment. Drop ruled-out candidates. When all selected files are checked and no concrete candidate remains, call task_done."
 +		}
-@@ -1488 +1491 @@
+@@ -1488 +1491,4 @@
 -			completed, stop, err := a.runner.RunMainTask(ctx, messages, groupKey)
++			if round == 2 {
++				fmt.Fprintln(stdout.Writer(), "[ocr] second_pass_started")
++			}
 +			completed, stop, err := a.runner.RunReviewRound(ctx, messages, groupKey, round)
+@@ -1492,0 +1499,3 @@
++			}
++			if round == 2 && completed {
++				fmt.Fprintln(stdout.Writer(), "[ocr] second_pass_completed")
 --- a/internal/llmloop/loop.go
 +++ b/internal/llmloop/loop.go
 @@ -374,0 +375,8 @@

@@ -1434,6 +1434,7 @@ async function startAdapter(options = {}) {
     options.finalPlanGuidance === true
       ? { responses: 0, usable: 0, length: 0, empty: 0, invalid_finish: 0 }
       : null
+  let firstWrapUpDispatch = null
   const draftCompression = options.guardDraftCompression
     ? { usable: 0, skipped: 0, repeat_skips: 0 }
     : null
@@ -1687,6 +1688,15 @@ async function startAdapter(options = {}) {
       conversation,
       attempt,
     }
+    const mainTaskScope =
+      main && /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key)
+    const tail = mistralBody.messages.at(-1)
+    const wrapUpTurn =
+      options.draftToolContinuation &&
+      mainTaskScope &&
+      tail?.role === 'user' &&
+      typeof tail.content === 'string' &&
+      tail.content.startsWith('[ocr:second-pass-wrap-up] ')
     let accepted = false
     const fail = (category) => {
       if (failureRecorded) return
@@ -1723,6 +1733,7 @@ async function startAdapter(options = {}) {
       const unavailable = providerAvailabilityError(availability.reason)
       if (unavailable) throw unavailable
       for (const counter of counters) counter.upstream_attempts += 1
+      if (wrapUpTurn) firstWrapUpDispatch ??= attempt
       journal.write({ ...receipt, event: 'dispatch' })
       const upstream = await fetchImpl(profile.url, {
         method: 'POST',
@@ -1820,11 +1831,8 @@ async function startAdapter(options = {}) {
           'completion was truncated'
         )
       }
-      const mainTaskScope =
-        main &&
-        conversation &&
-        /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key)
-      const draftScope = options.draftToolContinuation && mainTaskScope
+      const draftScope =
+        options.draftToolContinuation && mainTaskScope && conversation
       const continuation = draftScope && draftContinuations.get(conversation)
       let extraContinuation = false
       if (main && !choice.message.tool_calls?.length) {
@@ -1847,13 +1855,9 @@ async function startAdapter(options = {}) {
           // Require a tool receipt from its latest issued turn in this pass.
           // The pinned draft CLI may append its deadline notice after genuine
           // receipts. It neither supplies a result nor invalidates those receipts.
-          const tail = mistralBody.messages.at(-1)
-          const messages =
-            tail?.role === 'user' &&
-            typeof tail.content === 'string' &&
-            tail.content.startsWith('[ocr:second-pass-wrap-up] ')
-              ? mistralBody.messages.slice(0, -1)
-              : mistralBody.messages
+          const messages = wrapUpTurn
+            ? mistralBody.messages.slice(0, -1)
+            : mistralBody.messages
           const last = messages.findLastIndex((entry) => entry.role !== 'tool')
           const calls = messages[last]?.tool_calls
           extraContinuation =
@@ -2080,6 +2084,9 @@ async function startAdapter(options = {}) {
       })),
       history: history.diagnostics(),
       usage_events: journal.snapshot(),
+      ...(options.draftToolContinuation
+        ? { first_wrap_up_dispatch: firstWrapUpDispatch }
+        : {}),
       ...(draftCompression
         ? { draft_compression: { ...draftCompression } }
         : {}),
@@ -3048,7 +3055,11 @@ function createProgressFilter(write, onCompression = () => {}) {
         /^\[ocr\] compression_finished outcome=(rebuilt|unchanged|failed|cancelled) before_estimated_tokens=(\d{1,12}) after_estimated_tokens=(\d{1,12})$/.exec(
           line
         )
-      if (line.startsWith('[ocr] compression_')) {
+      if (line === '[ocr] second_pass_started') {
+        event = 'event=second_pass_started'
+      } else if (line === '[ocr] second_pass_completed') {
+        event = 'event=second_pass_completed'
+      } else if (line.startsWith('[ocr] compression_')) {
         let record = null
         if (line === '[ocr] compression_telemetry version=1') {
           record = { kind: 'ready' }

@@ -19,7 +19,7 @@
     "source": "1672852136fc87748249d22bce0819f33419ea79",
     "archive_sha256": "a1378ddc336bb874349ad47ad370fdf725e8db1dd03753d7df73347342ae093f",
     "go": "1.26.9",
-    "patch_sha256": "587594496d0c9ff972b4f414bae04b85ff93ddb1c8b5acfd0d4f2f290ec96fde"
+    "patch_sha256": "24669a46c52abd4d85bda548897001ce08d8c35c9fe81b90dafe0993ce34bfc2"
   },
   "final": {
     "execution": "repository-owned",
@@ -31,14 +31,14 @@
   "assets": {
     ".github/actions/ocr-review/action.yml": "439b8b39e6bd5ef47ae0d0992dfc0a7dfa236bf5ab094db4d194239e90db9234",
     ".github/scripts/ocr-controller.cjs": "8b9582ab4dda9ed5411da65930753de2925d34ed4da0da532b15be6779c254db",
-    ".github/scripts/ocr-draft-review.cjs": "c07dcb1a2c7fba456aa5403d7af80083f52c8dce2c9ec2257884b54e4b7f12bf",
-    ".github/scripts/ocr-mistral-adapter.cjs": "44a360c7ddf58c4459fbd7808e6503240491f91e59215f42f7f06134cf7c52b4",
+    ".github/scripts/ocr-draft-review.cjs": "647041d8350af8cd2c2976200d5e67bb8c3f3ad4fc6574543de6d13661134a10",
+    ".github/scripts/ocr-mistral-adapter.cjs": "a632ab7dbbd2d98d46e96036e9ce83eefe50cc7ad097f1155419c3f9bd289d20",
     ".github/scripts/ocr-review-tools.cjs": "6da67bef800bae4b1265331ec84fbe9d824ed5136714e7aaa088e70eaf5fe831",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
     ".github/scripts/install-patched-ocr.cjs": "cd8ce3110803bc7b782d822ef276e822a08f482479fe91760cd638bc4372f7f4",
     ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
     ".agents/skills/ocr-reviewer/SKILL.md": "2b755f3b8eecfec283bdaac030a40f26c4548e317ccfe7f385dc823a32de943d",
-    ".github/open-code-review/ocr-second-pass.patch": "587594496d0c9ff972b4f414bae04b85ff93ddb1c8b5acfd0d4f2f290ec96fde"
+    ".github/open-code-review/ocr-second-pass.patch": "24669a46c52abd4d85bda548897001ce08d8c35c9fe81b90dafe0993ce34bfc2"
   }
 }

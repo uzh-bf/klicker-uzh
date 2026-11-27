@@ -868,7 +868,11 @@ async function main(options = {}) {
       encoding: 'utf8',
       timeout: 5000,
     })
-    require('./install-patched-ocr.cjs').verifyDraftVersion(version)
+    try {
+      require('./install-patched-ocr.cjs').verifyDraftVersion(version)
+    } catch {
+      throw new Error('invalid_install')
+    }
     const publisher = fs.readFileSync(
       path.join(
         options.publisherRoot ?? path.join(repo, '.ocr-upstream'),

@@ -1161,6 +1161,7 @@ for (const divisor of [0, 1]) {
     git('add', 'calc.js')
     git('commit', '-m', 'test: candidate')
     const turns = [[], []]
+    const progress = []
     const guidedPasses = new Set()
     let evidenceRead
     let id = 0
@@ -1171,7 +1172,7 @@ for (const divisor of [0, 1]) {
       head: git('rev-parse', 'HEAD'),
       executable: process.env.OCR_TEST_DRAFT_BINARY,
       apiKey: 'synthetic',
-      write() {},
+      write: (line) => progress.push(line),
       fetchImpl: async (_url, init) => {
         const body = JSON.parse(init.body)
         const names = body.tools.map((tool) => tool.function.name)
@@ -1253,6 +1254,15 @@ for (const divisor of [0, 1]) {
     })
     assert.equal(outcome.code, 0)
     assert.equal(outcome.coverage.completed, 1)
+    assert.deepEqual(
+      progress.filter((line) =>
+        line.startsWith('OCR progress event=second_pass_')
+      ),
+      [
+        'OCR progress event=second_pass_started\n',
+        'OCR progress event=second_pass_completed\n',
+      ]
+    )
     assert.deepEqual([...guidedPasses], [1])
     assert.ok(evidenceRead?.includes(`export const divisor = ${divisor}`))
     assert.deepEqual(turns[0], ['code_comment', 'task_done'])
