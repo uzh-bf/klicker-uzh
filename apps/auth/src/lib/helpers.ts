@@ -1,3 +1,9 @@
+import {
+  type AuditTransactionClient,
+  emitCoveredParticipantEligibilityChange,
+  lockParticipationEligibility,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
@@ -12,7 +18,7 @@ import {
   parseCsvHosts,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
+import crypto, { randomUUID } from 'crypto'
 import type { Account, Profile } from 'next-auth'
 import { sendTeamsNotifications } from '@/lib/util'
 import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
@@ -54,6 +60,7 @@ export function getLecturerHosts(): string[] {
 
 export async function autoAcceptInvitations(
   tx: PrismaTransactionClient,
+  auditTx: AuditTransactionClient,
   emailCollection: CollectedInvitationEmails,
   participantId?: string,
   invitationEmailMode: InvitationEmailMode = InvitationEmailMode.AffiliationsOnly,
@@ -123,6 +130,9 @@ export async function autoAcceptInvitations(
         email: { in: normalizedInvitationEmails },
         status: 'PENDING',
       },
+      // Ascending course order keeps the per-course eligibility locks below
+      // from deadlocking against a concurrent sign-in.
+      orderBy: [{ courseId: 'asc' }, { id: 'asc' }],
     })
 
     log?.info(
@@ -135,9 +145,47 @@ export async function autoAcceptInvitations(
       'Completed invitation lookup'
     )
 
+    const correlationId = randomUUID()
+    const occurredAt = new Date()
     let acceptedCount = 0
     for (const invitation of pendingInvitations) {
       try {
+        await lockParticipationEligibility(
+          tx,
+          invitation.courseId,
+          matchingParticipantId!
+        )
+        const existingParticipation = await tx.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId: invitation.courseId,
+              participantId: matchingParticipantId!,
+            },
+          },
+          select: { id: true },
+        })
+
+        // A new course participation is what makes the participant eligible
+        // for the course's audited assessments; isActive is only the
+        // leaderboard opt-in. The evidence is written before the
+        // participation so a failed write cannot leave one without the other.
+        if (existingParticipation === null) {
+          await emitCoveredParticipantEligibilityChange({
+            tx,
+            auditTx,
+            courseId: invitation.courseId,
+            participantId: matchingParticipantId!,
+            eligible: true,
+            actor: {
+              kind: 'PARTICIPANT',
+              participantId: matchingParticipantId!,
+            },
+            correlationId,
+            occurredAt,
+            producerOperationId: `${correlationId}:invitation:${invitation.id}`,
+          })
+        }
+
         // Create or activate participation
         await tx.participation.upsert({
           where: {
@@ -316,26 +364,150 @@ export async function createOrLinkParticipant(
 ) {
   const randomUsername = generateRandomString(10)
 
-  const participant = await prisma.$transaction(async (tx) => {
-    // Lookup existing account via ssoId (Edu-ID sub)
-    const existing = await tx.participantAccount.findUnique({
-      where: { ssoId: profile.sub },
-      include: { participant: true },
-    })
+  const participant = await runInAuditTransaction(
+    prisma,
+    async (tx, auditTx) => {
+      // Lookup existing account via ssoId (Edu-ID sub)
+      const existing = await tx.participantAccount.findUnique({
+        where: { ssoId: profile.sub },
+        include: { participant: true },
+      })
 
-    if (existing) {
-      // Update affiliations for existing participant
-      if (profile.swissEduIDLinkedAffiliationUniqueID) {
-        const participantAffiliations = await createParticipantAffiliations(
+      if (existing) {
+        // Update affiliations for existing participant
+        if (profile.swissEduIDLinkedAffiliationUniqueID) {
+          const participantAffiliations = await createParticipantAffiliations(
+            tx,
+            existing.participantId,
+            profile.swissEduIDLinkedAffiliationUniqueID,
+            profile.swissEduIDLinkedAffiliationMail, // Pass undefined if not available
+            log
+          )
+        }
+
+        // auto-accept invitations for existing users
+        try {
+          // Extract all relevant emails for invitation checking
+          const emailCollection = collectInvitationEmails(
+            profile.email,
+            profile.swissEduIDLinkedAffiliationMail
+          )
+
+          const acceptedCount = await autoAcceptInvitations(
+            tx,
+            auditTx,
+            emailCollection,
+            existing.participantId,
+            InvitationEmailMode.AffiliationsOnly,
+            log
+          )
+          log.info(
+            {
+              event: 'auth.invitation.auto_accept_completed',
+              outcome: 'existing_participant',
+              invitationCount: acceptedCount,
+            },
+            'Completed invitation auto-accept'
+          )
+        } catch {
+          log.warn(
+            {
+              event: 'auth.invitation.auto_accept_failed',
+              err: toSafeError('Invitation auto-accept failed'),
+            },
+            'Invitation auto-accept failed'
+          )
+        }
+
+        await updateAssessmentParticipantIdentity(
           tx,
           existing.participantId,
+          profile
+        )
+
+        await tx.participant.update({
+          where: { id: existing.participantId },
+          data: {
+            lastLoginAt: new Date(),
+            email: profile.email?.toLowerCase(),
+          },
+        })
+
+        return existing.participant
+      }
+
+      // Check for existing participant by any affiliation (including primary email)
+      let participant: any = null
+      if (profile.email) {
+        // Try to find by primary email first
+        participant = await tx.participant.findUnique({
+          where: {
+            email_isSSOAccount: {
+              email: profile.email.toLowerCase(),
+              isSSOAccount: true,
+            },
+          },
+        })
+
+        // If not found by primary email, check affiliations
+        if (!participant) {
+          const affiliatedAccount = await tx.participantAccount.findFirst({
+            where: {
+              type: 'affiliation',
+              ssoEmail: profile.email.toLowerCase(),
+              isVerified: true,
+            },
+            include: { participant: true },
+          })
+
+          if (affiliatedAccount) {
+            participant = affiliatedAccount.participant
+          }
+        }
+      }
+
+      // Create new participant if none exists
+      if (!participant) {
+        participant = await tx.participant.create({
+          data: {
+            username: randomUsername,
+            email: profile.email?.toLowerCase(),
+            password: await bcrypt.hash(
+              crypto.randomBytes(32).toString('hex'),
+              10
+            ),
+            isEmailValid: true, // Edu-ID emails are pre-validated
+            isSSOAccount: true,
+            lastLoginAt: new Date(),
+          },
+        })
+      }
+
+      // Create enhanced ParticipantAccount link
+      await tx.participantAccount.create({
+        data: {
+          ssoType: 'EDUID',
+          ssoId: profile.sub as string,
+          ssoEmail: profile.email?.toLowerCase(), // Store primary email
+          participant: { connect: { id: participant.id } },
+          type: 'sso',
+          isVerified: true, // SSO accounts are pre-verified
+          isPrimary: true, // SSO accounts are not necessarily primary
+        },
+      })
+
+      // Add affiliations for participant
+      if (profile.swissEduIDLinkedAffiliationUniqueID) {
+        await createParticipantAffiliations(
+          tx,
+          participant.id,
           profile.swissEduIDLinkedAffiliationUniqueID,
-          profile.swissEduIDLinkedAffiliationMail, // Pass undefined if not available
+          profile.swissEduIDLinkedAffiliationMail,
           log
         )
       }
 
-      // auto-accept invitations for existing users
+      // auto-accept invitations for newly created participants
       try {
         // Extract all relevant emails for invitation checking
         const emailCollection = collectInvitationEmails(
@@ -345,15 +517,16 @@ export async function createOrLinkParticipant(
 
         const acceptedCount = await autoAcceptInvitations(
           tx,
+          auditTx,
           emailCollection,
-          existing.participantId,
+          participant.id,
           InvitationEmailMode.AffiliationsOnly,
           log
         )
         log.info(
           {
             event: 'auth.invitation.auto_accept_completed',
-            outcome: 'existing_participant',
+            outcome: 'new_participant',
             invitationCount: acceptedCount,
           },
           'Completed invitation auto-accept'
@@ -368,129 +541,12 @@ export async function createOrLinkParticipant(
         )
       }
 
-      await updateAssessmentParticipantIdentity(
-        tx,
-        existing.participantId,
-        profile
-      )
+      await updateAssessmentParticipantIdentity(tx, participant.id, profile)
 
-      await tx.participant.update({
-        where: { id: existing.participantId },
-        data: { lastLoginAt: new Date(), email: profile.email?.toLowerCase() },
-      })
-
-      return existing.participant
+      // Ensure the transaction returns the participant for the caller
+      return participant
     }
-
-    // Check for existing participant by any affiliation (including primary email)
-    let participant: any = null
-    if (profile.email) {
-      // Try to find by primary email first
-      participant = await tx.participant.findUnique({
-        where: {
-          email_isSSOAccount: {
-            email: profile.email.toLowerCase(),
-            isSSOAccount: true,
-          },
-        },
-      })
-
-      // If not found by primary email, check affiliations
-      if (!participant) {
-        const affiliatedAccount = await tx.participantAccount.findFirst({
-          where: {
-            type: 'affiliation',
-            ssoEmail: profile.email.toLowerCase(),
-            isVerified: true,
-          },
-          include: { participant: true },
-        })
-
-        if (affiliatedAccount) {
-          participant = affiliatedAccount.participant
-        }
-      }
-    }
-
-    // Create new participant if none exists
-    if (!participant) {
-      participant = await tx.participant.create({
-        data: {
-          username: randomUsername,
-          email: profile.email?.toLowerCase(),
-          password: await bcrypt.hash(
-            crypto.randomBytes(32).toString('hex'),
-            10
-          ),
-          isEmailValid: true, // Edu-ID emails are pre-validated
-          isSSOAccount: true,
-          lastLoginAt: new Date(),
-        },
-      })
-    }
-
-    // Create enhanced ParticipantAccount link
-    await tx.participantAccount.create({
-      data: {
-        ssoType: 'EDUID',
-        ssoId: profile.sub as string,
-        ssoEmail: profile.email?.toLowerCase(), // Store primary email
-        participant: { connect: { id: participant.id } },
-        type: 'sso',
-        isVerified: true, // SSO accounts are pre-verified
-        isPrimary: true, // SSO accounts are not necessarily primary
-      },
-    })
-
-    // Add affiliations for participant
-    if (profile.swissEduIDLinkedAffiliationUniqueID) {
-      await createParticipantAffiliations(
-        tx,
-        participant.id,
-        profile.swissEduIDLinkedAffiliationUniqueID,
-        profile.swissEduIDLinkedAffiliationMail,
-        log
-      )
-    }
-
-    // auto-accept invitations for newly created participants
-    try {
-      // Extract all relevant emails for invitation checking
-      const emailCollection = collectInvitationEmails(
-        profile.email,
-        profile.swissEduIDLinkedAffiliationMail
-      )
-
-      const acceptedCount = await autoAcceptInvitations(
-        tx,
-        emailCollection,
-        participant.id,
-        InvitationEmailMode.AffiliationsOnly,
-        log
-      )
-      log.info(
-        {
-          event: 'auth.invitation.auto_accept_completed',
-          outcome: 'new_participant',
-          invitationCount: acceptedCount,
-        },
-        'Completed invitation auto-accept'
-      )
-    } catch {
-      log.warn(
-        {
-          event: 'auth.invitation.auto_accept_failed',
-          err: toSafeError('Invitation auto-accept failed'),
-        },
-        'Invitation auto-accept failed'
-      )
-    }
-
-    await updateAssessmentParticipantIdentity(tx, participant.id, profile)
-
-    // Ensure the transaction returns the participant for the caller
-    return participant
-  })
+  )
 
   return participant
 }

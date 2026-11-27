@@ -145,7 +145,17 @@ it('does not serve an unselected candidate', async () => {
   expect(mocks.read).not.toHaveBeenCalled()
 })
 it('logs storage failures while keeping the response sanitized', async () => {
-  const loggedError = vi.spyOn(logger, 'error').mockImplementation(() => {})
+  // The route logs through a request child logger; capture at the fork.
+  const loggedError = vi.fn()
+  const child = vi.spyOn(logger, 'child').mockImplementation(
+    () =>
+      ({
+        error: loggedError,
+        info: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }) as never
+  )
   mocks.read.mockRejectedValue(new Error('/private/secret'))
   const response = await GET(req, { params })
   expect(response.status).toBe(404)
@@ -157,5 +167,5 @@ it('logs storage failures while keeping the response sanitized', async () => {
     }),
     expect.any(String)
   )
-  loggedError.mockRestore()
+  child.mockRestore()
 })

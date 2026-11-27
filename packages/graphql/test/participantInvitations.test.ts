@@ -551,26 +551,30 @@ describe('Assessment participant invitation management', () => {
       },
     })
 
-    let reachedCreateCount = 0
-    let releaseCreateBarrier!: () => void
-    const createBarrier = new Promise<void>((resolve, reject) => {
+    // Both imports wait until each has looked up the eligible participant,
+    // then race. The participation eligibility lock serializes them from
+    // there on, so the barrier sits before it rather than at the insert.
+    let reachedLookupCount = 0
+    let releaseLookupBarrier!: () => void
+    const lookupBarrier = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
-        () => reject(new Error('Concurrent create barrier timed out')),
+        () => reject(new Error('Concurrent lookup barrier timed out')),
         5000
       )
-      releaseCreateBarrier = () => {
+      releaseLookupBarrier = () => {
         clearTimeout(timeout)
         resolve()
       }
     })
     const concurrentPrisma = prisma.$extends({
       query: {
-        participantInvitation: {
-          async create({ args, query }) {
-            reachedCreateCount += 1
-            if (reachedCreateCount === 2) releaseCreateBarrier()
-            await createBarrier
-            return query(args)
+        participantAccount: {
+          async findMany({ args, query }) {
+            const result = await query(args)
+            reachedLookupCount += 1
+            if (reachedLookupCount === 2) releaseLookupBarrier()
+            await lookupBarrier
+            return result
           },
         },
       },
@@ -588,7 +592,7 @@ describe('Assessment participant invitation management', () => {
     try {
       const [firstResult, secondResult] = await Promise.all(operations)
 
-      expect(reachedCreateCount).toBe(2)
+      expect(reachedLookupCount).toBeGreaterThanOrEqual(2)
       expect([firstResult, secondResult]).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -621,7 +625,7 @@ describe('Assessment participant invitation management', () => {
         })
       ).resolves.toMatchObject({ isActive: false })
     } finally {
-      releaseCreateBarrier()
+      releaseLookupBarrier()
       await Promise.allSettled(operations)
     }
   })

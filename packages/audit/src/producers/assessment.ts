@@ -6,6 +6,22 @@ import {
 import type { AuditTransactionClient } from '../outbox/emit.js'
 import { emitAuditEvents } from '../outbox/emit.js'
 
+/**
+ * Serializes every producer that creates the course participation of one
+ * participant. Call it before checking whether the participation exists, so
+ * two concurrent producers cannot both see it missing and both record the
+ * eligibility change. Callers that take it for several courses must do so in
+ * ascending course order to avoid deadlocks.
+ */
+export async function lockParticipationEligibility(
+  tx: Pick<Prisma.TransactionClient, '$executeRaw'>,
+  courseId: string,
+  participantId: string
+) {
+  const lockKey = `participation-eligibility:${courseId}:${participantId}`
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
+}
+
 export async function emitCoveredParticipantEligibilityChange(input: {
   tx: Pick<Prisma.TransactionClient, 'liveQuiz' | 'assessmentAuditScope'>
   auditTx: AuditTransactionClient
