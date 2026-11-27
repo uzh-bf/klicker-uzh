@@ -1,4 +1,6 @@
 export * from './conformance.js'
+export * from './explanation.js'
 export * from './fixtures.js'
+export * from './openai-fetch.js'
 export * from './provider-origin.js'
 export * from './schema.js'

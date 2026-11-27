@@ -530,7 +530,7 @@ end-to-end gates.
 
 ## MCP execution capability
 
-One short-lived JWT minted by the chat host for one engine request. It names
-the permitted server audiences, tools, run, token identifier, issuer, and
-lifetime. The engine can forward this capability but cannot mint it; each MCP
-service verifies the signature and claims before execution.
+For generation v2, an opaque, short-lived capability minted by the chat host
+for one turn. The engine forwards it to the host dispatcher. The host checks
+the active turn and approved tool set before execution. A separate service
+credential authorizes Python only.

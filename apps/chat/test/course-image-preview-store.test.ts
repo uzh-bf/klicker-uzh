@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ findFirst: vi.fn(), readImage: vi.fn() }))
 vi.mock('@klicker-uzh/prisma', () => ({
   prisma: { kBResource: { findFirst: mocks.findFirst } },
 }))
-vi.mock('../src/lib/server/courseImageStore', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/courseImageStore', () => ({
   readCourseImage: mocks.readImage,
 }))
 

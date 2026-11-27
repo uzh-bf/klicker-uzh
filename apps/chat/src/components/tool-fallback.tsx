@@ -22,7 +22,7 @@ import {
   parseDocQueryPayload,
 } from '@/src/lib/sources/normalizeSources'
 import type { Translate } from '@/src/lib/sources/sourceDisplay'
-import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/lib/toolOutput'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
 import { ExplanationCard, isRejectedExplanation } from './explanation-card'

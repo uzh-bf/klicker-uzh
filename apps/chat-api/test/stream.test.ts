@@ -66,6 +66,44 @@ async function read(stream: ReadableStream<Uint8Array>) {
 }
 
 describe('validated engine stream', () => {
+  test('keeps an idle writer response open without adding a chat event', async () => {
+    vi.useFakeTimers()
+    const stopped = vi.fn()
+    const upstream = new ReadableStream<Uint8Array>({ cancel: stopped })
+    const finalize = vi.fn(async () => ({
+      creditsUsed: null,
+      finalPersistenceStatus: 'not-persisted' as const,
+    }))
+    const stream = createValidatedPlatformStream(new Response(upstream), {
+      keepAlive: true,
+      metadata: () => ({
+        chatMode: 'tutor',
+        modelId: 'synthetic',
+        reasoningEffort: null,
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        creditsUsed: null,
+        finalPersistenceStatus: 'not-persisted',
+      }),
+      finalize,
+    })
+    const reader = stream.getReader()
+    try {
+      for (let i = 0; i < 5; i++) {
+        const next = reader.read()
+        await vi.advanceTimersByTimeAsync(15_000)
+        const chunk = await next
+        expect(chunk.done).toBe(false)
+        expect(new TextDecoder().decode(chunk.value)).toBe(': keep-alive\n\n')
+      }
+      expect(finalize).not.toHaveBeenCalled()
+    } finally {
+      await reader.cancel()
+      vi.useRealTimers()
+    }
+    expect(stopped).toHaveBeenCalledOnce()
+  })
+
   test('does not finalize twice when abort follows abort metadata', async () => {
     const finalize = vi.fn(async () => ({
       creditsUsed: 0.000001,
@@ -646,4 +684,75 @@ test.each([
     if ('closeAllConnections' in server) server.closeAllConnections()
     await new Promise<void>((resolve) => server.close(() => resolve()))
   }
+})
+
+test.each([
+  'v1',
+  'v2',
+] as const)('keeps hidden reasoning canonical while suppressing every participant transport: %s', async (contractVersion) => {
+  const finishMetadata = {
+    ...metadata(),
+    contractVersion,
+    reasoningContent: 'synthetic private reasoning',
+  }
+  const finalize = vi.fn(async (_state: StreamState) => ({
+    creditsUsed: 0,
+    finalPersistenceStatus: 'persisted' as const,
+  }))
+  const response = await read(
+    createValidatedPlatformStream(
+      responseFor([
+        {
+          type: 'start',
+          messageId: 'assistant-1',
+          ...(contractVersion === 'v2'
+            ? { messageMetadata: finishMetadata }
+            : {}),
+        },
+        { type: 'reasoning-start', id: 'reason' },
+        {
+          type: 'reasoning-delta',
+          id: 'reason',
+          delta: finishMetadata.reasoningContent,
+        },
+        { type: 'reasoning-end', id: 'reason' },
+        { type: 'message-metadata', messageMetadata: finishMetadata },
+        { type: 'text-start', id: 'answer' },
+        { type: 'text-delta', id: 'answer', delta: 'synthetic answer' },
+        { type: 'text-end', id: 'answer' },
+        {
+          type: 'finish',
+          finishReason: 'stop',
+          messageMetadata: finishMetadata,
+        },
+      ]),
+      {
+        contractVersion,
+        showReasoning: false,
+        finalize,
+        metadata: () => ({
+          chatMode: 'cm_hidden',
+          modelId: 'model',
+          reasoningEffort: 'low',
+          userMessageId: 'user',
+          assistantMessageId: 'assistant',
+          creditsUsed: null,
+          finalPersistenceStatus: 'not-persisted',
+        }),
+      }
+    )
+  )
+  const parts = response
+    .split('\n')
+    .filter((line) => line.startsWith('data: {'))
+    .map((line) => JSON.parse(line.slice(6)))
+  expect(parts.some((part) => part.type.startsWith('reasoning-'))).toBe(false)
+  expect(
+    parts
+      .filter((part) => part.messageMetadata)
+      .every((part) => part.messageMetadata.reasoningContent === null)
+  ).toBe(true)
+  expect(finalize.mock.calls[0]?.[0].reasoning).toBe(
+    finishMetadata.reasoningContent
+  )
 })

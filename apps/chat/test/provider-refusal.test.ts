@@ -70,6 +70,17 @@ describe('providerRefusalTransform', () => {
     })
   })
 
+  test.each([
+    {},
+    { inputTokens: 0 },
+    { outputTokens: 0 },
+  ])('preserves short output when a usage counter is unknown: %j', async (usage) => {
+    const onSubstitute = vi.fn()
+    const parts = step(['Short ', 'answer.'], usage)
+    expect(await run(parts, onSubstitute)).toEqual(parts)
+    expect(onSubstitute).not.toHaveBeenCalled()
+  })
+
   test('keeps a short answer the model was billed for', async () => {
     const onSubstitute = vi.fn()
     const parts = step(['Short ', 'answer.'], {

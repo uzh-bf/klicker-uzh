@@ -20,10 +20,12 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 vi.mock('@/src/lib/server/apiGuards', () => ({ withChatbotAuth: mocks.auth }))
-vi.mock('@/src/lib/server/courseImageStore', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/courseImageStore', () => ({
   readCourseImage: mocks.read,
 }))
-vi.mock('@/src/services/mcpScope', () => ({ resolveMcpScope: mocks.scope }))
+vi.mock('@klicker-uzh/chat-api/host/services/mcpScope', () => ({
+  resolveMcpScope: mocks.scope,
+}))
 
 import { GET } from '../src/app/api/chatbots/[chatbotId]/threads/[threadId]/messages/[messageId]/images/[assetId]/route'
 

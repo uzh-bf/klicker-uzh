@@ -1,5 +1,9 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import type { ResolvedGeneration } from '@klicker-uzh/chat-engine-contract'
+import {
+  createOpenAIFetch,
+  type EngineV2ChatRequest,
+  type ResolvedGeneration,
+} from '@klicker-uzh/chat-engine-contract'
 import type { LanguageModel } from 'ai'
 
 export type ProviderConfig = {
@@ -8,35 +12,8 @@ export type ProviderConfig = {
   providerAllowedOrigins?: ReadonlySet<string>
 }
 
-/**
- * The current chat route needs this small Responses API compatibility patch for
- * strict OpenAI-compatible providers. Keeping it in the engine makes the
- * provider behavior identical while removing provider details from chat-api.
- */
-export const responsesApiFetch: typeof globalThis.fetch = async (
-  input,
-  init
-) => {
-  if (init?.body && typeof init.body === 'string') {
-    try {
-      const body = JSON.parse(init.body) as { input?: unknown }
-      if (Array.isArray(body.input)) {
-        body.input = body.input.map((item: Record<string, unknown>) =>
-          item.role === 'assistant'
-            ? { ...item, type: 'message', status: 'completed' }
-            : item
-        )
-        init = { ...init, body: JSON.stringify(body) }
-      }
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error
-    }
-  }
-  return globalThis.fetch(input, init)
-}
-
 export function createProviderModel(
-  generation: ResolvedGeneration,
+  generation: ResolvedGeneration | EngineV2ChatRequest['generation'],
   providerApiKey: string,
   config: ProviderConfig
 ): LanguageModel {
@@ -51,21 +28,32 @@ export function createProviderModel(
   const provider = createOpenAI({
     baseURL: baseUrl,
     apiKey: providerApiKey,
-    fetch: responsesApiFetch,
+    fetch: createOpenAIFetch(
+      generation.credentialMode.mode === 'gateway' ? 'custom' : 'default'
+    ),
   })
-  const usesResponsesApi = generation.reasoningEffort !== 'none'
+  const usesResponsesApi =
+    'providerApi' in generation && generation.providerApi
+      ? generation.providerApi === 'responses'
+      : generation.reasoningEffort !== 'none'
   return usesResponsesApi
     ? provider.responses(generation.deploymentId)
     : provider.chat(generation.deploymentId)
 }
 
-export function providerOptionsForGeneration(generation: ResolvedGeneration) {
-  const usesResponsesApi = generation.reasoningEffort !== 'none'
+export function providerOptionsForGeneration(
+  generation: ResolvedGeneration | EngineV2ChatRequest['generation']
+) {
+  const usesResponsesApi =
+    'providerApi' in generation && generation.providerApi
+      ? generation.providerApi === 'responses'
+      : generation.reasoningEffort !== 'none'
   return {
     openai: {
       ...(usesResponsesApi ? { store: generation.responseStorage } : {}),
-      ...(usesResponsesApi
+      ...(generation.reasoningEffort !== 'none'
         ? {
+            forceReasoning: true,
             reasoningEffort: generation.reasoningEffort,
             reasoningSummary: generation.reasoningSummary,
           }

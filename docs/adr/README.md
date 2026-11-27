@@ -44,7 +44,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0056](./0056-lecturer-ai-access-by-feature.md) — Lecturer AI features open by feature: the assistant to Catalyst, knowledge bases and chatbots to UZH by default, question generation behind its own flag
 - [0057](./0057-regeneration-inputs-live-in-the-database.md) — Each element generation build keeps a slot specification per slot in the database, so a slot can be reworked after blob artifacts are purged; evidence text follows its knowledge base
 
-- [0056](./0056-chat-engine-parity-contract-generation.md) — Full participant parity uses an explicit chat-engine contract generation
+- [0058](./0058-chat-engine-parity-contract-generation.md) — Full participant parity uses an explicit chat-engine contract generation
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

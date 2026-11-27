@@ -5,34 +5,53 @@ import {
   CHAT_ENGINE_CONTRACT_V2,
   CHAT_ENGINE_CONTRACT_VERSION,
   CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+  CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES,
+  CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES,
+  CHAT_ENGINE_V2_TOOL_PROJECTION_TIMEOUT_MS,
+  EXPLANATION_WRITER_CAPABILITY_HEADER,
+  engineExplanationDraftRequestSchema,
+  engineExplanationDraftResultSchema,
   type SupportedEngineChatRequest as EngineChatRequest,
   type EngineContractVersion,
   type SupportedEngineFinishMetadata as EngineFinishMetadata,
   type EngineManifest,
   type SupportedEngineMessage as EngineMessage,
+  type EngineExplanationDraftRequest,
   type EngineUsage,
+  chatToolStepBudget,
   engineChatRequestSchema,
   engineManifestSchema,
+  engineToolExecutionV2RequestSchema,
   engineToolExecutionV2ResultSchema,
+  engineToolProjectionV2RequestSchema,
+  engineToolProjectionV2ResultSchema,
   engineV2ChatRequestSchema,
   engineV2ManifestSchema,
+  explanationAttemptsLeft,
   MCP_EXECUTION_TOKEN_HEADER,
   parseProviderAllowedOrigins,
   providerOriginIsAllowed,
   type ResolvedGeneration,
+  SHOW_EXPLANATION_TOOL_NAME,
   validateProviderCredentialHeaders,
 } from '@klicker-uzh/chat-engine-contract'
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   dynamicTool,
+  tool as defineTool,
   isStepCount,
   type JSONValue,
   jsonSchema,
+  generateText,
   type LanguageModel,
+  type LanguageModelUsage,
   type ModelMessage,
+  type StreamTextTransform,
   streamText,
+  type TextStreamPart,
   type ToolResultPart,
+  type ToolSet,
   type UIMessage,
   type UIMessageChunk,
   type UIMessageStreamWriter,
@@ -48,12 +67,51 @@ import {
 const DEFAULT_ENGINE_ID = 'public-ai-sdk'
 const DEFAULT_PORT = 3015
 
+const EXPLANATION_DRAFT_TOOL_NAME = 'submit_explanation'
+const EXPLANATION_DRAFT_MAX_OUTPUT_TOKENS = 20_000
+
+/** Host tools whose budget changes the number of steps a turn may use. */
+const SHOW_FEEDBACK_TOOL_NAME = 'show_feedback'
+/** Failed feedback attempts per turn; the host tool counts the same cap. */
+const MAX_FEEDBACK_ATTEMPTS = 3
+
+type StepPart = { type: string; toolName?: string; output?: unknown }
+
+/**
+ * A feedback attempt is one step. After the cap the tool is withdrawn, so a
+ * model that cannot produce valid feedback answers in text instead.
+ */
+function feedbackAttemptsLeft(
+  steps: ReadonlyArray<{ content: ReadonlyArray<StepPart> }>
+): boolean {
+  let failed = 0
+  for (const step of steps)
+    for (const part of step.content) {
+      if (part.toolName !== SHOW_FEEDBACK_TOOL_NAME) continue
+      if (
+        part.type === 'tool-error' ||
+        (part.type === 'tool-result' &&
+          (part.output as { kind?: string } | undefined)?.kind ===
+            'feedback-invalid')
+      )
+        failed++
+    }
+  return failed < MAX_FEEDBACK_ATTEMPTS
+}
+
 export type ToolExecutionContext = {
   tool: ApprovedTool
+  toolCallId: string
   input: unknown
   token: string
   abortSignal: AbortSignal
   contractVersion: EngineContractVersion
+}
+
+export type ToolProjectionContext = {
+  toolCallIds: string[]
+  token: string
+  abortSignal: AbortSignal
 }
 
 export type DefaultEngineOptions = ProviderConfig & {
@@ -61,10 +119,11 @@ export type DefaultEngineOptions = ProviderConfig & {
   serviceToken?: string
   mcpExecutionUrl?: string
   modelFactory?: (
-    generation: ResolvedGeneration,
+    generation: EngineChatRequest['generation'],
     providerApiKey: string
   ) => LanguageModel
   toolExecutor?: (context: ToolExecutionContext) => Promise<unknown>
+  toolProjector?: (context: ToolProjectionContext) => Promise<unknown>
 }
 
 const DEFAULT_MANIFEST: EngineManifest = engineManifestSchema.parse({
@@ -260,12 +319,75 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
   return modelMessages
 }
 
+async function readBoundedJson(response: Response, maxBytes: number) {
+  const contentLength = response.headers.get('content-length')
+  if (contentLength && Number(contentLength) > maxBytes) {
+    void response.body?.cancel().catch(() => undefined)
+    throw new Error('MCP response exceeds its byte limit.')
+  }
+  if (!response.body) throw new Error('MCP response has no body.')
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > maxBytes) {
+        void reader.cancel().catch(() => undefined)
+        throw new Error('MCP response exceeds its byte limit.')
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  return JSON.parse(
+    new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))
+  )
+}
+
+async function withProjectionDeadline<T>(
+  requestSignal: AbortSignal,
+  operation: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  requestSignal.throwIfAborted()
+  const controller = new AbortController()
+  const abortRequest = () => controller.abort(requestSignal.reason)
+  requestSignal.addEventListener('abort', abortRequest, { once: true })
+  const timer = setTimeout(
+    () =>
+      controller.abort(
+        new DOMException('Projection timed out.', 'TimeoutError')
+      ),
+    CHAT_ENGINE_V2_TOOL_PROJECTION_TIMEOUT_MS
+  )
+  let rejectAbort: (() => void) | undefined
+  try {
+    const aborted = new Promise<never>((_, reject) => {
+      rejectAbort = () => reject(controller.signal.reason)
+      controller.signal.addEventListener('abort', rejectAbort, { once: true })
+    })
+    requestSignal.throwIfAborted()
+    const result = await Promise.race([operation(controller.signal), aborted])
+    controller.signal.throwIfAborted()
+    requestSignal.throwIfAborted()
+    return result
+  } finally {
+    clearTimeout(timer)
+    requestSignal.removeEventListener('abort', abortRequest)
+    if (rejectAbort) controller.signal.removeEventListener('abort', rejectAbort)
+  }
+}
+
 function buildTools(
   tools: ApprovedTool[],
   token: string,
   options: DefaultEngineOptions,
   requestSignal: AbortSignal,
-  contractVersion: EngineContractVersion
+  contractVersion: EngineContractVersion,
+  validatedToolResults: Set<string>
 ) {
   const executeTool =
     options.toolExecutor ??
@@ -278,20 +400,29 @@ function buildTools(
           'content-type': 'application/json',
           authorization: `Bearer ${context.token}`,
         },
-        body: JSON.stringify({
-          serverId: context.tool.serverId,
-          toolName: context.tool.name,
-          input: context.input,
-          ...(context.contractVersion === CHAT_ENGINE_CONTRACT_V2
-            ? { contractVersion: context.contractVersion }
-            : {}),
-        }),
+        body: JSON.stringify(
+          context.contractVersion === CHAT_ENGINE_CONTRACT_V2
+            ? engineToolExecutionV2RequestSchema.parse({
+                contractVersion: context.contractVersion,
+                toolCallId: context.toolCallId,
+                serverId: context.tool.serverId,
+                toolName: context.tool.name,
+                input: context.input,
+              })
+            : {
+                serverId: context.tool.serverId,
+                toolName: context.tool.name,
+                input: context.input,
+              }
+        ),
         signal: context.abortSignal,
       })
       if (!response.ok) {
         throw new Error(`MCP execution failed with HTTP ${response.status}.`)
       }
-      return await response.json()
+      return context.contractVersion === CHAT_ENGINE_CONTRACT_V2
+        ? await readBoundedJson(response, CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES)
+        : await response.json()
     })
 
   const modelOutputs = new Map<string, ToolResultPart['output']>()
@@ -302,16 +433,20 @@ function buildTools(
         description: tool.description,
         inputSchema: jsonSchema(tool.inputSchema as never),
         execute: async (input, executionOptions) => {
+          const abortSignal = executionOptions.abortSignal ?? requestSignal
           const result = await executeTool({
             tool,
+            toolCallId: executionOptions.toolCallId,
             input,
             token,
-            abortSignal: executionOptions.abortSignal ?? requestSignal,
+            abortSignal,
             contractVersion,
           })
           if (contractVersion === CHAT_ENGINE_CONTRACT_VERSION) return result
           const { output, modelOutput } =
             engineToolExecutionV2ResultSchema.parse(result)
+          abortSignal.throwIfAborted()
+          validatedToolResults.add(executionOptions.toolCallId)
           if (modelOutput !== undefined)
             modelOutputs.set(
               executionOptions.toolCallId,
@@ -426,6 +561,108 @@ function resolveProviderKey(
   return { providerApiKey: key } as const
 }
 
+const MAX_HELD_TEXT_LENGTH = 120
+
+/**
+ * A step that returned text while reporting exactly zero input and output tokens
+ * never reached the model: inference always reads the prompt. A provider or
+ * gateway safety layer answers some requests this way, with a generic
+ * refusal sentence, before the mode instructions apply.
+ */
+export function isUnbilledProviderReply(usage: LanguageModelUsage): boolean {
+  return usage.inputTokens === 0 && usage.outputTokens === 0
+}
+
+/**
+ * Replaces a step's text with `deflection` when the step turns out to be an
+ * unbilled provider reply, so a chat mode never shows the provider's generic
+ * refusal and a persona never breaks role. Only a step's text is held, and
+ * only until the step finishes, the model streams reasoning or calls a tool,
+ * or the held text exceeds a canned sentence; each of those proves a genuine
+ * answer and releases the text unchanged. Other parts pass through at once.
+ */
+export function providerRefusalTransform<TOOLS extends ToolSet>(
+  deflection: string,
+  onSubstitute?: (finish: {
+    finishReason: string
+    rawFinishReason: string | undefined
+  }) => void
+): StreamTextTransform<TOOLS> {
+  return () => {
+    let held: TextStreamPart<TOOLS>[] | null = null
+    let heldTextLength = 0
+
+    return new TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>({
+      transform(part, controller) {
+        if (part.type === 'start-step') {
+          held = []
+          heldTextLength = 0
+          controller.enqueue(part)
+          return
+        }
+        if (held === null) {
+          controller.enqueue(part)
+          return
+        }
+
+        if (part.type === 'finish-step') {
+          const parts = held
+          held = null
+          const hasText = parts.some(
+            (p) => p.type === 'text-delta' && p.text.length > 0
+          )
+          if (hasText && isUnbilledProviderReply(part.usage)) {
+            onSubstitute?.({
+              finishReason: part.finishReason,
+              rawFinishReason: part.rawFinishReason,
+            })
+            let replaced = false
+            for (const p of parts) {
+              if (p.type !== 'text-delta') {
+                controller.enqueue(p)
+              } else if (!replaced) {
+                replaced = true
+                controller.enqueue({ ...p, text: deflection })
+              }
+            }
+          } else {
+            for (const p of parts) controller.enqueue(p)
+          }
+          controller.enqueue(part)
+          return
+        }
+
+        const isText =
+          part.type === 'text-start' ||
+          part.type === 'text-delta' ||
+          part.type === 'text-end'
+        if (!isText) {
+          const provesGenuineAnswer =
+            (part.type === 'reasoning-delta' && part.text.length > 0) ||
+            part.type === 'tool-input-start' ||
+            part.type === 'tool-call'
+          if (provesGenuineAnswer) {
+            for (const p of held) controller.enqueue(p)
+            held = null
+          }
+          controller.enqueue(part)
+          return
+        }
+
+        held.push(part)
+        if (part.type === 'text-delta') heldTextLength += part.text.length
+        if (heldTextLength > MAX_HELD_TEXT_LENGTH) {
+          for (const p of held) controller.enqueue(p)
+          held = null
+        }
+      },
+      flush(controller) {
+        if (held) for (const p of held) controller.enqueue(p)
+      },
+    })
+  }
+}
+
 export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
   options.deploymentBaseUrl ??= process.env.OPENAI_BASE_URL
   options.providerAllowedOrigins ??= parseProviderAllowedOrigins(
@@ -471,6 +708,159 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
     })
   )
 
+  app.use('/v2/explanation-draft', async (c, next) => {
+    if (!serviceAuthorized(c.req.raw, serviceToken)) {
+      return jsonError(
+        401,
+        'ENGINE_AUTH_REQUIRED',
+        'Engine service authentication is required.',
+        false,
+        CHAT_ENGINE_CONTRACT_V2
+      )
+    }
+    await next()
+  })
+  app.use(
+    '/v2/explanation-draft',
+    bodyLimit({
+      maxSize: CHAT_ENGINE_MAX_V2_REQUEST_BYTES,
+      onError: () =>
+        jsonError(
+          413,
+          'ENGINE_REQUEST_TOO_LARGE',
+          'The engine request exceeds its byte limit.',
+          false,
+          CHAT_ENGINE_CONTRACT_V2
+        ),
+    })
+  )
+  app.post('/v2/explanation-draft', async (c) => {
+    const fail = (
+      status: number,
+      code: string,
+      message: string,
+      retryable = false
+    ) => jsonError(status, code, message, retryable, CHAT_ENGINE_CONTRACT_V2)
+
+    let request: EngineExplanationDraftRequest
+    try {
+      request = engineExplanationDraftRequestSchema.parse(await c.req.json())
+    } catch {
+      return fail(
+        400,
+        'INVALID_ENGINE_REQUEST',
+        'The engine request is invalid.'
+      )
+    }
+    const provider = resolveProviderKey(
+      c.req.raw,
+      request.generation,
+      options,
+      options.modelFactory ? 'model-factory' : undefined
+    )
+    if ('error' in provider) return fail(400, provider.code, provider.error)
+
+    let model: LanguageModel
+    try {
+      model = options.modelFactory
+        ? options.modelFactory(request.generation, provider.providerApiKey)
+        : createProviderModel(
+            request.generation,
+            provider.providerApiKey,
+            options
+          )
+    } catch {
+      return fail(
+        503,
+        'ENGINE_NOT_CONFIGURED',
+        'The selected engine is not configured.',
+        true
+      )
+    }
+
+    const messages: ModelMessage[] = [{ role: 'user', content: request.prompt }]
+    for (const [index, attempt] of request.previous.entries()) {
+      const toolCallId = `previous-${index}`
+      messages.push(
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId,
+              toolName: EXPLANATION_DRAFT_TOOL_NAME,
+              input: attempt.draft,
+            },
+          ],
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId,
+              toolName: EXPLANATION_DRAFT_TOOL_NAME,
+              output: { type: 'error-text', value: attempt.feedback },
+            },
+          ],
+        }
+      )
+    }
+
+    try {
+      const result = await generateText({
+        model,
+        system: request.systemPrompt,
+        messages,
+        tools: {
+          [EXPLANATION_DRAFT_TOOL_NAME]: defineTool({
+            description: 'Submit the explanation draft.',
+            inputSchema: jsonSchema(request.inputSchema as never),
+          }),
+        },
+        toolChoice: {
+          type: 'tool' as const,
+          toolName: EXPLANATION_DRAFT_TOOL_NAME,
+        },
+        // Only the forced tool call is wanted; never run the tool or loop.
+        stopWhen: isStepCount(1),
+        maxOutputTokens: EXPLANATION_DRAFT_MAX_OUTPUT_TOKENS,
+        providerOptions: providerOptionsForGeneration(request.generation),
+        maxRetries: 0,
+        abortSignal: c.req.raw.signal,
+      })
+      const call = result.toolCalls[0]
+      const body = engineExplanationDraftResultSchema.parse({
+        draft:
+          result.toolCalls.length === 1 &&
+          call?.toolName === EXPLANATION_DRAFT_TOOL_NAME &&
+          !call.invalid
+            ? call.input
+            : null,
+        usage: {
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+        },
+      })
+      if (
+        Buffer.byteLength(JSON.stringify(body)) >
+        CHAT_ENGINE_MAX_V2_TOOL_RESULT_BYTES
+      )
+        return fail(
+          502,
+          'ENGINE_DRAFT_FAILED',
+          'Explanation draft exceeds the result limit.'
+        )
+      return c.json(body)
+    } catch {
+      return fail(
+        502,
+        'ENGINE_DRAFT_FAILED',
+        'The selected engine could not complete the draft.'
+      )
+    }
+  })
+
   for (const version of [
     CHAT_ENGINE_CONTRACT_VERSION,
     CHAT_ENGINE_CONTRACT_V2,
@@ -487,7 +877,14 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       message: string,
       retryable = false
     ) => jsonError(status, code, message, retryable, version)
-    app.get(`/${version}/manifest`, (c) => c.json(manifest))
+    app.get(`/${version}/manifest`, (c) => {
+      if (
+        version === CHAT_ENGINE_CONTRACT_V2 &&
+        serviceAuthorized(c.req.raw, serviceToken)
+      )
+        c.header(EXPLANATION_WRITER_CAPABILITY_HEADER, '1')
+      return c.json(manifest)
+    })
     app.post(`/${version}/chat`, async (c) => {
       if (!serviceAuthorized(c.req.raw, serviceToken)) {
         return fail(
@@ -552,6 +949,15 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       let reasoningContent = ''
       let writer: UIMessageStreamWriter | undefined
       const completedCalls: Array<{ usage: unknown }> = []
+      const validatedToolResults = new Set<string>()
+      const startedToolInputs = new Set<string>()
+      const canonicalToolStarts: string[] = []
+      const deliveredToolResults = new Set<string>()
+      let acceptedProjectionIds: string[] = []
+      const uiProgressListeners = new Set<() => void>()
+      const signalUiProgress = () => {
+        for (const listener of uiProgressListeners) listener()
+      }
       const tools =
         request.tools.length > 0
           ? buildTools(
@@ -559,20 +965,258 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
               mcpToken!,
               options,
               c.req.raw.signal,
-              request.contractVersion
+              request.contractVersion,
+              validatedToolResults
             )
           : undefined
 
+      const projectToolResults = async (responseMessages: ModelMessage[]) => {
+        c.req.raw.signal.throwIfAborted()
+        const resultIds = responseMessages.flatMap((message) =>
+          message.role === 'tool'
+            ? message.content
+                .filter((part) => part.type === 'tool-result')
+                .map((part) => part.toolCallId)
+            : []
+        )
+        const expected = resultIds.filter((id) => validatedToolResults.has(id))
+        if (
+          expected.length !== validatedToolResults.size ||
+          new Set(expected).size !== expected.length
+        ) {
+          throw new Error('Validated tool results do not match model messages.')
+        }
+        if (expected.length === 0) return responseMessages
+
+        // The next step can be prepared before its prior UI events are read.
+        // Wait for those events to preserve the assistant's persisted order.
+        const requestSignal = c.req.raw.signal
+        await new Promise<void>((resolve, reject) => {
+          const cleanup = () => {
+            uiProgressListeners.delete(check)
+            requestSignal.removeEventListener('abort', abort)
+          }
+          const abort = () => {
+            cleanup()
+            reject(requestSignal.reason)
+          }
+          const check = () => {
+            if (
+              expected.every(
+                (id) =>
+                  startedToolInputs.has(id) && deliveredToolResults.has(id)
+              )
+            ) {
+              cleanup()
+              resolve()
+            }
+          }
+          uiProgressListeners.add(check)
+          requestSignal.addEventListener('abort', abort, { once: true })
+          if (requestSignal.aborted) abort()
+          else check()
+        })
+        const ids = canonicalToolStarts.filter(
+          (id) => validatedToolResults.has(id) && deliveredToolResults.has(id)
+        )
+        const projectionRequest = engineToolProjectionV2RequestSchema.parse({
+          contractVersion: CHAT_ENGINE_CONTRACT_V2,
+          toolCallIds: ids,
+        })
+        if (
+          ids.length !== expected.length ||
+          !expected.every((id) => ids.includes(id))
+        ) {
+          throw new Error(
+            'Canonical tool starts do not match delivered results.'
+          )
+        }
+        if (
+          ids.length < acceptedProjectionIds.length ||
+          acceptedProjectionIds.some((id, index) => ids[index] !== id)
+        ) {
+          throw new Error('Previously projected tool order changed.')
+        }
+        return await withProjectionDeadline(requestSignal, async (signal) => {
+          const projector =
+            options.toolProjector ??
+            (async (context: ToolProjectionContext) => {
+              const endpoint =
+                options.mcpExecutionUrl ?? process.env.MCP_EXECUTION_URL
+              if (!endpoint) throw new Error('MCP execution is not configured.')
+              const url = new URL(endpoint)
+              if (!url.pathname.endsWith('/execute') || url.search || url.hash)
+                throw new Error('MCP execution URL does not end in /execute.')
+              url.pathname = `${url.pathname.slice(0, -'/execute'.length)}/project`
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  authorization: `Bearer ${context.token}`,
+                },
+                body: JSON.stringify(projectionRequest),
+                signal: context.abortSignal,
+                redirect: 'error',
+              })
+              if (!response.ok)
+                throw new Error(
+                  `MCP projection failed with HTTP ${response.status}.`
+                )
+              return await readBoundedJson(
+                response,
+                CHAT_ENGINE_MAX_V2_TOOL_PROJECTION_BYTES
+              )
+            })
+          const rawResult = await projector({
+            toolCallIds: projectionRequest.toolCallIds,
+            token: mcpToken!,
+            abortSignal: signal,
+          })
+          signal.throwIfAborted()
+          const projection = engineToolProjectionV2ResultSchema.parse(rawResult)
+          if (
+            projection.outputs.length !== ids.length ||
+            projection.outputs.some(
+              (output, index) => output.toolCallId !== ids[index]
+            )
+          ) {
+            throw new Error(
+              'MCP projection does not match the requested call order.'
+            )
+          }
+          acceptedProjectionIds = [...ids]
+          const outputs = new Map(
+            projection.outputs.map(
+              (output) =>
+                [
+                  output.toolCallId,
+                  output.modelOutput as ToolResultPart['output'],
+                ] as const
+            )
+          )
+          return responseMessages.map((message) =>
+            message.role === 'tool'
+              ? {
+                  ...message,
+                  content: message.content.map((part) =>
+                    part.type === 'tool-result' && outputs.has(part.toolCallId)
+                      ? { ...part, output: outputs.get(part.toolCallId)! }
+                      : part
+                  ),
+                }
+              : message
+          )
+        })
+      }
+
+      const stepPolicy =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2
+          ? request.stepPolicy
+          : undefined
+      const explanationToolActive =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2 &&
+        request.tools.some(
+          (tool) =>
+            tool.serverId === 'klicker-host' &&
+            tool.name === SHOW_EXPLANATION_TOOL_NAME
+        )
+      const feedbackToolActive =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2 &&
+        request.tools.some(
+          (tool) =>
+            tool.serverId === 'klicker-host' &&
+            tool.name === SHOW_FEEDBACK_TOOL_NAME
+        )
+      // Each feedback attempt is a step; three attempts plus retrieval and the
+      // closing text need more than the usual five. An explanation call is one
+      // step, because its writer repairs drafts inside the tool. One more step
+      // is added for the text-only answer, so it never takes a tool call's slot.
+      const finalTextStep =
+        request.contractVersion === CHAT_ENGINE_CONTRACT_V2 && !!tools
+      const maxSteps = finalTextStep
+        ? chatToolStepBudget(explanationToolActive || feedbackToolActive)
+        : 5
       const result = streamText({
         model,
         system: request.systemPrompt,
         messages: toModelMessages(request.messages),
+        ...(stepPolicy || finalTextStep
+          ? {
+              allowSystemInMessages: true,
+              prepareStep: async ({
+                stepNumber,
+                steps,
+                initialMessages,
+                responseMessages,
+              }) => {
+                const projectedMessages =
+                  stepNumber > 0 && stepPolicy?.projectToolResults
+                    ? await projectToolResults(responseMessages)
+                    : responseMessages
+                return {
+                  ...((explanationToolActive &&
+                    !explanationAttemptsLeft(steps)) ||
+                  (feedbackToolActive && !feedbackAttemptsLeft(steps))
+                    ? {
+                        activeTools: Object.keys(tools ?? {}).filter(
+                          (name) =>
+                            !(
+                              (name === SHOW_EXPLANATION_TOOL_NAME &&
+                                explanationToolActive &&
+                                !explanationAttemptsLeft(steps)) ||
+                              (name === SHOW_FEEDBACK_TOOL_NAME &&
+                                feedbackToolActive &&
+                                !feedbackAttemptsLeft(steps))
+                            )
+                        ),
+                      }
+                    : {}),
+                  // The last allowed step must write the answer. Without this,
+                  // a turn that spends every step on tool calls ends with no
+                  // text at all.
+                  toolChoice:
+                    stepNumber === 0 && stepPolicy?.firstToolName
+                      ? {
+                          type: 'tool' as const,
+                          toolName: stepPolicy.firstToolName,
+                        }
+                      : stepNumber === maxSteps - 1
+                        ? ('none' as const)
+                        : ('auto' as const),
+                  messages: [
+                    ...initialMessages,
+                    ...projectedMessages,
+                    ...(stepPolicy
+                      ? [
+                          {
+                            role: 'system' as const,
+                            content: stepPolicy.trailingSystemMessage,
+                          },
+                        ]
+                      : []),
+                  ],
+                }
+              },
+            }
+          : {}),
         ...(request.generation.maxOutputTokens
           ? { maxOutputTokens: request.generation.maxOutputTokens }
           : {}),
         providerOptions: providerOptionsForGeneration(request.generation),
         ...(tools
-          ? { tools, toolChoice: 'auto' as const, stopWhen: isStepCount(5) }
+          ? {
+              tools,
+              toolChoice: 'auto' as const,
+              stopWhen: isStepCount(maxSteps),
+            }
+          : {}),
+        ...('stepPolicy' in request &&
+        request.stepPolicy?.unbilledReplyReplacement !== undefined
+          ? {
+              experimental_transform: providerRefusalTransform(
+                request.stepPolicy.unbilledReplyReplacement
+              ),
+            }
           : {}),
         maxRetries: 0,
         abortSignal: c.req.raw.signal,
@@ -622,7 +1266,6 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
         generateId: () => request.assistantMessageId,
         execute: ({ writer: streamWriter }) => {
           writer = streamWriter
-          const startedToolInputs = new Set<string>()
           streamWriter.merge(
             result
               .toUIMessageStream({
@@ -653,8 +1296,11 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
               .pipeThrough(
                 new TransformStream<UIMessageChunk, UIMessageChunk>({
                   transform(part, controller) {
-                    if (part.type === 'tool-input-start')
+                    if (part.type === 'tool-input-start') {
                       startedToolInputs.add(part.toolCallId)
+                      canonicalToolStarts.push(part.toolCallId)
+                      signalUiProgress()
+                    }
                     // Providers can return complete calls without streaming arguments.
                     // Atomic calls still need the platform contract's start event.
                     if (
@@ -663,13 +1309,19 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
                       !startedToolInputs.has(part.toolCallId)
                     ) {
                       startedToolInputs.add(part.toolCallId)
+                      canonicalToolStarts.push(part.toolCallId)
                       controller.enqueue({
                         type: 'tool-input-start',
                         toolCallId: part.toolCallId,
                         toolName: part.toolName,
                       })
+                      signalUiProgress()
                     }
                     controller.enqueue(part)
+                    if (part.type === 'tool-output-available') {
+                      deliveredToolResults.add(part.toolCallId)
+                      signalUiProgress()
+                    }
                   },
                 })
               )

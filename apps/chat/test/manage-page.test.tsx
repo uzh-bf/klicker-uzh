@@ -13,7 +13,7 @@ vi.mock('next/navigation', () => ({ notFound: mocks.notFound }))
 vi.mock('@/src/components/manage-assistant', () => ({
   ManageAssistant: () => null,
 }))
-vi.mock('@/src/lib/server/featureFlags', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/featureFlags', () => ({
   getManageAssistantCapability: mocks.getManageAssistantCapability,
 }))
 vi.mock('@/src/lib/server/manageAuth', () => ({

@@ -10,7 +10,7 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
 }))
 
-vi.mock('@/src/services/threads', () => ({
+vi.mock('@klicker-uzh/chat-api/host/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
   },

@@ -20,7 +20,7 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
   StreamableHTTPClientTransport: vi.fn(),
 }))
 
-vi.mock('@/src/lib/server/mcpAuthMint', () => ({
+vi.mock('@klicker-uzh/chat-api/host/lib/server/mcpAuthMint', () => ({
   mintLecturerMcpJwt: vi.fn().mockResolvedValue('mock-lecturer-jwt'),
 }))
 

@@ -17,7 +17,7 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "lib": ["es2022", "dom"],
+    "lib": ["es2023", "dom"],
     "types": ["vitest/globals", "node"]
   }
 }

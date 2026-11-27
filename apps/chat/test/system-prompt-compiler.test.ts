@@ -1,20 +1,23 @@
 import { describe, expect, test, vi } from 'vitest'
 
-vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../src/lib/server/promptTemplates')>()
+vi.mock(
+  '@klicker-uzh/chat-api/host/lib/server/promptTemplates',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<typeof import('../src/lib/server/promptTemplates')>()
 
-  return {
-    ...actual,
-    renderPromptTemplate: vi.fn((name: string, context: unknown) =>
-      name === 'citation-contract'
-        ? '<SYNTHETIC-CITATION-CONTRACT>'
-        : name === 'course-images' || name === 'course-image-vision'
-          ? JSON.stringify({ template: name, context })
-          : actual.renderPromptTemplate(name as never, context as never)
-    ),
+    return {
+      ...actual,
+      renderPromptTemplate: vi.fn((name: string, context: unknown) =>
+        name === 'citation-contract'
+          ? '<SYNTHETIC-CITATION-CONTRACT>'
+          : name === 'course-images' || name === 'course-image-vision'
+            ? JSON.stringify({ template: name, context })
+            : actual.renderPromptTemplate(name as never, context as never)
+      ),
+    }
   }
-})
+)
 
 import { CHAT_MODE_KEYS } from '../scripts/chat-mode-keys.mjs'
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
@@ -465,23 +468,18 @@ describe('compileSystemPrompt', () => {
   })
 
   test('compiles the approved custom-mode persona with the platform sections last', () => {
+    const modeKey = `cm_${crypto.randomUUID()}`
     const approved = {
       modes: [
         {
-          key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+          key: modeKey,
           name: 'Ethik-Rollenspiel',
           description: 'Practises ethical reasoning in a role play.',
           personaText: 'APPROVED-CUSTOM-PERSONA',
         },
       ],
     }
-    const result = compilePrompt(
-      null,
-      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
-      [DOC_TOOL],
-      null,
-      approved
-    )
+    const result = compilePrompt(null, modeKey, [DOC_TOOL], null, approved)
 
     expect(result.startsWith(COURSE_DATA_MARK)).toBe(true)
     expect(result).toContain(CUSTOM_PERSONA_MARK)
