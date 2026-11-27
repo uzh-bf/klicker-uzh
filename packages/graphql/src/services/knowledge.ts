@@ -42,6 +42,8 @@ import {
   getPositiveObjectPermission,
   isChatbotStandardModeKey,
   normalizeChatbotCustomModeConfig,
+  resolveSharedObjectPermission,
+  sharedObjectUserPermissionWhere,
 } from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
@@ -527,24 +529,23 @@ interface KBAccess {
 function resolveKbAccess(
   kb: {
     ownerId: string
-    permissions: Array<{ permissionLevel: DB.PermissionLevel }>
+    directPermissions: Array<{
+      id: number
+      permissionLevel: DB.PermissionLevel
+    }>
   },
   userId: string
 ): KBAccess | null {
-  if (kb.ownerId === userId) {
-    return {
-      ownerId: kb.ownerId,
-      permissionLevel: DB.PermissionLevel.OWNER,
-      isOwner: true,
-    }
-  }
-
-  const permission = kb.permissions[0]
+  const permission = resolveSharedObjectPermission({
+    ownerId: kb.ownerId,
+    userId,
+    directPermissions: kb.directPermissions,
+  })
   return permission
     ? {
         ownerId: kb.ownerId,
         permissionLevel: permission.permissionLevel,
-        isOwner: false,
+        isOwner: permission.permissionLevel === DB.PermissionLevel.OWNER,
       }
     : null
 }
@@ -580,10 +581,9 @@ async function getKbAccessOrThrow(
   const kb = await ctx.prisma.kB.findFirst({
     where: { id, deletedAt: null },
     include: {
-      permissions: {
-        where: { userId: ctx.user.sub },
-        select: { permissionLevel: true },
-        take: 1,
+      directPermissions: {
+        where: sharedObjectUserPermissionWhere(ctx.user.sub),
+        select: { id: true, permissionLevel: true },
       },
     },
   })
@@ -607,10 +607,9 @@ async function getKbResourceAccessOrThrow(
     include: {
       kb: {
         include: {
-          permissions: {
-            where: { userId: ctx.user.sub },
-            select: { permissionLevel: true },
-            take: 1,
+          directPermissions: {
+            where: sharedObjectUserPermissionWhere(ctx.user.sub),
+            select: { id: true, permissionLevel: true },
           },
         },
       },
@@ -626,7 +625,7 @@ async function getKbResourceAccessOrThrow(
   return { resource, access }
 }
 
-async function lockOwnedKbOrThrow(
+async function lockOwnedKb(
   prisma: DB.Prisma.TransactionClient,
   id: string,
   ownerId: string
@@ -639,7 +638,15 @@ async function lockOwnedKbOrThrow(
       AND "deletedAt" IS NULL
     FOR UPDATE
   `
-  if (lockedKb.length === 0) {
+  return lockedKb.length > 0
+}
+
+async function lockOwnedKbOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  ownerId: string
+) {
+  if (!(await lockOwnedKb(prisma, id, ownerId))) {
     throw new GraphQLError('KB not found')
   }
 }
@@ -651,23 +658,26 @@ async function lockKbAccessOrThrow(
   required: KBRequiredAccess,
   notFoundMessage = 'KB not found'
 ) {
-  const lockedKb = await prisma.$queryRaw<
-    Array<{ id: string; ownerId: string }>
-  >`
-    SELECT "id", "ownerId"
+  if (await lockOwnedKb(prisma, id, userId)) {
+    return {
+      ownerId: userId,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      isOwner: true,
+    }
+  }
+  if (required === 'OWNER') throw new GraphQLError(notFoundMessage)
+
+  // A shared write must serialize with other KB writes while allowing the
+  // foreign-key check that reinstates a surviving grant during revocation.
+  const [sharedKb] = await prisma.$queryRaw<Array<{ ownerId: string }>>`
+    SELECT "ownerId"
     FROM "public"."KB"
     WHERE "id" = CAST(${id} AS UUID)
       AND "deletedAt" IS NULL
-    FOR UPDATE
+    FOR NO KEY UPDATE
   `
-  if (lockedKb.length === 0) {
-    throw new GraphQLError(notFoundMessage)
-  }
-
-  const ownerId = lockedKb[0]!.ownerId
-  if (ownerId === userId) {
-    return { ownerId, permissionLevel: DB.PermissionLevel.OWNER, isOwner: true }
-  }
+  if (!sharedKb) throw new GraphQLError(notFoundMessage)
+  const { ownerId } = sharedKb
 
   // Serialize against permission and group-membership recomputation. The KB
   // row alone does not fence derived-permission changes.
@@ -1032,7 +1042,11 @@ export async function getUserKbsConnection(
   const accessWhere: DB.Prisma.KBWhereInput = {
     OR: [
       { ownerId: ctx.user.sub },
-      { permissions: { some: { userId: ctx.user.sub } } },
+      {
+        directPermissions: {
+          some: sharedObjectUserPermissionWhere(ctx.user.sub),
+        },
+      },
     ],
   }
   const where: DB.Prisma.KBWhereInput = {
@@ -1062,10 +1076,9 @@ export async function getUserKbsConnection(
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       take: pageSize + 1,
       include: {
-        permissions: {
-          where: { userId: ctx.user.sub },
-          select: { permissionLevel: true },
-          take: 1,
+        directPermissions: {
+          where: sharedObjectUserPermissionWhere(ctx.user.sub),
+          select: { id: true, permissionLevel: true },
         },
       },
     }),
