@@ -111,7 +111,7 @@ function PracticeQuizPage({
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
+  const { loading, error, data, refetch } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
   })
 
@@ -393,6 +393,7 @@ function PracticeQuizPage({
           hostNavigationRequested={hostNavigationRequested}
           hostAdvanceRequest={hostAdvanceRequest}
           onHostNavigationStateChange={handleHostNavigationStateChange}
+          refetch={refetch}
           quiz={{
             ...data.practiceQuiz,
             course: data.practiceQuiz.course!,

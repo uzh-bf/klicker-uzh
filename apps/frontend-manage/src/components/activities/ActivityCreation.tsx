@@ -4,6 +4,7 @@ import {
   Course,
   Element,
   GetActiveUserCoursesDocument,
+  GetEscapeRoomHintsDocument,
   GetGroupActivityDocument,
   GetSingleLiveQuizDocument,
   GetSingleMicroLearningDocument,
@@ -37,6 +38,7 @@ export type ElementSelectCourse = {
 interface ActivityCreationProps {
   creationMode: ActivityType
   closeWizard: () => void
+  onEscapeRoomChange?: (isEscapeRoom: boolean) => void
   activityId?: string
   editMode?: ActivityType
   duplicationMode?: ActivityType
@@ -49,6 +51,7 @@ interface ActivityCreationProps {
 function ActivityCreation({
   creationMode,
   closeWizard,
+  onEscapeRoomChange,
   activityId,
   editMode,
   duplicationMode,
@@ -94,6 +97,21 @@ function ActivityCreation({
       fetchPolicy: 'network-only',
     }
   )
+  // Hint text is lecturer-only and needed only to edit an existing activity.
+  const { data: dataEscapeRoomHints, loading: escapeRoomHintsLoading } =
+    useQuery(GetEscapeRoomHintsDocument, {
+      variables: {
+        practiceQuizId:
+          editMode === ActivityType.PracticeQuiz ? activityId : undefined,
+        microLearningId:
+          editMode === ActivityType.MicroLearning ? activityId : undefined,
+      },
+      skip:
+        !activityId ||
+        (editMode !== ActivityType.PracticeQuiz &&
+          editMode !== ActivityType.MicroLearning),
+      fetchPolicy: 'network-only',
+    })
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
     GetGroupActivityDocument,
     {
@@ -160,6 +178,7 @@ function ActivityCreation({
 
   if (
     (!errorCourses && loadingCourses) ||
+    escapeRoomHintsLoading ||
     (activityId &&
       (editMode === ActivityType.LiveQuiz ||
         duplicationMode === ActivityType.LiveQuiz) &&
@@ -193,6 +212,7 @@ function ActivityCreation({
         | 'stacks'
         | 'pointsMultiplier'
         | 'course'
+        | 'escapeRoomConfig'
       > & {
         id?: string
         orderType?: string
@@ -214,6 +234,7 @@ function ActivityCreation({
       stacks: microData.stacks,
       pointsMultiplier: microData.pointsMultiplier,
       course: microData.course as Course,
+      escapeRoomConfig: microData.escapeRoomConfig,
     }
   }
 
@@ -248,6 +269,7 @@ function ActivityCreation({
           <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
+            onEscapeRoomChange={onEscapeRoomChange}
             courses={courseSelection ?? []}
             initialValues={
               dataMicroLearning?.getSingleMicroLearning
@@ -266,6 +288,7 @@ function ActivityCreation({
             restoreSelection={restoreSelection}
             editMode={editMode === ActivityType.MicroLearning}
             duplicationMode={duplicationMode === ActivityType.MicroLearning}
+            escapeRoomHints={dataEscapeRoomHints?.escapeRoomHints ?? []}
           />
         )}
         {(creationMode === ActivityType.PracticeQuiz ||
@@ -273,6 +296,7 @@ function ActivityCreation({
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
+            onEscapeRoomChange={onEscapeRoomChange}
             courses={courseSelection ?? []}
             initialValues={
               dataPracticeQuiz?.getSinglePracticeQuiz
@@ -297,6 +321,7 @@ function ActivityCreation({
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
             editMode={editMode === ActivityType.PracticeQuiz}
             duplicationMode={duplicationMode === ActivityType.PracticeQuiz}
+            escapeRoomHints={dataEscapeRoomHints?.escapeRoomHints ?? []}
           />
         )}
         {creationMode === ActivityType.GroupActivity && (

@@ -56,9 +56,12 @@ function createPlacementContext({
   return { ctx, groupActivityUpdate }
 }
 
-function expectQrPlacementRejection(action: () => Promise<unknown>) {
+function expectQrPlacementRejection(
+  action: () => Promise<unknown>,
+  message = 'QR scan questions are not supported in activities yet'
+) {
   return expect(action()).rejects.toMatchObject({
-    message: 'QR scan questions are not supported in activities yet',
+    message,
     extensions: { code: 'BAD_USER_INPUT' },
   })
 }
@@ -110,38 +113,42 @@ describe('QR scan activity placement guards', () => {
   it('rejects QR scans in practice quizzes', async () => {
     const { ctx } = createPlacementContext()
 
-    await expectQrPlacementRejection(() =>
-      manipulatePracticeQuiz(
-        {
-          name: 'Practice quiz',
-          displayName: 'Practice quiz',
-          stacks: [qrStack],
-          courseId: 'course-id',
-          multiplier: 1,
-          order: DB.ElementOrderType.SEQUENTIAL,
-          resetTimeDays: 1,
-        },
-        ctx
-      )
+    await expectQrPlacementRejection(
+      () =>
+        manipulatePracticeQuiz(
+          {
+            name: 'Practice quiz',
+            displayName: 'Practice quiz',
+            stacks: [qrStack],
+            courseId: 'course-id',
+            multiplier: 1,
+            order: DB.ElementOrderType.SEQUENTIAL,
+            resetTimeDays: 1,
+          },
+          ctx
+        ),
+      'QR scan questions are only supported in escape room activities'
     )
   })
 
   it('rejects QR scans in microlearnings', async () => {
     const { ctx } = createPlacementContext()
 
-    await expectQrPlacementRejection(() =>
-      manipulateMicroLearning(
-        {
-          name: 'Microlearning',
-          displayName: 'Microlearning',
-          stacks: [qrStack],
-          courseId: 'course-id',
-          multiplier: 1,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 60_000),
-        },
-        ctx
-      )
+    await expectQrPlacementRejection(
+      () =>
+        manipulateMicroLearning(
+          {
+            name: 'Microlearning',
+            displayName: 'Microlearning',
+            stacks: [qrStack],
+            courseId: 'course-id',
+            multiplier: 1,
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 60_000),
+          },
+          ctx
+        ),
+      'QR scan questions are only supported in escape room activities'
     )
   })
 

@@ -22,6 +22,7 @@ import {
   type Dispatch,
   type SetStateAction,
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react'
@@ -29,6 +30,7 @@ import * as yup from 'yup'
 import type { ElementSelectCourse } from '../../ActivityCreation'
 import { getActivityAcceptedElementTypes } from '../activityAcceptedElementTypes'
 import CompletionStep from '../CompletionStep'
+import { useEscapeRoomYupFields } from '../escapeRoomValidation'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { type PracticeQuizFormValues } from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
@@ -60,6 +62,7 @@ interface PracticeQuizWizardProps {
   title: string
   courses: ElementSelectCourse[]
   closeWizard: () => void
+  onEscapeRoomChange?: (isEscapeRoom: boolean) => void
   initialValues?: Omit<
     PracticeQuiz,
     'id' | 'orderType' | 'resetTimeDays' | 'status'
@@ -76,12 +79,14 @@ interface PracticeQuizWizardProps {
   conversion: boolean
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints: Array<{ instanceId: number; hint: string }>
 }
 
 function PracticeQuizWizard({
   title,
   courses,
   closeWizard,
+  onEscapeRoomChange,
   initialValues,
   selection,
   resetSelection,
@@ -90,6 +95,7 @@ function PracticeQuizWizard({
   conversion,
   editMode,
   duplicationMode,
+  escapeRoomHints,
 }: PracticeQuizWizardProps) {
   const t = useTranslations()
 
@@ -104,6 +110,10 @@ function PracticeQuizWizard({
     useCoursesGamificationSplit({
       courseSelection: courses,
     })
+  const escapeRoomYupFields = useEscapeRoomYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+  )
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -137,6 +147,7 @@ function PracticeQuizWizard({
         /^[0-9]+$/,
         t('manage.activityWizard.practiceQuizValidResetDays')
       ),
+    ...escapeRoomYupFields,
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -156,7 +167,7 @@ function PracticeQuizWizard({
                 type: yup
                   .string()
                   .oneOf(
-                    acceptedTypes,
+                    [...acceptedTypes, ElementType.QrScan],
                     t('manage.activityWizard.practiceQuizTypes')
                   ),
                 hasSampleSolution: yup.boolean().when('type', {
@@ -189,6 +200,10 @@ function PracticeQuizWizard({
     order: ElementOrderType.SpacedRepetition,
     courseStartDate: undefined,
     resetTimeDays: '6',
+    isEscapeRoom: false,
+    escapeRoomTimeLimit: '60',
+    escapeRoomHintPenalty: '0',
+    escapeRoomIntroText: '',
   }
 
   const workflowItems = [
@@ -228,7 +243,7 @@ function PracticeQuizWizard({
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
-              id: parseInt(elementId),
+              id: parseInt(elementId, 10),
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
@@ -237,6 +252,7 @@ function PracticeQuizWizard({
                   : true,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode || conversion,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id),
             }
           }),
         }))
@@ -252,6 +268,18 @@ function PracticeQuizWizard({
       typeof initialValues?.resetTimeDays !== 'undefined'
         ? String(initialValues?.resetTimeDays)
         : formDefaultValues.resetTimeDays,
+    isEscapeRoom: !!initialValues?.escapeRoomConfig,
+    escapeRoomTimeLimit: initialValues?.escapeRoomConfig?.timeLimit
+      ? String(Math.round(initialValues.escapeRoomConfig.timeLimit / 60))
+      : formDefaultValues.escapeRoomTimeLimit,
+    escapeRoomHintPenalty:
+      typeof initialValues?.escapeRoomConfig?.hintPenalty !== 'undefined' &&
+      initialValues?.escapeRoomConfig?.hintPenalty !== null
+        ? String(initialValues.escapeRoomConfig.hintPenalty)
+        : formDefaultValues.escapeRoomHintPenalty,
+    escapeRoomIntroText:
+      initialValues?.escapeRoomConfig?.introText ??
+      formDefaultValues.escapeRoomIntroText,
   })
 
   const { recoveryProps, closeWizardAndClearSnapshot } =
@@ -271,6 +299,15 @@ function PracticeQuizWizard({
       elements: { selected: selection, restore: restoreSelection },
       lifecycle: { isCompleted: isWizardCompleted, close: closeWizard },
     })
+  // QR scan questions are only placeable in escape-room activities
+  const stackAcceptedTypes = formData.isEscapeRoom
+    ? [...acceptedTypes, ElementType.QrScan]
+    : acceptedTypes
+  // The element library beside the wizard offers QR scans only while the
+  // activity is configured as an Escape Room.
+  useEffect(() => {
+    onEscapeRoomChange?.(!!formData.isEscapeRoom)
+  }, [formData.isEscapeRoom, onEscapeRoomChange])
 
   const [createPracticeQuiz, { data: creationData }] = useMutation(
     CreatePracticeQuizDocument
@@ -428,7 +465,7 @@ function PracticeQuizWizard({
           editMode={editMode}
           selection={selection}
           resetSelection={resetSelection}
-          acceptedTypes={acceptedTypes}
+          acceptedTypes={stackAcceptedTypes}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

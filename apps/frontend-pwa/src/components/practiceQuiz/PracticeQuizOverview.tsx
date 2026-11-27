@@ -3,7 +3,11 @@ import {
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
+import {
+  faDoorOpen,
+  faRepeat,
+  faShuffle,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementOrderType,
@@ -26,6 +30,7 @@ interface PracticeQuizOverviewProps {
   pointsMultiplier: number
   setCurrentIx: (ix: number) => void
   previewOnly: boolean
+  isEscapeRoom?: boolean
 }
 
 function PracticeQuizOverview({
@@ -39,6 +44,7 @@ function PracticeQuizOverview({
   pointsMultiplier,
   setCurrentIx,
   previewOnly,
+  isEscapeRoom = false,
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -99,16 +105,27 @@ function PracticeQuizOverview({
               })}
             </div>
           </div>
-          {typeof orderType !== 'undefined' && (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faShuffle} />
-              <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
+          {isEscapeRoom ? (
+            <div
+              className="flex flex-row items-center gap-2"
+              data-cy="practice-quiz-escape-room-info"
+            >
+              <FontAwesomeIcon icon={faDoorOpen} />
+              <div>{t('pwa.practiceQuiz.escapeRoomOverviewInfo')}</div>
             </div>
+          ) : (
+            typeof orderType !== 'undefined' && (
+              <div className="flex flex-row items-center gap-2">
+                <FontAwesomeIcon icon={faShuffle} />
+                <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
+              </div>
+            )
           )}
         </div>
 
         <div className="flex-1 space-y-2">
-          {typeof resetTimeDays !== 'undefined' && (
+          {/* repetition is meaningless in escape mode: a single timed attempt */}
+          {!isEscapeRoom && typeof resetTimeDays !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faRepeat} />
               {resetTimeDays === 1 ? (
