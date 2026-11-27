@@ -1522,6 +1522,31 @@ async function startAdapter(options = {}) {
       return
     }
 
+    const planScope =
+      planGuidance &&
+      (!body.tools || (Array.isArray(body.tools) && body.tools.length === 0))
+        ? /^[0-9a-f]{8}-plan_task-([0-9a-f]{16})$/.exec(
+            body.prompt_cache_key
+          )?.[1]
+        : null
+    if (planScope && options.singleFileOutline && !availability.reason) {
+      const outline = options.singleFileOutline(body.messages, planScope)
+      if (outline) {
+        planGuidance.local_outlines = (planGuidance.local_outlines ?? 0) + 1
+        sendJson(res, 200, {
+          model: profile.model,
+          choices: [
+            {
+              index: 0,
+              finish_reason: 'stop',
+              message: { role: 'assistant', content: outline },
+            },
+          ],
+        })
+        return
+      }
+    }
+
     const main = hasCompletionTool(body)
     const kind = main ? 'main' : 'auxiliary'
     const counters = [diagnostics, requestTypes[kind]]
@@ -1775,11 +1800,7 @@ async function startAdapter(options = {}) {
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message, body.prompt_cache_key)
-      if (
-        planGuidance &&
-        /^[0-9a-f]{8}-plan_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
-        (!body.tools || (Array.isArray(body.tools) && body.tools.length === 0))
-      ) {
+      if (planScope) {
         const outcome =
           choice.finish_reason === 'length'
             ? 'length'
@@ -1961,6 +1982,8 @@ function summarizePlanGuidance(record) {
         counters.invalid_finish
   )
     return 'OCR planning status=unavailable'
+  if (Number.isSafeInteger(counters.local_outlines))
+    fields.push('local_outlines')
   return `OCR planning status=complete ${fields.map((field) => `${field}=${counters[field]}`).join(' ')}`
 }
 

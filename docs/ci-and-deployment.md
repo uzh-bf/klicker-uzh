@@ -774,7 +774,11 @@ Sticky summaries, incremental comment deduplication, low-severity routing and
 existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
 
 The draft adapter recognizes the pinned CLI's planning task affinity shape and
-supplies guidance only from a `stop` response with nonempty final text. Truncated
+returns a local outline for a one-file group with at least 500 added and removed
+lines combined. It lists changed hunk coordinates and available declaration
+landmarks from the supplied diff. The full diff remains in the review.
+`local_outlines` counts these substitutions separately from provider usage.
+Other planning calls supply guidance only from a `stop` response with nonempty final text. Truncated
 or empty plans reach the stock CLI as an empty answer without reasoning, using
 its existing continue-without-plan path. HTTP success, original finish reason,
 returned usage and private native history remain intact; this adds no provider

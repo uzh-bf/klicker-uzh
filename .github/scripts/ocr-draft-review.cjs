@@ -33,6 +33,73 @@ const DRAFT_PROFILE = Object.freeze({
 const PUBLISHER_SHA256 =
   '1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2'
 
+// Stock OCR 1.13 renders one diff block per selected file in PLAN_TASK.
+// Read only the group before the PR background and corroborate the path with
+// the CLI's scope hash. Unknown prompt shapes use the ordinary planner.
+function singleFileOutline(messages, scope) {
+  const prompt = messages.at(-1)
+  if (prompt?.role !== 'user' || typeof prompt.content !== 'string') return null
+  const marker = '\n</other_changed_files>\n\n'
+  const start = prompt.content.indexOf(marker)
+  if (start < 0) return null
+  const group = prompt.content.slice(start + marker.length)
+  const close = '\n</file>'
+  const end = group.indexOf(close)
+  if (
+    end < 0 ||
+    !group.startsWith('\n\nCurrent time in the real world:', end + close.length)
+  )
+    return null
+  const lines = group.slice(0, end).split('\n')
+  const file = /^<file path="([^"\n]+)">$/.exec(lines[0])?.[1]
+  if (!file || !lines[1]?.startsWith('diff --git ')) return null
+  const hash = require('node:crypto')
+    .createHash('sha256')
+    .update(file)
+    .digest('hex')
+  if (hash.slice(0, 16) !== scope) return null
+
+  let changed = 0
+  let line = null
+  const hunks = []
+  const symbols = []
+  for (const entry of lines) {
+    const hunk = /^@@ (-\d+(?:,\d+)?) (\+(\d+)(?:,\d+)?) @@/.exec(entry)
+    if (hunk) {
+      hunks.push(`${hunk[1]} ${hunk[2]}`)
+      line = Number(hunk[3])
+    } else if (line !== null) {
+      if (entry.startsWith('-')) changed++
+      if (entry.startsWith('+')) {
+        changed++
+        const symbol =
+          /^\+(?:export (?:default )?)?(?:async )?(?:function\*?|class|interface|type|def|func|fn|struct|enum|const) ([A-Za-z_$][\w$]{0,79})\b/.exec(
+            entry
+          )
+        if (symbol) symbols.push(`${symbol[1]} L${line}`)
+      }
+      if (entry.startsWith('+') || entry.startsWith(' ')) line++
+    }
+  }
+  if (changed < 500) return null
+  // Sample across the whole file so a large new module has landmarks near
+  // its end as well as its imports and declarations at the top.
+  const sample = (items) =>
+    items.length <= 24
+      ? items
+      : Array.from(
+          { length: 24 },
+          (_, i) => items[Math.round((i * (items.length - 1)) / 23)]
+        )
+  return [
+    `Changed hunks (old/new coordinates, ${hunks.length} total): ${sample(hunks).join('; ')}`,
+    ...(symbols.length
+      ? [`Declaration landmarks: ${sample(symbols).join(', ')}`]
+      : []),
+    'Use the full supplied diff to review every changed region.',
+  ].join('\n')
+}
+
 function summarizeCoverage(result) {
   return buildOCRResultDiagnostic('draft', { result, status: result?.status })
 }
@@ -392,6 +459,7 @@ async function runDraftReview(options) {
     adapter = await startAdapter({
       availability,
       finalPlanGuidance: true,
+      singleFileOutline,
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
       usageJournalPath: `${diagnosticsPath}.events.jsonl`,
@@ -882,6 +950,7 @@ async function main(options = {}) {
 module.exports = {
   main,
   runDraftReview,
+  singleFileOutline,
   summarizeCoverage,
   DRAFT_PROFILE,
   PUBLISHER_SHA256,
