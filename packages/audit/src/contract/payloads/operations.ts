@@ -41,29 +41,6 @@ export const reportPayloadSchema = z
   })
   .strict()
 
-export const evidenceAdministrationPayloadSchema = z
-  .object({
-    caseReference: z.string().min(1).max(256),
-    referencedEventId: uuidSchema.optional(),
-    participantId: uuidSchema.optional(),
-    reviewAt: utcIsoMillisecondsSchema.optional(),
-    reasonCode: stableCodeSchema,
-    annotation: z.string().min(1).max(10_000).optional(),
-  })
-  .strict()
-
-export const clientOperationPayloadSchema = z
-  .object({
-    streamId: uuidSchema,
-    firstSequence: z.number().int().nonnegative(),
-    lastSequence: z.number().int().nonnegative(),
-    reasonCode: stableCodeSchema,
-  })
-  .strict()
-  .refine((value) => value.lastSequence >= value.firstSequence, {
-    message: 'lastSequence must not precede firstSequence',
-  })
-
 export function auditOperationPayloadSchema(operation: string) {
   return z
     .object({
@@ -86,12 +63,6 @@ export type BulkOperationPayload = z.input<
   ReturnType<typeof bulkOperationPayloadSchema>
 >
 export type ReportPayload = z.input<typeof reportPayloadSchema>
-export type EvidenceAdministrationPayload = z.input<
-  typeof evidenceAdministrationPayloadSchema
->
-export type ClientOperationPayload = z.input<
-  typeof clientOperationPayloadSchema
->
 export type AuditOperationPayload = z.input<
   ReturnType<typeof auditOperationPayloadSchema>
 >

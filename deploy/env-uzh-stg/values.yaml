@@ -149,7 +149,7 @@ assessmentAudit:
   # not ExternalSecrets; do not duplicate them in Infisical.
   enabled: true
   environment: stg
-  # Cover all assessment live quizzes once audit is enabled; no pilot allowlist.
+  # Cover all assessment live quizzes once audit is enabled.
   rollout: all
   # Set from df-cloud outputs auditTableEndpoint and auditBlobEndpoint.
   # Do not use the legacy audit account or URLs containing SAS credentials.

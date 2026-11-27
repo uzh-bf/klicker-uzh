@@ -179,7 +179,6 @@ assessmentAudit:
   enabled: false
   environment: prd
   rollout: disabled
-  pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
   worker:

@@ -189,22 +189,6 @@ describe('canonical audit envelope', () => {
     expect(() =>
       createCanonicalAuditEvent(context(), {
         eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
-        producerOperationId: `${correlationId}:secret-value`,
-        payload: {
-          entityType: 'ASSESSMENT',
-          entityId: liveQuizId,
-          before: assessmentState('Assessment'),
-          after: {
-            ...assessmentState('Assessment'),
-            description: 'Bearer abc.def.ghi',
-          },
-        },
-      })
-    ).toThrow('Forbidden audit evidence value')
-
-    expect(() =>
-      createCanonicalAuditEvent(context(), {
-        eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
         producerOperationId: `${correlationId}:2`,
         payload: {
           entityType: 'ASSESSMENT',
@@ -238,43 +222,22 @@ describe('canonical audit envelope', () => {
     ).toThrow()
   })
 
-  it('keeps deferred tiers unavailable to callers', () => {
+  it('keeps content that resembles a credential', () => {
     expect(() =>
       createCanonicalAuditEvent(context(), {
-        eventType: 'AUDIT_MANIFEST_SEALED',
-        producerOperationId: `${correlationId}:fast-follow`,
-        payload: { operation: 'AUDIT_MANIFEST_SEALED' },
-      })
-    ).toThrow('disabled delivery tier FAST_FOLLOW')
-
-    expect(() =>
-      createCanonicalAuditEvent(context(), {
-        eventType: 'RESPONSE_ANSWER_CHANGED',
-        producerOperationId: `${correlationId}:stack-2`,
+        eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
+        producerOperationId: `${correlationId}:credential-like`,
         payload: {
-          elementInstanceId: 44,
-          elementInstanceVersion: 1,
-          effectiveContentHash: sha256,
-          answer: { kind: 'MC', selectedOptionIds: [0] },
-          trigger: 'IDLE',
+          entityType: 'ASSESSMENT',
+          entityId: liveQuizId,
+          before: assessmentState('Assessment'),
+          after: {
+            ...assessmentState('Assessment'),
+            description: 'Bearer bonds pay coupons',
+          },
         },
       })
-    ).toThrow('disabled delivery tier STACK_2')
-
-    expect(() =>
-      createTrustedAuditContext({
-        recordedVia: 'TRANSACTIONAL_OUTBOX',
-        receivedAt: '2026-08-11T08:00:00.123Z',
-        actor: { kind: 'USER', userId: actorId },
-        authorization: {
-          decision: 'ALLOWED',
-          authScope: 'LECTURER',
-        },
-        scope: { liveQuizId, lifecycleEpoch: 1 },
-        correlationId,
-        enabledTiers: ['STACK_2'],
-      } as never)
-    ).toThrow()
+    ).not.toThrow()
   })
 
   it('requires Hatchet identity and trusted transport chronology', () => {

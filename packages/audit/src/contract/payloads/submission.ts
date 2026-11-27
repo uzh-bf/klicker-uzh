@@ -7,31 +7,6 @@ import {
   uuidSchema,
 } from './common.js'
 
-export function answerChangePayloadSchema(cleared: boolean) {
-  return z
-    .object({
-      elementInstanceId: z.number().int().positive(),
-      elementInstanceVersion: z.number().int().positive(),
-      effectiveContentHash: sha256Schema,
-      answer: cleared ? z.null() : normalizedAnswerSchema,
-      trigger: z.enum(['IDLE', 'BLUR', 'NAVIGATION', 'SUBMIT', 'CLEAR']),
-    })
-    .strict()
-    .refine((value) => !cleared || value.trigger === 'CLEAR', {
-      message: 'cleared answer evidence requires the CLEAR trigger',
-    })
-}
-
-export function submissionAttemptPayloadSchema(trigger: 'CLICK' | 'AUTO') {
-  return z
-    .object({
-      submissionId: uuidSchema,
-      trigger: z.literal(trigger),
-      answerStateHash: sha256Schema,
-    })
-    .strict()
-}
-
 const submissionStageSchema = z.enum([
   'SERVER_ACCEPTED',
   'VALIDATED',
@@ -189,12 +164,6 @@ export function responseChangePayloadSchema(
     })
 }
 
-export type AnswerChangePayload = z.input<
-  ReturnType<typeof answerChangePayloadSchema>
->
-export type SubmissionAttemptPayload = z.input<
-  ReturnType<typeof submissionAttemptPayloadSchema>
->
 export type SubmissionOutcomePayload = z.input<
   ReturnType<typeof submissionOutcomePayloadSchema>
 >

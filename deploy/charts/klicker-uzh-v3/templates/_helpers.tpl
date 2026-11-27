@@ -163,5 +163,4 @@ so the two cannot drift; outside an enabled audit the code defaults to disabled.
 */}}
 {{- define "chart.assessmentAuditRolloutEnv" -}}
 ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}
-ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
 {{- end }}

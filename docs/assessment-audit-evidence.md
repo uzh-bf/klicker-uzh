@@ -22,7 +22,7 @@ that historical design. The delivery order lives in the
 ## Current implementation boundary
 
 Staging audit configuration lives in `deploy/env-uzh-stg/values.yaml` under
-`assessmentAudit`. The chart renders the endpoint, rollout, pilot quiz IDs,
+`assessmentAudit`. The chart renders the endpoint, rollout,
 environment, and dedicated worker role/metrics settings into ConfigMaps; these
 settings do not require duplicate Infisical entries or ExternalSecret mappings.
 Existing worker Secrets still supply database, Redis, and Hatchet credentials.
@@ -30,7 +30,7 @@ The dispatcher uses the `stg-audit-dispatcher` service account in `stg-klicker`.
 The backend no longer requires an audit Blob identity, and the media-policy
 deployment is removed. Previously provisioned Blob identities and retained
 blobs are not deleted by this application change.
-Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
+Staging uses `rollout: all`: once audit is enabled,
 all assessment live quizzes are eligible for coverage activation.
 The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
 Staging sets `enabled: true` for assessment testing. Before syncing this revision,
@@ -109,8 +109,8 @@ standard, server-observed facts that have no business mutation to commit with;
 critical or authoritative evidence must share the business transaction.
 
 Hatchet submission materialization remains a separate emission lane, but it
-ultimately writes the same event contract and outbox. The browser-observed
-Stack 2 lane uses the same registry later through the independent audit ingress.
+ultimately writes the same event contract and outbox. A later browser-observed
+lane must add its event names to the same registry together with its producer.
 
 ## Participant submission materialization
 
@@ -188,20 +188,19 @@ from trusted `v3`, so this artifact-list change must reach that trusted branch
 before hosted stack checks can exercise the updated workers.
 
 `packages/audit/src/contract/event-registry.ts:EVENT_REGISTRY` is the single
-registry for stable event names and their delivery tier, emission path, evidence
-class, criticality, allowed recorder, producer owner, durability point, and
-runtime payload schema. Delivery tiers are `LAUNCH`, `FAST_FOLLOW`, and
-`STACK_2`; Layer 1 constructors admit only launch events. Callers cannot enable
-deferred tiers. A later stack layer must deliberately add its trusted producer
-path before those events can be constructed.
+registry for stable event names and their emission path, evidence class,
+criticality, allowed recorder, and runtime payload schema. It registers only
+events that a production source records; a later stack layer adds its event
+names, payload schemas, and trusted producer path together.
 
 `createCanonicalAuditEvent` derives registry-owned metadata, including the
 payload schema version, instead of trusting the producer to supply it. Every
 event uses an explicit, normalized payload allowlist; raw Prisma records and
 arbitrary JSON blobs are not contract values. Strict Zod schemas reject unknown
-fields, and a second guard rejects secret-bearing names and values such as
-tokens, cookies, authorization headers, passwords, private keys, and SAS query
-strings. Participant evidence retains the stable participant UUID; it does not
+fields, and a second guard rejects secret-bearing field names such as tokens,
+cookies, authorization headers, and passwords. String values are not
+pattern-matched: they are participant or lecturer content, and URL fields are
+query-free by schema. Participant evidence retains the stable participant UUID; it does not
 copy participant profile data into the evidence contract.
 
 Payload schemas are retained and dispatched by `(eventType,
@@ -219,9 +218,7 @@ element content and scoring are explicit per element type, including selection
 collections and case-study structure. Public image links remain in that content;
 no image bytes, MIME metadata, image fingerprints, or separate image history are
 recorded. Historical version-1 media payload schemas remain readable for retained
-evidence. Client events
-reserve both occurrence and seven-day replay-expiry timestamps, although their
-Stack 2 constructors remain disabled in this layer.
+evidence.
 
 Canonicalization follows RFC 8785/JCS through the pinned `canonicalize` package.
 Dates are normalized to millisecond UTC strings, selected answer option IDs are
@@ -245,8 +242,9 @@ Evidence classes are deliberately different claims:
 
 - `AUTHORITATIVE`: committed Klicker business state.
 - `SERVER_OBSERVED`: what Klicker or Hatchet observed at a server boundary.
-- `CLIENT_OBSERVED`: what the assessment client later reports through Stack 2.
-- `ADMINISTRATIVE`: evidence-owner actions such as holds and annotations.
+- `CLIENT_OBSERVED` and `ADMINISTRATIVE` remain in the storage enums for
+  client-reported facts and evidence-owner actions; no registered event uses
+  them yet.
 
 None of these classes proves a person's unobservable intent.
 
@@ -348,8 +346,7 @@ Baseline parts are independently hashed, and the root commits to each part key
 and full canonical-part hash. Snapshot comparison uses that incremental root
 aggregate rather than canonicalizing the complete assessment as one object.
 
-Rollout modes are `disabled`, `pilot`, and `all`. Pilot mode requires one
-configured LiveQuiz UUID. A scan receives an operator-supplied stable scan ID,
+Rollout modes are `disabled` and `all`. A scan receives an operator-supplied stable scan ID,
 creates `PENDING` inventory before activation work, records terminal quizzes as
 excluded, and records every success or stable failure. Rerunning the same scan
 resumes pending entries and preserves already-recorded failures instead of
@@ -570,14 +567,14 @@ The staged rollout command is:
 pnpm --filter @klicker-uzh/graphql script:stg -- \
   src/scripts/activateAssessmentAudit.ts --dry-run
 
-# activate the configured pilot/all selection and make the scan resumable
+# activate the configured all selection and make the scan resumable
 pnpm --filter @klicker-uzh/graphql script:stg -- \
   src/scripts/activateAssessmentAudit.ts --scan-id <stable-operator-uuid>
 ```
 
 Explicit `--quiz-id <uuid>` flags override configuration for a bounded repair.
 The operator must archive the scan output, verify that no entry remains pending
-or failed, export and independently verify the pilot evidence, and check both
+or failed, export and independently verify the evidence, and check both
 worker metric sets before expanding rollout. Empty or pre-instrumentation
 results retain the explicit limitations documented above.
 
@@ -600,9 +597,9 @@ Layer 4 adds registry metadata and producer-boundary coverage tests plus focused
 tests for exact configuration/block/instance snapshots, deterministic
 response/reset hashes, effective-permission filtering, public image-link
 preservation, and retained legacy media export compatibility. The coverage
-test verifies that every active launch producer has an owner, emission path,
-durability point, and explicit delivery tier; legacy media events are retained
-for read compatibility and excluded from active producer coverage. The test does
+test verifies that every registered event name occurs in a listed production
+source; legacy media events are retained for read compatibility and excluded
+from active producer coverage. The test does
 not claim to statically prove every runtime call site.
 Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer

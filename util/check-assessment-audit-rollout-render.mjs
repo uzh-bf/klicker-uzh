@@ -7,10 +7,7 @@ import { parse, parseAllDocuments } from 'yaml'
 // Hatchet worker, so it needs the keys as well as the backend; a missing key
 // silently falls back to "disabled" there.
 const chartPath = 'deploy/charts/klicker-uzh-v3'
-const rolloutKeys = [
-  'ASSESSMENT_AUDIT_ROLLOUT',
-  'ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS',
-]
+const rolloutKeys = ['ASSESSMENT_AUDIT_ROLLOUT']
 const activatingConfigMaps = [
   'config-backend-graphql',
   'config-hatchet-worker-general',
@@ -72,10 +69,7 @@ for (const environment of environments) {
         }
         continue
       }
-      const expected =
-        key === 'ASSESSMENT_AUDIT_ROLLOUT'
-          ? String(audit.rollout ?? 'disabled')
-          : String(audit.pilotLiveQuizIds ?? '')
+      const expected = String(audit.rollout ?? 'disabled')
       if (data[key] !== expected) {
         fail(
           `${environment.name} ${suffix} expected ${key}=${JSON.stringify(expected)}, received ${JSON.stringify(data[key])}`
