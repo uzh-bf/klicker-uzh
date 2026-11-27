@@ -170,6 +170,22 @@ export function parseChatStream(body) {
   }
 }
 
+// A Tutor turn can answer with only a show_feedback card and no text. The
+// student still sees the card, so its text counts as the visible answer.
+export function feedbackCardText(tools) {
+  return tools
+    .filter((tool) => tool.name === 'show_feedback')
+    .flatMap(({ input = {} }) => [
+      input.title,
+      input.summary,
+      ...(input.strengths ?? []).map((entry) => entry.text),
+      ...(input.improvements ?? []).map((entry) => entry.comment),
+      input.nextStep,
+    ])
+    .filter((value) => typeof value === 'string' && value.trim())
+    .join('\n')
+}
+
 async function runTurn({
   target,
   history,
@@ -233,7 +249,8 @@ async function runCase({ target, testCase, repeat, effort }) {
     turns.push({ student: turn.message, ...record })
     const servedOther =
       record.servedModelId !== null && record.servedModelId !== target.modelId
-    if (record.status !== 200 || !record.text || servedOther) {
+    const answer = record.text || feedbackCardText(record.tools)
+    if (record.status !== 200 || !answer || servedOther) {
       stoppedAt = {
         turn: turns.length,
         reason:
@@ -248,7 +265,7 @@ async function runCase({ target, testCase, repeat, effort }) {
     history.push(userMessage, {
       id: assistantMessageId,
       role: 'assistant',
-      content: record.text,
+      content: answer,
     })
     parentId = assistantMessageId
   }
