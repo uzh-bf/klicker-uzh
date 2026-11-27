@@ -5075,6 +5075,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that you want to publish the microlearning <b>{name}</b>. This action will make it available to all participants in the following time window:',
       microlearningPublishingHint:
         'This process can only be undone if the start time is in the future. Changes to the content of contained elements are no longer possible after publishing.',
+      publishArtifactForbidden:
+        'This activity cannot be published with its attached activity artifact. Check that activity artifacts are enabled for the linked artifact owner and that you may administer this activity, then try again.',
+      publishArtifactInvalid:
+        'The attached activity artifact is invalid or no longer matches this activity. Reattach the intended revision and try again.',
+      publishArtifactUnavailable:
+        'Activity artifacts are temporarily unavailable. Try again later.',
       confirmPublishingGroupActivity:
         'Please confirm that you want to publish the group activity <b>{name}</b>. This action will make it available to all groups in the following time window:',
       groupActivityPublishingHint:

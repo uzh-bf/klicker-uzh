@@ -5188,6 +5188,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass Sie das Microlearning <b>{name}</b> veröffentlichen möchten. Diese Aktion macht es für alle Teilnehmenden im folgenden Zeitfenster verfügbar:',
       microlearningPublishingHint:
         'Dieser Prozess kann nur rückgängig gemacht werden, wenn das Startdatum in der Zukunft liegt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
+      publishArtifactForbidden:
+        'Diese Aktivität kann mit dem angehängten Aktivitätsartefakt nicht veröffentlicht werden. Prüfen Sie, ob Aktivitätsartefakte für die verknüpfte Erstellerin oder den verknüpften Ersteller aktiviert sind und ob Sie diese Aktivität verwalten dürfen, und versuchen Sie es anschliessend erneut.',
+      publishArtifactInvalid:
+        'Das angehängte Aktivitätsartefakt ist ungültig oder passt nicht mehr zu dieser Aktivität. Hängen Sie die vorgesehene Revision erneut an und versuchen Sie es nochmals.',
+      publishArtifactUnavailable:
+        'Aktivitätsartefakte sind vorübergehend nicht verfügbar. Versuchen Sie es später erneut.',
       confirmPublishingGroupActivity:
         'Bitte bestätigen Sie, dass Sie die Gruppenaktivität <b>{name}</b> veröffentlichen möchten. Diese Aktion macht sie für alle Gruppen im folgenden Zeitfenster verfügbar:',
       groupActivityPublishingHint:

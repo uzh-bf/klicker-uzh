@@ -11,7 +11,7 @@ import {
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 
@@ -26,6 +26,35 @@ interface PublishConfirmationModalProps {
   title: string
   courseId: string
   refetchActivities?: () => Promise<void>
+}
+
+function getActivityArtifactPublishReason(error: unknown): string | undefined {
+  const graphQLErrors = (error as { graphQLErrors?: unknown[] } | null)
+    ?.graphQLErrors
+
+  for (const graphQLError of graphQLErrors ?? []) {
+    const reason = (
+      graphQLError as {
+        extensions?: { activityArtifactPublish?: unknown }
+      } | null
+    )?.extensions?.activityArtifactPublish
+    if (typeof reason === 'string') return reason
+  }
+
+  return undefined
+}
+
+function getPublishErrorMessageKey(error: unknown) {
+  switch (getActivityArtifactPublishReason(error)) {
+    case 'forbidden':
+      return 'manage.course.publishArtifactForbidden' as const
+    case 'invalid':
+      return 'manage.course.publishArtifactInvalid' as const
+    case 'unavailable':
+      return 'manage.course.publishArtifactUnavailable' as const
+    default:
+      return 'shared.generic.error' as const
+  }
 }
 
 function PublishConfirmationModal({
@@ -111,10 +140,19 @@ function PublishConfirmationModal({
       primaryLabel={t('shared.generic.confirm')}
       primaryLoading={mlPublishLoading || gaPublishLoading}
       onPrimaryAction={async () => {
-        if (activityType === ElementInstanceType.Microlearning) {
-          await publishMicroLearning()
-        } else if (activityType === ElementInstanceType.GroupActivity) {
-          await publishGroupActivity()
+        try {
+          if (activityType === ElementInstanceType.Microlearning) {
+            await publishMicroLearning()
+          } else if (activityType === ElementInstanceType.GroupActivity) {
+            await publishGroupActivity()
+          }
+        } catch (error) {
+          toast({
+            type: 'error',
+            message: t(getPublishErrorMessageKey(error)),
+            options: { duration: 6000 },
+          })
+          return
         }
         await refetchActivities?.()
         onClose()

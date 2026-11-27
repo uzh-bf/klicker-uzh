@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import {
   ElementStatus,
   ElementType,
+  Prisma,
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma/client'
@@ -601,9 +602,14 @@ describe('activity artifact attach and upgrade', () => {
     )
     const { ctx } = lecturerContext(runtime)
 
-    await expect(
-      previewActivityArtifactByUrl({ url: canonicalUrl }, ctx)
-    ).rejects.toMatchObject({ extensions: { code } })
+    const error: unknown = await previewActivityArtifactByUrl(
+      { url: canonicalUrl },
+      ctx
+    ).catch((caught) => caught)
+    expect(error).toMatchObject({ extensions: { code } })
+    expect(
+      (error as { extensions: Record<string, unknown> }).extensions
+    ).not.toHaveProperty('activityArtifactPublish')
   })
 
   it('maps staff lookup transport failures with an actionable code', async () => {
@@ -1589,6 +1595,95 @@ describe('activity artifact publication binding', () => {
     expect(updateMicroLearning).toHaveBeenCalledTimes(1)
   })
 
+  it('treats a JSON-null pin as an ordinary content instance', async () => {
+    const { prisma, findInstances, updateMicroLearning } = publicationPrisma()
+    findInstances.mockResolvedValue([
+      {
+        id: 42,
+        elementData: { options: { activityArtifact: null } },
+        elementStack: { microLearning: { courseId } },
+      },
+    ])
+    const runtime = publicationRuntime()
+    const scheduleCompletion = vi.fn().mockResolvedValue({
+      metadata: { id: 'completion-task' },
+    })
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(false),
+        tasks: {
+          endExpiredMicroLearning: { schedule: scheduleCompletion },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+
+    expect(findInstances.mock.calls[0]![0].where.elementData.not).toBe(
+      Prisma.AnyNull
+    )
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(updateMicroLearning).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a non-null malformed pin before publication', async () => {
+    const { prisma, findInstances, updateMicroLearning } = publicationPrisma()
+    findInstances.mockResolvedValue([
+      {
+        id: 42,
+        elementData: { options: { activityArtifact: {} } },
+        elementStack: { microLearning: { courseId } },
+      },
+    ])
+    const runtime = publicationRuntime()
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(),
+        tasks: {
+          endExpiredMicroLearning: { schedule: vi.fn() },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'BAD_USER_INPUT',
+        activityArtifactPublish: 'invalid',
+      },
+    })
+
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(updateMicroLearning).not.toHaveBeenCalled()
+  })
+
+  it('marks a publisher authorization failure during publication', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    const runtime = publicationRuntime()
+    runtime.assign.mockRejectedValue(
+      new ActivityArtifactRequestError('publisher rejected binding', 403)
+    )
+
+    await expect(
+      publishMicroLearning({ id: microLearningId }, {
+        prisma,
+        activityArtifactRuntime: runtime,
+        featureFlags: publicationFeatureFlags(),
+        tasks: {
+          endExpiredMicroLearning: { schedule: vi.fn() },
+        },
+        emitter: { emit: vi.fn() },
+      } as unknown as ContextWithUser)
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN', activityArtifactPublish: 'forbidden' },
+    })
+
+    expect(updateMicroLearning).not.toHaveBeenCalled()
+  })
+
   it('blocks scheduling a pinned activity before either worker task is created while the owner flag is off', async () => {
     const { prisma, findMicroLearning, updateMicroLearning } =
       publicationPrisma()
@@ -1613,7 +1708,9 @@ describe('activity artifact publication binding', () => {
         },
         emitter: { emit: vi.fn() },
       } as unknown as ContextWithUser)
-    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN', activityArtifactPublish: 'forbidden' },
+    })
 
     expect(runtime.assign).not.toHaveBeenCalled()
     expect(schedulePublication).not.toHaveBeenCalled()
@@ -1704,6 +1801,37 @@ describe('activity artifact publication binding', () => {
     expect(runtime.assign.mock.invocationCallOrder[0]).toBeLessThan(
       updateMicroLearning.mock.invocationCallOrder[0]!
     )
+  })
+
+  it('leaves a scheduled activity unpublished for retry while the owner flag is off', async () => {
+    const { prisma, updateMicroLearning } = publicationPrisma()
+    prisma.microLearning.findUnique.mockResolvedValue({
+      id: microLearningId,
+      status: PublicationStatus.SCHEDULED,
+    })
+    const runtime = publicationRuntime()
+
+    await expect(
+      handlePublishScheduledMicroLearning(
+        { microLearningId },
+        {
+          prisma,
+          activityArtifactRuntime: runtime,
+          featureFlags: publicationFeatureFlags(false),
+          emitter: { emit: vi.fn() },
+        } as unknown as Parameters<
+          typeof handlePublishScheduledMicroLearning
+        >[1],
+        {} as Parameters<typeof handlePublishScheduledMicroLearning>[2]
+      )
+    ).rejects.toMatchObject({
+      message:
+        'Re-enable activity artifacts for the linked artifact owner before publishing',
+      extensions: { code: 'FORBIDDEN', activityArtifactPublish: 'forbidden' },
+    })
+
+    expect(runtime.assign).not.toHaveBeenCalled()
+    expect(updateMicroLearning).not.toHaveBeenCalled()
   })
 })
 
@@ -1855,6 +1983,7 @@ describe('activity artifact content updates', () => {
       conditionalUpdate,
       currentOptions,
       directUpdate,
+      findElement: prisma.element.findUnique,
       findPermissions,
       guardedStatuses,
       instanceId,
@@ -2068,7 +2197,7 @@ describe('activity artifact content updates', () => {
   })
 
   it('declines a template refresh when templates are excluded', async () => {
-    const { conditionalUpdate, guardedStatuses, prisma } =
+    const { conditionalUpdate, findElement, guardedStatuses, prisma } =
       microLearningGuardContext({
         activityStatus: PublicationStatus.TEMPLATE,
         conditionalResult: 'pass',
@@ -2089,6 +2218,10 @@ describe('activity artifact content updates', () => {
       PublicationStatus.SCHEDULED,
     ])
     expect(guardedStatuses).not.toContain(PublicationStatus.PUBLISHED)
+    expect(
+      findElement.mock.calls[0]![0].include.elementInstances.include
+        .elementStack.include.microLearning.where.status.in
+    ).toEqual([PublicationStatus.DRAFT, PublicationStatus.SCHEDULED])
   })
 })
 

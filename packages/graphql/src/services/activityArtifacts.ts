@@ -213,7 +213,7 @@ export async function assertActivityArtifactPinsAccessible(
       elementStack: { microLearningId },
       elementData: {
         path: ['options', 'activityArtifact'],
-        not: DB.Prisma.DbNull,
+        not: DB.Prisma.AnyNull,
       },
     },
     select: { elementData: true },
@@ -251,7 +251,12 @@ async function assertPinSubjectsAccessible(
   ) {
     throw new GraphQLError(
       'The attached activity artifact must be confirmed by a lecturer who administers this microlearning',
-      { extensions: { code: 'BAD_USER_INPUT' } }
+      {
+        extensions: {
+          code: 'BAD_USER_INPUT',
+          [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: 'forbidden',
+        },
+      }
     )
   }
 }
@@ -400,6 +405,43 @@ type ActivityArtifactPublicationBinding = {
   pin: ActivityArtifactPin
 }
 
+/**
+ * Machine-readable marker on publication errors so the lecturer UI can show a
+ * pilot-specific message without guessing from the canonical GraphQL code.
+ * Ordinary authorization and input errors keep only their standard code.
+ */
+type ActivityArtifactPublishErrorReason =
+  | 'forbidden'
+  | 'invalid'
+  | 'unavailable'
+
+const ACTIVITY_ARTIFACT_PUBLISH_EXTENSION = 'activityArtifactPublish'
+
+function withActivityArtifactPublishReason(
+  error: GraphQLError,
+  reason: ActivityArtifactPublishErrorReason
+): GraphQLError {
+  return new GraphQLError(error.message, {
+    nodes: error.nodes,
+    source: error.source,
+    positions: error.positions,
+    path: error.path,
+    originalError: error.originalError ?? error,
+    extensions: {
+      ...error.extensions,
+      [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: reason,
+    },
+  })
+}
+
+function publishErrorReasonForCode(
+  code: unknown
+): ActivityArtifactPublishErrorReason {
+  if (code === 'FORBIDDEN') return 'forbidden'
+  if (code === 'BAD_USER_INPUT') return 'invalid'
+  return 'unavailable'
+}
+
 async function loadActivityArtifactPinsForPublication(
   microLearningId: string,
   featureFlags: Pick<FeatureFlagEvaluator, 'isEnabled'> | undefined,
@@ -414,7 +456,7 @@ async function loadActivityArtifactPinsForPublication(
       elementStack: { microLearningId },
       elementData: {
         path: ['options', 'activityArtifact'],
-        not: DB.Prisma.DbNull,
+        not: DB.Prisma.AnyNull,
       },
     },
     select: {
@@ -430,17 +472,21 @@ async function loadActivityArtifactPinsForPublication(
 
   const bindings: ActivityArtifactPublicationBinding[] = []
   for (const instance of instances) {
-    const pin = sanitizeActivityArtifactPin(
-      (
-        instance.elementData as {
-          options?: { activityArtifact?: unknown }
-        } | null
-      )?.options?.activityArtifact
-    )
+    const storedPin = (
+      instance.elementData as {
+        options?: { activityArtifact?: unknown }
+      } | null
+    )?.options?.activityArtifact
+    if (storedPin === null || typeof storedPin === 'undefined') continue
+
+    const pin = sanitizeActivityArtifactPin(storedPin)
     const courseId = instance.elementStack?.microLearning?.courseId
     if (!pin || !courseId) {
       throw new GraphQLError('The attached activity artifact is invalid', {
-        extensions: { code: 'BAD_USER_INPUT' },
+        extensions: {
+          code: 'BAD_USER_INPUT',
+          [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: 'invalid',
+        },
       })
     }
 
@@ -465,7 +511,10 @@ async function loadActivityArtifactPinsForPublication(
     const account = accountsById.get(pin.subject)
     if (!account) {
       throw new GraphQLError('The attached activity artifact is invalid', {
-        extensions: { code: 'BAD_USER_INPUT' },
+        extensions: {
+          code: 'BAD_USER_INPUT',
+          [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: 'invalid',
+        },
       })
     }
     if (
@@ -477,7 +526,12 @@ async function loadActivityArtifactPinsForPublication(
     ) {
       throw new GraphQLError(
         'Re-enable activity artifacts for the linked artifact owner before publishing',
-        { extensions: { code: 'FORBIDDEN' } }
+        {
+          extensions: {
+            code: 'FORBIDDEN',
+            [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: 'forbidden',
+          },
+        }
       )
     }
   }
@@ -498,7 +552,10 @@ function requirePublicationArtifactRuntime(
 ): Pick<ActivityArtifactRuntime, 'assign'> {
   if (!runtime) {
     throw new GraphQLError('Activity artifacts are not configured', {
-      extensions: { code: 'SERVICE_UNAVAILABLE' },
+      extensions: {
+        code: 'SERVICE_UNAVAILABLE',
+        [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: 'unavailable',
+      },
     })
   }
 
@@ -565,13 +622,22 @@ export async function assignActivityArtifactPinsForPublication(
         revisionId: pin.revisionId,
       })
     } catch (error) {
-      throw toArtifactGraphQLError(error)
+      const graphqlError = toArtifactGraphQLError(error)
+      throw withActivityArtifactPublishReason(
+        graphqlError,
+        publishErrorReasonForCode(graphqlError.extensions?.code)
+      )
     }
 
     if (assignment === 'conflict') {
       throw new GraphQLError(
         'The attached activity artifact no longer matches this instance',
-        { extensions: { code: 'BAD_USER_INPUT' } }
+        {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            [ACTIVITY_ARTIFACT_PUBLISH_EXTENSION]: 'invalid',
+          },
+        }
       )
     }
   }
