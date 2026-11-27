@@ -1,7 +1,9 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { signChatTabHandoffToken } from '@/src/lib/server/pwaEmbed'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 
 const bodySchema = z.object({
   threadId: z.string().guid().optional(),
@@ -13,12 +15,13 @@ const bodySchema = z.object({
  * cookies partitioned to the host site (or in sessionStorage), so the new tab
  * cannot reuse it directly.
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -45,3 +48,8 @@ export async function POST(
     { headers: { 'Cache-Control': 'no-store' } }
   )
 }
+
+export const POST = createLoggedRoute(
+  '/api/chatbots/:chatbotId/handoff',
+  handlePOST
+)
