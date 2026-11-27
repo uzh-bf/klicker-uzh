@@ -10,7 +10,7 @@ import {
   GetUserKbsWithPermissionLevelDocument,
   KbIngestionStatus,
   KbResourceType,
-  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
+  QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   CreateKnowledgeBaseModal,
@@ -33,9 +33,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 // The largest page the knowledge-base list accepts in one request.
 const KB_LIST_PAGE_SIZE = 50
 
-const refetchQueries = [
-  { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
-]
+const refetchQueries = [{ query: QGetChatbotsInfoWithSharingDocument }]
 
 // The select value that stands for answering without a knowledge base.
 const NO_KNOWLEDGE_BASE = 'no-knowledge-base'
@@ -109,7 +107,7 @@ function KnowledgeBaseCard({
     else stopPolling()
     if (previousActiveCount.current > 0 && activeCount === 0) {
       void apolloClient.refetchQueries({
-        include: [QGetChatbotsInfoWithKnowledgeBaseMetadataDocument],
+        include: [QGetChatbotsInfoWithSharingDocument],
       })
     }
     previousActiveCount.current = activeCount
@@ -506,7 +504,7 @@ function ChatbotKnowledgeBaseSetup({
   const refreshMaterials = () =>
     apolloClient.refetchQueries({
       include: [
-        QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
+        QGetChatbotsInfoWithSharingDocument,
         GetKbResourcesWithFailureDetailDocument,
       ],
     })

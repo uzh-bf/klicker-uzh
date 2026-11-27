@@ -21,10 +21,7 @@ export const ObjectAccess = builder.enumType('ObjectAccess', {
 
 export const ObjectType = builder.enumType('ObjectType', {
   values: Object.values(DB.ObjectType).filter(
-    // user groups have dedicated operations; chatbot sharing is enabled in
-    // layer 3 only after chatbot read and write projections enforce grants
-    (type) =>
-      type !== DB.ObjectType.USER_GROUP && type !== DB.ObjectType.CHATBOT
+    (type) => type !== DB.ObjectType.USER_GROUP
   ) as DB.ObjectType[],
 })
 

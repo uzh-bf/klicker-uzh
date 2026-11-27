@@ -4,7 +4,6 @@ import {
   ChatbotStatus,
   DetachKbFromChatbotByBindingDocument,
   QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
-  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -66,9 +65,6 @@ function KnowledgeBaseChatbotBindings({
     {
       query: QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
       variables: { kbId },
-    },
-    {
-      query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
     },
   ]
 

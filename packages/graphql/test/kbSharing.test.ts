@@ -415,7 +415,7 @@ describe('Knowledge base and chatbot sharing permissions', () => {
     ).toBeNull()
   })
 
-  it('recomputes internal chatbot grants without external sharing', async () => {
+  it('grants, changes and revokes chatbot access through object sharing', async () => {
     const course = await seedCourse({}, userOneCtx)
     const chatbot = await prisma.chatbot.create({
       data: {
@@ -428,14 +428,16 @@ describe('Knowledge base and chatbot sharing permissions', () => {
         },
       },
     })
-    await prisma.permission.create({
-      data: {
+    const grant = await shareObject(
+      {
         chatbotId: chatbot.id,
-        userId: userTwo.id,
+        shortnameOrEmail: userTwo.shortname,
         permissionLevel: PermissionLevel.READ,
+        propagation: false,
       },
-    })
-
+      userOneCtx
+    )
+    expect(grant?.permissionId).toBeGreaterThan(0)
     await recomputeDerivedPermissions({ chatbotId: chatbot.id }, prisma)
     expect(
       await prisma.derivedPermission.findUnique({
@@ -444,8 +446,8 @@ describe('Knowledge base and chatbot sharing permissions', () => {
         },
       })
     ).toMatchObject({ permissionLevel: PermissionLevel.OWNER })
-    expect(
-      await getPositiveObjectPermission(
+    const effective = () =>
+      getPositiveObjectPermission(
         {
           objectType: ObjectType.CHATBOT,
           objectId: chatbot.id,
@@ -453,6 +455,21 @@ describe('Knowledge base and chatbot sharing permissions', () => {
         },
         prisma
       )
-    ).toBe(PermissionLevel.READ)
+    expect(await effective()).toBe(PermissionLevel.READ)
+    await changeObjectPermissionLevel(
+      {
+        chatbotId: chatbot.id,
+        permissionId: grant!.permissionId,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
+      },
+      userOneCtx
+    )
+    expect(await effective()).toBe(PermissionLevel.WRITE)
+    await revokeObjectAccess(
+      { chatbotId: chatbot.id, permissionId: grant!.permissionId },
+      userOneCtx
+    )
+    expect(await effective()).toBeNull()
   })
 })

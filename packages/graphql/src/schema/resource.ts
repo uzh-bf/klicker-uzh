@@ -519,6 +519,13 @@ export interface IChatbot {
   authoringRevision?: ChatbotAuthoringRevisionProjection | null
   revisionStatus?: DB.ChatbotStatus | null
   revisionVersion?: number
+  permissionLevel?: DB.PermissionLevel | null
+  ownerShortname?: string
+  numSharedUsers?: number
+  isOwner?: boolean
+  isManager?: boolean
+  isEditor?: boolean
+  isShared?: boolean
 }
 
 export interface IChatbotKnowledgeBaseSummary {
@@ -765,6 +772,16 @@ export const Chatbot = ChatbotRef.implement({
     revisionVersion: t.int({
       resolve: (chatbot) => chatbot.revisionVersion ?? 0,
     }),
+    permissionLevel: t.expose('permissionLevel', {
+      type: PermissionLevel,
+      nullable: true,
+    }),
+    ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isManager: t.exposeBoolean('isManager', { nullable: true }),
+    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
+    isShared: t.exposeBoolean('isShared', { nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
   }),

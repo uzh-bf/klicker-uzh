@@ -3311,7 +3311,10 @@ export const Mutation = builder.mutationType({
             return null
           }
 
-          if (args.objectType === DB.ObjectType.KB) {
+          if (
+            args.objectType === DB.ObjectType.KB ||
+            args.objectType === DB.ObjectType.CHATBOT
+          ) {
             await AiFeatureGateService.assertManageAiEnabled(ctx)
             if (
               args.propagation ||
@@ -3319,8 +3322,6 @@ export const Mutation = builder.mutationType({
             ) {
               return null
             }
-          } else if (args.objectType === DB.ObjectType.CHATBOT) {
-            return null
           }
 
           // >= ADMIN permissions on the object required
@@ -3334,10 +3335,13 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === DB.ObjectType.KB
+              ...(args.objectType === DB.ObjectType.KB ||
+              args.objectType === DB.ObjectType.CHATBOT
                 ? [
                     {
-                      kbId: args.objectId,
+                      ...(args.objectType === DB.ObjectType.KB
+                        ? { kbId: args.objectId }
+                        : { chatbotId: args.objectId }),
                       minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                     },
                   ]
@@ -3447,6 +3451,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === DB.ObjectType.KB
                   ? args.objectId
                   : undefined,
+              chatbotId:
+                args.objectType === DB.ObjectType.CHATBOT
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -3461,10 +3469,11 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === DB.ObjectType.KB) {
+          if (
+            args.objectType === DB.ObjectType.KB ||
+            args.objectType === DB.ObjectType.CHATBOT
+          ) {
             await AiFeatureGateService.assertManageAiEnabled(ctx)
-          } else if (args.objectType === DB.ObjectType.CHATBOT) {
-            return null
           }
 
           const validAccess = await checkAccess(
@@ -3477,10 +3486,13 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === DB.ObjectType.KB
+              ...(args.objectType === DB.ObjectType.KB ||
+              args.objectType === DB.ObjectType.CHATBOT
                 ? [
                     {
-                      kbId: args.objectId,
+                      ...(args.objectType === DB.ObjectType.KB
+                        ? { kbId: args.objectId }
+                        : { chatbotId: args.objectId }),
                       minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                     },
                   ]
@@ -3587,6 +3599,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === DB.ObjectType.KB
                   ? args.objectId
                   : undefined,
+              chatbotId:
+                args.objectType === DB.ObjectType.CHATBOT
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -3608,7 +3624,10 @@ export const Mutation = builder.mutationType({
             return false
           }
 
-          if (args.objectType === DB.ObjectType.KB) {
+          if (
+            args.objectType === DB.ObjectType.KB ||
+            args.objectType === DB.ObjectType.CHATBOT
+          ) {
             await AiFeatureGateService.assertManageAiEnabled(ctx)
             if (
               args.propagation ||
@@ -3616,8 +3635,6 @@ export const Mutation = builder.mutationType({
             ) {
               return false
             }
-          } else if (args.objectType === DB.ObjectType.CHATBOT) {
-            return false
           }
 
           // >= ADMIN permissions on the object required
@@ -3631,10 +3648,13 @@ export const Mutation = builder.mutationType({
                     },
                   ]
                 : []),
-              ...(args.objectType === DB.ObjectType.KB
+              ...(args.objectType === DB.ObjectType.KB ||
+              args.objectType === DB.ObjectType.CHATBOT
                 ? [
                     {
-                      kbId: args.objectId,
+                      ...(args.objectType === DB.ObjectType.KB
+                        ? { kbId: args.objectId }
+                        : { chatbotId: args.objectId }),
                       minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                     },
                   ]
@@ -3741,6 +3761,10 @@ export const Mutation = builder.mutationType({
                   : undefined,
               kbId:
                 args.objectType === DB.ObjectType.KB
+                  ? args.objectId
+                  : undefined,
+              chatbotId:
+                args.objectType === DB.ObjectType.CHATBOT
                   ? args.objectId
                   : undefined,
             },

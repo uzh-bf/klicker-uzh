@@ -7,7 +7,7 @@ import {
   GetChatModelRegistryDocument,
   GetKbWithPermissionLevelDocument,
   GetUserCoursesDocument,
-  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
+  QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Select, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -38,12 +38,9 @@ function Chatbots() {
   const createdChatbotNavigationRef = useRef(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
-  const { data, loading } = useQuery(
-    QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
-    {
-      fetchPolicy: 'network-only',
-    }
-  )
+  const { data, loading } = useQuery(QGetChatbotsInfoWithSharingDocument, {
+    fetchPolicy: 'network-only',
+  })
   const { data: modelRegistryData, loading: modelRegistryLoading } = useQuery(
     GetChatModelRegistryDocument,
     {
@@ -261,9 +258,7 @@ function Chatbots() {
     try {
       await attachKb({
         variables: { kbId, chatbotId },
-        refetchQueries: [
-          { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
-        ],
+        refetchQueries: [{ query: QGetChatbotsInfoWithSharingDocument }],
         awaitRefetchQueries: true,
       })
     } catch (error) {

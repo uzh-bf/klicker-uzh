@@ -39,6 +39,25 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
+  } else if (objectType === ObjectType.Chatbot) {
+    return [
+      {
+        action: t('manage.sharing.chatbotViewSetup'),
+        permissions: [true, true, true, true],
+      },
+      {
+        action: t('manage.sharing.chatbotEditSetup'),
+        permissions: [false, true, true, true],
+      },
+      {
+        action: t('kb.sharingPermissions.manageAccess'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('manage.sharing.chatbotSubmit'),
+        permissions: [false, false, false, true],
+      },
+    ]
   } else if (objectType === ObjectType.Kb) {
     return [
       {

@@ -20,6 +20,7 @@ import {
   parseChatbotCustomModeConfigInput,
   parseChatbotStandardModeConfigForStorage,
   parseStoredChatbotStandardModeConfig,
+  resolveSharedObjectPermission,
   sharedObjectUserPermissionWhere,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
@@ -443,6 +444,7 @@ export async function getParticipantCourseChatbots(
 // returned, so the GraphQL type never sees a missing non-nullable field.
 const chatbotOwnerSelect = {
   id: true,
+  ownerId: true,
   name: true,
   description: true,
   avatar: true,
@@ -485,10 +487,6 @@ const KB_WRITE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
   DB.PermissionLevel.ADMIN,
   DB.PermissionLevel.OWNER,
 ]
-const CHATBOT_WRITE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
-  DB.PermissionLevel.WRITE,
-  DB.PermissionLevel.ADMIN,
-]
 
 function canReadKb(kb: KbWithLivePermissions, userId: string) {
   const permissionLevel = resolveKnowledgeBasePermissionLevel(kb, userId)
@@ -508,7 +506,11 @@ function canEditKb(kb: KbWithLivePermissions, userId: string) {
 
 type ChatbotWithOwnerCourse = {
   id: string
-  ownerId?: string
+  ownerId: string
+  directPermissions?: {
+    id: number
+    permissionLevel: DB.PermissionLevel
+  }[]
   name: string
   description: string | null
   avatar: string | null
@@ -537,6 +539,36 @@ type ChatbotWithOwnerCourse = {
   disclaimerId: string | null
   creditResetPeriodChangedAt: Date | null
   course: { id: string; name: string } | null
+}
+
+function getChatbotPermissionLevel(
+  chatbot: Pick<ChatbotWithOwnerCourse, 'ownerId' | 'directPermissions'>,
+  viewerId?: string
+) {
+  if (!viewerId) return null
+  return (
+    resolveSharedObjectPermission({
+      ownerId: chatbot.ownerId,
+      userId: viewerId,
+      directPermissions: chatbot.directPermissions ?? [],
+    })?.permissionLevel ?? null
+  )
+}
+
+function getChatbotPermissionFlags(permissionLevel: DB.PermissionLevel | null) {
+  return {
+    permissionLevel,
+    isOwner: permissionLevel === DB.PermissionLevel.OWNER,
+    isManager:
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.OWNER,
+    isEditor:
+      permissionLevel === DB.PermissionLevel.WRITE ||
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.OWNER,
+    isShared:
+      permissionLevel !== null && permissionLevel !== DB.PermissionLevel.OWNER,
+  }
 }
 
 function resolveLegacyFixedModelId(allowedModelIds: readonly string[]) {
@@ -590,17 +622,30 @@ function normalizeAllowedModelIds(
 
 function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
   chatbot: T,
-  options: { resolveLegacyFixedPolicy?: boolean } = {}
+  options: {
+    resolveLegacyFixedPolicy?: boolean
+    viewerId?: string
+    permissionLevel?: DB.PermissionLevel
+    ownerShortname?: string
+    numSharedUsers?: number
+  } = {}
 ) {
   const {
     systemPrompts,
     draftConfig: _draftConfig,
+    directPermissions: _directPermissions,
     ...chatbotWithoutSystemPrompts
   } = chatbot
   const resolveLegacyFixedPolicy = options.resolveLegacyFixedPolicy ?? true
+  const permissionLevel =
+    options.permissionLevel ??
+    getChatbotPermissionLevel(chatbot, options.viewerId)
 
   return {
     ...chatbotWithoutSystemPrompts,
+    ...getChatbotPermissionFlags(permissionLevel),
+    ownerShortname: options.ownerShortname,
+    numSharedUsers: options.numSharedUsers,
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -636,7 +681,7 @@ type ChatbotDisclaimerRevisionSource = {
 type ChatbotRevisionRecord = ChatbotWithOwnerCourse & {
   ownerId: string
   disclaimer: ChatbotDisclaimerRevisionSource | null
-  owner: { aiFeaturesEnabled: boolean }
+  owner: { aiFeaturesEnabled: boolean; shortname: string }
 }
 
 const chatbotRevisionSelect = {
@@ -654,7 +699,7 @@ const chatbotRevisionSelect = {
       mediaType: true,
     },
   },
-  owner: { select: { aiFeaturesEnabled: true } },
+  owner: { select: { aiFeaturesEnabled: true, shortname: true } },
 } satisfies Prisma.ChatbotSelect
 
 type RevisionPrismaClient = PrismaClient | Prisma.TransactionClient
@@ -949,11 +994,31 @@ function projectAuthoringRevision(
 async function readChatbotRevision(
   prisma: RevisionPrismaClient,
   chatbotId: string,
-  ownerId?: string
+  viewerId?: string
 ): Promise<ChatbotRevisionRecord | null> {
   return (await prisma.chatbot.findFirst({
-    where: ownerId ? { id: chatbotId, ownerId } : { id: chatbotId },
-    select: chatbotRevisionSelect,
+    where: viewerId
+      ? {
+          id: chatbotId,
+          OR: [
+            { ownerId: viewerId },
+            {
+              directPermissions: {
+                some: sharedObjectUserPermissionWhere(viewerId),
+              },
+            },
+          ],
+        }
+      : { id: chatbotId },
+    select: viewerId
+      ? {
+          ...chatbotRevisionSelect,
+          directPermissions: {
+            where: sharedObjectUserPermissionWhere(viewerId),
+            select: { id: true, permissionLevel: true },
+          },
+        }
+      : chatbotRevisionSelect,
   })) as ChatbotRevisionRecord | null
 }
 
@@ -1004,6 +1069,29 @@ function assertRevisionEditable(chatbot: ChatbotRevisionRecord) {
       'CHATBOT_NOT_EDITABLE'
     )
   }
+}
+
+function assertChatbotOwner(chatbot: ChatbotRevisionRecord, viewerId: string) {
+  if (
+    getChatbotPermissionLevel(chatbot, viewerId) !== DB.PermissionLevel.OWNER
+  ) {
+    throw chatbotError(
+      'Only the chatbot owner can change publication or lifecycle state',
+      'CHATBOT_OWNER_REQUIRED'
+    )
+  }
+}
+
+function assertChatbotEditor(chatbot: ChatbotRevisionRecord, viewerId: string) {
+  const permissionLevel = getChatbotPermissionLevel(chatbot, viewerId)
+  if (
+    permissionLevel !== DB.PermissionLevel.WRITE &&
+    permissionLevel !== DB.PermissionLevel.ADMIN &&
+    permissionLevel !== DB.PermissionLevel.OWNER
+  ) {
+    throw chatbotError('Write access to the chatbot is required', 'FORBIDDEN')
+  }
+  return permissionLevel
 }
 
 function isLegacyPendingRevision(chatbot: ChatbotRevisionRecord) {
@@ -1080,7 +1168,8 @@ async function saveRevisionSnapshot(
   revision: ChatbotAuthoringRevision,
   status: DB.ChatbotStatus = revisionSaveStatus(chatbot),
   reviewComment: string | null | undefined = undefined,
-  liveStatus: DB.ChatbotStatus | undefined = undefined
+  liveStatus: DB.ChatbotStatus | undefined = undefined,
+  viewerId?: string
 ) {
   await tx.chatbot.update({
     where: { id: chatbot.id },
@@ -1096,9 +1185,9 @@ async function saveRevisionSnapshot(
     },
   })
 
-  const updated = await readChatbotRevision(tx, chatbot.id)
+  const updated = await readChatbotRevision(tx, chatbot.id, viewerId)
   if (!updated) return null
-  return shapeChatbotResponse(updated)
+  return shapeChatbotResponse(updated, { viewerId })
 }
 
 function normalizeRevisionReasoningMap(
@@ -1471,6 +1560,16 @@ export async function saveChatbotRevision(
     const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
     if (!chatbot) return null
 
+    const permissionLevel = assertChatbotEditor(chatbot, ctx.user.sub)
+    if (
+      input.creditPolicy !== undefined &&
+      permissionLevel !== DB.PermissionLevel.OWNER
+    ) {
+      throw chatbotError(
+        'Only the chatbot owner can change credit or billing settings',
+        'CHATBOT_CREDIT_POLICY_OWNER_ONLY'
+      )
+    }
     assertRevisionEditable(chatbot)
     assertExpectedRevisionVersion(
       chatbot.revisionVersion,
@@ -1574,7 +1673,15 @@ export async function saveChatbotRevision(
     if (next.name === '') {
       throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
     }
-    return await saveRevisionSnapshot(tx, chatbot, next)
+    return await saveRevisionSnapshot(
+      tx,
+      chatbot,
+      next,
+      undefined,
+      undefined,
+      undefined,
+      ctx.user.sub
+    )
   })
 }
 
@@ -1763,11 +1870,12 @@ export async function submitChatbotRevision(
     await lockChatbotRevision(tx, args.chatbotId)
     const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
     if (!chatbot) return null
+    assertChatbotOwner(chatbot, ctx.user.sub)
     await tx.$queryRaw(
-      Prisma.sql`SELECT "id" FROM "public"."User" WHERE "id" = ${ctx.user.sub}::uuid FOR SHARE`
+      Prisma.sql`SELECT "id" FROM "public"."User" WHERE "id" = ${chatbot.ownerId}::uuid FOR SHARE`
     )
     const owner = await tx.user.findUniqueOrThrow({
-      where: { id: ctx.user.sub },
+      where: { id: chatbot.ownerId },
       select: { aiFeaturesEnabled: true },
     })
     if (!owner.aiFeaturesEnabled) {
@@ -1815,7 +1923,8 @@ export async function submitChatbotRevision(
       null,
       currentStatus === DB.ChatbotStatus.PUBLISHED
         ? DB.ChatbotStatus.PUBLISHED
-        : DB.ChatbotStatus.PENDING_APPROVAL
+        : DB.ChatbotStatus.PENDING_APPROVAL,
+      ctx.user.sub
     )
   })
 }
@@ -1829,6 +1938,7 @@ export async function withdrawChatbotRevision(
     await lockChatbotRevision(tx, args.chatbotId)
     const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
     if (!chatbot) return null
+    assertChatbotOwner(chatbot, ctx.user.sub)
     if (chatbot.revisionStatus !== DB.ChatbotStatus.PENDING_APPROVAL) {
       throw chatbotError(
         'Chatbot revision is not pending approval',
@@ -1851,8 +1961,10 @@ export async function withdrawChatbotRevision(
         revisionVersion: { increment: 1 },
       },
     })
-    const shaped = await readChatbotRevision(tx, updated.id)
-    return shaped ? shapeChatbotResponse(shaped) : null
+    const shaped = await readChatbotRevision(tx, updated.id, ctx.user.sub)
+    return shaped
+      ? shapeChatbotResponse(shaped, { viewerId: ctx.user.sub })
+      : null
   })
 }
 
@@ -2068,16 +2180,25 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         { ownerId: ctx.user.sub },
         {
           directPermissions: {
-            some: {
-              ...sharedObjectUserPermissionWhere(ctx.user.sub),
-              permissionLevel: { in: CHATBOT_WRITE_PERMISSION_LEVELS },
-            },
+            some: sharedObjectUserPermissionWhere(ctx.user.sub),
           },
         },
       ],
     },
     select: {
       ...chatbotOwnerSelect,
+      owner: { select: { shortname: true } },
+      directPermissions: {
+        where: sharedObjectUserPermissionWhere(ctx.user.sub),
+        select: { id: true, permissionLevel: true },
+      },
+      _count: {
+        select: {
+          permissions: {
+            where: { permissionLevel: { not: DB.PermissionLevel.OWNER } },
+          },
+        },
+      },
       ownerId: true,
       course: {
         select: {
@@ -2113,10 +2234,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     return []
   }
 
-  const chatbotIds = chatbots.map((chatbot) => chatbot.id)
+  const ownerChatbotIds = chatbots
+    .filter((chatbot) => chatbot.ownerId === ctx.user.sub)
+    .map((chatbot) => chatbot.id)
   const chatbotOwnerIds = [
     ...new Set(chatbots.map((chatbot) => chatbot.ownerId)),
   ]
+
   const bindingKbIds = [
     ...new Set(
       chatbots.flatMap((chatbot) =>
@@ -2130,7 +2254,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     await Promise.all([
       ctx.prisma.chatUsageCredits.groupBy({
         by: ['chatbotId'],
-        where: { chatbotId: { in: chatbotIds } },
+        where: { chatbotId: { in: ownerChatbotIds } },
         _count: { _all: true },
         _sum: {
           total: true,
@@ -2143,21 +2267,21 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       }),
       ctx.prisma.chatThread.groupBy({
         by: ['chatbotId'],
-        where: { chatbotId: { in: chatbotIds } },
+        where: { chatbotId: { in: ownerChatbotIds } },
         _count: { _all: true },
         _max: { updatedAt: true },
       }),
       ctx.prisma.chatUsageCredits.groupBy({
         by: ['chatbotId', 'acceptedDisclaimerId'],
         where: {
-          chatbotId: { in: chatbotIds },
+          chatbotId: { in: ownerChatbotIds },
           acceptedDisclaimerId: { not: null },
         },
         _count: { _all: true },
       }),
       ctx.prisma.chatUsageCredits.groupBy({
         by: ['chatbotId'],
-        where: { chatbotId: { in: chatbotIds }, disclaimerDeclined: true },
+        where: { chatbotId: { in: ownerChatbotIds }, disclaimerDeclined: true },
         _count: { _all: true },
       }),
     ])
@@ -2185,7 +2309,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       SELECT t."chatbotId", COUNT(m.id) AS count
       FROM "public"."ChatMessage" m
       JOIN "public"."ChatThread" t ON t.id = m."threadId"
-      WHERE t."chatbotId" = ANY(${chatbotIds}::uuid[])
+      WHERE t."chatbotId" = ANY(${ownerChatbotIds}::uuid[])
       GROUP BY t."chatbotId"
     `
   )
@@ -2229,96 +2353,116 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     ),
   ])
 
-  return chatbots.map((chatbot) => {
-    const {
-      ownerId: _ownerId,
-      knowledgeBases: _knowledgeBases,
-      ...chatbotForResponse
-    } = chatbot
-    const creditAggregate = creditAggregateById.get(chatbot.id)
-    const threadAggregate = threadAggregateById.get(chatbot.id)
-    const participantCount = creditAggregate?._count._all ?? 0
-    const acceptedCount = chatbot.disclaimer
-      ? (acceptedCountByDisclaimer.get(
-          `${chatbot.id}:${chatbot.disclaimer.id}`
-        ) ?? 0)
-      : 0
-    const declinedCount = declinedCountById.get(chatbot.id) ?? 0
-    const pendingCount = Math.max(
-      participantCount - acceptedCount - declinedCount,
-      0
-    )
+  return chatbots.map(
+    ({
+      owner,
+      _count,
+      directPermissions: viewerDirectPermissions,
+      ...chatbot
+    }) => {
+      const permissionLevel = getChatbotPermissionLevel(
+        {
+          ownerId: chatbot.ownerId,
+          directPermissions: viewerDirectPermissions,
+        },
+        ctx.user.sub
+      )
+      if (!permissionLevel)
+        throw new GraphQLError('Chatbot access is unavailable')
+      const isOwner = permissionLevel === DB.PermissionLevel.OWNER
+      const isManager =
+        permissionLevel === DB.PermissionLevel.ADMIN ||
+        permissionLevel === DB.PermissionLevel.OWNER
+      const creditAggregate = creditAggregateById.get(chatbot.id)
+      const threadAggregate = threadAggregateById.get(chatbot.id)
+      const participantCount = creditAggregate?._count._all ?? 0
+      const acceptedCount = chatbot.disclaimer
+        ? (acceptedCountByDisclaimer.get(
+            `${chatbot.id}:${chatbot.disclaimer.id}`
+          ) ?? 0)
+        : 0
+      const declinedCount = declinedCountById.get(chatbot.id) ?? 0
+      const pendingCount = Math.max(
+        participantCount - acceptedCount - declinedCount,
+        0
+      )
 
-    const usageSummary = {
-      threadCount: threadAggregate?._count._all ?? 0,
-      messageCount: messageCountById.get(chatbot.id) ?? 0,
-      participantCount,
-      lastActivityAt: threadAggregate?._max.updatedAt ?? null,
-      totalCredits: toNumber(creditAggregate?._sum.total),
-      currentCredits: toNumber(creditAggregate?._sum.current),
-      totalResets: creditAggregate?._sum.resetCount ?? 0,
-      lastResetAt: creditAggregate?._max.lastResetAt ?? null,
-    }
-
-    const disclaimerSummary = chatbot.disclaimer
-      ? {
-          ...chatbot.disclaimer,
-          acceptedCount,
-          declinedCount,
-          pendingCount,
-        }
-      : null
-
-    const enabledKnowledgeBases = chatbot.knowledgeBases.map((binding) => {
-      const kb = knowledgeBaseById.get(binding.kb.id)
-      const canRead = kb ? canReadKb(kb, ctx.user.sub) : false
-      if (!kb || kb.deletedAt !== null || !canRead) {
-        return {
-          bindingId: binding.id,
-          id: null,
-          name: null,
-          available: false,
-          canEdit: false,
-          metrics: null,
-        }
+      const usageSummary = {
+        threadCount: threadAggregate?._count._all ?? 0,
+        messageCount: messageCountById.get(chatbot.id) ?? 0,
+        participantCount,
+        lastActivityAt: threadAggregate?._max.updatedAt ?? null,
+        totalCredits: toNumber(creditAggregate?._sum.total),
+        currentCredits: toNumber(creditAggregate?._sum.current),
+        totalResets: creditAggregate?._sum.resetCount ?? 0,
+        lastResetAt: creditAggregate?._max.lastResetAt ?? null,
       }
 
-      return {
-        bindingId: binding.id,
+      const disclaimerSummary = chatbot.disclaimer
+        ? {
+            ...chatbot.disclaimer,
+            acceptedCount: isOwner ? acceptedCount : 0,
+            declinedCount: isOwner ? declinedCount : 0,
+            pendingCount: isOwner ? pendingCount : 0,
+          }
+        : null
+
+      const enabledKnowledgeBases = chatbot.knowledgeBases.map((binding) => {
+        const kb = knowledgeBaseById.get(binding.kb.id)
+        const canRead = kb ? canReadKb(kb, ctx.user.sub) : false
+        if (!kb || kb.deletedAt !== null || !canRead) {
+          return {
+            bindingId: binding.id,
+            id: null,
+            name: null,
+            available: false,
+            canEdit: false,
+            metrics: null,
+          }
+        }
+
+        return {
+          bindingId: binding.id,
+          id: kb.id,
+          name: kb.name,
+          available: canReadKb(kb, chatbot.ownerId),
+          canEdit: canEditKb(kb, ctx.user.sub),
+          metrics: kbMetricsById.get(kb.id) ?? null,
+        }
+      })
+      const knowledgeBaseOptions = kbPickerCandidates.map((kb) => ({
         id: kb.id,
         name: kb.name,
         available: canReadKb(kb, chatbot.ownerId),
-        canEdit: canEditKb(kb, ctx.user.sub),
-        metrics: kbMetricsById.get(kb.id) ?? null,
-      }
-    })
-    const knowledgeBaseOptions = kbPickerCandidates.map((kb) => ({
-      id: kb.id,
-      name: kb.name,
-      available: canReadKb(kb, chatbot.ownerId),
-    }))
+      }))
 
-    return {
-      ...shapeChatbotResponse(chatbotForResponse),
-      courses: chatbot.course
-        ? [
-            {
-              id: chatbot.course.id,
-              name: chatbot.course.name,
-              numOfParticipants: chatbot.course._count.participations,
-            },
-          ]
-        : [],
-      usageSummary,
-      disclaimerSummary,
-      enabledKnowledgeBases,
-      knowledgeBaseOptions,
-      enabledKnowledgeBase:
-        enabledKnowledgeBases.length === 1
-          ? (enabledKnowledgeBases[0] ?? null)
-          : null,
+      return {
+        ...shapeChatbotResponse(chatbot, {
+          viewerId: ctx.user.sub,
+          permissionLevel,
+          ownerShortname: owner.shortname,
+          numSharedUsers: isManager ? _count.permissions : undefined,
+        }),
+        courses: chatbot.course
+          ? [
+              {
+                id: chatbot.course.id,
+                name: chatbot.course.name,
+                numOfParticipants: chatbot.course._count.participations,
+              },
+            ]
+          : [],
+        usageSummary: isOwner ? usageSummary : null,
+        disclaimerSummary,
+        enabledKnowledgeBases,
+        knowledgeBaseOptions,
+        enabledKnowledgeBase:
+          enabledKnowledgeBases.length === 1
+            ? (enabledKnowledgeBases[0] ?? null)
+            : null,
+      }
     }
-  })
+  )
 }
 
 function normalizeStrictReasoningConfig(
@@ -2507,5 +2651,5 @@ export async function createChatbot(
     },
   })
 
-  return shapeChatbotResponse(created)
+  return shapeChatbotResponse(created, { viewerId: ctx.user.sub })
 }

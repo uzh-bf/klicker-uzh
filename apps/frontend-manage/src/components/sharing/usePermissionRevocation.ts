@@ -41,7 +41,8 @@ function usePermissionRevocation({
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )
-  const hasDerivedPermissions = objectType !== ObjectType.Kb
+  const hasDerivedPermissions =
+    objectType !== ObjectType.Kb && objectType !== ObjectType.Chatbot
 
   const onPermissionRevocation = async ({
     permissionId,

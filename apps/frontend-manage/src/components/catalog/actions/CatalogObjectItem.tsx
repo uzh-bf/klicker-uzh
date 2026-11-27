@@ -48,6 +48,7 @@ function CatalogObjectItem({
     [ObjectType.CatalogCollection]: faFolder,
     [ObjectType.Course]: undefined,
     [ObjectType.Kb]: undefined,
+    [ObjectType.Chatbot]: undefined,
     [ObjectType.LiveQuiz]: faFileLines, // icon for activities & activity templates
     [ObjectType.PracticeQuiz]: faFileLines, // icon for activities & activity templates
     [ObjectType.MicroLearning]: faFileLines, // icon for activities & activity templates

@@ -2070,6 +2070,26 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
+          } else if (args.objectType === DB.ObjectType.CHATBOT) {
+            await AiFeatureGateService.assertManageAiEnabled(ctx)
+
+            const validAccess = await checkAccess(
+              [
+                {
+                  chatbotId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getChatbotPermissions(
+              { id: args.objectId },
+              ctx
+            )
           } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(

@@ -35,6 +35,8 @@ const KB_OWNER_ID = randomUUID()
 const COURSE_ID = randomUUID()
 const CHATBOT_ID = randomUUID()
 const KB_ID = randomUUID()
+const PARTICIPANT_ID = randomUUID()
+const THREAD_ID = randomUUID()
 const TEST_KEY = `kb-runtime-auth-${BOT_OWNER_ID.slice(0, 8)}`
 const TEST_ISSUER = 'https://chat.klicker.test'
 const TEST_AUDIENCE = 'klicker-doc-query-test'
@@ -160,6 +162,8 @@ async function cleanup() {
   await prisma.derivedPermission.deleteMany({ where: { kbId: KB_ID } })
   await prisma.permission.deleteMany({ where: { kbId: KB_ID } })
   await prisma.kBChatbot.deleteMany({ where: { chatbotId: CHATBOT_ID } })
+  await prisma.chatThread.deleteMany({ where: { id: THREAD_ID } })
+  await prisma.participant.deleteMany({ where: { id: PARTICIPANT_ID } })
   await prisma.chatbot.deleteMany({ where: { id: CHATBOT_ID } })
   await prisma.course.deleteMany({ where: { id: COURSE_ID } })
   await prisma.kB.deleteMany({ where: { id: KB_ID } })
@@ -204,185 +208,194 @@ async function grantReadThroughGroup() {
   })
 }
 
-describePostgres(
-  'Chat KB owner-preview runtime authorization over retained handles',
-  () => {
-    beforeAll(async () => {
-      ;({ prisma } = await import('@klicker-uzh/prisma'))
-      await cleanup()
+describePostgres('Chat KB runtime authorization over retained handles', () => {
+  beforeAll(async () => {
+    ;({ prisma } = await import('@klicker-uzh/prisma'))
+    await cleanup()
 
-      const keyPair = await generateKeyPair('ES256')
-      publicKey = keyPair.publicKey
-      vi.stubEnv(
-        'DOC_QUERY_SCOPE_PRIVATE_KEY',
-        await exportPKCS8(keyPair.privateKey)
-      )
-      vi.stubEnv('DOC_QUERY_SCOPE_KID', TEST_KID)
-      vi.stubEnv('DOC_QUERY_SCOPE_ISSUER', TEST_ISSUER)
-      vi.stubEnv('DOC_QUERY_SCOPE_AUDIENCE', TEST_AUDIENCE)
+    const keyPair = await generateKeyPair('ES256')
+    publicKey = keyPair.publicKey
+    vi.stubEnv(
+      'DOC_QUERY_SCOPE_PRIVATE_KEY',
+      await exportPKCS8(keyPair.privateKey)
+    )
+    vi.stubEnv('DOC_QUERY_SCOPE_KID', TEST_KID)
+    vi.stubEnv('DOC_QUERY_SCOPE_ISSUER', TEST_ISSUER)
+    vi.stubEnv('DOC_QUERY_SCOPE_AUDIENCE', TEST_AUDIENCE)
 
-      vi.stubEnv('DOC_QUERY_SCOPED_MCP_SERVER_ID', '')
-      vi.stubEnv('DOC_QUERY_SCOPED_MCP_LEGACY_URL', '')
-      vi.stubEnv('DOC_QUERY_SCOPED_MCP_URL', '')
+    vi.stubEnv('DOC_QUERY_SCOPED_MCP_SERVER_ID', '')
+    vi.stubEnv('DOC_QUERY_SCOPED_MCP_LEGACY_URL', '')
+    vi.stubEnv('DOC_QUERY_SCOPED_MCP_URL', '')
 
-      server = createServer(
-        async (request: IncomingMessage, response: ServerResponse) => {
-          if (request.method !== 'POST') {
-            response.writeHead(405).end()
-            return
-          }
-
-          if (!(await authorizeTransport(request))) {
-            response.writeHead(401).end()
-            return
-          }
-
-          const body = await readJsonBody(request)
-          outboundRequests += 1
-
-          const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined,
-            enableJsonResponse: true,
-          })
-          const mcpServer = createSyntheticDocQueryServer()
-          response.on('close', () => {
-            void transport.close()
-            void mcpServer.close()
-          })
-          await mcpServer.connect(transport)
-          await transport.handleRequest(request, response, body)
+    server = createServer(
+      async (request: IncomingMessage, response: ServerResponse) => {
+        if (request.method !== 'POST') {
+          response.writeHead(405).end()
+          return
         }
-      )
-      serverUrl = await listen(server)
 
-      await prisma.user.createMany({
-        data: [
-          {
-            id: BOT_OWNER_ID,
-            email: `${TEST_KEY}-bot@example.invalid`,
-            shortname: `${TEST_KEY}-bot`,
-          },
-          {
-            id: KB_OWNER_ID,
-            email: `${TEST_KEY}-kb@example.invalid`,
-            shortname: `${TEST_KEY}-kb`,
-          },
-        ],
-      })
-      await prisma.course.create({
-        data: {
-          id: COURSE_ID,
-          name: TEST_KEY,
-          displayName: 'Synthetic KB runtime authorization course',
-          authType: 'SSO',
-          startDate: new Date('2026-01-01T00:00:00.000Z'),
-          endDate: new Date('2027-01-01T00:00:00.000Z'),
-          groupDeadlineDate: new Date('2026-12-01T00:00:00.000Z'),
-          ownerId: BOT_OWNER_ID,
-        },
-      })
-      await prisma.chatbot.create({
-        data: {
-          id: CHATBOT_ID,
-          name: 'Synthetic KB runtime authorization chatbot',
-          ownerId: BOT_OWNER_ID,
-          courseId: COURSE_ID,
-        },
-      })
-      await prisma.kB.create({
-        data: {
-          id: KB_ID,
-          name: 'Synthetic cross-owner runtime KB',
-          ownerId: KB_OWNER_ID,
-        },
-      })
-      await prisma.kBChatbot.create({
-        data: { kbId: KB_ID, chatbotId: CHATBOT_ID, isEnabled: true },
-      })
-    }, 60_000)
+        if (!(await authorizeTransport(request))) {
+          response.writeHead(401).end()
+          return
+        }
 
-    beforeEach(async () => {
-      await grantReadThroughGroup()
-    }, 60_000)
+        const body = await readJsonBody(request)
+        outboundRequests += 1
 
-    afterAll(async () => {
-      vi.unstubAllEnvs()
-      try {
-        if (prisma) await cleanup()
-      } finally {
-        if (server) await closeServer(server)
-        if (prisma) await prisma.$disconnect()
-      }
-    }, 60_000)
-
-    test.each([
-      {
-        label: 'removing the member while retaining the Permission row',
-        mode: 'membership' as const,
-      },
-      {
-        label: 'deleting the Permission row while retaining the member',
-        mode: 'permission' as const,
-      },
-    ])('$label closes an owner-preview handle before outbound', async ({
-      mode,
-    }) => {
-      providerToolCalls = 0
-      outboundRequests = 0
-      let handle: MCPToolsHandle | undefined
-      try {
-        // This suite deliberately exercises owner preview. Participant
-        // publication and enrollment are covered by the route-level suites.
-        handle = await getAggregatedMCPTools([kbServer()], {
-          chatbotId: CHATBOT_ID,
-          ownerPreviewUserId: BOT_OWNER_ID,
-          authMode: 'account',
-          kbIds: [KB_ID],
-          sessionId: 'existing-synthetic-thread',
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+          enableJsonResponse: true,
         })
-        const tool = handle.tools.KB_doc_query as {
-          execute: (input: { query: string }) => Promise<unknown>
-        }
-
-        await expect(
-          tool.execute({ query: 'first authorized request' })
-        ).resolves.toBeTruthy()
-        const requestsBeforeRevoke = outboundRequests
-        expect(providerToolCalls).toBe(1)
-
-        if (mode === 'membership') {
-          await prisma.userGroup.update({
-            where: { id: groupId },
-            data: { members: { disconnect: { id: BOT_OWNER_ID } } },
-          })
-          const permission = await prisma.permission.findUniqueOrThrow({
-            where: { id: permissionId },
-          })
-          expect(permission.permissionLevel).toBe(PermissionLevel.READ)
-        } else {
-          await prisma.permission.delete({ where: { id: permissionId } })
-          const group = await prisma.userGroup.findUniqueOrThrow({
-            where: { id: groupId },
-            include: { members: { select: { id: true } } },
-          })
-          expect(group.members.map(({ id }) => id)).toContain(BOT_OWNER_ID)
-        }
-
-        await expect(
-          prisma.derivedPermission.findUniqueOrThrow({
-            where: { kbId_userId: { kbId: KB_ID, userId: BOT_OWNER_ID } },
-          })
-        ).resolves.toMatchObject({ permissionLevel: PermissionLevel.READ })
-
-        await expect(
-          tool.execute({ query: 'second request after revocation' })
-        ).rejects.toMatchObject({ reason: 'scope_violation' })
-
-        expect(providerToolCalls).toBe(1)
-        expect(outboundRequests).toBe(requestsBeforeRevoke)
-      } finally {
-        await handle?.close()
+        const mcpServer = createSyntheticDocQueryServer()
+        response.on('close', () => {
+          void transport.close()
+          void mcpServer.close()
+        })
+        await mcpServer.connect(transport)
+        await transport.handleRequest(request, response, body)
       }
+    )
+    serverUrl = await listen(server)
+
+    await prisma.user.createMany({
+      data: [
+        {
+          id: BOT_OWNER_ID,
+          email: `${TEST_KEY}-bot@example.invalid`,
+          shortname: `${TEST_KEY}-bot`,
+        },
+        {
+          id: KB_OWNER_ID,
+          email: `${TEST_KEY}-kb@example.invalid`,
+          shortname: `${TEST_KEY}-kb`,
+        },
+      ],
     })
-  }
-)
+    await prisma.course.create({
+      data: {
+        id: COURSE_ID,
+        name: TEST_KEY,
+        displayName: 'Synthetic KB runtime authorization course',
+        authType: 'SSO',
+        startDate: new Date('2026-01-01T00:00:00.000Z'),
+        endDate: new Date('2027-01-01T00:00:00.000Z'),
+        groupDeadlineDate: new Date('2026-12-01T00:00:00.000Z'),
+        ownerId: BOT_OWNER_ID,
+      },
+    })
+    await prisma.chatbot.create({
+      data: {
+        id: CHATBOT_ID,
+        name: 'Synthetic KB runtime authorization chatbot',
+        status: 'PUBLISHED',
+        ownerId: BOT_OWNER_ID,
+        courseId: COURSE_ID,
+      },
+    })
+    await prisma.participant.create({
+      data: { id: PARTICIPANT_ID, username: TEST_KEY, password: randomUUID() },
+    })
+    await prisma.participation.create({
+      data: { participantId: PARTICIPANT_ID, courseId: COURSE_ID },
+    })
+    await prisma.chatThread.create({
+      data: {
+        id: THREAD_ID,
+        participantId: PARTICIPANT_ID,
+        chatbotId: CHATBOT_ID,
+      },
+    })
+    await prisma.kB.create({
+      data: {
+        id: KB_ID,
+        name: 'Synthetic cross-owner runtime KB',
+        ownerId: KB_OWNER_ID,
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: { kbId: KB_ID, chatbotId: CHATBOT_ID, isEnabled: true },
+    })
+  }, 60_000)
+
+  beforeEach(async () => {
+    await grantReadThroughGroup()
+  }, 60_000)
+
+  afterAll(async () => {
+    vi.unstubAllEnvs()
+    try {
+      if (prisma) await cleanup()
+    } finally {
+      if (server) await closeServer(server)
+      if (prisma) await prisma.$disconnect()
+    }
+  }, 60_000)
+
+  test.each([
+    {
+      label: 'removing the member while retaining the Permission row',
+      mode: 'membership' as const,
+    },
+    {
+      label: 'deleting the Permission row while retaining the member',
+      mode: 'permission' as const,
+    },
+  ])('$label stops the next call on a retained handle', async ({ mode }) => {
+    providerToolCalls = 0
+    outboundRequests = 0
+    let handle: MCPToolsHandle | undefined
+    try {
+      handle = await getAggregatedMCPTools([kbServer()], {
+        chatbotId: CHATBOT_ID,
+        ...(mode === 'membership'
+          ? { ownerPreviewUserId: BOT_OWNER_ID }
+          : { participantId: PARTICIPANT_ID, courseId: COURSE_ID }),
+        authMode: 'account',
+        kbIds: [KB_ID],
+        sessionId: THREAD_ID,
+      })
+      const tool = handle.tools.KB_doc_query as {
+        execute: (input: { query: string }) => Promise<unknown>
+      }
+
+      await expect(
+        tool.execute({ query: 'first authorized request' })
+      ).resolves.toBeTruthy()
+      const requestsBeforeRevoke = outboundRequests
+      expect(providerToolCalls).toBe(1)
+
+      if (mode === 'membership') {
+        await prisma.userGroup.update({
+          where: { id: groupId },
+          data: { members: { disconnect: { id: BOT_OWNER_ID } } },
+        })
+        const permission = await prisma.permission.findUniqueOrThrow({
+          where: { id: permissionId },
+        })
+        expect(permission.permissionLevel).toBe(PermissionLevel.READ)
+      } else {
+        await prisma.permission.delete({ where: { id: permissionId } })
+        const group = await prisma.userGroup.findUniqueOrThrow({
+          where: { id: groupId },
+          include: { members: { select: { id: true } } },
+        })
+        expect(group.members.map(({ id }) => id)).toContain(BOT_OWNER_ID)
+      }
+
+      await expect(
+        prisma.derivedPermission.findUniqueOrThrow({
+          where: { kbId_userId: { kbId: KB_ID, userId: BOT_OWNER_ID } },
+        })
+      ).resolves.toMatchObject({ permissionLevel: PermissionLevel.READ })
+
+      await expect(
+        tool.execute({ query: 'second request after revocation' })
+      ).rejects.toMatchObject({ reason: 'scope_violation' })
+
+      expect(providerToolCalls).toBe(1)
+      expect(outboundRequests).toBe(requestsBeforeRevoke)
+    } finally {
+      await handle?.close()
+    }
+  })
+})

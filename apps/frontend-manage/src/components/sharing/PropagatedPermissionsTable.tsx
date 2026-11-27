@@ -21,7 +21,8 @@ function PropagatedPermissionsTable({
     propagation,
   })
 
-  if (objectType === ObjectType.Kb) return null
+  if (objectType === ObjectType.Kb || objectType === ObjectType.Chatbot)
+    return null
 
   // execution rights are only available for activities and courses
   const showExecution =

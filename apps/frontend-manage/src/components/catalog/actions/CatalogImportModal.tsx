@@ -40,7 +40,8 @@ function CatalogImportModal({
     onError: () => onErrorToast(),
   })
 
-  if (objectType === ObjectType.Kb) return null
+  if (objectType === ObjectType.Kb || objectType === ObjectType.Chatbot)
+    return null
 
   return (
     <Modal
