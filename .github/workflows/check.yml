@@ -390,6 +390,7 @@ jobs:
           set -euo pipefail
           node .github/scripts/install-patched-ocr.cjs qualify-draft "${RUNNER_TEMP}/qualified-draft-ocr"
           export OCR_TEST_DRAFT_BINARY="${RUNNER_TEMP}/qualified-draft-ocr/ocr"
+          export OCR_REQUIRE_DRAFT_BINARY=1
           node --test .github/scripts/ocr-draft-review.test.cjs
 
       # The chart is what production consumes from this branch, and nothing

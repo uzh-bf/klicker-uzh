@@ -1137,6 +1137,18 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
   )
 })
 
+test('required draft qualification verifies the executable before accepting its results', () => {
+  if (process.env.OCR_REQUIRE_DRAFT_BINARY !== '1') return
+  const executable = process.env.OCR_TEST_DRAFT_BINARY
+  assert.ok(executable, 'required draft OCR binary is missing')
+  const version = execFileSync(executable, ['version'], {
+    env: { ...process.env, OCR_NO_UPDATE: '1' },
+    encoding: 'utf8',
+    timeout: 5000,
+  })
+  require('./install-patched-ocr.cjs').verifyDraftVersion(version)
+})
+
 for (const divisor of [0, 1]) {
   test(`draft second pass closes a ${divisor ? 'ruled-out' : 'verified'} candidate`, {
     skip: !process.env.OCR_TEST_DRAFT_BINARY,
