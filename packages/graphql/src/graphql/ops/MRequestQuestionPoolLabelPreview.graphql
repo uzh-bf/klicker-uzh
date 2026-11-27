@@ -1,0 +1,26 @@
+mutation RequestQuestionPoolLabelPreview(
+  $elementId: Int!
+  $courseId: String!
+  $elementVersion: Int!
+) {
+  requestQuestionPoolLabelPreview(
+    elementId: $elementId
+    courseId: $courseId
+    elementVersion: $elementVersion
+  ) {
+    elementVersion
+    observed {
+      fullCreditCount
+      denominator
+      rate
+      band
+    }
+    ai {
+      rawRate
+      rawBand
+      calibratedRate
+      calibratedBand
+      bloom
+    }
+  }
+}

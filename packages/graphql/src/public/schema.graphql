@@ -2159,6 +2159,7 @@ type Mutation {
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   requestChatbotPublication(expectedStudentCount: Int!, id: String!, proposedCredits: Int!, useCase: String!): Chatbot
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
+  requestQuestionPoolLabelPreview(courseId: String!, elementId: Int!, elementVersion: Int!): QuestionPoolLabelPreview!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
@@ -2794,6 +2795,27 @@ type QuestionFeedback {
   feedback: String
   ix: Int!
   value: String!
+}
+
+type QuestionPoolAiLabels {
+  bloom: String!
+  calibratedBand: Int
+  calibratedRate: Float
+  rawBand: Int!
+  rawRate: Float!
+}
+
+type QuestionPoolLabelPreview {
+  ai: QuestionPoolAiLabels
+  elementVersion: Int!
+  observed: QuestionPoolObservedLabels
+}
+
+type QuestionPoolObservedLabels {
+  band: Int!
+  denominator: Int!
+  fullCreditCount: Int!
+  rate: Float!
 }
 
 type QuizAnalytics {

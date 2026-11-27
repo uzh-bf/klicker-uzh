@@ -1,25 +1,27 @@
-import { useQuery } from '@apollo/client'
-import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import {
-  ActivityType,
-  Element,
-  GetUserElementsDocument,
-  SharingType,
-} from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, UserNotification, toast } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
-import { Suspense, useCallback, useEffect, useState } from 'react'
-import ActivityCreation from '../components/activities/ActivityCreation'
-import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
+import { useMutation, useQuery } from '@apollo/client'
 import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
 } from '@components/common/Pagination'
+import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  type ActivityType,
+  type Element,
+  GetActiveUserCoursesDocument,
+  GetUserElementsDocument,
+  RequestQuestionPoolLabelPreviewDocument,
+  SharingType,
+} from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import { computeResultRange } from '@lib/resultRange'
+import { Button, toast, UserNotification } from '@uzh-bf/design-system'
+import type { GetStaticPropsContext } from 'next'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import ActivityCreation from '../components/activities/ActivityCreation'
+import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -29,6 +31,12 @@ import ElementEditModal, {
   ElementEditMode,
 } from '../components/elements/manipulation/ElementEditModal'
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
+import {
+  isQuestionPoolLabelPreviewSupported,
+  QuestionPoolLabelPreviewControls,
+  QuestionPoolLabelPreviewModal,
+  type QuestionPoolLabelPreviewState,
+} from '../components/elements/QuestionPoolLabelPreview'
 import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
@@ -69,6 +77,18 @@ function Index() {
 
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+
+  const [
+    isQuestionPoolLabelPreviewEnabled,
+    setQuestionPoolLabelPreviewEnabled,
+  ] = useState(false)
+  const [
+    questionPoolLabelPreviewCourseId,
+    setQuestionPoolLabelPreviewCourseId,
+  ] = useState<string>()
+  const [questionPoolLabelPreviewState, setQuestionPoolLabelPreviewState] =
+    useState<QuestionPoolLabelPreviewState>()
+  const questionPoolLabelPreviewRequestId = useRef(0)
 
   // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
@@ -154,6 +174,130 @@ function Index() {
   })
   const numOfElements = dataElements?.userElements?.numOfElements || 0
   const elements = dataElements?.userElements?.elements ?? []
+
+  const {
+    loading: loadingQuestionPoolLabelPreviewCourses,
+    error: errorQuestionPoolLabelPreviewCourses,
+    data: dataQuestionPoolLabelPreviewCourses,
+  } = useQuery(GetActiveUserCoursesDocument, {
+    variables: {},
+    skip: !isQuestionPoolLabelPreviewEnabled,
+    fetchPolicy: 'cache-and-network',
+  })
+  const questionPoolLabelPreviewCourses =
+    dataQuestionPoolLabelPreviewCourses?.getActiveUserCourses
+      ?.filter((course) => course.isManager)
+      .map((course) => ({ id: course.id, name: course.name })) ?? []
+  const questionPoolLabelPreviewCourse = questionPoolLabelPreviewCourses.find(
+    (course) => course.id === questionPoolLabelPreviewCourseId
+  )
+
+  const [requestQuestionPoolLabelPreview] = useMutation(
+    RequestQuestionPoolLabelPreviewDocument
+  )
+
+  const invalidateQuestionPoolLabelPreview = useCallback(() => {
+    questionPoolLabelPreviewRequestId.current += 1
+    setQuestionPoolLabelPreviewState(undefined)
+  }, [])
+
+  const handleQuestionPoolLabelPreviewEnabledChange = useCallback(
+    (enabled: boolean) => {
+      invalidateQuestionPoolLabelPreview()
+      setQuestionPoolLabelPreviewEnabled(enabled)
+      if (!enabled) setQuestionPoolLabelPreviewCourseId(undefined)
+    },
+    [invalidateQuestionPoolLabelPreview]
+  )
+
+  const handleQuestionPoolLabelPreviewCourseChange = useCallback(
+    (courseId: string) => {
+      invalidateQuestionPoolLabelPreview()
+      setQuestionPoolLabelPreviewCourseId(courseId || undefined)
+    },
+    [invalidateQuestionPoolLabelPreview]
+  )
+
+  const handleQuestionPoolLabelPreviewRequest = useCallback(
+    async (element: Element) => {
+      if (
+        !isQuestionPoolLabelPreviewEnabled ||
+        !questionPoolLabelPreviewCourse ||
+        !isQuestionPoolLabelPreviewSupported(element.type)
+      ) {
+        return
+      }
+
+      const selection = {
+        elementId: element.id,
+        elementName: element.name,
+        elementVersion: element.version,
+        courseId: questionPoolLabelPreviewCourse.id,
+        courseName: questionPoolLabelPreviewCourse.name,
+      }
+      const requestId = ++questionPoolLabelPreviewRequestId.current
+      setQuestionPoolLabelPreviewState({ status: 'loading', selection })
+
+      try {
+        const { data } = await requestQuestionPoolLabelPreview({
+          variables: {
+            elementId: element.id,
+            elementVersion: element.version,
+            courseId: questionPoolLabelPreviewCourse.id,
+          },
+        })
+
+        if (questionPoolLabelPreviewRequestId.current !== requestId) return
+
+        const preview = data?.requestQuestionPoolLabelPreview
+        if (!preview || preview.elementVersion !== element.version) {
+          setQuestionPoolLabelPreviewState({ status: 'error', selection })
+          return
+        }
+
+        setQuestionPoolLabelPreviewState({
+          status: 'success',
+          selection,
+          data: preview,
+        })
+      } catch {
+        if (questionPoolLabelPreviewRequestId.current === requestId) {
+          setQuestionPoolLabelPreviewState({ status: 'error', selection })
+        }
+      }
+    },
+    [
+      isQuestionPoolLabelPreviewEnabled,
+      questionPoolLabelPreviewCourse,
+      requestQuestionPoolLabelPreview,
+    ]
+  )
+
+  useEffect(() => {
+    const selection = questionPoolLabelPreviewState?.selection
+    if (!selection) return
+
+    const currentElement = elements.find(
+      (element) => element.id === selection.elementId
+    )
+    if (
+      !currentElement ||
+      currentElement.version !== selection.elementVersion ||
+      !isQuestionPoolLabelPreviewSupported(currentElement.type) ||
+      questionPoolLabelPreviewCourseId !== selection.courseId ||
+      (!loadingQuestionPoolLabelPreviewCourses &&
+        !questionPoolLabelPreviewCourse)
+    ) {
+      invalidateQuestionPoolLabelPreview()
+    }
+  }, [
+    elements,
+    invalidateQuestionPoolLabelPreview,
+    loadingQuestionPoolLabelPreviewCourses,
+    questionPoolLabelPreviewCourseId,
+    questionPoolLabelPreviewCourse,
+    questionPoolLabelPreviewState?.selection,
+  ])
   const refetchElementsForChildren = useCallback(async () => {
     await refetchElements()
   }, [refetchElements])
@@ -370,6 +514,15 @@ function Index() {
               {t('manage.questionPool.createElement')}
             </Button.Label>
           </Button>
+          <QuestionPoolLabelPreviewControls
+            enabled={isQuestionPoolLabelPreviewEnabled}
+            courseId={questionPoolLabelPreviewCourseId}
+            courses={questionPoolLabelPreviewCourses}
+            coursesLoading={loadingQuestionPoolLabelPreviewCourses}
+            coursesError={Boolean(errorQuestionPoolLabelPreviewCourses)}
+            onEnabledChange={handleQuestionPoolLabelPreviewEnabledChange}
+            onCourseChange={handleQuestionPoolLabelPreviewCourseChange}
+          />
           <FilterList
             key={creationMode}
             defaultValue={
@@ -506,6 +659,14 @@ function Index() {
                     onClearSearch={handleClearSearch}
                     onCreateElement={handleCreateElement}
                     refetchElements={refetchElementsForChildren}
+                    onPreviewQuestionLabels={
+                      isQuestionPoolLabelPreviewEnabled &&
+                      questionPoolLabelPreviewCourse
+                        ? (element) => {
+                            void handleQuestionPoolLabelPreviewRequest(element)
+                          }
+                        : undefined
+                    }
                   />
                 </div>
 
@@ -543,6 +704,12 @@ function Index() {
           refetchElements={refetchElementsForChildren}
         />
       )}
+      {questionPoolLabelPreviewState ? (
+        <QuestionPoolLabelPreviewModal
+          state={questionPoolLabelPreviewState}
+          onClose={invalidateQuestionPoolLabelPreview}
+        />
+      ) : null}
       {modificationModalOpen && router.query.editElementId && (
         <ElementEditModal
           isOpen

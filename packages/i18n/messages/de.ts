@@ -2331,6 +2331,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
+      labelPreviewEnable: 'Fragen-Label-Vorschau',
+      labelPreviewDescription:
+        'Aktivieren Sie kursbezogene Leistungs- und KI-Labels. Eine Vorschau wird nur dann angefragt, wenn Sie sie für eine Single-Choice- oder KPRIM-Frage öffnen.',
+      labelPreviewCourse: 'Kurskontext',
+      labelPreviewSelectCourse: 'Aktiven Kurs auswählen',
+      labelPreviewCoursesLoading: 'Kurse werden geladen…',
+      labelPreviewCoursesLoadError:
+        'Die berechtigten Kurse konnten nicht geladen werden.',
+      labelPreviewNoCourses:
+        'Es ist kein aktiver Kurs für die Vorschau verfügbar.',
+      labelPreviewAction: 'Fragen-Labels anzeigen',
+      labelPreviewTitle: 'Fragen-Label-Vorschau',
+      labelPreviewContext: '{element} in {course}',
+      labelPreviewObserved: 'In diesem Kurs beobachtet',
+      labelPreviewObservedDescription:
+        'Pro Person und Aktivitätsinstanz zählt der erste bewertete Versuch für diese Fragenversion.',
+      labelPreviewObservedUnavailable:
+        'Für diese Fragenversion gibt es in diesem Kurs keine bewerteten Erstversuche.',
+      labelPreviewFullCredit: 'Vollständig richtige Versuche',
+      labelPreviewRate: 'Anteil vollständig richtig',
+      labelPreviewBand: 'Schwierigkeitsband',
+      labelPreviewBandValue: 'D{band}',
+      labelPreviewAi: 'KI-Schätzungen',
+      labelPreviewAiDescription:
+        'Quellenfreie Schätzungen für den angezeigten Frageninhalt.',
+      labelPreviewAiUnavailable:
+        'Für diese Fragenversion sind keine KI-Schätzungen verfügbar.',
+      labelPreviewRaw: 'Rohe Schätzung',
+      labelPreviewCalibrated: 'Kalibrierte Schätzung',
+      labelPreviewBloom: 'Bloom-Stufe',
+      labelPreviewError:
+        'Die Vorschau konnte nicht erstellt werden. Die Frage wurde möglicherweise geändert oder ihr Typ wird nicht unterstützt. Schliessen Sie die Vorschau und versuchen Sie es im aktuellen Fragenpool erneut.',
       moreActions: 'Weitere Aktionen für {name}',
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',
