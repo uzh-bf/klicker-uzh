@@ -76,8 +76,11 @@ query QGetChatbotsInfoWithKnowledgeBases {
       pendingCount
     }
     enabledKnowledgeBases {
+      bindingId
       id
       name
+      available
+      canEdit
       materialsReadiness {
         visibleResourceCount
         servingResourceCount
@@ -85,6 +88,11 @@ query QGetChatbotsInfoWithKnowledgeBases {
         failedResourceCount
         lastChangedAt
       }
+    }
+    knowledgeBaseOptions {
+      id
+      name
+      available
     }
     createdAt
     updatedAt

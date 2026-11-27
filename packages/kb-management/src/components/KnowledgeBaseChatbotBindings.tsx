@@ -52,6 +52,7 @@ function KnowledgeBaseChatbotBindings({
     ({ id }) => id !== kbId
   )
   const replacing = replacementKb != null
+  const replacementKbName = replacementKb?.name
   const mutating = attaching || detaching
   const summary = loading
     ? t('shared.generic.loading')
@@ -188,9 +189,13 @@ function KnowledgeBaseChatbotBindings({
               <UserNotification
                 type="warning"
                 className={{ root: 'mt-3' }}
-                message={t('kb.chatbotReplacementWarning', {
-                  kbName: replacementKb?.name ?? '',
-                })}
+                message={
+                  replacementKbName
+                    ? t('kb.chatbotReplacementWarning', {
+                        kbName: replacementKbName,
+                      })
+                    : t('kb.chatbotReplacementHiddenWarning')
+                }
                 data={{ cy: 'kb-chatbot-replacement-warning' }}
               />
             ) : null}

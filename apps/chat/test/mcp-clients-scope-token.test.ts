@@ -4,6 +4,7 @@ const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
 const clientToolsMock = vi.hoisted(() => vi.fn())
 const safeDecryptMock = vi.hoisted(() => vi.fn((value: string) => value))
+const assertKnowledgeAccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
@@ -11,6 +12,10 @@ vi.mock('@ai-sdk/mcp', () => ({
 
 vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
   signDocQueryScopeToken: signDocQueryScopeTokenMock,
+}))
+
+vi.mock('@/src/lib/server/chatbotKnowledgeAccess', () => ({
+  assertCurrentChatbotKnowledgeAccess: assertKnowledgeAccessMock,
 }))
 
 vi.mock('@klicker-uzh/util', () => ({
@@ -70,6 +75,7 @@ describe('current-v3 Doc Query scope', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+    assertKnowledgeAccessMock.mockResolvedValue(undefined)
     clientToolsMock.mockResolvedValue({ doc_query: {} })
     createSDKMCPClientMock.mockResolvedValue({
       close: vi.fn(),
@@ -229,6 +235,7 @@ describe('current-v3 Doc Query scope', () => {
 
     expect(createSDKMCPClientMock).toHaveBeenCalledWith({
       transport: {
+        fetch: expect.any(Function),
         type: 'http',
         url: 'https://mcp.example.test',
         headers: {

@@ -8,6 +8,7 @@ import {
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
 import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
+import { assertCurrentChatbotKnowledgeAccess } from '@/src/lib/server/chatbotKnowledgeAccess'
 import type { AuthMode } from '@/src/lib/server/ltiGuest'
 import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import {
@@ -22,6 +23,7 @@ import {
 import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
+  createDocQueryAuthorizedFetch,
   createDocQueryScopedFetch,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
@@ -86,6 +88,12 @@ const MCP_AUTHORIZATION_STATUS_CODES = new Set([401, 403])
  * outages, so a required-tool caller must keep them fail-closed.
  */
 function isMcpAuthorizationError(error: unknown): boolean {
+  if (
+    error instanceof RequiredMCPUnavailableError &&
+    error.reason === 'scope_violation'
+  ) {
+    return true
+  }
   if (!error || typeof error !== 'object') return false
   if ((error as { name?: unknown }).name === 'UnauthorizedError') return true
 
@@ -224,7 +232,8 @@ interface MCPTransportRequest {
  */
 function createScopedDocQueryTransport(
   server: MCPServerConfig,
-  context: MCPRequestContext
+  context: MCPRequestContext,
+  authorize: () => Promise<void>
 ): MCPTransportRequest | undefined {
   if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return undefined
 
@@ -250,9 +259,55 @@ function createScopedDocQueryTransport(
       kbIds,
       chatbotId: context.chatbotId,
       sessionId: context.sessionId,
+      authorize,
       signToken: signDocQueryScopeToken,
     }),
   }
+}
+
+function createFreshDocQueryAuthorization(
+  context: MCPRequestContext
+): () => Promise<void> {
+  const snapshot = Object.freeze({
+    chatbotId: context.chatbotId,
+    kbIds: Object.freeze([...(context.kbIds ?? [])]),
+    participantId: context.participantId,
+    ownerPreviewUserId: context.ownerPreviewUserId,
+    authMode: context.authMode,
+    courseId: context.courseId,
+    sessionId: context.sessionId,
+  })
+
+  return async () => {
+    if (snapshot.kbIds.length === 0 || !snapshot.sessionId) return
+    await assertCurrentChatbotKnowledgeAccess(snapshot)
+  }
+}
+
+/**
+ * A discovered MCP tool can be retained across model steps and an SDK may
+ * retry it. Re-authorize each invocation before the tool dispatches.
+ */
+function withFreshToolAuthorization(
+  rawTools: Record<string, any>,
+  authorize: () => Promise<void>
+): Record<string, any> {
+  const guarded: Record<string, any> = {}
+  for (const [name, definition] of Object.entries(rawTools)) {
+    if (typeof definition?.execute !== 'function') {
+      guarded[name] = definition
+      continue
+    }
+    const execute = definition.execute.bind(definition)
+    guarded[name] = {
+      ...definition,
+      execute: async (...args: Parameters<typeof execute>) => {
+        await authorize()
+        return execute(...args)
+      },
+    }
+  }
+  return guarded
 }
 
 /**
@@ -405,10 +460,21 @@ export async function createMCPClient(
   )
 
   try {
-    const scopedTransport = createScopedDocQueryTransport(server, context)
+    const authorize =
+      server.name === DOC_QUERY_MCP_SERVER_NAME
+        ? createFreshDocQueryAuthorization(context)
+        : undefined
+    const scopedTransport = createScopedDocQueryTransport(
+      server,
+      context,
+      authorize ?? (async () => undefined)
+    )
     const headers = scopedTransport
       ? scopedTransport.headers
       : await createAuthHeaders(server, context)
+    const transportFetch =
+      scopedTransport?.fetch ??
+      (authorize ? createDocQueryAuthorizedFetch({ authorize }) : undefined)
 
     const client = await createSDKMCPClient({
       transport: {
@@ -416,7 +482,7 @@ export async function createMCPClient(
         url: scopedTransport ? scopedTransport.url : server.url,
         headers,
         redirect: 'error',
-        ...(scopedTransport?.fetch ? { fetch: scopedTransport.fetch } : {}),
+        ...(transportFetch ? { fetch: transportFetch } : {}),
       },
       ...(options.requestTimeoutMs !== undefined
         ? { initializationOptions: { timeout: options.requestTimeoutMs } }
@@ -488,7 +554,14 @@ async function loadServerTools(
       assertDocQueryRequestScope(config.parameters, context.kbIds)
     }
     client = await createMCPClient(server, context, options)
-    const rawTools = await client.tools()
+    const discoveredTools = await client.tools()
+    const rawTools =
+      server.name === DOC_QUERY_MCP_SERVER_NAME
+        ? withFreshToolAuthorization(
+            discoveredTools,
+            createFreshDocQueryAuthorization(context)
+          )
+        : discoveredTools
     // Serialize the raw client calls, including graph-expanded searches. An
     // augmentation timeout must not release an unfinished provider operation.
     for (const [name, tool] of Object.entries(rawTools)) {

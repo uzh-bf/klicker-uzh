@@ -2322,6 +2322,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     noLinkedChatbots: 'No chatbot is using this knowledge base.',
     chatbotReplacementWarning:
       'This chatbot currently uses “{kbName}”. Connecting it here replaces that knowledge base.',
+    chatbotReplacementHiddenWarning:
+      'This chatbot currently uses a hidden knowledge base. Connecting it here replaces that knowledge base.',
     chatbotLiveChangeWarning:
       'This chatbot is published. Connecting it here changes its materials for students immediately, without review.',
     linkedChatbotLiveNote:
@@ -5370,11 +5372,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceDisclaimerDescription:
         'Edit the participant-facing introduction and review the fixed institutional sections.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',
+      chatbotKnowledgeBaseOwnerNeedsReadOption:
+        '{kbName} (owner needs Read access)',
       chatbotKnowledgeBaseConnect: 'Connect',
       chatbotKnowledgeBaseReplace: 'Replace',
       chatbotKnowledgeBaseDisconnect: 'Disconnect',
       chatbotKnowledgeBaseReplacementWarning:
         'This chatbot currently uses “{kbName}”. Connecting another knowledge base replaces it.',
+      chatbotKnowledgeBaseReplacementHiddenWarning:
+        'This chatbot currently uses a hidden knowledge base. Connecting another knowledge base replaces it.',
       chatbotKnowledgeBaseLiveChangeNote:
         'This chatbot is published. Connecting, replacing or disconnecting a knowledge base takes effect for participants immediately and is not part of the draft changes awaiting review.',
       chatbotKnowledgeBaseListError:
@@ -5385,6 +5391,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseDisconnectSuccess: 'Knowledge base disconnected.',
       chatbotKnowledgeBaseDisconnectError:
         'The knowledge base could not be disconnected.',
+      chatbotKnowledgeBaseRedactedUnavailable:
+        'The selected knowledge base is hidden because you no longer have Read access. You can replace or remove the connection.',
+      chatbotKnowledgeBaseOwnerReadRequired:
+        'The chatbot owner no longer has Read access to this knowledge base. New retrieval is paused until access is restored or the selection is replaced.',
+      chatbotKnowledgeBaseUnavailableOptions:
+        'Knowledge bases marked as unavailable cannot be attached because this chatbot’s owner does not have Read access.',
       chatbotKnowledgeBaseCreatedNotConnected:
         'The knowledge base “{kbName}” was created but could not be connected to this chatbot. Retry the connection to use it here.',
       chatbotKnowledgeBaseCardReusable:
@@ -5397,6 +5409,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseCardLastChanged: 'Last changed on {date}.',
       chatbotKnowledgeBaseCardEmpty:
         'This knowledge base has no materials yet.',
+      chatbotSummaryMaterialsRedacted: 'The selected knowledge base is hidden.',
+      chatbotSummaryMaterialsUnavailable:
+        'The chatbot owner no longer has Read access.',
+      chatbotListKnowledgeBaseRedacted: 'Knowledge base hidden',
+      chatbotListKnowledgeBaseUnavailable: '{kbName} (owner needs Read access)',
       chatbotKnowledgeBaseCardRecent: 'Recently added',
       chatbotKnowledgeBaseAddFiles: 'Add files',
       chatbotKnowledgeBaseBanner:

@@ -74,7 +74,7 @@ export function hasCompleteResponseExampleCitationParity(
 /**
  * Validate response-example lineage against the resources currently served by
  * the chatbot's one enabled knowledge base. This verifies identity, activity,
- * content hash, and renderer-visible citation parity only.
+ * content hash, current owner access, and renderer-visible citation parity.
  */
 export function evaluateResponseExampleCurrentEligibility(
   example: ResponseExampleEligibilityInput,
@@ -109,27 +109,51 @@ export async function loadCurrentResponseExampleResources(
 
   return await prisma.$queryRaw<ResponseExampleCurrentResource[]>(
     PrismaRuntime.sql`
-      WITH enabled_kb AS (
+      WITH enabled_kb_bindings AS (
         SELECT binding."kbId"
         FROM "public"."KBChatbot" AS binding
-        INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
         WHERE binding."chatbotId" = ${chatbotId}::uuid
           AND binding."isEnabled" = true
-          AND kb."deletedAt" IS NULL
         ORDER BY binding."id" ASC
         LIMIT 2
-      ), exact_kb AS (
-        SELECT "kbId"
-        FROM enabled_kb
-        WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
+      ), chatbot_owner AS (
+        SELECT "ownerId"
+        FROM "public"."Chatbot"
+        WHERE "id" = ${chatbotId}::uuid
+      ), current_kb AS (
+        SELECT binding."kbId"
+        FROM enabled_kb_bindings AS binding
+        CROSS JOIN chatbot_owner AS owner
+        WHERE (SELECT COUNT(*) FROM enabled_kb_bindings) = 1
+          AND EXISTS (
+            SELECT 1
+            FROM "public"."KB" AS kb
+            WHERE kb."id" = binding."kbId"
+              AND kb."deletedAt" IS NULL
+              AND (
+                kb."ownerId" = owner."ownerId"
+                OR EXISTS (
+                  SELECT 1
+                  FROM "public"."DerivedPermission" AS permission
+                  WHERE permission."kbId" = binding."kbId"
+                    AND permission."userId" = owner."ownerId"
+                    AND permission."permissionLevel" IN (
+                      'READ',
+                      'WRITE',
+                      'ADMIN',
+                      'OWNER'
+                    )
+                )
+              )
+          )
       )
       SELECT
         resource."id",
         resource."activeContentSha256",
         resource."deletedAt"
-      FROM exact_kb
+      FROM current_kb
       INNER JOIN "public"."KBResource" AS resource
-        ON resource."kbId" = exact_kb."kbId"
+        ON resource."kbId" = current_kb."kbId"
       WHERE resource."id" IN (${PrismaRuntime.join([...sourceIds])})
     `
   )

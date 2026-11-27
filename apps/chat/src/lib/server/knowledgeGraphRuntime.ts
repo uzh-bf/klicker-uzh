@@ -4,6 +4,7 @@ import type {
   KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import { createRequire } from 'node:module'
+import { assertCurrentChatbotKnowledgeAccess } from './chatbotKnowledgeAccess'
 
 export type PublishedKnowledgeGraph = {
   kbId: string
@@ -98,6 +99,12 @@ export async function getPublishedKnowledgeGraphForChatbot(
     id: binding.kbId,
     name: binding.kb.name,
   }))
+  if (bindings.length > 0) {
+    await assertCurrentChatbotKnowledgeAccess(
+      { chatbotId, kbIds: bindings.map((binding) => binding.kbId) },
+      { client }
+    )
+  }
   if (
     (kbId !== undefined &&
       !bindings.some((binding) => binding.kbId === kbId)) ||

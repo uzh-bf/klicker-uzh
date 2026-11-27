@@ -85,6 +85,22 @@ const KB_CURSOR_VERSION = 1
 // rather than failing after dispatch.
 const KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH = 300
 const KB_MCP_SERVER_NAME = 'KB'
+const KB_READ_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.READ,
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+const KB_WRITE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+const CHATBOT_WRITE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
@@ -743,21 +759,183 @@ async function lockChatbotForCleanup(
   `
 }
 
-async function lockOwnedChatbotOrThrow(
+async function lockKbOrThrow(prisma: DB.Prisma.TransactionClient, id: string) {
+  const lockedKb = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "public"."KB"
+    WHERE "id" = CAST(${id} AS UUID)
+      AND "deletedAt" IS NULL
+    FOR UPDATE
+  `
+  if (lockedKb.length === 0) {
+    throw new GraphQLError('KB not found')
+  }
+}
+
+async function findKbReadableByUser(
   prisma: DB.Prisma.TransactionClient,
   id: string,
-  ownerId: string
+  userId: string
+) {
+  return await prisma.kB.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+      OR: [
+        { ownerId: userId },
+        {
+          permissions: {
+            some: {
+              userId,
+              permissionLevel: { in: KB_READ_PERMISSION_LEVELS },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      permissions: {
+        where: { userId },
+        select: { userId: true, permissionLevel: true },
+      },
+    },
+  })
+}
+
+async function findReadableKbOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  userId: string
+) {
+  const kb = await findKbReadableByUser(prisma, id, userId)
+  if (!kb) {
+    throw new GraphQLError('KB not found')
+  }
+  return kb
+}
+
+async function lockReadableKbOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  userId: string
+) {
+  await lockKbOrThrow(prisma, id)
+  return await findReadableKbOrThrow(prisma, id, userId)
+}
+
+async function lockChatbotForWriteOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  userId: string
 ) {
   const lockedChatbot = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT "id"
     FROM "public"."Chatbot"
     WHERE "id" = CAST(${id} AS UUID)
-      AND "ownerId" = CAST(${ownerId} AS UUID)
     FOR UPDATE
   `
   if (lockedChatbot.length === 0) {
     throw new GraphQLError('Chatbot not found')
   }
+
+  const chatbot = await prisma.chatbot.findFirst({
+    where: {
+      id,
+      OR: [
+        { ownerId: userId },
+        {
+          permissions: {
+            some: {
+              userId,
+              permissionLevel: { in: CHATBOT_WRITE_PERMISSION_LEVELS },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      ownerId: true,
+      status: true,
+    },
+  })
+  if (!chatbot) {
+    throw new GraphQLError('Chatbot not found')
+  }
+  return chatbot
+}
+
+function hasKbRead(
+  kb: {
+    ownerId: string
+    permissions: Array<{
+      userId: string
+      permissionLevel: DB.PermissionLevel
+    }>
+  },
+  userId: string
+) {
+  return (
+    kb.ownerId === userId ||
+    kb.permissions.some(
+      (permission) =>
+        permission.userId === userId &&
+        KB_READ_PERMISSION_LEVELS.includes(permission.permissionLevel)
+    )
+  )
+}
+
+function hasKbEdit(
+  kb: {
+    ownerId: string
+    permissions: Array<{
+      userId: string
+      permissionLevel: DB.PermissionLevel
+    }>
+  },
+  userId: string
+) {
+  return (
+    kb.ownerId === userId ||
+    kb.permissions.some(
+      (permission) =>
+        permission.userId === userId &&
+        KB_WRITE_PERMISSION_LEVELS.includes(permission.permissionLevel)
+    )
+  )
+}
+
+async function lockKbChatbotBindingOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  {
+    chatbotId,
+    bindingId,
+    kbId,
+  }: { chatbotId: string; bindingId?: string; kbId?: string }
+) {
+  const lockedBinding = bindingId
+    ? await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "public"."KBChatbot"
+        WHERE "id" = CAST(${bindingId} AS UUID)
+          AND "chatbotId" = CAST(${chatbotId} AS UUID)
+        FOR UPDATE
+      `
+    : await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "public"."KBChatbot"
+        WHERE "kbId" = CAST(${kbId} AS UUID)
+          AND "chatbotId" = CAST(${chatbotId} AS UUID)
+        FOR UPDATE
+      `
+  if (lockedBinding.length === 0) {
+    throw new GraphQLError('KB binding not found')
+  }
+  return lockedBinding[0]!.id
 }
 
 async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
@@ -1366,36 +1544,94 @@ export async function getKbChatbotBindings(
   await assertManageAiEnabled(ctx)
   await getKbAccessOrThrow(ctx, kbId, 'READ')
 
+  const visibleChatbotWhere = {
+    OR: [
+      { ownerId: ctx.user.sub },
+      {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: { in: CHATBOT_WRITE_PERMISSION_LEVELS },
+          },
+        },
+      },
+    ],
+  } satisfies DB.Prisma.ChatbotWhereInput
+
+  const visibleChatbots = await ctx.prisma.chatbot.findMany({
+    where: visibleChatbotWhere,
+    select: { ownerId: true },
+  })
+  const chatbotOwnerIds = [
+    ...new Set(visibleChatbots.map(({ ownerId }) => ownerId)),
+  ]
+
   const chatbots = await ctx.prisma.chatbot.findMany({
-    where: { ownerId: ctx.user.sub },
+    where: visibleChatbotWhere,
     select: {
       id: true,
       name: true,
       status: true,
+      ownerId: true,
       knowledgeBases: {
-        where: { isEnabled: true, kb: { deletedAt: null } },
+        where: { isEnabled: true },
+        orderBy: { id: 'asc' },
         select: {
-          kb: { select: { id: true, name: true } },
+          id: true,
+          kb: {
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              deletedAt: true,
+              permissions: {
+                where: {
+                  userId: { in: [ctx.user.sub, ...chatbotOwnerIds] },
+                },
+                select: { userId: true, permissionLevel: true },
+              },
+            },
+          },
         },
       },
     },
     orderBy: { name: 'asc' },
   })
 
-  return chatbots.map((chatbot) => ({
-    chatbotId: chatbot.id,
-    chatbotName: chatbot.name,
-    chatbotStatus: chatbot.status,
-    enabledKbs: chatbot.knowledgeBases.map(({ kb }) => kb),
-    enabledKbId:
-      chatbot.knowledgeBases.length === 1
-        ? (chatbot.knowledgeBases[0]?.kb.id ?? null)
-        : null,
-    enabledKbName:
-      chatbot.knowledgeBases.length === 1
-        ? (chatbot.knowledgeBases[0]?.kb.name ?? null)
-        : null,
-  }))
+  return chatbots.map((chatbot) => {
+    const enabledKbs = chatbot.knowledgeBases.map((binding) => {
+      if (
+        binding.kb.deletedAt !== null ||
+        !hasKbRead(binding.kb, ctx.user.sub)
+      ) {
+        return {
+          bindingId: binding.id,
+          id: null,
+          name: null,
+          available: false,
+          canEdit: false,
+        }
+      }
+
+      return {
+        bindingId: binding.id,
+        id: binding.kb.id,
+        name: binding.kb.name,
+        available: hasKbRead(binding.kb, chatbot.ownerId),
+        canEdit: hasKbEdit(binding.kb, ctx.user.sub),
+      }
+    })
+    const onlyEnabledKb = enabledKbs.length === 1 ? enabledKbs[0] : undefined
+
+    return {
+      chatbotId: chatbot.id,
+      chatbotName: chatbot.name,
+      chatbotStatus: chatbot.status,
+      enabledKbs,
+      enabledKbId: onlyEnabledKb?.id ?? null,
+      enabledKbName: onlyEnabledKb?.name ?? null,
+    }
+  })
 }
 
 export async function attachKbToChatbot(
@@ -1404,8 +1640,17 @@ export async function attachKbToChatbot(
 ) {
   await assertManageAiEnabled(ctx)
   return ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+    const chatbot = await lockChatbotForWriteOrThrow(
+      prisma,
+      chatbotId,
+      ctx.user.sub
+    )
+    const kb = await lockReadableKbOrThrow(prisma, kbId, ctx.user.sub)
+    if (!(await findKbReadableByUser(prisma, kbId, chatbot.ownerId))) {
+      throw new GraphQLError('The chatbot owner needs Read access to this KB', {
+        extensions: { code: 'KB_OWNER_READ_REQUIRED' },
+      })
+    }
     const mcpServer = await getKbMcpServerOrThrow(prisma)
     const { customModeConfig } = await prisma.chatbot.findUniqueOrThrow({
       where: { id: chatbotId },
@@ -1420,10 +1665,11 @@ export async function attachKbToChatbot(
       },
       data: { isEnabled: false },
     })
-    await prisma.kBChatbot.upsert({
+    const binding = await prisma.kBChatbot.upsert({
       where: { kbId_chatbotId: { kbId, chatbotId } },
       create: { kbId, chatbotId, isEnabled: true },
       update: { isEnabled: true },
+      select: { id: true },
     })
 
     // Approved custom modes inherit the required standard retrieval binding.
@@ -1490,37 +1736,47 @@ export async function attachKbToChatbot(
       data: retrievalBinding,
     })
 
-    const [chatbot, kb] = await Promise.all([
-      prisma.chatbot.findUniqueOrThrow({
-        where: { id: chatbotId },
-        select: { name: true, status: true },
-      }),
-      prisma.kB.findUniqueOrThrow({
-        where: { id: kbId },
-        select: { name: true },
-      }),
-    ])
     return {
       chatbotId,
       chatbotName: chatbot.name,
       chatbotStatus: chatbot.status,
       enabledKbId: kbId,
       enabledKbName: kb.name,
-      enabledKbs: [{ id: kbId, name: kb.name }],
+      enabledKbs: [
+        {
+          bindingId: binding.id,
+          id: kbId,
+          name: kb.name,
+          available: true,
+          canEdit: hasKbEdit(kb, ctx.user.sub),
+        },
+      ],
     }
   })
 }
 
 export async function detachKbFromChatbot(
-  { kbId, chatbotId }: { kbId: string; chatbotId: string },
+  {
+    kbId,
+    bindingId,
+    chatbotId,
+  }: { kbId?: string | null; bindingId?: string | null; chatbotId: string },
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  return ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+  if ((!kbId && !bindingId) || (kbId && bindingId)) {
+    throw new GraphQLError('Provide exactly one KB binding identifier')
+  }
 
-    await prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockChatbotForWriteOrThrow(prisma, chatbotId, ctx.user.sub)
+    const lockedBindingId = await lockKbChatbotBindingOrThrow(prisma, {
+      chatbotId,
+      bindingId: bindingId ?? undefined,
+      kbId: kbId ?? undefined,
+    })
+
+    await prisma.kBChatbot.delete({ where: { id: lockedBindingId } })
     const enabledBinding = await prisma.kBChatbot.findFirst({
       where: { chatbotId, isEnabled: true },
       select: { id: true },

@@ -1,6 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { assertCurrentChatbotKnowledgeAccess } from '@/src/lib/server/chatbotKnowledgeAccess'
 import { readCourseImage } from '@/src/lib/server/courseImageStore'
 import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
@@ -73,6 +74,13 @@ export async function GET(
       select: { id: true },
     })
     if (!resource) return missing()
+    await assertCurrentChatbotKnowledgeAccess({
+      chatbotId,
+      kbIds,
+      participantId: auth.participantId,
+      authMode: auth.authMode,
+      courseId: auth.chatbot.courseId,
+    })
     const bytes = await readCourseImage(image)
     return new NextResponse(new Uint8Array(bytes), {
       headers: {

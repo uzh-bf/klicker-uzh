@@ -6,7 +6,9 @@ import {
 } from '../sources/normalizeSources'
 import { selectedVideoFrames, type VideoFrame } from '../sources/videoFrames'
 import { withVideoSourceFrames } from '../sources/videoSourceMedia'
+import { assertCurrentChatbotKnowledgeAccess } from './chatbotKnowledgeAccess'
 import { resolveEffectiveMCPConfigurations } from './effectiveChatModes'
+import type { AuthMode } from './ltiGuest'
 
 /** Resolve displayed or source-preview frames within the owned message and current KB scope. */
 export async function resolveAuthorizedVideoFrame({
@@ -14,12 +16,16 @@ export async function resolveAuthorizedVideoFrame({
   chatbotId,
   messageId,
   participantId,
+  authMode,
+  courseId,
   threadId,
 }: {
   assetId: string
   chatbotId: string
   messageId: string
   participantId: string
+  authMode: AuthMode
+  courseId: string
   threadId: string
 }): Promise<VideoFrame | undefined> {
   const message = await prisma.chatMessage.findFirst({
@@ -55,5 +61,14 @@ export async function resolveAuthorizedVideoFrame({
     mode,
     resolveEffectiveMCPConfigurations(allConfigs, mode)
   )
-  return kbIds?.includes(frame.kb_id) ? frame : undefined
+  if (!kbIds?.includes(frame.kb_id)) return undefined
+
+  await assertCurrentChatbotKnowledgeAccess({
+    chatbotId,
+    kbIds,
+    participantId,
+    authMode,
+    courseId,
+  })
+  return frame
 }

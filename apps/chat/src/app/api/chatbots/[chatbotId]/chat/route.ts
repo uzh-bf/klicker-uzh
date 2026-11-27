@@ -46,6 +46,7 @@ import {
 } from '@/src/lib/server/answerStyleInstructions'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { withCalculatorTool } from '@/src/lib/server/calculatorTool'
+import { assertCurrentChatbotKnowledgeAccess } from '@/src/lib/server/chatbotKnowledgeAccess'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
@@ -1399,8 +1400,46 @@ export async function POST(
       )
     }
 
-    if (scopedKbIds?.length && videoFrameStoreConfigured()) {
-      mcpTools = withVideoFrameTool(mcpTools, scopedKbIds, readVideoFrame)
+    const scopedKnowledgeIds = scopedKbIds ?? []
+    const authorizeScopedKnowledgeRead =
+      scopedKnowledgeIds.length > 0
+        ? () =>
+            assertCurrentChatbotKnowledgeAccess({
+              chatbotId,
+              kbIds: scopedKnowledgeIds,
+              participantId,
+              authMode,
+              courseId: chatbot.courseId,
+            })
+        : undefined
+
+    // A retained thread can resume after the binding or the bot owner's grant
+    // changed. Stop the new turn before any model request, tool result replay
+    // or protected asset read, not only when the model decides to call a tool.
+    try {
+      await authorizeScopedKnowledgeRead?.()
+    } catch (error) {
+      if (!(error instanceof RequiredMCPUnavailableError)) throw error
+      await closeMcpTools()
+      await failOrDiscardUnstartedClaim('mcp.authorization')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
+    if (scopedKnowledgeIds.length > 0 && videoFrameStoreConfigured()) {
+      mcpTools = withVideoFrameTool(
+        mcpTools,
+        scopedKnowledgeIds,
+        async (frame) => {
+          await authorizeScopedKnowledgeRead?.()
+          return readVideoFrame(frame)
+        }
+      )
     }
 
     let responseExampleSummary = ''
@@ -1408,6 +1447,7 @@ export async function POST(
     let responseExampleProjectionDigest: string | null = null
     const responseExampleTools: Record<string, any> = {}
     try {
+      await authorizeScopedKnowledgeRead?.()
       const responseExampleSkill = await loadResponseExampleRuntimeSkill({
         prisma,
         chatbotId,
@@ -1422,8 +1462,17 @@ export async function POST(
       } else {
         const responseExampleTool =
           createResponseExampleSearchTool(responseExampleSkill)
+        const execute = responseExampleTool.execute
         responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
-          responseExampleTool
+          execute === undefined
+            ? responseExampleTool
+            : {
+                ...responseExampleTool,
+                execute: async (...args: Parameters<typeof execute>) => {
+                  await authorizeScopedKnowledgeRead?.()
+                  return execute(...args)
+                },
+              }
         responseExampleSummary = responseExampleSkill.summary
         responseExampleSetDigest = responseExampleSkill.setDigest
         responseExampleProjectionDigest = responseExampleSkill.projectionDigest
@@ -1589,16 +1638,21 @@ export async function POST(
       courseImageVisionEnabled(selectedModelConfig.supportsImageAttachments)
     const courseImageVision = imageVisionEnabled
       ? createCourseImageVision({
-          kbIds: scopedKbIds ?? [],
-          readImage: (image) =>
-            readCourseImagePreview(image, scopedKbIds ?? []),
+          kbIds: scopedKnowledgeIds,
+          readImage: async (image) => {
+            await authorizeScopedKnowledgeRead?.()
+            return readCourseImagePreview(image, scopedKnowledgeIds)
+          },
         })
       : undefined
     if (imageDecisionEnabled) {
       chatTools = withCourseImageTool(
         chatTools,
-        scopedKbIds ?? [],
-        (image) => readCourseImagePreview(image, scopedKbIds ?? []),
+        scopedKnowledgeIds,
+        async (image) => {
+          await authorizeScopedKnowledgeRead?.()
+          return readCourseImagePreview(image, scopedKnowledgeIds)
+        },
         imageVisionEnabled,
         courseImageVision?.hasPixelInput
       )
@@ -2498,13 +2552,20 @@ export async function POST(
               stepReminder,
             ],
           }
+          const finishPrepared = () =>
+            courseImageVision
+              ? courseImageVision
+                  .prepareMessages(prepared.messages, steps)
+                  .then(({ messages }) => ({ ...prepared, messages }))
+              : prepared
+
+          if (stepNumber > 0 && authorizeScopedKnowledgeRead) {
+            return authorizeScopedKnowledgeRead().then(finishPrepared)
+          }
+
           // Keep the off path synchronous and unchanged. Preview bytes exist
           // only in model input, never in persisted steps or streamed tool data.
-          return courseImageVision
-            ? courseImageVision
-                .prepareMessages(prepared.messages, steps)
-                .then(({ messages }) => ({ ...prepared, messages }))
-            : prepared
+          return finishPrepared()
         },
         stopWhen: isStepCount(maxSteps),
         // A provider's canned, unbilled refusal is replaced with a neutral

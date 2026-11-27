@@ -468,6 +468,70 @@ const chatbotOwnerSelect = {
   updatedAt: true,
 } satisfies Prisma.ChatbotSelect
 
+const KB_READ_PERMISSION_LEVELS = [
+  DB.PermissionLevel.READ,
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+const KB_WRITE_PERMISSION_LEVELS = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+const CHATBOT_WRITE_PERMISSION_LEVELS = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+
+function hasPermissionLevel(
+  permissions: readonly {
+    userId: string
+    permissionLevel: DB.PermissionLevel
+  }[],
+  userId: string,
+  allowedLevels: readonly DB.PermissionLevel[]
+) {
+  return permissions.some(
+    (permission) =>
+      permission.userId === userId &&
+      allowedLevels.includes(permission.permissionLevel)
+  )
+}
+
+function canReadKb(
+  kb: {
+    ownerId: string
+    permissions: readonly {
+      userId: string
+      permissionLevel: DB.PermissionLevel
+    }[]
+  },
+  userId: string
+) {
+  return (
+    kb.ownerId === userId ||
+    hasPermissionLevel(kb.permissions, userId, KB_READ_PERMISSION_LEVELS)
+  )
+}
+
+function canEditKb(
+  kb: {
+    ownerId: string
+    permissions: readonly {
+      userId: string
+      permissionLevel: DB.PermissionLevel
+    }[]
+  },
+  userId: string
+) {
+  return (
+    kb.ownerId === userId ||
+    hasPermissionLevel(kb.permissions, userId, KB_WRITE_PERMISSION_LEVELS)
+  )
+}
+
 type ChatbotWithOwnerCourse = {
   id: string
   ownerId?: string
@@ -2025,9 +2089,22 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
 
   const chatbots = await ctx.prisma.chatbot.findMany({
-    where: { ownerId: ctx.user.sub },
+    where: {
+      OR: [
+        { ownerId: ctx.user.sub },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: { in: CHATBOT_WRITE_PERMISSION_LEVELS },
+            },
+          },
+        },
+      ],
+    },
     select: {
       ...chatbotOwnerSelect,
+      ownerId: true,
       course: {
         select: {
           id: true,
@@ -2040,9 +2117,21 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         select: { id: true, name: true, title: true, introText: true },
       },
       knowledgeBases: {
-        where: { isEnabled: true, kb: { deletedAt: null } },
+        where: { isEnabled: true },
+        orderBy: { id: 'asc' },
         select: {
-          kb: { select: { id: true, name: true } },
+          id: true,
+          kb: {
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              deletedAt: true,
+              permissions: {
+                select: { userId: true, permissionLevel: true },
+              },
+            },
+          },
         },
       },
     },
@@ -2054,42 +2143,78 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   }
 
   const chatbotIds = chatbots.map((chatbot) => chatbot.id)
+  const chatbotOwnerIds = [
+    ...new Set(chatbots.map((chatbot) => chatbot.ownerId)),
+  ]
 
-  const [creditAggregates, threadAggregates, acceptedCounts, declinedCounts] =
-    await Promise.all([
-      ctx.prisma.chatUsageCredits.groupBy({
-        by: ['chatbotId'],
-        where: { chatbotId: { in: chatbotIds } },
-        _count: { _all: true },
-        _sum: {
-          total: true,
-          current: true,
-          resetCount: true,
+  const [
+    creditAggregates,
+    threadAggregates,
+    acceptedCounts,
+    declinedCounts,
+    kbPickerCandidates,
+  ] = await Promise.all([
+    ctx.prisma.chatUsageCredits.groupBy({
+      by: ['chatbotId'],
+      where: { chatbotId: { in: chatbotIds } },
+      _count: { _all: true },
+      _sum: {
+        total: true,
+        current: true,
+        resetCount: true,
+      },
+      _max: {
+        lastResetAt: true,
+      },
+    }),
+    ctx.prisma.chatThread.groupBy({
+      by: ['chatbotId'],
+      where: { chatbotId: { in: chatbotIds } },
+      _count: { _all: true },
+      _max: { updatedAt: true },
+    }),
+    ctx.prisma.chatUsageCredits.groupBy({
+      by: ['chatbotId', 'acceptedDisclaimerId'],
+      where: {
+        chatbotId: { in: chatbotIds },
+        acceptedDisclaimerId: { not: null },
+      },
+      _count: { _all: true },
+    }),
+    ctx.prisma.chatUsageCredits.groupBy({
+      by: ['chatbotId'],
+      where: { chatbotId: { in: chatbotIds }, disclaimerDeclined: true },
+      _count: { _all: true },
+    }),
+    ctx.prisma.kB.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { ownerId: ctx.user.sub },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionLevel: { in: KB_READ_PERMISSION_LEVELS },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        ownerId: true,
+        permissions: {
+          where: {
+            userId: { in: [ctx.user.sub, ...chatbotOwnerIds] },
+          },
+          select: { userId: true, permissionLevel: true },
         },
-        _max: {
-          lastResetAt: true,
-        },
-      }),
-      ctx.prisma.chatThread.groupBy({
-        by: ['chatbotId'],
-        where: { chatbotId: { in: chatbotIds } },
-        _count: { _all: true },
-        _max: { updatedAt: true },
-      }),
-      ctx.prisma.chatUsageCredits.groupBy({
-        by: ['chatbotId', 'acceptedDisclaimerId'],
-        where: {
-          chatbotId: { in: chatbotIds },
-          acceptedDisclaimerId: { not: null },
-        },
-        _count: { _all: true },
-      }),
-      ctx.prisma.chatUsageCredits.groupBy({
-        by: ['chatbotId'],
-        where: { chatbotId: { in: chatbotIds }, disclaimerDeclined: true },
-        _count: { _all: true },
-      }),
-    ])
+      },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    }),
+  ])
 
   const creditAggregateById = new Map(
     creditAggregates.map((entry) => [entry.chatbotId, entry])
@@ -2124,12 +2249,19 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   const kbMetricsById = await getKbMetricsMap(ctx.prisma, [
     ...new Set(
       chatbots.flatMap((chatbot) =>
-        chatbot.knowledgeBases.map(({ kb }) => kb.id)
+        chatbot.knowledgeBases.flatMap(({ kb }) =>
+          kb.deletedAt === null && canReadKb(kb, ctx.user.sub) ? [kb.id] : []
+        )
       )
     ),
   ])
 
   return chatbots.map((chatbot) => {
+    const {
+      ownerId: _ownerId,
+      knowledgeBases: _knowledgeBases,
+      ...chatbotForResponse
+    } = chatbot
     const creditAggregate = creditAggregateById.get(chatbot.id)
     const threadAggregate = threadAggregateById.get(chatbot.id)
     const participantCount = creditAggregate?._count._all ?? 0
@@ -2164,13 +2296,36 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
-    const enabledKnowledgeBases = chatbot.knowledgeBases.map(({ kb }) => ({
-      ...kb,
-      metrics: kbMetricsById.get(kb.id) ?? null,
+    const enabledKnowledgeBases = chatbot.knowledgeBases.map((binding) => {
+      const canRead = canReadKb(binding.kb, ctx.user.sub)
+      if (binding.kb.deletedAt !== null || !canRead) {
+        return {
+          bindingId: binding.id,
+          id: null,
+          name: null,
+          available: false,
+          canEdit: false,
+          metrics: null,
+        }
+      }
+
+      return {
+        bindingId: binding.id,
+        id: binding.kb.id,
+        name: binding.kb.name,
+        available: canReadKb(binding.kb, chatbot.ownerId),
+        canEdit: canEditKb(binding.kb, ctx.user.sub),
+        metrics: kbMetricsById.get(binding.kb.id) ?? null,
+      }
+    })
+    const knowledgeBaseOptions = kbPickerCandidates.map((kb) => ({
+      id: kb.id,
+      name: kb.name,
+      available: canReadKb(kb, chatbot.ownerId),
     }))
 
     return {
-      ...shapeChatbotResponse(chatbot),
+      ...shapeChatbotResponse(chatbotForResponse),
       courses: chatbot.course
         ? [
             {
@@ -2183,6 +2338,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       usageSummary,
       disclaimerSummary,
       enabledKnowledgeBases,
+      knowledgeBaseOptions,
       enabledKnowledgeBase:
         enabledKnowledgeBases.length === 1
           ? (enabledKnowledgeBases[0] ?? null)

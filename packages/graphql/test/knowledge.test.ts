@@ -76,6 +76,7 @@ import {
   updateKb,
   updateKbResourceMaterialType,
 } from '../src/services/knowledge.js'
+import { getChatbotsInfo } from '../src/services/chatbots.js'
 import { revokeObjectAccess, shareObject } from '../src/services/sharing.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
 
@@ -965,7 +966,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       data: { kbId: otherKb.id, chatbotId: otherChatbot.id },
     })
 
-    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    const attached = await attachKbToChatbot(
+      { kbId: kb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
     const bindings = await getKbChatbotBindings({ kbId: kb.id }, userOneCtx)
 
     expect(bindings).toEqual([
@@ -975,7 +979,15 @@ describe('Integration tests for knowledge base CRUD', () => {
         chatbotStatus: chatbot.status,
         enabledKbId: kb.id,
         enabledKbName: kb.name,
-        enabledKbs: [{ id: kb.id, name: kb.name }],
+        enabledKbs: [
+          {
+            bindingId: attached.enabledKbs[0]!.bindingId,
+            id: kb.id,
+            name: kb.name,
+            available: true,
+            canEdit: true,
+          },
+        ],
       },
     ])
   })
@@ -1361,6 +1373,157 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       attachKbToChatbot({ kbId: kb.id, chatbotId: otherChatbot.id }, userOneCtx)
     ).rejects.toThrow('Chatbot not found')
+  })
+
+  it('lets a shared chatbot editor attach a KB readable by both roles and reflects owner revocation', async () => {
+    const kb = await createKb({ name: 'Shared editor KB' }, userOneCtx)
+    const course = await seedCourse({}, userTwoCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Shared editor chatbot',
+        ownerId: userTwoCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await prisma.derivedPermission.createMany({
+      data: [
+        {
+          chatbotId: chatbot.id,
+          userId: userOneCtx.user.sub,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          kbId: kb.id,
+          userId: userTwoCtx.user.sub,
+          permissionLevel: PermissionLevel.READ,
+        },
+      ],
+    })
+
+    const attached = await attachKbToChatbot(
+      { kbId: kb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(attached.enabledKbs).toEqual([
+      {
+        bindingId: expect.any(String),
+        id: kb.id,
+        name: kb.name,
+        available: true,
+        canEdit: true,
+      },
+    ])
+
+    await prisma.derivedPermission.deleteMany({
+      where: { kbId: kb.id, userId: userTwoCtx.user.sub },
+    })
+    const [revoked] = (await getChatbotsInfo(userOneCtx)) ?? []
+    expect(revoked?.enabledKnowledgeBases).toEqual([
+      expect.objectContaining({
+        id: kb.id,
+        name: kb.name,
+        available: false,
+        canEdit: true,
+      }),
+    ])
+    expect(revoked?.knowledgeBaseOptions).toEqual([
+      { id: kb.id, name: kb.name, available: false },
+    ])
+
+    await prisma.derivedPermission.create({
+      data: {
+        kbId: kb.id,
+        userId: userTwoCtx.user.sub,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const [restored] = (await getChatbotsInfo(userOneCtx)) ?? []
+    expect(restored?.enabledKnowledgeBases).toEqual([
+      expect.objectContaining({
+        id: kb.id,
+        name: kb.name,
+        available: true,
+      }),
+    ])
+  })
+
+  it('requires the chatbot owner to retain KB Read when a shared editor attaches it', async () => {
+    const kb = await createKb({ name: 'Editor only KB' }, userOneCtx)
+    const course = await seedCourse({}, userTwoCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Owner without KB access',
+        ownerId: userTwoCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        chatbotId: chatbot.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    await expect(
+      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_OWNER_READ_REQUIRED' },
+    })
+    await expect(
+      prisma.kBChatbot.count({ where: { chatbotId: chatbot.id } })
+    ).resolves.toBe(0)
+  })
+
+  it('redacts an attached KB from an editor without Read and detaches it by binding handle', async () => {
+    const kb = await createKb({ name: 'Hidden shared KB' }, userTwoCtx)
+    const course = await seedCourse({}, userTwoCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Shared chatbot without KB access',
+        ownerId: userTwoCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const binding = await prisma.kBChatbot.create({
+      data: { kbId: kb.id, chatbotId: chatbot.id, isEnabled: true },
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        chatbotId: chatbot.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    await expect(
+      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).rejects.toThrow('KB not found')
+    const [projected] = (await getChatbotsInfo(userOneCtx)) ?? []
+    expect(projected?.enabledKnowledgeBases).toEqual([
+      {
+        bindingId: binding.id,
+        id: null,
+        name: null,
+        available: false,
+        canEdit: false,
+        metrics: null,
+      },
+    ])
+    expect(projected?.knowledgeBaseOptions).toEqual([])
+
+    await expect(
+      detachKbFromChatbot(
+        { bindingId: binding.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+    ).resolves.toBe(true)
+    await expect(
+      prisma.kBChatbot.findUnique({ where: { id: binding.id } })
+    ).resolves.toBeNull()
+    await expect(
+      prisma.chatbot.findUnique({ where: { id: chatbot.id } })
+    ).resolves.toMatchObject({ id: chatbot.id, ownerId: userTwoCtx.user.sub })
   })
 
   it('fails closed when knowledge retrieval is inactive', async () => {
