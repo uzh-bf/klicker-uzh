@@ -1,0 +1,37 @@
+query GetUserKbsWithPermissionLevel(
+  $first: Int
+  $after: String
+  $search: String
+) {
+  getUserKbsConnection(first: $first, after: $after, search: $search) {
+    items {
+      id
+      name
+      description
+      permissionLevel
+      domainPolicyId
+      domainPolicyLanguage
+      metrics {
+        visibleResourceCount
+        visibleSizeBytes
+        linkedConsumerCount
+      }
+      materialsReadiness {
+        visibleResourceCount
+        servingResourceCount
+        processingResourceCount
+        failedResourceCount
+      }
+      questionPreparation {
+        state
+        pendingReason
+        hasBasis
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

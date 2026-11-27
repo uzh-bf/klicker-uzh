@@ -1,8 +1,8 @@
 import { NetworkStatus, useQuery } from '@apollo/client'
 import {
-  GetUserKbsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   PermissionLevel,
-  type GetUserKbsQuery,
+  type GetUserKbsWithPermissionLevelQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -25,7 +25,7 @@ import { kbDomainLabelForId, useKbDomainLabels } from './kbDomainSettings'
 const PAGE_SIZE = 20
 
 type KnowledgeBaseSummary =
-  GetUserKbsQuery['getUserKbsConnection']['items'][number]
+  GetUserKbsWithPermissionLevelQuery['getUserKbsConnection']['items'][number]
 
 function KnowledgeBaseManager({
   onShare,
@@ -40,7 +40,7 @@ function KnowledgeBaseManager({
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseSummary | null>(null)
   const { data, loading, error, fetchMore, refetch, networkStatus } = useQuery(
-    GetUserKbsDocument,
+    GetUserKbsWithPermissionLevelDocument,
     {
       variables: {
         first: PAGE_SIZE,

@@ -5,7 +5,7 @@ import {
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetUserCoursesDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -65,7 +65,7 @@ function Chatbots() {
   useEffect(() => {
     if (requestedCreateForKbId) setCreateForKbId(requestedCreateForKbId)
   }, [requestedCreateForKbId])
-  const { data: createForKbData } = useQuery(GetKbDocument, {
+  const { data: createForKbData } = useQuery(GetKbWithPermissionLevelDocument, {
     variables: { id: createForKbId ?? '' },
     skip: !createForKbId,
   })

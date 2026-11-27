@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetKbDocument, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetKbWithPermissionLevelDocument,
+  PermissionLevel,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -35,9 +38,12 @@ function KnowledgeBaseDetail({
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
-  const { data, loading, error, refetch } = useQuery(GetKbDocument, {
-    variables: { id: kbId },
-  })
+  const { data, loading, error, refetch } = useQuery(
+    GetKbWithPermissionLevelDocument,
+    {
+      variables: { id: kbId },
+    }
+  )
 
   if (loading) {
     return (
@@ -173,7 +179,7 @@ function KnowledgeBaseDetail({
           />
         </div>
       ) : null}
-      {advanced && isOwner && metrics ? (
+      {advanced && canWrite && metrics ? (
         <section
           className="mt-6"
           aria-labelledby="kb-metrics-title"
