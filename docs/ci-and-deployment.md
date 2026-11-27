@@ -563,8 +563,11 @@ tool turn may instead match within its validated conversation key; cross-task
 and ambiguous matches remain rejected. Main-review requests offering
 `task_done` force tool use with `tool_choice: required`; a length-limited
 response without a tool call may enter OCR's existing continuation loop once per
-replayed chain, retaining its native history and billable usage. A finished
-tool-free response or another tool-free turn in that chain still fails closed.
+replayed chain, retaining its native history and billable usage. For manual
+MOAT final code reviews, the first tool-free main response may also finish with
+`stop`. OCR asks for a real tool call on the next iteration under the same
+limits. Empty text and prose carry no verdict. Another tool-free `stop` in that
+scope fails closed even if compression has removed the earlier turn.
 Auxiliary grouping, planning, filtering and compression requests remain
 unchanged. Manual jobs retain seven-day aggregate execution counters for request
 counts, input/output usage, missing tools, length finishes and history

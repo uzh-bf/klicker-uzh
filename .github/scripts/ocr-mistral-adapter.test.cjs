@@ -2897,80 +2897,138 @@ test('a finished response ignoring required tool use fails without entering OCR 
   }
 })
 
-test('one length-limited tool-free turn can continue natively; a repeated failure stops', async () => {
-  for (const recover of [true, false]) {
-    const native = {
-      role: 'assistant',
-      content: 'private unfinished answer',
-      reasoning_content: 'private unfinished reasoning',
-    }
-    const fetchImpl = upstream(({ body: { messages } }) =>
-      jsonResponse(
-        200,
-        recover && messages.some((message) => message.role === 'assistant')
-          ? completion(
-              {
-                role: 'assistant',
-                content: '',
-                tool_calls: [
-                  {
-                    id: 'done',
-                    type: 'function',
-                    function: {
-                      name: 'task_done',
-                      arguments: '{"state":"DONE"}',
-                    },
-                  },
-                ],
-              },
-              'tool_calls'
-            )
-          : completion(native, 'length')
-      )
-    )
-    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
-    const request = {
-      messages: [{ role: 'user', content: 'synthetic input' }],
-      tools: [{ type: 'function', function: { name: 'task_done' } }],
-      max_completion_tokens: 55,
-    }
-    try {
-      const first = await postJson(adapter, request)
-      assert.equal(first.status, 200)
-      assert.equal(first.json.choices[0].finish_reason, 'length')
-      assert.equal(first.json.usage.completion_tokens, 4)
-      const echoed = { ...first.json.choices[0].message }
-      delete echoed.reasoning_content
-      const next = await postJson(adapter, {
-        ...request,
-        messages: [
-          ...request.messages,
-          echoed,
-          { role: 'user', content: 'continue' },
-        ],
-      })
-      assert.equal(next.status, recover ? 200 : 422)
-      if (recover) {
-        assert.equal(
-          next.json.choices[0].message.tool_calls[0].function.name,
-          'task_done'
-        )
-      } else {
-        assert.equal(next.json.error.code, 'required_tool_call_missing')
+for (const [provider, finish, content] of [
+  ['mistral', 'length', 'private unfinished answer'],
+  ['moat-flash', 'stop', ''],
+  ['moat-flash', 'stop', 'synthetic prose'],
+]) {
+  test(`required tool continuation for ${provider} ${finish} with ${content ? 'text' : 'empty text'}`, async () => {
+    for (const recover of [true, false]) {
+      const native = {
+        role: 'assistant',
+        content,
+        reasoning_content: 'private unfinished reasoning',
       }
-      assert.equal(fetchImpl.calls.length, 2)
-      assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
-      assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
-      const receipt = adapter.diagnostics()
-      assert.equal(receipt.completion_tokens, 8)
-      assert.equal(receipt.accepted_responses, recover ? 2 : 1)
-      assert.equal(receipt.history.misses, 0)
-      assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
-      assert.equal(receipt.failures.required_tool_call_missing, 0)
-      assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
-    } finally {
-      await adapter.close()
+      const fetchImpl = upstream(({ body: { messages } }) => {
+        const payload =
+          recover && messages.some((message) => message.role === 'assistant')
+            ? completion(
+                {
+                  role: 'assistant',
+                  content: '',
+                  tool_calls: [
+                    {
+                      id: 'done',
+                      type: 'function',
+                      function: {
+                        name: 'task_done',
+                        arguments: '{"state":"DONE"}',
+                      },
+                    },
+                  ],
+                },
+                'tool_calls'
+              )
+            : completion(native, finish)
+        if (provider === 'moat-flash') payload.model = MOAT_FLASH_MODEL
+        return jsonResponse(200, payload)
+      })
+      const adapter = await startAdapter({
+        apiKey: 'synthetic-key',
+        fetchImpl,
+        provider,
+        finalReviewContinuation: provider === 'moat-flash',
+      })
+      const request = {
+        messages: [{ role: 'user', content: 'synthetic input' }],
+        tools: [{ type: 'function', function: { name: 'task_done' } }],
+        max_completion_tokens: 55,
+        prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
+      }
+      try {
+        const first = await postJson(adapter, request)
+        assert.equal(first.status, 200)
+        assert.equal(first.json.choices[0].finish_reason, finish)
+        assert.equal(first.json.choices[0].message.tool_calls, undefined)
+        assert.equal(first.json.usage.completion_tokens, 4)
+        const echoed = { ...first.json.choices[0].message }
+        delete echoed.reasoning_content
+        const next = await postJson(adapter, {
+          ...request,
+          messages: [
+            ...request.messages,
+            echoed,
+            { role: 'user', content: 'continue' },
+          ],
+        })
+        assert.equal(next.status, recover ? 200 : 422)
+        if (recover) {
+          assert.equal(
+            next.json.choices[0].message.tool_calls[0].function.name,
+            'task_done'
+          )
+        } else {
+          assert.equal(next.json.error.code, 'required_tool_call_missing')
+        }
+        assert.equal(fetchImpl.calls.length, 2)
+        assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
+        assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
+        const receipt = adapter.diagnostics()
+        assert.equal(receipt.completion_tokens, 8)
+        assert.equal(receipt.accepted_responses, recover ? 2 : 1)
+        assert.equal(receipt.history.misses, 0)
+        assert.equal(
+          receipt.failures.length_no_tool,
+          !recover && finish === 'length' ? 1 : 0
+        )
+        assert.equal(
+          receipt.failures.required_tool_call_missing,
+          !recover && finish === 'stop' ? 1 : 0
+        )
+        assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
+      } finally {
+        await adapter.close()
+      }
     }
+  })
+}
+
+test('a final stop cannot gain a fresh continuation by dropping the echoed assistant turn', async () => {
+  const payload = completion(
+    {
+      role: 'assistant',
+      content: '',
+      reasoning_content: 'synthetic reasoning',
+    },
+    'stop'
+  )
+  payload.model = MOAT_FLASH_MODEL
+  const adapter = await startAdapter({
+    provider: 'moat-flash',
+    finalReviewContinuation: true,
+    apiKey: 'synthetic',
+    fetchImpl: async () => jsonResponse(200, payload),
+  })
+  const request = {
+    messages: [{ role: 'user', content: 'synthetic input' }],
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+    prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
+  }
+  try {
+    assert.equal((await postJson(adapter, request)).status, 200)
+    const repeat = await postJson(adapter, {
+      ...request,
+      messages: [{ role: 'user', content: 'compacted input' }],
+    })
+    assert.equal(repeat.status, 422)
+    assert.equal(repeat.json.error.code, 'required_tool_call_missing')
+    assert.equal(
+      (await postJson(adapter, { ...request, prompt_cache_key: undefined }))
+        .status,
+      422
+    )
+  } finally {
+    await adapter.close()
   }
 })
 

@@ -1806,11 +1806,16 @@ async function startAdapter(options = {}) {
       }
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
-        // OCR 1.13.0 echoes a tool-free assistant turn before requesting its
-        // continuation. Permit one interrupted turn in that replayed chain;
-        // another tool-free answer still fails instead of retrying prose.
+        // OCR prompts for a real tool call on its next budgeted loop iteration.
+        // A final-review scope survives transcript compression, so a missing
+        // echoed assistant message cannot renew the stop continuation.
+        const firstFinalStop =
+          options.finalReviewContinuation &&
+          choice.finish_reason === 'stop' &&
+          /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
+          conversations.get(conversation)?.main_no_tool_responses === 1
         const canContinue =
-          choice.finish_reason === 'length' &&
+          (choice.finish_reason === 'length' || firstFinalStop) &&
           !body.messages.some(
             (message) =>
               message.role === 'assistant' && !message.tool_calls?.length
@@ -3289,6 +3294,10 @@ async function commandRun(args, options = {}) {
     apiKey,
     provider: profile.name,
     availability,
+    finalReviewContinuation:
+      Boolean(configPath) &&
+      argv[1] === 'review' &&
+      profile.name === 'moat-flash',
     onClose: (snapshot) => {
       executionReceipt = snapshot
     },
