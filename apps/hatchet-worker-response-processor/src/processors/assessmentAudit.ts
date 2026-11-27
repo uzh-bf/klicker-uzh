@@ -59,7 +59,10 @@ export function normalizeAssessmentAnswer(input: {
     case ElementType.NUMERICAL: {
       // Convert like validation and grading, so the evidence records the
       // number that was graded ('0x10' is 16, not 0).
-      const value = Number(input.response.value)
+      const raw = input.response.value
+      // Number() reads blank strings and null as 0, so reject them first.
+      const value =
+        typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : Number.NaN
       if (!Number.isFinite(value)) {
         throw new Error('Numerical response is not normalizable')
       }
