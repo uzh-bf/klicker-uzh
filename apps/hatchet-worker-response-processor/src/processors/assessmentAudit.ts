@@ -339,9 +339,11 @@ const TIME_BASED_REJECTION_REASONS: ReadonlySet<string> = new Set([
   'SUBMISSION_LIFECYCLE_CHANGED',
 ])
 
-// Serializes every transaction that checks and records a terminal outcome for
-// one submissionId. It must run before the first terminal read so READ
-// COMMITTED reads see the outcome a concurrent delivery committed.
+// Serializes every transaction that checks and records audit evidence for one
+// submissionId. It must run before the first read so READ COMMITTED reads see
+// the evidence a concurrent delivery committed. Without it, two matching
+// resends can both miss the stored event and the second insert fails as an
+// idempotency conflict, because its receipt and recording times differ.
 export async function lockSubmissionOutcome(
   tx: Pick<Prisma.TransactionClient, '$executeRaw'>,
   message: SubmissionCommand

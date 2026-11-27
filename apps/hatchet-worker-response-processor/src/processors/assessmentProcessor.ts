@@ -88,6 +88,7 @@ export async function processAssessmentResponse(
     const scope = coveredScope
     if (scope === null) return
     await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
+      await lockSubmissionOutcome(tx, message)
       await emitSubmissionAuditEvents({
         tx,
         auditTx,
@@ -242,6 +243,7 @@ export async function processAssessmentResponse(
         | 'SUBMISSION_ID_SCOPE_MISMATCH'
         | undefined
       await runInAuditTransaction(dependencies.client, async (tx, auditTx) => {
+        await lockSubmissionOutcome(tx, message)
         const answerStateHash = hashCanonicalValue(message.response)
         const previousBindings = await findAcceptedSubmissionBindings({
           tx,
@@ -305,8 +307,12 @@ export async function processAssessmentResponse(
         if (terminal === 'SUBMISSION_REJECTED')
           throw new NonRetryableError('SUBMISSION_PREVIOUSLY_REJECTED')
         if (terminal !== undefined) {
-          await runInAuditTransaction(dependencies.client, (tx, auditTx) =>
-            recoverTerminalReplay({ tx, auditTx })
+          await runInAuditTransaction(
+            dependencies.client,
+            async (tx, auditTx) => {
+              await lockSubmissionOutcome(tx, message)
+              await recoverTerminalReplay({ tx, auditTx })
+            }
           )
           return { status: 208 }
         }
