@@ -98,6 +98,8 @@ export default {
       settingsIntro:
         'Ändere die optionalen Zwecke für Dein KlickerUZH-Konto. Forschung und Learning Analytics sind freiwillig, und ein Widerspruch gilt für deren künftige Nutzung.',
       settingsLoading: 'Einstellungen zur Datennutzung werden geladen…',
+      settingsChangedElsewhere:
+        'Deine Auswahl wurde in einem anderen Fenster geändert. Prüfe sie unten und wähle bei Bedarf erneut.',
     },
     personalization: {
       offerTitle: 'Tutor personalisieren?',

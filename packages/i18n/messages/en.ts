@@ -97,6 +97,8 @@ export default {
       settingsIntro:
         'Change the optional purposes for your KlickerUZH account. Research and Learning Analytics are voluntary, and an objection applies to their future use.',
       settingsLoading: 'Loading your data use settings…',
+      settingsChangedElsewhere:
+        'Your choices were changed in another window. Check them below and choose again if needed.',
     },
     personalization: {
       offerTitle: 'Personalize the Tutor?',
