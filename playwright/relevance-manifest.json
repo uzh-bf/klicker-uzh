@@ -66,6 +66,7 @@
         "P-microlearning.spec.ts",
         "P-pagination-show-all.spec.ts",
         "P-question-library-batch-operations.spec.ts",
+        "P-question-library-excel.spec.ts",
         "P-question-library-feedback.spec.ts",
         "P-question-library-filters.spec.ts",
         "P-question-library-first-use.spec.ts",
