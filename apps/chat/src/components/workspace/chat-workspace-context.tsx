@@ -13,6 +13,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { MessageSources } from '@/src/hooks/useMessageSources'
+import type { FeedbackAnnotation, FeedbackContent } from '@/src/lib/feedback'
 
 /**
  * What a message card hands the canvas to show one of its artifacts, per
@@ -21,6 +23,12 @@ import {
  */
 export type ChatCanvasArtifactData = {
   explanation: { title: string; html: string }
+  feedback: {
+    title: string
+    content: FeedbackContent
+    annotation: FeedbackAnnotation | null
+    sources: MessageSources
+  }
 }
 
 export type ChatCanvasArtifactType = keyof ChatCanvasArtifactData
@@ -52,6 +60,7 @@ const ARTIFACT_OPEN_SIZE: Record<
   Exclude<ChatWorkspaceSize, 'fullscreen'>
 > = {
   explanation: 'expanded',
+  feedback: 'expanded',
 }
 
 type PendingFocus = 'composer' | 'opener' | null
@@ -282,7 +291,7 @@ export function ChatWorkspaceProvider({
         const artifact = registry.current.get(
           registryKey(kind, element.dataset.canvasArtifactId ?? '')
         )
-        return artifact ? [artifact as ChatCanvasArtifact<K>] : []
+        return artifact ? [artifact as unknown as ChatCanvasArtifact<K>] : []
       }),
     []
   )

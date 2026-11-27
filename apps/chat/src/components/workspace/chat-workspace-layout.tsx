@@ -26,6 +26,7 @@ import {
   ExplanationPanelTitle,
   forgetExplanationPlace,
 } from '../explanation-card'
+import { FeedbackPanelContent, FeedbackPanelTitle } from '../feedback-card'
 import { ChatGraphConceptContext } from '../knowledge-graph/ChatGraphConcepts'
 import {
   ChatKnowledgeGraphPanelContent,
@@ -169,6 +170,34 @@ function ExplanationPanel({
   )
 }
 
+/** A feedback card in the shared panel shell, with room for its margin. */
+function FeedbackPanel({ item }: { item: ChatCanvasArtifact<'feedback'> }) {
+  const t = useTranslations('chat.thread.feedback')
+  return (
+    <WorkspacePanel
+      config={{
+        id: 'chat-feedback-panel',
+        testId: 'chat-feedback-panel',
+        testIdPrefix: 'feedback-panel',
+        storageKey: 'klicker-chat-feedback-panel-width',
+        dockedClassName: 'lg:w-[55%] lg:min-w-[30rem]',
+        labels: {
+          region: item.title,
+          enlarge: t('enlarge'),
+          shrink: t('shrink'),
+          fullscreen: t('fullscreen'),
+          restore: t('restore'),
+          close: t('closePanel'),
+          resize: t('resize'),
+          resizeHint: t('resizeHint'),
+        },
+        title: <FeedbackPanelTitle item={item} />,
+        content: <FeedbackPanelContent key={item.id} item={item} />,
+      }}
+    />
+  )
+}
+
 /**
  * The panel of each workspace item kind: the concept map and every canvas
  * artifact type. A panel passes its title, actions and content to the shared
@@ -181,6 +210,7 @@ const WORKSPACE_PANELS: {
 } = {
   graph: GraphPanel,
   explanation: ExplanationPanel,
+  feedback: FeedbackPanel,
 }
 
 /**
@@ -227,7 +257,12 @@ export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
           {children}
         </ChatGraphConceptContext.Provider>
       </div>
-      {item && Panel ? <Panel item={item} /> : null}
+      {item && Panel ? (
+        // Concept links in panel text open the graph, as in the thread.
+        <ChatGraphConceptContext.Provider value={conceptContext}>
+          <Panel item={item} />
+        </ChatGraphConceptContext.Provider>
+      ) : null}
     </div>
   )
 }
