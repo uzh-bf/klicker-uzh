@@ -5,9 +5,9 @@ import {
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetObjectPermissionsDocument,
-  GetUserKbsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   ObjectType,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -107,10 +107,10 @@ function usePermissionLevelChange({
           ...(objectType === ObjectType.Kb
             ? [
                 {
-                  query: GetKbDocument,
+                  query: GetKbWithPermissionLevelDocument,
                   variables: { id: String(objectId) },
                 },
-                { query: GetUserKbsDocument },
+                { query: GetUserKbsWithPermissionLevelDocument },
               ]
             : []),
         ],

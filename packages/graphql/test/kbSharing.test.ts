@@ -4,9 +4,13 @@ import {
   PermissionLevel,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import { getPositiveObjectPermission } from '@klicker-uzh/util'
+import {
+  getPositiveObjectPermission,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import type { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { updateKb } from '../src/services/knowledge.js'
 import {
   changeObjectPermissionLevel,
   checkAccess,
@@ -251,6 +255,36 @@ describe('Knowledge base and chatbot sharing permissions', () => {
     ).toBeNull()
   })
 
+  it('uses committed grants when a derived permission row lags', async () => {
+    await prisma.user.update({
+      where: { id: userTwo.id },
+      data: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+    const kb = await createKnowledgeBase(
+      userOneCtx,
+      'Lagging derived access KB'
+    )
+    await shareObject(
+      {
+        kbId: kb.id,
+        permissionLevel: PermissionLevel.WRITE,
+        shortnameOrEmail: userTwo.shortname,
+        propagation: false,
+      },
+      userOneCtx
+    )
+    await prisma.derivedPermission.deleteMany({
+      where: { kbId: kb.id, userId: userTwo.id },
+    })
+
+    await expect(
+      updateKb({ id: kb.id, name: 'Updated from committed grant' }, userTwoCtx)
+    ).resolves.toMatchObject({
+      id: kb.id,
+      name: 'Updated from committed grant',
+    })
+  })
+
   it('denies unsupported levels and cross-object permission edits', async () => {
     const kb = await createKnowledgeBase(userOneCtx, 'Permission bounds KB')
     const otherKb = await createKnowledgeBase(userOneCtx, 'Other permission KB')
@@ -404,6 +438,14 @@ describe('Knowledge base and chatbot sharing permissions', () => {
       userOneCtx
     )
     expect(grant?.permissionId).toBeGreaterThan(0)
+    await recomputeDerivedPermissions({ chatbotId: chatbot.id }, prisma)
+    expect(
+      await prisma.derivedPermission.findUnique({
+        where: {
+          chatbotId_userId: { chatbotId: chatbot.id, userId: userOne.id },
+        },
+      })
+    ).toMatchObject({ permissionLevel: PermissionLevel.OWNER })
     const effective = () =>
       getPositiveObjectPermission(
         {

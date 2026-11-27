@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetKbGraphDomainOptionsDocument,
   UpdateKbDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -101,7 +101,12 @@ function KnowledgeBaseDomainSettings({
         },
         // A domain change can move the question-generation readiness shown
         // on the same page.
-        refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
+        refetchQueries: [
+          {
+            query: GetKbWithPermissionLevelDocument,
+            variables: { id: kbId },
+          },
+        ],
       })
     } catch (error) {
       console.error('Failed to update knowledge base settings', error)

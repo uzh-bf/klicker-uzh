@@ -2,15 +2,15 @@ import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import { faFileLines, faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AttachKbToChatbotDocument,
+  AttachKbToChatbotWithKnowledgeBasesDocument,
   ChatbotStatus,
-  DetachKbFromChatbotDocument,
+  DetachKbFromChatbotByBindingDocument,
   GetKbResourcesWithFailureDetailDocument,
   GetUserCoursesDocument,
-  GetUserKbsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   KbIngestionStatus,
   KbResourceType,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   CreateKnowledgeBaseModal,
@@ -33,7 +33,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 // The largest page the knowledge-base list accepts in one request.
 const KB_LIST_PAGE_SIZE = 50
 
-const refetchQueries = [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }]
+const refetchQueries = [{ query: QGetChatbotsInfoWithSharingDocument }]
 
 // The select value that stands for answering without a knowledge base.
 const NO_KNOWLEDGE_BASE = 'no-knowledge-base'
@@ -107,7 +107,7 @@ function KnowledgeBaseCard({
     else stopPolling()
     if (previousActiveCount.current > 0 && activeCount === 0) {
       void apolloClient.refetchQueries({
-        include: [QGetChatbotsInfoWithKnowledgeBasesDocument],
+        include: [QGetChatbotsInfoWithSharingDocument],
       })
     }
     previousActiveCount.current = activeCount
@@ -287,9 +287,12 @@ function ChatbotKnowledgeBaseSetup({
   const [unconnectedKb, setUnconnectedKb] = useState<
     { id: string; name: string; available: true } | undefined
   >()
-  const { data, error, refetch } = useQuery(GetUserKbsDocument, {
-    variables: { first: KB_LIST_PAGE_SIZE },
-  })
+  const { data, error, refetch } = useQuery(
+    GetUserKbsWithPermissionLevelDocument,
+    {
+      variables: { first: KB_LIST_PAGE_SIZE },
+    }
+  )
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
     fetchPolicy: 'cache-first',
   })
@@ -304,10 +307,10 @@ function ChatbotKnowledgeBaseSetup({
   const proposedLanguage =
     courseLanguages.size === 1 ? [...courseLanguages][0] : undefined
   const [attachKb, { loading: attaching }] = useMutation(
-    AttachKbToChatbotDocument
+    AttachKbToChatbotWithKnowledgeBasesDocument
   )
   const [detachKb, { loading: detaching }] = useMutation(
-    DetachKbFromChatbotDocument
+    DetachKbFromChatbotByBindingDocument
   )
   const mutating = attaching || detaching
 
@@ -501,7 +504,7 @@ function ChatbotKnowledgeBaseSetup({
   const refreshMaterials = () =>
     apolloClient.refetchQueries({
       include: [
-        QGetChatbotsInfoWithKnowledgeBasesDocument,
+        QGetChatbotsInfoWithSharingDocument,
         GetKbResourcesWithFailureDetailDocument,
       ],
     })

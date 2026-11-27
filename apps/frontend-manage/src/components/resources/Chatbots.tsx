@@ -1,11 +1,11 @@
 import type { ParsedUrlQuery } from 'node:querystring'
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  AttachKbToChatbotDocument,
+  AttachKbToChatbotWithKnowledgeBasesDocument,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetUserCoursesDocument,
   QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -62,7 +62,7 @@ function Chatbots() {
   useEffect(() => {
     if (requestedCreateForKbId) setCreateForKbId(requestedCreateForKbId)
   }, [requestedCreateForKbId])
-  const { data: createForKbData } = useQuery(GetKbDocument, {
+  const { data: createForKbData } = useQuery(GetKbWithPermissionLevelDocument, {
     variables: { id: createForKbId ?? '' },
     skip: !createForKbId,
   })
@@ -70,7 +70,7 @@ function Chatbots() {
     createForKbId && createForKbData?.getKb.id === createForKbId
       ? createForKbData.getKb
       : undefined
-  const [attachKb] = useMutation(AttachKbToChatbotDocument)
+  const [attachKb] = useMutation(AttachKbToChatbotWithKnowledgeBasesDocument)
   const {
     data: publishingCapabilityData,
     loading: publishingCapabilityLoading,

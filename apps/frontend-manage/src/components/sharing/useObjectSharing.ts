@@ -4,9 +4,9 @@ import {
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetObjectPermissionsDocument,
-  GetUserKbsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   ObjectType,
   PermissionLevel,
   ShareObjectDocument,
@@ -112,10 +112,10 @@ function useObjectSharing({
           ...(objectType === ObjectType.Kb
             ? [
                 {
-                  query: GetKbDocument,
+                  query: GetKbWithPermissionLevelDocument,
                   variables: { id: String(objectId) },
                 },
-                { query: GetUserKbsDocument },
+                { query: GetUserKbsWithPermissionLevelDocument },
               ]
             : []),
         ],

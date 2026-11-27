@@ -1,13 +1,13 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient, useMutation } from '@apollo/client'
 import {
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetDerivedObjectPermissionsDocument,
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetObjectPermissionsDocument,
-  GetUserKbsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   ObjectType,
   RevokeObjectAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -37,6 +37,7 @@ function usePermissionRevocation({
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
+  const apolloClient = useApolloClient()
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )
@@ -111,17 +112,37 @@ function usePermissionRevocation({
             : []),
           ...(objectType === ObjectType.Kb
             ? [
-                {
-                  query: GetKbDocument,
-                  variables: { id: String(objectId) },
-                },
-                { query: GetUserKbsDocument },
+                ...(!isOwn
+                  ? [
+                      {
+                        query: GetKbWithPermissionLevelDocument,
+                        variables: { id: String(objectId) },
+                      },
+                    ]
+                  : []),
+                { query: GetUserKbsWithPermissionLevelDocument },
               ]
             : []),
         ],
       })
 
       if (res.data?.revokeObjectAccess) {
+        if (isOwn && objectType === ObjectType.Kb) {
+          try {
+            await apolloClient.query({
+              query: GetKbWithPermissionLevelDocument,
+              variables: { id: String(objectId) },
+              fetchPolicy: 'network-only',
+            })
+          } catch {
+            apolloClient.cache.evict({
+              fieldName: 'getKb',
+              args: { id: String(objectId) },
+            })
+            apolloClient.cache.gc()
+          }
+        }
+
         // if own permission was revoked, refetch elements and activities depending on object type
         if (isOwn && objectType === ObjectType.Element) {
           await refetchElements?.()

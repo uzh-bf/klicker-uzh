@@ -1,3 +1,3 @@
-mutation DetachKbFromChatbot($kbId: ID, $bindingId: ID, $chatbotId: ID!) {
-  detachKbFromChatbot(kbId: $kbId, bindingId: $bindingId, chatbotId: $chatbotId)
+mutation DetachKbFromChatbot($kbId: ID!, $chatbotId: ID!) {
+  detachKbFromChatbot(kbId: $kbId, chatbotId: $chatbotId)
 }

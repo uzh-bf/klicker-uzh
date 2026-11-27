@@ -1,0 +1,13 @@
+query QGetKbChatbotBindingsWithKnowledgeBaseMetadata($kbId: ID!) {
+  getKbChatbotBindings(kbId: $kbId) {
+    chatbotId
+    chatbotName
+    chatbotStatus
+    enabledKbs {
+      bindingId
+      id
+      name
+      available
+    }
+  }
+}

@@ -39,6 +39,7 @@ import {
 import {
   CHATBOT_KB_RETRIEVAL_MODE_KEYS,
   getBlobStorageAccountUrl,
+  getPositiveObjectPermission,
   isChatbotStandardModeKey,
   normalizeChatbotCustomModeConfig,
 } from '@klicker-uzh/util'
@@ -679,6 +680,11 @@ async function lockKbAccessOrThrow(
     throw new GraphQLError(notFoundMessage)
   }
 
+  const ownerId = lockedKb[0]!.ownerId
+  if (ownerId === userId) {
+    return { ownerId, permissionLevel: DB.PermissionLevel.OWNER, isOwner: true }
+  }
+
   // Serialize against permission and group-membership recomputation. The KB
   // row alone does not fence derived-permission changes.
   await prisma.$queryRaw<Array<{ id: number }>>`
@@ -688,17 +694,21 @@ async function lockKbAccessOrThrow(
       AND "userId" = CAST(${userId} AS UUID)
     FOR UPDATE
   `
-  const permission = await prisma.derivedPermission.findFirst({
-    where: { kbId: id, userId },
-    select: { permissionLevel: true },
-  })
-  const access = resolveKbAccess(
+  const permissionLevel = await getPositiveObjectPermission(
     {
-      ownerId: lockedKb[0]!.ownerId,
-      permissions: permission ? [permission] : [],
+      objectType: DB.ObjectType.KB,
+      objectId: id,
+      userId,
     },
-    userId
+    prisma
   )
+  const access = permissionLevel
+    ? {
+        ownerId,
+        permissionLevel,
+        isOwner: false,
+      }
+    : null
   if (!access || !hasKbAccess(access, required)) {
     throw new GraphQLError(notFoundMessage)
   }
@@ -1640,12 +1650,12 @@ export async function attachKbToChatbot(
 ) {
   await assertManageAiEnabled(ctx)
   return ctx.prisma.$transaction(async (prisma) => {
+    const kb = await lockReadableKbOrThrow(prisma, kbId, ctx.user.sub)
     const chatbot = await lockChatbotForWriteOrThrow(
       prisma,
       chatbotId,
       ctx.user.sub
     )
-    const kb = await lockReadableKbOrThrow(prisma, kbId, ctx.user.sub)
     if (!(await findKbReadableByUser(prisma, kbId, chatbot.ownerId))) {
       throw new GraphQLError('The chatbot owner needs Read access to this KB', {
         extensions: { code: 'KB_OWNER_READ_REQUIRED' },
