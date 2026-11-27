@@ -59,6 +59,7 @@ import {
   detachKbFromChatbot,
   getKb,
   getKbChatbotBindings,
+  getKbImportedSourcesConnection,
   getKbKnowledgeGraphConfig,
   getKbKnowledgeGraphDomainConfig,
   getKbKnowledgeGraphNeighbors,
@@ -961,6 +962,127 @@ describe('Integration tests for knowledge base CRUD', () => {
     const kb = await getKb({ id: created.id }, userOneCtx)
 
     expect(kb.id).toBe(created.id)
+  })
+
+  it('denies reads through a stale positive derived grant after group removal', async () => {
+    const kb = await createKb({ name: 'Stale positive KB' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Synthetic source',
+        sourceUrl: 'https://example.com/stale-positive',
+      },
+    })
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Stale positive group',
+        ownerId: userOneCtx.user.sub,
+        members: { connect: { id: userTwoCtx.user.sub } },
+      },
+    })
+    await shareObject(
+      {
+        kbId: kb.id,
+        permissionLevel: PermissionLevel.READ,
+        userGroupId: group.id,
+        propagation: false,
+      },
+      userOneCtx
+    )
+    await prisma.userGroup.update({
+      where: { id: group.id },
+      data: { members: { disconnect: { id: userTwoCtx.user.sub } } },
+    })
+
+    await expect(
+      prisma.derivedPermission.findUnique({
+        where: {
+          kbId_userId: { kbId: kb.id, userId: userTwoCtx.user.sub },
+        },
+      })
+    ).resolves.toMatchObject({ permissionLevel: PermissionLevel.READ })
+    await expect(getUserKbsConnection({}, userTwoCtx)).resolves.toMatchObject({
+      items: [],
+      totalCount: 0,
+    })
+    await expect(getKb({ id: kb.id }, userTwoCtx)).rejects.toThrow(
+      'KB not found'
+    )
+    await expect(
+      getKbResourcesConnection({ kbId: kb.id }, userTwoCtx)
+    ).rejects.toThrow('KB not found')
+    await expect(
+      getKbResourceIngestionRuns({ resourceId: resource.id }, userTwoCtx)
+    ).rejects.toThrow('KB resource not found')
+
+    const createClient = vi.fn()
+    await expect(
+      getKbImportedSourcesConnection({ kbId: kb.id }, userTwoCtx, {
+        createClient,
+      })
+    ).rejects.toThrow('KB not found')
+    expect(createClient).not.toHaveBeenCalled()
+  })
+
+  it('keeps list, detail and resource reads through a surviving group grant when its derived row is stale negative', async () => {
+    const kb = await createKb({ name: 'Surviving group KB' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Synthetic source',
+        sourceUrl: 'https://example.com/surviving-group',
+      },
+    })
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Surviving group admin',
+        ownerId: userOneCtx.user.sub,
+        admins: { connect: { id: userTwoCtx.user.sub } },
+      },
+    })
+    await shareObject(
+      {
+        kbId: kb.id,
+        permissionLevel: PermissionLevel.READ,
+        userGroupId: group.id,
+        propagation: false,
+      },
+      userOneCtx
+    )
+    await prisma.derivedPermission.deleteMany({
+      where: { kbId: kb.id, userId: userTwoCtx.user.sub },
+    })
+    await expect(
+      prisma.derivedPermission.count({
+        where: { kbId: kb.id, userId: userTwoCtx.user.sub },
+      })
+    ).resolves.toBe(0)
+
+    await expect(getUserKbsConnection({}, userTwoCtx)).resolves.toMatchObject({
+      items: [
+        expect.objectContaining({
+          id: kb.id,
+          permissionLevel: PermissionLevel.READ,
+          isOwner: false,
+        }),
+      ],
+      totalCount: 1,
+    })
+    await expect(getKb({ id: kb.id }, userTwoCtx)).resolves.toMatchObject({
+      id: kb.id,
+      permissionLevel: PermissionLevel.READ,
+      isOwner: false,
+    })
+    await expect(
+      getKbResourcesConnection({ kbId: kb.id }, userTwoCtx)
+    ).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: resource.id })],
+    })
+    await expect(
+      getKbResourceIngestionRuns({ resourceId: resource.id }, userTwoCtx)
+    ).resolves.toEqual(expect.any(Array))
   })
 
   it('lists owned chatbots with their enabled knowledge base', async () => {
