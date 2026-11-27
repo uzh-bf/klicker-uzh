@@ -406,6 +406,54 @@ describe('withHatchetTaskLogging', () => {
     await drainTaskLogWrites()
   })
 
+  it('waits for correlated error writes before continuing', async () => {
+    const context = fakeHatchetContext()
+    const releases: Array<() => void> = []
+    context.logger.error.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releases.push(resolve)
+        })
+    )
+    const failure = new Error('handler failed')
+    let continuedAfterErrorLog = false
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'correlated-error-writes',
+      handler: async (_input, ctx) => {
+        await ctx.logger.error('Response processing failed')
+        continuedAfterErrorLog = true
+        throw failure
+      },
+    })
+
+    let settled = false
+    const outcome = wrapped(
+      { loggingContext: { correlationId: 'correlation-1' } },
+      context
+    ).then(
+      () => undefined,
+      (error: unknown) => {
+        settled = true
+        return error
+      }
+    )
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+    // The handler's own error write blocks the handler.
+    await flush()
+    expect(releases).toHaveLength(1)
+    expect(continuedAfterErrorLog).toBe(false)
+    releases[0]?.()
+
+    // The failure lifecycle write blocks the rethrow.
+    await flush()
+    expect(continuedAfterErrorLog).toBe(true)
+    expect(releases).toHaveLength(2)
+    expect(settled).toBe(false)
+    releases[1]?.()
+    expect(await outcome).toBe(failure)
+  })
+
   it('awaits the failure record before rethrowing, bounded by a timeout', async () => {
     vi.useFakeTimers()
     try {
