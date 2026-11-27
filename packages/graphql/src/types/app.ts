@@ -1,3 +1,4 @@
+import type {} from '@klicker-uzh/adaptive-persistence/json-types'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ActivityLogModificationDetails,

@@ -14,12 +14,17 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
 | Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI includes it in `test-unit.yml`, but still run it locally before claiming verification               |
 | `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment (marked disposable Postgres + Redis + Hatchet); serialized, don't parallelize                   |
+| Assessment audit contract/storage                                                 | `pnpm --filter @klicker-uzh/audit test` inside the DevPod — integration cases require disposable PostgreSQL and pinned Azurite; then run focused GraphQL audit specs                        |
 | Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
 | React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
 | React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
 | Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 | Prisma seed reconciliation                                                        | `pnpm --filter @klicker-uzh/prisma-data test` — Node test runner through the package's existing `tsx` toolchain                                                                             |
+
+Engine-backed adaptive GraphQL cases and adaptive Playwright specs skip unless
+`ADAPTIVE_ENGINE_URL`/`ADAPTIVE_ENGINE_TOKEN` point at a running Catalyst
+engine; see [the integration guide](../../../docs/adaptive-catalyst-integration.md).
 
 For the manage-list `All` page size, the focused browser evidence must cover
 the finite-to-All-to-50 state transition and explicit selection. A 200-record

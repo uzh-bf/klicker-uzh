@@ -70,7 +70,17 @@ async function fixture(t) {
   })
   const origin = `http://127.0.0.1:${server.address().port}`
   const diagnostics = []
-  t.mock.method(console, 'error', (line) => diagnostics.push(JSON.parse(line)))
+  const passthroughWrite = process.stdout.write.bind(process.stdout)
+  t.mock.method(process.stdout, 'write', (chunk, ...args) => {
+    const value = String(chunk)
+    if (!value.includes('"event":"lti_')) {
+      return passthroughWrite(chunk, ...args)
+    }
+    for (const line of value.split('\n')) {
+      if (line) diagnostics.push(JSON.parse(line))
+    }
+    return true
+  })
   const logging = createRequestLogging(origin)
   httpHandler.app.use(logging.middleware)
   httpHandler.app.use(

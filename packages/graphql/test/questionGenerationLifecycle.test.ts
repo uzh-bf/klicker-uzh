@@ -1,3 +1,4 @@
+import { createLogger } from '@klicker-uzh/logging/node'
 import * as DB from '@klicker-uzh/prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { questionGenerationServiceError } from '../src/services/questionGenerationErrors.js'
@@ -379,6 +380,7 @@ describe('question-generation preparation lifecycle', () => {
       findRunByQuestionReview: vi.fn(),
     } satisfies QuestionGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -484,6 +486,7 @@ describe('question-generation synchronization lifecycle', () => {
       findRunByQuestionReview: vi.fn(),
     } satisfies QuestionGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -562,6 +565,7 @@ describe('flashcard retry preparation lifecycle', () => {
       })),
     } satisfies FlashcardGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -699,6 +703,7 @@ describe('flashcard retry preparation lifecycle', () => {
       findRunByFlashcardBuildId: vi.fn(async () => null),
     } satisfies FlashcardGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -902,6 +907,7 @@ describe('terminal workflow artifact lifecycle', () => {
       findRunByQuestionReview: vi.fn(),
     } satisfies QuestionGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1271,6 +1277,7 @@ describe('terminal workflow artifact lifecycle', () => {
       findRunByFlashcardBuildId: vi.fn(),
     } satisfies FlashcardGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1350,6 +1357,7 @@ describe('question-generation review dispatch lifecycle', () => {
       findRunByQuestionReview: vi.fn(async () => null),
     } satisfies QuestionGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1451,6 +1459,7 @@ describe('question-generation review dispatch lifecycle', () => {
       })),
     } satisfies QuestionGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1521,6 +1530,7 @@ describe('question-generation review dispatch lifecycle', () => {
       findRunByQuestionReview: vi.fn(),
     } satisfies QuestionGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1604,6 +1614,7 @@ describe('flashcard incomplete-publication lifecycle', () => {
       findRunByFlashcardBuildId: vi.fn(async () => null),
     } satisfies FlashcardGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1708,6 +1719,7 @@ describe('flashcard incomplete-publication lifecycle', () => {
       findRunByFlashcardBuildId,
     } satisfies FlashcardGenerationRuntime
     const ctx = {
+      log: createLogger({ service: 'graphql-test', level: 'silent' }),
       user: { sub: fixtures.ownerId },
       elementGenerationRuntime: runtime,
       prisma: {
@@ -1763,15 +1775,15 @@ describe('flashcard preparation polling failure policy', () => {
     const release = vi
       .mocked(releaseUnclaimedElementGenerationSpend)
       .mockClear()
-    const errorLog = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
+    const log = createLogger({ service: 'graphql-test', level: 'silent' })
+    const errorLog = vi.spyOn(log, 'error')
     const updateMany = vi.fn(async ({ data }) => {
       build = { ...build, ...data }
       return { count: 1 }
     })
     try {
       const result = await getFlashcardGenerationBuild(fixtures.buildId, {
+        log,
         user: { sub: fixtures.ownerId },
         prisma: {
           elementGenerationBuild: {
@@ -1800,6 +1812,7 @@ describe('flashcard preparation polling failure policy', () => {
       }
       expect(result.syncLeaseOwner).toBeNull()
       expect(release).not.toHaveBeenCalled()
+      expect(errorLog).toHaveBeenCalledTimes(retryable ? 0 : 1)
     } finally {
       errorLog.mockRestore()
     }
@@ -1889,6 +1902,7 @@ describe('partial question-generation delivery lifecycle', () => {
       ctx: {
         user: { sub: fixtures.ownerId },
         elementGenerationRuntime: runtime,
+        log: createLogger({ service: 'graphql-test', level: 'silent' }),
         prisma: {
           elementGenerationBuild: {
             findMany: vi.fn(async () => []),

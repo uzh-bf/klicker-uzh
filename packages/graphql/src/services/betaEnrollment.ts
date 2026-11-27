@@ -75,7 +75,10 @@ export async function getBetaEnrollment(
   try {
     return capability(ctx, await getBetaPreference(ctx))
   } catch (error) {
-    console.error('Failed to read beta preference', errorDiagnostics(error))
+    ctx.log.error(
+      { event: 'beta_enrollment.read.failed', ...errorDiagnostics(error) },
+      'Failed to read beta preference'
+    )
     return capability(ctx, null)
   }
 }
@@ -110,7 +113,10 @@ export async function setBetaEnrollment(
     }
     return capability(ctx, user.betaEnabled)
   } catch (error) {
-    console.error('Failed to update beta preference', errorDiagnostics(error))
+    ctx.log.error(
+      { event: 'beta_enrollment.update.failed', ...errorDiagnostics(error) },
+      'Failed to update beta preference'
+    )
     throw new GraphQLError('Failed to update beta enrollment', {
       extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
     })

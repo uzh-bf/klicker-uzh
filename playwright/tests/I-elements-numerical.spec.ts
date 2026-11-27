@@ -53,7 +53,9 @@ async function saveNumericalElement(page: Page) {
 
     try {
       const body = request.postDataJSON() as { operationName?: string }
-      return body.operationName === 'ManipulateNumericalQuestion'
+      return (
+        body.operationName === 'ManipulateNumericalQuestionWithTreeAssignments'
+      )
     } catch {
       return false
     }
