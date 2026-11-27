@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { CourseDeletionEvent, HatchetHandlers } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
+import { createTaskAppLogger } from '../lib/taskLogger.js'
 import {
   cancelCourseDeletionRequest,
   deleteCourse as permanentlyDeleteCourse,
@@ -89,6 +90,7 @@ export async function requestCourseDeletion(
   }
 
   const event: CourseDeletionEvent = {
+    loggingContext: ctx.requestContext,
     courseId: request.courseId,
     deletionRequestedAt: request.deletionRequestedAt.toISOString(),
     requestedById: ctx.user.sub,
@@ -97,10 +99,10 @@ export async function requestCourseDeletion(
 
   try {
     await ctx.hatchet.events.push('process-course-deletion', event)
-  } catch (error) {
-    console.error(
-      `Failed to publish course deletion for ${request.courseId}:`,
-      error
+  } catch {
+    ctx.log.error(
+      { event: 'course.deletion.schedule.failed' },
+      'Failed to publish course deletion'
     )
     await cancelCourseDeletionRequest(
       {
@@ -145,12 +147,13 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
           deleteDraftActivities,
           request: { deletionRequestedAt: requestedAt, requestedById },
         },
-        globalCtx
+        { ...globalCtx, log: createTaskAppLogger(executionCtx) }
       )
     } catch (error) {
       if (executionCtx.retryCount() >= COURSE_DELETION_MAX_RETRIES) {
         executionCtx.logger.error(
-          `Course deletion for ${courseId} failed permanently; the course is visible again.`
+          'Course deletion failed permanently; the course is visible again',
+          { extra: { event: 'course.deletion.failed' } }
         )
         await cancelCourseDeletionRequest(
           { id: courseId, deletionRequestedAt: requestedAt },

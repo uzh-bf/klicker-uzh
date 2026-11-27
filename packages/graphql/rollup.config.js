@@ -29,12 +29,10 @@ const config = defineConfig([
         compilerOptions: {
           module: 'ESNext',
           moduleResolution: 'Bundler',
-        },
-        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
-        compilerOptions: {
           incremental: false,
           tsBuildInfoFile: undefined,
         },
+        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
       }),
       copy({
         targets: [{ src: 'src/public/*', dest: 'dist' }],

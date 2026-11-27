@@ -1,19 +1,22 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 import { resolveElearningThreadOrigin } from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
-import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 /**
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.
  * Used by the frontend to display threads in the sidebar.
  */
-export async function GET(
+async function handleGET(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -22,8 +25,7 @@ export async function GET(
   try {
     const threads = await ThreadService.getAllThreads(participantId, chatbotId)
     return NextResponse.json(threads)
-  } catch (error) {
-    console.error('Failed to fetch threads:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch threads' },
       { status: 500 }
@@ -35,12 +37,13 @@ export async function GET(
  * Creates a new chat thread with an optional title for the authenticated participant.
  * Used when explicitly creating a thread or starting a new conversation.
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -69,11 +72,19 @@ export async function POST(
       origin
     )
     return NextResponse.json(thread)
-  } catch (error) {
-    console.error('Failed to create thread:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to create thread' },
       { status: 500 }
     )
   }
 }
+
+export const GET = createLoggedRoute(
+  '/api/chatbots/:chatbotId/threads',
+  handleGET
+)
+export const POST = createLoggedRoute(
+  '/api/chatbots/:chatbotId/threads',
+  handlePOST
+)

@@ -1,6 +1,8 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 import { buildExplanationPage } from '@/src/services/explainerService'
-import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 
@@ -9,12 +11,13 @@ export const runtime = 'nodejs'
  * stores only the content; the page is built on demand by the Catalyst
  * explainer service, which validates the content again.
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) return authResult.response
   // The prototype flag turns the proxy off too, so a configured service is
   // not reachable while explanations are disabled.
@@ -56,3 +59,8 @@ export async function POST(
     )
   }
 }
+
+export const POST = createLoggedRoute(
+  '/api/chatbots/:chatbotId/explanations/page',
+  handlePOST
+)

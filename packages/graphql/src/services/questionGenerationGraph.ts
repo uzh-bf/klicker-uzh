@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { createLogger } from '@klicker-uzh/logging/node'
 import {
   getDefaultKBGraphDomainCatalog,
   getPublishedKnowledgeGraph,
@@ -35,6 +36,8 @@ import {
   loadKBGraphPreparationCandidates,
 } from './knowledgeGraphPreparation.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
+
+const logger = createLogger({ service: 'graphql' })
 
 export type QuestionGenerationGraphErrorCode =
   | 'KB_GRAPH_VERSION_NOT_ELIGIBLE'
@@ -579,9 +582,12 @@ export async function getKBQuestionGenerationSource(
         () => null
       )
       .catch((error: unknown) => {
-        console.error(
-          'Failed to load question generation readiness',
-          error instanceof Error ? error.message : error
+        logger.error(
+          {
+            event: 'question-generation.readiness.load_failed',
+            errorType: error instanceof Error ? error.name : 'unknown',
+          },
+          'Failed to load question generation readiness'
         )
         return null
       })

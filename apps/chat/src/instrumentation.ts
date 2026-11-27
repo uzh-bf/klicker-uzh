@@ -9,6 +9,9 @@ export async function register() {
       import('./lib/server/langfuseTracing'),
     ])
 
+  const { logger } = await import('./lib/server/logger')
+  logger.info({ event: 'service.started' }, 'Chat service started')
+
   getChatModelRegistry()
   await registerLangfuseTelemetry()
 }

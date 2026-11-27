@@ -280,9 +280,15 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/next-config':
         specifier: workspace:*
         version: link:../../packages/next-config
@@ -440,6 +446,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -561,6 +570,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   apps/chat:
     dependencies:
@@ -580,8 +592,8 @@ importers:
         specifier: 0.14.8
         version: 0.14.8(@assistant-ui/react@0.15.1(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(immer@10.1.1)(ioredis@5.11.1(supports-color@8.1.1))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(redis@5.12.1(@opentelemetry/api@1.9.1))(use-sync-external-store@1.6.0(react@19.2.8)))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)
       '@azure/identity':
-        specifier: 4.13.0
-        version: 4.13.0(supports-color@8.1.1)
+        specifier: 4.14.1
+        version: 4.14.1(supports-color@8.1.1)
       '@azure/storage-blob':
         specifier: 12.25.0
         version: 12.25.0(supports-color@8.1.1)
@@ -609,6 +621,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../../packages/knowledge-graph
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -949,6 +964,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1130,6 +1148,9 @@ importers:
       '@klicker-uzh/kb-management':
         specifier: workspace:*
         version: link:../../packages/kb-management
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1377,6 +1398,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1555,6 +1579,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@klicker-uzh/feature-flags':
         specifier: workspace:*
         version: link:../../packages/feature-flags
@@ -1564,6 +1591,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1576,12 +1606,6 @@ importers:
       ioredis:
         specifier: 5.4.1
         version: 5.4.1(supports-color@8.1.1)
-      pino:
-        specifier: 9.9.5
-        version: 9.9.5
-      pino-pretty:
-        specifier: 13.1.3
-        version: 13.1.3
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -1619,12 +1643,18 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1665,9 +1695,15 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   apps/lti:
     dependencies:
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1827,6 +1863,9 @@ importers:
 
   apps/olat-api:
     dependencies:
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1906,6 +1945,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1937,6 +1979,64 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+
+  packages/audit:
+    dependencies:
+      '@azure/data-tables':
+        specifier: 13.3.2
+        version: 13.3.2(supports-color@8.1.1)
+      '@azure/identity':
+        specifier: 4.14.1
+        version: 4.14.1(supports-color@8.1.1)
+      '@azure/storage-blob':
+        specifier: 12.25.0
+        version: 12.25.0(supports-color@8.1.1)
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../prisma
+      canonicalize:
+        specifier: 3.0.0
+        version: 3.0.0
+      uuid:
+        specifier: 10.0.0
+        version: 10.0.0
+      zod:
+        specifier: 4.6.6
+        version: 4.6.6
+    devDependencies:
+      '@rollup/plugin-node-resolve':
+        specifier: ~15.3.1
+        version: 15.3.1(rollup@4.34.9)
+      '@rollup/plugin-typescript':
+        specifier: ~12.1.4
+        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
+      cross-env:
+        specifier: ~7.0.3
+        version: 7.0.3
+      eslint:
+        specifier: ~9.30.1
+        version: 9.30.1(jiti@2.7.0)(supports-color@8.1.1)
+      npm-run-all:
+        specifier: ~4.1.5
+        version: 4.1.5
+      rollup:
+        specifier: ~4.34.9
+        version: 4.34.9
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   packages/doc-query-client:
     dependencies:
@@ -2082,6 +2182,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.22.0
         version: 1.22.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(zod@4.6.6)
+      '@klicker-uzh/audit':
+        specifier: workspace:*
+        version: link:../audit
       '@klicker-uzh/doc-query-client':
         specifier: workspace:*
         version: link:../doc-query-client
@@ -2094,6 +2197,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2314,6 +2420,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../logging
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2471,6 +2580,40 @@ importers:
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+
+  packages/logging:
+    dependencies:
+      pino:
+        specifier: 9.14.0
+        version: 9.14.0
+    devDependencies:
+      '@rollup/plugin-node-resolve':
+        specifier: ~15.3.1
+        version: 15.3.1(rollup@4.34.9)
+      '@rollup/plugin-typescript':
+        specifier: ~12.1.4
+        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      cross-env:
+        specifier: ~7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: ~4.1.5
+        version: 4.1.5
+      pino-pretty:
+        specifier: ~13.1.3
+        version: 13.1.3
+      rollup:
+        specifier: ~4.34.9
+        version: 4.34.9
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
   packages/markdown:
     dependencies:
@@ -3505,6 +3648,10 @@ packages:
     resolution: {integrity: sha512-YKWi9YuCU04B55h25cnOYZHxXYtEvQEbKST5vqRga7hWY9ydd3FZHdeQF8pyh+acWZvppw13M/LMGx0LABUVMA==}
     engines: {node: '>=18.0.0'}
 
+  '@azure/core-process@1.0.0':
+    resolution: {integrity: sha512-/shnJ+ooO8WPxDhPEeI/2oRQuubn16gZ6CvlbpWbEswZfzwI9tI/sMAHmF3x1LuQ9yZYXfLW3TjzGMLEC5blKg==}
+    engines: {node: '>=22.0.0'}
+
   '@azure/core-rest-pipeline@1.22.0':
     resolution: {integrity: sha512-OKHmb3/Kpm06HypvB3g6Q3zJuvyXcpxDpCS1PnU8OV6AJgSFaee/covXBcPbWc6XDDxtEPlbi3EMQ6nUiPaQtw==}
     engines: {node: '>=20.0.0'}
@@ -3521,25 +3668,33 @@ packages:
     resolution: {integrity: sha512-D/sdlJBMJfx7gqoj66PKVmhDDaU6TKA49ptcolxdas29X7AfvLTmfAGLjAcIMBK7UZ2o4lygHIqVckOlQU3xWw==}
     engines: {node: '>=20.0.0'}
 
-  '@azure/identity@4.13.0':
-    resolution: {integrity: sha512-uWC0fssc+hs1TGGVkkghiaFkkS7NkTxfnCH+Hdg+yTehTpMcehpok4PgUKKdyCH+9ldu6FhiHRv84Ntqj1vVcw==}
+  '@azure/data-tables@13.3.2':
+    resolution: {integrity: sha512-PZ8e4SnCpTQEbQ1P+CK6NR7Vhb86Jw1S1qJi2IcF1ij4qiPX2b4vIemwNPkYg/gZGMqKbxkPvGRpRmEbBYdXuA==}
     engines: {node: '>=20.0.0'}
+
+  '@azure/identity@4.14.1':
+    resolution: {integrity: sha512-HHuuFrmN1uuF9D5A6aAo5eHzNFNX4Q+P4SksZqDKse5YaJFFy/zDLG3wXHEV2FVGgetZ3QM8jGURNBtnQYf1NQ==}
+    engines: {node: '>=22.0.0'}
 
   '@azure/logger@1.3.0':
     resolution: {integrity: sha512-fCqPIfOcLE+CGqGPd66c8bZpwAji98tZ4JI9i/mlTNTlsIWslCfpg48s/ypyLxZTump5sypjrKn2/kY7q8oAbA==}
     engines: {node: '>=20.0.0'}
 
-  '@azure/msal-browser@4.30.0':
-    resolution: {integrity: sha512-HBBKfbZkMVzzF5bofvS1cXuNHFVc+gt4/HOnCmG/0hsHuZRJvJvDg/+7nTwIpoqvJc8BQp5o23rBUfisOLxR+w==}
+  '@azure/msal-browser@5.28.0':
+    resolution: {integrity: sha512-f3yY518Z++x3ZogCbcLK6vnABgpxc8rAKGKtQibcUJKAVU9gamgh5mNAPJIRwduzXQvO2xtHx/gtmPz8iuZ8+w==}
     engines: {node: '>=0.8.0'}
 
-  '@azure/msal-common@15.17.0':
-    resolution: {integrity: sha512-VQ5/gTLFADkwue+FohVuCqlzFPUq4xSrX8jeZe+iwZuY6moliNC8xt86qPVNYdtbQfELDf2Nu6LI+demFPHGgw==}
+  '@azure/msal-common@16.16.0':
+    resolution: {integrity: sha512-EZgd8h5nczsdRAQAgXA0A0pC5L/zj43n1jePXvUMgdwXMbH2zhb7b7Hp+Oe7ZOODK/sch2x+soD6FOrtgUbx/w==}
     engines: {node: '>=0.8.0'}
 
-  '@azure/msal-node@3.8.10':
-    resolution: {integrity: sha512-0Hz7Kx4hs70KZWep/Rd7aw/qOLUF92wUOhn7ZsOuB5xNR/06NL1E2RAI9+UKH1FtvN8nD6mFjH7UKSjv6vOWvQ==}
-    engines: {node: '>=16'}
+  '@azure/msal-common@16.16.1':
+    resolution: {integrity: sha512-dSKdL9h/iercb4GumsKFh+wVvLe1ohuDPiviklgnQVHnY2FYNUlbQJ3E1Qd37vkof9CfraK9BQpCW1hoOg0znQ==}
+    engines: {node: '>=0.8.0'}
+
+  '@azure/msal-node@7.2.1':
+    resolution: {integrity: sha512-6mntsfCNq7H1eAPSZik74jT3C5at4nRqiVk7OC+D5Hy3Pe3s76uwE4+J0xvDvlVPmoX2kasf3mSwUmzeq9rW/A==}
+    engines: {node: '>=20'}
 
   '@azure/service-bus@7.9.5':
     resolution: {integrity: sha512-R5Af+4jtZZII2snLomaddMyElFtTCBRZp2qERPlP8PuISLU87eFYFM7xWzxjNd0yeiyQUBkamx/ZhOC8eWhCHA==}
@@ -7266,6 +7421,9 @@ packages:
   '@peculiar/webcrypto@1.5.0':
     resolution: {integrity: sha512-BRs5XUAwiyCDQMsVA9IDvDa7UBR9gAvPHgugOeGng3YN6vJ9JYonyDc0lNczErgtCWtucjR5N7VtaonboD/ezg==}
     engines: {node: '>=10.12.0'}
+
+  '@pinojs/redact@0.4.0':
+    resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -11703,6 +11861,11 @@ packages:
   caniuse-lite@1.0.30001810:
     resolution: {integrity: sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg==}
 
+  canonicalize@3.0.0:
+    resolution: {integrity: sha512-yYLfHyDMIXRyRqsKBRLX023riFLpXY2YOfdtqKXZRZy9qsfOJ9U+4F9YZL7MEzL5+ziN2x2nlBvY/Voi3EBljA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   capital-case@1.0.4:
     resolution: {integrity: sha512-ds37W8CytHgwnhGGTi88pcPyR15qoNkOpYwmMMfnWqqWgESapLqvDx6huFjQ5vqWSn2Z06173XNA7LtMOeUh1A==}
 
@@ -12651,6 +12814,10 @@ packages:
     resolution: {integrity: sha512-WY/3TUME0x3KPYdRRxEJJvXRHV4PyPoUsxtZa78lwItwRQRHhd2U9xOscaT/YTf8uCXIAjeJOFBVEh/7FtD8Xg==}
     engines: {node: '>=18'}
 
+  default-browser@5.5.1:
+    resolution: {integrity: sha512-m1pAzaJgZ/gssEqlOhJkPJp8Xly7QyW6xcrkUa2KKcDeDSEMP7X8xipU3snUcfisTQx0w1AGae+9UtJSfVnXGw==}
+    engines: {node: '>=18'}
+
   default-gateway@6.0.3:
     resolution: {integrity: sha512-fwSOJsbbNzZ/CUFpqFBqYfYNLj1NbMPm8MMCIzHjC83iSJRBEGmDUxU+WP661BaBQImeC2yHwXtz+P/O9o+XEg==}
     engines: {node: '>= 10'}
@@ -13450,10 +13617,6 @@ packages:
 
   fast-querystring@1.1.2:
     resolution: {integrity: sha512-g6KuKWmFXc0fID8WWH0jit4g0AGBoJhCkJMb1RmbsSEUNvQ+ZC8D6CUZ+GtF8nMzSPXnhiePyyqqipzNNEnHjg==}
-
-  fast-redact@3.5.0:
-    resolution: {integrity: sha512-dwsoQlS7h9hMeYUq1W++23NDcBLV4KqONnITDV9DjfS3q1SgDGVrBdvvTLUotWtPSD7asWDV9/CmsZPy8Hf70A==}
-    engines: {node: '>=6'}
 
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
@@ -14638,6 +14801,10 @@ packages:
 
   is-hotkey@0.2.0:
     resolution: {integrity: sha512-UknnZK4RakDmTgz4PI1wIph5yxSs/mvChWs9ifnlXsKuXgWmOkY/hAE0H/k2MIqH0RlRye0i1oC07MCRSD28Mw==}
+
+  is-in-ssh@1.0.0:
+    resolution: {integrity: sha512-jYa6Q9rH90kR1vKB6NM7qqd1mge3Fx4Dhw5TVlK1MUBqhEOuCagrEHMevNuCcbECmXZ0ThXkRm+Ymr51HwEPAw==}
+    engines: {node: '>=20'}
 
   is-inside-container@1.0.0:
     resolution: {integrity: sha512-KIYLCCJghfHZxqjYBE7rEy0OBuTd5xCHS7tHVgvCLkx7StIoaxwNW3hCALgEUjFfeRk+MG/Qxmp/vtETEF3tRA==}
@@ -16685,6 +16852,10 @@ packages:
     resolution: {integrity: sha512-YgBpdJHPyQ2UE5x+hlSXcnejzAvD0b22U2OuAP+8OnlJT+PjWPxtgmGqKKc+RgTM63U9gN0YzrYc71R2WT/hTA==}
     engines: {node: '>=18'}
 
+  open@11.0.4:
+    resolution: {integrity: sha512-++Zlftm0kVLPmzC06t6epuWmcRMDbI4z5P3NNX979WA/k23+NtSOynEGzsVfZwguKw2mi5umVgnBlJQMwRz4Pg==}
+    engines: {node: '>=20'}
+
   open@7.4.2:
     resolution: {integrity: sha512-MVHddDVweXZF3awtlAS+6pgKLlm/JgxZ90+/NBurBoQctVOOB/zDdVjcyPzQ+0laDGbsWgrRkflI65sQeOgT9Q==}
     engines: {node: '>=8'}
@@ -17064,8 +17235,8 @@ packages:
   pino-std-serializers@7.0.0:
     resolution: {integrity: sha512-e906FRY0+tV27iq4juKzSYPbUj2do2X2JX4EzSca1631EB2QJQUqGbDuERal7LCtOpxl6x3+nvo9NPZcmjkiFA==}
 
-  pino@9.9.5:
-    resolution: {integrity: sha512-d1s98p8/4TfYhsJ09r/Azt30aYELRi6NNnZtEbqFw6BoGsdPVf5lKNK3kUwH8BmJJfpTLNuicjUQjaMbd93dVg==}
+  pino@9.14.0:
+    resolution: {integrity: sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w==}
     hasBin: true
 
   pipenet@1.4.2:
@@ -17545,6 +17716,10 @@ packages:
   postgres@3.4.7:
     resolution: {integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==}
     engines: {node: '>=12'}
+
+  powershell-utils@0.2.1:
+    resolution: {integrity: sha512-C+y9x90UElAddDZmV4qOx9W53B61PO7cIqWz2dQsWlwswuq4mr8NEwytdGKboYbQlGZ3awrkTeNvcZiZNHnQ8A==}
+    engines: {node: '>=20'}
 
   preact-render-to-string@5.2.6:
     resolution: {integrity: sha512-JyhErpYOvBV1hEPwIxc/fHWXPfnEGdRKxc8gFdAZ7XV4tlzyzG847XAyEZqoDnynP88akM4eaHcSOzNcLWFguw==}
@@ -18984,9 +19159,6 @@ packages:
   socks@2.8.9:
     resolution: {integrity: sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
-
-  sonic-boom@4.2.0:
-    resolution: {integrity: sha512-INb7TM37/mAcsGmc9hyyI6+QR3rR1zVRu36B0NeGXKnOOLiZOfER5SA+N7X7k3yUYRzLWafduTDvJAfDswwEww==}
 
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
@@ -20626,6 +20798,10 @@ packages:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
 
+  wsl-utils@1.0.1:
+    resolution: {integrity: sha512-c16PKLIRxBYpR3jSWsdS7SFp0COm5SOQdiFjY818dYFHJbMGuLBszpF07LBWmOS1uzrHa9VGdynsEgoeKy0oOQ==}
+    engines: {node: '>=20'}
+
   xdg-basedir@5.1.0:
     resolution: {integrity: sha512-GCPAHLvrIH13+c0SuacwvRYj2SxJXQ4kaVTT5xgL3kPrz56XxkF21IGhjSE1+W0aw7gpBWRGXLCPnPby6lSpmQ==}
     engines: {node: '>=12'}
@@ -21455,6 +21631,8 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@azure/core-process@1.0.0': {}
+
   '@azure/core-rest-pipeline@1.22.0(supports-color@8.1.1)':
     dependencies:
       '@azure/abort-controller': 2.1.2
@@ -21484,18 +21662,33 @@ snapshots:
       fast-xml-parser: 5.7.0
       tslib: 2.8.1
 
-  '@azure/identity@4.13.0(supports-color@8.1.1)':
+  '@azure/data-tables@13.3.2(supports-color@8.1.1)':
+    dependencies:
+      '@azure/core-auth': 1.10.0(supports-color@8.1.1)
+      '@azure/core-client': 1.10.0(supports-color@8.1.1)
+      '@azure/core-paging': 1.6.2
+      '@azure/core-rest-pipeline': 1.22.0(supports-color@8.1.1)
+      '@azure/core-tracing': 1.3.0
+      '@azure/core-util': 1.13.0(supports-color@8.1.1)
+      '@azure/core-xml': 1.5.0
+      '@azure/logger': 1.3.0(supports-color@8.1.1)
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/identity@4.14.1(supports-color@8.1.1)':
     dependencies:
       '@azure/abort-controller': 2.1.2
       '@azure/core-auth': 1.10.0(supports-color@8.1.1)
       '@azure/core-client': 1.10.0(supports-color@8.1.1)
+      '@azure/core-process': 1.0.0
       '@azure/core-rest-pipeline': 1.22.0(supports-color@8.1.1)
       '@azure/core-tracing': 1.3.0
       '@azure/core-util': 1.13.0(supports-color@8.1.1)
       '@azure/logger': 1.3.0(supports-color@8.1.1)
-      '@azure/msal-browser': 4.30.0
-      '@azure/msal-node': 3.8.10
-      open: 10.2.0
+      '@azure/msal-browser': 5.28.0
+      '@azure/msal-node': 7.2.1
+      open: 11.0.4
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
@@ -21507,17 +21700,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@azure/msal-browser@4.30.0':
+  '@azure/msal-browser@5.28.0':
     dependencies:
-      '@azure/msal-common': 15.17.0
+      '@azure/msal-common': 16.16.0
 
-  '@azure/msal-common@15.17.0': {}
+  '@azure/msal-common@16.16.0': {}
 
-  '@azure/msal-node@3.8.10':
+  '@azure/msal-common@16.16.1': {}
+
+  '@azure/msal-node@7.2.1':
     dependencies:
-      '@azure/msal-common': 15.17.0
+      '@azure/msal-common': 16.16.1
       jsonwebtoken: 9.0.3
-      uuid: 8.3.2
 
   '@azure/service-bus@7.9.5(supports-color@8.1.1)':
     dependencies:
@@ -26351,6 +26545,8 @@ snapshots:
       tslib: 2.8.1
       webcrypto-core: 1.8.1
 
+  '@pinojs/redact@0.4.0': {}
+
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
@@ -30184,6 +30380,14 @@ snapshots:
     optionalDependencies:
       vite: 7.3.2(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
 
+  '@vitest/mocker@3.2.4(vite@7.3.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.3.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+
   '@vitest/pretty-format@3.2.4':
     dependencies:
       tinyrainbow: 2.0.0
@@ -31182,6 +31386,8 @@ snapshots:
   caniuse-lite@1.0.30001793: {}
 
   caniuse-lite@1.0.30001810: {}
+
+  canonicalize@3.0.0: {}
 
   capital-case@1.0.4:
     dependencies:
@@ -32182,6 +32388,11 @@ snapshots:
   default-browser-id@5.0.0: {}
 
   default-browser@5.2.1:
+    dependencies:
+      bundle-name: 4.1.0
+      default-browser-id: 5.0.0
+
+  default-browser@5.5.1:
     dependencies:
       bundle-name: 4.1.0
       default-browser-id: 5.0.0
@@ -33332,8 +33543,6 @@ snapshots:
   fast-querystring@1.1.2:
     dependencies:
       fast-decode-uri-component: 1.0.1
-
-  fast-redact@3.5.0: {}
 
   fast-safe-stringify@2.1.1: {}
 
@@ -34794,6 +35003,8 @@ snapshots:
   is-hexadecimal@2.0.1: {}
 
   is-hotkey@0.2.0: {}
+
+  is-in-ssh@1.0.0: {}
 
   is-inside-container@1.0.0:
     dependencies:
@@ -37328,6 +37539,15 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
+  open@11.0.4:
+    dependencies:
+      default-browser: 5.5.1
+      define-lazy-prop: 3.0.0
+      is-in-ssh: 1.0.0
+      is-inside-container: 1.0.0
+      powershell-utils: 0.2.1
+      wsl-utils: 1.0.1
+
   open@7.4.2:
     dependencies:
       is-docker: 2.2.1
@@ -37757,10 +37977,10 @@ snapshots:
 
   pino-std-serializers@7.0.0: {}
 
-  pino@9.9.5:
+  pino@9.14.0:
     dependencies:
+      '@pinojs/redact': 0.4.0
       atomic-sleep: 1.0.0
-      fast-redact: 3.5.0
       on-exit-leak-free: 2.1.2
       pino-abstract-transport: 2.0.0
       pino-std-serializers: 7.0.0
@@ -37768,7 +37988,7 @@ snapshots:
       quick-format-unescaped: 4.0.4
       real-require: 0.2.0
       safe-stable-stringify: 2.5.0
-      sonic-boom: 4.2.0
+      sonic-boom: 4.2.1
       thread-stream: 3.1.0
 
   pipenet@1.4.2(supports-color@8.1.1):
@@ -38287,6 +38507,8 @@ snapshots:
       xtend: 4.0.2
 
   postgres@3.4.7: {}
+
+  powershell-utils@0.2.1: {}
 
   preact-render-to-string@5.2.6(preact@10.29.1):
     dependencies:
@@ -40346,10 +40568,6 @@ snapshots:
       smart-buffer: 4.2.0
     optional: true
 
-  sonic-boom@4.2.0:
-    dependencies:
-      atomic-sleep: 1.0.0
-
   sonic-boom@4.2.1:
     dependencies:
       atomic-sleep: 1.0.0
@@ -41713,6 +41931,27 @@ snapshots:
       - tsx
       - yaml
 
+  vite-node@3.2.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1):
+    dependencies:
+      cac: 6.7.14
+      debug: 4.4.3(supports-color@8.1.1)
+      es-module-lexer: 1.7.0
+      pathe: 2.0.3
+      vite: 7.3.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+    transitivePeerDependencies:
+      - '@types/node'
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - yaml
+
   vite@7.3.2(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1):
     dependencies:
       esbuild: 0.27.7
@@ -41723,6 +41962,23 @@ snapshots:
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 24.12.4
+      fsevents: 2.3.3
+      jiti: 2.7.0
+      lightningcss: 1.32.0
+      terser: 5.51.2
+      tsx: 4.19.4
+      yaml: 2.6.1
+
+  vite@7.3.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1):
+    dependencies:
+      esbuild: 0.27.7
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
+      postcss: 8.5.26
+      rollup: 4.62.2
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 24.13.3
       fsevents: 2.3.3
       jiti: 2.7.0
       lightningcss: 1.32.0
@@ -41758,6 +42014,48 @@ snapshots:
     optionalDependencies:
       '@types/debug': 4.1.12
       '@types/node': 24.12.4
+    transitivePeerDependencies:
+      - jiti
+      - less
+      - lightningcss
+      - msw
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - yaml
+
+  vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1):
+    dependencies:
+      '@types/chai': 5.2.2
+      '@vitest/expect': 3.2.4
+      '@vitest/mocker': 3.2.4(vite@7.3.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1))
+      '@vitest/pretty-format': 3.2.4
+      '@vitest/runner': 3.2.4
+      '@vitest/snapshot': 3.2.4
+      '@vitest/spy': 3.2.4
+      '@vitest/utils': 3.2.4
+      chai: 5.3.3
+      debug: 4.4.3(supports-color@8.1.1)
+      expect-type: 1.2.2
+      magic-string: 0.30.21
+      pathe: 2.0.3
+      picomatch: 4.0.4
+      std-env: 3.10.0
+      tinybench: 2.9.0
+      tinyexec: 0.3.2
+      tinyglobby: 0.2.17
+      tinypool: 1.1.1
+      tinyrainbow: 2.0.0
+      vite: 7.3.2(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+      vite-node: 3.2.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.51.2)(tsx@4.19.4)(yaml@2.6.1)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/debug': 4.1.12
+      '@types/node': 24.13.3
     transitivePeerDependencies:
       - jiti
       - less
@@ -42311,6 +42609,11 @@ snapshots:
   wsl-utils@0.1.0:
     dependencies:
       is-wsl: 3.1.0
+
+  wsl-utils@1.0.1:
+    dependencies:
+      is-wsl: 3.1.0
+      powershell-utils: 0.2.1
 
   xdg-basedir@5.1.0: {}
 

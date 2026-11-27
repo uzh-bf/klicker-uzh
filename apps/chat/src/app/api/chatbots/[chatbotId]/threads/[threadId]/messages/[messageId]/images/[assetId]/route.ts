@@ -1,14 +1,16 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { readCourseImage } from '@/src/lib/server/courseImageStore'
 import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import { selectedCourseImages } from '@/src/lib/sources/courseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { resolveMcpScope } from '@/src/services/mcpScope'
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
   {
     params,
@@ -19,10 +21,11 @@ export async function GET(
       messageId: string
       assetId: string
     }>
-  }
+  },
+  log: AppLogger
 ) {
   const { chatbotId, threadId, messageId, assetId } = await params
-  const auth = await withChatbotAuth(req, chatbotId)
+  const auth = await withChatbotAuth(req, chatbotId, log)
   if ('response' in auth) return auth.response
   const headers = {
     'Cache-Control': 'private, no-store',
@@ -82,7 +85,15 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('Failed to serve authorized course image', error)
+    log.error(
+      { event: 'chat.course_image.serve_failed', err: error },
+      'Failed to serve authorized course image'
+    )
     return missing()
   }
 }
+
+export const GET = createLoggedRoute(
+  '/api/chatbots/:chatbotId/threads/:threadId/messages/:messageId/images/:assetId',
+  handleGET
+)

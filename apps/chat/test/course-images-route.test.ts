@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import { beforeEach, expect, it, vi } from 'vitest'
+import { logger } from '../src/lib/server/logger'
 import { courseImageCandidates } from '../src/lib/sources/courseImages'
 
 const mocks = vi.hoisted(() => ({
@@ -144,14 +145,27 @@ it('does not serve an unselected candidate', async () => {
   expect(mocks.read).not.toHaveBeenCalled()
 })
 it('logs storage failures while keeping the response sanitized', async () => {
-  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  // The route logs through a request child logger; capture at the fork.
+  const loggedError = vi.fn()
+  const child = vi.spyOn(logger, 'child').mockImplementation(
+    () =>
+      ({
+        error: loggedError,
+        info: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+      }) as never
+  )
   mocks.read.mockRejectedValue(new Error('/private/secret'))
   const response = await GET(req, { params })
   expect(response.status).toBe(404)
   expect(await response.json()).toEqual({ error: 'Course image unavailable' })
-  expect(consoleError).toHaveBeenCalledWith(
-    'Failed to serve authorized course image',
-    expect.any(Error)
+  expect(loggedError).toHaveBeenCalledWith(
+    expect.objectContaining({
+      event: 'chat.course_image.serve_failed',
+      err: expect.any(Error),
+    }),
+    expect.any(String)
   )
-  consoleError.mockRestore()
+  child.mockRestore()
 })
