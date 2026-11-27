@@ -44,6 +44,8 @@ describe('chat knowledge graph API client', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch
+    vi.stubGlobal('location', new URL('https://chat.synthetic.localhost/'))
+    vi.stubGlobal('document', { documentElement: { dataset: {} } })
     const store = new Map<string, string>()
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,
@@ -60,6 +62,7 @@ describe('chat knowledge graph API client', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllGlobals()
     globalThis.fetch = originalFetch
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,

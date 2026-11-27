@@ -80,6 +80,9 @@ uses the separate Chat guest token (`_t`). Neither fallback carries a raw accoun
 session token. The launch clears both previous Chat sessionStorage transports and
 the opposite scoped cookie before navigating, so an earlier guest cannot override
 a newly chosen account.
+For cookie-capable launches with direct routing to a different API hostname,
+Chat also writes the selected scoped token to tab storage before navigation.
+The client sends that bearer only to Chat and the configured API origin.
 
 The proxy overwrites `CHAT_SCOPED_TOKEN_HEADER` with a verified query token when
 cookies are unavailable. The server layout verifies that token again. Page and API

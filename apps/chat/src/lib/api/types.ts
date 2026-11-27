@@ -1,4 +1,4 @@
-import {
+import type {
   ExtendedThreadMessageLike,
   MessageRating,
   Thread,
@@ -103,6 +103,31 @@ export interface ApiMessage {
   updatedAt: string
 }
 
+/** Routes participant calls through the deployment-selected authenticated origin. */
+export function fetchChatApi(path: string, options: RequestInit = {}) {
+  const base =
+    typeof document === 'undefined'
+      ? ''
+      : (document.documentElement?.dataset.chatApiUrl ?? '')
+  if (!path.startsWith('/api/') || path.includes('\\'))
+    throw new Error('Chat API calls require a local API path')
+  const selected = base ? new URL(base) : null
+  if (
+    selected &&
+    (!['http:', 'https:'].includes(selected.protocol) ||
+      selected.username ||
+      selected.password ||
+      selected.pathname !== '/' ||
+      selected.search ||
+      selected.hash)
+  )
+    throw new Error('Chat API origin is invalid')
+  return authedFetch(`${selected?.origin ?? ''}${path}`, {
+    ...options,
+    ...(base ? { credentials: 'include' } : {}),
+  })
+}
+
 /**
  * Makes API call to the chat backend
  * Handles error responses and JSON parsing
@@ -116,7 +141,7 @@ export const apiCall = async <T = unknown>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const response = await authedFetch(`/api${url}`, {
+  const response = await fetchChatApi(`/api${url}`, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

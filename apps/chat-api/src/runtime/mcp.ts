@@ -41,7 +41,6 @@ import {
 } from '../host/lib/server/courseImageVision.js'
 import { resolveEffectiveMCPConfigurations } from '../host/lib/server/effectiveChatModes.js'
 import { isChatbotInteractiveExplanationsEnabled } from '../host/lib/server/featureFlags.js'
-import { renderPromptTemplate } from '../host/lib/server/promptTemplates.js'
 import { RequiredMCPUnavailableError } from '../host/lib/server/mcpRuntimePolicy.js'
 import {
   createResponseExampleSearchTool,
@@ -60,7 +59,7 @@ import {
   shouldOfferExplanationTool,
 } from '../host/services/explainerService.js'
 import {
-  createShowFeedbackTool,
+  createHostFeedbackTool,
   isFeedbackToolEnabled,
 } from '../host/services/feedbackTool.js'
 import { SHOW_FEEDBACK_TOOL_NAME } from '../host/lib/feedback.js'
@@ -276,10 +275,9 @@ export async function prepareHostTools(
       .map((message) => message.content)
     const modelTools = { ...withCalculatorTool(input.mode, tools) }
     if (isFeedbackToolEnabled(input.mode)) {
-      modelTools[SHOW_FEEDBACK_TOOL_NAME] = createShowFeedbackTool({
-        learnerMessages,
-      })
-      promptContext.push(renderPromptTemplate('feedback-card-tool', {}))
+      const feedback = createHostFeedbackTool(learnerMessages)
+      modelTools[SHOW_FEEDBACK_TOOL_NAME] = feedback.definition
+      promptContext.push(feedback.instructions)
     }
     return {
       courseImageVision,

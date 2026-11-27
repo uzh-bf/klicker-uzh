@@ -3,6 +3,10 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { PWA_CHAT_EMBED_SESSION_COOKIE } from '@/src/lib/pwaEmbedAuth'
 import { authorizeIdentityForChatbot } from '@/src/lib/server/apiGuards'
+import {
+  chatLaunchResponse,
+  hasSeparateChatApiHostname,
+} from '@/src/lib/server/chatLaunchResponse'
 import { signChatGuestToken } from '@/src/lib/server/ltiGuest'
 import {
   type ChatTabHandoffPayload,
@@ -34,21 +38,6 @@ function noLoginRedirect(chatbotId: string | null) {
   response.headers.set('Cache-Control', 'no-store')
   response.headers.set('Referrer-Policy', 'no-referrer')
   return response
-}
-
-// A tab opened from the frame can inherit the frame's sessionStorage fallback
-// tokens; clearing them makes the new first-party cookie the only transport.
-function navigateResponse(path: string) {
-  return new NextResponse(
-    `<!doctype html><meta charset="utf-8"><script>try { sessionStorage.removeItem('chat_participant_token'); sessionStorage.removeItem('chat_pwa_embed_token') } catch {} window.location.replace(${JSON.stringify(path).replaceAll('<', '\\u003c')})</script>`,
-    {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store',
-        'Referrer-Policy': 'no-referrer',
-      },
-    }
-  )
 }
 
 /**
@@ -95,10 +84,11 @@ export async function GET(req: NextRequest) {
     return noLoginRedirect(chatbotId)
   }
 
-  const path = query.data.threadId
+  const destination = req.nextUrl.clone()
+  destination.pathname = query.data.threadId
     ? `/${chatbotId}/threads/${query.data.threadId}`
     : `/${chatbotId}`
-  const response = navigateResponse(path)
+  destination.search = ''
 
   const isProduction =
     process.env.NODE_ENV === 'production' &&
@@ -110,27 +100,35 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const sessionToken =
+      kind === 'guest'
+        ? await signChatGuestToken(participantId, learnerBinding)
+        : await signPwaEmbedSessionToken({
+            chatbotId,
+            courseId,
+            participantId,
+            learnerBinding,
+          })
+    const response = chatLaunchResponse(
+      destination,
+      hasSeparateChatApiHostname(destination.hostname)
+        ? { kind: kind === 'guest' ? 'guest' : 'embed', token: sessionToken }
+        : undefined
+    )
     if (kind === 'guest') {
-      response.cookies.set(
-        'chat_participant_token',
-        await signChatGuestToken(participantId, learnerBinding),
-        { ...cookieOptions, maxAge: GUEST_SESSION_MAX_AGE_SECONDS }
-      )
+      response.cookies.set('chat_participant_token', sessionToken, {
+        ...cookieOptions,
+        maxAge: GUEST_SESSION_MAX_AGE_SECONDS,
+      })
       response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, '', {
         ...cookieOptions,
         maxAge: 0,
       })
     } else {
-      response.cookies.set(
-        PWA_CHAT_EMBED_SESSION_COOKIE,
-        await signPwaEmbedSessionToken({
-          chatbotId,
-          courseId,
-          participantId,
-          learnerBinding,
-        }),
-        { ...cookieOptions, maxAge: EMBED_SESSION_MAX_AGE_SECONDS }
-      )
+      response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, sessionToken, {
+        ...cookieOptions,
+        maxAge: EMBED_SESSION_MAX_AGE_SECONDS,
+      })
       // The guest cookie takes precedence in identity resolution, so a stale
       // one would replace the account identity being handed over.
       response.cookies.set('chat_participant_token', '', {
@@ -138,10 +136,9 @@ export async function GET(req: NextRequest) {
         maxAge: 0,
       })
     }
+    return response
   } catch (error) {
     console.error(LOG_PREFIX, 'Failed to sign the new-tab session:', error)
     return noLoginRedirect(chatbotId)
   }
-
-  return response
 }

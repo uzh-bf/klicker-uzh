@@ -1,4 +1,8 @@
 import {
+  chatLaunchResponse,
+  hasSeparateChatApiHostname,
+} from '@/src/lib/server/chatLaunchResponse'
+import {
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
 } from '@/src/lib/pwaEmbedAuth'
@@ -26,28 +30,6 @@ function noLoginRedirect(req: NextRequest, chatbotId: string | null) {
     noLoginUrl.searchParams.set('redirectTo', `/${chatbotId}?embed=true`)
   }
   return NextResponse.redirect(noLoginUrl)
-}
-
-function escapeHtmlAttribute(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-}
-
-function embedBootstrapResponse(chatbotUrl: URL) {
-  const destination = `${chatbotUrl.pathname}${chatbotUrl.search}`
-  return new NextResponse(
-    `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${escapeHtmlAttribute(destination)}"><script>window.location.replace(${JSON.stringify(destination)})</script></head><body></body></html>`,
-    {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Referrer-Policy': 'no-referrer',
-      },
-    }
-  )
 }
 
 export async function GET(req: NextRequest) {
@@ -140,11 +122,22 @@ export async function GET(req: NextRequest) {
     chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, sessionToken)
   }
 
-  const response = embedBootstrapResponse(chatbotUrl)
+  const response = chatLaunchResponse(
+    chatbotUrl,
+    cookiesAvailable && hasSeparateChatApiHostname(chatbotUrl.hostname)
+      ? { kind: 'embed', token: sessionToken }
+      : undefined
+  )
   const isProduction =
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1'
 
+  response.cookies.set('chat_participant_token', '', {
+    httpOnly: true,
+    ...cookieSecurityOptions({ isProduction }),
+    path: '/',
+    maxAge: 0,
+  })
   response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, sessionToken, {
     httpOnly: true,
     ...cookieSecurityOptions({ isProduction }),

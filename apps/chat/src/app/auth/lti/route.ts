@@ -1,3 +1,7 @@
+import {
+  chatLaunchResponse,
+  hasSeparateChatApiHostname,
+} from '@/src/lib/server/chatLaunchResponse'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import {
   cookieSecurityOptions,
@@ -40,21 +44,6 @@ function noLoginRedirect(chatbotId: string | null) {
   response.headers.set('Cache-Control', 'no-store')
   response.headers.set('Referrer-Policy', 'no-referrer')
   return response
-}
-
-// Clear previous Chat transport state before choosing this launch's identity.
-function launchResponse(destination: URL) {
-  const path = `${destination.pathname}${destination.search}`
-  return new NextResponse(
-    `<!doctype html><meta charset="utf-8"><script>try { sessionStorage.removeItem('chat_participant_token'); sessionStorage.removeItem('chat_pwa_embed_token') } catch {} window.location.replace(${JSON.stringify(path).replaceAll('<', '\\u003c')})</script>`,
-    {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store',
-        'Referrer-Policy': 'no-referrer',
-      },
-    }
-  )
 }
 
 export async function GET(req: NextRequest) {
@@ -194,7 +183,12 @@ export async function GET(req: NextRequest) {
     })
     if (!cookiesAvailable)
       chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, scopedToken)
-    const response = launchResponse(chatbotUrl)
+    const response = chatLaunchResponse(
+      chatbotUrl,
+      cookiesAvailable && hasSeparateChatApiHostname(chatbotUrl.hostname)
+        ? { kind: 'embed', token: scopedToken }
+        : undefined
+    )
     response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
       ...cookieSecurityOptions({ isProduction }),
       domain: process.env.COOKIE_DOMAIN,
@@ -241,7 +235,12 @@ export async function GET(req: NextRequest) {
   // sessionStorage and strip the URL parameter via `router.replace`.
   if (!cookiesAvailable) chatbotUrl.searchParams.set('_t', chatGuestToken)
 
-  const response = launchResponse(chatbotUrl)
+  const response = chatLaunchResponse(
+    chatbotUrl,
+    cookiesAvailable && hasSeparateChatApiHostname(chatbotUrl.hostname)
+      ? { kind: 'guest', token: chatGuestToken }
+      : undefined
+  )
   response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
     ...cookieSecurityOptions({ isProduction }),
     domain: process.env.COOKIE_DOMAIN,

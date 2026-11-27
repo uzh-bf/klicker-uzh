@@ -10,6 +10,7 @@ KLICKER_PROFILE_AUTH_ROOT='--filter=@klicker-uzh/auth'
 KLICKER_PROFILE_MANAGE_ROOT='--filter=@klicker-uzh/frontend-manage'
 KLICKER_PROFILE_PWA_ROOT='--filter=@klicker-uzh/frontend-pwa'
 KLICKER_PROFILE_CHAT_ROOT='--filter=@klicker-uzh/chat'
+KLICKER_PROFILE_CHAT_API_ROOT='--filter=@klicker-uzh/chat-api'
 KLICKER_PROFILE_MCP_LECTURER_ROOT='--filter=@klicker-uzh/mcp-lecturer'
 KLICKER_PROFILE_CONTROL_ROOT='--filter=@klicker-uzh/frontend-control'
 KLICKER_PROFILE_RESPONSE_ROOT='--filter=@klicker-uzh/response-api'
@@ -41,7 +42,7 @@ _profile_components() {
     component="${component#"${component%%[![:space:]]*}"}"
     component="${component%"${component##*[![:space:]]}"}"
     case "$component" in
-      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|workers|eduid|db) ;;
+      standard|full|playwright|manage|pwa|chat|chat-api|live-quiz|mcp|ai|email|workers|eduid|db|chat-api) ;;
       *) return 2 ;;
     esac
     components+=("$component")
@@ -78,7 +79,7 @@ profile_wants() {
       mcp) [ "$marker" = klicker-local-mcp ] && return 0 ;;
       # `eduid` and `db` only route the local Edu-ID OIDC mock or Postgres, so
       # they start no managed process and add nothing to a merged selection.
-      ai|email|local-kb-setup|eduid|db) ;;
+      ai|email|local-kb-setup|eduid|db|chat-api) ;;
       *) return 2 ;;
     esac
   done
@@ -89,7 +90,7 @@ profile_wants() {
 # 'full' starts every routed app plus both workers (turbo default: no filter).
 profile_turbo_filters() {
   local filters="" component components status
-  local wants_chat=false wants_manage=false
+  local wants_chat=false wants_manage=false wants_chat_api=false
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
@@ -119,10 +120,14 @@ profile_turbo_filters() {
       workers)
         filters="${filters} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
         ;;
+      chat-api) wants_chat_api=true ;;
       mcp|ai|email|eduid|db) ;;
       *) return 2 ;;
     esac
   done
+  if [ "$wants_chat" = true ] && [ "$wants_chat_api" = true ]; then
+    filters="${filters} ${KLICKER_PROFILE_CHAT_API_ROOT}"
+  fi
   if [ "$wants_chat" = true ] && [ "$wants_manage" = true ]; then
     filters="${filters} ${KLICKER_PROFILE_MCP_LECTURER_ROOT}"
   fi
@@ -153,7 +158,7 @@ profile_readiness_apps() {
         wants_chat=true
         ;;
       live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
-      mcp|ai|email|workers|eduid|db) ;;
+      mcp|ai|email|workers|eduid|db|chat-api) ;;
       *) return 2 ;;
     esac
   done

@@ -3,9 +3,13 @@
 import { bootstrapTokenFromUrl } from '@klicker-uzh/util/client-auth'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
-import { PWA_CHAT_EMBED_SESSION_STORAGE_KEY } from '../lib/pwaEmbedAuth'
+import {
+  CHAT_GUEST_SESSION_STORAGE_KEY,
+  PWA_CHAT_EMBED_SESSION_STORAGE_KEY,
+} from '../lib/pwaEmbedAuth'
 
-export const CHAT_GUEST_SESSION_STORAGE_KEY = 'chat_participant_token'
+export { CHAT_GUEST_SESSION_STORAGE_KEY } from '../lib/pwaEmbedAuth'
+
 export const CHAT_GUEST_QUERY_KEY = '_t'
 
 /**
@@ -16,7 +20,7 @@ export const CHAT_GUEST_QUERY_KEY = '_t'
  * Used as the sessionStorage fallback for the CHIPS-unsupported-browser path
  * (pre-Safari 26.2 / pre-Firefox 141 inside an LMS iframe). On modern
  * browsers, `chat_participant_token` is set as a Partitioned cookie and the
- * `_t` query is never appended by `/auth/lti`.
+ * `_t` query is absent when `/auth/lti` detects cookie support.
  */
 export function useChatGuestTokenBootstrap(): void {
   const pathname = usePathname()

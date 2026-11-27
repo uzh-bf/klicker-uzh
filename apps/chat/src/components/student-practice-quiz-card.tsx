@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { authedFetch } from '../lib/client/authedFetch'
 import type {
   GetPracticeStackForQuizOutput,
   StackResponseInput,
@@ -319,7 +320,7 @@ export function StudentPracticeQuizCard({
 
     setIsSubmitting(true)
     try {
-      const response = await fetch(
+      const response = await authedFetch(
         `/api/chatbots/${chatbotId}/practice/submit`,
         {
           body: JSON.stringify({

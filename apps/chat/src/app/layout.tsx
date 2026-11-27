@@ -1,3 +1,4 @@
+import { configuredChatApiOrigin } from '@/src/lib/server/chatLaunchResponse'
 import { messagesByLocale } from '@/src/types/i18n'
 import { routing } from '@klicker-uzh/i18n'
 import {
@@ -46,9 +47,12 @@ export default async function RootLayout({
   const messages = messagesByLocale[locale]
   const t = await getTranslations()
 
+  const chatApiUrl = configuredChatApiOrigin()?.origin ?? ''
+
   return (
     <html
       lang={locale}
+      data-chat-api-url={chatApiUrl}
       className={`${sourceSansPro.variable} ${monoSpaceFont.variable}`}
     >
       <head>

@@ -231,6 +231,9 @@
     "CHAT_VIDEO_FRAME_STORE_PATH",
     "CHAT_MODEL_REGISTRY_JSON",
     "CHAT_ENGINE_URL",
+    "CHAT_DIRECT_API_ENABLED",
+    "CHAT_PUBLIC_API_URL",
+    "CHAT_BROWSER_ALLOWED_ORIGINS",
     "CHAT_ENGINE_ID",
     "PORT",
     "CHAT_ENGINE_SERVICE_TOKEN",
@@ -372,7 +375,15 @@
     },
     "@klicker-uzh/chat#start:test": {
       "cache": false,
-      "env": ["RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"],
+      "env": [
+        "ELEARNING_CHAT_HANDOFF_SECRET",
+        "RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY"
+      ],
+      "persistent": true
+    },
+    "@klicker-uzh/backend-docker#start:test": {
+      "cache": false,
+      "env": ["ELEARNING_CHAT_HANDOFF_SECRET"],
       "persistent": true
     },
     "test": {

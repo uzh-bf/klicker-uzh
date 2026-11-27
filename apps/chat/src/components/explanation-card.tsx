@@ -14,6 +14,7 @@ import {
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useId, useRef, useState } from 'react'
+import { authedFetch } from '@/src/lib/client/authedFetch'
 import type { ExplanationToolResult } from '@/src/lib/explanations'
 import {
   type ChatCanvasArtifact,
@@ -168,6 +169,7 @@ export function ExplanationCard({
   const id = toolCallId ?? fallbackId
   const parsed = asResult(result)
   const content = parsed?.kind === 'explanation' ? parsed.content : null
+  const requestBody = content ? JSON.stringify({ content }) : null
   // While the answer streams, the call carries a text placeholder until the
   // explainer service has validated and rendered the draft. Its part then
   // already reads as complete, so the streaming message decides instead.
@@ -189,12 +191,12 @@ export function ExplanationCard({
   const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
-    if (!content || !params.chatbotId) return
+    if (!requestBody || !params.chatbotId) return
     let cancelled = false
-    fetch(`/api/chatbots/${params.chatbotId}/explanations/page`, {
+    authedFetch(`/api/chatbots/${params.chatbotId}/explanations/page`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: requestBody,
     })
       .then(async (response) => {
         const data = (await response.json()) as { html?: string }
@@ -209,9 +211,7 @@ export function ExplanationCard({
     return () => {
       cancelled = true
     }
-    // The content of a stored tool result never changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.chatbotId, content === null])
+  }, [params.chatbotId, requestBody])
 
   const html = page && 'html' in page ? page.html : null
   const title =
