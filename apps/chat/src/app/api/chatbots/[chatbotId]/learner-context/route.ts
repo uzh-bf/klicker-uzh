@@ -2,8 +2,13 @@ import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { resolveLearnerContext } from '@/src/lib/server/learnerContext'
+import { createRateLimiter } from '@/src/services/rateLimiter'
 
 export const maxDuration = 60
+
+// Each view runs the summary queries. The view re-reads after every saved
+// choice, so the limit is generous for a person and stops a scripted loop.
+const viewRateLimiter = createRateLimiter(30, 60 * 1000)
 
 /**
  * Show the student what the Tutor would receive about them on their next
@@ -18,6 +23,19 @@ export async function GET(
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
     return authResult.response
+  }
+
+  const rateLimit = viewRateLimiter.check(authResult.participantId)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'LEARNER_CONTEXT_RATE_LIMITED' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000)),
+        },
+      }
+    )
   }
 
   try {

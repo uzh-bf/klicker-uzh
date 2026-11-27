@@ -111,6 +111,7 @@ export interface ResultTally {
 
 /** One answered practice question, reduced to what the summary may use. */
 export interface PracticeResultRow {
+  activityId: string
   activityName: string
   activityKind: 'practice-quiz' | 'microlearning'
   lastCorrectness: ResponseCorrectness
@@ -118,13 +119,13 @@ export interface PracticeResultRow {
 }
 
 export interface PracticeResults {
-  /** All answered questions with a checked answer, latest attempt each. */
+  /** All answered graded questions, latest attempt each. */
   totals: ResultTally
   /** Flashcards are rated by the student, so they are counted apart. */
   flashcards: ResultTally
   /** The most recently answered questions, for the activity lines. */
   recentRows: PracticeResultRow[]
-  /** Checked practice questions currently published in the course. */
+  /** Graded practice questions currently published in the course. */
   availableQuestionCount: number
 }
 
@@ -134,6 +135,16 @@ const MAX_ACTIVITIES = 6
 const MAX_NAME_LENGTH = 80
 
 const UNCHECKED_TYPES = [ElementType.CONTENT, ElementType.FLASHCARD]
+
+/**
+ * A question without a sample solution is saved as correct whatever the
+ * answer, so only questions with one say whether the student was right. A
+ * missing key counts as ungraded.
+ */
+const GRADED = {
+  path: ['options', 'hasSampleSolution'],
+  equals: true,
+} as const
 
 function emptyTally(): ResultTally {
   return { answered: 0, correct: 0, partial: 0, wrong: 0, lastAnsweredAt: null }
@@ -193,7 +204,10 @@ export async function loadPracticeResults(input: {
   }
   const checked = {
     ...ownPracticeResponses,
-    elementInstance: { elementType: { notIn: UNCHECKED_TYPES } },
+    elementInstance: {
+      elementType: { notIn: UNCHECKED_TYPES },
+      elementData: GRADED,
+    },
   }
   const publishedInCourse = {
     courseId: input.courseId,
@@ -225,13 +239,14 @@ export async function loadPracticeResults(input: {
         select: {
           lastAnsweredAt: true,
           lastResponseCorrectness: true,
-          practiceQuiz: { select: { displayName: true } },
-          microLearning: { select: { displayName: true } },
+          practiceQuiz: { select: { id: true, displayName: true } },
+          microLearning: { select: { id: true, displayName: true } },
         },
       }),
       prisma.elementInstance.count({
         where: {
           elementType: { notIn: UNCHECKED_TYPES },
+          elementData: GRADED,
           elementStack: {
             OR: [
               { practiceQuiz: publishedInCourse },
@@ -247,6 +262,7 @@ export async function loadPracticeResults(input: {
     flashcards: tallyFromGroups(flashcards),
     availableQuestionCount,
     recentRows: recent.map((response) => ({
+      activityId: response.practiceQuiz?.id ?? response.microLearning?.id ?? '',
       activityName:
         response.practiceQuiz?.displayName ??
         response.microLearning?.displayName ??
@@ -302,10 +318,15 @@ function groupLine(name: string, tally: ResultTally, now: Date): string {
   return `  - ${name}: ${tally.answered} answered; latest attempts: ${attempts(tally)}; last practised ${age(tally.lastAnsweredAt, now)}.`
 }
 
-function byRecency(a: [string, ResultTally], b: [string, ResultTally]): number {
+interface ActivityTally {
+  label: string
+  tally: ResultTally
+}
+
+function byRecency(a: ActivityTally, b: ActivityTally): number {
   return (
-    (b[1].lastAnsweredAt?.getTime() ?? 0) -
-    (a[1].lastAnsweredAt?.getTime() ?? 0)
+    (b.tally.lastAnsweredAt?.getTime() ?? 0) -
+    (a.tally.lastAnsweredAt?.getTime() ?? 0)
   )
 }
 
@@ -337,14 +358,22 @@ export function formatPracticeResults(
     )
   }
 
-  const activities = new Map<string, ResultTally>()
+  // Activities are told apart by their id, so two activities with the same
+  // name keep separate lines. The id itself is never part of the text.
+  const activities = new Map<string, ActivityTally>()
   for (const row of results.recentRows) {
-    const kind =
-      row.activityKind === 'practice-quiz' ? 'practice quiz' : 'microlearning'
-    const activityKey = `"${cleanName(row.activityName)}" (${kind})`
-    const activity = activities.get(activityKey) ?? emptyTally()
-    addRow(activity, row)
-    activities.set(activityKey, activity)
+    const key = `${row.activityKind}:${row.activityId}`
+    let activity = activities.get(key)
+    if (!activity) {
+      const kind =
+        row.activityKind === 'practice-quiz' ? 'practice quiz' : 'microlearning'
+      activity = {
+        label: `"${cleanName(row.activityName)}" (${kind})`,
+        tally: emptyTally(),
+      }
+      activities.set(key, activity)
+    }
+    addRow(activity.tally, row)
   }
   const partial =
     totals.answered > results.recentRows.length
@@ -353,10 +382,10 @@ export function formatPracticeResults(
   if (activities.size > 0) {
     lines.push(
       `- By activity, most recent first${partial}:`,
-      ...[...activities.entries()]
+      ...[...activities.values()]
         .sort(byRecency)
         .slice(0, MAX_ACTIVITIES)
-        .map(([name, tally]) => groupLine(name, tally, now))
+        .map(({ label, tally }) => groupLine(label, tally, now))
     )
   }
 

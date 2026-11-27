@@ -68,6 +68,7 @@ function tally(overrides: Partial<ResultTally> = {}): ResultTally {
 
 function row(overrides: Partial<PracticeResultRow> = {}): PracticeResultRow {
   return {
+    activityId: 'activity-synthetic',
     activityName: 'Synthetic quiz',
     activityKind: 'practice-quiz',
     lastCorrectness: 'CORRECT',
@@ -106,7 +107,7 @@ function stubResults() {
     {
       lastAnsweredAt: daysAgo(2),
       lastResponseCorrectness: 'CORRECT',
-      practiceQuiz: { displayName: 'Synthetic quiz' },
+      practiceQuiz: { id: 'activity-synthetic', displayName: 'Synthetic quiz' },
       microLearning: null,
     },
   ])
@@ -222,6 +223,25 @@ describe('learner context for a chat turn', () => {
       .OR) {
       expect(Object.values(activity)[0]).toMatchObject({ isDeleted: false })
     }
+  })
+
+  test('counts only questions with a sample solution', async () => {
+    db.participantFindUnique.mockResolvedValue(optedIn)
+    stubResults()
+
+    await loadLearnerContextForTurn(turn)
+
+    // Without a sample solution every answer is saved as correct.
+    const graded = { path: ['options', 'hasSampleSolution'], equals: true }
+    const [totals, flashcards] = db.responseGroupBy.mock.calls.map(
+      ([query]) => query
+    )
+    expect(totals.where.elementInstance.elementData).toEqual(graded)
+    expect(flashcards.where.elementInstance.elementData).toBeUndefined()
+    expect(
+      db.responseFindMany.mock.calls[0][0].where.elementInstance.elementData
+    ).toEqual(graded)
+    expect(db.instanceCount.mock.calls[0][0].where.elementData).toEqual(graded)
   })
 
   test.each([
@@ -361,9 +381,35 @@ describe('practice results summary', () => {
     expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/)
   })
 
+  test('keeps activities with the same name apart', () => {
+    const text = formatPracticeResults(
+      results({
+        totals: tally({
+          answered: 3,
+          correct: 2,
+          wrong: 1,
+          lastAnsweredAt: NOW,
+        }),
+        recentRows: [
+          row({ activityId: 'activity-a', lastCorrectness: 'CORRECT' }),
+          row({ activityId: 'activity-a', lastCorrectness: 'CORRECT' }),
+          row({ activityId: 'activity-b', lastCorrectness: 'WRONG' }),
+        ],
+      }),
+      NOW
+    )
+    const lines = text
+      .split('\n')
+      .filter((line) => line.includes('"Synthetic quiz" (practice quiz)'))
+
+    expect(lines).toHaveLength(2)
+    expect(text).not.toContain('activity-a')
+  })
+
   test('bounds the number of activities and the length of names', () => {
     const recentRows = Array.from({ length: 30 }, (_, index) =>
       row({
+        activityId: `activity-${index}`,
         activityName: `Synthetic quiz ${index}\nsecond line ${'x'.repeat(200)}`,
         lastAnsweredAt: daysAgo(index),
       })
