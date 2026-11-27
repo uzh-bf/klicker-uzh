@@ -172,17 +172,38 @@ export function parseChatStream(body) {
 
 // A Tutor turn can answer with only a show_feedback card and no text. The
 // student still sees the card, so its text counts as the visible answer.
+// Drafts the feedback gate rejected are never shown, and card input is not
+// schema-validated, so the projection skips rejected drafts and tolerates any
+// input shape.
 export function feedbackCardText(tools) {
+  const strings = (value) => (typeof value === 'string' ? [value] : [])
+  const entries = (value, fields) =>
+    Array.isArray(value)
+      ? value.flatMap((entry) =>
+          entry && typeof entry === 'object'
+            ? fields.flatMap((field) => strings(entry[field]))
+            : []
+        )
+      : []
   return tools
-    .filter((tool) => tool.name === 'show_feedback')
-    .flatMap(({ input = {} }) => [
-      input.title,
-      input.summary,
-      ...(input.strengths ?? []).map((entry) => entry.text),
-      ...(input.improvements ?? []).map((entry) => entry.comment),
-      input.nextStep,
-    ])
-    .filter((value) => typeof value === 'string' && value.trim())
+    .filter(
+      (tool) =>
+        tool.name === 'show_feedback' &&
+        !tool.output?.includes('"kind":"feedback-invalid"')
+    )
+    .flatMap(({ input }) =>
+      input && typeof input === 'object'
+        ? [
+            ...strings(input.title),
+            ...strings(input.summary),
+            ...entries(input.strengths, ['text']),
+            ...entries(input.criteria, ['label', 'comment']),
+            ...entries(input.improvements, ['label', 'comment']),
+            ...strings(input.nextStep),
+          ]
+        : []
+    )
+    .filter((value) => value.trim())
     .join('\n')
 }
 
