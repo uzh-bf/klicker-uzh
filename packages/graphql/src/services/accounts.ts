@@ -10,7 +10,6 @@ import {
   processElementData,
   recomputeDerivedPermissions,
   signJWT,
-  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
   verifyElearningChatGrant,
   verifyJWT,
 } from '@klicker-uzh/util'
@@ -718,7 +717,10 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   // to delete them is written in the same transaction and outlives the
   // account, so the retry task can deliver it afterwards. Its epoch is one
   // above the account's last, which also makes the service drop a note that is
-  // still being written. Without the key secret no note can exist.
+  // still being written. Without the key secret no note can exist. The request
+  // is written whatever the current choice: the choice is read without a lock,
+  // so an agreement saved concurrently could otherwise leave notes behind, and
+  // deleting notes that do not exist is harmless.
   const learnerKey = deriveLearnerMemoryKey(ctx.user.sub)
   if (learnerKey) {
     deletionPromises.push(
@@ -728,9 +730,6 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
         SELECT ${learnerKey}, NULL, "learnerMemoryEpoch" + 1, clock_timestamp()
         FROM "Participant"
         WHERE "id" = ${ctx.user.sub}::uuid
-          AND "tutorPersonalizationConsent" = true
-          AND "tutorPersonalizationDisclosureVersion" =
-            ${TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION}
       `
     )
   }

@@ -307,7 +307,7 @@ describe('consent to learning notes', () => {
     expect(await readForgetRequests(participant.id)).toEqual([])
   })
 
-  it('leaves a deletion request behind when an account with notes is deleted', async () => {
+  it('leaves a deletion request behind whenever learner memory is configured', async () => {
     const withNotes = await createCompletedParticipant('delete-with-notes')
     const withoutNotes = await createCompletedParticipant('delete-without')
     await answer(withNotes.id, 'memory', 'yes')
@@ -331,7 +331,10 @@ describe('consent to learning notes', () => {
     expect(await readForgetRequests(withNotes.id)).toEqual([
       { courseId: null, epoch: 1, completedAt: null },
     ])
-    expect(await readForgetRequests(withoutNotes.id)).toEqual([])
+    // The choice is read without a lock, so the request does not depend on it.
+    expect(await readForgetRequests(withoutNotes.id)).toEqual([
+      { courseId: null, epoch: 1, completedAt: null },
+    ])
   })
 
   it('deletes an account without learner memory configured', async () => {
