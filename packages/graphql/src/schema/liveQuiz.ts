@@ -2,7 +2,8 @@ import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 import { CourseRef } from './course.js'
 import { ElementInstanceRef } from './element.js'
-import { PublicationStatus } from './practiceQuiz.js'
+import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
+import { EscapeRoomAttemptRef, PublicationStatus } from './practiceQuiz.js'
 
 export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
   values: Object.values(DB.AccessMode),
@@ -91,6 +92,7 @@ export interface ILiveQuiz extends DB.LiveQuiz {
   isPartOfGamifiedCourse?: boolean | null
   isPinProtected?: boolean | null
   beforeFirstBlock?: boolean
+  canResetEscapeRoom?: boolean
 }
 
 export const LiveQuizRef = builder.objectRef<ILiveQuiz>('LiveQuiz')
@@ -115,6 +117,9 @@ export const LiveQuiz = LiveQuizRef.implement({
       nullable: true,
     }),
     isPinProtected: t.exposeBoolean('isPinProtected', { nullable: true }),
+    canResetEscapeRoom: t.exposeBoolean('canResetEscapeRoom', {
+      nullable: true,
+    }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     defaultPoints: t.exposeInt('defaultPoints'),
@@ -196,6 +201,9 @@ export const LiveQuizMeta = LiveQuizMetaRef.implement({
 export interface IElementBlock extends DB.ElementBlock {
   numOfParticipants?: number
   elements?: DB.ElementInstance[] | null
+  escapeRoomConfig?: DB.EscapeRoomConfig | null
+  escapeRoomTotalInstances?: number | null
+  escapeRoomClearedInstances?: number | null
 }
 export const ElementBlockRef = builder.objectRef<IElementBlock>('ElementBlock')
 export const ElementBlock = ElementBlockRef.implement({
@@ -208,10 +216,33 @@ export const ElementBlock = ElementBlockRef.implement({
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
     execution: t.exposeInt('execution', { nullable: true }),
+    escapeRoomTotalInstances: t.exposeInt('escapeRoomTotalInstances', {
+      nullable: true,
+    }),
+    escapeRoomClearedInstances: t.exposeInt('escapeRoomClearedInstances', {
+      nullable: true,
+    }),
 
     elements: t.expose('elements', {
       type: [ElementInstanceRef],
       nullable: true,
+    }),
+    escapeRoomConfig: t.expose('escapeRoomConfig', {
+      type: EscapeRoomConfigRef,
+      nullable: true,
+    }),
+    escapeRoomAttempts: t.field({
+      type: [EscapeRoomAttemptRef],
+      nullable: true,
+      resolve: async (parent, _args, ctx) => {
+        if (!ctx.user?.sub) return null
+        return await ctx.prisma.escapeRoomAttempt.findMany({
+          where: {
+            elementBlockId: parent.id,
+            participantId: ctx.user.sub,
+          },
+        })
+      },
     }),
   }),
 })

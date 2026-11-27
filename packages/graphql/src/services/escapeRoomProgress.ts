@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { isEscapeRoomExpired } from '@klicker-uzh/types'
+import {
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  isEscapeRoomExpired,
+} from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import {
@@ -10,6 +13,8 @@ interface EscapeRoomProgressArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null
   groupActivityId?: string | null
+  elementBlockId?: number | null
+  liveQuizId?: string | null
 }
 
 // A participant's or group's run through an escape-room activity, as seen by
@@ -40,10 +45,11 @@ export interface EscapeRoomProgress {
 
 function stackWhere(
   args: EscapeRoomProgressArgs
-): DB.Prisma.ElementStackWhereInput {
+): DB.Prisma.ElementStackWhereInput | null {
   if (args.practiceQuizId) return { practiceQuizId: args.practiceQuizId }
   if (args.microLearningId) return { microLearningId: args.microLearningId }
-  return { groupActivityId: args.groupActivityId! }
+  if (args.groupActivityId) return { groupActivityId: args.groupActivityId }
+  return null
 }
 
 /**
@@ -55,16 +61,35 @@ export async function getEscapeRoomProgress(
   args: EscapeRoomProgressArgs,
   ctx: ContextWithUser
 ): Promise<EscapeRoomProgress | null> {
-  const { practiceQuizId, microLearningId, groupActivityId } = args
+  const {
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId,
+    liveQuizId,
+  } = args
 
+  const activityKinds = [
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+    elementBlockId != null && liveQuizId ? 'liveQuizBlock' : null,
+  ].filter(Boolean)
   if (
-    [practiceQuizId, microLearningId, groupActivityId].filter(Boolean)
-      .length !== 1
+    activityKinds.length !== 1 ||
+    (elementBlockId != null) !== (liveQuizId != null)
   ) {
     throw new GraphQLError('Exactly one escape-room activity is required')
   }
 
-  const activityId = (practiceQuizId ?? microLearningId ?? groupActivityId)!
+  const activityId =
+    practiceQuizId ??
+    microLearningId ??
+    groupActivityId ??
+    (elementBlockId != null ? String(elementBlockId) : null)
+  if (!activityId) {
+    throw new GraphQLError('An escape-room activity id is required')
+  }
 
   // 1. Load the escape-room config to confirm the activity is actually an
   //    escape room and to read the time limit for the header.
@@ -73,11 +98,17 @@ export async function getEscapeRoomProgress(
       practiceQuizId: practiceQuizId ?? undefined,
       microLearningId: microLearningId ?? undefined,
       groupActivityId: groupActivityId ?? undefined,
+      elementBlockId: elementBlockId ?? undefined,
+      elementBlock:
+        elementBlockId != null && liveQuizId ? { liveQuizId } : undefined,
     },
     include: {
       practiceQuiz: { select: { courseId: true } },
       microLearning: { select: { courseId: true } },
       groupActivity: { select: { courseId: true } },
+      elementBlock: {
+        select: { liveQuiz: { select: { courseId: true } } },
+      },
     },
   })
   if (!config) return null
@@ -86,18 +117,28 @@ export async function getEscapeRoomProgress(
   //    how many leading stacks a participant has fully cleared (mirrors the
   //    getPracticeQuizData masking logic).
   const where = stackWhere(args)
-  const stacks = await ctx.prisma.elementStack.findMany({
-    where,
-    include: {
-      elements: { select: { id: true, elementType: true, order: true } },
-    },
-    orderBy: { order: 'asc' },
-  })
-  // Group Activity stages are its answerable elements; individual modes
-  // count stacks.
-  const totalStacks = groupActivityId
-    ? getGroupEscapeRoomStages(stacks).length
-    : stacks.length
+  const stacks = where
+    ? await ctx.prisma.elementStack.findMany({
+        where,
+        include: {
+          elements: { select: { id: true, elementType: true, order: true } },
+        },
+        orderBy: { order: 'asc' },
+      })
+    : []
+  // Group Activity stages are its answerable elements; Live Quiz blocks count
+  // their supported elements; individual modes count stacks.
+  const totalStacks =
+    elementBlockId != null
+      ? await ctx.prisma.elementInstance.count({
+          where: {
+            elementBlockId,
+            elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
+          },
+        })
+      : groupActivityId
+        ? getGroupEscapeRoomStages(stacks).length
+        : stacks.length
 
   // 3. Load every attempt on this activity with the participant identity.
   const attempts = await ctx.prisma.escapeRoomAttempt.findMany({
@@ -105,6 +146,7 @@ export async function getEscapeRoomProgress(
       practiceQuizId: practiceQuizId ?? undefined,
       microLearningId: microLearningId ?? undefined,
       groupActivityId: groupActivityId ?? undefined,
+      elementBlockId: elementBlockId ?? undefined,
     },
     include: {
       participant: { select: { id: true, username: true, avatar: true } },
@@ -151,7 +193,7 @@ export async function getEscapeRoomProgress(
     .map((a) => a.participantId)
     .filter((id): id is string => id != null)
 
-  if (participantIds.length > 0 && totalStacks > 0) {
+  if (where && participantIds.length > 0 && totalStacks > 0) {
     const responses = await ctx.prisma.questionResponse.findMany({
       where: {
         participantId: { in: participantIds },
@@ -201,14 +243,19 @@ export async function getEscapeRoomProgress(
       : 0
 
     const clearedStacks =
-      attempt.participantId != null
-        ? (clearedByParticipant.get(attempt.participantId) ?? 0)
-        : attempt.status === DB.EscapeRoomStatus.COMPLETED
+      elementBlockId != null
+        ? attempt.status === DB.EscapeRoomStatus.COMPLETED
           ? totalStacks
-          : Math.min(
-              parseGroupEscapeRoomStageResponses(attempt.stageResponses).length,
-              totalStacks
-            )
+          : 0
+        : attempt.participantId != null
+          ? (clearedByParticipant.get(attempt.participantId) ?? 0)
+          : attempt.status === DB.EscapeRoomStatus.COMPLETED
+            ? totalStacks
+            : Math.min(
+                parseGroupEscapeRoomStageResponses(attempt.stageResponses)
+                  .length,
+                totalStacks
+              )
 
     const timeSpentSeconds = attempt.completedAt
       ? Math.round(
@@ -240,7 +287,9 @@ export async function getEscapeRoomProgress(
 
   let progress = attempts.map(progressForAttempt)
   const participantCourseId =
-    config.practiceQuiz?.courseId ?? config.microLearning?.courseId
+    config.practiceQuiz?.courseId ??
+    config.microLearning?.courseId ??
+    config.elementBlock?.liveQuiz.courseId
   if (participantCourseId) {
     // The progress dashboard tracks the whole class, so include every enrolled
     // participant rather than only leaderboard-active ones (isActive gates
