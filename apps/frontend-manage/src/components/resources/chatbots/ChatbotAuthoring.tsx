@@ -6,7 +6,7 @@ import {
   ChatbotStatus,
   LocaleType,
   MSaveChatbotRevisionDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
@@ -565,7 +565,7 @@ function CustomModesEditor({
                   },
                 },
                 refetchQueries: [
-                  { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+                  { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
                 ],
                 awaitRefetchQueries: true,
               })
@@ -1261,7 +1261,8 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                              query:
+                                QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -1467,7 +1468,8 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                              query:
+                                QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -1872,7 +1874,8 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                              query:
+                                QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
                             },
                           ],
                           awaitRefetchQueries: true,

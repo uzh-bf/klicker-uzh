@@ -1,0 +1,14 @@
+mutation AttachKbToChatbotWithKnowledgeBases($kbId: ID!, $chatbotId: ID!) {
+  attachKbToChatbot(kbId: $kbId, chatbotId: $chatbotId) {
+    chatbotId
+    chatbotName
+    enabledKbs {
+      bindingId
+      id
+      name
+      available
+    }
+    enabledKbId
+    enabledKbName
+  }
+}

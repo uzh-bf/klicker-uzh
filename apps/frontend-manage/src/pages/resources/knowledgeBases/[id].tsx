@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   ObjectType,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { KnowledgeBaseDetail } from '@klicker-uzh/kb-management'
 import type { GetStaticPropsContext } from 'next'
@@ -31,7 +31,7 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
       ? router.query.chatbotId
       : undefined
   const { data: chatbotData } = useQuery(
-    QGetChatbotsInfoWithKnowledgeBasesDocument,
+    QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
     { skip: !requestedChatbotId || !aiFeaturesEnabled }
   )
   // The way back is offered only for one of the lecturer's own chatbots and is

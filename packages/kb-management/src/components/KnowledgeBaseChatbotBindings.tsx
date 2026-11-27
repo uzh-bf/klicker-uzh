@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  AttachKbToChatbotDocument,
+  AttachKbToChatbotWithKnowledgeBasesDocument,
   ChatbotStatus,
-  DetachKbFromChatbotDocument,
-  QGetKbChatbotBindingsWithKnowledgeBasesDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  DetachKbFromChatbotByBindingDocument,
+  QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -30,16 +30,16 @@ function KnowledgeBaseChatbotBindings({
     string | undefined
   >()
   const { data, loading, error } = useQuery(
-    QGetKbChatbotBindingsWithKnowledgeBasesDocument,
+    QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
     {
       variables: { kbId },
     }
   )
   const [attachKb, { loading: attaching }] = useMutation(
-    AttachKbToChatbotDocument
+    AttachKbToChatbotWithKnowledgeBasesDocument
   )
   const [detachKb, { loading: detaching }] = useMutation(
-    DetachKbFromChatbotDocument
+    DetachKbFromChatbotByBindingDocument
   )
   const bindings = data?.getKbChatbotBindings ?? []
   const selectedBinding = bindings.find(
@@ -64,10 +64,12 @@ function KnowledgeBaseChatbotBindings({
 
   const refetchQueries = [
     {
-      query: QGetKbChatbotBindingsWithKnowledgeBasesDocument,
+      query: QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
       variables: { kbId },
     },
-    { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+    {
+      query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
+    },
   ]
 
   const handleAttach = async () => {

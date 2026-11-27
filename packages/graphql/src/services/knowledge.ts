@@ -1640,12 +1640,12 @@ export async function attachKbToChatbot(
 ) {
   await assertManageAiEnabled(ctx)
   return ctx.prisma.$transaction(async (prisma) => {
+    const kb = await lockReadableKbOrThrow(prisma, kbId, ctx.user.sub)
     const chatbot = await lockChatbotForWriteOrThrow(
       prisma,
       chatbotId,
       ctx.user.sub
     )
-    const kb = await lockReadableKbOrThrow(prisma, kbId, ctx.user.sub)
     if (!(await findKbReadableByUser(prisma, kbId, chatbot.ownerId))) {
       throw new GraphQLError('The chatbot owner needs Read access to this KB', {
         extensions: { code: 'KB_OWNER_READ_REQUIRED' },

@@ -3,7 +3,7 @@ import {
   ChatbotStatus,
   CreditResetPeriod,
   MSaveChatbotRevisionDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -233,7 +233,7 @@ function ChatbotCreditPolicy({
               },
             },
             refetchQueries: [
-              { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+              { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
             ],
             awaitRefetchQueries: true,
           })

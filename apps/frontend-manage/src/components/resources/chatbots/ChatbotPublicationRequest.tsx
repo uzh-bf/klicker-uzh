@@ -3,7 +3,7 @@ import {
   ChatbotStatus,
   MSubmitChatbotRevisionDocument,
   MWithdrawChatbotRevisionDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -290,7 +290,9 @@ function ChatbotPublicationRequest({
           chatbotId: chatbot.id,
           expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
         },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [
+          { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
+        ],
         awaitRefetchQueries: true,
       })
       if (!result.data?.withdrawChatbotRevision) {
@@ -381,7 +383,7 @@ function ChatbotPublicationRequest({
               expectedStudentCount: Number(values.expectedStudentCount),
             },
             refetchQueries: [
-              { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+              { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
             ],
             awaitRefetchQueries: true,
           })

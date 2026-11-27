@@ -206,6 +206,26 @@ function withKbBindingSnapshotPause(
   return { ...ctx, prisma: prisma as unknown as PrismaClient }
 }
 
+function withLockedChatbotSignal(
+  ctx: ContextWithUser,
+  onLocked: () => void
+): ContextWithUser {
+  const prisma = ctx.prisma.$extends({
+    query: {
+      chatbot: {
+        async findFirst({ args, query }) {
+          const result = await query(args)
+          // The FOR UPDATE lock precedes this read in the service. A result
+          // therefore proves that the transaction acquired the chatbot row.
+          if (result) onLocked()
+          return result
+        },
+      },
+    },
+  })
+  return { ...ctx, prisma: prisma as unknown as PrismaClient }
+}
+
 describe('Knowledge base GraphQL contract', () => {
   it('serializes aggregate byte metrics above the signed 32-bit range', () => {
     const schema = buildSchema(
@@ -1685,6 +1705,58 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     expect(configurations).toHaveLength(2)
     expect(configurations.every(({ isEnabled }) => isEnabled)).toBe(true)
+  })
+
+  it('locks the knowledge base before the chatbot during concurrent deletion and attachment', async () => {
+    const kb = await createKb({ name: 'Deletion lock order KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Deletion lock order chatbot',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+
+    const deletionHoldsKb = createDeferred<void>()
+    const finishDeletion = createDeferred<void>()
+    const deleteCtx = withTombstonePause(
+      userOneCtx,
+      'kB',
+      () => deletionHoldsKb.resolve(undefined),
+      finishDeletion.promise
+    )
+    const attachmentHoldsChatbot = createDeferred<void>()
+    const attachCtx = withLockedChatbotSignal(userOneCtx, () =>
+      attachmentHoldsChatbot.resolve(undefined)
+    )
+
+    const deletion = deleteKb({ id: kb.id }, deleteCtx)
+    await deletionHoldsKb.promise
+    const attachment = attachKbToChatbot(
+      { kbId: kb.id, chatbotId: chatbot.id },
+      attachCtx
+    )
+    // The KB-first path waits on the held KB row. The bounded fallback releases
+    // deletion when no chatbot lock was attempted, preserving the regression
+    // check without leaving the test blocked.
+    const acquiredChatbotBeforeDeletion = await Promise.race([
+      attachmentHoldsChatbot.promise.then(() => true),
+      new Promise<false>((resolve) => setTimeout(() => resolve(false), 500)),
+    ])
+    finishDeletion.resolve(undefined)
+
+    const [deletionResult, attachmentResult] = await Promise.allSettled([
+      deletion,
+      attachment,
+    ])
+    expect(acquiredChatbotBeforeDeletion).toBe(false)
+    expect(deletionResult.status).toBe('fulfilled')
+    expect(attachmentResult).toMatchObject({
+      status: 'rejected',
+      reason: { message: 'KB not found' },
+    })
   })
 
   it('rejects an empty knowledge base name', async () => {

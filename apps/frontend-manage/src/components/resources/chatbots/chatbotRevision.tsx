@@ -2,9 +2,9 @@ import { useApolloClient } from '@apollo/client'
 import {
   type Chatbot,
   type ChatbotAuthoringRevision,
-  type QGetChatbotsInfoWithKnowledgeBasesQuery,
+  type QGetChatbotsInfoWithKnowledgeBaseMetadataQuery,
   ChatbotStatus,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { type FormikValues, useFormikContext } from 'formik'
@@ -14,7 +14,7 @@ import { getChatbotStatusTranslationKey } from './chatbotStatus'
 
 type RevisionChatbot = NonNullable<
   NonNullable<
-    QGetChatbotsInfoWithKnowledgeBasesQuery['getChatbotsInfo']
+    QGetChatbotsInfoWithKnowledgeBaseMetadataQuery['getChatbotsInfo']
   >[number]
 >
 type StandardModeRevisionConfig = NonNullable<
@@ -223,7 +223,7 @@ function useChatbotRevisionReload() {
     setLoading(true)
     try {
       await client.refetchQueries({
-        include: [QGetChatbotsInfoWithKnowledgeBasesDocument],
+        include: [QGetChatbotsInfoWithKnowledgeBaseMetadataDocument],
       })
     } finally {
       setLoading(false)
