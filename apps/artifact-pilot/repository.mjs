@@ -18,6 +18,9 @@ export async function initialize(pool) {
       reserved_cents integer NOT NULL CHECK (reserved_cents > 0),
       html text CHECK (octet_length(html) <= 65536)
     );
+    ALTER TABLE artifact_author_request
+      ADD COLUMN IF NOT EXISTS live_until timestamptz,
+      ADD COLUMN IF NOT EXISTS closed_at timestamptz;
     CREATE TABLE IF NOT EXISTS artifact_assignment (
       course_id text NOT NULL, instance_id text NOT NULL,
       artifact_id uuid NOT NULL, revision_id uuid NOT NULL,
@@ -136,6 +139,15 @@ export async function readAssignment(
   return rows[0]
 }
 
+export function authoringLocked() {
+  return Object.assign(
+    new Error('Authoring locked; operator reconciliation required'),
+    {
+      status: 423,
+    }
+  )
+}
+
 export async function reserveAuthorRequest(pool, id, requestDigest, cents) {
   const db = await pool.connect()
   try {
@@ -147,50 +159,85 @@ export async function reserveAuthorRequest(pool, id, requestDigest, cents) {
     const {
       rows: [existing],
     } = await db.query(
-      'SELECT request_digest, html FROM artifact_author_request WHERE id = $1',
+      'SELECT request_digest, html, closed_at FROM artifact_author_request WHERE id = $1',
       [id]
     )
-    if (existing) {
-      if (existing.request_digest !== requestDigest || existing.html === null)
-        throw Object.assign(new Error('Authoring request conflict'), {
-          status: 409,
+    if (existing && (existing.html !== null || existing.closed_at !== null)) {
+      if (existing.request_digest !== requestDigest)
+        throw Object.assign(new Error('Request identifier already used'), {
+          status: 422,
         })
+      if (existing.html === null)
+        throw Object.assign(
+          new Error('Authoring request closed without a result'),
+          { status: 422 }
+        )
       await db.query('COMMIT')
-      return existing.html
+      db.release()
+      return { html: existing.html }
+    }
+    const { rows: outstanding } = await db.query(
+      `SELECT id, live_until > clock_timestamp() AS live
+       FROM artifact_author_request WHERE html IS NULL AND closed_at IS NULL`
+    )
+    if (outstanding.length) {
+      const [reservation] = outstanding
+      if (outstanding.length !== 1 || !reservation.live) throw authoringLocked()
+      // A crash drops the dispatcher's session lock independently of the durable debit.
+      const {
+        rows: [probe],
+      } = await db.query(
+        'SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) AS abandoned',
+        [reservation.id]
+      )
+      if (probe.abandoned) throw authoringLocked()
+      throw Object.assign(new Error('An authoring request is outstanding'), {
+        status: 409,
+      })
     }
     const {
       rows: [usage],
     } = await db.query(
-      `SELECT coalesce(sum(reserved_cents), 0)::integer AS cents,
-              count(*) FILTER (WHERE html IS NULL)::integer AS outstanding
-         FROM artifact_author_request`
+      'SELECT coalesce(sum(reserved_cents), 0)::integer AS cents FROM artifact_author_request'
     )
-    if (usage.outstanding > 0)
-      throw Object.assign(new Error('An authoring request is outstanding'), {
-        status: 409,
-      })
     if (usage.cents + cents > 200)
       throw Object.assign(new Error('Authoring allowance reached'), {
         status: 429,
       })
     await db.query(
-      'INSERT INTO artifact_author_request (id, request_digest, reserved_cents) VALUES ($1, $2, $3)',
+      `INSERT INTO artifact_author_request (id, request_digest, reserved_cents, live_until)
+       VALUES ($1, $2, $3, clock_timestamp() + interval '35 seconds')`,
       [id, requestDigest, cents]
     )
+    await db.query('SELECT pg_advisory_lock(hashtextextended($1, 0))', [
+      id.toLowerCase(),
+    ])
     await db.query('COMMIT')
-    return null
+    return { db }
   } catch (error) {
-    await db.query('ROLLBACK')
+    try {
+      await db.query('ROLLBACK')
+    } finally {
+      // Discard a session whose lock or COMMIT outcome might be unknown.
+      db.release(true)
+    }
     throw error
-  } finally {
-    db.release()
   }
 }
 
-export async function completeAuthorRequest(pool, id, html) {
-  const result = await pool.query(
-    'UPDATE artifact_author_request SET html = $2 WHERE id = $1 AND html IS NULL',
+export async function completeAuthorRequest(db, id, html) {
+  const result = await db.query(
+    `UPDATE artifact_author_request SET html = $2, closed_at = clock_timestamp()
+     WHERE id = $1 AND html IS NULL AND closed_at IS NULL AND live_until > clock_timestamp()`,
     [id, html]
   )
-  if (result.rowCount !== 1) throw new Error('Missing authoring reservation')
+  if (result.rowCount !== 1) throw authoringLocked()
+}
+
+export async function lockAuthorRequest(db, id) {
+  await db.query(
+    `UPDATE artifact_author_request SET live_until = clock_timestamp()
+     WHERE id = $1 AND html IS NULL AND closed_at IS NULL AND live_until > clock_timestamp()`,
+    [id]
+  )
 }

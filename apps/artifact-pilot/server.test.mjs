@@ -351,6 +351,8 @@ test('authoring admits one priced call and replays only its canonical result', a
   await stopPublisher()
   const received = Promise.withResolvers()
   const dispatch = Promise.withResolvers()
+  const crashDispatch = Promise.withResolvers()
+  let behavior = 'valid'
   let calls = 0
   const model = 'aibuddy/azure/gpt-6-luna'
   const key = 'synthetic-author-key-'.padEnd(40, 'k')
@@ -368,6 +370,11 @@ test('authoring admits one priced call and replays only its canonical result', a
       body: JSON.parse(Buffer.concat(chunks)),
     })
     await dispatch.promise
+    if (behavior === 'disconnect') return res.destroy()
+    if (behavior === 'hang') {
+      crashDispatch.resolve()
+      return
+    }
     res.writeHead(200, { 'content-type': 'application/json' })
     res.end(
       JSON.stringify({
@@ -377,7 +384,7 @@ test('authoring admits one priced call and replays only its canonical result', a
             message: {
               role: 'assistant',
               content: JSON.stringify(
-                calls === 1 ? revised : { html: '<main></main>' }
+                behavior === 'valid' ? revised : { html: '<main></main>' }
               ),
             },
           },
@@ -492,7 +499,7 @@ test('authoring admits one priced call and replays only its canonical result', a
   assert.deepEqual((await author()).body, completed.body)
   assert.equal(
     (await author({ ...body, prompt: 'Different' })).response.status,
-    409
+    422
   )
   assert.equal(
     (await author({ ...body, requestId: randomUUID() })).response.status,
@@ -504,16 +511,58 @@ test('authoring admits one priced call and replays only its canonical result', a
     'DELETE FROM artifact_author_request WHERE request_digest = $1',
     [digest('prior')]
   )
+  behavior = 'invalid exercise'
   const invalid = { ...body, requestId: randomUUID() }
-  assert.equal((await author(invalid)).response.status, 502)
-  assert.equal((await author(invalid)).response.status, 409)
+  assert.equal((await author(invalid)).response.status, 422)
+  assert.equal((await author(invalid)).response.status, 422)
+  assert.equal(calls, 2)
+  behavior = 'valid'
   assert.equal(
     (await author({ ...body, requestId: randomUUID() })).response.status,
-    409
+    200
   )
-  assert.equal(calls, 2)
+
+  behavior = 'disconnect'
+  const unknown = { ...body, requestId: randomUUID() }
+  const locked = await author(unknown)
+  assert.equal(locked.response.status, 423)
+  assert.match(locked.body.error, /operator reconciliation/)
+  assert.equal((await author(unknown)).response.status, 423)
+  assert.equal(
+    (await author({ ...body, requestId: randomUUID() })).response.status,
+    423
+  )
+  assert.equal(calls, 4)
+
+  // Simulate the operator closing exactly one reconciled debit with dispatch stopped.
+  await stopPublisher()
+  const reconciled = await pool.query(
+    `UPDATE artifact_author_request SET closed_at = clock_timestamp()
+     WHERE id = $1 AND html IS NULL AND closed_at IS NULL
+       AND (live_until IS NULL OR live_until <= clock_timestamp())
+     RETURNING reserved_cents`,
+    [unknown.requestId]
+  )
+  assert.deepEqual(reconciled.rows, [{ reserved_cents: 18 }])
+  await startPublisher(env, args)
+  assert.equal((await author(unknown)).response.status, 422)
+
+  behavior = 'hang'
+  const interrupted = { ...body, requestId: randomUUID() }
+  const disconnected = assert.rejects(author(interrupted))
+  await crashDispatch.promise
+  const exit = once(server, 'exit')
+  server.kill('SIGKILL')
+  await Promise.all([exit, disconnected])
+  await startPublisher(env, args)
+  assert.equal((await author(interrupted)).response.status, 423)
+  assert.equal(
+    (await author({ ...body, requestId: randomUUID() })).response.status,
+    423
+  )
+  assert.equal(calls, 5)
   const ledger = await pool.query(
-    'SELECT sum(reserved_cents)::int AS cents, count(*) FILTER (WHERE html IS NULL)::int AS outstanding FROM artifact_author_request'
+    'SELECT sum(reserved_cents)::int AS cents, count(*) FILTER (WHERE html IS NULL AND closed_at IS NULL)::int AS outstanding FROM artifact_author_request'
   )
-  assert.deepEqual(ledger.rows[0], { cents: 36, outstanding: 1 })
+  assert.deepEqual(ledger.rows[0], { cents: 90, outstanding: 1 })
 })

@@ -53,8 +53,43 @@ all of the following against the actual STG gateway deployment and current tarif
   PostgreSQL before the HTTP request. The $2 ledger permits up to 11 such
   dispatches and one outstanding request across the pilot.
 
-A completed request with the same UUID, mapped subject and prompt replays its
-stored HTML. A changed request or an outstanding reservation returns `409`.
-An exhausted budget returns `429`. A timeout, upstream error or invalid model
-response retains the debit and blocks further dispatch until operator
-reconciliation. Keep the toggle off if any price or route metadata is unverified.
+## Authoring outcomes and reconciliation
+
+Every committed reservation counts towards the $2 cap permanently. An exact
+replay of a successful UUID returns its stored HTML. Reusing a completed UUID
+with different content, or replaying one closed without HTML, returns `422`.
+A complete single-attempt provider stop response with valid usage and invalid
+exercise JSON also returns `422`. Only a new UUID may use the remaining budget.
+
+`409` indicates an outstanding dispatch with a live PostgreSQL session lock
+inside its 35-second deadline (the HTTP timeout is at most 30 seconds).
+`423` means dispatch requires operator reconciliation. Lost delivery, an
+incomplete or unexpected provider envelope, or an abandoned dispatch all
+retain their debit. A publisher crash releases its session lock. Expiry of
+the deadline also changes a hung request to `423` even if its session persists.
+Neither event admits new work. Legacy rows with neither HTML nor a deadline start
+locked. An exhausted allowance returns `429`.
+
+On `423`, stop authoring on **all** publisher replicas and drain or terminate
+their in-flight dispatches. During upgrade, retire older replicas before
+enabling authoring. Use a single bounded lookup of the unresolved rows
+(`html IS NULL AND closed_at IS NULL`) and the dedicated key's gateway/provider
+records. Confirm the exact attempt has terminated, its single charge fits the
+reservation, and no retry or fallback remains queued. If delivery, billing or
+identity is still uncertain, leave the row locked and end the pilot at expiry.
+
+After confirmation and after the deadline, close only the verified UUID in a
+short operator transaction. Bind the UUID as `$1`.
+
+```sql
+UPDATE artifact_author_request
+   SET closed_at = clock_timestamp()
+ WHERE id = $1 AND closed_at IS NULL AND html IS NULL
+   AND (live_until IS NULL OR live_until <= clock_timestamp())
+ RETURNING id, reserved_cents;
+```
+
+Commit only when exactly the verified row and its original debit are returned.
+Preserve its UUID, digest and reserved cents for deduplication and accounting.
+A separate operator decision may enable new requests within the original
+expiry and remaining allowance. Reconciliation never dispatches or retries.

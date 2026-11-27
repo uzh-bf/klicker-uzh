@@ -1,11 +1,13 @@
-import { createServer } from 'node:http'
 import { timingSafeEqual } from 'node:crypto'
+import { createServer } from 'node:http'
 import { Pool } from 'pg'
 import { digest, frame, parseSource, sourceFor } from './exercise.mjs'
 import {
+  authoringLocked,
   bindAssignment,
   completeAuthorRequest,
   initialize,
+  lockAuthorRequest,
   publish,
   readAssignment,
   readRevision,
@@ -137,11 +139,14 @@ const instruction =
   'Use a plain title of 1-100 characters, 1-30 whole years and a positive face value up to 1000000. ' +
   'Include 1-8 cashflows, each with when (maturity or year-end) and amount (the string face or a number from 0 to 1000000).'
 
-async function generateAuthorSource(messages) {
+async function generateAuthorSource(messages, ownerSignal) {
   const response = await fetch(authorBaseUrl + '/chat/completions', {
     method: 'POST',
     redirect: 'error',
-    signal: AbortSignal.timeout(Math.min(30000, expiry - Date.now())),
+    signal: AbortSignal.any([
+      ownerSignal,
+      AbortSignal.timeout(Math.min(30000, expiry - Date.now())),
+    ]),
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + authorKey,
@@ -189,7 +194,13 @@ async function generateAuthorSource(messages) {
     typeof choices[0].message.content !== 'string'
   )
     throw new Error('Invalid completion')
-  return sourceFor(JSON.parse(choices[0].message.content))
+  // The complete stop response and bounded usage establish that dispatch finished.
+  // A rejected exercise still consumes its reservation.
+  try {
+    return sourceFor(JSON.parse(choices[0].message.content))
+  } catch {
+    return null
+  }
 }
 
 async function authorExercise(req, res) {
@@ -218,24 +229,40 @@ async function authorExercise(req, res) {
   if (Buffer.byteLength(JSON.stringify(messages)) + 1024 > inputTokens)
     fail(422, 'Authoring input too large')
   if (Date.now() >= expiry) fail(403, 'Pilot closed')
-  const replay = await reserveAuthorRequest(
+  const reservation = await reserveAuthorRequest(
     pool,
     requestId,
     digest(JSON.stringify([lecturer, prompt])),
     reserveCents
   )
-  if (Date.now() >= expiry) fail(403, 'Pilot closed')
-  if (replay !== null) return json(res, 200, { html: replay })
-  let html
-  try {
-    html = await generateAuthorSource(messages)
-  } catch {
-    // A dispatched request can be billed even when no valid response arrives.
-    fail(502, 'Authoring did not complete')
+  if ('html' in reservation) {
+    if (Date.now() >= expiry) fail(403, 'Pilot closed')
+    return json(res, 200, { html: reservation.html })
   }
-  if (Date.now() >= expiry) fail(403, 'Pilot closed')
-  await completeAuthorRequest(pool, requestId, html)
-  json(res, 200, { html })
+
+  const { db } = reservation
+  const owner = new AbortController()
+  db.once('error', () => owner.abort())
+  try {
+    if (Date.now() >= expiry) fail(403, 'Pilot closed')
+    let html
+    try {
+      html = await generateAuthorSource(messages, owner.signal)
+    } catch {
+      await lockAuthorRequest(db, requestId)
+      throw authoringLocked()
+    }
+    await completeAuthorRequest(db, requestId, html)
+    if (Date.now() >= expiry) fail(403, 'Pilot closed')
+    if (html === null) fail(422, 'Authoring request closed without a result')
+    json(res, 200, { html })
+  } catch (error) {
+    if (error.status) throw error
+    throw authoringLocked()
+  } finally {
+    // This connection owns the session lock. Never return it to another request.
+    db.release(true)
+  }
 }
 
 async function publishRevision(req, res) {
