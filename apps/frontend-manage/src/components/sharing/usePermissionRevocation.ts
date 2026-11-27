@@ -1,11 +1,13 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient, useMutation } from '@apollo/client'
 import {
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetDerivedObjectPermissionsDocument,
+  GetKbWithPermissionLevelDocument,
   GetObjectPermissionsDocument,
+  GetUserKbsWithPermissionLevelDocument,
   ObjectType,
   RevokeObjectAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -35,9 +37,11 @@ function usePermissionRevocation({
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
+  const apolloClient = useApolloClient()
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )
+  const hasDerivedPermissions = objectType !== ObjectType.Kb
 
   const onPermissionRevocation = async ({
     permissionId,
@@ -82,10 +86,14 @@ function usePermissionRevocation({
         // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           { query: GetCatalogSharingRequestsDocument },
-          {
-            query: GetDerivedObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
+          ...(hasDerivedPermissions
+            ? [
+                {
+                  query: GetDerivedObjectPermissionsDocument,
+                  variables: { objectId: String(objectId), objectType },
+                },
+              ]
+            : []),
           {
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
@@ -101,10 +109,39 @@ function usePermissionRevocation({
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
             : []),
+          ...(objectType === ObjectType.Kb
+            ? [
+                ...(!isOwn
+                  ? [
+                      {
+                        query: GetKbWithPermissionLevelDocument,
+                        variables: { id: String(objectId) },
+                      },
+                    ]
+                  : []),
+                { query: GetUserKbsWithPermissionLevelDocument },
+              ]
+            : []),
         ],
       })
 
       if (res.data?.revokeObjectAccess) {
+        if (isOwn && objectType === ObjectType.Kb) {
+          try {
+            await apolloClient.query({
+              query: GetKbWithPermissionLevelDocument,
+              variables: { id: String(objectId) },
+              fetchPolicy: 'network-only',
+            })
+          } catch {
+            apolloClient.cache.evict({
+              fieldName: 'getKb',
+              args: { id: String(objectId) },
+            })
+            apolloClient.cache.gc()
+          }
+        }
+
         // if own permission was revoked, refetch elements and activities depending on object type
         if (isOwn && objectType === ObjectType.Element) {
           await refetchElements?.()

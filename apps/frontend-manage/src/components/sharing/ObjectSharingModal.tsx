@@ -139,6 +139,7 @@ function ObjectSharingModal({
 
       <div className="mt-8">
         <GrantedPermissionsTable
+          objectId={String(objectId)}
           type={objectType}
           permissions={permissions ?? []}
           ownerPermission={ownerPermission}

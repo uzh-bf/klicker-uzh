@@ -40,6 +40,8 @@ function useCatalogObjectActionsDropdown({
   const router = useRouter()
 
   return useMemo(() => {
+    if (object.objectType === ObjectType.Kb) return []
+
     const items = []
 
     // import functionality for public answer collections (self-service with read permissions)

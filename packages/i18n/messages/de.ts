@@ -1176,6 +1176,7 @@ export default {
       GROUP_ACTIVITY: 'Gruppenaktivität',
       GROUP_ACTIVITY_TEMPLATE: 'Gruppenaktivität Vorlage',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
+      KB: 'Wissensbasis',
       CATALOG_COLLECTION: 'Katalog-Sammlung',
       ELEMENT: 'Element',
       COURSE: 'Kurs',
@@ -2109,6 +2110,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
   },
   kb: {
     title: 'Wissensdatenbanken',
+    sharingPermissions: {
+      viewAndInspect:
+        'Wissensdatenbank und Quellenmaterial anzeigen und prüfen',
+      editSources: 'Quellenmaterial bearbeiten und verwalten',
+      manageAccess: 'Zugriff erteilen, ändern und entziehen',
+      delete: 'Wissensdatenbank löschen und deren Lebenszyklus verwalten',
+    },
     create: 'Wissensdatenbank erstellen',
     nameLabel: 'Name',
     descriptionLabel: 'Beschreibung (optional)',
@@ -6398,6 +6406,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareGROUP_ACTIVITY: 'Gruppen-Aktivität teilen',
       shareCOURSE: 'Kurs teilen',
       shareELEMENT: 'Element teilen',
+      shareKB: 'Wissensdatenbank teilen',
       infoSharingANSWER_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCATALOG_COLLECTION:
@@ -6414,6 +6423,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Ansicht erlaubt es Ihnen, den Kurs "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Kurs bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingELEMENT:
         'Diese Ansicht erlaubt es Ihnen, das Element "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer das Element bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingKB:
+        'In dieser Ansicht können Sie die Wissensdatenbank "<b>{objectName}</b>" mit anderen Dozierenden oder Nutzergruppen teilen. Leserechte erlauben Einsicht in die Wissensdatenbank und ihr Quellenmaterial. Schreibrechte erlauben zusätzlich die Bearbeitung des Quellenmaterials. Adminrechte erlauben zusätzlich das Erteilen, Ändern und Entziehen von Zugriff. Eigentümerrechte umfassen weiterhin den Lebenszyklus und das Löschen.',
       propagatedPermissions: 'Abgeleitete Berechtigungen',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
@@ -6463,8 +6474,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass Sie Nutzer <b>{username}</b> den direkten Zugriff auf dieses Objekt entziehen möchten.',
       revokeGroupPermission:
         'Bitte bestätigen Sie, dass Sie der Nutzergruppe <b>{groupName}</b> den direkten Zugriff auf dieses Objekt entziehen möchten.',
+      revokeKbUserPermission:
+        'Bitte bestätigen Sie, dass Sie dem Nutzer <b>{username}</b> den direkten Zugriff auf diese Wissensdatenbank entziehen möchten. Andere individuelle oder Gruppenberechtigungen können den Zugriff weiterhin ermöglichen.',
+      revokeKbGroupPermission:
+        'Bitte bestätigen Sie, dass Sie der Nutzergruppe <b>{groupName}</b> den direkten Zugriff auf diese Wissensdatenbank entziehen möchten. Andere individuelle oder Gruppenberechtigungen der Mitglieder gelten weiterhin.',
       derivedPermissionWarning:
         'Achtung: Das Entziehen der direkten Zugriffsrechte auf ein Objekt entfernt möglicherweise nicht den Zugriff des Nutzers darauf. Wenn ein Nutzer Zugriff auf andere Objekte hat, die von diesem Objekt abhängen, erhält er eine abgeleitete Berechtigung, die im unteren Bereich des Freigabedialogs eingesehen werden kann.',
+      knowledgeBaseRevocationWarning:
+        'Verliert der Eigentümer eines verknüpften Chatbots seine letzte Leseberechtigung, verwendet dieser Chatbot die Wissensdatenbank nicht mehr für neue Abfragen. Bereits ausgelieferte Antworten bleiben lesbar. Die Eigentümerschaft wird nicht übertragen.',
+      knowledgeBaseOverlapChecking:
+        'Die aktuellen Berechtigungen werden geprüft, um festzustellen, ob dieser Nutzer weiterhin Lesezugriff behält.',
+      knowledgeBaseOverlapSurvives:
+        'Nach aktuellem Stand verleiht eine andere Berechtigung diesem Nutzer weiterhin mindestens Lesezugriff. Die festgeschriebenen Berechtigungen bleiben massgebend.',
+      knowledgeBaseOverlapLost:
+        'Nach aktuellem Stand verleiht keine andere Berechtigung diesem Nutzer weiterhin Lesezugriff.',
+      knowledgeBaseOverlapUnavailable:
+        'Die aktuelle Überschneidungsprüfung ist nicht verfügbar. Die nach der Bestätigung festgeschriebene Berechtigung bleibt massgebend.',
+      knowledgeBaseOverlapGroup:
+        'Der Zugriff wird für jedes Gruppenmitglied einzeln bewertet. Andere individuelle oder Gruppenberechtigungen gelten weiterhin.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

@@ -344,6 +344,7 @@ type KnowledgeBaseResourceConnection = NonNullable<
 
 function ResourceTableRow({
   resource,
+  canWrite,
   selectedIds,
   ingestingId,
   bulkIngesting,
@@ -356,6 +357,7 @@ function ResourceTableRow({
   onDelete,
 }: Readonly<{
   resource: KnowledgeBaseResource
+  canWrite: boolean
   selectedIds: Set<string>
   ingestingId: string | null
   bulkIngesting: boolean
@@ -376,27 +378,29 @@ function ResourceTableRow({
       className="bg-white"
       data-cy={`kb-resource-row-${resource.id}`}
     >
-      <ShadcnTableCell className="w-10 px-2 align-top">
-        <label
-          className={`flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2 ${active ? 'cursor-not-allowed opacity-50' : ''}`}
-        >
-          <span className="sr-only">
-            {t('kb.selectResource', { title: resource.title })}
-          </span>
-          <input
-            type="checkbox"
-            checked={selectedIds.has(resource.id)}
-            disabled={
-              active ||
-              (!selectedIds.has(resource.id) &&
-                selectedIds.size >= MAX_BULK_SELECTION)
-            }
-            onChange={() => onToggleSelection(resource.id)}
-            className="h-4 w-4"
-            data-cy={`select-kb-resource-${resource.id}`}
-          />
-        </label>
-      </ShadcnTableCell>
+      {canWrite ? (
+        <ShadcnTableCell className="w-10 px-2 align-top">
+          <label
+            className={`flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2 ${active ? 'cursor-not-allowed opacity-50' : ''}`}
+          >
+            <span className="sr-only">
+              {t('kb.selectResource', { title: resource.title })}
+            </span>
+            <input
+              type="checkbox"
+              checked={selectedIds.has(resource.id)}
+              disabled={
+                active ||
+                (!selectedIds.has(resource.id) &&
+                  selectedIds.size >= MAX_BULK_SELECTION)
+              }
+              onChange={() => onToggleSelection(resource.id)}
+              className="h-4 w-4"
+              data-cy={`select-kb-resource-${resource.id}`}
+            />
+          </label>
+        </ShadcnTableCell>
+      ) : null}
       <ShadcnTableCell className="whitespace-normal align-top">
         <div className="flex min-w-0 items-start gap-3">
           <FontAwesomeIcon
@@ -509,44 +513,51 @@ function ResourceTableRow({
           >
             <Button.Label>{t('kb.inspectResource')}</Button.Label>
           </Button>
-          <Dropdown
-            align="end"
-            items={[
-              ...(resource.type === KbResourceType.Blob
-                ? [
-                    {
-                      id: `replace-kb-resource-${resource.id}`,
-                      disabled: active || ingestingId !== null || bulkIngesting,
-                      label: t('kb.replaceFile'),
-                      onClick: () => onReplace(resource),
-                      data: {
-                        cy: `replace-kb-resource-${resource.id}`,
+          {canWrite ? (
+            <Dropdown
+              align="end"
+              items={[
+                ...(resource.type === KbResourceType.Blob
+                  ? [
+                      {
+                        id: `replace-kb-resource-${resource.id}`,
+                        disabled:
+                          active || ingestingId !== null || bulkIngesting,
+                        label: t('kb.replaceFile'),
+                        onClick: () => onReplace(resource),
+                        data: {
+                          cy: `replace-kb-resource-${resource.id}`,
+                        },
                       },
-                    },
-                  ]
-                : []),
-              {
-                id: `delete-kb-resource-${resource.id}`,
-                disabled: active || ingestingId !== null || bulkIngesting,
-                label: t('shared.generic.delete'),
-                onClick: () => onDelete(resource),
-                data: {
-                  cy: `delete-kb-resource-${resource.id}`,
+                    ]
+                  : []),
+                {
+                  id: `delete-kb-resource-${resource.id}`,
+                  disabled: active || ingestingId !== null || bulkIngesting,
+                  label: t('shared.generic.delete'),
+                  onClick: () => onDelete(resource),
+                  data: {
+                    cy: `delete-kb-resource-${resource.id}`,
+                  },
                 },
-              },
-            ]}
-            trigger={
-              <>
-                <FontAwesomeIcon icon={faEllipsisVertical} aria-hidden="true" />
-                <span className="sr-only">{t('kb.resourceActions')}</span>
-              </>
-            }
-            data={{ cy: `kb-resource-actions-${resource.id}` }}
-            className={{
-              trigger: 'h-8 w-8 border-none bg-transparent p-0 text-slate-600',
-              item: 'py-0.5 text-sm',
-            }}
-          />
+              ]}
+              trigger={
+                <>
+                  <FontAwesomeIcon
+                    icon={faEllipsisVertical}
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only">{t('kb.resourceActions')}</span>
+                </>
+              }
+              data={{ cy: `kb-resource-actions-${resource.id}` }}
+              className={{
+                trigger:
+                  'h-8 w-8 border-none bg-transparent p-0 text-slate-600',
+                item: 'py-0.5 text-sm',
+              }}
+            />
+          ) : null}
         </div>
       </ShadcnTableCell>
     </ShadcnTableRow>
@@ -556,6 +567,7 @@ function ResourceTableRow({
 function ResourceTable({
   connection,
   resources,
+  canWrite,
   selectedIds,
   allPageSelected,
   ingestingId,
@@ -573,6 +585,7 @@ function ResourceTable({
 }: Readonly<{
   connection: KnowledgeBaseResourceConnection
   resources: KnowledgeBaseResource[]
+  canWrite: boolean
   selectedIds: Set<string>
   allPageSelected: boolean
   ingestingId: string | null
@@ -608,18 +621,20 @@ function ResourceTable({
         </ShadcnTableCaption>
         <ShadcnTableHeader className="bg-slate-50">
           <ShadcnTableRow>
-            <ShadcnTableHead className="w-10 px-2" scope="col">
-              <label className="flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2">
-                <span className="sr-only">{t('kb.selectAllPage')}</span>
-                <input
-                  type="checkbox"
-                  checked={allPageSelected}
-                  onChange={onTogglePageSelection}
-                  className="h-4 w-4"
-                  data-cy="select-kb-resource-page"
-                />
-              </label>
-            </ShadcnTableHead>
+            {canWrite ? (
+              <ShadcnTableHead className="w-10 px-2" scope="col">
+                <label className="flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2">
+                  <span className="sr-only">{t('kb.selectAllPage')}</span>
+                  <input
+                    type="checkbox"
+                    checked={allPageSelected}
+                    onChange={onTogglePageSelection}
+                    className="h-4 w-4"
+                    data-cy="select-kb-resource-page"
+                  />
+                </label>
+              </ShadcnTableHead>
+            ) : null}
             <ShadcnTableHead scope="col">
               {t('kb.resourceColumn')}
             </ShadcnTableHead>
@@ -660,6 +675,7 @@ function ResourceTable({
             <ResourceTableRow
               key={resource.id}
               resource={resource}
+              canWrite={canWrite}
               selectedIds={selectedIds}
               ingestingId={ingestingId}
               bulkIngesting={bulkIngesting}
@@ -695,6 +711,7 @@ function ResourceListContent({
   loading,
   error,
   resources,
+  canWrite,
   hasFilters,
   selectedIds,
   allPageSelected,
@@ -715,6 +732,7 @@ function ResourceListContent({
   loading: boolean
   error: unknown
   resources: KnowledgeBaseResource[]
+  canWrite: boolean
   hasFilters: boolean
   selectedIds: Set<string>
   allPageSelected: boolean
@@ -784,6 +802,7 @@ function ResourceListContent({
     <ResourceTable
       connection={connection}
       resources={resources}
+      canWrite={canWrite}
       selectedIds={selectedIds}
       allPageSelected={allPageSelected}
       ingestingId={ingestingId}
@@ -804,12 +823,14 @@ function ResourceListContent({
 
 function KnowledgeBaseResourceList({
   kbId,
+  canWrite,
   refreshKey,
   onMetricsChanged,
   onAddResource,
   advanced = false,
 }: {
   kbId: string
+  canWrite: boolean
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
   onAddResource: (trigger: HTMLElement) => void
@@ -1284,7 +1305,7 @@ function KnowledgeBaseResourceList({
   }
 
   const handleIngest = async (resource: KnowledgeBaseResource) => {
-    if (ingestingId !== null) return
+    if (!canWrite || ingestingId !== null) return
     setIngestingId(resource.id)
     try {
       try {
@@ -1321,7 +1342,7 @@ function KnowledgeBaseResourceList({
   }
 
   const handleIngestAll = async () => {
-    if (bulkIngesting) return
+    if (!canWrite || bulkIngesting) return
 
     try {
       const { data: result } = await ingestAllResources({
@@ -1363,6 +1384,7 @@ function KnowledgeBaseResourceList({
     materialType: KbResourceMaterialType
   ) => {
     if (
+      !canWrite ||
       updatingMaterialTypeId !== null ||
       resource.materialType === materialType
     ) {
@@ -1491,29 +1513,31 @@ function KnowledgeBaseResourceList({
     <section className="mt-8" data-cy="kb-resource-list">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <H2>{t('kb.resourcesTitle')}</H2>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button
-            primary
-            onClick={(event) => {
-              if (event) onAddResource(event.currentTarget)
-            }}
-            data={{ cy: 'add-kb-resource' }}
-          >
-            <Button.Icon icon={faPlus} />
-            <Button.Label>{t('kb.addResource')}</Button.Label>
-          </Button>
-          {selectedIds.size > 0 ? (
+        {canWrite ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Button
-              destructive
-              onClick={() => setBulkDeletionOpen(true)}
-              data={{ cy: 'delete-selected-kb-resources' }}
+              primary
+              onClick={(event) => {
+                if (event) onAddResource(event.currentTarget)
+              }}
+              data={{ cy: 'add-kb-resource' }}
             >
-              <Button.Label>
-                {t('kb.bulkDelete', { count: selectedIds.size })}
-              </Button.Label>
+              <Button.Icon icon={faPlus} />
+              <Button.Label>{t('kb.addResource')}</Button.Label>
             </Button>
-          ) : null}
-        </div>
+            {selectedIds.size > 0 ? (
+              <Button
+                destructive
+                onClick={() => setBulkDeletionOpen(true)}
+                data={{ cy: 'delete-selected-kb-resources' }}
+              >
+                <Button.Label>
+                  {t('kb.bulkDelete', { count: selectedIds.size })}
+                </Button.Label>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {advanced ? (
@@ -1628,7 +1652,7 @@ function KnowledgeBaseResourceList({
               inProgress: connection.inProgressCount,
             })}
           </p>
-          {connection.needsIngestionCount > 0 ? (
+          {canWrite && connection.needsIngestionCount > 0 ? (
             <Button
               onClick={() => setBulkIngestOpen(true)}
               disabled={bulkIngesting || ingestingId !== null}
@@ -1654,6 +1678,7 @@ function KnowledgeBaseResourceList({
         loading={loading}
         error={error}
         resources={resources}
+        canWrite={canWrite}
         hasFilters={hasFilters}
         selectedIds={selectedIds}
         allPageSelected={allPageSelected}
@@ -1671,7 +1696,7 @@ function KnowledgeBaseResourceList({
         onLoadMore={loadMore}
       />
 
-      {bulkIngestOpen && connection ? (
+      {canWrite && bulkIngestOpen && connection ? (
         <Modal
           open
           onClose={() => {
@@ -1727,14 +1752,18 @@ function KnowledgeBaseResourceList({
           open
           onClose={() => setInspectorId(null)}
           title={t('kb.inspectorTitle')}
-          primaryLabel={getIngestActionLabel(inspectorResource)}
+          primaryLabel={
+            canWrite ? getIngestActionLabel(inspectorResource) : undefined
+          }
           primaryLoading={ingestingId === inspectorResource.id}
           primaryDisabled={
             ingestingId !== null ||
             bulkIngesting ||
             isActiveResource(inspectorResource)
           }
-          onPrimaryAction={() => handleIngest(inspectorResource)}
+          onPrimaryAction={
+            canWrite ? () => handleIngest(inspectorResource) : undefined
+          }
           secondaryLabel={t('shared.generic.close')}
           onSecondaryAction={() => setInspectorId(null)}
           dataContent={{ cy: 'kb-resource-inspector' }}
@@ -1763,34 +1792,48 @@ function KnowledgeBaseResourceList({
                 </dd>
               </div>
               <div className="sm:col-span-2">
-                <SelectField
-                  id="kb-inspector-material-type"
-                  label={t('kb.materialType')}
-                  value={inspectorResource.materialType}
-                  onChange={(value) =>
-                    void handleMaterialTypeChange(
-                      inspectorResource,
-                      value as KbResourceMaterialType
-                    )
-                  }
-                  items={[
-                    {
-                      value: KbResourceMaterialType.Unclassified,
-                      label: t('kb.materialTypeUnclassified'),
-                    },
-                    {
-                      value: KbResourceMaterialType.CourseContent,
-                      label: t('kb.materialTypeCourseContent'),
-                    },
-                    {
-                      value: KbResourceMaterialType.Administrative,
-                      label: t('kb.materialTypeAdministrative'),
-                    },
-                  ]}
-                  disabled={updatingMaterialTypeId !== null || bulkIngesting}
-                  data={{ cy: 'kb-inspector-material-type' }}
-                  className={{ select: { trigger: 'w-full' } }}
-                />
+                {canWrite ? (
+                  <SelectField
+                    id="kb-inspector-material-type"
+                    label={t('kb.materialType')}
+                    value={inspectorResource.materialType}
+                    onChange={(value) =>
+                      void handleMaterialTypeChange(
+                        inspectorResource,
+                        value as KbResourceMaterialType
+                      )
+                    }
+                    items={[
+                      {
+                        value: KbResourceMaterialType.Unclassified,
+                        label: t('kb.materialTypeUnclassified'),
+                      },
+                      {
+                        value: KbResourceMaterialType.CourseContent,
+                        label: t('kb.materialTypeCourseContent'),
+                      },
+                      {
+                        value: KbResourceMaterialType.Administrative,
+                        label: t('kb.materialTypeAdministrative'),
+                      },
+                    ]}
+                    disabled={updatingMaterialTypeId !== null || bulkIngesting}
+                    data={{ cy: 'kb-inspector-material-type' }}
+                    className={{ select: { trigger: 'w-full' } }}
+                  />
+                ) : (
+                  <>
+                    <dt className="font-medium text-slate-600">
+                      {t('kb.materialType')}
+                    </dt>
+                    <dd
+                      className="mt-1 text-slate-900"
+                      data-cy="kb-inspector-material-type-value"
+                    >
+                      {getMaterialTypeLabel(inspectorResource.materialType)}
+                    </dd>
+                  </>
+                )}
               </div>
               <div>
                 <dt className="font-medium text-slate-600">
@@ -1848,26 +1891,28 @@ function KnowledgeBaseResourceList({
               resourceId={inspectorResource.id}
               refreshKey={historyRefreshes[inspectorResource.id] ?? 0}
             />
-            <Button
-              destructive
-              disabled={
-                isActiveResource(inspectorResource) ||
-                ingestingId !== null ||
-                bulkIngesting
-              }
-              onClick={() => {
-                setInspectorId(null)
-                setDeletionTarget(inspectorResource)
-              }}
-              data={{ cy: 'delete-kb-resource-inspector' }}
-            >
-              <Button.Label>{t('shared.generic.delete')}</Button.Label>
-            </Button>
+            {canWrite ? (
+              <Button
+                destructive
+                disabled={
+                  isActiveResource(inspectorResource) ||
+                  ingestingId !== null ||
+                  bulkIngesting
+                }
+                onClick={() => {
+                  setInspectorId(null)
+                  setDeletionTarget(inspectorResource)
+                }}
+                data={{ cy: 'delete-kb-resource-inspector' }}
+              >
+                <Button.Label>{t('shared.generic.delete')}</Button.Label>
+              </Button>
+            ) : null}
           </div>
         </Modal>
       ) : null}
 
-      {deletionTarget ? (
+      {canWrite && deletionTarget ? (
         <DeleteKnowledgeBaseResourceModal
           resource={deletionTarget}
           onClose={() => setDeletionTarget(null)}
@@ -1882,7 +1927,7 @@ function KnowledgeBaseResourceList({
         />
       ) : null}
 
-      {replacementTarget ? (
+      {canWrite && replacementTarget ? (
         <KnowledgeBaseReplaceFileModal
           kbId={kbId}
           resource={{
@@ -1894,7 +1939,7 @@ function KnowledgeBaseResourceList({
         />
       ) : null}
 
-      {bulkDeletionOpen && selectedResources.length > 0 ? (
+      {canWrite && bulkDeletionOpen && selectedResources.length > 0 ? (
         <DeleteKnowledgeBaseResourcesModal
           kbId={kbId}
           resources={selectedResources}

@@ -41,6 +41,8 @@ function CatalogCopyModal({
     onError: onErrorToast,
   })
 
+  if (objectType === ObjectType.Kb) return null
+
   return (
     <Modal
       open

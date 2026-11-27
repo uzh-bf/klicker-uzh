@@ -36,7 +36,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    })
    ```
 
-   Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that. Owner-only aggregates that have no `PermissionCheck` key, including `KB`, keep the role gate on the schema field and must resolve the persisted owner relation inside every service entry point. Do not invent a permission key or make an owner-only aggregate shareable only to reuse this wrapper.
+   Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that. For owner-only operations, keep the role gate on the schema field and verify the persisted owner in the service. KB source operations use the effective sharing level; KB deletion and paid graph operations still require the owner. Do not invent a permission key or make an owner-only aggregate shareable only to reuse this wrapper.
 
    For participant course membership, check that the composite-key
    `Participation` row exists. Never use `Participation.isActive` as enrollment

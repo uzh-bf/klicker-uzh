@@ -6,21 +6,27 @@
 
 import { recomputeAnswerCollectionPermissions } from './permissions/answerCollection.js'
 import { recomputeCatalogCollectionPermissions } from './permissions/catalog.js'
+import { recomputeChatbotPermissions } from './permissions/chatbot.js'
 import { recomputeCoursePermissions } from './permissions/course.js'
 import { recomputeElementPermissions } from './permissions/element.js'
 import { recomputeGroupActivityPermissions } from './permissions/groupActivity.js'
+import { recomputeKBPermissions } from './permissions/knowledgeBase.js'
 import { recomputeLiveQuizPermissions } from './permissions/liveQuiz.js'
 import { recomputeMicroLearningPermissions } from './permissions/microlearning.js'
 import { recomputePracticeQuizPermissions } from './permissions/practiceQuiz.js'
-import { type PrismaTransactionClient } from './types.js'
+import type { PrismaTransactionClient } from './types.js'
+
 export * from './permissions/accessRequest.js'
 export * from './permissions/answerCollection.js'
 export * from './permissions/catalog.js'
+export * from './permissions/chatbot.js'
 export * from './permissions/course.js'
 export * from './permissions/element.js'
 export * from './permissions/groupActivity.js'
+export * from './permissions/knowledgeBase.js'
 export * from './permissions/liveQuiz.js'
 export * from './permissions/microlearning.js'
+export * from './permissions/objectSharing.js'
 export * from './permissions/practiceQuiz.js'
 export * from './permissions/util.js'
 
@@ -63,6 +69,8 @@ export async function recomputeDerivedPermissions(
     practiceQuizId,
     microLearningId,
     groupActivityId,
+    kbId,
+    chatbotId,
     // optional user to limit the required recomputation
     userId,
     // optional flag to update the access requests for the object under consideration
@@ -76,6 +84,8 @@ export async function recomputeDerivedPermissions(
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
+    kbId?: string
+    chatbotId?: string
     userId?: string
     updateAccessRequests?: boolean
   } & (
@@ -87,6 +97,8 @@ export async function recomputeDerivedPermissions(
     | { practiceQuizId: string }
     | { microLearningId: string }
     | { groupActivityId: string }
+    | { kbId: string }
+    | { chatbotId: string }
   ),
   prisma: PrismaTransactionClient
 ) {
@@ -130,6 +142,10 @@ export async function recomputeDerivedPermissions(
       { id: courseId, userId, updateAccessRequests },
       prisma
     )
+  } else if (typeof kbId !== 'undefined') {
+    await recomputeKBPermissions({ id: kbId, userId }, prisma)
+  } else if (typeof chatbotId !== 'undefined') {
+    await recomputeChatbotPermissions({ id: chatbotId, userId }, prisma)
   } else {
     throw new Error('No object id defined')
   }

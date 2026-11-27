@@ -69,12 +69,13 @@ function ObjectSharingModalWrapper({
         onOwnershipTransfer={() => setTransferModalOpen(true)}
         derivedPermissionsAvailable={
           objectType !== ObjectType.CatalogCollection &&
-          objectType !== ObjectType.Course
+          objectType !== ObjectType.Course &&
+          objectType !== ObjectType.Kb
         }
         refetchElements={refetchElements}
         refetchActivities={refetchActivities}
       />
-      {transferModalOpen && (
+      {transferModalOpen && objectType !== ObjectType.Kb && (
         <TransferOwnershipModal
           onClose={() => setTransferModalOpen(false)}
           objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}

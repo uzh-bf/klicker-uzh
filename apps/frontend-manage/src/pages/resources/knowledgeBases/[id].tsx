@@ -1,11 +1,16 @@
 import { useQuery } from '@apollo/client'
-import { QGetChatbotsInfoWithKnowledgeBasesDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ObjectType,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { KnowledgeBaseDetail } from '@klicker-uzh/kb-management'
 import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import AiBetaUnavailable from '../../../components/AiBetaUnavailable'
 import Layout from '../../../components/Layout'
+import ObjectSharingModalWrapper from '../../../components/sharing/ObjectSharingModalWrapper'
 import { useAiFeaturesEnabled } from '../../../lib/hooks/useAiFeaturesEnabled'
 import {
   AiSettingsModeSwitch,
@@ -17,6 +22,10 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
   const aiFeaturesEnabled = useAiFeaturesEnabled()
   const [settingsMode, setSettingsMode] = useAiSettingsMode()
   const router = useRouter()
+  const [sharingTarget, setSharingTarget] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const requestedChatbotId =
     typeof router.query.chatbotId === 'string'
       ? router.query.chatbotId
@@ -54,7 +63,16 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
             kbId={kbId}
             backLink={backLink}
             advanced={settingsMode === 'advanced'}
+            onShare={setSharingTarget}
           />
+          {sharingTarget ? (
+            <ObjectSharingModalWrapper
+              objectUuid={sharingTarget.id}
+              objectName={sharingTarget.name}
+              objectType={ObjectType.Kb}
+              onClose={() => setSharingTarget(null)}
+            />
+          ) : null}
         </>
       ) : (
         <AiBetaUnavailable />

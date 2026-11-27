@@ -1,0 +1,30 @@
+query GetKbWithPermissionLevel($id: ID!) {
+  getKb(id: $id) {
+    id
+    name
+    description
+    permissionLevel
+    domainPolicyId
+    domainPolicyVersion
+    domainPolicyLanguage
+    questionPreparation {
+      state
+      pendingReason
+      hasBasis
+    }
+    metrics {
+      visibleResourceCount
+      visibleSizeBytes
+      unknownSizeResourceCount
+      quotaResourceCount
+      quotaSizeBytes
+      resourceLimit
+      storageLimitBytes
+      pendingCleanupCount
+      pendingCleanupSizeBytes
+      reservedResourceCount
+      reservedSizeBytes
+      linkedConsumerCount
+    }
+  }
+}

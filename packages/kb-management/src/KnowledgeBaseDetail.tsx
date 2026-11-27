@@ -1,6 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
+import {
+  GetKbWithPermissionLevelDocument,
+  PermissionLevel,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useFormatter, useTranslations } from 'next-intl'
 import React, { useRef, useState } from 'react'
@@ -17,6 +20,7 @@ function KnowledgeBaseDetail({
   kbId,
   backLink,
   advanced = false,
+  onShare,
 }: {
   kbId: string
   // Advanced mode adds usage and quota figures, resource search and filters,
@@ -27,15 +31,19 @@ function KnowledgeBaseDetail({
   // A banner leading back, for example to the chatbot whose materials are
   // being prepared. The caller owns and validates the target.
   backLink?: { href: string; label: string; message: string }
+  onShare?: (knowledgeBase: { id: string; name: string }) => void
 }) {
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
   const addResourceTriggerRef = useRef<HTMLElement | null>(null)
-  const { data, loading, error, refetch } = useQuery(GetKbDocument, {
-    variables: { id: kbId },
-  })
+  const { data, loading, error, refetch } = useQuery(
+    GetKbWithPermissionLevelDocument,
+    {
+      variables: { id: kbId },
+    }
+  )
 
   if (loading) {
     return (
@@ -87,6 +95,15 @@ function KnowledgeBaseDetail({
   }
 
   const metrics = data.getKb.metrics
+  const permissionLevel = data.getKb.permissionLevel
+  const canWrite =
+    permissionLevel === PermissionLevel.Write ||
+    permissionLevel === PermissionLevel.Admin ||
+    permissionLevel === PermissionLevel.Owner
+  const canManageAccess =
+    permissionLevel === PermissionLevel.Admin ||
+    permissionLevel === PermissionLevel.Owner
+  const isOwner = permissionLevel === PermissionLevel.Owner
   const formatFileSize = (sizeBytes: number) => {
     if (sizeBytes < 1024) return `${format.number(sizeBytes)} B`
     if (sizeBytes < 1024 * 1024) {
@@ -128,7 +145,19 @@ function KnowledgeBaseDetail({
           </Link>
         </div>
       ) : null}
-      <H1 className={{ root: 'mt-4 break-words' }}>{data.getKb.name}</H1>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+        <H1 className={{ root: 'min-w-0 break-words' }}>{data.getKb.name}</H1>
+        {onShare && canManageAccess ? (
+          <Button
+            onClick={() =>
+              onShare({ id: data.getKb.id, name: data.getKb.name })
+            }
+            data={{ cy: 'share-knowledge-base-detail' }}
+          >
+            <Button.Label>{t('manage.sharing.shareKB')}</Button.Label>
+          </Button>
+        ) : null}
+      </div>
       {data.getKb.description ? (
         <p className="mt-2 break-words text-slate-600">
           {data.getKb.description}
@@ -136,6 +165,7 @@ function KnowledgeBaseDetail({
       ) : null}
       <KnowledgeBaseDomainSettings
         kbId={kbId}
+        canEdit={isOwner}
         domain={{
           id: data.getKb.domainPolicyId ?? null,
           version: data.getKb.domainPolicyVersion ?? null,
@@ -149,7 +179,7 @@ function KnowledgeBaseDetail({
           />
         </div>
       ) : null}
-      {advanced && metrics ? (
+      {advanced && canWrite && metrics ? (
         <section
           className="mt-6"
           aria-labelledby="kb-metrics-title"
@@ -235,6 +265,7 @@ function KnowledgeBaseDetail({
       ) : null}
       <KnowledgeBaseResourceList
         kbId={kbId}
+        canWrite={canWrite}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
         advanced={advanced}
@@ -244,9 +275,11 @@ function KnowledgeBaseDetail({
         }}
       />
       {advanced ? <KnowledgeBaseImportedSourceList kbId={kbId} /> : null}
-      <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
-      {addResourceOpen ? (
+      {isOwner ? (
+        <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
+      ) : null}
+      {advanced && isOwner ? <KnowledgeGraphPanel kbId={kbId} /> : null}
+      {canWrite && addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}
           triggerRef={addResourceTriggerRef}

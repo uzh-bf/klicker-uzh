@@ -11,6 +11,7 @@ import DirectSharingForm from './DirectSharingForm'
 import ExistingPermissionEntries from './ExistingPermissionEntries'
 
 function GrantedPermissionsTable({
+  objectId,
   type,
   permissions,
   ownerPermission,
@@ -23,6 +24,7 @@ function GrantedPermissionsTable({
   onOwnershipTransfer,
   shareObjectCallback,
 }: {
+  objectId: string
   type: ObjectType
   permissions: PermissionInfo[]
   ownerPermission?: PermissionInfo
@@ -54,12 +56,13 @@ function GrantedPermissionsTable({
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
+  const ownershipTransferAvailable = isOwner && type !== ObjectType.Kb
 
   return (
     <>
       <div className="flex flex-row justify-between">
         <H3>{t('manage.sharing.grantedPermissions')}</H3>
-        {isOwner && (
+        {ownershipTransferAvailable && (
           <Button
             basic
             onClick={() => onOwnershipTransfer()}
@@ -107,6 +110,7 @@ function GrantedPermissionsTable({
           ) : (
             <>
               <ExistingPermissionEntries
+                objectId={objectId}
                 type={type}
                 permissions={permissions ?? []}
                 ownerPermission={ownerPermission}

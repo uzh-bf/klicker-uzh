@@ -107,6 +107,9 @@ model KB {
   name        String
   description String?
 
+  directPermissions Permission[]
+  permissions       DerivedPermission[]
+
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 

@@ -1,0 +1,14 @@
+query GetObjectPermissionRemovalPreview(
+  $permissionId: Int!
+  $objectId: String!
+  $objectType: ObjectType!
+) {
+  getObjectPermissionRemovalPreview(
+    permissionId: $permissionId
+    objectId: $objectId
+    objectType: $objectType
+  ) {
+    permissionId
+    readSurvives
+  }
+}

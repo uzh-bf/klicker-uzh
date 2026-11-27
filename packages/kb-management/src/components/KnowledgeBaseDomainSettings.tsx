@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  GetKbDocument,
+  GetKbWithPermissionLevelDocument,
   GetKbGraphDomainOptionsDocument,
   UpdateKbDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -30,9 +30,11 @@ import KnowledgeBaseDomainFields, {
  */
 function KnowledgeBaseDomainSettings({
   kbId,
+  canEdit,
   domain,
 }: {
   kbId: string
+  canEdit: boolean
   domain: KbDomainTriple
 }) {
   const t = useTranslations()
@@ -61,6 +63,7 @@ function KnowledgeBaseDomainSettings({
       : t('kb.domainSettingsNotSet')
 
   const handleEdit = () => {
+    if (!canEdit) return
     setSaveError(false)
     setDraft(
       domain.id != null && domain.language != null
@@ -80,7 +83,13 @@ function KnowledgeBaseDomainSettings({
   }
 
   const handleSave = async () => {
-    if (draft == null || !isKbDomainSelectionSupported(options, draft)) return
+    if (
+      !canEdit ||
+      draft == null ||
+      !isKbDomainSelectionSupported(options, draft)
+    ) {
+      return
+    }
     setSaveError(false)
     try {
       await updateKb({
@@ -92,7 +101,12 @@ function KnowledgeBaseDomainSettings({
         },
         // A domain change can move the question-generation readiness shown
         // on the same page.
-        refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
+        refetchQueries: [
+          {
+            query: GetKbWithPermissionLevelDocument,
+            variables: { id: kbId },
+          },
+        ],
       })
     } catch (error) {
       console.error('Failed to update knowledge base settings', error)
@@ -115,7 +129,7 @@ function KnowledgeBaseDomainSettings({
         >
           {t('kb.domainSettingsTitle')}
         </h2>
-        {editable && draft == null ? (
+        {editable && canEdit && draft == null ? (
           <Button onClick={handleEdit} data={{ cy: 'kb-domain-settings-edit' }}>
             <Button.Label>{t('shared.generic.edit')}</Button.Label>
           </Button>

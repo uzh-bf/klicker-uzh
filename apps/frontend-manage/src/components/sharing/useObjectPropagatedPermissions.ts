@@ -10,7 +10,10 @@ function useObjectPropagatedPermissions({
 }): { object: string; permissions: (PermissionLevel | undefined)[] }[] | null {
   const t = useTranslations()
 
-  if (objectType === ObjectType.CatalogCollection) {
+  if (
+    objectType === ObjectType.Kb ||
+    objectType === ObjectType.CatalogCollection
+  ) {
     return null
   } else if (objectType === ObjectType.AnswerCollection) {
     return null

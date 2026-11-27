@@ -11,6 +11,7 @@ import PermissionListEntry from './PermissionListEntry'
 import PermissionRevocationModal from './PermissionRevocationModal'
 
 function ExistingPermissionEntries({
+  objectId,
   type,
   permissions,
   ownerPermission,
@@ -19,6 +20,7 @@ function ExistingPermissionEntries({
   onPermissionLevelChange,
   onPermissionRemoval,
 }: {
+  objectId: string
   type: ObjectType
   permissions: PermissionInfo[]
   ownerPermission?: PermissionInfo
@@ -170,16 +172,20 @@ function ExistingPermissionEntries({
           onConfirm={confirmModifyOwnPermissions}
           action={modifyOwnPermissionsModal.action}
           newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
+          objectType={type}
         />
       )}
       {revocationModal.open && (
         <PermissionRevocationModal
+          objectId={objectId}
+          permissionId={revocationModal.permissionId!}
           onClose={() =>
             setRevocationModal({ ...revocationModal, open: false })
           }
           onRevocation={confirmRevocation}
           username={revocationModal.username}
           userGroup={revocationModal.userGroup}
+          objectType={type}
         />
       )}
     </>

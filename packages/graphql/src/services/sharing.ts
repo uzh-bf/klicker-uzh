@@ -1,13 +1,15 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationFieldType,
+  type ActivityLogModificationFieldType,
   ActivityType,
-  CatalogObject,
-  ObjectSharingRequest,
+  type CatalogObject,
+  type ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import {
+  getPositiveObjectPermission,
+  isSharedObjectPermissionLevel,
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -310,6 +312,8 @@ export async function verifyCatalogObjectEditPermissions(
  * @param [params.practiceQuizId] - ID of a practice quiz
  * @param [params.microLearningId] - ID of a micro learning
  * @param [params.groupActivityId] - ID of a group activity
+ * @param [params.kbId] - ID of a knowledge base
+ * @param [params.chatbotId] - ID of a chatbot
  * @returns {{objectType: DB.ObjectType, objectId: string}|null} Object with type and ID or null
  */
 export function getAuditLogObjectType({
@@ -321,6 +325,8 @@ export function getAuditLogObjectType({
   practiceQuizId,
   microLearningId,
   groupActivityId,
+  kbId,
+  chatbotId,
 }: {
   catalogCollectionId?: string | null
   answerCollectionId?: number | null
@@ -330,6 +336,8 @@ export function getAuditLogObjectType({
   practiceQuizId?: string | null
   microLearningId?: string | null
   groupActivityId?: string | null
+  kbId?: string | null
+  chatbotId?: string | null
 }): { objectType: DB.ObjectType | null; objectId: string | null } {
   // check if exactly one of the object ids is defined
   const defined = [
@@ -341,6 +349,8 @@ export function getAuditLogObjectType({
     practiceQuizId,
     microLearningId,
     groupActivityId,
+    kbId,
+    chatbotId,
   ].filter((v) => v != null)
 
   if (defined.length !== 1) {
@@ -390,6 +400,10 @@ export function getAuditLogObjectType({
       objectType: DB.ObjectType.GROUP_ACTIVITY,
       objectId: groupActivityId,
     }
+  } else if (typeof kbId !== 'undefined' && kbId !== null) {
+    return { objectType: DB.ObjectType.KB, objectId: kbId }
+  } else if (typeof chatbotId !== 'undefined' && chatbotId !== null) {
+    return { objectType: DB.ObjectType.CHATBOT, objectId: chatbotId }
   }
 
   return { objectType: null, objectId: null }
@@ -1014,7 +1028,7 @@ export async function requestCatalogObject(
         existingPermission: boolean
         existingRequest: boolean
       }
-    | undefined = undefined
+    | undefined
 
   if (typeof answerCollectionId !== 'undefined') {
     // fetch the answer collection including potential pending permission requests
@@ -1905,6 +1919,7 @@ export async function changeObjectPermissionLevel(
     practiceQuizId,
     microLearningId,
     groupActivityId,
+    kbId,
   }: {
     permissionId: number
     permissionLevel: DB.PermissionLevel
@@ -1917,9 +1932,27 @@ export async function changeObjectPermissionLevel(
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
+    kbId?: string
   },
   ctx: ContextWithUser
 ) {
+  if (typeof kbId !== 'undefined') {
+    if (propagation || !isSharedObjectPermissionLevel(permissionLevel)) {
+      return false
+    }
+
+    const callerPermission = await getPositiveObjectPermission(
+      { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+      ctx.prisma
+    )
+    if (
+      callerPermission !== DB.PermissionLevel.ADMIN &&
+      callerPermission !== DB.PermissionLevel.OWNER
+    ) {
+      return false
+    }
+  }
+
   const previousPermission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
@@ -1933,6 +1966,7 @@ export async function changeObjectPermissionLevel(
       practiceQuizId,
       microLearningId,
       groupActivityId,
+      kbId,
     },
   })
 
@@ -1942,7 +1976,7 @@ export async function changeObjectPermissionLevel(
 
   // fetch the user group of the updated permission
   const userGroup =
-    previousPermission.userGroupId !== null
+    typeof kbId === 'undefined' && previousPermission.userGroupId !== null
       ? await ctx.prisma.userGroup.findUnique({
           where: { id: previousPermission.userGroupId },
           include: { members: true, admins: true },
@@ -1952,6 +1986,23 @@ export async function changeObjectPermissionLevel(
   // execute the update and recomputation in a single transaction
   const permission = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (typeof kbId !== 'undefined') {
+        const permissionLevel = await getPositiveObjectPermission(
+          {
+            objectType: DB.ObjectType.KB,
+            objectId: kbId,
+            userId: ctx.user.sub,
+          },
+          prisma
+        )
+        if (
+          permissionLevel !== DB.PermissionLevel.ADMIN &&
+          permissionLevel !== DB.PermissionLevel.OWNER
+        ) {
+          return false
+        }
+      }
+
       // update the access level of the permission
       const updatedPermission = await prisma.permission.update({
         where: {
@@ -1964,6 +2015,7 @@ export async function changeObjectPermissionLevel(
           practiceQuizId,
           microLearningId,
           groupActivityId,
+          kbId,
         },
         data: {
           permissionLevel,
@@ -1993,6 +2045,13 @@ export async function changeObjectPermissionLevel(
           permissionLevel === DB.PermissionLevel.ADMIN) ||
         (previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
           permissionLevel !== DB.PermissionLevel.ADMIN)
+
+      // A group permission applies to its current members. Recompute the
+      // whole KB so membership changes made before this transaction cannot
+      // leave a removed member behind.
+      if (typeof kbId !== 'undefined' && updatedPermission.userId === null) {
+        await recomputeDerivedPermissions({ kbId }, prisma)
+      }
 
       for (const affectedUserId of affectedUserIds) {
         if (typeof catalogCollectionId !== 'undefined') {
@@ -2055,6 +2114,14 @@ export async function changeObjectPermissionLevel(
             },
             prisma
           )
+        } else if (
+          typeof kbId !== 'undefined' &&
+          updatedPermission.userId !== null
+        ) {
+          await recomputeDerivedPermissions(
+            { kbId, userId: affectedUserId },
+            prisma
+          )
         }
       }
 
@@ -2068,6 +2135,7 @@ export async function changeObjectPermissionLevel(
         practiceQuizId,
         microLearningId,
         groupActivityId,
+        kbId,
       })
       if (objectType && objectId) {
         await prisma.auditLogEntry.create({
@@ -2093,6 +2161,7 @@ export async function changeObjectPermissionLevel(
               practiceQuizId,
               microLearningId,
               groupActivityId,
+              kbId,
             }
           )}`
         )
@@ -2128,6 +2197,7 @@ export async function revokeObjectAccess(
     practiceQuizId,
     microLearningId,
     groupActivityId,
+    kbId,
   }: {
     permissionId: number
     catalogCollectionId?: string
@@ -2138,9 +2208,23 @@ export async function revokeObjectAccess(
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
+    kbId?: string
   },
   ctx: ContextWithUser
 ) {
+  if (typeof kbId !== 'undefined') {
+    const callerPermission = await getPositiveObjectPermission(
+      { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+      ctx.prisma
+    )
+    if (
+      callerPermission !== DB.PermissionLevel.ADMIN &&
+      callerPermission !== DB.PermissionLevel.OWNER
+    ) {
+      return null
+    }
+  }
+
   // verify that the direct permission belongs to the specified object
   const permission = await ctx.prisma.permission.findUnique({
     where: {
@@ -2153,6 +2237,7 @@ export async function revokeObjectAccess(
       practiceQuizId,
       microLearningId,
       groupActivityId,
+      kbId,
     },
     include: {
       user: {
@@ -2164,6 +2249,7 @@ export async function revokeObjectAccess(
   })
 
   const userGroup =
+    typeof kbId === 'undefined' &&
     typeof permission?.userGroupId !== 'undefined' &&
     permission?.userGroupId !== null
       ? await ctx.prisma.userGroup.findUnique({
@@ -2179,9 +2265,36 @@ export async function revokeObjectAccess(
   // delete the direct permission and recompute derived permissions
   const deletedPermission = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (typeof kbId !== 'undefined') {
+        const permissionLevel = await getPositiveObjectPermission(
+          {
+            objectType: DB.ObjectType.KB,
+            objectId: kbId,
+            userId: ctx.user.sub,
+          },
+          prisma
+        )
+        if (
+          permissionLevel !== DB.PermissionLevel.ADMIN &&
+          permissionLevel !== DB.PermissionLevel.OWNER
+        ) {
+          return null
+        }
+      }
+
       const deleted = await prisma.permission.delete({
-        where: { id: permissionId },
+        where:
+          typeof kbId !== 'undefined'
+            ? { id: permissionId, kbId }
+            : { id: permissionId },
       })
+
+      // A group permission applies to its current members. Recompute the
+      // whole KB so the deletion removes every member grant, including users
+      // who joined or left while this request was in flight.
+      if (typeof kbId !== 'undefined' && permission.userId === null) {
+        await recomputeDerivedPermissions({ kbId }, prisma)
+      }
 
       // add an audit log entry for the revoked permission
       const { objectType, objectId } = getAuditLogObjectType({
@@ -2193,6 +2306,7 @@ export async function revokeObjectAccess(
         practiceQuizId,
         microLearningId,
         groupActivityId,
+        kbId,
       })
       if (objectType && objectId) {
         await prisma.auditLogEntry.create({
@@ -2218,6 +2332,7 @@ export async function revokeObjectAccess(
               practiceQuizId,
               microLearningId,
               groupActivityId,
+              kbId,
             }
           )}`
         )
@@ -2296,6 +2411,11 @@ export async function revokeObjectAccess(
             },
             prisma
           )
+        } else if (typeof kbId !== 'undefined' && permission.userId !== null) {
+          await recomputeDerivedPermissions(
+            { kbId, userId: affectedUserId },
+            prisma
+          )
         }
       }
 
@@ -2348,6 +2468,10 @@ export async function revokeObjectAccess(
     },
     { timeout: 60000 }
   )
+
+  if (!deletedPermission) {
+    return null
+  }
 
   // invalidate permission
   ctx.emitter.emit('invalidate', {
@@ -2574,6 +2698,101 @@ export async function getAnswerCollectionPermissions(
       collection.directPermissions,
       ctx.user.sub
     ),
+  }
+}
+
+export async function getKnowledgeBasePermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const kb = await ctx.prisma.kB.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        where: { permissionLevel: { not: DB.PermissionLevel.OWNER } },
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+      owner: { select: { id: true, shortname: true, email: true } },
+    },
+  })
+
+  if (!kb) {
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
+  }
+
+  return {
+    isOwner: kb.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1,
+      userId: kb.owner.id,
+      username: kb.owner.shortname,
+      userEmail: kb.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: kb.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(kb.directPermissions, ctx.user.sub),
+  }
+}
+
+export type ObjectPermissionRemovalPreview = {
+  permissionId: number
+  readSurvives: boolean | null
+}
+
+export async function getObjectPermissionRemovalPreview(
+  { permissionId, kbId }: { permissionId: number; kbId: string },
+  ctx: ContextWithUser
+): Promise<ObjectPermissionRemovalPreview | null> {
+  const callerPermission = await getPositiveObjectPermission(
+    { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+    ctx.prisma
+  )
+  if (
+    callerPermission !== DB.PermissionLevel.ADMIN &&
+    callerPermission !== DB.PermissionLevel.OWNER
+  ) {
+    return null
+  }
+
+  const permission = await ctx.prisma.permission.findFirst({
+    where: { id: permissionId, kbId },
+    select: { userId: true, userGroupId: true },
+  })
+  if (!permission) {
+    return null
+  }
+
+  // A group removal has a per-member outcome and the sharing UI uses the
+  // existing group explanation instead of exposing membership details.
+  if (permission.userGroupId !== null) {
+    return { permissionId, readSurvives: null }
+  }
+
+  if (permission.userId === null) {
+    return null
+  }
+
+  const survivingPermission = await getPositiveObjectPermission(
+    {
+      objectType: DB.ObjectType.KB,
+      objectId: kbId,
+      userId: permission.userId,
+      excludeDirectPermissionId: permissionId,
+    },
+    ctx.prisma
+  )
+
+  return {
+    permissionId,
+    readSurvives:
+      survivingPermission !== null &&
+      acceptedPermissionLevels[DB.PermissionLevel.READ].includes(
+        survivingPermission
+      ),
   }
 }
 
@@ -4552,6 +4771,121 @@ async function shareElementForBatch(
   }
 }
 
+async function shareKnowledgeBaseObject(
+  {
+    kbId,
+    permissionLevel,
+    propagation,
+    target,
+  }: {
+    kbId: string
+    permissionLevel: DB.PermissionLevel
+    propagation: boolean
+    target: ResolvedSharingTarget
+  },
+  ctx: ContextWithUser
+) {
+  if (propagation || !isSharedObjectPermissionLevel(permissionLevel)) {
+    return null
+  }
+
+  const permission = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const kb = await prisma.kB.findUnique({
+        where: { id: kbId },
+        select: { ownerId: true, deletedAt: true },
+      })
+
+      if (!kb || kb.deletedAt !== null) {
+        return null
+      }
+
+      if (target.kind === 'USER' && target.id === kb.ownerId) {
+        return null
+      }
+
+      const callerPermission = await getPositiveObjectPermission(
+        { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+        prisma
+      )
+      if (
+        callerPermission !== DB.PermissionLevel.ADMIN &&
+        callerPermission !== DB.PermissionLevel.OWNER
+      ) {
+        return null
+      }
+
+      const newPermission =
+        target.kind === 'USER'
+          ? await prisma.permission.upsert({
+              where: { kbId_userId: { kbId, userId: target.id } },
+              create: {
+                kbId,
+                userId: target.id,
+                permissionLevel,
+                propagation: false,
+              },
+              update: { permissionLevel, propagation: false },
+            })
+          : await prisma.permission.upsert({
+              where: { kbId_userGroupId: { kbId, userGroupId: target.id } },
+              create: {
+                kbId,
+                userGroupId: target.id,
+                permissionLevel,
+                propagation: false,
+              },
+              update: { permissionLevel, propagation: false },
+            })
+
+      await recomputeDerivedPermissions(
+        target.kind === 'USER' ? { kbId, userId: target.id } : { kbId },
+        prisma
+      )
+
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_GRANTED,
+          objectType: DB.ObjectType.KB,
+          objectId: kbId,
+          sourceUserId: ctx.user.sub,
+          targetUserId: target.kind === 'USER' ? target.id : undefined,
+          targetUserGroupId:
+            target.kind === 'USER_GROUP' ? target.id : undefined,
+          message:
+            target.kind === 'USER'
+              ? `Direct permission with level ${permissionLevel} granted for ${DB.ObjectType.KB} (ID ${kbId}) by owner / admin ${ctx.user.sub} to user ${target.id}.`
+              : `Direct permission with level ${permissionLevel} granted for ${DB.ObjectType.KB} (ID ${kbId}) by owner / admin ${ctx.user.sub} to user group ${target.id}.`,
+        },
+      })
+
+      return newPermission
+    },
+    { timeout: 60000 }
+  )
+
+  if (!permission) {
+    return null
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permission.id,
+  })
+
+  return {
+    permissionId: permission.id,
+    userId: target.kind === 'USER' ? target.id : undefined,
+    username: target.kind === 'USER' ? target.shortname : undefined,
+    userEmail: target.kind === 'USER' ? target.email : undefined,
+    userGroupId: target.kind === 'USER_GROUP' ? target.id : undefined,
+    userGroupName: target.kind === 'USER_GROUP' ? target.name : undefined,
+    permissionLevel: permission.permissionLevel,
+    propagation: permission.propagation,
+    isOwn: false,
+  }
+}
+
 export async function shareObject(
   {
     permissionLevel,
@@ -4566,6 +4900,7 @@ export async function shareObject(
     practiceQuizId,
     microLearningId,
     groupActivityId,
+    kbId,
   }: {
     permissionLevel: DB.PermissionLevel
     shortnameOrEmail?: string | null
@@ -4579,6 +4914,7 @@ export async function shareObject(
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
+    kbId?: string
   },
   ctx: ContextWithUser
 ) {
@@ -4589,6 +4925,18 @@ export async function shareObject(
   )
   if (!resolvedTarget.target) {
     return null
+  }
+
+  if (typeof kbId !== 'undefined') {
+    return await shareKnowledgeBaseObject(
+      {
+        kbId,
+        permissionLevel,
+        propagation,
+        target: resolvedTarget.target,
+      },
+      ctx
+    )
   }
 
   // create new permission with the defined access level
@@ -4809,6 +5157,7 @@ export async function shareObject(
           practiceQuizId,
           microLearningId,
           groupActivityId,
+          kbId,
         })
         if (objectType && objectId) {
           await prisma.auditLogEntry.create({
@@ -6129,9 +6478,10 @@ export async function addObjectToCatalog(
 
 // ! Permissions Checking / Access Validation
 // #region
-const acceptedPermissionLevels: {
-  [minimumPermissionLevel: string]: DB.PermissionLevel[]
-} = {
+const acceptedPermissionLevels: Record<
+  DB.PermissionLevel,
+  DB.PermissionLevel[]
+> = {
   [DB.PermissionLevel.OWNER]: [DB.PermissionLevel.OWNER],
   [DB.PermissionLevel.ADMIN]: [
     DB.PermissionLevel.ADMIN,
@@ -6172,6 +6522,8 @@ export type PermissionCheck =
   | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
   | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
   | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { kbId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { chatbotId: string; minimumPermissionLevel: DB.PermissionLevel }
 
 export async function checkAccess(
   checks: PermissionCheck[],
@@ -6322,6 +6674,42 @@ export async function checkAccess(
       })
 
       if (!coursePermission) {
+        return false
+      }
+    } else if ('kbId' in check && typeof check.kbId !== 'undefined') {
+      const permissionLevel = await getPositiveObjectPermission(
+        {
+          objectType: DB.ObjectType.KB,
+          objectId: check.kbId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+
+      if (
+        !permissionLevel ||
+        !acceptedPermissionLevels[check.minimumPermissionLevel].includes(
+          permissionLevel
+        )
+      ) {
+        return false
+      }
+    } else if ('chatbotId' in check && typeof check.chatbotId !== 'undefined') {
+      const permissionLevel = await getPositiveObjectPermission(
+        {
+          objectType: DB.ObjectType.CHATBOT,
+          objectId: check.chatbotId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+
+      if (
+        !permissionLevel ||
+        !acceptedPermissionLevels[check.minimumPermissionLevel].includes(
+          permissionLevel
+        )
+      ) {
         return false
       }
     } else {
@@ -6485,6 +6873,8 @@ export type ObjectSelectorFunction = (
   | { practiceQuizId: string }
   | { microLearningId: string }
   | { groupActivityId: string }
+  | { kbId: string }
+  | { chatbotId: string }
 
 // higher-level interface function that returns a wrapped resolver
 // (simplified notation for calls in mutation.ts and query.ts)
@@ -6583,6 +6973,16 @@ async function recomputePermissionsUserGroupMember(
           groupActivityId: permission.groupActivityId,
           userId,
         },
+        prisma
+      )
+    } else if (permission.kbId !== null) {
+      await recomputeDerivedPermissions(
+        { kbId: permission.kbId, userId },
+        prisma
+      )
+    } else if (permission.chatbotId !== null) {
+      await recomputeDerivedPermissions(
+        { chatbotId: permission.chatbotId, userId },
         prisma
       )
     }
@@ -6934,6 +7334,13 @@ export async function deleteUserGroup(
         } else if (permission.groupActivityId !== null) {
           await recomputeDerivedPermissions(
             { groupActivityId: permission.groupActivityId },
+            prisma
+          )
+        } else if (permission.kbId !== null) {
+          await recomputeDerivedPermissions({ kbId: permission.kbId }, prisma)
+        } else if (permission.chatbotId !== null) {
+          await recomputeDerivedPermissions(
+            { chatbotId: permission.chatbotId },
             prisma
           )
         }

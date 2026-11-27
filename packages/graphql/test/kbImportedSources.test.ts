@@ -136,7 +136,11 @@ function createContext({
       catalystIndividual: false,
     },
     prisma: {
-      kB: { findFirst: vi.fn(async () => kb) },
+      kB: {
+        findFirst: vi.fn(async () =>
+          kb ? { ...kb, directPermissions: [] } : null
+        ),
+      },
       user: { findUnique: vi.fn(async () => account) },
       chatbotMCPServer: { findUnique: vi.fn(async () => mcpServer) },
       kBResource: {

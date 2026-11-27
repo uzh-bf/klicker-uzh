@@ -5,6 +5,7 @@ import {
   type KBImportedSource as KBImportedSourceType,
 } from '../services/knowledge.js'
 import { ChatbotKnowledgeBaseSummaryRef, ChatbotStatus } from './resource.js'
+import { PermissionLevel } from './sharing.js'
 
 interface IKBFileUpload {
   uploadSasURL: string
@@ -190,6 +191,8 @@ builder.objectField(ChatbotKnowledgeBaseSummaryRef, 'materialsReadiness', (t) =>
 
 interface IKB extends DB.KB {
   metrics?: IKBMetrics
+  permissionLevel: DB.PermissionLevel
+  isOwner: boolean
 }
 
 export const KBRef = builder.objectRef<IKB>('KB')
@@ -210,6 +213,8 @@ export const KB = KBRef.implement({
       nullable: true,
       resolve: (kb) => kb.metrics ?? null,
     }),
+    permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
+    isOwner: t.exposeBoolean('isOwner'),
     materialsReadiness: t.field({
       type: KBMaterialsReadinessRef,
       nullable: true,
