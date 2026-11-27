@@ -2384,6 +2384,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     noLinkedChatbots: 'Kein Chatbot verwendet diese Wissensdatenbank.',
     chatbotReplacementWarning:
       'Dieser Chatbot verwendet derzeit „{kbName}“. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
+    chatbotReplacementHiddenWarning:
+      'Dieser Chatbot verwendet derzeit eine ausgeblendete Wissensdatenbank. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
     chatbotLiveChangeWarning:
       'Dieser Chatbot ist veröffentlicht. Eine Verknüpfung hier ändert seine Materialien für Studierende sofort und ohne Prüfung.',
     linkedChatbotLiveNote:
@@ -5516,11 +5518,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceDisclaimerDescription:
         'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Wissensdatenbank auswählen',
+      chatbotKnowledgeBaseOwnerNeedsReadOption:
+        '{kbName} (Eigentümer benötigt Leserechte)',
       chatbotKnowledgeBaseConnect: 'Verknüpfen',
       chatbotKnowledgeBaseReplace: 'Ersetzen',
       chatbotKnowledgeBaseDisconnect: 'Verknüpfung aufheben',
       chatbotKnowledgeBaseReplacementWarning:
         'Dieser Chatbot verwendet derzeit „{kbName}“. Wenn Sie eine andere Wissensdatenbank verknüpfen, wird diese ersetzt.',
+      chatbotKnowledgeBaseReplacementHiddenWarning:
+        'Dieser Chatbot verwendet derzeit eine ausgeblendete Wissensdatenbank. Wenn Sie eine andere Wissensdatenbank verknüpfen, wird diese ersetzt.',
       chatbotKnowledgeBaseLiveChangeNote:
         'Dieser Chatbot ist veröffentlicht. Das Verknüpfen, Ersetzen oder Aufheben einer Wissensdatenbank wirkt sich sofort für Teilnehmende aus und ist nicht Teil der Entwurfsänderungen, die auf Prüfung warten.',
       chatbotKnowledgeBaseListError:
@@ -5533,6 +5539,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Verknüpfung der Wissensdatenbank wurde aufgehoben.',
       chatbotKnowledgeBaseDisconnectError:
         'Die Verknüpfung der Wissensdatenbank konnte nicht aufgehoben werden.',
+      chatbotKnowledgeBaseRedactedUnavailable:
+        'Die ausgewählte Wissensdatenbank ist ausgeblendet, weil Sie keine Leserechte mehr haben. Sie können die Verknüpfung ersetzen oder aufheben.',
+      chatbotKnowledgeBaseOwnerReadRequired:
+        'Der Eigentümer des Chatbots hat keine Leserechte mehr auf diese Wissensdatenbank. Neue Abrufe sind pausiert, bis die Rechte wiederhergestellt oder die Auswahl ersetzt wird.',
+      chatbotKnowledgeBaseUnavailableOptions:
+        'Als nicht verfügbar markierte Wissensdatenbanken können nicht verknüpft werden, weil der Eigentümer dieses Chatbots keine Leserechte hat.',
       chatbotKnowledgeBaseCreatedNotConnected:
         'Die Wissensdatenbank „{kbName}“ wurde erstellt, konnte aber nicht mit diesem Chatbot verknüpft werden. Versuchen Sie die Verknüpfung erneut, um sie hier zu verwenden.',
       chatbotKnowledgeBaseCardReusable:
@@ -5545,6 +5557,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotKnowledgeBaseCardLastChanged: 'Zuletzt geändert am {date}.',
       chatbotKnowledgeBaseCardEmpty:
         'Diese Wissensdatenbank enthält noch keine Materialien.',
+      chatbotSummaryMaterialsRedacted:
+        'Die ausgewählte Wissensdatenbank ist ausgeblendet.',
+      chatbotSummaryMaterialsUnavailable:
+        'Der Eigentümer des Chatbots hat keine Leserechte mehr.',
+      chatbotListKnowledgeBaseRedacted: 'Wissensdatenbank ausgeblendet',
+      chatbotListKnowledgeBaseUnavailable:
+        '{kbName} (Eigentümer benötigt Leserechte)',
       chatbotKnowledgeBaseCardRecent: 'Zuletzt hinzugefügt',
       chatbotKnowledgeBaseAddFiles: 'Dateien hinzufügen',
       chatbotKnowledgeBaseBanner:

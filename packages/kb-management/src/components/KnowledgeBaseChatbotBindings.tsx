@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  AttachKbToChatbotDocument,
+  AttachKbToChatbotWithKnowledgeBasesDocument,
   ChatbotStatus,
-  DetachKbFromChatbotDocument,
-  QGetKbChatbotBindingsWithKnowledgeBasesDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  DetachKbFromChatbotByBindingDocument,
+  QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -30,16 +30,16 @@ function KnowledgeBaseChatbotBindings({
     string | undefined
   >()
   const { data, loading, error } = useQuery(
-    QGetKbChatbotBindingsWithKnowledgeBasesDocument,
+    QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
     {
       variables: { kbId },
     }
   )
   const [attachKb, { loading: attaching }] = useMutation(
-    AttachKbToChatbotDocument
+    AttachKbToChatbotWithKnowledgeBasesDocument
   )
   const [detachKb, { loading: detaching }] = useMutation(
-    DetachKbFromChatbotDocument
+    DetachKbFromChatbotByBindingDocument
   )
   const bindings = data?.getKbChatbotBindings ?? []
   const selectedBinding = bindings.find(
@@ -52,6 +52,7 @@ function KnowledgeBaseChatbotBindings({
     ({ id }) => id !== kbId
   )
   const replacing = replacementKb != null
+  const replacementKbName = replacementKb?.name
   const mutating = attaching || detaching
   const summary = loading
     ? t('shared.generic.loading')
@@ -63,10 +64,12 @@ function KnowledgeBaseChatbotBindings({
 
   const refetchQueries = [
     {
-      query: QGetKbChatbotBindingsWithKnowledgeBasesDocument,
+      query: QGetKbChatbotBindingsWithKnowledgeBaseMetadataDocument,
       variables: { kbId },
     },
-    { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+    {
+      query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
+    },
   ]
 
   const handleAttach = async () => {
@@ -188,9 +191,13 @@ function KnowledgeBaseChatbotBindings({
               <UserNotification
                 type="warning"
                 className={{ root: 'mt-3' }}
-                message={t('kb.chatbotReplacementWarning', {
-                  kbName: replacementKb?.name ?? '',
-                })}
+                message={
+                  replacementKbName
+                    ? t('kb.chatbotReplacementWarning', {
+                        kbName: replacementKbName,
+                      })
+                    : t('kb.chatbotReplacementHiddenWarning')
+                }
                 data={{ cy: 'kb-chatbot-replacement-warning' }}
               />
             ) : null}

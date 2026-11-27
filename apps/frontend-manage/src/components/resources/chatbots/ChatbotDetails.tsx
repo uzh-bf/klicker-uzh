@@ -9,7 +9,7 @@ import {
   GetChatAccountUsageDocument,
   MSaveChatbotRevisionDocument,
   QGetCatalystRequestAccessDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -825,7 +825,9 @@ function ChatbotDetails({
             },
           },
         },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [
+          { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
+        ],
         awaitRefetchQueries: true,
       })
 
@@ -853,7 +855,9 @@ function ChatbotDetails({
             },
           },
         },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [
+          { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
+        ],
         awaitRefetchQueries: true,
       })
 
@@ -1383,28 +1387,40 @@ function ChatbotDetails({
     comparesLiveValues && hasUnsubmittedChanges(saved, live)
 
   const materialsReadiness = connectedKnowledgeBase?.materialsReadiness
+  const connectedKnowledgeBaseRedacted =
+    connectedKnowledgeBase != null &&
+    (!connectedKnowledgeBase.id || !connectedKnowledgeBase.name)
+  const connectedKnowledgeBaseUnavailable =
+    connectedKnowledgeBase != null && !connectedKnowledgeBase.available
   // Failed resources never block a request, but the lecturer should notice.
   const materialsStatus = resolveSectionStatus({
     warning:
       !connectedKnowledgeBase ||
+      connectedKnowledgeBaseRedacted ||
+      connectedKnowledgeBaseUnavailable ||
       (materialsReadiness?.failedResourceCount ?? 0) > 0,
   })
-  const materialsSummary = connectedKnowledgeBase
-    ? [
-        t('manage.resources.chatbotSummaryMaterialsConnected', {
-          name: connectedKnowledgeBase.name,
-        }),
-        materialsReadiness
-          ? t('manage.resources.chatbotSummaryMaterialsReadiness', {
-              total: materialsReadiness.visibleResourceCount,
-              ready: materialsReadiness.servingResourceCount,
-              failed: materialsReadiness.failedResourceCount,
-            })
-          : null,
-      ]
-        .filter(Boolean)
-        .join(' ')
-    : t('manage.resources.chatbotSummaryMaterialsNone')
+  const materialsSummary = connectedKnowledgeBaseRedacted
+    ? t('manage.resources.chatbotSummaryMaterialsRedacted')
+    : connectedKnowledgeBase
+      ? [
+          t('manage.resources.chatbotSummaryMaterialsConnected', {
+            name: connectedKnowledgeBase.name ?? '',
+          }),
+          connectedKnowledgeBaseUnavailable
+            ? t('manage.resources.chatbotSummaryMaterialsUnavailable')
+            : null,
+          materialsReadiness
+            ? t('manage.resources.chatbotSummaryMaterialsReadiness', {
+                total: materialsReadiness.visibleResourceCount,
+                ready: materialsReadiness.servingResourceCount,
+                failed: materialsReadiness.failedResourceCount,
+              })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      : t('manage.resources.chatbotSummaryMaterialsNone')
 
   // A chatbot created before the suggestion existed has no stored student
   // information; its editor then starts from the suggested text, which still
@@ -1953,6 +1969,7 @@ function ChatbotDetails({
               chatbotStatus={chatbot.status}
               courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
               connectedKnowledgeBase={connectedKnowledgeBase}
+              knowledgeBaseOptions={chatbot.knowledgeBaseOptions}
               connectOnSelect
               proposedKnowledgeBaseName={chatbot.name}
               readOnly={paused}

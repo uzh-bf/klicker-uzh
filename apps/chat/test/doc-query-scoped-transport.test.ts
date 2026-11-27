@@ -16,13 +16,17 @@ import {
   afterAll,
   afterEach,
   beforeAll,
+  beforeEach,
   describe,
   expect,
   test,
   vi,
 } from 'vitest'
 import { z } from 'zod'
-import { REQUIRED_MCP_UNAVAILABLE_CODE } from '../src/lib/server/mcpRuntimePolicy'
+import {
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
+} from '../src/lib/server/mcpRuntimePolicy'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -58,6 +62,11 @@ let scopedUrl: string
 let server: ReturnType<typeof createServer>
 const recorded: RecordedRequest[] = []
 const rejections: string[] = []
+
+const assertKnowledgeAccessMock = vi.hoisted(() => vi.fn())
+vi.mock('@/src/lib/server/chatbotKnowledgeAccess', () => ({
+  assertCurrentChatbotKnowledgeAccess: assertKnowledgeAccessMock,
+}))
 
 function scopedServerChain(kbId: string): MCPServerWithConfig {
   return {
@@ -281,6 +290,11 @@ describe('scoped KB transport over real HTTP', () => {
     vi.setSystemTime(TURN_START)
   })
 
+  beforeEach(() => {
+    vi.clearAllMocks()
+    assertKnowledgeAccessMock.mockResolvedValue(undefined)
+  })
+
   test('discovers, calls and refreshes the scope token through the real transport', async () => {
     const start = recorded.length
     const firstTurnIssuedAt = Math.floor(TURN_START.getTime() / 1000)
@@ -292,6 +306,13 @@ describe('scoped KB transport over real HTTP', () => {
     )
 
     expect(Object.keys(handle.tools)).toEqual(['KB_doc_query'])
+    expect(assertKnowledgeAccessMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatbotId: TEST_CHATBOT_ID,
+        kbIds: [KB_ID],
+        sessionId: 'thread-first-turn',
+      })
+    )
     const discovery = recorded.slice(start)
     expect(discovery.length).toBeGreaterThanOrEqual(3)
     expect(rejections).toEqual([])
@@ -350,6 +371,23 @@ describe('scoped KB transport over real HTTP', () => {
     ).toBe(true)
 
     await handle.close()
+  })
+
+  test('does not discover scoped tools when live knowledge access is revoked', async () => {
+    const start = recorded.length
+    assertKnowledgeAccessMock.mockRejectedValue(
+      new RequiredMCPUnavailableError('scope_violation')
+    )
+
+    await expect(
+      getAggregatedMCPTools([scopedServerChain(KB_ID)], TEST_CHATBOT_ID, {
+        kbIds: [KB_ID],
+        sessionId: 'thread-revoked',
+      })
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+
+    expect(recorded.slice(start)).toEqual([])
+    expect(rejections).toEqual([])
   })
 
   test('keeps concurrent turns on their own authorized scope', async () => {

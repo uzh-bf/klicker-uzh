@@ -144,7 +144,12 @@ function createChatbot(
     allowedReasoningEffortsByModel: null,
     course: { displayName: 'Test Course' },
     id: 'chatbot-id',
-    knowledgeBases: [{ kbId: originalKbId }],
+    knowledgeBases: [
+      {
+        kb: { knowledgeGraphEnabled: false, ownerId: 'owner-id' },
+        kbId: originalKbId,
+      },
+    ],
     mcpConfigurations: [
       {
         allowedTools: ['*', 'delete_all'],
@@ -631,9 +636,27 @@ describe('POST owner preview chat', () => {
 
   it.each([
     { knowledgeBases: [] },
-    { knowledgeBases: [{ kbId: additionalKbId }] },
-    { knowledgeBases: [{ kbId: 'first-kb' }, { kbId: 'second-kb' }] },
-  ])('withholds the receipt KB scope without one matching live binding: $knowledgeBases', async ({
+    {
+      knowledgeBases: [
+        {
+          kb: { knowledgeGraphEnabled: false, ownerId: 'owner-id' },
+          kbId: additionalKbId,
+        },
+      ],
+    },
+    {
+      knowledgeBases: [
+        {
+          kb: { knowledgeGraphEnabled: false, ownerId: 'owner-id' },
+          kbId: 'first-kb',
+        },
+        {
+          kb: { knowledgeGraphEnabled: false, ownerId: 'owner-id' },
+          kbId: 'second-kb',
+        },
+      ],
+    },
+  ])('fails closed when live bindings do not match the scoped KB: $knowledgeBases', async ({
     knowledgeBases,
   }) => {
     const chatbot = await mocks.findChatbot()
@@ -642,17 +665,20 @@ describe('POST owner preview chat', () => {
     const response = await POST(request(), {
       params: Promise.resolve({ chatbotId: 'chatbot-id' }),
     })
-    await response.text()
 
-    expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
-      expect.objectContaining({ kbId: undefined })
-    )
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Required chatbot tools are unavailable',
+    })
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({
         kbIds: [originalKbId],
       })
     )
+    expect(mocks.closeMcpTools).toHaveBeenCalledOnce()
+    expect(mocks.issuePreviewResponseExampleReceipt).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
   it('appends an unavailable capture state before the stream finishes', async () => {
@@ -672,13 +698,23 @@ describe('POST owner preview chat', () => {
     )
   })
 
-  it('uses the configured multi-KB scope even without matching KB relations', async () => {
+  it('uses the configured multi-KB scope with matching live bindings', async () => {
     const chatbot = await mocks.findChatbot()
     chatbot.mcpConfigurations[0].parameters = {
       kb_ids: [additionalKbId, originalKbId],
       required: true,
       toolAlias: 'doc_query',
     }
+    chatbot.knowledgeBases = [
+      {
+        kb: { knowledgeGraphEnabled: false, ownerId: 'owner-id' },
+        kbId: originalKbId,
+      },
+      {
+        kb: { knowledgeGraphEnabled: false, ownerId: 'owner-id' },
+        kbId: additionalKbId,
+      },
+    ]
     mocks.findChatbot.mockResolvedValue(chatbot)
 
     const response = await POST(request(), {
@@ -1291,7 +1327,7 @@ describe('POST owner preview chat', () => {
     )
     const streamOptions = mocks.streamText.mock.calls[0]![0]
     expect(
-      streamOptions.prepareStep({
+      await streamOptions.prepareStep({
         initialMessages: [],
         responseMessages: [],
         stepNumber: 0,
@@ -1440,7 +1476,7 @@ describe('POST owner preview chat', () => {
     expect(response.status).toBe(200)
     const streamOptions = mocks.streamText.mock.calls[0]![0]
     expect(
-      streamOptions.prepareStep({
+      await streamOptions.prepareStep({
         initialMessages: [],
         responseMessages: [],
         stepNumber: 0,
@@ -1451,7 +1487,7 @@ describe('POST owner preview chat', () => {
       messages: [REPLY_LANGUAGE_REMINDER],
     })
     expect(
-      streamOptions.prepareStep({
+      await streamOptions.prepareStep({
         initialMessages: [],
         responseMessages: [],
         stepNumber: 1,
@@ -1509,7 +1545,7 @@ describe('POST owner preview chat', () => {
 
     expect(response.status).toBe(200)
     const streamOptions = mocks.streamText.mock.calls[0]![0]
-    const prepared = streamOptions.prepareStep({
+    const prepared = await streamOptions.prepareStep({
       initialMessages: [{ role: 'user' }],
       responseMessages,
       stepNumber: 1,

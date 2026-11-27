@@ -154,8 +154,12 @@ export interface DocQueryScopedRoute {
 }
 
 export interface DocQueryScopedFetchOptions extends DocQueryScopedRoute {
+  /** Fresh server-side authorization run before every outbound request. */
+  authorize?: () => Promise<void>
   /** Signing seam for tests; defaults to the shared ES256 signer. */
   signToken?: typeof signDocQueryScopeToken
+  /** Transport seam for tests and host-specific HTTP handling. */
+  fetch?: DocQueryScopedFetch
 }
 
 export interface DocQueryScopedEndpoint {
@@ -262,7 +266,9 @@ export function createDocQueryScopedFetch({
   kbIds,
   chatbotId,
   sessionId,
+  authorize,
   signToken = signDocQueryScopeToken,
+  fetch: transportFetch = globalThis.fetch,
 }: DocQueryScopedFetchOptions): DocQueryScopedFetch {
   return async (input, init) => {
     const rawUrl = input instanceof Request ? input.url : input
@@ -271,6 +277,10 @@ export function createDocQueryScopedFetch({
     if (requestUrl.href !== target.href) {
       throw new DocQueryScopeTokenError('Scope token target mismatch')
     }
+
+    // A retained client or an SDK retry must re-establish access before it can
+    // mint another credential or reach the network.
+    await authorize?.()
 
     // A Request carries protocol headers (content type, accept, session id)
     // that init.headers would replace rather than merge. Seed the outgoing
@@ -292,11 +302,33 @@ export function createDocQueryScopedFetch({
     })
     headers.set(DOC_QUERY_SCOPE_TOKEN_HEADER, `Bearer ${token}`)
 
-    return fetch(input, {
+    return transportFetch(input, {
       ...init,
       headers,
       redirect: 'error',
     })
+  }
+}
+
+export interface DocQueryAuthorizedFetchOptions {
+  /** Fresh server-side authorization run before every outbound request. */
+  authorize: () => Promise<void>
+  /** Transport seam for tests and host-specific HTTP handling. */
+  fetch?: DocQueryScopedFetch
+}
+
+/**
+ * Guards a legacy transport that keeps its configured bearer for the life of
+ * one request-local client. Authorization runs for connection setup and every
+ * later request, including SDK retries.
+ */
+export function createDocQueryAuthorizedFetch({
+  authorize,
+  fetch: transportFetch = globalThis.fetch,
+}: DocQueryAuthorizedFetchOptions): DocQueryScopedFetch {
+  return async (input, init) => {
+    await authorize()
+    return transportFetch(input, { ...init, redirect: 'error' })
   }
 }
 

@@ -24,6 +24,17 @@ function ChatbotItem({
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
   const knowledgeBase = chatbot.enabledKnowledgeBases?.[0]
+  const knowledgeBaseLabel = !knowledgeBase
+    ? t('manage.resources.chatbotListNoKnowledgeBase')
+    : !knowledgeBase.id || !knowledgeBase.name
+      ? t('manage.resources.chatbotListKnowledgeBaseRedacted')
+      : !knowledgeBase.available
+        ? t('manage.resources.chatbotListKnowledgeBaseUnavailable', {
+            kbName: knowledgeBase.name,
+          })
+        : t('manage.resources.chatbotListKnowledgeBase', {
+            kbName: knowledgeBase.name,
+          })
 
   return (
     <button
@@ -53,11 +64,7 @@ function ChatbotItem({
             : t('manage.resources.noLinkedCourses')}
         </div>
         <div className="text-sm text-gray-500" data-cy="chatbot-list-materials">
-          {knowledgeBase
-            ? t('manage.resources.chatbotListKnowledgeBase', {
-                kbName: knowledgeBase.name,
-              })
-            : t('manage.resources.chatbotListNoKnowledgeBase')}
+          {knowledgeBaseLabel}
         </div>
         {knowledgeBase?.materialsReadiness ? (
           <KnowledgeBaseMaterialsReadiness

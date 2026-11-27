@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   CreateChatbotDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -101,7 +101,7 @@ function ChatbotCreateModal({
                 ...suggestedDisclaimer,
               },
               refetchQueries: [
-                { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+                { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
               ],
               awaitRefetchQueries: true,
             })

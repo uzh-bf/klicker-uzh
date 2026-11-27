@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const boundaries = vi.hoisted(() => ({
+  assertKnowledgeAccess: vi.fn(),
   getPublishedKnowledgeGraph: vi.fn(),
   getPublishedKnowledgeGraphForChatbot: vi.fn(),
   isKnowledgeGraphNotPublishedError: vi.fn(),
@@ -27,6 +28,10 @@ vi.mock('@klicker-uzh/knowledge-graph', () => ({
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: boundaries.withChatbotAuth,
+}))
+
+vi.mock('@/src/lib/server/chatbotKnowledgeAccess', () => ({
+  assertCurrentChatbotKnowledgeAccess: boundaries.assertKnowledgeAccess,
 }))
 
 vi.mock('@klicker-uzh/prisma', () => ({
@@ -136,6 +141,7 @@ beforeEach(() => {
     authMode: 'account',
     chatbot: { courseId: 'course-id', knowledgeGraphVisible: true },
   })
+  boundaries.assertKnowledgeAccess.mockResolvedValue(undefined)
   boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue(publication)
   boundaries.getPublishedKnowledgeGraph.mockResolvedValue(publication)
   boundaries.isKnowledgeGraphNotPublishedError.mockImplementation(

@@ -28,6 +28,7 @@ import {
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import { assertCurrentChatbotKnowledgeAccess } from '@/src/lib/server/chatbotKnowledgeAccess'
 import {
   getCustomModeTurnSettings,
   resolveEffectiveChatModeOptions,
@@ -47,6 +48,7 @@ import {
 import {
   isToolAllowed,
   REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
@@ -399,8 +401,9 @@ export async function POST(
 
   let tools: ToolSet = {}
   let captureKbId: string | undefined
+  let scopedKbIds: string[] | undefined
   try {
-    const kbIds = resolveMcpScope(
+    scopedKbIds = resolveMcpScope(
       enabledMCPConfigurations,
       selectedMode,
       modeConfigurations
@@ -415,17 +418,17 @@ export async function POST(
         Object.hasOwn(chatbot.systemPrompts, selectedMode))
     captureKbId =
       captureModeSupported &&
-      kbIds?.length === 1 &&
+      scopedKbIds?.length === 1 &&
       chatbot.knowledgeBases.length === 1 &&
-      chatbot.knowledgeBases[0]?.kbId === kbIds[0]
-        ? kbIds[0]
+      chatbot.knowledgeBases[0]?.kbId === scopedKbIds[0]
+        ? scopedKbIds[0]
         : undefined
     if (kbConfigurations.length > 0) {
       mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
         chatbotId,
         authMode: 'account',
         ownerPreviewUserId: auth.userId,
-        kbIds,
+        kbIds: scopedKbIds,
         sessionId: randomUUID(),
         knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
       })
@@ -443,9 +446,31 @@ export async function POST(
     )
   }
 
+  const authorizeScopedKnowledgeRead =
+    scopedKbIds && scopedKbIds.length > 0
+      ? () =>
+          assertCurrentChatbotKnowledgeAccess({
+            chatbotId,
+            kbIds: scopedKbIds!,
+            ownerPreviewUserId: auth.userId,
+          })
+      : undefined
+
   try {
+    try {
+      await authorizeScopedKnowledgeRead?.()
+    } catch (error) {
+      if (!(error instanceof RequiredMCPUnavailableError)) throw error
+      await closeMcpTools()
+      return NextResponse.json(
+        { error: 'Required chatbot tools are unavailable' },
+        { status: 503 }
+      )
+    }
+
     let responseExampleSummary = ''
     try {
+      await authorizeScopedKnowledgeRead?.()
       const responseExampleSkill = await loadResponseExampleRuntimeSkill({
         prisma,
         chatbotId,
@@ -458,10 +483,21 @@ export async function POST(
           { chatbotId }
         )
       } else {
+        const responseExampleTool =
+          createResponseExampleSearchTool(responseExampleSkill)
+        const execute = responseExampleTool.execute
         tools = {
           ...tools,
           [RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]:
-            createResponseExampleSearchTool(responseExampleSkill),
+            execute === undefined
+              ? responseExampleTool
+              : {
+                  ...responseExampleTool,
+                  execute: async (...args: Parameters<typeof execute>) => {
+                    await authorizeScopedKnowledgeRead?.()
+                    return execute(...args)
+                  },
+                },
         }
         responseExampleSummary = responseExampleSkill.summary
       }
@@ -612,23 +648,28 @@ export async function POST(
         steps,
         initialMessages,
         responseMessages,
-      }) => ({
-        ...(quizzerDocQueryToolName && stepNumber === 0
-          ? {
-              toolChoice: {
-                type: 'tool' as const,
-                toolName: quizzerDocQueryToolName,
-              },
-            }
-          : {}),
-        messages: [
-          ...initialMessages,
-          ...(docQueryToolName && stepNumber > 0
-            ? withModelCitationIndices(responseMessages, steps)
-            : responseMessages),
-          languageReminder,
-        ],
-      }),
+      }) => {
+        const prepared = {
+          ...(quizzerDocQueryToolName && stepNumber === 0
+            ? {
+                toolChoice: {
+                  type: 'tool' as const,
+                  toolName: quizzerDocQueryToolName,
+                },
+              }
+            : {}),
+          messages: [
+            ...initialMessages,
+            ...(docQueryToolName && stepNumber > 0
+              ? withModelCitationIndices(responseMessages, steps)
+              : responseMessages),
+            languageReminder,
+          ],
+        }
+        return stepNumber > 0 && authorizeScopedKnowledgeRead
+          ? authorizeScopedKnowledgeRead().then(() => prepared)
+          : prepared
+      },
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,

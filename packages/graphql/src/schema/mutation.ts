@@ -2139,7 +2139,8 @@ export const Mutation = builder.mutationType({
       detachKbFromChatbot: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          kbId: t.arg.id({ required: true }),
+          kbId: t.arg.id({ required: false }),
+          bindingId: t.arg.id({ required: false }),
           chatbotId: t.arg.id({ required: true }),
         },
         resolve: async (_, args, ctx) => {

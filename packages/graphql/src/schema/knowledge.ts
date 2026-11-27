@@ -340,7 +340,13 @@ interface IKBChatbotBinding {
   chatbotStatus: DB.ChatbotStatus
   enabledKbId: string | null
   enabledKbName: string | null
-  enabledKbs: { id: string; name: string }[]
+  enabledKbs: {
+    bindingId: string
+    id: string | null
+    name: string | null
+    available: boolean
+    canEdit: boolean
+  }[]
 }
 
 export const KBChatbotBindingRef =

@@ -36,6 +36,8 @@ export async function GET(
       chatbotId,
       messageId,
       participantId: auth.participantId,
+      authMode: auth.authMode,
+      courseId: auth.chatbot.courseId,
       threadId,
     })
     if (!frame) return missing()

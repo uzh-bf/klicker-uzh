@@ -775,6 +775,7 @@ type Chatbot {
   expectedStudentCount: Int
   id: ID!
   interactiveExplanationsEnabled: Boolean!
+  knowledgeBaseOptions: [ChatbotKnowledgeBasePickerOption!]!
   knowledgeGraphRetrievalEnabled: Boolean!
   knowledgeGraphVisible: Boolean!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]! @deprecated(reason: "Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.")
@@ -872,10 +873,19 @@ type ChatbotDisclaimerSummary {
   title: String!
 }
 
-type ChatbotKnowledgeBaseSummary {
+type ChatbotKnowledgeBasePickerOption {
+  available: Boolean!
   id: ID!
-  materialsReadiness: KBMaterialsReadiness
   name: String!
+}
+
+type ChatbotKnowledgeBaseSummary {
+  available: Boolean!
+  bindingId: ID!
+  canEdit: Boolean!
+  id: ID
+  materialsReadiness: KBMaterialsReadiness
+  name: String
 }
 
 type ChatbotMcpConfigurationSummary {
@@ -2971,7 +2981,7 @@ type Mutation {
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
-  detachKbFromChatbot(chatbotId: ID!, kbId: ID!): Boolean!
+  detachKbFromChatbot(bindingId: ID, chatbotId: ID!, kbId: ID): Boolean!
   duplicateAnswerCollection(id: Int!): AnswerCollection
   duplicateGeneratedElementDraft(input: GeneratedElementDraftInput!): GeneratedElementDraft!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!

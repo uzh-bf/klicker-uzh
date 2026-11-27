@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const closeSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
+const assertKnowledgeAccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
@@ -10,6 +11,10 @@ vi.mock('@ai-sdk/mcp', () => ({
 
 vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
   signDocQueryScopeToken: signDocQueryScopeTokenMock,
+}))
+
+vi.mock('@/src/lib/server/chatbotKnowledgeAccess', () => ({
+  assertCurrentChatbotKnowledgeAccess: assertKnowledgeAccessMock,
 }))
 
 vi.mock('@klicker-uzh/util', () => ({
@@ -69,6 +74,7 @@ describe('MCP runtime policy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+    assertKnowledgeAccessMock.mockResolvedValue(undefined)
   })
 
   afterEach(async () => {
@@ -193,6 +199,7 @@ describe('MCP runtime policy', () => {
     })
     expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(3, {
       transport: {
+        fetch: expect.any(Function),
         type: 'http',
         url: 'https://mcp.example.test',
         headers: {

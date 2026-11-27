@@ -20,6 +20,7 @@ import {
   parseChatbotCustomModeConfigInput,
   parseChatbotStandardModeConfigForStorage,
   parseStoredChatbotStandardModeConfig,
+  sharedObjectUserPermissionWhere,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -39,7 +40,12 @@ import {
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from './chatbotCreditPolicy.js'
-import { getKbMetricsMap } from './knowledge.js'
+import {
+  getKbMetricsMap,
+  getKnowledgeBasesWithLivePermissions,
+  type KbWithLivePermissions,
+  resolveKnowledgeBasePermissionLevel,
+} from './knowledge.js'
 
 const chatModelSchema = z
   .object({
@@ -467,6 +473,38 @@ const chatbotOwnerSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ChatbotSelect
+
+const KB_READ_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.READ,
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+const KB_WRITE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+  DB.PermissionLevel.OWNER,
+]
+const CHATBOT_WRITE_PERMISSION_LEVELS: DB.PermissionLevel[] = [
+  DB.PermissionLevel.WRITE,
+  DB.PermissionLevel.ADMIN,
+]
+
+function canReadKb(kb: KbWithLivePermissions, userId: string) {
+  const permissionLevel = resolveKnowledgeBasePermissionLevel(kb, userId)
+  return (
+    permissionLevel !== null &&
+    KB_READ_PERMISSION_LEVELS.includes(permissionLevel)
+  )
+}
+
+function canEditKb(kb: KbWithLivePermissions, userId: string) {
+  const permissionLevel = resolveKnowledgeBasePermissionLevel(kb, userId)
+  return (
+    permissionLevel !== null &&
+    KB_WRITE_PERMISSION_LEVELS.includes(permissionLevel)
+  )
+}
 
 type ChatbotWithOwnerCourse = {
   id: string
@@ -2025,9 +2063,22 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
 
   const chatbots = await ctx.prisma.chatbot.findMany({
-    where: { ownerId: ctx.user.sub },
+    where: {
+      OR: [
+        { ownerId: ctx.user.sub },
+        {
+          directPermissions: {
+            some: {
+              ...sharedObjectUserPermissionWhere(ctx.user.sub),
+              permissionLevel: { in: CHATBOT_WRITE_PERMISSION_LEVELS },
+            },
+          },
+        },
+      ],
+    },
     select: {
       ...chatbotOwnerSelect,
+      ownerId: true,
       course: {
         select: {
           id: true,
@@ -2040,9 +2091,18 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         select: { id: true, name: true, title: true, introText: true },
       },
       knowledgeBases: {
-        where: { isEnabled: true, kb: { deletedAt: null } },
+        where: { isEnabled: true },
+        orderBy: { id: 'asc' },
         select: {
-          kb: { select: { id: true, name: true } },
+          id: true,
+          kb: {
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              deletedAt: true,
+            },
+          },
         },
       },
     },
@@ -2054,6 +2114,17 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   }
 
   const chatbotIds = chatbots.map((chatbot) => chatbot.id)
+  const chatbotOwnerIds = [
+    ...new Set(chatbots.map((chatbot) => chatbot.ownerId)),
+  ]
+  const bindingKbIds = [
+    ...new Set(
+      chatbots.flatMap((chatbot) =>
+        chatbot.knowledgeBases.map(({ kb }) => kb.id)
+      )
+    ),
+  ]
+  const relevantUserIds = [...new Set([ctx.user.sub, ...chatbotOwnerIds])]
 
   const [creditAggregates, threadAggregates, acceptedCounts, declinedCounts] =
     await Promise.all([
@@ -2121,15 +2192,49 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   const messageCountById = new Map(
     messageCountRows.map((row) => [row.chatbotId, Number(row.count)])
   )
+  const knowledgeBases = await getKnowledgeBasesWithLivePermissions(
+    ctx.prisma,
+    {
+      where: {
+        OR: [
+          ...(bindingKbIds.length > 0 ? [{ id: { in: bindingKbIds } }] : []),
+          { deletedAt: null, ownerId: ctx.user.sub },
+          {
+            deletedAt: null,
+            directPermissions: {
+              some: sharedObjectUserPermissionWhere(ctx.user.sub),
+            },
+          },
+        ],
+      },
+      userIds: relevantUserIds,
+    }
+  )
+  const knowledgeBaseById = new Map(knowledgeBases.map((kb) => [kb.id, kb]))
+  const kbPickerCandidates = knowledgeBases.filter(
+    (kb) => kb.deletedAt === null && canReadKb(kb, ctx.user.sub)
+  )
   const kbMetricsById = await getKbMetricsMap(ctx.prisma, [
     ...new Set(
       chatbots.flatMap((chatbot) =>
-        chatbot.knowledgeBases.map(({ kb }) => kb.id)
+        chatbot.knowledgeBases.flatMap(({ kb }) => {
+          const liveKb = knowledgeBaseById.get(kb.id)
+          return liveKb &&
+            liveKb.deletedAt === null &&
+            canReadKb(liveKb, ctx.user.sub)
+            ? [liveKb.id]
+            : []
+        })
       )
     ),
   ])
 
   return chatbots.map((chatbot) => {
+    const {
+      ownerId: _ownerId,
+      knowledgeBases: _knowledgeBases,
+      ...chatbotForResponse
+    } = chatbot
     const creditAggregate = creditAggregateById.get(chatbot.id)
     const threadAggregate = threadAggregateById.get(chatbot.id)
     const participantCount = creditAggregate?._count._all ?? 0
@@ -2164,13 +2269,37 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
-    const enabledKnowledgeBases = chatbot.knowledgeBases.map(({ kb }) => ({
-      ...kb,
-      metrics: kbMetricsById.get(kb.id) ?? null,
+    const enabledKnowledgeBases = chatbot.knowledgeBases.map((binding) => {
+      const kb = knowledgeBaseById.get(binding.kb.id)
+      const canRead = kb ? canReadKb(kb, ctx.user.sub) : false
+      if (!kb || kb.deletedAt !== null || !canRead) {
+        return {
+          bindingId: binding.id,
+          id: null,
+          name: null,
+          available: false,
+          canEdit: false,
+          metrics: null,
+        }
+      }
+
+      return {
+        bindingId: binding.id,
+        id: kb.id,
+        name: kb.name,
+        available: canReadKb(kb, chatbot.ownerId),
+        canEdit: canEditKb(kb, ctx.user.sub),
+        metrics: kbMetricsById.get(kb.id) ?? null,
+      }
+    })
+    const knowledgeBaseOptions = kbPickerCandidates.map((kb) => ({
+      id: kb.id,
+      name: kb.name,
+      available: canReadKb(kb, chatbot.ownerId),
     }))
 
     return {
-      ...shapeChatbotResponse(chatbot),
+      ...shapeChatbotResponse(chatbotForResponse),
       courses: chatbot.course
         ? [
             {
@@ -2183,6 +2312,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       usageSummary,
       disclaimerSummary,
       enabledKnowledgeBases,
+      knowledgeBaseOptions,
       enabledKnowledgeBase:
         enabledKnowledgeBases.length === 1
           ? (enabledKnowledgeBases[0] ?? null)

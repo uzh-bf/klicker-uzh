@@ -4,6 +4,7 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   KBResourceStatus,
   KBResourceType,
+  PermissionLevel,
   Prisma,
   type PrismaClient,
   ResponseExampleStatus,
@@ -162,7 +163,13 @@ describe('response-example foundation', () => {
     await testCleanup(prisma)
   })
 
-  async function seedResponseExampleSet() {
+  async function seedResponseExampleSet({
+    kbOwnerId = userOneCtx.user.sub,
+    ownerReadUserId,
+  }: {
+    kbOwnerId?: string
+    ownerReadUserId?: string
+  } = {}) {
     const course = await seedCourse({}, userOneCtx)
     const chatbot = await prisma.chatbot.create({
       data: {
@@ -181,9 +188,18 @@ describe('response-example foundation', () => {
     const kb = await prisma.kB.create({
       data: {
         name: 'Response example test knowledge base',
-        ownerId: userOneCtx.user.sub,
+        ownerId: kbOwnerId,
       },
     })
+    if (ownerReadUserId && ownerReadUserId !== kbOwnerId) {
+      await prisma.permission.create({
+        data: {
+          kbId: kb.id,
+          userId: ownerReadUserId,
+          permissionLevel: PermissionLevel.READ,
+        },
+      })
+    }
     await prisma.kBChatbot.create({
       data: { kbId: kb.id, chatbotId: chatbot.id, isEnabled: true },
     })
@@ -252,16 +268,20 @@ describe('response-example foundation', () => {
     answer = 'Use the current course source to justify the result [1].',
     chatMode = 'tutor',
     question = 'Why does the result follow?',
+    kbOwnerId,
+    ownerReadUserId,
   }: {
     answer?: string
     chatMode?: string
     question?: string
+    kbOwnerId?: string
+    ownerReadUserId?: string
   } = {}) {
     await prisma.user.update({
       where: { id: userOneCtx.user.sub },
       data: { aiFeaturesEnabled: true },
     })
-    const seeded = await seedResponseExampleSet()
+    const seeded = await seedResponseExampleSet({ kbOwnerId, ownerReadUserId })
     const contentHash = 'b'.repeat(64)
     await prisma.kBResource.update({
       where: { id: seeded.currentResource.id },
@@ -501,6 +521,86 @@ describe('response-example foundation', () => {
         },
       })
     ).resolves.toBeNull()
+  })
+
+  it('accepts capture while the chatbot owner has a live KB Read grant', async () => {
+    const capture = await buildCaptureInput({
+      kbOwnerId: userTwoCtx.user.sub,
+      ownerReadUserId: userOneCtx.user.sub,
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).resolves.toMatchObject({ created: true })
+    await expect(
+      prisma.responseExample.findFirst({
+        where: {
+          setId: capture.set.id,
+          chatMode: 'tutor',
+          studentMessage: capture.args.question,
+        },
+        include: { evidenceReferences: true },
+      })
+    ).resolves.toMatchObject({
+      status: ResponseExampleStatus.CANDIDATE,
+      evidenceReferences: [
+        expect.objectContaining({ sourceId: capture.currentResource.id }),
+      ],
+    })
+  })
+
+  it('rejects a stale receipt after the chatbot owner loses the final KB Read grant', async () => {
+    const capture = await buildCaptureInput({
+      kbOwnerId: userTwoCtx.user.sub,
+      ownerReadUserId: userOneCtx.user.sub,
+    })
+    await prisma.permission.deleteMany({
+      where: {
+        kbId: capture.kb.id,
+        userId: userOneCtx.user.sub,
+      },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+    })
+    await expect(
+      prisma.responseExample.count({
+        where: {
+          setId: capture.set.id,
+          chatMode: 'tutor',
+          studentMessage: capture.args.question,
+        },
+      })
+    ).resolves.toBe(0)
+  })
+
+  it('rejects capture when only a stale derived KB Read grant remains', async () => {
+    const capture = await buildCaptureInput({
+      kbOwnerId: userTwoCtx.user.sub,
+      ownerReadUserId: userOneCtx.user.sub,
+    })
+    await prisma.permission.deleteMany({
+      where: {
+        kbId: capture.kb.id,
+        userId: userOneCtx.user.sub,
+      },
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        kbId: capture.kb.id,
+        userId: userOneCtx.user.sub,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: RESPONSE_EXAMPLE_CAPTURE_STALE },
+    })
   })
 
   it.each([
@@ -1475,6 +1575,46 @@ describe('response-example foundation', () => {
     expect(computeResponseExampleSetDigest(loadedSet)).toBe(
       computeResponseExampleSetDigest(reversedSet)
     )
+  })
+
+  it('rejects evidence from a disabled KB after replacement with an unreadable KB', async () => {
+    const { chatbot, currentResource, kb, set } = await seedResponseExampleSet()
+    const hiddenKb = await prisma.kB.create({
+      data: {
+        name: 'Unavailable second knowledge base',
+        ownerId: userTwoCtx.user.sub,
+      },
+    })
+    await prisma.kBChatbot.update({
+      where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+      data: { isEnabled: false },
+    })
+    await prisma.kBChatbot.create({
+      data: { kbId: hiddenKb.id, chatbotId: chatbot.id, isEnabled: true },
+    })
+    const candidate = set.examples.find(
+      (example) => example.status === ResponseExampleStatus.CANDIDATE
+    )!
+
+    const reconciled = await getChatbotResponseExamples(
+      { chatbotId: chatbot.id },
+      userOneCtx
+    )
+    expect(
+      reconciled?.examples.find((example) => example.id === candidate.id)
+    ).toMatchObject({
+      evidenceReferences: [
+        expect.objectContaining({
+          sourceId: currentResource.id,
+          evidenceEligible: false,
+        }),
+      ],
+    })
+    await expect(
+      prisma.kBChatbot.count({
+        where: { chatbotId: chatbot.id, isEnabled: true },
+      })
+    ).resolves.toBe(1)
   })
 
   it('cascades the set, entries, and evidence when a chatbot is deleted', async () => {

@@ -2,15 +2,15 @@ import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import { faFileLines, faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AttachKbToChatbotDocument,
+  AttachKbToChatbotWithKnowledgeBasesDocument,
   ChatbotStatus,
-  DetachKbFromChatbotDocument,
+  DetachKbFromChatbotByBindingDocument,
   GetKbResourcesWithFailureDetailDocument,
   GetUserCoursesDocument,
   GetUserKbsWithPermissionLevelDocument,
   KbIngestionStatus,
   KbResourceType,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   CreateKnowledgeBaseModal,
@@ -33,7 +33,9 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 // The largest page the knowledge-base list accepts in one request.
 const KB_LIST_PAGE_SIZE = 50
 
-const refetchQueries = [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }]
+const refetchQueries = [
+  { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
+]
 
 // The select value that stands for answering without a knowledge base.
 const NO_KNOWLEDGE_BASE = 'no-knowledge-base'
@@ -53,9 +55,23 @@ type MaterialsReadiness = {
 }
 
 type ConnectedKnowledgeBase = {
+  bindingId: string
+  id?: string | null
+  name?: string | null
+  available: boolean
+  canEdit: boolean
+  materialsReadiness?: MaterialsReadiness | null
+}
+
+type ReadableConnectedKnowledgeBase = ConnectedKnowledgeBase & {
   id: string
   name: string
-  materialsReadiness?: MaterialsReadiness | null
+}
+
+type KnowledgeBaseOption = {
+  id: string
+  name: string
+  available: boolean
 }
 
 function KnowledgeBaseCard({
@@ -65,7 +81,7 @@ function KnowledgeBaseCard({
   onAddFiles,
 }: {
   chatbotId: string
-  knowledgeBase: ConnectedKnowledgeBase
+  knowledgeBase: ReadableConnectedKnowledgeBase
   addFilesRef: RefObject<HTMLDivElement | null>
   // Without it the card only shows the knowledge base.
   onAddFiles?: () => void
@@ -93,7 +109,7 @@ function KnowledgeBaseCard({
     else stopPolling()
     if (previousActiveCount.current > 0 && activeCount === 0) {
       void apolloClient.refetchQueries({
-        include: [QGetChatbotsInfoWithKnowledgeBasesDocument],
+        include: [QGetChatbotsInfoWithKnowledgeBaseMetadataDocument],
       })
     }
     previousActiveCount.current = activeCount
@@ -232,6 +248,7 @@ function ChatbotKnowledgeBaseSetup({
   chatbotStatus,
   courseIds,
   connectedKnowledgeBase,
+  knowledgeBaseOptions,
   connectOnSelect = false,
   proposedKnowledgeBaseName,
   readOnly = false,
@@ -240,6 +257,7 @@ function ChatbotKnowledgeBaseSetup({
   chatbotStatus: ChatbotStatus
   courseIds: string[]
   connectedKnowledgeBase?: ConnectedKnowledgeBase
+  knowledgeBaseOptions?: readonly KnowledgeBaseOption[]
   // The setup page connects on select, shows the knowledge base card, and
   // keeps creating and adding materials on the chatbot.
   connectOnSelect?: boolean
@@ -269,7 +287,7 @@ function ChatbotKnowledgeBaseSetup({
   // selected so the lecturer can retry the connection instead of creating a
   // second knowledge base.
   const [unconnectedKb, setUnconnectedKb] = useState<
-    { id: string; name: string } | undefined
+    { id: string; name: string; available: true } | undefined
   >()
   const { data, error, refetch } = useQuery(
     GetUserKbsWithPermissionLevelDocument,
@@ -291,36 +309,62 @@ function ChatbotKnowledgeBaseSetup({
   const proposedLanguage =
     courseLanguages.size === 1 ? [...courseLanguages][0] : undefined
   const [attachKb, { loading: attaching }] = useMutation(
-    AttachKbToChatbotDocument
+    AttachKbToChatbotWithKnowledgeBasesDocument
   )
   const [detachKb, { loading: detaching }] = useMutation(
-    DetachKbFromChatbotDocument
+    DetachKbFromChatbotByBindingDocument
   )
   const mutating = attaching || detaching
 
   const knowledgeBases = data?.getUserKbsConnection.items ?? []
-  // The connected knowledge base and one just created here stay selectable even
-  // when they fall outside the first page of the lecturer's list.
+  const pickerOptions =
+    knowledgeBaseOptions ??
+    knowledgeBases.map((knowledgeBase) => ({
+      ...knowledgeBase,
+      available: true,
+    }))
+  const seenKbIds = new Set<string>()
   const selectItems = [
-    ...[connectedKnowledgeBase, unconnectedKb].filter(
-      (knowledgeBase): knowledgeBase is { id: string; name: string } =>
-        knowledgeBase != null &&
-        !knowledgeBases.some(({ id }) => id === knowledgeBase.id)
-    ),
-    ...knowledgeBases,
-  ].map((knowledgeBase) => ({
-    value: knowledgeBase.id,
-    label: knowledgeBase.name,
-  }))
+    ...pickerOptions,
+    ...(unconnectedKb ? [unconnectedKb] : []),
+    ...(connectedKnowledgeBase?.id &&
+    connectedKnowledgeBase.name &&
+    connectedKnowledgeBase.bindingId
+      ? [
+          {
+            id: connectedKnowledgeBase.id,
+            name: connectedKnowledgeBase.name,
+            available: connectedKnowledgeBase.available,
+          },
+        ]
+      : []),
+  ]
+    .filter((knowledgeBase) => {
+      if (seenKbIds.has(knowledgeBase.id)) return false
+      seenKbIds.add(knowledgeBase.id)
+      return true
+    })
+    .map((knowledgeBase) => ({
+      value: knowledgeBase.id,
+      label: knowledgeBase.available
+        ? knowledgeBase.name
+        : t('manage.resources.chatbotKnowledgeBaseOwnerNeedsReadOption', {
+            kbName: knowledgeBase.name,
+          }),
+      disabled: !knowledgeBase.available,
+    }))
   if (connectsOnSelect) {
     selectItems.unshift({
       value: NO_KNOWLEDGE_BASE,
       label: t('manage.resources.chatbotNoKnowledgeBaseOption'),
+      disabled: false,
     })
   }
   const selectedValue =
     selectedKbId ??
-    connectedKnowledgeBase?.id ??
+    (connectedKnowledgeBase?.id && connectedKnowledgeBase.name
+      ? connectedKnowledgeBase.id
+      : undefined) ??
     (connectsOnSelect ? NO_KNOWLEDGE_BASE : undefined)
   const replacing =
     connectedKnowledgeBase != null &&
@@ -334,7 +378,25 @@ function ChatbotKnowledgeBaseSetup({
     selectedValue != null &&
     selectedValue !== NO_KNOWLEDGE_BASE &&
     selectedValue !== connectedKnowledgeBase?.id &&
+    selectItems.find(({ value }) => value === selectedValue)?.disabled !==
+      true &&
     !mutating
+  const redactedKnowledgeBase =
+    connectedKnowledgeBase != null &&
+    (!connectedKnowledgeBase.id || !connectedKnowledgeBase.name)
+  const unavailableKnowledgeBase =
+    connectedKnowledgeBase?.available === false && !redactedKnowledgeBase
+  const readableConnectedKnowledgeBase =
+    connectedKnowledgeBase?.id && connectedKnowledgeBase.name
+      ? {
+          ...connectedKnowledgeBase,
+          id: connectedKnowledgeBase.id,
+          name: connectedKnowledgeBase.name,
+        }
+      : undefined
+  const hasUnavailableOptions = pickerOptions.some(
+    ({ available }) => !available
+  )
 
   const attach = async (kbId: string) => {
     try {
@@ -369,6 +431,7 @@ function ChatbotKnowledgeBaseSetup({
   }
 
   const handleSelect = (kbId: string) => {
+    if (selectItems.find(({ value }) => value === kbId)?.disabled) return
     if (kbId === NO_KNOWLEDGE_BASE) {
       setSelectedKbId(undefined)
       void handleDisconnect()
@@ -385,7 +448,15 @@ function ChatbotKnowledgeBaseSetup({
 
     try {
       await detachKb({
-        variables: { kbId: connectedKnowledgeBase.id, chatbotId },
+        variables: connectedKnowledgeBase.bindingId
+          ? {
+              bindingId: connectedKnowledgeBase.bindingId,
+              chatbotId,
+            }
+          : {
+              kbId: connectedKnowledgeBase.id,
+              chatbotId,
+            },
         refetchQueries,
       })
     } catch (mutationError) {
@@ -412,7 +483,7 @@ function ChatbotKnowledgeBaseSetup({
     apolloClient.cache.gc()
 
     if (!(await attach(id))) {
-      setUnconnectedKb(createdKb)
+      setUnconnectedKb({ ...createdKb, available: true })
       setSelectedKbId(id)
       await refetch()
       return
@@ -435,7 +506,7 @@ function ChatbotKnowledgeBaseSetup({
   const refreshMaterials = () =>
     apolloClient.refetchQueries({
       include: [
-        QGetChatbotsInfoWithKnowledgeBasesDocument,
+        QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
         GetKbResourcesWithFailureDetailDocument,
       ],
     })
@@ -443,10 +514,27 @@ function ChatbotKnowledgeBaseSetup({
   if (readOnly) {
     return (
       <div className="space-y-3" data-cy="chatbot-kb-setup">
-        {connectedKnowledgeBase ? (
+        {redactedKnowledgeBase ? (
+          <UserNotification
+            type="warning"
+            message={t(
+              'manage.resources.chatbotKnowledgeBaseRedactedUnavailable'
+            )}
+            data={{ cy: 'chatbot-kb-redacted-unavailable' }}
+          />
+        ) : unavailableKnowledgeBase ? (
+          <UserNotification
+            type="warning"
+            message={t(
+              'manage.resources.chatbotKnowledgeBaseOwnerReadRequired'
+            )}
+            data={{ cy: 'chatbot-kb-owner-read-required' }}
+          />
+        ) : null}
+        {readableConnectedKnowledgeBase ? (
           <KnowledgeBaseCard
             chatbotId={chatbotId}
-            knowledgeBase={connectedKnowledgeBase}
+            knowledgeBase={readableConnectedKnowledgeBase}
             addFilesRef={addFilesRef}
           />
         ) : null}
@@ -470,6 +558,28 @@ function ChatbotKnowledgeBaseSetup({
           type="error"
           message={t('manage.resources.chatbotKnowledgeBaseListError')}
           data={{ cy: 'chatbot-kb-list-error' }}
+        />
+      ) : null}
+      {redactedKnowledgeBase ? (
+        <UserNotification
+          type="warning"
+          message={t(
+            'manage.resources.chatbotKnowledgeBaseRedactedUnavailable'
+          )}
+          data={{ cy: 'chatbot-kb-redacted-unavailable' }}
+        />
+      ) : unavailableKnowledgeBase ? (
+        <UserNotification
+          type="warning"
+          message={t('manage.resources.chatbotKnowledgeBaseOwnerReadRequired')}
+          data={{ cy: 'chatbot-kb-owner-read-required' }}
+        />
+      ) : null}
+      {hasUnavailableOptions ? (
+        <UserNotification
+          type="info"
+          message={t('manage.resources.chatbotKnowledgeBaseUnavailableOptions')}
+          data={{ cy: 'chatbot-kb-unavailable-options' }}
         />
       ) : null}
       <div className="flex flex-col items-end gap-3 sm:flex-row">
@@ -504,7 +614,10 @@ function ChatbotKnowledgeBaseSetup({
             </Button.Label>
           </Button>
         ) : null}
-        {connectedKnowledgeBase && !connectsOnSelect ? (
+        {connectedKnowledgeBase &&
+        (!connectsOnSelect ||
+          redactedKnowledgeBase ||
+          unavailableKnowledgeBase) ? (
           <Button
             disabled={mutating}
             onClick={handleDisconnect}
@@ -536,25 +649,32 @@ function ChatbotKnowledgeBaseSetup({
       {replacing && !connectsOnSelect ? (
         <UserNotification
           type="warning"
-          message={t(
-            'manage.resources.chatbotKnowledgeBaseReplacementWarning',
-            {
-              kbName: connectedKnowledgeBase?.name ?? '',
-            }
-          )}
+          message={
+            connectedKnowledgeBase?.name
+              ? t('manage.resources.chatbotKnowledgeBaseReplacementWarning', {
+                  kbName: connectedKnowledgeBase.name,
+                })
+              : t(
+                  'manage.resources.chatbotKnowledgeBaseReplacementHiddenWarning'
+                )
+          }
           data={{ cy: 'chatbot-kb-replacement-warning' }}
         />
       ) : null}
-      {connectOnSelect && connectedKnowledgeBase ? (
+      {connectOnSelect && readableConnectedKnowledgeBase ? (
         <KnowledgeBaseCard
           chatbotId={chatbotId}
-          knowledgeBase={connectedKnowledgeBase}
+          knowledgeBase={readableConnectedKnowledgeBase}
           addFilesRef={addFilesRef}
-          onAddFiles={() => {
-            addResourceTriggerRef.current =
-              document.activeElement as HTMLElement
-            setAddResourceKb(connectedKnowledgeBase)
-          }}
+          onAddFiles={
+            readableConnectedKnowledgeBase.canEdit
+              ? () => {
+                  addResourceTriggerRef.current =
+                    document.activeElement as HTMLElement
+                  setAddResourceKb(readableConnectedKnowledgeBase)
+                }
+              : undefined
+          }
         />
       ) : null}
       {createOpen ? (

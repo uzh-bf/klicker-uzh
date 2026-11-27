@@ -1,13 +1,13 @@
 import type { ParsedUrlQuery } from 'node:querystring'
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  AttachKbToChatbotDocument,
+  AttachKbToChatbotWithKnowledgeBasesDocument,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
   GetKbWithPermissionLevelDocument,
   GetUserCoursesDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Select, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -39,7 +39,7 @@ function Chatbots() {
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
   const { data, loading } = useQuery(
-    QGetChatbotsInfoWithKnowledgeBasesDocument,
+    QGetChatbotsInfoWithKnowledgeBaseMetadataDocument,
     {
       fetchPolicy: 'network-only',
     }
@@ -73,7 +73,7 @@ function Chatbots() {
     createForKbId && createForKbData?.getKb.id === createForKbId
       ? createForKbData.getKb
       : undefined
-  const [attachKb] = useMutation(AttachKbToChatbotDocument)
+  const [attachKb] = useMutation(AttachKbToChatbotWithKnowledgeBasesDocument)
   const {
     data: publishingCapabilityData,
     loading: publishingCapabilityLoading,
@@ -261,7 +261,9 @@ function Chatbots() {
     try {
       await attachKb({
         variables: { kbId, chatbotId },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [
+          { query: QGetChatbotsInfoWithKnowledgeBaseMetadataDocument },
+        ],
         awaitRefetchQueries: true,
       })
     } catch (error) {

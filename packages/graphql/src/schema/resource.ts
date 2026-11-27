@@ -515,24 +515,50 @@ export interface IChatbot {
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
   enabledKnowledgeBase?: IChatbotKnowledgeBaseSummary | null
   enabledKnowledgeBases?: IChatbotKnowledgeBaseSummary[]
+  knowledgeBaseOptions?: IChatbotKnowledgeBasePickerOption[]
   authoringRevision?: ChatbotAuthoringRevisionProjection | null
   revisionStatus?: DB.ChatbotStatus | null
   revisionVersion?: number
 }
 
 export interface IChatbotKnowledgeBaseSummary {
-  id: string
-  name: string
+  bindingId: string
+  id: string | null
+  name: string | null
+  available: boolean
+  canEdit: boolean
   metrics?: KBMetrics | null
 }
+
+export interface IChatbotKnowledgeBasePickerOption {
+  id: string
+  name: string
+  available: boolean
+}
+
+export const ChatbotKnowledgeBasePickerOptionRef =
+  builder.objectRef<IChatbotKnowledgeBasePickerOption>(
+    'ChatbotKnowledgeBasePickerOption'
+  )
+export const ChatbotKnowledgeBasePickerOption =
+  ChatbotKnowledgeBasePickerOptionRef.implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      name: t.exposeString('name'),
+      available: t.exposeBoolean('available'),
+    }),
+  })
 
 export const ChatbotKnowledgeBaseSummaryRef =
   builder.objectRef<IChatbotKnowledgeBaseSummary>('ChatbotKnowledgeBaseSummary')
 export const ChatbotKnowledgeBaseSummary =
   ChatbotKnowledgeBaseSummaryRef.implement({
     fields: (t) => ({
-      id: t.exposeID('id'),
-      name: t.exposeString('name'),
+      bindingId: t.exposeID('bindingId'),
+      id: t.exposeID('id', { nullable: true }),
+      name: t.exposeString('name', { nullable: true }),
+      available: t.exposeBoolean('available'),
+      canEdit: t.exposeBoolean('canEdit'),
     }),
   })
 
@@ -722,6 +748,10 @@ export const Chatbot = ChatbotRef.implement({
     enabledKnowledgeBases: t.field({
       type: [ChatbotKnowledgeBaseSummaryRef],
       resolve: (chatbot) => chatbot.enabledKnowledgeBases ?? [],
+    }),
+    knowledgeBaseOptions: t.field({
+      type: [ChatbotKnowledgeBasePickerOptionRef],
+      resolve: (chatbot) => chatbot.knowledgeBaseOptions ?? [],
     }),
     authoringRevision: t.field({
       type: ChatbotAuthoringRevisionRef,

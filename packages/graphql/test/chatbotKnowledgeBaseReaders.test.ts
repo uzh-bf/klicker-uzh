@@ -1,42 +1,91 @@
+import { PermissionLevel } from '@klicker-uzh/prisma/client'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getChatbotsInfo } from '../src/services/chatbots.js'
 import { getKbChatbotBindings } from '../src/services/knowledge.js'
 
-const USER_ID = '00000000-0000-4000-8000-000000000001'
-const READER_KB_ID = '00000000-0000-4000-8000-000000000002'
+const EDITOR_ID = '00000000-0000-4000-8000-000000000001'
+const BOT_OWNER_ID = '00000000-0000-4000-8000-000000000002'
+const CHATBOT_ID = '00000000-0000-4000-8000-000000000003'
+const READABLE_KB_ID = '00000000-0000-4000-8000-000000000004'
+
+type MockPermission = {
+  id: number
+  userId: string
+  permissionLevel: PermissionLevel
+  userGroup: null
+}
+
+type MockPermissionInput = {
+  userId: string
+  permissionLevel: PermissionLevel
+}
 
 type MockKnowledgeBase = {
   id: string
   name: string
+  ownerId: string
   deletedAt: Date | null
+  directPermissions: MockPermission[]
 }
 
 type MockKnowledgeBaseBinding = {
+  id: string
   isEnabled: boolean
   kb: MockKnowledgeBase
 }
 
 type ChatbotFindManyArgs = {
   select?: {
+    ownerId?: boolean
     knowledgeBases?: {
-      take?: number
       where?: {
         isEnabled?: boolean
-        kb?: { deletedAt?: Date | null }
       }
     }
   }
 }
 
+type KnowledgeBaseFindManyArgs = {
+  select?: {
+    storageLimitMiB?: boolean
+  }
+}
+
+function knowledgeBase(
+  id: string,
+  name: string,
+  ownerId: string,
+  permissions: MockPermissionInput[] = []
+): MockKnowledgeBase {
+  return {
+    id,
+    name,
+    ownerId,
+    deletedAt: null,
+    directPermissions: permissions.map((permission, index) => ({
+      id: index + 1,
+      userId: permission.userId,
+      permissionLevel: permission.permissionLevel,
+      userGroup: null,
+    })),
+  }
+}
+
+function binding(id: string, kb: MockKnowledgeBase): MockKnowledgeBaseBinding {
+  return { id, kb, isEnabled: true }
+}
+
 function createMockChatbot(knowledgeBases: MockKnowledgeBaseBinding[]) {
   return {
-    id: '00000000-0000-4000-8000-000000000003',
+    id: CHATBOT_ID,
+    ownerId: BOT_OWNER_ID,
     name: 'Reader test chatbot',
     description: null,
     avatar: null,
     systemPrompts: null,
     standardModeConfig: null,
+    customModeConfig: null,
     draftConfig: null,
     modelSelection: true,
     allowedModelIds: ['auto'],
@@ -62,38 +111,48 @@ function createMockChatbot(knowledgeBases: MockKnowledgeBaseBinding[]) {
   }
 }
 
-function createReaderContext(knowledgeBases: MockKnowledgeBaseBinding[]) {
-  // Model the nested Prisma result so plural projections can be exercised
-  // without weakening the database's one-enabled-binding constraint.
+function createReaderContext(
+  chatbot: ReturnType<typeof createMockChatbot>,
+  pickerKnowledgeBases: MockKnowledgeBase[],
+  readableKnowledgeBase: MockKnowledgeBase
+) {
   const chatbotFindMany = vi.fn(async (args: ChatbotFindManyArgs) => {
-    const knowledgeBaseQuery = args.select?.knowledgeBases
-    if (knowledgeBaseQuery?.take !== undefined) {
+    if (args.select?.knowledgeBases?.where?.isEnabled !== true) {
       throw new Error(
-        'Reader must not truncate knowledge-base attachments before projection'
+        'Reader must filter disabled knowledge-base bindings before redaction'
       )
     }
-
-    const where = knowledgeBaseQuery?.where
-    if (where?.isEnabled !== true || where.kb?.deletedAt !== null) {
-      throw new Error(
-        'Reader must filter disabled and deleted knowledge-base bindings'
-      )
-    }
-
-    const chatbot = createMockChatbot(knowledgeBases)
     return [
       {
         ...chatbot,
-        knowledgeBases: chatbot.knowledgeBases
-          .filter(({ isEnabled, kb }) => isEnabled && kb.deletedAt === null)
-          .map(({ kb }) => ({ kb: { id: kb.id, name: kb.name } })),
+        knowledgeBases: chatbot.knowledgeBases.filter(
+          ({ isEnabled }) => isEnabled
+        ),
       },
     ]
   })
+  const knowledgeBaseFindMany = vi.fn(
+    async (args: KnowledgeBaseFindManyArgs) => {
+      if (args.select?.storageLimitMiB) {
+        return pickerKnowledgeBases.map((kb) => ({
+          id: kb.id,
+          storageLimitMiB: null,
+        }))
+      }
+      return [
+        ...new Map(
+          [
+            ...chatbot.knowledgeBases.map(({ kb }) => kb),
+            ...pickerKnowledgeBases,
+          ].map((kb) => [kb.id, kb])
+        ).values(),
+      ]
+    }
+  )
 
   const ctx = {
     user: {
-      sub: USER_ID,
+      sub: EDITOR_ID,
       role: 'USER',
       scope: 'ACCOUNT_OWNER',
       catalystInstitutional: true,
@@ -112,15 +171,12 @@ function createReaderContext(knowledgeBases: MockKnowledgeBaseBinding[]) {
         })),
       },
       kB: {
-        findFirst: vi.fn(async () => ({
-          id: READER_KB_ID,
-          ownerId: USER_ID,
-          deletedAt: null,
+        findUnique: vi.fn(async () => ({
+          ...readableKnowledgeBase,
+          id: READABLE_KB_ID,
         })),
-        findMany: vi.fn(async () => []),
+        findMany: knowledgeBaseFindMany,
       },
-      // The chatbot reader aggregates material readiness for the attached
-      // knowledge bases; an empty aggregate keeps the projection under test.
       kBResource: { groupBy: vi.fn(async () => []) },
       kBUploadTicket: { groupBy: vi.fn(async () => []) },
       kBChatbot: { groupBy: vi.fn(async () => []) },
@@ -134,97 +190,106 @@ function createReaderContext(knowledgeBases: MockKnowledgeBaseBinding[]) {
   return { chatbotFindMany, ctx }
 }
 
-function knowledgeBaseBinding(
-  id: string,
-  name: string,
-  options: { isEnabled?: boolean; deletedAt?: Date | null } = {}
-): MockKnowledgeBaseBinding {
-  return {
-    isEnabled: options.isEnabled ?? true,
-    kb: {
-      id,
-      name,
-      deletedAt: options.deletedAt ?? null,
-    },
-  }
-}
+describe('Chatbot knowledge-base reader projections', () => {
+  it('redacts editor unreadable metadata and derives owner availability independently', async () => {
+    const editorWritable = knowledgeBase(
+      'kb-editor-writable',
+      'Editor writable',
+      EDITOR_ID,
+      [{ userId: BOT_OWNER_ID, permissionLevel: PermissionLevel.READ }]
+    )
+    const editorReadOnly = knowledgeBase(
+      'kb-editor-read-only',
+      'Editor read only',
+      BOT_OWNER_ID,
+      [{ userId: EDITOR_ID, permissionLevel: PermissionLevel.READ }]
+    )
+    const ownerUnreadable = knowledgeBase(
+      'kb-owner-unreadable',
+      'Owner unreadable',
+      EDITOR_ID
+    )
+    const editorUnreadable = knowledgeBase(
+      'kb-editor-unreadable',
+      'Must stay hidden',
+      BOT_OWNER_ID
+    )
+    const chatbot = createMockChatbot([
+      binding('binding-writable', editorWritable),
+      binding('binding-read-only', editorReadOnly),
+      binding('binding-owner-unreadable', ownerUnreadable),
+      binding('binding-editor-unreadable', editorUnreadable),
+    ])
+    const { chatbotFindMany, ctx } = createReaderContext(
+      chatbot,
+      [editorWritable, editorReadOnly, ownerUnreadable],
+      editorWritable
+    )
 
-describe('Chatbot knowledge-base reader compatibility', () => {
-  it.each([
-    {
-      name: 'zero eligible attachments',
-      knowledgeBases: [
-        knowledgeBaseBinding('kb-disabled', 'Disabled KB', {
-          isEnabled: false,
-        }),
-        knowledgeBaseBinding('kb-deleted', 'Deleted KB', {
-          deletedAt: new Date('2026-09-09T08:00:00.000Z'),
-        }),
-      ],
-      expected: [],
-      legacyId: null,
-      legacyName: null,
-    },
-    {
-      name: 'one eligible attachment',
-      knowledgeBases: [
-        knowledgeBaseBinding('kb-one', 'One KB'),
-        knowledgeBaseBinding('kb-disabled', 'Disabled KB', {
-          isEnabled: false,
-        }),
-        knowledgeBaseBinding('kb-deleted', 'Deleted KB', {
-          deletedAt: new Date('2026-09-09T08:00:00.000Z'),
-        }),
-      ],
-      expected: [{ id: 'kb-one', name: 'One KB' }],
-      legacyId: 'kb-one',
-      legacyName: 'One KB',
-    },
-    {
-      name: 'many eligible attachments',
-      knowledgeBases: [
-        knowledgeBaseBinding('kb-one', 'One KB'),
-        knowledgeBaseBinding('kb-two', 'Two KB'),
-        knowledgeBaseBinding('kb-disabled', 'Disabled KB', {
-          isEnabled: false,
-        }),
-        knowledgeBaseBinding('kb-deleted', 'Deleted KB', {
-          deletedAt: new Date('2026-09-09T08:00:00.000Z'),
-        }),
-      ],
-      expected: [
-        { id: 'kb-one', name: 'One KB' },
-        { id: 'kb-two', name: 'Two KB' },
-      ],
-      legacyId: null,
-      legacyName: null,
-    },
-  ])('projects $name consistently in chatbot and KB-binding readers', async ({
-    knowledgeBases,
-    expected,
-    legacyId,
-    legacyName,
-  }) => {
-    const { chatbotFindMany, ctx } = createReaderContext(knowledgeBases)
+    const [projectedChatbot] = (await getChatbotsInfo(ctx)) ?? []
+    const [kbBinding] = await getKbChatbotBindings(
+      { kbId: READABLE_KB_ID },
+      ctx
+    )
 
-    const [chatbot] = (await getChatbotsInfo(ctx)) ?? []
-    const bindings = await getKbChatbotBindings({ kbId: READER_KB_ID }, ctx)
-
-    expect(chatbot).toMatchObject({
-      enabledKnowledgeBases: expected,
-      enabledKnowledgeBase:
-        expected.length === 1 ? (expected[0] ?? null) : null,
-    })
-    expect(bindings).toEqual([
+    expect(projectedChatbot?.enabledKnowledgeBases).toEqual([
+      expect.objectContaining({
+        bindingId: 'binding-writable',
+        id: editorWritable.id,
+        name: editorWritable.name,
+        available: true,
+        canEdit: true,
+      }),
+      expect.objectContaining({
+        bindingId: 'binding-read-only',
+        id: editorReadOnly.id,
+        name: editorReadOnly.name,
+        available: true,
+        canEdit: false,
+      }),
+      expect.objectContaining({
+        bindingId: 'binding-owner-unreadable',
+        id: ownerUnreadable.id,
+        name: ownerUnreadable.name,
+        available: false,
+        canEdit: true,
+      }),
       {
-        chatbotId: '00000000-0000-4000-8000-000000000003',
-        chatbotName: 'Reader test chatbot',
-        chatbotStatus: 'DRAFT',
-        enabledKbs: expected,
-        enabledKbId: legacyId,
-        enabledKbName: legacyName,
+        bindingId: 'binding-editor-unreadable',
+        id: null,
+        name: null,
+        available: false,
+        canEdit: false,
+        metrics: null,
       },
     ])
+    expect(projectedChatbot?.knowledgeBaseOptions).toEqual([
+      { id: editorWritable.id, name: editorWritable.name, available: true },
+      { id: editorReadOnly.id, name: editorReadOnly.name, available: true },
+      {
+        id: ownerUnreadable.id,
+        name: ownerUnreadable.name,
+        available: false,
+      },
+    ])
+    expect(projectedChatbot?.enabledKnowledgeBase).toBeNull()
+
+    expect(kbBinding).toEqual({
+      chatbotId: CHATBOT_ID,
+      chatbotName: 'Reader test chatbot',
+      chatbotStatus: 'DRAFT',
+      enabledKbs: projectedChatbot?.enabledKnowledgeBases?.map(
+        ({ bindingId, id, name, available, canEdit }) => ({
+          bindingId,
+          id,
+          name,
+          available,
+          canEdit,
+        })
+      ),
+      enabledKbId: null,
+      enabledKbName: null,
+    })
     expect(chatbotFindMany).toHaveBeenCalledTimes(2)
   })
 })
