@@ -183,6 +183,7 @@ test('routes every main review through Flash while retaining separate advisor cr
   const setup = action.runs.steps.find((step) =>
     step.uses?.startsWith('actions/setup-go@')
   )
+  assert.ok(setup, 'expected the pinned draft OCR build toolchain step')
   assert.equal(setup.with['go-version'], manifest.draft.go)
   assert.equal(install.env.OCR_NO_UPDATE, '1')
   assert.equal(manifest.draft.package, '@alibaba-group/open-code-review@1.13.0')

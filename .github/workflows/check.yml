@@ -366,7 +366,7 @@ jobs:
         id: ocr_engine
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^\.github/(scripts/(install-patched-ocr|ocr-draft-review(\.test)?)\.cjs|open-code-review/ocr-(compression|second-pass)\.patch|actions/ocr-review/action\.yml|workflows/check(-execution|-ocr-final-review)?\.yml)$'
+          pattern: '^\.github/(scripts/(install-patched-ocr|ocr-draft-review(\.test)?|ocr-(mistral-adapter|runtime-config|review-shared|review-tools))\.cjs|open-code-review/ocr-(compression|second-pass)\.patch|actions/ocr-review/action\.yml|workflows/check(-execution|-ocr-final-review)?\.yml)$'
 
       - name: Set up pinned OCR build toolchain
         if: steps.ocr_engine.outputs.should_run != 'false'
