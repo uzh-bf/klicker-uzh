@@ -1382,18 +1382,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
-      escapeRoomStartTitle: 'Escape-Room-Modus',
+      escapeRoomStartTitle: 'Escape Room',
       escapeRoomStartDesc:
-        'Schalte Fragen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
+        'Schalte die Stationen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
       escapeRoomTimeLimitLabel: 'Zeitlimit',
-      escapeRoomPenaltyLabel: 'Hinweis-Strafzeit',
       escapeRoomStartButton: 'Versuch starten',
       escapeRoomExpiredTitle: 'Zeit abgelaufen!',
       escapeRoomExpiredDesc:
-        'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
+        'Dieser Versuch ist beendet und kann nicht neu gestartet werden.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
-        'Herzlichen Glückwunsch! Du hast alle Fragen hinter dir und den Escape Room abgeschlossen.',
+        'Herzlichen Glückwunsch! Du hast alle Stationen hinter dir und den Escape Room abgeschlossen.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Verbleibende Zeit',
       escapeRoomContactLecturer:
@@ -1401,51 +1400,99 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomLockoutToast:
         'Falsch — du bist für kurze Zeit gesperrt, bevor du es erneut versuchen kannst.',
       escapeRoomLockoutCountdown:
-        'Gesperrt. Du kannst es in {seconds}s erneut versuchen.',
+        'Gesperrt. Du kannst es in {duration} erneut versuchen.',
       escapeRoomIncorrectToast: 'Falsche Antwort! Bitte versuche es erneut.',
       escapeRoomExpiredToast:
         'Die Zeit ist abgelaufen — dieser Escape-Room-Versuch ist verfallen.',
       escapeRoomGatedToast:
-        'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
+        'Löse die vorherigen Stationen, bevor du diese Station bearbeitest.',
       escapeRoomForbiddenToast:
         'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
-      escapeRoomRequestHint: 'Hinweis anzeigen (+{penalty}s Wertungszeit)',
+      escapeRoomRequestHint: 'Hinweis anzeigen (+{duration} Wertungszeit)',
       escapeRoomHintRevealedToast:
-        'Hinweis angezeigt — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+        'Hinweis angezeigt. {duration} zu deiner Wertungszeit hinzugefügt.',
       escapeRoomNextHint:
-        'Nächsten Hinweis anzeigen (+{penalty}s Wertungszeit)',
+        'Nächsten Hinweis anzeigen (+{duration} Wertungszeit)',
       escapeRoomTriesLeft:
         '{count, plural, one {Noch ein Versuch} other {Verbleibende Versuche: #}}',
       escapeRoomWrongTriesToast:
         'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
       escapeRoomRevealedNotice:
-        'Keine Versuche mehr. Die Frage gilt als abgeschlossen (+{penalty}s Wertungszeit).',
+        'Keine Versuche mehr. Die Station gilt als abgeschlossen (+{duration} Wertungszeit).',
       escapeRoomRevealedToast:
-        'Keine Versuche mehr — die Frage gilt als abgeschlossen. Weiter geht es.',
-      escapeRoomSkip: 'Frage überspringen (+{penalty}s Wertungszeit)',
+        'Keine Versuche mehr — die Station gilt als abgeschlossen. Weiter geht es.',
+      escapeRoomSkip: 'Station überspringen (+{duration} Wertungszeit)',
       escapeRoomSkipConfirm:
-        'Diese Frage überspringen? Sie gilt als abgeschlossen und addiert {penalty}s zu deiner Wertungszeit.',
+        'Diese Station überspringen? Sie gilt als abgeschlossen und addiert {duration} zu deiner Wertungszeit.',
       escapeRoomSkipConfirmButton: 'Ja, überspringen',
       escapeRoomSkippedToast:
-        'Frage übersprungen — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+        'Station übersprungen. {duration} zu deiner Wertungszeit hinzugefügt.',
       escapeRoomSkipDisabledToast:
         'Überspringen ist in diesem Escape Room nicht erlaubt.',
       escapeRoomBonusOffer:
-        'Bonus: Bei richtiger Antwort −{seconds}s Wertungszeit',
+        'Bonus: Bei richtiger Antwort −{duration} Wertungszeit',
       escapeRoomBonusDesc:
-        'Eine Bonusfrage ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
+        'Die Bonus-Station ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
       escapeRoomBonusCorrect:
-        'Bonusfrage richtig beantwortet: −{seconds}s Wertungszeit.',
+        'Bonus-Station richtig beantwortet: −{duration} Wertungszeit.',
       escapeRoomBonusWrong:
-        'Bonusfrage falsch beantwortet: keine Zeitgutschrift.',
+        'Bonus-Station falsch beantwortet: keine Zeitgutschrift.',
       escapeRoomBonusSubmitted: 'Bonus-Antwort abgegeben.',
+      escapeRoomStageCount:
+        '{required, plural, one {# Station} other {# Stationen}}{bonus, plural, =0 {} other { + # Bonus}}',
       escapeRoomStagesLabel: 'Stationen',
       escapeRoomStagesCleared: 'Gelöste Stationen',
+      escapeRoomStageOpen: 'Station {number}: offen',
+      escapeRoomStageCurrent: 'Station {number}: aktuell',
+      escapeRoomStageUnsolved: 'Station {number}: nicht gelöst',
+      escapeRoomStageSolved: 'Station {number}: gelöst',
+      escapeRoomStageRevealed: 'Station {number}: aufgedeckt',
+      escapeRoomStageSkipped: 'Station {number}: übersprungen',
+      escapeRoomStageBonusOpen: 'Bonus: offen',
+      escapeRoomStageBonusCurrent: 'Bonus: aktuell',
+      escapeRoomStageBonusCorrect: 'Bonus: richtig',
+      escapeRoomStageBonusWrong: 'Bonus: verpasst',
+      escapeRoomTimeWarning:
+        'Weniger als {minutes, plural, one {# Minute} other {# Minuten}} verbleibend',
+      escapeRoomTimeCritical: 'Weniger als {seconds} Sekunden verbleibend',
       escapeRoomClearedProgress:
-        'Du hast {cleared} von {total} Stationen abgeschlossen, bevor die Zeit abgelaufen ist.',
+        'Du hast {cleared} von {total, plural, one {# Station} other {# Stationen}} abgeschlossen, bevor die Zeit abgelaufen ist.',
       escapeRoomStatsTime: 'Fluchtzeit',
       escapeRoomStatsHints: 'Genutzte Hinweise',
       escapeRoomStatsPenalty: 'Zeitstrafe',
+      escapeRoomStatsBonus: 'Bonus-Gutschrift',
+      escapeRoomStartDescGroup:
+        'Löst gemeinsam die Stationen der Reihe nach, bevor die Zeit abläuft.',
+      escapeRoomRulesLabel: 'Regeln',
+      escapeRoomRuleHintEach: 'Jeder Hinweis',
+      escapeRoomRuleHintNumber: 'Hinweis {number}',
+      escapeRoomRuleWrongAnswer: 'Falsche Antwort',
+      escapeRoomRuleWait: '{duration} Wartezeit',
+      escapeRoomRuleReveal:
+        'Lösung nach {count, plural, one {# falschen Antwort} other {# falschen Antworten}}',
+      escapeRoomRuleSkip: 'Station überspringen',
+      escapeRoomRuleNoPenalty: 'ohne Strafzeit',
+      escapeRoomRuleBonus: 'Bonus-Station',
+      escapeRoomDurationSeconds: '{seconds} s',
+      escapeRoomDurationMinutes: '{minutes} Min.',
+      escapeRoomDurationMinutesSeconds: '{minutes} Min. {seconds} s',
+      escapeRoomRankingNote:
+        'Die Wertungszeit ist deine Fluchtzeit plus alle Strafzeiten, minus eine allfällige Bonus-Gutschrift. In der Rangliste stehen zuerst die meisten Stationen ohne angezeigte Lösung oder Überspringen, danach die kürzeste Wertungszeit.',
+      escapeRoomStartWarning:
+        'Du hast einen einzigen Versuch. Die Zeit läuft ab dem Start des Versuchs und wird nie angehalten, auch nicht, wenn du diese Seite schliesst.',
+      escapeRoomStartWarningGroup:
+        'Eure Gruppe hat einen gemeinsamen Versuch. Die Zeit läuft für die ganze Gruppe, sobald ein Mitglied den Versuch startet, und wird nie angehalten, auch nicht, wenn die Seite geschlossen wird.',
+      escapeRoomNotNow: 'Jetzt nicht',
+      escapeRoomBackToCourse: 'Zurück zum Kurs',
+      escapeRoomContinue: 'Weiter',
+      escapeRoomAssistedTitle: 'Escape Room abgeschlossen',
+      escapeRoomAssistedSummary:
+        '{solved} von {required, plural, one {# Station} other {# Stationen}} ohne Hilfe gelöst',
+      escapeRoomRevealedCount: '{count} aufgedeckt',
+      escapeRoomSkippedCount: '{count} übersprungen',
+      escapeRoomRankedTimeLabel: 'Wertungszeit',
+      escapeRoomWrongAttempts:
+        '{count, plural, one {# falsche Antwort} other {# falsche Antworten}}',
       escapeRoomOverviewInfo:
         'Escape Room: ein zeitlich begrenzter Versuch, löse alle Stationen der Reihe nach',
     },
@@ -3076,11 +3123,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes können alle verfügbaren Element-Typen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
-      escapeRoomMode: 'Escape-Room-Modus',
-      escapeRoomTimeLimit: 'Zeitlimit (Minuten)',
-      escapeRoomHintPenalty: 'Hinweis-Strafe (Sekunden)',
+      escapeRoomMode: 'Escape Room',
+      escapeRoomTimeLimit: 'Zeitlimit',
+      escapeRoomTimeLimitTooltip:
+        'Minuten, die Studierende oder Gruppen nach dem Start des Versuchs für den gesamten Escape Room haben. Pflichtfeld.',
+      escapeRoomUnitMinutes: 'Minuten',
+      escapeRoomHintPenalty: 'Hinweis-Strafe',
+      escapeRoomHintPenaltyTooltip:
+        'Sekunden, die der Wertungszeit für jeden geöffneten Hinweis hinzugefügt werden. Pflichtfeld; 0 macht Hinweise kostenlos. Bei steigenden Strafen gilt sie für Hinweise, die über diese Liste hinausgehen.',
       escapeRoomAssessmentIncompatible:
-        'Der Escape-Room-Modus kann nicht mit dem Bewertungsmodus kombiniert werden.',
+        'Ein Escape Room kann nicht mit dem Bewertungsmodus kombiniert werden.',
       escapeRoomNoQrOutside:
         'QR-Scan-Fragen können nur in Escape-Room-Blöcken verwendet werden.',
       escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
@@ -3095,28 +3147,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomHintPenaltyMin: 'Muss eine nicht-negative Anzahl Sekunden sein',
       escapeRoomHintPenaltyMax:
         'Hinweis-Strafe darf 3600 Sekunden (1h) nicht überschreiten',
-      escapeRoomIntroText: 'Einleitungsgeschichte (optional)',
+      escapeRoomIntroText: 'Einleitungsgeschichte',
+      escapeRoomIntroTextTooltip:
+        'Optionale Geschichte, die Studierende auf dem Startbildschirm sehen, bevor der Timer beginnt. Leer bedeutet, dass keine Einleitung angezeigt wird.',
       escapeRoomIntroTextPlaceholder:
         'Stimmen Sie die Teilnehmenden ein — wird auf dem Startbildschirm vor dem Start des Timers angezeigt (Markdown wird unterstützt)',
       escapeRoomIntroTextMax:
         'Die Einleitungsgeschichte darf 5000 Zeichen nicht überschreiten',
-      escapeRoomRulesTitle: 'Bewertungsregeln',
+      escapeRoomRulesTitle: 'Escape-Room-Regeln',
       escapeRoomApplyPreset: 'Klassenzimmer-Vorlage anwenden',
-      escapeRoomHintPenalties:
-        'Strafe pro Hinweis, der Reihe nach (Sekunden, durch Kommas getrennt)',
+      escapeRoomGroupTime: 'Zeit',
+      escapeRoomGroupHints: 'Hinweise',
+      escapeRoomGroupWrongAnswers: 'Falsche Antworten',
+      escapeRoomGroupSkip: 'Überspringen',
+      escapeRoomGroupBonus: 'Bonus',
+      escapeRoomHintPenalties: 'Steigende Strafen',
+      escapeRoomHintPenaltiesTooltip:
+        'Optionale Sekunden für den ersten, zweiten, dritten Hinweis usw., durch Kommas getrennt. Weitere Hinweise kosten die Hinweis-Strafe; leer bedeutet, dass jeder Hinweis die Hinweis-Strafe kostet.',
+      escapeRoomHintPenaltiesPlaceholder: 'z. B. 60, 120, 240',
       escapeRoomHintPenaltiesInvalid:
         'Bis zu 10 ganze Zahlen zwischen 0 und 3600, durch Kommas getrennt',
-      escapeRoomWrongAnswerPenalty: 'Strafe pro falscher Antwort (Sekunden)',
-      escapeRoomMaxWrongAttempts:
-        'Falsche Antworten, bis die Lösung aufgedeckt wird (leer = nie)',
+      escapeRoomWrongAnswerPenalty: 'Strafe falsche Antwort',
+      escapeRoomWrongAnswerPenaltyTooltip:
+        'Sekunden, die der Wertungszeit für jede falsche Antwort hinzugefügt werden. Leer oder 0 bedeutet, dass falsche Antworten nichts kosten.',
+      escapeRoomMaxWrongAttempts: 'Max. falsche Antworten',
+      escapeRoomMaxWrongAttemptsTooltip:
+        'Falsche Antworten bei einer Station, nach denen die Lösung aufgedeckt wird. Leer bedeutet, dass die Lösung nie aufgedeckt wird.',
       escapeRoomMaxWrongAttemptsRange:
         'Muss eine ganze Zahl zwischen 1 und 50 sein',
-      escapeRoomRevealPenalty:
-        'Strafe, wenn die Lösung aufgedeckt wird (Sekunden)',
-      escapeRoomSkipPenalty:
-        'Strafe für das Überspringen einer Frage (Sekunden, leer = Überspringen deaktiviert)',
-      escapeRoomBonusSeconds:
-        'Zeitgutschrift für eine richtige Bonus-Schlussfrage (Sekunden, leer = kein Bonus)',
+      escapeRoomRevealPenalty: 'Strafe Aufdecken',
+      escapeRoomRevealPenaltyTooltip:
+        'Sekunden, die der Wertungszeit hinzugefügt werden, wenn eine Lösung aufgedeckt wird. Leer oder 0 bedeutet, dass Aufdecken nichts kostet.',
+      escapeRoomSkipPenalty: 'Strafe Überspringen',
+      escapeRoomSkipPenaltyTooltip:
+        'Sekunden, die der Wertungszeit hinzugefügt werden, wenn Studierende eine Station überspringen. Leer bedeutet, dass Stationen nicht übersprungen werden können.',
+      escapeRoomBonusSeconds: 'Bonus-Gutschrift',
+      escapeRoomBonusSecondsTooltip:
+        'Sekunden, die von der Wertungszeit abgezogen werden, wenn die letzte Station, die zur Bonus-Station wird, richtig beantwortet wird. Leer bedeutet, dass es keine Bonus-Station gibt.',
       escapeRoomRuleSecondsRange:
         'Muss eine ganze Zahl zwischen 0 und 3600 Sekunden sein',
       selectGamifiedCourse:
@@ -3729,6 +3796,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomStatusCompleted: 'Abgeschlossen',
       escapeRoomStatusExpired: 'Abgelaufen',
       escapeRoomLockedOut: 'Gesperrt',
+      escapeRoomSummaryParticipants:
+        '{total, plural, one {# Teilnehmende:r} other {# Teilnehmende}} · {finished} beendet · {inProgress} laufend · {notStarted} nicht gestartet',
+      escapeRoomSummaryGroups:
+        '{total, plural, one {# Gruppe} other {# Gruppen}} · {finished} beendet · {inProgress} laufend · {notStarted} nicht gestartet',
+      escapeRoomHideNotStarted: 'Nicht gestartete ausblenden',
       escapeRoomReset: 'Zurücksetzen',
       escapeRoomResetConfirm: 'Zurücksetzen bestätigen',
       escapeRoomResetError:

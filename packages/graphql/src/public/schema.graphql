@@ -1876,6 +1876,7 @@ type GroupActivityDetails {
   displayName: String!
   escapeRoomAttempts: [EscapeRoomAttempt!]
   escapeRoomConfig: EscapeRoomConfig
+  escapeRoomStageCount: Int
   group: ParticipantGroup!
   id: String!
   name: String!

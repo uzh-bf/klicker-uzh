@@ -100,7 +100,7 @@ export function registerEscapeRoomRulesTests() {
       page.locator('[data-cy^="escape-room-hint-text-"]').first()
     ).toContainText(RULES_QUIZ.hints[0]!)
     const nextHint = page.getByTestId('escape-room-next-hint')
-    await expect(nextHint).toContainText('240')
+    await expect(nextHint).toHaveAttribute('data-seconds', '240')
     await nextHint.click()
     await expect(
       page.locator('[data-cy^="escape-room-hint-text-"]')
@@ -112,9 +112,8 @@ export function registerEscapeRoomRulesTests() {
     await page.getByTestId('sc-0-answer-option-1').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
-    // a resubmit within the lockout window is rejected with a countdown
+    // the lockout window shows a countdown while the wrong answer is retried
     await page.getByTestId('sc-0-answer-option-1').click()
-    await page.getByTestId('student-stack-submit').click()
     await expect(
       page.getByTestId('escape-room-lockout-countdown')
     ).toBeVisible()
@@ -131,9 +130,16 @@ export function registerEscapeRoomRulesTests() {
     await expect(page.getByText(SC2.content).first()).toBeVisible()
     await page.getByTestId('escape-room-skip').click()
     await page.getByTestId('escape-room-skip-confirm').click()
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+    // a revealed and a skipped stage make the ending an assisted one
+    await expect(page.getByTestId('escape-room-completed')).toHaveAttribute(
+      'data-outcome',
+      'assisted'
+    )
+    await expect(page.getByTestId('escape-room-exit')).toBeVisible()
+    await expect(page.getByTestId('escape-room-ranked-time')).toHaveAttribute(
+      'data-seconds',
+      /^[1-9]\d*$/
+    )
 
     await captureEvidence(page, 'rules-bonus-offer-en-desktop.png')
 
@@ -144,8 +150,9 @@ export function registerEscapeRoomRulesTests() {
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
     await page.getByTestId('student-stack-continue').click()
-    await expect(page.getByTestId('escape-room-bonus-result')).toContainText(
-      '180'
+    await expect(page.getByTestId('escape-room-bonus-result')).toHaveAttribute(
+      'data-outcome',
+      'BONUS_CORRECT'
     )
     await expect(page.getByTestId('escape-room-bonus')).not.toBeAttached()
   })
@@ -172,6 +179,10 @@ export function registerEscapeRoomRulesTests() {
       '1',
       { timeout: 60_000 }
     )
+    const summary = page.getByTestId('escape-room-progress-summary')
+    await expect
+      .poll(async () => Number(await summary.getAttribute('data-finished')))
+      .toBeGreaterThanOrEqual(1)
     const row = page.getByTestId(`escape-room-attempt-${username}`)
     await expect(row).toContainText(
       messages.manage.evaluation.escapeRoomOutcomeSummary

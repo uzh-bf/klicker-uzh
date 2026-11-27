@@ -4,7 +4,7 @@ import {
   EscapeRoomProgress as EscapeRoomProgressType,
   ResetEscapeRoomAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button, Switch, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -22,6 +22,36 @@ function formatDuration(seconds: number) {
   const mins = Math.floor(safe / 60)
   const secs = safe % 60
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+type EscapeRoomAttempt = EscapeRoomProgressType['attempts'][number]
+
+// Ranked attempts by rank, then attempts in progress (most stages cleared
+// first), then participants or groups that have not started. Ties keep the
+// incoming order.
+function sortEscapeRoomAttempts<
+  T extends Pick<EscapeRoomAttempt, 'rank' | 'status' | 'clearedStacks'>,
+>(attempts: T[]): T[] {
+  function bucket(attempt: T) {
+    if (attempt.rank != null) return 0
+    return attempt.status === EscapeRoomProgressStatus.NotStarted ? 2 : 1
+  }
+
+  return attempts
+    .map((attempt, index) => ({ attempt, index }))
+    .sort((a, b) => {
+      const bucketDiff = bucket(a.attempt) - bucket(b.attempt)
+      if (bucketDiff !== 0) return bucketDiff
+      if (bucket(a.attempt) === 0) {
+        const rankDiff = (a.attempt.rank as number) - (b.attempt.rank as number)
+        if (rankDiff !== 0) return rankDiff
+      } else if (bucket(a.attempt) === 1) {
+        const clearedDiff = b.attempt.clearedStacks - a.attempt.clearedStacks
+        if (clearedDiff !== 0) return clearedDiff
+      }
+      return a.index - b.index
+    })
+    .map(({ attempt }) => attempt)
 }
 
 function StatusPill({ status }: { status: EscapeRoomProgressStatus }) {
@@ -73,6 +103,7 @@ function EscapeRoomProgress({
   const [resettingId, setResettingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState<number | null>(null)
+  const [hideNotStarted, setHideNotStarted] = useState(false)
 
   useEffect(() => {
     const updateCurrentTime = () => setCurrentTime(Date.now())
@@ -84,7 +115,28 @@ function EscapeRoomProgress({
     }
   }, [])
 
-  const { totalStacks, attempts } = progress
+  const { totalStacks } = progress
+  const attempts = sortEscapeRoomAttempts(progress.attempts)
+  // Finished covers completed and expired attempts, i.e. attempts that ended
+  const counts = {
+    total: attempts.length,
+    finished: attempts.filter(
+      (attempt) =>
+        attempt.status === EscapeRoomProgressStatus.Completed ||
+        attempt.status === EscapeRoomProgressStatus.Expired
+    ).length,
+    inProgress: attempts.filter(
+      (attempt) => attempt.status === EscapeRoomProgressStatus.InProgress
+    ).length,
+    notStarted: attempts.filter(
+      (attempt) => attempt.status === EscapeRoomProgressStatus.NotStarted
+    ).length,
+  }
+  const visibleAttempts = hideNotStarted
+    ? attempts.filter(
+        (attempt) => attempt.status !== EscapeRoomProgressStatus.NotStarted
+      )
+    : attempts
   // Live Quiz escape rooms keep their own leaderboard and have no scoring rules.
   const showRank = activityType !== 'liveQuiz'
 
@@ -130,6 +182,33 @@ function EscapeRoomProgress({
           />
         )}
 
+        {attempts.length > 0 && (
+          <div className="mb-2 flex flex-row flex-wrap items-center justify-between gap-2">
+            <div
+              className="text-sm font-bold"
+              data-cy="escape-room-progress-summary"
+              data-total={counts.total}
+              data-finished={counts.finished}
+              data-in-progress={counts.inProgress}
+              data-not-started={counts.notStarted}
+            >
+              {t(
+                activityType === 'groupActivity'
+                  ? 'manage.evaluation.escapeRoomSummaryGroups'
+                  : 'manage.evaluation.escapeRoomSummaryParticipants',
+                counts
+              )}
+            </div>
+            <Switch
+              checked={hideNotStarted}
+              onCheckedChange={setHideNotStarted}
+              label={t('manage.evaluation.escapeRoomHideNotStarted')}
+              labelLeft
+              data={{ cy: 'escape-room-hide-not-started' }}
+            />
+          </div>
+        )}
+
         {attempts.length === 0 ? (
           <UserNotification
             type="info"
@@ -172,7 +251,7 @@ function EscapeRoomProgress({
                 </tr>
               </thead>
               <tbody>
-                {attempts.map((attempt) => {
+                {visibleAttempts.map((attempt) => {
                   const pct =
                     totalStacks > 0
                       ? Math.round((attempt.clearedStacks / totalStacks) * 100)
@@ -260,9 +339,8 @@ function EscapeRoomProgress({
                         {attempt.id != null && confirmingId === attempt.id ? (
                           <div className="flex justify-end gap-1">
                             <Button
-                              className={{
-                                root: 'bg-red-600 px-2 py-1 text-xs text-white',
-                              }}
+                              destructive
+                              className={{ root: 'px-2 py-1 text-xs' }}
                               loading={resettingId === attempt.id}
                               onClick={() => handleReset(attempt)}
                               data={{

@@ -28,6 +28,8 @@ interface StepProgressWithScoringProps {
   resetLocalStorage?: () => void
   navigableUntilIx?: number
   readOnly?: boolean
+  // escape rooms rank by time, so the strip shows no points or wrong-answer marks
+  hidePoints?: boolean
 }
 
 function StepProgressWithScoring({
@@ -37,6 +39,7 @@ function StepProgressWithScoring({
   resetLocalStorage,
   navigableUntilIx,
   readOnly = false,
+  hidePoints = false,
 }: StepProgressWithScoringProps) {
   const t = useTranslations()
 
@@ -64,7 +67,8 @@ function StepProgressWithScoring({
             <div className="flex flex-row items-center justify-between md:w-full">
               <div
                 className={twMerge(
-                  typeof element.score !== 'undefined' &&
+                  !hidePoints &&
+                    typeof element.score !== 'undefined' &&
                     element.score !== null &&
                     'hidden md:block'
                 )}
@@ -72,17 +76,20 @@ function StepProgressWithScoring({
                 {ix + 1}
               </div>
 
-              {typeof element.score !== 'undefined' &&
+              {!hidePoints &&
+                typeof element.score !== 'undefined' &&
                 element.score !== null && (
                   <ProgressPoints
                     score={element.score as string | null}
                     status={element.status as string | null}
                   />
                 )}
-              <FontAwesomeIcon
-                icon={ICON_MAP[element.status as StackFeedbackStatus]}
-                className="hidden md:block"
-              />
+              {!(hidePoints && element.status === 'incorrect') && (
+                <FontAwesomeIcon
+                  icon={ICON_MAP[element.status as StackFeedbackStatus]}
+                  className="hidden md:block"
+                />
+              )}
             </div>
           </div>
         )}

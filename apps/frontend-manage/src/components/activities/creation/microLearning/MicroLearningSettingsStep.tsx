@@ -1,4 +1,6 @@
-import EscapeRoomSettingsFields from '@components/activities/creation/EscapeRoomSettingsFields'
+import EscapeRoomSettingsFields, {
+  EscapeRoomRulesCard,
+} from '@components/activities/creation/EscapeRoomSettingsFields'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -167,6 +169,7 @@ function MicroLearningSettingsStep({
                   />
                 </div>
               </div>
+              <EscapeRoomRulesCard isEscapeRoom={!!values.isEscapeRoom} />
             </div>
             <WizardNavigation
               editMode={editMode}

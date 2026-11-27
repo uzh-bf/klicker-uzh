@@ -8,7 +8,7 @@ import {
   loginStudent,
   selectOption,
 } from '../../util/workflow.js'
-import { COURSE, MICRO, SC1, SC2, expect, messages } from './shared.js'
+import { COURSE, MICRO, SC1, SC2, expect } from './shared.js'
 
 async function createEscapeRoomMicroLearning(page: Page) {
   await page.getByTestId('create-microlearning').click()
@@ -97,17 +97,16 @@ export function registerMicrolearningFlowTest() {
     await expect(page).toHaveURL(/\/microLearnings\/[^/]+\/0$/)
     await expect(page.getByText(SC1.content).first()).toBeVisible()
 
-    // resubmitting within the lockout window surfaces the countdown
-    // (clicks must land within ~5s of grading)
-    await page.getByTestId('sc-0-answer-option-1').click()
-    await page.getByTestId('student-stack-submit').click()
+    // the server-side lockout window surfaces the countdown and blocks the
+    // submit (assertions must land within the ~5s lockout)
     await expect(
       page.getByTestId('escape-room-lockout-countdown')
     ).toBeVisible()
+    await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
+    await page.getByTestId('sc-0-answer-option-0').click()
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled({
       timeout: 15_000,
     })
-    await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
 
     // the authoritative refetch advances the stale URL to the next uncleared
@@ -123,8 +122,6 @@ export function registerMicrolearningFlowTest() {
 
     // clearing the last stage completes the server-side attempt and the
     // completion overlay takes over without a continue click
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+    await expect(page.getByTestId('escape-room-completed')).toBeVisible()
   })
 }
