@@ -10,6 +10,7 @@ import {
   KBResourceMaterialType,
   KBResourceStatus,
   KBResourceType,
+  PermissionLevel,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -75,6 +76,7 @@ import {
   updateKb,
   updateKbResourceMaterialType,
 } from '../src/services/knowledge.js'
+import { revokeObjectAccess, shareObject } from '../src/services/sharing.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
 
 const previousManageAiEnvironment = vi.hoisted(() => {
@@ -130,15 +132,19 @@ function withDeniedFeatureFlag(
   }
 }
 
-function withIngestionClaimSignal(
+function withIngestionLockAttemptSignal(
   ctx: ContextWithUser,
-  onClaim: () => void
+  onLockAttempt: () => void
 ): ContextWithUser {
   const prisma = ctx.prisma.$extends({
     query: {
       kBResource: {
-        updateMany({ args, query }) {
-          onClaim()
+        findFirst({ args, query }) {
+          // The service resolves the resource's KB before taking row locks. The
+          // signal lets the serialization test release its held transaction as
+          // soon as that path begins waiting, without extending the transaction
+          // or test timeout.
+          onLockAttempt()
           return query(args)
         },
       },
@@ -1690,6 +1696,126 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).rejects.toThrow('KB not found')
   })
 
+  it('confirms delegated uploads in the owner container and refuses an outstanding ticket after revocation', async () => {
+    const kb = await createKb({ name: 'Teaching team' }, userOneCtx)
+    const editor = await prisma.user.findUniqueOrThrow({
+      where: { id: userTwoCtx.user.sub },
+      select: { shortname: true },
+    })
+    const grant = await shareObject(
+      {
+        kbId: kb.id,
+        shortnameOrEmail: editor.shortname,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
+      },
+      userOneCtx
+    )
+    expect(grant).toBeTruthy()
+    const file = {
+      kbId: kb.id,
+      fileName: 'notes.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 1024,
+    }
+    const confirm = (blobName: string) =>
+      confirmKbFileUpload(
+        {
+          kbId: kb.id,
+          blobName,
+          title: 'Notes',
+          originalFilename: file.fileName,
+          mimeType: file.contentType,
+          sizeBytes: file.sizeBytes,
+        },
+        userTwoCtx
+      )
+    const accepted = await requestKbFileUpload(file, userTwoCtx)
+    expect(accepted.containerName).toBe(`kb-${userOneCtx.user.sub}`)
+    const resource = await confirm(accepted.blobName)
+    expect(containerName).toBe(accepted.containerName)
+    expect(resource.kbId).toBe(kb.id)
+    expect(resource.blobHref).toContain(`/${accepted.containerName}/`)
+    const pending = await requestKbFileUpload(file, userTwoCtx)
+    await revokeObjectAccess(
+      { kbId: kb.id, permissionId: grant!.permissionId },
+      userOneCtx
+    )
+    blobExists.mockClear()
+    await expect(confirm(pending.blobName)).rejects.toThrow()
+    expect(blobExists).not.toHaveBeenCalled()
+    expect(await prisma.kBResource.count({ where: { kbId: kb.id } })).toBe(1)
+  })
+
+  it('lets a Read collaborator inspect sources without authoring or storage access', async () => {
+    const kb = await createKb({ name: 'Shared reading' }, userOneCtx)
+    const source = await createKbUrlResource(
+      { kbId: kb.id, title: 'Reading', url: 'https://example.com/reading' },
+      userOneCtx
+    )
+    const reader = await prisma.user.findUniqueOrThrow({
+      where: { id: userTwoCtx.user.sub },
+      select: { shortname: true },
+    })
+    await shareObject(
+      {
+        kbId: kb.id,
+        shortnameOrEmail: reader.shortname,
+        permissionLevel: PermissionLevel.READ,
+        propagation: false,
+      },
+      userOneCtx
+    )
+
+    const listing = await getUserKbsConnection({}, userTwoCtx)
+    expect(listing.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: kb.id,
+          permissionLevel: PermissionLevel.READ,
+          isOwner: false,
+        }),
+      ])
+    )
+    await expect(getKb({ id: kb.id }, userTwoCtx)).resolves.toMatchObject({
+      id: kb.id,
+      permissionLevel: PermissionLevel.READ,
+      isOwner: false,
+    })
+    await expect(
+      getKbResourcesConnection({ kbId: kb.id }, userTwoCtx)
+    ).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: source.id })],
+    })
+
+    createIfNotExists.mockClear()
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: kb.id,
+          fileName: 'notes.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userTwoCtx
+      )
+    ).rejects.toThrow('KB not found')
+    expect(createIfNotExists).not.toHaveBeenCalled()
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: kb.id,
+          title: 'Unauthorized',
+          url: 'https://example.com/unauthorized',
+        },
+        userTwoCtx
+      )
+    ).rejects.toThrow('KB not found')
+    await expect(deleteKb({ id: kb.id }, userTwoCtx)).rejects.toThrow(
+      'KB not found'
+    )
+  })
+
   it('issues a private blob-scoped upload ticket without creating a resource', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     process.env.BLOB_STORAGE_ACCOUNT_URL =
@@ -2299,12 +2425,60 @@ describe('Integration tests for knowledge base CRUD', () => {
         userOneCtx
       )
 
-    await expect(confirm(`${foreignBlobId}.pdf`)).rejects.toThrow(
-      'KB blob was not found'
-    )
+    blobExists.mockClear()
+    await expect(confirm(`${foreignBlobId}.pdf`)).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
     await expect(
       confirm('b151cb31-064b-49c0-b53b-fe732171660f.pdf')
-    ).rejects.toThrow('KB blob was not found')
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
+    expect(blobExists).not.toHaveBeenCalled()
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+  })
+
+  it('rejects a delegated upload ticket from another KB before shared-storage access', async () => {
+    const firstKb = await createKb({ name: 'First shared KB' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second shared KB' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: firstKb.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    blobExists.mockClear()
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: secondKb.id,
+          blobName: ticket.blobName,
+          title: 'Notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
+    expect(blobExists).not.toHaveBeenCalled()
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: { id: ticket.blobName.slice(0, -4) },
+      })
+    ).resolves.toMatchObject({ kbId: firstKb.id })
+    await expect(
+      prisma.kBResource.count({
+        where: { kbId: { in: [firstKb.id, secondKb.id] } },
+      })
+    ).resolves.toBe(0)
   })
 
   it('does not delete the winning blob during concurrent cross-KB confirmation', async () => {
@@ -2349,7 +2523,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(1)
   })
 
-  it('does not delete an existing blob on cross-KB metadata mismatch', async () => {
+  it('does not access shared storage for a ticket from another KB', async () => {
     const firstKb = await createKb({ name: 'First notes' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second notes' }, userOneCtx)
     const ticket = await requestKbFileUpload(
@@ -2381,7 +2555,9 @@ describe('Integration tests for knowledge base CRUD', () => {
         { ...args, kbId: secondKb.id, sizeBytes: 1025 },
         userOneCtx
       )
-    ).rejects.toThrow('KB blob name is invalid')
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
     expect(getBlobProperties).not.toHaveBeenCalled()
     expect(deleteBlobIfExists).not.toHaveBeenCalled()
     await expect(
@@ -2430,7 +2606,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(runNoWait).toHaveBeenCalledOnce()
   })
 
-  it('rejects absent blobs and deletes mismatched uploads', async () => {
+  it('rejects absent blobs and leaves mismatched uploads for ticket cleanup', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const ticket = await requestKbFileUpload(
       {
@@ -2462,7 +2638,12 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(confirmKbFileUpload(args, userOneCtx)).rejects.toThrow(
       'KB blob metadata is invalid'
     )
-    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: { id: ticket.blobName.slice(0, -4) },
+      })
+    ).resolves.toBeTruthy()
     await expect(
       prisma.kBResource.count({ where: { kbId: created.id } })
     ).resolves.toBe(0)
@@ -2737,6 +2918,51 @@ describe('Integration tests for knowledge base CRUD', () => {
       })
     ).resolves.toBe(1)
     expect(runNoWait).toHaveBeenCalledOnce()
+  })
+
+  it('leaves a mismatched replacement blob for ticket cleanup', async () => {
+    const created = await createKb(
+      { name: 'Safe replacement cleanup' },
+      userOneCtx
+    )
+    const { resource } = await createReadyFileResource(created.id)
+    const ticket = await requestKbFileReplacement(
+      {
+        kbId: created.id,
+        resourceId: resource.id,
+        fileName: 'updated.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 2048,
+      },
+      userOneCtx
+    )
+    getBlobProperties.mockResolvedValue({
+      contentLength: 1025,
+      contentType: 'application/pdf',
+    })
+
+    await expect(
+      confirmKbFileReplacement(
+        {
+          kbId: created.id,
+          resourceId: resource.id,
+          blobName: ticket.blobName,
+          originalFilename: 'updated.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB blob metadata is invalid')
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: { id: ticket.blobName.slice(0, -4) },
+      })
+    ).resolves.toBeTruthy()
+    await expect(
+      prisma.kBResource.findUniqueOrThrow({ where: { id: resource.id } })
+    ).resolves.toMatchObject({ blobName: resource.blobName })
   })
 
   it('keeps the canonical replacement retryable when queueing and cleanup fail', async () => {
@@ -3247,9 +3473,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => deletionStarted.resolve(undefined),
       finishDeletion.promise
     )
-    const claimStarted = createDeferred<void>()
-    const ingestCtx = withIngestionClaimSignal(userOneCtx, () =>
-      claimStarted.resolve(undefined)
+    const lockAttemptStarted = createDeferred<void>()
+    const ingestCtx = withIngestionLockAttemptSignal(userOneCtx, () =>
+      lockAttemptStarted.resolve(undefined)
     )
     const runNoWait = vi
       .spyOn(ingestCtx.tasks.ingestKBResource, 'runNoWait')
@@ -3257,15 +3483,19 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     const deletion = deleteKbResource({ id: resource.id }, deleteCtx)
     await deletionStarted.promise
-    const ingestion = expect(
-      ingestKbResource({ id: resource.id }, ingestCtx)
-    ).rejects.toThrow('KB resource cannot be ingested')
-    await claimStarted.promise
+    const ingestion = ingestKbResource({ id: resource.id }, ingestCtx).then(
+      (result) => ({ status: 'resolved' as const, result }),
+      (error: unknown) => ({ status: 'rejected' as const, error })
+    )
+    await lockAttemptStarted.promise
 
     expect(runNoWait).not.toHaveBeenCalled()
     finishDeletion.resolve(undefined)
     await expect(deletion).resolves.toMatchObject({ id: resource.id })
-    await ingestion
+    await expect(ingestion).resolves.toMatchObject({
+      status: 'rejected',
+      error: { message: 'KB resource not found' },
+    })
 
     expect(deleteBlobIfExists).not.toHaveBeenCalled()
     expect(runNoWait).not.toHaveBeenCalled()
@@ -3297,9 +3527,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => deletionStarted.resolve(undefined),
       finishDeletion.promise
     )
-    const claimStarted = createDeferred<void>()
-    const ingestCtx = withIngestionClaimSignal(userOneCtx, () =>
-      claimStarted.resolve(undefined)
+    const lockAttemptStarted = createDeferred<void>()
+    const ingestCtx = withIngestionLockAttemptSignal(userOneCtx, () =>
+      lockAttemptStarted.resolve(undefined)
     )
     const runNoWait = vi
       .spyOn(ingestCtx.tasks.ingestKBResource, 'runNoWait')
@@ -3307,15 +3537,19 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     const deletion = deleteKb({ id: created.id }, deleteCtx)
     await deletionStarted.promise
-    const ingestion = expect(
-      ingestKbResource({ id: resource.id }, ingestCtx)
-    ).rejects.toThrow('KB resource cannot be ingested')
-    await claimStarted.promise
+    const ingestion = ingestKbResource({ id: resource.id }, ingestCtx).then(
+      (result) => ({ status: 'resolved' as const, result }),
+      (error: unknown) => ({ status: 'rejected' as const, error })
+    )
+    await lockAttemptStarted.promise
 
     expect(runNoWait).not.toHaveBeenCalled()
     finishDeletion.resolve(undefined)
     await expect(deletion).resolves.toMatchObject({ id: created.id })
-    await ingestion
+    await expect(ingestion).resolves.toMatchObject({
+      status: 'rejected',
+      error: { message: 'KB resource not found' },
+    })
 
     expect(deleteBlobIfExists).not.toHaveBeenCalled()
     expect(runNoWait).not.toHaveBeenCalled()
@@ -3990,6 +4224,23 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'ai-beta')
     const deniedUploadBlobId = randomUUID()
+    const replayedBlobId = randomUUID()
+    const replayedBlobName = `${replayedBlobId}.pdf`
+    const replayedUpload = await prisma.kBResource.create({
+      data: {
+        id: replayedBlobId,
+        kbId: kb.id,
+        type: KBResourceType.BLOB,
+        title: 'Already confirmed',
+        originalFilename: 'confirmed.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: replayedBlobName,
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/container/confirmed.pdf',
+        status: KBResourceStatus.READY,
+      },
+    })
 
     const blockedCalls: Array<() => Promise<unknown>> = [
       () =>
@@ -4060,6 +4311,19 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.findUnique({ where: { id: deniedUploadBlobId } })
     ).resolves.toBeNull()
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: kb.id,
+          blobName: replayedBlobName,
+          title: replayedUpload.title,
+          originalFilename: replayedUpload.originalFilename!,
+          mimeType: replayedUpload.mimeType!,
+          sizeBytes: replayedUpload.sizeBytes!,
+        },
+        deniedCtx
+      )
+    ).resolves.toMatchObject({ id: replayedUpload.id })
 
     // The denied actor keeps everything it already owns: reads, deletion and
     // the graph lifecycle configuration stay independent of new-work admission.

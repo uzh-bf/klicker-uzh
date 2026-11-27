@@ -428,6 +428,11 @@ export async function testCleanup(prisma: PrismaClient) {
   await prisma.groupActivity.deleteMany()
   await prisma.course.deleteMany()
 
+  // upload tickets intentionally restrict KB deletion until retention cleanup
+  await prisma.kBUploadTicket.deleteMany()
+
+  await prisma.kB.deleteMany()
+
   // verify that no permission or derived permission entries are left in the database (deleted through cascading)
   const dbPermissions = await prisma.permission.count()
   const dbPermissionsDerived = await prisma.derivedPermission.count()
@@ -436,9 +441,6 @@ export async function testCleanup(prisma: PrismaClient) {
       `Permissions or derived permissions still exist in the database: ${dbPermissions} permissions, ${dbPermissionsDerived} derived permissions`
     )
   }
-
-  // upload tickets intentionally restrict KB deletion until retention cleanup
-  await prisma.kBUploadTicket.deleteMany()
 
   // delete all users, participants and user groups / participant groups that have been added for the test run
   await prisma.user.deleteMany()

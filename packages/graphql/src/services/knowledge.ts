@@ -127,6 +127,8 @@ export interface KBMetrics {
 
 export interface KBWithMetrics extends DB.KB {
   metrics: KBMetrics
+  permissionLevel: DB.PermissionLevel
+  isOwner: boolean
 }
 
 export interface KBConnection {
@@ -513,18 +515,114 @@ async function getOwnedKbOrThrow(ctx: ContextWithUser, id: string) {
   return kb
 }
 
-async function getOwnedKbResourceOrThrow(ctx: ContextWithUser, id: string) {
+type KBRequiredAccess = 'READ' | 'WRITE' | 'OWNER'
+
+interface KBAccess {
+  ownerId: string
+  permissionLevel: DB.PermissionLevel
+  isOwner: boolean
+}
+
+function resolveKbAccess(
+  kb: {
+    ownerId: string
+    permissions: Array<{ permissionLevel: DB.PermissionLevel }>
+  },
+  userId: string
+): KBAccess | null {
+  if (kb.ownerId === userId) {
+    return {
+      ownerId: kb.ownerId,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      isOwner: true,
+    }
+  }
+
+  const permission = kb.permissions[0]
+  return permission
+    ? {
+        ownerId: kb.ownerId,
+        permissionLevel: permission.permissionLevel,
+        isOwner: false,
+      }
+    : null
+}
+
+function hasKbAccess(access: KBAccess, required: KBRequiredAccess) {
+  if (required === 'OWNER') {
+    return access.isOwner
+  }
+  if (required === 'WRITE') {
+    return (
+      access.permissionLevel === DB.PermissionLevel.WRITE ||
+      access.permissionLevel === DB.PermissionLevel.ADMIN ||
+      access.permissionLevel === DB.PermissionLevel.OWNER
+    )
+  }
+  return (
+    access.permissionLevel === DB.PermissionLevel.READ ||
+    access.permissionLevel === DB.PermissionLevel.WRITE ||
+    access.permissionLevel === DB.PermissionLevel.ADMIN ||
+    access.permissionLevel === DB.PermissionLevel.OWNER
+  )
+}
+
+function throwKbNotFound(): never {
+  throw new GraphQLError('KB not found')
+}
+
+async function getKbAccessOrThrow(
+  ctx: ContextWithUser,
+  id: string,
+  required: KBRequiredAccess
+) {
+  const kb = await ctx.prisma.kB.findFirst({
+    where: { id, deletedAt: null },
+    include: {
+      permissions: {
+        where: { userId: ctx.user.sub },
+        select: { permissionLevel: true },
+        take: 1,
+      },
+    },
+  })
+  if (!kb) throwKbNotFound()
+  const access = resolveKbAccess(kb, ctx.user.sub)
+  if (!access || !hasKbAccess(access, required)) throwKbNotFound()
+  return { kb, access }
+}
+
+async function getKbResourceAccessOrThrow(
+  ctx: ContextWithUser,
+  id: string,
+  required: KBRequiredAccess
+) {
   const resource = await ctx.prisma.kBResource.findFirst({
     where: {
       id,
       deletedAt: null,
-      kb: { ownerId: ctx.user.sub, deletedAt: null },
+      kb: { deletedAt: null },
+    },
+    include: {
+      kb: {
+        include: {
+          permissions: {
+            where: { userId: ctx.user.sub },
+            select: { permissionLevel: true },
+            take: 1,
+          },
+        },
+      },
     },
   })
   if (!resource) {
     throw new GraphQLError('KB resource not found')
   }
-  return resource
+  const access = resolveKbAccess(resource.kb, ctx.user.sub)
+  if (!access || !hasKbAccess(access, required)) {
+    throw new GraphQLError('KB resource not found')
+  }
+  return { resource, access }
 }
 
 async function lockOwnedKbOrThrow(
@@ -545,24 +643,74 @@ async function lockOwnedKbOrThrow(
   }
 }
 
-async function lockOwnedKbResourceOrThrow(
+async function lockKbAccessOrThrow(
   prisma: DB.Prisma.TransactionClient,
   id: string,
-  ownerId: string
+  userId: string,
+  required: KBRequiredAccess,
+  notFoundMessage = 'KB not found'
 ) {
-  const lockedResource = await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT resource."id"
-    FROM "public"."KBResource" AS resource
-    INNER JOIN "public"."KB" AS kb ON kb."id" = resource."kbId"
-    WHERE resource."id" = CAST(${id} AS UUID)
-      AND kb."ownerId" = CAST(${ownerId} AS UUID)
-      AND resource."deletedAt" IS NULL
-      AND kb."deletedAt" IS NULL
-    FOR UPDATE OF resource
+  const lockedKb = await prisma.$queryRaw<
+    Array<{ id: string; ownerId: string }>
+  >`
+    SELECT "id", "ownerId"
+    FROM "public"."KB"
+    WHERE "id" = CAST(${id} AS UUID)
+      AND "deletedAt" IS NULL
+    FOR UPDATE
   `
-  if (lockedResource.length === 0) {
+  if (lockedKb.length === 0) {
+    throw new GraphQLError(notFoundMessage)
+  }
+
+  // Serialize against permission and group-membership recomputation. The KB
+  // row alone does not fence derived-permission changes.
+  await prisma.$queryRaw<Array<{ id: number }>>`
+    SELECT "id"
+    FROM "public"."DerivedPermission"
+    WHERE "kbId" = CAST(${id} AS UUID)
+      AND "userId" = CAST(${userId} AS UUID)
+    FOR UPDATE
+  `
+  const permission = await prisma.derivedPermission.findFirst({
+    where: { kbId: id, userId },
+    select: { permissionLevel: true },
+  })
+  const access = resolveKbAccess(
+    {
+      ownerId: lockedKb[0]!.ownerId,
+      permissions: permission ? [permission] : [],
+    },
+    userId
+  )
+  if (!access || !hasKbAccess(access, required)) {
+    throw new GraphQLError(notFoundMessage)
+  }
+  return access
+}
+
+async function lockKbResourceAccessOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  userId: string,
+  required: KBRequiredAccess
+) {
+  const resource = await prisma.kBResource.findFirst({
+    where: { id, deletedAt: null, kb: { deletedAt: null } },
+    select: { kbId: true },
+  })
+  if (!resource) {
     throw new GraphQLError('KB resource not found')
   }
+  const access = await lockKbAccessOrThrow(
+    prisma,
+    resource.kbId,
+    userId,
+    required,
+    'KB resource not found'
+  )
+  await lockKbResourceInKbOrThrow(prisma, resource.kbId, id)
+  return { kbId: resource.kbId, access }
 }
 
 async function lockKbResourceInKbOrThrow(
@@ -583,25 +731,16 @@ async function lockKbResourceInKbOrThrow(
   }
 }
 
-async function lockOwnedKbForResourceOrThrow(
+async function lockChatbotForCleanup(
   prisma: DB.Prisma.TransactionClient,
-  resourceId: string,
-  ownerId: string
+  id: string
 ) {
-  const lockedKb = await prisma.$queryRaw<Array<{ kbId: string }>>`
-    SELECT kb."id" AS "kbId"
-    FROM "public"."KB" AS kb
-    INNER JOIN "public"."KBResource" AS resource ON resource."kbId" = kb."id"
-    WHERE resource."id" = CAST(${resourceId} AS UUID)
-      AND kb."ownerId" = CAST(${ownerId} AS UUID)
-      AND kb."deletedAt" IS NULL
-      AND resource."deletedAt" IS NULL
-    FOR UPDATE OF kb
+  await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "public"."Chatbot"
+    WHERE "id" = CAST(${id} AS UUID)
+    FOR UPDATE
   `
-  if (lockedKb.length === 0) {
-    throw new GraphQLError('KB resource not found')
-  }
-  return lockedKb[0]!.kbId
 }
 
 async function lockOwnedChatbotOrThrow(
@@ -867,7 +1006,7 @@ export async function getUserKbsConnection(
     search: normalizedSearch,
   })
   const cursor = decodePaginationCursor(after, 'knowledge-bases', filterHash)
-  const searchWhere: DB.Prisma.KBWhereInput = normalizedSearch
+  const searchWhere: DB.Prisma.KBWhereInput | null = normalizedSearch
     ? {
         OR: [
           { name: { contains: normalizedSearch, mode: 'insensitive' } },
@@ -879,15 +1018,20 @@ export async function getUserKbsConnection(
           },
         ],
       }
-    : {}
+    : null
+  const accessWhere: DB.Prisma.KBWhereInput = {
+    OR: [
+      { ownerId: ctx.user.sub },
+      { permissions: { some: { userId: ctx.user.sub } } },
+    ],
+  }
   const where: DB.Prisma.KBWhereInput = {
-    ownerId: ctx.user.sub,
     deletedAt: null,
-    ...searchWhere,
-    ...(cursor
-      ? {
-          AND: [
-            searchWhere,
+    AND: [
+      accessWhere,
+      ...(searchWhere ? [searchWhere] : []),
+      ...(cursor
+        ? [
             {
               OR: [
                 { updatedAt: { lt: cursor.timestamp } },
@@ -897,9 +1041,9 @@ export async function getUserKbsConnection(
                 },
               ],
             },
-          ],
-        }
-      : {}),
+          ]
+        : []),
+    ],
   }
 
   const [items, totalCount] = await Promise.all([
@@ -907,12 +1051,18 @@ export async function getUserKbsConnection(
       where,
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       take: pageSize + 1,
+      include: {
+        permissions: {
+          where: { userId: ctx.user.sub },
+          select: { permissionLevel: true },
+          take: 1,
+        },
+      },
     }),
     ctx.prisma.kB.count({
       where: {
-        ownerId: ctx.user.sub,
         deletedAt: null,
-        ...searchWhere,
+        AND: [accessWhere, ...(searchWhere ? [searchWhere] : [])],
       },
     }),
   ])
@@ -924,6 +1074,8 @@ export async function getUserKbsConnection(
     ...kb,
     resources: [],
     metrics: metrics.get(kb.id) ?? createKbMetrics(),
+    permissionLevel: resolveKbAccess(kb, ctx.user.sub)!.permissionLevel,
+    isOwner: kb.ownerId === ctx.user.sub,
   }))
 
   return createPaginationResult(
@@ -942,15 +1094,12 @@ export async function getUserKbsConnection(
 
 export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
   await assertManageAiEnabled(ctx)
-  const kb = await ctx.prisma.kB.findFirst({
-    where: { id, ownerId: ctx.user.sub, deletedAt: null },
-  })
-  if (!kb) {
-    throw new GraphQLError('KB not found')
-  }
+  const { kb, access } = await getKbAccessOrThrow(ctx, id, 'READ')
   return {
     ...kb,
     metrics: await getKbMetrics(ctx.prisma, kb.id),
+    permissionLevel: access.permissionLevel,
+    isOwner: access.isOwner,
   } satisfies KBWithMetrics
 }
 
@@ -975,7 +1124,7 @@ export async function getKbResourcesConnection(
   ctx: ContextWithUser
 ): Promise<KBResourceConnection> {
   await assertManageAiEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  await getKbAccessOrThrow(ctx, kbId, 'READ')
   const pageSize = normalizePageSize(first)
   const normalizedSearch = normalizeSearch(search)
   const filterHash = getFilterHash({
@@ -1020,7 +1169,6 @@ export async function getKbResourcesConnection(
     kbId,
     kb: {
       is: {
-        ownerId: ctx.user.sub,
         deletedAt: null,
       },
     },
@@ -1061,7 +1209,6 @@ export async function getKbResourcesConnection(
         kbId,
         kb: {
           is: {
-            ownerId: ctx.user.sub,
             deletedAt: null,
           },
         },
@@ -1153,7 +1300,7 @@ export async function getKbImportedSourcesConnection(
   deps: KbSourceInventoryDeps = {}
 ): Promise<KBImportedSourceConnection> {
   await assertManageAiEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  await getKbAccessOrThrow(ctx, kbId, 'READ')
   const pageSize = normalizePageSize(first)
   const mcpServer = await getKbMcpServerOrThrow(ctx.prisma)
 
@@ -1217,7 +1364,7 @@ export async function getKbChatbotBindings(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  await getKbAccessOrThrow(ctx, kbId, 'READ')
 
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
@@ -1400,14 +1547,14 @@ export async function getKbResourceIngestionRuns(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  await getOwnedKbResourceOrThrow(ctx, resourceId)
+  await getKbResourceAccessOrThrow(ctx, resourceId, 'READ')
 
   return ctx.prisma.kBIngestionRun.findMany({
     where: {
       resourceId,
       resource: {
         deletedAt: null,
-        kb: { ownerId: ctx.user.sub, deletedAt: null },
+        kb: { deletedAt: null },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -1452,7 +1599,7 @@ export async function createKb(
   // starts enabled instead of having to switch the graph on.
   const knowledgeGraphEnabled = await isFeatureFlagEnabled(ctx, 'ai-beta')
 
-  return ctx.prisma.kB.create({
+  const kb = await ctx.prisma.kB.create({
     data: {
       name: normalizedName,
       description,
@@ -1463,14 +1610,20 @@ export async function createKb(
       knowledgeGraphEnabled,
     },
   })
+  return {
+    ...kb,
+    permissionLevel: DB.PermissionLevel.OWNER,
+    isOwner: true,
+  }
 }
 
 /**
- * Owner-scoped edit of the settings a lecturer controls on a knowledge base.
+ * Edit of the settings a lecturer controls on a knowledge base.
  * An omitted argument leaves its field alone, so a caller that only renames the
  * knowledge base cannot drop its subject area. A graph build snapshots the
  * subject and language it ran with, so changing them here leaves every existing
- * build, published chatbot and generated question exactly as it was.
+ * build, published chatbot and generated question exactly as it was. Subject
+ * and language remain part of the owner's graph lifecycle.
  */
 export async function updateKb(
   {
@@ -1506,7 +1659,16 @@ export async function updateKb(
   )
 
   return ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+    const updatesGraphDomain =
+      domainPolicyId !== undefined ||
+      domainPolicyVersion !== undefined ||
+      domainPolicyLanguage !== undefined
+    const access = await lockKbAccessOrThrow(
+      prisma,
+      id,
+      ctx.user.sub,
+      updatesGraphDomain ? 'OWNER' : 'WRITE'
+    )
     const stored = domain
       ? await prisma.kB.findUniqueOrThrow({
           where: { id },
@@ -1525,7 +1687,7 @@ export async function updateKb(
       (stored.domainPolicyId !== domain.domainPolicyId ||
         stored.domainPolicyVersion !== domain.domainPolicyVersion ||
         stored.domainPolicyLanguage !== domain.language)
-    return prisma.kB.update({
+    const kb = await prisma.kB.update({
       where: { id },
       data: {
         ...(normalizedName !== undefined ? { name: normalizedName } : {}),
@@ -1540,6 +1702,11 @@ export async function updateKb(
         ...(domainChanged ? { graphSettingsChangedAt: new Date() } : {}),
       },
     })
+    return {
+      ...kb,
+      permissionLevel: access.permissionLevel,
+      isOwner: access.isOwner,
+    }
   })
 }
 
@@ -1611,7 +1778,7 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
   await assertManageAiEnabled(ctx)
   const { kb, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {
-      await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+      await lockKbAccessOrThrow(prisma, id, ctx.user.sub, 'OWNER')
       const graphState = await prisma.kB.findUniqueOrThrow({
         where: { id },
         select: { activeGraphBuildId: true },
@@ -1675,7 +1842,7 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
         orderBy: { chatbotId: 'asc' },
       })
       for (const { chatbotId } of bindingCandidates) {
-        await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+        await lockChatbotForCleanup(prisma, chatbotId)
       }
       const bindings = await prisma.kBChatbot.findMany({
         where: { kbId: id, isEnabled: true },
@@ -1745,7 +1912,14 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
       const kb = await prisma.kB.findUniqueOrThrow({
         where: { id },
       })
-      return { kb, deletionInputs }
+      return {
+        kb: {
+          ...kb,
+          permissionLevel: DB.PermissionLevel.OWNER,
+          isOwner: true,
+        },
+        deletionInputs,
+      }
     }
   )
   await queueKbDeletions(deletionInputs, ctx)
@@ -1768,10 +1942,10 @@ export async function requestKbFileUpload(
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  const { access } = await getKbAccessOrThrow(ctx, kbId, 'WRITE')
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
-    ctx.user.sub
+    access.ownerId
   )
   await containerClient.createIfNotExists()
 
@@ -1779,7 +1953,7 @@ export async function requestKbFileUpload(
   const blobName = `${blobId}.${validated.extension}`
   const expiresOn = new Date(Date.now() + 15 * 60 * 1000)
   await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await lockKbAccessOrThrow(prisma, kbId, ctx.user.sub, 'WRITE')
     await assertKbQuotaAvailable(prisma, {
       kbId,
       resourceCount: 1,
@@ -1855,16 +2029,16 @@ async function getReplaceableKbResourceOrThrow(
   {
     kbId,
     resourceId,
-    ownerId,
-  }: { kbId: string; resourceId: string; ownerId: string }
+    userId,
+  }: { kbId: string; resourceId: string; userId: string }
 ) {
-  await lockOwnedKbOrThrow(prisma, kbId, ownerId)
+  const access = await lockKbAccessOrThrow(prisma, kbId, userId, 'WRITE')
   const resource = await prisma.kBResource.findFirst({
     where: {
       id: resourceId,
       kbId,
       deletedAt: null,
-      kb: { ownerId, deletedAt: null },
+      kb: { deletedAt: null },
     },
   })
   if (!resource) {
@@ -1884,7 +2058,7 @@ async function getReplaceableKbResourceOrThrow(
   if (resource.resourceVersion >= 2_147_483_647) {
     throw new GraphQLError('KB resource version limit reached')
   }
-  return resource
+  return { resource, ownerId: access.ownerId }
 }
 
 export async function confirmKbFileUpload(
@@ -1925,16 +2099,41 @@ export async function confirmKbFileUpload(
   }
   const normalizedTitle = validateKbResourceTitle(title)
 
-  const existingResource = await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    return prisma.kBResource.findFirst({
-      where: {
-        id: blobId,
-        deletedAt: null,
-        kb: { ownerId: ctx.user.sub, deletedAt: null },
-      },
+  const { existingResource, access: initialAccess } =
+    await ctx.prisma.$transaction(async (prisma) => {
+      const access = await lockKbAccessOrThrow(
+        prisma,
+        kbId,
+        ctx.user.sub,
+        'WRITE'
+      )
+      const existingResource = await prisma.kBResource.findFirst({
+        where: { id: blobId, kbId, deletedAt: null },
+      })
+      if (!existingResource) {
+        // A repeated confirmation returns the resource even when new ingestion
+        // admission has since closed. Only a request that would create content
+        // consults the rollout, and that happens before ticket or blob access.
+        await assertKbIngestionEnabled(ctx)
+        const ticket = await prisma.kBUploadTicket.findFirst({
+          where: {
+            id: blobId,
+            kbId,
+            blobName,
+            replacementResourceId: null,
+            expiresAt: { gt: new Date() },
+            sizeBytes: { in: [0, sizeBytes] },
+          },
+          select: { id: true },
+        })
+        if (!ticket) {
+          throw new GraphQLError('KB upload ticket is invalid', {
+            extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+          })
+        }
+      }
+      return { existingResource, access }
     })
-  })
   if (existingResource) {
     assertMatchingConfirmedBlob(existingResource, {
       kbId,
@@ -1947,14 +2146,9 @@ export async function confirmKbFileUpload(
     return existingResource
   }
 
-  // Only genuinely new content is subject to the ingestion rollout. The
-  // repeated-confirmation return above stays reachable with the rollout
-  // closed so that a client retrying a call that already succeeded is
-  // answered with its resource instead of a refusal for work it is not
-  // asking to start.
-  await assertKbIngestionEnabled(ctx)
-
-  const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
+  const { accountUrl, containerClient } = getKbBlobContainer(
+    initialAccess.ownerId
+  )
   const blobClient = containerClient.getBlobClient(blobName)
   if (!(await blobClient.exists())) {
     throw new GraphQLError('KB blob was not found')
@@ -1965,15 +2159,22 @@ export async function confirmKbFileUpload(
     properties.contentLength !== sizeBytes ||
     properties.contentType?.trim().toLowerCase() !== validated.contentType
   ) {
-    await blobClient.deleteIfExists()
+    // The owner-scoped container is shared by several KBs and a client can
+    // still overwrite its ticket-scoped blob until the upload expires. Leave
+    // this blob for the delayed ticket cleanup instead of racing a retry.
     throw new GraphQLError('KB blob metadata is invalid')
   }
 
   const ingestionAttemptId = randomUUID()
   const result = await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    const access = await lockKbAccessOrThrow(
+      prisma,
+      kbId,
+      ctx.user.sub,
+      'WRITE'
+    )
     const racedResource = await prisma.kBResource.findFirst({
-      where: { id: blobId, deletedAt: null },
+      where: { id: blobId, kbId, deletedAt: null },
     })
     if (racedResource) {
       assertMatchingConfirmedBlob(racedResource, {
@@ -2039,7 +2240,7 @@ export async function confirmKbFileUpload(
         resource,
         ingestionAttemptId,
         1,
-        ctx.user.sub
+        access.ownerId
       ),
     }
   })
@@ -2080,9 +2281,10 @@ export async function requestKbFileReplacement(
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
+  const { access } = await getKbAccessOrThrow(ctx, kbId, 'WRITE')
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
-    ctx.user.sub
+    access.ownerId
   )
   await containerClient.createIfNotExists()
 
@@ -2090,10 +2292,10 @@ export async function requestKbFileReplacement(
   const blobName = `${blobId}.${validated.extension}`
   const expiresOn = new Date(Date.now() + 15 * 60 * 1000)
   await ctx.prisma.$transaction(async (prisma) => {
-    const resource = await getReplaceableKbResourceOrThrow(prisma, {
+    const { resource } = await getReplaceableKbResourceOrThrow(prisma, {
       kbId,
       resourceId,
-      ownerId: ctx.user.sub,
+      userId: ctx.user.sub,
     })
     await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
     await prisma.kBUploadTicket.create({
@@ -2162,15 +2364,44 @@ export async function confirmKbFileReplacement(
     throw new GraphQLError('KB blob name is invalid')
   }
 
-  const confirmedReplacement = await ctx.prisma.kBResource.findFirst({
-    where: {
-      id: resourceId,
-      kbId,
-      blobName,
-      deletedAt: null,
-      kb: { ownerId: ctx.user.sub, deletedAt: null },
-    },
-  })
+  const { confirmedReplacement, access: initialAccess } =
+    await ctx.prisma.$transaction(async (prisma) => {
+      const access = await lockKbAccessOrThrow(
+        prisma,
+        kbId,
+        ctx.user.sub,
+        'WRITE'
+      )
+      const confirmedReplacement = await prisma.kBResource.findFirst({
+        where: {
+          id: resourceId,
+          kbId,
+          blobName,
+          deletedAt: null,
+          kb: { deletedAt: null },
+        },
+      })
+      if (!confirmedReplacement) {
+        const ticket = await prisma.kBUploadTicket.findFirst({
+          where: {
+            id: blobId,
+            kbId,
+            blobName,
+            replacementResourceId: resourceId,
+            sizeBytes,
+            expiresAt: { gt: new Date() },
+            kb: { deletedAt: null },
+          },
+          select: { id: true },
+        })
+        if (!ticket) {
+          throw new GraphQLError('KB upload ticket is invalid', {
+            extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+          })
+        }
+      }
+      return { confirmedReplacement, access }
+    })
   if (confirmedReplacement) {
     assertMatchingConfirmedBlob(confirmedReplacement, {
       kbId,
@@ -2183,24 +2414,9 @@ export async function confirmKbFileReplacement(
     return confirmedReplacement
   }
 
-  const ticket = await ctx.prisma.kBUploadTicket.findFirst({
-    where: {
-      id: blobId,
-      kbId,
-      blobName,
-      replacementResourceId: resourceId,
-      expiresAt: { gt: new Date() },
-      kb: { ownerId: ctx.user.sub, deletedAt: null },
-    },
-    select: { id: true },
-  })
-  if (!ticket) {
-    throw new GraphQLError('KB upload ticket is invalid', {
-      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
-    })
-  }
-
-  const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
+  const { accountUrl, containerClient } = getKbBlobContainer(
+    initialAccess.ownerId
+  )
   const blobClient = containerClient.getBlobClient(blobName)
   if (!(await blobClient.exists())) {
     throw new GraphQLError('KB blob was not found')
@@ -2211,17 +2427,22 @@ export async function confirmKbFileReplacement(
     properties.contentLength !== sizeBytes ||
     properties.contentType?.trim().toLowerCase() !== validated.contentType
   ) {
-    await blobClient.deleteIfExists()
+    // A concurrent confirmation may repair the same ticket while metadata is
+    // checked. Keep the blob behind its ticket so delayed maintenance removes
+    // it if no confirmation ever succeeds.
     throw new GraphQLError('KB blob metadata is invalid')
   }
 
   const ingestionAttemptId = randomUUID()
   const result = await ctx.prisma.$transaction(async (prisma) => {
-    const resource = await getReplaceableKbResourceOrThrow(prisma, {
-      kbId,
-      resourceId,
-      ownerId: ctx.user.sub,
-    })
+    const { resource, ownerId } = await getReplaceableKbResourceOrThrow(
+      prisma,
+      {
+        kbId,
+        resourceId,
+        userId: ctx.user.sub,
+      }
+    )
 
     const currentTicket = await prisma.kBUploadTicket.findFirst({
       where: {
@@ -2288,7 +2509,7 @@ export async function confirmKbFileReplacement(
         updated,
         ingestionAttemptId,
         resourceVersion,
-        ctx.user.sub
+        ownerId
       ),
       previousBlobName: resource.blobName,
     }
@@ -2342,7 +2563,7 @@ export async function createKbUrlResource(
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  await getKbAccessOrThrow(ctx, kbId, 'WRITE')
 
   let sourceUrl: string
   try {
@@ -2353,7 +2574,12 @@ export async function createKbUrlResource(
 
   const ingestionAttemptId = randomUUID()
   const result = await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    const access = await lockKbAccessOrThrow(
+      prisma,
+      kbId,
+      ctx.user.sub,
+      'WRITE'
+    )
     await assertKbQuotaAvailable(prisma, {
       kbId,
       resourceCount: 1,
@@ -2386,7 +2612,7 @@ export async function createKbUrlResource(
         resource,
         ingestionAttemptId,
         1,
-        ctx.user.sub
+        access.ownerId
       ),
     }
   })
@@ -2419,7 +2645,7 @@ export async function updateKbResourceMaterialType(
 ) {
   await assertManageAiEnabled(ctx)
   return ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbResourceOrThrow(prisma, id, ctx.user.sub)
+    await lockKbResourceAccessOrThrow(prisma, id, ctx.user.sub, 'WRITE')
     return prisma.kBResource.update({
       where: { id },
       data: { materialType },
@@ -2434,8 +2660,12 @@ export async function deleteKbResource(
   await assertManageAiEnabled(ctx)
   const { resource, deletionInput } = await ctx.prisma.$transaction(
     async (prisma) => {
-      const kbId = await lockOwnedKbForResourceOrThrow(prisma, id, ctx.user.sub)
-      await lockOwnedKbResourceOrThrow(prisma, id, ctx.user.sub)
+      const { kbId } = await lockKbResourceAccessOrThrow(
+        prisma,
+        id,
+        ctx.user.sub,
+        'WRITE'
+      )
       const resource = await prisma.kBResource.findUniqueOrThrow({
         where: { id },
       })
@@ -2506,7 +2736,7 @@ export async function deleteKbResources(
 
   const { resources, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {
-      await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+      await lockKbAccessOrThrow(prisma, kbId, ctx.user.sub, 'WRITE')
       for (const resourceId of sortedIds) {
         await lockKbResourceInKbOrThrow(prisma, kbId, resourceId)
       }
@@ -2672,60 +2902,72 @@ export async function ingestKbResource(
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
-  const resource = await getOwnedKbResourceOrThrow(ctx, id)
-  if (
-    resource.status !== DB.KBResourceStatus.ADDED &&
-    resource.status !== DB.KBResourceStatus.READY &&
-    resource.status !== DB.KBResourceStatus.FAILED
-  ) {
-    throw new GraphQLError('KB resource cannot be ingested')
-  }
-  if (resource.resourceVersion >= 2_147_483_647) {
-    throw new GraphQLError('KB resource version limit reached')
-  }
-
   const ingestionAttemptId = randomUUID()
-  const resourceVersion = resource.resourceVersion + 1
-  const payload = buildKbIngestionPayload(
-    resource,
-    ingestionAttemptId,
-    resourceVersion,
-    ctx.user.sub
-  )
+  const { payload, resource } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const { access } = await lockKbResourceAccessOrThrow(
+        prisma,
+        id,
+        ctx.user.sub,
+        'WRITE'
+      )
+      const resource = await prisma.kBResource.findUniqueOrThrow({
+        where: { id },
+      })
+      if (
+        resource.status !== DB.KBResourceStatus.ADDED &&
+        resource.status !== DB.KBResourceStatus.READY &&
+        resource.status !== DB.KBResourceStatus.FAILED
+      ) {
+        throw new GraphQLError('KB resource cannot be ingested')
+      }
+      if (resource.resourceVersion >= 2_147_483_647) {
+        throw new GraphQLError('KB resource version limit reached')
+      }
 
-  await ctx.prisma.$transaction(async (prisma) => {
-    const claim = await prisma.kBResource.updateMany({
-      where: {
-        id: resource.id,
-        status: resource.status,
-        ingestionAttemptId: resource.ingestionAttemptId,
-        deletedAt: null,
-        kb: { ownerId: ctx.user.sub, deletedAt: null },
-      },
-      data: {
-        status: DB.KBResourceStatus.QUEUED,
-        statusMessage: null,
-        ingestionOperation: DB.KBIngestionOperation.UPSERT,
-        ingestionAttemptId,
-        resourceVersion,
-        contentSha256: null,
-        externalOperationId: null,
-        externalOperationStartedAt: null,
-        errorCode: null,
-      },
-    })
-    if (claim.count !== 1) {
-      throw new GraphQLError('KB resource cannot be ingested')
+      const resourceVersion = resource.resourceVersion + 1
+      const claim = await prisma.kBResource.updateMany({
+        where: {
+          id: resource.id,
+          status: resource.status,
+          ingestionAttemptId: resource.ingestionAttemptId,
+          deletedAt: null,
+          kb: { deletedAt: null },
+        },
+        data: {
+          status: DB.KBResourceStatus.QUEUED,
+          statusMessage: null,
+          ingestionOperation: DB.KBIngestionOperation.UPSERT,
+          ingestionAttemptId,
+          resourceVersion,
+          contentSha256: null,
+          externalOperationId: null,
+          externalOperationStartedAt: null,
+          errorCode: null,
+        },
+      })
+      if (claim.count !== 1) {
+        throw new GraphQLError('KB resource cannot be ingested')
+      }
+      await prisma.kBIngestionRun.create({
+        data: {
+          id: ingestionAttemptId,
+          resourceId: resource.id,
+          operation: DB.KBIngestionOperation.UPSERT,
+          resourceVersion,
+        },
+      })
+      return {
+        resource,
+        payload: buildKbIngestionPayload(
+          resource,
+          ingestionAttemptId,
+          resourceVersion,
+          access.ownerId
+        ),
+      }
     }
-    await prisma.kBIngestionRun.create({
-      data: {
-        id: ingestionAttemptId,
-        resourceId: resource.id,
-        operation: DB.KBIngestionOperation.UPSERT,
-        resourceVersion,
-      },
-    })
-  })
+  )
 
   try {
     await ctx.tasks.ingestKBResource.runNoWait(payload)
@@ -2752,11 +2994,16 @@ export async function ingestAllKbResources(
 ): Promise<KBIngestAllResult> {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  await getKbAccessOrThrow(ctx, kbId, 'WRITE')
 
   const { queued, alreadyCurrentCount, alreadyInProgressCount } =
     await ctx.prisma.$transaction(async (prisma) => {
-      await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+      const access = await lockKbAccessOrThrow(
+        prisma,
+        kbId,
+        ctx.user.sub,
+        'WRITE'
+      )
       const resources = await prisma.kBResource.findMany({
         where: { kbId, deletedAt: null },
         orderBy: { id: 'asc' },
@@ -2856,7 +3103,7 @@ export async function ingestAllKbResources(
             resource,
             ingestionAttemptId,
             resourceVersion,
-            ctx.user.sub
+            access.ownerId
           ),
           resourceId: resource.id,
           ingestionAttemptId,

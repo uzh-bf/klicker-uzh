@@ -148,6 +148,7 @@ import {
   CatalogSelectionObject,
   DerivedPermissionInfo,
   DerivedPermissionOriginInformation,
+  ObjectPermissionRemovalPreview,
   ObjectSharingRequest,
   ObjectType,
   PermissionsList,
@@ -2049,6 +2050,26 @@ export const Query = builder.queryType({
               { id: args.objectId },
               ctx
             )
+          } else if (args.objectType === DB.ObjectType.KB) {
+            await AiFeatureGateService.assertManageAiEnabled(ctx)
+
+            const validAccess = await checkAccess(
+              [
+                {
+                  kbId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getKnowledgeBasePermissions(
+              { id: args.objectId },
+              ctx
+            )
           } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
@@ -2199,6 +2220,19 @@ export const Query = builder.queryType({
           // on certain top-level objects, no derived permissions can be created -> return an empty array
           if (args.objectType === DB.ObjectType.CATALOG_COLLECTION) {
             return []
+          } else if (args.objectType === DB.ObjectType.KB) {
+            await AiFeatureGateService.assertManageAiEnabled(ctx)
+
+            const validAccess = await checkAccess(
+              [
+                {
+                  kbId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            return validAccess ? [] : null
           } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             // >= ADMIN permissions on answer collection
             const validAccess = await checkAccess(
@@ -2352,6 +2386,27 @@ export const Query = builder.queryType({
         },
       }),
 
+      getObjectPermissionRemovalPreview: t.withAuth(asUser).field({
+        nullable: true,
+        type: ObjectPermissionRemovalPreview,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: ObjectType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          if (args.objectType !== DB.ObjectType.KB) {
+            return null
+          }
+
+          await AiFeatureGateService.assertManageAiEnabled(ctx)
+          return await SharingService.getObjectPermissionRemovalPreview(
+            { permissionId: args.permissionId, kbId: args.objectId },
+            ctx
+          )
+        },
+      }),
+
       getDerivedPermissionOrigin: t.withAuth(asUser).field({
         nullable: true,
         type: DerivedPermissionOriginInformation,
@@ -2375,7 +2430,9 @@ export const Query = builder.queryType({
           // and must not fall through to an unfiltered activity query
           if (
             args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
-            args.objectType === DB.ObjectType.USER_GROUP
+            args.objectType === DB.ObjectType.USER_GROUP ||
+            args.objectType === DB.ObjectType.KB ||
+            args.objectType === DB.ObjectType.CHATBOT
           ) {
             return null
           }

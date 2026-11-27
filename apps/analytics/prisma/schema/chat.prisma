@@ -252,6 +252,9 @@ model Chatbot {
   usageCredits      ChatUsageCredits[]
   responseExampleSet ResponseExampleSet?
 
+  directPermissions Permission[]
+  permissions       DerivedPermission[]
+
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 

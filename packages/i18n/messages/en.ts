@@ -1132,6 +1132,7 @@ export default {
       GROUP_ACTIVITY: 'Group Activity',
       GROUP_ACTIVITY_TEMPLATE: 'Group Activity Template',
       ANSWER_COLLECTION: 'Answer Collection',
+      KB: 'Knowledge base',
       CATALOG_COLLECTION: 'Catalog Collection',
       ELEMENT: 'Element',
       COURSE: 'Course',
@@ -2064,6 +2065,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
   },
   kb: {
     title: 'Knowledge Bases',
+    sharingPermissions: {
+      viewAndInspect:
+        'View and inspect the knowledge base and its source material',
+      editSources: 'Maintain the source material',
+      manageAccess: 'Grant, change and revoke access',
+      delete: 'Delete the knowledge base and manage its lifecycle',
+    },
     create: 'Create knowledge base',
     nameLabel: 'Name',
     descriptionLabel: 'Description (optional)',
@@ -6225,6 +6233,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       shareGROUP_ACTIVITY: 'Share Group Activity',
       shareCOURSE: 'Share Course',
       shareELEMENT: 'Share Element',
+      shareKB: 'Share Knowledge Base',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
@@ -6241,6 +6250,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This view allows you to share the course "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the course or make other changes.',
       infoSharingELEMENT:
         'This view allows you to share the element "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the element, add more users or make other changes.',
+      infoSharingKB:
+        'This view allows you to share the knowledge base "<b>{objectName}</b>" with other lecturers or user groups. Read access lets recipients inspect the knowledge base and its source material. Write access also lets them maintain the source material. Admin access also lets them grant, change and revoke access. Owners keep lifecycle and deletion controls.',
       propagatedPermissions: 'Propagated Permissions',
       propagatedPermissionsANSWER_COLLECTION: '',
       propagatedPermissionsCATALOG_COLLECTION: '',
@@ -6290,8 +6301,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that you want to remove the direct access to this resource for user <b>{username}</b>.',
       revokeGroupPermission:
         'Please confirm that you want to remove the direct access to this resource for the user group <b>{groupName}</b>.',
+      revokeKbUserPermission:
+        'Please confirm that you want to remove the direct access to this knowledge base for user <b>{username}</b>. Other individual or group grants may still allow access.',
+      revokeKbGroupPermission:
+        "Please confirm that you want to remove the direct access to this knowledge base for the user group <b>{groupName}</b>. Each member's other individual or group grants still apply.",
       derivedPermissionWarning:
         "Caution: Removing the direct access rights to an object might not completely remove a user's access to it. In case a user has access to other objects that depend on this one, they will be granted a derived permission, which can be inspected at the bottom of the sharing dialog.",
+      knowledgeBaseRevocationWarning:
+        'If a linked chatbot owner loses their last Read grant, that chatbot stops using this knowledge base for new retrieval. Answers that were already delivered remain readable. Ownership is not transferred.',
+      knowledgeBaseOverlapChecking:
+        'Checking current grants to see whether this user would keep Read access.',
+      knowledgeBaseOverlapSurvives:
+        'As of this check, another grant keeps at least Read access for this user. The committed permissions remain authoritative.',
+      knowledgeBaseOverlapLost:
+        'As of this check, no other grant keeps Read access for this user.',
+      knowledgeBaseOverlapUnavailable:
+        'The current overlap check is unavailable. The committed permission after confirmation remains authoritative.',
+      knowledgeBaseOverlapGroup:
+        'Access is evaluated for each group member. Other individual or group grants continue to apply.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

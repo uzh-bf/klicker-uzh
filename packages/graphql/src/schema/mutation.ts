@@ -1,8 +1,12 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
-import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import {
+  isSharedObjectPermissionLevel,
+  MISSING_CATALOG_COLLECTION_ID,
+} from '@klicker-uzh/util'
 import { z } from 'zod'
 import builder from '../builder.js'
+import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
@@ -2735,7 +2739,9 @@ export const Mutation = builder.mutationType({
           // activity entries are not supported for catalog collections and user groups
           if (
             args.objectType === DB.ObjectType.CATALOG_COLLECTION ||
-            args.objectType === DB.ObjectType.USER_GROUP
+            args.objectType === DB.ObjectType.USER_GROUP ||
+            args.objectType === DB.ObjectType.KB ||
+            args.objectType === DB.ObjectType.CHATBOT
           ) {
             return null
           }
@@ -2830,6 +2836,13 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
+          if (
+            args.objectType === DB.ObjectType.KB ||
+            args.objectType === DB.ObjectType.CHATBOT
+          ) {
+            return null
+          }
+
           // if defined, >= WRITE permissions on catalog collection required
           const validAccess =
             args.catalogCollectionId &&
@@ -3297,6 +3310,18 @@ export const Mutation = builder.mutationType({
             return null
           }
 
+          if (args.objectType === DB.ObjectType.KB) {
+            await AiFeatureGateService.assertManageAiEnabled(ctx)
+            if (
+              args.propagation ||
+              !isSharedObjectPermissionLevel(args.permissionLevel)
+            ) {
+              return null
+            }
+          } else if (args.objectType === DB.ObjectType.CHATBOT) {
+            return null
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -3304,6 +3329,14 @@ export const Mutation = builder.mutationType({
                 ? [
                     {
                       catalogCollectionId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.KB
+                ? [
+                    {
+                      kbId: args.objectId,
                       minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                     },
                   ]
@@ -3409,6 +3442,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
+              kbId:
+                args.objectType === DB.ObjectType.KB
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -3423,12 +3460,26 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
+          if (args.objectType === DB.ObjectType.KB) {
+            await AiFeatureGateService.assertManageAiEnabled(ctx)
+          } else if (args.objectType === DB.ObjectType.CHATBOT) {
+            return null
+          }
+
           const validAccess = await checkAccess(
             [
               ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
                 ? [
                     {
                       catalogCollectionId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.KB
+                ? [
+                    {
+                      kbId: args.objectId,
                       minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                     },
                   ]
@@ -3531,6 +3582,10 @@ export const Mutation = builder.mutationType({
                 args.objectType === DB.ObjectType.GROUP_ACTIVITY
                   ? args.objectId
                   : undefined,
+              kbId:
+                args.objectType === DB.ObjectType.KB
+                  ? args.objectId
+                  : undefined,
             },
             ctx
           )
@@ -3552,6 +3607,18 @@ export const Mutation = builder.mutationType({
             return false
           }
 
+          if (args.objectType === DB.ObjectType.KB) {
+            await AiFeatureGateService.assertManageAiEnabled(ctx)
+            if (
+              args.propagation ||
+              !isSharedObjectPermissionLevel(args.permissionLevel)
+            ) {
+              return false
+            }
+          } else if (args.objectType === DB.ObjectType.CHATBOT) {
+            return false
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
@@ -3559,6 +3626,14 @@ export const Mutation = builder.mutationType({
                 ? [
                     {
                       catalogCollectionId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === DB.ObjectType.KB
+                ? [
+                    {
+                      kbId: args.objectId,
                       minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                     },
                   ]
@@ -3661,6 +3736,10 @@ export const Mutation = builder.mutationType({
                   : undefined,
               groupActivityId:
                 args.objectType === DB.ObjectType.GROUP_ACTIVITY
+                  ? args.objectId
+                  : undefined,
+              kbId:
+                args.objectType === DB.ObjectType.KB
                   ? args.objectId
                   : undefined,
             },

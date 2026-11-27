@@ -3,6 +3,7 @@ query GetKb($id: ID!) {
     id
     name
     description
+    permissionLevel
     domainPolicyId
     domainPolicyVersion
     domainPolicyLanguage

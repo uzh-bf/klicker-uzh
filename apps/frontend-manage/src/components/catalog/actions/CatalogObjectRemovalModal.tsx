@@ -22,6 +22,8 @@ function CatalogObjectRemovalModal({
     RemoveCatalogObjectAssignmentDocument
   )
 
+  if (object.objectType === ObjectType.Kb) return null
+
   return (
     <Modal
       open

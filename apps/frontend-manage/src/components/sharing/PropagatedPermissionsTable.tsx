@@ -21,6 +21,8 @@ function PropagatedPermissionsTable({
     propagation,
   })
 
+  if (objectType === ObjectType.Kb) return null
+
   // execution rights are only available for activities and courses
   const showExecution =
     objectType === ObjectType.Course ||

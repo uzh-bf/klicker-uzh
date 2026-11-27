@@ -1,4 +1,4 @@
-import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectType, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
@@ -7,6 +7,7 @@ interface ModifyOwnPermissionsModalProps {
   onConfirm: () => void
   action: 'change' | 'remove'
   newPermissionLevel?: PermissionLevel
+  objectType?: ObjectType
 }
 
 function ModifyOwnPermissionsModal({
@@ -14,6 +15,7 @@ function ModifyOwnPermissionsModal({
   onConfirm,
   action,
   newPermissionLevel,
+  objectType,
 }: ModifyOwnPermissionsModalProps) {
   const t = useTranslations()
 
@@ -35,9 +37,16 @@ function ModifyOwnPermissionsModal({
     >
       <div className="mt-2">
         {action === 'remove' ? (
-          <p className="text-sm" data-cy="remove-own-access-warning">
-            {t('manage.sharing.removeOwnPermissionsWarning')}
-          </p>
+          <>
+            <p className="text-sm" data-cy="remove-own-access-warning">
+              {t('manage.sharing.removeOwnPermissionsWarning')}
+            </p>
+            {objectType === ObjectType.Kb ? (
+              <p className="mt-2 text-sm text-gray-600">
+                {t('manage.sharing.knowledgeBaseRevocationWarning')}
+              </p>
+            ) : null}
+          </>
         ) : (
           <p className="text-sm" data-cy="change-own-access-warning">
             {t('manage.sharing.changeOwnPermissionsWarning', {

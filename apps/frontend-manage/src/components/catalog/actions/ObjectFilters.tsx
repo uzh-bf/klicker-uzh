@@ -27,11 +27,13 @@ function ObjectFilters({
             label: t('manage.catalog.all'),
             data: { cy: 'all-object-types' },
           },
-          ...Object.values(ObjectType).map((type) => ({
-            label: t(`shared.types.${type}`),
-            value: type,
-            data: { cy: `catalog-object-type-${type}` },
-          })),
+          ...Object.values(ObjectType)
+            .filter((type) => type !== ObjectType.Kb)
+            .map((type) => ({
+              label: t(`shared.types.${type}`),
+              value: type,
+              data: { cy: `catalog-object-type-${type}` },
+            })),
         ]}
         value={typeFilter}
         onChange={(newValue) => {

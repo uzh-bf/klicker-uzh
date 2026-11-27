@@ -1,6 +1,7 @@
 import { NetworkStatus, useQuery } from '@apollo/client'
 import {
   GetUserKbsDocument,
+  PermissionLevel,
   type GetUserKbsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -26,7 +27,11 @@ const PAGE_SIZE = 20
 type KnowledgeBaseSummary =
   GetUserKbsQuery['getUserKbsConnection']['items'][number]
 
-function KnowledgeBaseManager() {
+function KnowledgeBaseManager({
+  onShare,
+}: {
+  onShare?: (knowledgeBase: { id: string; name: string }) => void
+}) {
   const t = useTranslations()
   const { labelForKey, languageLabel } = useKbDomainLabels()
   const [createOpen, setCreateOpen] = useState(false)
@@ -47,6 +52,8 @@ function KnowledgeBaseManager() {
   const connection = data?.getUserKbsConnection
   const knowledgeBases = connection?.items ?? []
   const loadingMore = networkStatus === NetworkStatus.fetchMore
+  const deletionTargetIsOwner =
+    deletionTarget?.permissionLevel === PermissionLevel.Owner
 
   const loadMore = async () => {
     if (!connection?.pageInfo.hasNextPage || loadingMore) return
@@ -215,14 +222,26 @@ function KnowledgeBaseManager() {
                     </span>
                   ) : null}
                 </Link>
-                <div className="flex items-center justify-end border-t border-slate-200 px-3 py-2 sm:border-l sm:border-t-0 sm:py-0">
-                  <Button
-                    destructive
-                    onClick={() => setDeletionTarget(kb)}
-                    data={{ cy: `delete-knowledge-base-${kb.id}` }}
-                  >
-                    <Button.Label>{t('shared.generic.delete')}</Button.Label>
-                  </Button>
+                <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-3 py-2 sm:border-l sm:border-t-0 sm:py-0">
+                  {onShare &&
+                  (kb.permissionLevel === PermissionLevel.Admin ||
+                    kb.permissionLevel === PermissionLevel.Owner) ? (
+                    <Button
+                      onClick={() => onShare({ id: kb.id, name: kb.name })}
+                      data={{ cy: `share-knowledge-base-${kb.id}` }}
+                    >
+                      <Button.Label>{t('manage.sharing.shareKB')}</Button.Label>
+                    </Button>
+                  ) : null}
+                  {kb.permissionLevel === PermissionLevel.Owner ? (
+                    <Button
+                      destructive
+                      onClick={() => setDeletionTarget(kb)}
+                      data={{ cy: `delete-knowledge-base-${kb.id}` }}
+                    >
+                      <Button.Label>{t('shared.generic.delete')}</Button.Label>
+                    </Button>
+                  ) : null}
                 </div>
               </li>
             ))}
@@ -248,7 +267,7 @@ function KnowledgeBaseManager() {
           onCreated={() => refetch()}
         />
       ) : null}
-      {deletionTarget ? (
+      {deletionTarget && deletionTargetIsOwner ? (
         <DeleteKnowledgeBaseModal
           knowledgeBase={deletionTarget}
           onClose={() => setDeletionTarget(null)}

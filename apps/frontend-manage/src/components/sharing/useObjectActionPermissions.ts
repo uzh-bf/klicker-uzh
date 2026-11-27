@@ -39,6 +39,25 @@ function useObjectActionPermissions({
         permissions: [false, false, false, true],
       },
     ]
+  } else if (objectType === ObjectType.Kb) {
+    return [
+      {
+        action: t('kb.sharingPermissions.viewAndInspect'),
+        permissions: [true, true, true, true],
+      },
+      {
+        action: t('kb.sharingPermissions.editSources'),
+        permissions: [false, true, true, true],
+      },
+      {
+        action: t('kb.sharingPermissions.manageAccess'),
+        permissions: [false, false, true, true],
+      },
+      {
+        action: t('kb.sharingPermissions.delete'),
+        permissions: [false, false, false, true],
+      },
+    ]
   } else if (objectType === ObjectType.AnswerCollection) {
     return [
       {

@@ -2433,9 +2433,11 @@ type KB {
   domainPolicyLanguage: String
   domainPolicyVersion: Int
   id: ID!
+  isOwner: Boolean!
   materialsReadiness: KBMaterialsReadiness
   metrics: KBMetrics
   name: String!
+  permissionLevel: PermissionLevel!
   questionPreparation: KBQuestionPreparation
   updatedAt: Date!
 }
@@ -3229,6 +3231,11 @@ enum ObjectAccess {
   RESTRICTED
 }
 
+type ObjectPermissionRemovalPreview {
+  permissionId: Int!
+  readSurvives: Boolean
+}
+
 type ObjectSharingRequest {
   objectName: String!
   objectType: ObjectType!
@@ -3244,6 +3251,7 @@ enum ObjectType {
   COURSE
   ELEMENT
   GROUP_ACTIVITY
+  KB
   LIVE_QUIZ
   MICRO_LEARNING
   PRACTICE_QUIZ
@@ -3653,6 +3661,7 @@ type Query {
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
+  getObjectPermissionRemovalPreview(objectId: String!, objectType: ObjectType!, permissionId: Int!): ObjectPermissionRemovalPreview
   getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation

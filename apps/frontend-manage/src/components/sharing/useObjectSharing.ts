@@ -4,7 +4,9 @@ import {
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
+  GetKbDocument,
   GetObjectPermissionsDocument,
+  GetUserKbsDocument,
   ObjectType,
   PermissionLevel,
   ShareObjectDocument,
@@ -106,6 +108,15 @@ function useObjectSharing({
             : []),
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
+            : []),
+          ...(objectType === ObjectType.Kb
+            ? [
+                {
+                  query: GetKbDocument,
+                  variables: { id: String(objectId) },
+                },
+                { query: GetUserKbsDocument },
+              ]
             : []),
         ],
       })

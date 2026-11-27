@@ -1,8 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityLogModificationFieldType as ActivityLogModificationFieldTypeEnum,
-  CatalogObject as CatalogObjectInterface,
-  ObjectSharingRequest as ObjectSharingRequestType,
+  type CatalogObject as CatalogObjectInterface,
+  type ObjectSharingRequest as ObjectSharingRequestType,
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
@@ -13,7 +13,7 @@ import {
   type ElementBatchSharingOutcome as ElementBatchSharingOutcomeType,
   type ElementBatchSharingResult as ElementBatchSharingResultType,
 } from '../services/sharing.js'
-import { IUserInfo, UserInfo } from './user.js'
+import { type IUserInfo, UserInfo } from './user.js'
 
 export const ObjectAccess = builder.enumType('ObjectAccess', {
   values: Object.values(DB.ObjectAccess),
@@ -21,8 +21,10 @@ export const ObjectAccess = builder.enumType('ObjectAccess', {
 
 export const ObjectType = builder.enumType('ObjectType', {
   values: Object.values(DB.ObjectType).filter(
-    // exclude user group from the graphql object type
-    (type) => type !== DB.ObjectType.USER_GROUP
+    // user groups have dedicated operations; chatbot sharing is enabled in
+    // layer 3 only after chatbot read and write projections enforce grants
+    (type) =>
+      type !== DB.ObjectType.USER_GROUP && type !== DB.ObjectType.CHATBOT
   ) as DB.ObjectType[],
 })
 
@@ -209,6 +211,22 @@ interface IPermissionsList {
   ownerPermission?: IPermissionInfo | null
   permissions: IPermissionInfo[]
 }
+
+interface IObjectPermissionRemovalPreview {
+  permissionId: number
+  readSurvives: boolean | null
+}
+export const ObjectPermissionRemovalPreviewRef =
+  builder.objectRef<IObjectPermissionRemovalPreview>(
+    'ObjectPermissionRemovalPreview'
+  )
+export const ObjectPermissionRemovalPreview =
+  ObjectPermissionRemovalPreviewRef.implement({
+    fields: (t) => ({
+      permissionId: t.exposeInt('permissionId'),
+      readSurvives: t.exposeBoolean('readSurvives', { nullable: true }),
+    }),
+  })
 export const PermissionsListRef =
   builder.objectRef<IPermissionsList>('PermissionsList')
 export const PermissionsList = PermissionsListRef.implement({

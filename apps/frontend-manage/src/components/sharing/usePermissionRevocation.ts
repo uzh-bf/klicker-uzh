@@ -5,7 +5,9 @@ import {
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   GetDerivedObjectPermissionsDocument,
+  GetKbDocument,
   GetObjectPermissionsDocument,
+  GetUserKbsDocument,
   ObjectType,
   RevokeObjectAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -38,6 +40,7 @@ function usePermissionRevocation({
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )
+  const hasDerivedPermissions = objectType !== ObjectType.Kb
 
   const onPermissionRevocation = async ({
     permissionId,
@@ -82,10 +85,14 @@ function usePermissionRevocation({
         // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           { query: GetCatalogSharingRequestsDocument },
-          {
-            query: GetDerivedObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          },
+          ...(hasDerivedPermissions
+            ? [
+                {
+                  query: GetDerivedObjectPermissionsDocument,
+                  variables: { objectId: String(objectId), objectType },
+                },
+              ]
+            : []),
           {
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },
@@ -100,6 +107,15 @@ function usePermissionRevocation({
             : []),
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
+            : []),
+          ...(objectType === ObjectType.Kb
+            ? [
+                {
+                  query: GetKbDocument,
+                  variables: { id: String(objectId) },
+                },
+                { query: GetUserKbsDocument },
+              ]
             : []),
         ],
       })

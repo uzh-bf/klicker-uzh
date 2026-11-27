@@ -45,6 +45,12 @@ model Permission {
     derivedPermissions DerivedPermission[]
 
     // shared objects
+    kb   KB?     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    kbId String? @db.Uuid
+
+    chatbot   Chatbot? @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    chatbotId String?  @db.Uuid
+
     catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     catalogCollectionId String?            @db.Uuid
 
@@ -73,6 +79,8 @@ model Permission {
     updatedAt DateTime @updatedAt
 
     // only one permission per object and user / user group
+    @@unique([kbId, userId])
+    @@unique([chatbotId, userId])
     @@unique([catalogCollectionId, userId])
     @@unique([answerCollectionId, userId])
     @@unique([elementId, userId])
@@ -81,6 +89,8 @@ model Permission {
     @@unique([practiceQuizId, userId])
     @@unique([microLearningId, userId])
     @@unique([groupActivityId, userId])
+    @@unique([kbId, userGroupId])
+    @@unique([chatbotId, userGroupId])
     @@unique([catalogCollectionId, userGroupId])
     @@unique([answerCollectionId, userGroupId])
     @@unique([elementId, userGroupId])
@@ -187,6 +197,12 @@ model DerivedPermission {
     userId String @db.Uuid
 
     // shared objects
+    kb   KB?     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    kbId String? @db.Uuid
+
+    chatbot   Chatbot? @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    chatbotId String?  @db.Uuid
+
     catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     catalogCollectionId String?            @db.Uuid
 
@@ -215,6 +231,8 @@ model DerivedPermission {
     updatedAt DateTime @updatedAt
 
     // only one access request per object and user (upsert when creating a new request)
+    @@unique([kbId, userId])
+    @@unique([chatbotId, userId])
     @@unique([catalogCollectionId, userId])
     @@unique([answerCollectionId, userId])
     @@unique([elementId, userId])
@@ -224,6 +242,8 @@ model DerivedPermission {
     @@unique([microLearningId, userId])
     @@unique([groupActivityId, userId])
     // index on permission level and object id to efficiently retrieve all users with a specific access level to the object
+    @@index([kbId, permissionLevel])
+    @@index([chatbotId, permissionLevel])
     @@index([catalogCollectionId, permissionLevel])
     @@index([answerCollectionId, permissionLevel])
     @@index([elementId, permissionLevel])
@@ -370,6 +390,8 @@ enum AuditLogType {
 }
 
 enum ObjectType {
+    KB
+    CHATBOT
     USER_GROUP
     CATALOG_COLLECTION
     ANSWER_COLLECTION

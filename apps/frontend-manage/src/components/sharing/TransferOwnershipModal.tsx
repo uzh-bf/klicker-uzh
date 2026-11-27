@@ -35,6 +35,8 @@ function TransferOwnershipModal({
     onError: onTransferFailure,
   })
 
+  if (objectType === ObjectType.Kb) return null
+
   const activityTemplate =
     isTemplate &&
     (objectType === ObjectType.LiveQuiz ||

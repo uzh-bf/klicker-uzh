@@ -4,6 +4,7 @@ query GetUserKbs($first: Int, $after: String, $search: String) {
       id
       name
       description
+      permissionLevel
       domainPolicyId
       domainPolicyLanguage
       metrics {
