@@ -318,7 +318,10 @@ async function installKbMocks(page: Page, state: DomainMockState) {
 
     // The stored triple is patched into the real knowledge base so the metrics
     // and the identity stay authentic while the spec controls the selection.
-    if (operationName === 'GetKb' && state.kbDomain != null) {
+    if (
+      operationName === 'GetKbWithPermissionLevel' &&
+      state.kbDomain != null
+    ) {
       const response = await route.fetch()
       const json = (await response.json()) as {
         data?: { getKb?: Record<string, unknown> | null }
