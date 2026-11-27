@@ -83,4 +83,6 @@ Layer two has passed two persisted group-access revocation cases on a retained o
 
 Layer two is published in [PR #7077](https://github.com/uzh-bf/klicker-uzh/pull/7077). Its combined retrieval, attachment and receipt suite passed 117 tests and 106 focused Chat tests. Layer three extends the shared Manage dialog to chatbot grants, protects student and owner-only data, and preserves the live KB binding across draft revisions. Browser testing on the combined stack confirmed that a seeded lecturer can grant Read to another lecturer in both dialogs.
 
+Layer three is published in [PR #7079](https://github.com/uzh-bf/klicker-uzh/pull/7079). GitHub lists the three drafts in dependency order in stack #7078. On the combined branch, both open-chat cases, all 88 KB tests and the GraphQL typecheck passed. Follow-up checks covered receipt capture with stale derived access, per-call graph identity checks and the shared dialog’s supported controls.
+
 Current local worktrees are `rs/kb-chatbot-sharing`, `rs/kb-chatbot-retrieval` and `rs/chatbot-collaboration`. Source delivery ends at three draft PRs. Merge and deployment require separate authority.

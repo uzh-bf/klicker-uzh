@@ -70,21 +70,24 @@ function ObjectSharingModalWrapper({
         derivedPermissionsAvailable={
           objectType !== ObjectType.CatalogCollection &&
           objectType !== ObjectType.Course &&
-          objectType !== ObjectType.Kb
+          objectType !== ObjectType.Kb &&
+          objectType !== ObjectType.Chatbot
         }
         refetchElements={refetchElements}
         refetchActivities={refetchActivities}
       />
-      {transferModalOpen && objectType !== ObjectType.Kb && (
-        <TransferOwnershipModal
-          onClose={() => setTransferModalOpen(false)}
-          objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
-          objectType={objectType}
-          objectName={objectName}
-          isTemplate={isTemplate}
-          catalogCollectionId={catalogCollectionId}
-        />
-      )}
+      {transferModalOpen &&
+        objectType !== ObjectType.Kb &&
+        objectType !== ObjectType.Chatbot && (
+          <TransferOwnershipModal
+            onClose={() => setTransferModalOpen(false)}
+            objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
+            objectType={objectType}
+            objectName={objectName}
+            isTemplate={isTemplate}
+            catalogCollectionId={catalogCollectionId}
+          />
+        )}
     </>
   )
 }

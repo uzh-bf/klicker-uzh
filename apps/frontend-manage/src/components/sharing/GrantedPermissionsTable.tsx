@@ -56,7 +56,8 @@ function GrantedPermissionsTable({
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
-  const ownershipTransferAvailable = isOwner && type !== ObjectType.Kb
+  const ownershipTransferAvailable =
+    isOwner && type !== ObjectType.Kb && type !== ObjectType.Chatbot
 
   return (
     <>
