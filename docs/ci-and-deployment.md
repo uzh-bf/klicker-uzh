@@ -794,6 +794,16 @@ event records that its planning request returned; it alone does not prove usable
 guidance. Raw usage journals retain the original response sizes and finish reason
 before the compatibility projection, and aggregate accounting remains unchanged.
 
+For stock draft memory compression, the adapter returns summary text only when
+the provider finishes with `stop`, supplies visible text and requests no tools.
+An unusable answer returns empty text, so OCR keeps its working history. A
+repeat of a recently skipped, identical compression request returns empty
+locally. The adapter retains only request digests for this check.
+`OCR draft compression` reports usable replies, skipped replies and local repeat
+skips. These counters describe what the adapter sent to the CLI. The CLI decides
+whether to install a summary in a continuing review. Paid responses keep
+their original usage receipts.
+
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
 3 to the live log before redirecting raw stderr to its existing private file.

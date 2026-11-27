@@ -1420,6 +1420,10 @@ async function startAdapter(options = {}) {
     options.finalPlanGuidance === true
       ? { responses: 0, usable: 0, length: 0, empty: 0, invalid_finish: 0 }
       : null
+  const draftCompression = options.guardDraftCompression
+    ? { usable: 0, skipped: 0, repeat_skips: 0 }
+    : null
+  const skippedSnapshots = new Set()
   const pendingRequests = new Set()
   const active = new Set()
   const sockets = new Set()
@@ -1522,9 +1526,10 @@ async function startAdapter(options = {}) {
       return
     }
 
+    const toolFree =
+      !body.tools || (Array.isArray(body.tools) && body.tools.length === 0)
     const planScope =
-      planGuidance &&
-      (!body.tools || (Array.isArray(body.tools) && body.tools.length === 0))
+      planGuidance && toolFree
         ? /^[0-9a-f]{8}-plan_task-([0-9a-f]{16})$/.exec(
             body.prompt_cache_key
           )?.[1]
@@ -1545,6 +1550,31 @@ async function startAdapter(options = {}) {
         })
         return
       }
+    }
+
+    const requestBody = JSON.stringify(mistralBody)
+    const compressionSnapshot =
+      draftCompression &&
+      !availability.reason &&
+      toolFree &&
+      /^[0-9a-f]{8}-memory_compression_task-[0-9a-f]{16}$/.test(
+        body.prompt_cache_key
+      )
+        ? crypto.createHash('sha256').update(requestBody).digest('hex')
+        : null
+    if (compressionSnapshot && skippedSnapshots.has(compressionSnapshot)) {
+      draftCompression.repeat_skips++
+      sendJson(res, 200, {
+        model: profile.model,
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            message: { role: 'assistant', content: '' },
+          },
+        ],
+      })
+      return
     }
 
     const main = hasCompletionTool(body)
@@ -1618,7 +1648,6 @@ async function startAdapter(options = {}) {
     } else diagnostics.unattributed_requests += 1
     diagnostics[main ? 'main_requests' : 'auxiliary_requests'] += 1
     const startedAt = now()
-    const requestBody = JSON.stringify(mistralBody)
     const requestBytes = Buffer.byteLength(requestBody)
     for (const counter of counters) {
       counter.requests += 1
@@ -1817,6 +1846,25 @@ async function startAdapter(options = {}) {
         if (outcome !== 'usable')
           choice.message = { role: 'assistant', content: '' }
       }
+      if (compressionSnapshot) {
+        // Stock OCR retains working history on an empty summary. Strip private
+        // reasoning as well: its Content() accessor otherwise falls back to it.
+        const text = choice.message.content.trim()
+        const usable =
+          choice.finish_reason === 'stop' &&
+          !choice.message.tool_calls?.length &&
+          text.length > 0 &&
+          !/<\/?think>/i.test(text)
+        choice.message = { role: 'assistant', content: usable ? text : '' }
+        if (usable) {
+          draftCompression.usable++
+        } else {
+          draftCompression.skipped++
+          if (skippedSnapshots.size >= 256)
+            skippedSnapshots.delete(skippedSnapshots.values().next().value)
+          skippedSnapshots.add(compressionSnapshot)
+        }
+      }
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
       accepted = true
@@ -1954,6 +2002,9 @@ async function startAdapter(options = {}) {
       })),
       history: history.diagnostics(),
       usage_events: journal.snapshot(),
+      ...(draftCompression
+        ? { draft_compression: { ...draftCompression } }
+        : {}),
       plan_guidance: planGuidance ? { ...planGuidance } : null,
     }
   }

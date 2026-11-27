@@ -136,6 +136,95 @@ test('draft plan compatibility supplies only completed final text without retrie
   }
 })
 
+test('only draft compression skips unusable snapshots and accounts for every upstream response once', async () => {
+  const request = {
+    prompt_cache_key: '1234abcd-memory_compression_task-0123456789abcdef',
+    messages: [{ role: 'user', content: 'first snapshot' }],
+    reasoning_effort: 'max',
+    max_tokens: 16384,
+  }
+  const fetchImpl = upstream(({ body }) => {
+    const visible = body.messages[0].content === 'changed snapshot'
+    const reply = completion(
+      {
+        role: 'assistant',
+        content: visible ? 'completed summary' : '',
+        reasoning_content: 'private fixture reasoning',
+        ...(visible
+          ? {}
+          : {
+              tool_calls: [
+                {
+                  id: 'unused',
+                  type: 'function',
+                  function: { name: 'unexpected', arguments: '{}' },
+                },
+              ],
+            }),
+      },
+      visible ? 'stop' : 'tool_calls'
+    )
+    reply.model = MOAT_FLASH_MODEL
+    return jsonResponse(200, reply)
+  })
+  const adapter = await startAdapter({
+    provider: 'moat-flash',
+    apiKey: 'synthetic',
+    guardDraftCompression: true,
+    fetchImpl,
+  })
+  try {
+    const first = await postJson(adapter, request)
+    const repeat = await postJson(adapter, request)
+    assert.deepEqual(first.json.choices[0].message, {
+      role: 'assistant',
+      content: '',
+    })
+    assert.deepEqual(
+      repeat.json.choices[0].message,
+      first.json.choices[0].message
+    )
+    assert.equal(first.json.usage.total_tokens, 7)
+    assert.equal(repeat.json.usage, undefined)
+    const changed = await postJson(adapter, {
+      ...request,
+      messages: [{ role: 'user', content: 'changed snapshot' }],
+    })
+    assert.deepEqual(changed.json.choices[0].message, {
+      role: 'assistant',
+      content: 'completed summary',
+    })
+    for (const other of [
+      {
+        ...request,
+        prompt_cache_key: request.prompt_cache_key.replace(
+          'memory_compression_task',
+          'review_filter_task'
+        ),
+      },
+      {
+        ...request,
+        tools: [{ type: 'function', function: { name: 'unexpected' } }],
+      },
+    ]) {
+      const reply = await postJson(adapter, other)
+      assert.equal(reply.json.choices[0].message.tool_calls.length, 1)
+    }
+    assert.equal(fetchImpl.calls.length, 4)
+    const diag = adapter.diagnostics()
+    assert.deepEqual(diag.draft_compression, {
+      usable: 1,
+      skipped: 1,
+      repeat_skips: 1,
+    })
+    assert.equal(diag.responses, 4)
+    assert.equal(diag.prompt_tokens, 12)
+    assert.equal(diag.completion_tokens, 16)
+  } finally {
+    await adapter.close()
+  }
+})
+
 test('planning summary rejects missing, unfinished or inconsistent counters and reflects only fixed fields', () => {
   const plan = {
     responses: 4,
