@@ -12,23 +12,15 @@ export type MockToolResult = {
 
 export type ProofInvokeArgs = {
   question: string
-  override?: string
+  mintScopeToken: () => Promise<string>
 }
 
 export type ProofInvoke = (args: ProofInvokeArgs) => Promise<MockToolResult>
 
-export type ProofScopeVariant =
-  | 'valid'
-  | 'expired'
-  | 'forged'
-  | 'wrong_issuer'
-  | 'wrong_audience'
-  | 'unknown_key'
-
 export type ProofSigner = (input: {
   kbId: string
   chatbotId: string
-  variant?: ProofScopeVariant
+  sessionId: string
 }) => Promise<string>
 
 export type ProofLock = {
@@ -39,7 +31,6 @@ export type ProofReceipt = {
   result: string
   failureClass: string | null
   failedCaseId: string | null
-  failedRejectionClass: string | null
   exitCode: number | null
   counts: Record<string, unknown>
   [key: string]: unknown
@@ -176,7 +167,6 @@ export async function proofDummyEnvironment(): Promise<Record<string, string>> {
     'klicker-doc-query-proof-env-'
   )
   return {
-    DOC_QUERY_JWT_TOKEN_KLICKER: 'dummy-transport-token',
     DOC_QUERY_SCOPE_PRIVATE_KEY: await exportPKCS8(privateKey),
     DOC_QUERY_SCOPE_KID: 'dummy-key',
     DOC_QUERY_SCOPE_ISSUER: 'https://chat.klicker.test',
@@ -206,7 +196,7 @@ export function createProofReceiptSources({
       '',
       extra,
       'process.send({',
-      '  receiptVersion: 1,',
+      '  receiptVersion: 2,',
       `  environment: '${environment}',`,
       `  collection: '${collection}',`,
       ...(proofMode ? [`  mode: '${proofMode}',`] : []),
@@ -215,9 +205,7 @@ export function createProofReceiptSources({
       "  failureClass: 'none',",
       "  diagnosticClass: 'none',",
       '  failedCaseId: null,',
-      '  failedRejectionClass: null,',
       `  counts: ${passedCounts},`,
-      "  rejections: {missing:'passed',expired:'passed',forged:'passed',wrong_issuer:'passed',wrong_audience:'passed',unknown_key:'passed',trusted_filter_override:'passed'},",
       `  preservation: ${preservation}`,
       '}, () => process.exit(0))',
       '',
@@ -230,7 +218,7 @@ export function createProofReceiptSources({
     return [
       '',
       'process.send({',
-      '  receiptVersion: 1,',
+      '  receiptVersion: 2,',
       `  environment: '${environment}',`,
       `  collection: '${collection}',`,
       ...(proofMode ? [`  mode: '${proofMode}',`] : []),
@@ -239,9 +227,7 @@ export function createProofReceiptSources({
       "  failureClass: 'canary_positive_failed',",
       "  diagnosticClass: 'none',",
       "  failedCaseId: 'corpus_1',",
-      '  failedRejectionClass: null,',
       `  counts: ${failedCounts},`,
-      "  rejections: {missing:'not_run',expired:'not_run',forged:'not_run',wrong_issuer:'not_run',wrong_audience:'not_run',unknown_key:'not_run',trusted_filter_override:'not_run'},",
       `  preservation: ${preservation},`,
       "  secret: 'dummy-private-key'",
       '}, () => process.exit(1))',
@@ -368,22 +354,18 @@ export function defineProofMatrixSuite(
     manifest: () => unknown
     environment: () => Promise<Record<string, string>>
     rejection: (message?: string) => MockToolResult
-    rejectionWithArguments: () => MockToolResult
     expectedDirectCalls: number
     expectedCounts: Record<string, number>
     expectedMode?: string
   }
 ) {
   describe(`${label} Doc Query proof matrix`, () => {
-    test('runs the singleton canary, seven rejections, then the serial matrix', async () => {
+    test('runs the singleton canary and then the serial matrix', async () => {
       const validated = behaviors.validateManifest(config.manifest())
       const environment = await config.environment()
       let call = 0
-      const invoke: ProofInvoke = async ({ question, override }) => {
+      const invoke: ProofInvoke = async ({ question }) => {
         call += 1
-        if ((call >= 3 && call <= 8) || override) {
-          return override ? config.rejectionWithArguments() : config.rejection()
-        }
         const positive = question.startsWith('positive')
         const marker = question.replace(
           positive ? 'positive fixture ' : 'foreign fixture ',
@@ -400,10 +382,12 @@ export function defineProofMatrixSuite(
                 sources: [
                   positive
                     ? {
+                        kb_id: proofUuid(Number(question.split(' ').at(-1))),
                         reference: 'safe-positive-reference',
                         chunks: [{ content: marker }],
                       }
                     : {
+                        kb_id: proofUuid(Number(question.split(' ').at(-1))),
                         reference: 'safe-foreign-reference',
                         chunks: [{ content: marker }],
                       },
@@ -426,7 +410,11 @@ export function defineProofMatrixSuite(
       expect(receipt.counts).toMatchObject(config.expectedCounts)
     })
 
-    test('fails when a foreign source reference is returned', async () => {
+    test.each([
+      ['foreign reference', proofUuid(1), 'foreign-reference-1'],
+      ['foreign KB identity', proofUuid(2), 'ordinary-reference'],
+      ['missing KB identity', undefined, 'ordinary-reference'],
+    ])('fails isolation for a %s', async (_label, kbId, reference) => {
       const validated = behaviors.validateManifest(config.manifest())
       const environment = await config.environment()
       let calls = 0
@@ -445,9 +433,10 @@ export function defineProofMatrixSuite(
                   summary: { sources_returned: 1, chunks_returned: 1 },
                   sources: [
                     {
+                      kb_id: positive ? validated.cases[0].kbId : kbId,
                       reference: positive
                         ? 'safe-positive-reference'
-                        : 'foreign-reference-1',
+                        : reference,
                       chunks: [
                         {
                           content: positive
@@ -470,6 +459,25 @@ export function defineProofMatrixSuite(
       expect(calls).toBe(2)
     })
 
+    test('refuses a foreign structured result even if the text contains an in-scope copy', async () => {
+      const manifest = behaviors.validateManifest(config.manifest())
+      const documents = (kbId: string) =>
+        JSON.stringify({
+          mode: 'documents',
+          summary: { sources_returned: 1 },
+          sources: [{ kb_id: kbId, reference: 'positive-marker-1' }],
+        })
+      const receipt = await behaviors.runProofMatrix({
+        manifest,
+        environment: await config.environment(),
+        invoke: async () => ({
+          structuredContent: { result: documents(manifest.cases[1].kbId) },
+          content: [{ type: 'text', text: documents(manifest.cases[0].kbId) }],
+        }),
+      })
+      expect(receipt.failureClass).toBe('canary_positive_failed')
+    })
+
     test('stops on the first invariant failure without retrying', async () => {
       const validated = behaviors.validateManifest(config.manifest())
       const environment = await config.environment()
@@ -484,47 +492,6 @@ export function defineProofMatrixSuite(
       })
       expect(receipt.failureClass).toBe('canary_positive_failed')
       expect(calls).toBe(1)
-    })
-
-    test('sends both protected fields in the trusted-filter rejection case', async () => {
-      const validated = behaviors.validateManifest(config.manifest())
-      const environment = await config.environment()
-      const overrides: string[] = []
-      let call = 0
-      const receipt = await behaviors.runProofMatrix({
-        manifest: validated,
-        environment,
-        invoke: async ({ question, override }) => {
-          call += 1
-          if (override) overrides.push(override)
-          if (override) {
-            return config.rejectionWithArguments()
-          }
-          if (call >= 3 && call <= 8) {
-            return config.rejection()
-          }
-          const positive = question.startsWith('positive')
-          const marker = question.replace(
-            positive ? 'positive fixture ' : 'foreign fixture ',
-            positive ? 'positive-marker-' : 'safe-marker-'
-          )
-          return {
-            isError: false,
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  mode: 'documents',
-                  summary: { sources_returned: 1, chunks_returned: 1 },
-                  sources: [{ reference: marker, chunks: [] }],
-                }),
-              },
-            ],
-          }
-        },
-      })
-      expect(receipt.result).toBe('passed')
-      expect(overrides).toEqual([validated.cases[1].kbId])
     })
   })
 }
@@ -556,13 +523,16 @@ export function defineProofSupervisorSuite(
     test('passes only the allowlisted environment', async () => {
       const environment = await config.dummyEnvironment()
       const childEnvironment = behaviors.minimalChildEnvironment(
-        { ...environment, LEAK_ME: 'must-not-pass' },
+        {
+          ...environment,
+          DOC_QUERY_JWT_TOKEN_KLICKER: 'unused',
+          LEAK_ME: 'must-not-pass',
+        },
         123
       )
       expect(childEnvironment).not.toHaveProperty('LEAK_ME')
       expect(childEnvironment).not.toHaveProperty('PATH')
       const expectedEnvironmentNames = [
-        'DOC_QUERY_JWT_TOKEN_KLICKER',
         'DOC_QUERY_SCOPE_AUDIENCE',
         'DOC_QUERY_SCOPE_ISSUER',
         'DOC_QUERY_SCOPE_KID',
@@ -724,7 +694,6 @@ export function defineProofSupervisorSuite(
       )
       const unrelated = await open(join(directory, 'unrelated'), 'w')
       const allowedEnvironmentNames = [
-        'DOC_QUERY_JWT_TOKEN_KLICKER',
         'DOC_QUERY_SCOPE_AUDIENCE',
         'DOC_QUERY_SCOPE_ISSUER',
         'DOC_QUERY_SCOPE_KID',
