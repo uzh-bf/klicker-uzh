@@ -2993,6 +2993,114 @@ for (const [provider, finish, content] of [
   })
 }
 
+test('draft length recovery needs a matched tool result and survives compaction only once', async (t) => {
+  const response = (message, finish) => {
+    const payload = completion(
+      { role: 'assistant', content: '', ...message },
+      finish
+    )
+    payload.model = MOAT_FLASH_MODEL
+    return jsonResponse(200, payload)
+  }
+  let reply
+  const adapter = await startAdapter({
+    provider: 'moat-flash',
+    draftToolContinuation: true,
+    apiKey: 'synthetic',
+    fetchImpl: async () => reply(),
+  })
+  t.after(() => adapter.close())
+  const request = {
+    messages: [{ role: 'user', content: 'review' }],
+    tools: ['file_find', 'task_done'].map((name) => ({
+      type: 'function',
+      function: { name },
+    })),
+    prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
+  }
+  const send = (messages) => postJson(adapter, { ...request, messages })
+  const initial = request.messages
+  const compact = [{ role: 'user', content: 'summary' }]
+
+  reply = () => response({}, 'length')
+  const first = await send(initial)
+  assert.equal(first.status, 200)
+  const retry = [
+    ...initial,
+    first.json.choices[0].message,
+    { role: 'user', content: 'continue' },
+  ]
+  assert.equal((await send(retry)).status, 422)
+  assert.equal((await send(compact)).status, 422)
+
+  const toolTurn = (name, finish, args = '{}') =>
+    response(
+      {
+        tool_calls: [
+          { id: name, type: 'function', function: { name, arguments: args } },
+        ],
+      },
+      finish
+    )
+  const receipt = {
+    role: 'tool',
+    tool_call_id: 'file_find',
+    content: 'fixture.js',
+  }
+  reply = () => toolTurn('file_find', 'length')
+  const truncatedTool = await send(retry)
+  assert.equal(truncatedTool.status, 200)
+  reply = () => response({}, 'length')
+  assert.equal(
+    (await send([...compact, truncatedTool.json.choices[0].message, receipt]))
+      .status,
+    422
+  )
+  reply = () => toolTurn('task_done', 'tool_calls', '{"state":"INVALID"}')
+  assert.equal((await send(retry)).status, 200)
+  reply = () => response({}, 'length')
+  assert.equal((await send(compact)).status, 422)
+
+  reply = () => toolTurn('file_find', 'tool_calls')
+  const tool = await send(retry)
+  assert.equal(tool.status, 200)
+  const echoed = [...compact, tool.json.choices[0].message]
+  const progress = [...echoed, receipt]
+  reply = () => response({}, 'length')
+  assert.equal((await send(echoed)).status, 422)
+  assert.equal(
+    (await send([...echoed, { ...receipt, tool_call_id: 'other' }])).status,
+    422
+  )
+  reply = () => response({ content: 'unfinished review' }, 'length')
+  assert.equal((await send(progress)).status, 422)
+  reply = () => response({}, 'stop')
+  assert.equal((await send(progress)).status, 422)
+  reply = () => response({}, 'length')
+  const resumed = await send(progress)
+  assert.equal(resumed.status, 200)
+  assert.equal(resumed.json.choices[0].finish_reason, 'length')
+  assert.equal(resumed.json.choices[0].message.tool_calls, undefined)
+  assert.equal((await send(progress)).status, 422)
+  assert.equal((await send(compact)).status, 422)
+
+  reply = () => toolTurn('task_done', 'tool_calls', '{"state":"DONE"}')
+  assert.equal((await send(progress)).status, 200)
+  const nextPass = [{ role: 'user', content: 'next pass' }]
+  reply = () => response({}, 'length')
+  const nextFirst = await send(nextPass)
+  assert.equal(nextFirst.status, 200)
+  reply = () => toolTurn('file_find', 'tool_calls')
+  const nextTool = await send([...nextPass, nextFirst.json.choices[0].message])
+  assert.equal(nextTool.status, 200)
+  reply = () => response({}, 'length')
+  assert.equal(
+    (await send([...compact, nextTool.json.choices[0].message, receipt]))
+      .status,
+    422
+  )
+})
+
 test('a final stop cannot gain a fresh continuation by dropping the echoed assistant turn', async () => {
   const payload = completion(
     {
