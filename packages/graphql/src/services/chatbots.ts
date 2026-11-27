@@ -20,6 +20,8 @@ import {
   parseChatbotCustomModeConfigInput,
   parseChatbotStandardModeConfigForStorage,
   parseStoredChatbotStandardModeConfig,
+  resolveSharedObjectPermission,
+  sharedObjectUserPermissionWhere,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -530,9 +532,11 @@ function canEditKb(
 
 type ChatbotWithOwnerCourse = {
   id: string
-  ownerId?: string
-  permissions?: { permissionLevel: DB.PermissionLevel }[]
-  directPermissions?: { permissionLevel: DB.PermissionLevel }[]
+  ownerId: string
+  directPermissions?: {
+    id: number
+    permissionLevel: DB.PermissionLevel
+  }[]
   name: string
   description: string | null
   avatar: string | null
@@ -564,18 +568,16 @@ type ChatbotWithOwnerCourse = {
 }
 
 function getChatbotPermissionLevel(
-  chatbot: Pick<
-    ChatbotWithOwnerCourse,
-    'ownerId' | 'permissions' | 'directPermissions'
-  >,
+  chatbot: Pick<ChatbotWithOwnerCourse, 'ownerId' | 'directPermissions'>,
   viewerId?: string
 ) {
   if (!viewerId) return null
-  if (chatbot.ownerId === viewerId) return DB.PermissionLevel.OWNER
   return (
-    chatbot.permissions?.[0]?.permissionLevel ??
-    chatbot.directPermissions?.[0]?.permissionLevel ??
-    null
+    resolveSharedObjectPermission({
+      ownerId: chatbot.ownerId,
+      userId: viewerId,
+      directPermissions: chatbot.directPermissions ?? [],
+    })?.permissionLevel ?? null
   )
 }
 
@@ -657,7 +659,6 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
   const {
     systemPrompts,
     draftConfig: _draftConfig,
-    permissions: _permissions,
     directPermissions: _directPermissions,
     ...chatbotWithoutSystemPrompts
   } = chatbot
@@ -1027,21 +1028,20 @@ async function readChatbotRevision(
           id: chatbotId,
           OR: [
             { ownerId: viewerId },
-            { permissions: { some: { userId: viewerId } } },
-            { directPermissions: { some: { userId: viewerId } } },
+            {
+              directPermissions: {
+                some: sharedObjectUserPermissionWhere(viewerId),
+              },
+            },
           ],
         }
       : { id: chatbotId },
     select: viewerId
       ? {
           ...chatbotRevisionSelect,
-          permissions: {
-            where: { userId: viewerId },
-            select: { permissionLevel: true },
-          },
           directPermissions: {
-            where: { userId: viewerId },
-            select: { permissionLevel: true },
+            where: sharedObjectUserPermissionWhere(viewerId),
+            select: { id: true, permissionLevel: true },
           },
         }
       : chatbotRevisionSelect,
@@ -2204,20 +2204,19 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     where: {
       OR: [
         { ownerId: ctx.user.sub },
-        { permissions: { some: { userId: ctx.user.sub } } },
-        { directPermissions: { some: { userId: ctx.user.sub } } },
+        {
+          directPermissions: {
+            some: sharedObjectUserPermissionWhere(ctx.user.sub),
+          },
+        },
       ],
     },
     select: {
       ...chatbotOwnerSelect,
       owner: { select: { shortname: true } },
-      permissions: {
-        where: { userId: ctx.user.sub },
-        select: { permissionLevel: true },
-      },
       directPermissions: {
-        where: { userId: ctx.user.sub },
-        select: { permissionLevel: true },
+        where: sharedObjectUserPermissionWhere(ctx.user.sub),
+        select: { id: true, permissionLevel: true },
       },
       _count: {
         select: {
@@ -2384,14 +2383,12 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     ({
       owner,
       _count,
-      permissions: viewerPermissions,
       directPermissions: viewerDirectPermissions,
       ...chatbot
     }) => {
       const permissionLevel = getChatbotPermissionLevel(
         {
           ownerId: chatbot.ownerId,
-          permissions: viewerPermissions,
           directPermissions: viewerDirectPermissions,
         },
         ctx.user.sub

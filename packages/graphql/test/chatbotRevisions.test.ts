@@ -7,12 +7,14 @@ import {
 import type { ContextWithUser } from '../src/lib/context.js'
 import * as service from '../src/services/chatbots.js'
 import * as responseExamples from '../src/services/responseExamples.js'
+import { createUserGroup, shareObject } from '../src/services/sharing.js'
 import {
   initializePrisma,
   seedCourse,
   testCleanup,
   testInitialization,
 } from './helpers.js'
+import { userTwo } from './userData.js'
 
 describe('chatbot authoring revision transitions', () => {
   let dependencies: Awaited<ReturnType<typeof initializePrisma>>
@@ -1590,6 +1592,121 @@ describe('chatbot authoring revision transitions', () => {
         editor
       )
     ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_OWNER_REQUIRED' } })
+  })
+
+  it('ignores a stale derived chatbot grant for list, detail, and draft writes', async () => {
+    const bot = await seed(ChatbotStatus.DRAFT)
+    await dependencies.prisma.derivedPermission.create({
+      data: {
+        permissionLevel: PermissionLevel.WRITE,
+        derived: true,
+        userId: editor.user.sub,
+        chatbotId: bot.id,
+      },
+    })
+
+    const listed = await service.getChatbotsInfo(editor)
+    expect(listed?.find((chatbot) => chatbot.id === bot.id)).toBeUndefined()
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 0,
+          input: { metadata: { description: 'Stale derived write' } },
+        },
+        editor
+      )
+    ).resolves.toBeNull()
+    expect(await read(bot.id)).toMatchObject({
+      draftConfig: null,
+      revisionVersion: 0,
+    })
+  })
+
+  it('uses a surviving group grant instead of a stale higher direct grant', async () => {
+    const bot = await seed(ChatbotStatus.DRAFT)
+    const group = await createUserGroup(
+      {
+        name: 'Synthetic chatbot collaboration group',
+        members: [{ shortnameOrEmail: userTwo.shortname }],
+      },
+      owner
+    )
+    expect(group).not.toBeNull()
+    await shareObject(
+      {
+        chatbotId: bot.id,
+        permissionLevel: PermissionLevel.WRITE,
+        userGroupId: group!.id,
+        propagation: false,
+      },
+      owner
+    )
+    await grantChatbotPermission(bot.id, PermissionLevel.ADMIN)
+    await dependencies.prisma.permission.deleteMany({
+      where: {
+        chatbotId: bot.id,
+        userId: editor.user.sub,
+      },
+    })
+    await dependencies.prisma.derivedPermission.upsert({
+      where: {
+        chatbotId_userId: {
+          chatbotId: bot.id,
+          userId: editor.user.sub,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.ADMIN,
+        derived: true,
+        userId: editor.user.sub,
+        chatbotId: bot.id,
+      },
+      update: {
+        permissionLevel: PermissionLevel.ADMIN,
+        derived: true,
+        directPermissionId: null,
+      },
+    })
+
+    const shared = (await service.getChatbotsInfo(editor))?.find(
+      (chatbot) => chatbot.id === bot.id
+    )
+    expect(shared).toMatchObject({
+      permissionLevel: PermissionLevel.WRITE,
+      isEditor: true,
+      isManager: false,
+      isOwner: false,
+      usageSummary: null,
+      disclaimerSummary: {
+        acceptedCount: 0,
+        declinedCount: 0,
+        pendingCount: 0,
+      },
+    })
+
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { metadata: { description: 'Edited through the group grant' } },
+      },
+      editor
+    )
+    expect(saved).toMatchObject({
+      permissionLevel: PermissionLevel.WRITE,
+      revisionVersion: 1,
+    })
+    expect((await read(bot.id)).draftConfig).toMatchObject({
+      description: 'Edited through the group grant',
+    })
+    const refreshed = (await service.getChatbotsInfo(editor))?.find(
+      (chatbot) => chatbot.id === bot.id
+    )
+    expect(refreshed?.authoringRevision).toMatchObject({
+      version: 1,
+      description: 'Edited through the group grant',
+    })
   })
 
   it('returns a redacted shared projection and keeps response examples owner-only', async () => {

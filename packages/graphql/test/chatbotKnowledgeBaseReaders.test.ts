@@ -63,9 +63,7 @@ function createMockChatbot(knowledgeBases: MockKnowledgeBaseBinding[]) {
     id: CHATBOT_ID,
     ownerId: BOT_OWNER_ID,
     owner: { shortname: 'bot-owner' },
-    permissions: [
-      { userId: EDITOR_ID, permissionLevel: PermissionLevel.WRITE },
-    ],
+    directPermissions: [{ id: 1, permissionLevel: PermissionLevel.WRITE }],
     name: 'Reader test chatbot',
     description: null,
     avatar: null,
