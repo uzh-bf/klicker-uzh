@@ -431,8 +431,14 @@ export async function getTerminalStageForCommand(input: {
   // receipt was rejected for timing, and older evidence can pair PERSISTED
   // with DUPLICATE for one submission.
   if (stages.has('SUBMISSION_PERSISTED')) return 'SUBMISSION_PERSISTED'
+  // Evidence keyed per Hatchet event could record both a rejection and a
+  // duplicate for one submission. The rejection decides, so a resend ends as
+  // previously rejected instead of retrying into failure evidence.
+  if (stages.has('SUBMISSION_REJECTED')) return 'SUBMISSION_REJECTED'
   if (stages.size > 1) {
-    throw new Error('Submission command has multiple terminal stages')
+    throw new NonRetryableError(
+      'Submission command has multiple terminal stages'
+    )
   }
   return [...stages][0]
 }
