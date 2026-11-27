@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { runInAuditTransaction } from '@klicker-uzh/audit'
+import {
+  deriveAuditCorrelationId,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { resolveOptionalRequestContext } from '@klicker-uzh/logging/request'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -116,6 +119,9 @@ interface CourseDuplicationJob extends CourseDuplicationStatus {
   catalystInstitutional: boolean
   catalystIndividual: boolean
   args?: CourseDuplicationJobArgs
+  // Copied and source live quiz IDs of an assessment course copy, recorded
+  // before the copy commits so a retry can finish their audit evidence.
+  assessmentCopies?: [string, string][]
 }
 
 function getCourseDuplicationStatusKey(jobId: string) {
@@ -385,7 +391,11 @@ async function updateCourseDuplicationJob(
   patch: Partial<
     Pick<
       CourseDuplicationJob,
-      'createdCourseId' | 'errorMessage' | 'errorType' | 'status'
+      | 'assessmentCopies'
+      | 'createdCourseId'
+      | 'errorMessage'
+      | 'errorType'
+      | 'status'
     >
   >
 ) {
@@ -446,17 +456,71 @@ async function normalizeStaleCourseDuplicationJob(
   })
 
   if (committedCourse) {
-    log?.warn(
-      {
-        event: 'course_duplication.status.reconciled',
-        outcome: 'committed_course',
-      },
-      'Course duplication job went stale but its course is committed; marking completed'
+    // The attempts may have stopped after the copy committed but before its
+    // assessment audit work finished. Status polling and the sweep can reach
+    // this concurrently, so the work runs under the worker's process lock; a
+    // caller that cannot take it leaves the job for a later pass. Failure
+    // also leaves the job stale instead of completing it without evidence.
+    const processLockKey = getCourseDuplicationProcessLockKey(job.id)
+    const processLockValue = randomUUID()
+    const processLockAcquired = await redis.set(
+      processLockKey,
+      processLockValue,
+      'EX',
+      COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS,
+      'NX'
     )
-    return await updateCourseDuplicationJob(redis, job, {
-      status: 'COMPLETED',
-      createdCourseId: committedCourse.id,
-    })
+    if (processLockAcquired !== 'OK') return job
+    // Large courses can take longer than the lock lifetime, so keep it alive
+    // the same way the worker does while the audit work runs.
+    const processLockRenewal = setInterval(() => {
+      void renewCourseDuplicationProcessLock(
+        redis,
+        processLockKey,
+        processLockValue
+      ).catch(() => undefined)
+    }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
+    // A worker may have changed the job between the read above and this lock,
+    // so continue from the stored state, not the earlier copy.
+    try {
+      const lockedJob = await getCourseDuplicationJob(redis, job.id, log)
+      if (!lockedJob || isTerminalCourseDuplicationStatus(lockedJob.status)) {
+        return lockedJob ?? job
+      }
+      await completeCopiedAssessmentAudit(
+        prisma,
+        lockedJob.assessmentCopies ?? []
+      )
+      // Mark the job completed while still holding the lock, so no other
+      // recovery starts between the audit work and the terminal status.
+      log?.warn(
+        {
+          event: 'course_duplication.status.reconciled',
+          outcome: 'committed_course',
+        },
+        'Course duplication job went stale but its course is committed; marking completed'
+      )
+      return await updateCourseDuplicationJob(redis, lockedJob, {
+        status: 'COMPLETED',
+        createdCourseId: committedCourse.id,
+      })
+    } catch (error) {
+      log?.error(
+        {
+          event: 'course_duplication.status.audit_completion_failed',
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Copied assessment audit could not be completed for a stale job'
+      )
+      return job
+    } finally {
+      clearInterval(processLockRenewal)
+      await releaseCourseDuplicationLockValue(
+        redis,
+        processLockKey,
+        processLockValue
+      )
+    }
   }
 
   log?.warn(
@@ -772,7 +836,20 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       throw new Error('Course duplication job is already being processed')
     }
 
-    let job = pendingJob
+    // Another delivery may have finished the job between the read above and
+    // this lock, so continue from the stored state, not the earlier copy.
+    const lockedJob = await getCourseDuplicationJob(redis, jobId, log)
+    if (!lockedJob || isTerminalCourseDuplicationStatus(lockedJob.status)) {
+      await releaseCourseDuplicationLockValue(
+        redis,
+        processLockKey,
+        processLockValue
+      )
+      if (lockedJob) await releaseCourseDuplicationSourceLock(redis, lockedJob)
+      return lockedJob !== null
+    }
+
+    let job = lockedJob
     let committedCourseId: string | null = null
     let processLockRenewal: ReturnType<typeof setInterval> | undefined
 
@@ -813,6 +890,12 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
 
       if (existingCourse) {
         committedCourseId = existingCourse.id
+        // The previous attempt may have stopped after the copy committed but
+        // before its assessment audit work finished.
+        await completeCopiedAssessmentAudit(
+          globalCtx.prisma,
+          job.assessmentCopies ?? []
+        )
         await updateCourseDuplicationJob(redis, job, {
           status: 'COMPLETED',
           createdCourseId: existingCourse.id,
@@ -845,6 +928,13 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
             scope: job.userScope,
             catalystInstitutional: job.catalystInstitutional,
             catalystIndividual: job.catalystIndividual,
+          },
+        },
+        {
+          onAssessmentCopies: async (assessmentCopies) => {
+            job = await updateCourseDuplicationJob(redis, job, {
+              assessmentCopies,
+            })
           },
         }
       )
@@ -1795,6 +1885,87 @@ async function assertCourseDuplicationInstanceAccess({
   }
 }
 
+/**
+ * Activates audit coverage for copied assessments and records the source of
+ * each copy. A retried job calls this again for a course that already
+ * committed, so it skips copies that are already covered or already carry
+ * their copy event.
+ */
+async function completeCopiedAssessmentAudit(
+  client: PrismaClient,
+  copiedLiveQuizSources: Iterable<[string, string]>
+) {
+  for (const [copiedLiveQuizId, sourceLiveQuizId] of copiedLiveQuizSources) {
+    // Pairs from an attempt that rolled back can name quizzes that were never
+    // created, and a copy can leave assessment mode before a retry. Neither
+    // can be activated, and a retry would not change that.
+    const copiedQuiz = await client.liveQuiz.findUnique({
+      where: { id: copiedLiveQuizId },
+      select: { isAssessmentEnabled: true },
+    })
+    if (!copiedQuiz?.isAssessmentEnabled) continue
+
+    const latestScope = await client.assessmentAuditScope.findFirst({
+      where: { liveQuizId: copiedLiveQuizId },
+      orderBy: { lifecycleEpoch: 'desc' },
+      select: { coverageState: true },
+    })
+    if (
+      latestScope?.coverageState !== DB.AssessmentAuditCoverageState.COVERED
+    ) {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client,
+        liveQuizId: copiedLiveQuizId,
+      })
+      if (outcome === 'NOT_SELECTED') continue
+      // A failed activation leaves the copy uncovered, so no copy event could
+      // be written; fail here so the job stays retryable.
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        throw new Error('Copied assessment audit activation failed')
+      }
+    }
+
+    const copiedEvent = await client.assessmentAuditOutboxEvent.findFirst({
+      where: { liveQuizId: copiedLiveQuizId, eventType: 'ASSESSMENT_COPIED' },
+      select: { eventId: true },
+    })
+    if (copiedEvent !== null) continue
+
+    const copiedAt = new Date()
+    await runInAuditTransaction(client, async (tx, auditTx) => {
+      const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
+      if (copied === null) return
+      // A stable operation per copied quiz gives every attempt the same
+      // idempotency key, so a second writer cannot add a second copy event.
+      const operation = assessmentAuditSystemOperation({
+        occurredAt: copiedAt,
+        correlationId: deriveAuditCorrelationId(
+          `assessment-copied:${copiedLiveQuizId}`
+        ),
+      })
+      await emitCoveredAssessmentAuditEvents({
+        tx,
+        auditTx,
+        liveQuizId: copiedLiveQuizId,
+        courseId: copied.courseId,
+        operation,
+        drafts: [
+          assessmentLifecycleDraft({
+            eventType: 'ASSESSMENT_COPIED',
+            producerOperationId: `${operation.correlationId}:copied`,
+            fromState: null,
+            // The copy event attests creation, which the audit contract
+            // fixes as DRAFT; a later state is in the activation baseline.
+            toState: 'DRAFT',
+            reasonCode: 'COURSE_DUPLICATION',
+            sourceLiveQuizId,
+          }),
+        ],
+      })
+    })
+  }
+}
+
 export async function duplicateCourse(
   {
     courseId,
@@ -1816,7 +1987,10 @@ export async function duplicateCourse(
     duplicateMicrolearnings,
     duplicateGroupActivities,
   }: CourseDuplicationArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  options?: {
+    onAssessmentCopies?: (copies: [string, string][]) => Promise<void>
+  }
 ) {
   if (!sourceCourseId) {
     throw new Error('Course ID to duplicate not provided')
@@ -1904,11 +2078,18 @@ export async function duplicateCourse(
         ctx,
         prisma,
       })
-      for (const [
-        sourceLiveQuizId,
-        copiedLiveQuizId,
-      ] of copiedActivityIds.liveQuizIds) {
-        copiedLiveQuizSources.set(copiedLiveQuizId, sourceLiveQuizId)
+      // Only copies in an assessment course become assessments; audit
+      // activation rejects the regular quizzes of an ordinary course.
+      if (oldCourse.isAssessmentEnabled) {
+        for (const [
+          sourceLiveQuizId,
+          copiedLiveQuizId,
+        ] of copiedActivityIds.liveQuizIds) {
+          copiedLiveQuizSources.set(copiedLiveQuizId, sourceLiveQuizId)
+        }
+        if (copiedLiveQuizSources.size > 0) {
+          await options?.onAssessmentCopies?.([...copiedLiveQuizSources])
+        }
       }
 
       await prisma.course.update({
@@ -1982,39 +2163,7 @@ export async function duplicateCourse(
 
   // Activation needs the committed copy: the baseline reader must not use the
   // root Prisma client while the duplication transaction is still open.
-  for (const [copiedLiveQuizId, sourceLiveQuizId] of copiedLiveQuizSources) {
-    const outcome = await activateNewAssessmentAuditIfSelected({
-      client: ctx.prisma,
-      liveQuizId: copiedLiveQuizId,
-    })
-    if (outcome === 'NOT_SELECTED') continue
-
-    const copiedAt = new Date()
-    await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
-      const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
-      if (copied === null) return
-      const operation = assessmentAuditSystemOperation({
-        occurredAt: copiedAt,
-      })
-      await emitCoveredAssessmentAuditEvents({
-        tx,
-        auditTx,
-        liveQuizId: copiedLiveQuizId,
-        courseId: copied.courseId,
-        operation,
-        drafts: [
-          assessmentLifecycleDraft({
-            eventType: 'ASSESSMENT_COPIED',
-            producerOperationId: `${operation.correlationId}:copied`,
-            fromState: null,
-            toState: 'DRAFT',
-            reasonCode: 'COURSE_DUPLICATION',
-            sourceLiveQuizId,
-          }),
-        ],
-      })
-    })
-  }
+  await completeCopiedAssessmentAudit(ctx.prisma, copiedLiveQuizSources)
 
   return duplicatedCourse
 }
