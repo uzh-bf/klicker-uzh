@@ -6,6 +6,8 @@ type PromptContext = {
   'citation-contract': { maxSources: number }
   'course-data': { courseData: string }
   'course-grounding': Record<string, never>
+  'course-images': { courseImageTool: string; visualEvidence: string }
+  'course-image-vision': Record<string, never>
   'course-policy': { customPersona: boolean }
   'input-context': Record<string, never>
   'language-style': { lockedLanguage: string | null }
@@ -16,6 +18,9 @@ type PromptContext = {
     timeZone: string
   }
   'numeric-precision': Record<string, never>
+  'explanation-tool': Record<string, never>
+  'explanation-writer': Record<string, never>
+  'feedback-card-tool': Record<string, never>
   'feedback-check': Record<string, never>
   'quiz-feedback-check': Record<string, never>
   'feedback-evidence': {
@@ -24,8 +29,12 @@ type PromptContext = {
   }
   'output-format': { customPersona: boolean }
   'mode-tutor': Record<string, never>
+  'mode-tutor-v2': Record<string, never>
   'mode-explainer': Record<string, never>
-  'mode-quizzer': Record<string, never>
+  'mode-quizzer': {
+    courseRetrievalAvailable: boolean
+    isElearningOrigin: boolean
+  }
   'mode-writing-coach': Record<string, never>
   'lecturer-guidance': { lecturerPrompt: string }
   'lecturer-custom-persona': {

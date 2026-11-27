@@ -28,6 +28,10 @@ import {
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
+import { isRejectedExplanation } from './explanation-card'
+import { isRejectedFeedback } from './feedback-card'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { useHasAvailableChatMode } from './mode-options-context'
 import { ResponseExampleCaptureAction } from './response-example-capture-action'
@@ -157,8 +161,8 @@ const ToolGroup: FC<
 }
 
 type ChatErrorPartData = {
-  errorLabel: string
-  message: string
+  errorLabel?: string
+  message?: string
 }
 
 /**
@@ -183,8 +187,10 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
           aria-hidden
         />
         <p>
-          <span className="font-medium">{data.errorLabel}</span>
-          {`: ${data.message}`}
+          <span className="font-medium">
+            {data.errorLabel ?? t('chat.response.errorLabel')}
+          </span>
+          {`: ${data.message ?? t('chat.response.genericError')}`}
         </p>
       </div>
       {hasAvailableMode && (
@@ -239,14 +245,29 @@ const ChatStoppedPart: FC = () => {
   )
 }
 
+const groupByType = groupPartByType({
+  reasoning: ['group-reasoning'],
+  'tool-call': ['group-tool'],
+})
+
+// An interactive explanation or a feedback card is the answer itself, so it
+// stays visible instead of collapsing into the tool-call group. A rejected
+// explanation or feedback draft is only a trace of an attempt and joins the
+// group.
+const groupAssistantParts: typeof groupByType = (part, context) =>
+  part.type === 'tool-call' &&
+  ((part.toolName === SHOW_EXPLANATION_TOOL_NAME &&
+    !isRejectedExplanation(part.result, part.isError)) ||
+    (part.toolName === SHOW_FEEDBACK_TOOL_NAME &&
+      !isRejectedFeedback(part.result, part.isError)))
+    ? []
+    : groupByType(part, context)
+
 export const AssistantMessageParts: FC = () => {
   return (
     <MessagePrimitive.GroupedParts
       indicator="never"
-      groupBy={groupPartByType({
-        reasoning: ['group-reasoning'],
-        'tool-call': ['group-tool'],
-      })}
+      groupBy={groupAssistantParts}
     >
       {({ part, children }) => {
         switch (part.type) {

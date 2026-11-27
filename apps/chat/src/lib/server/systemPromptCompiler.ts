@@ -13,6 +13,8 @@ import { withInputContextContract } from '@/src/lib/server/inputContextInstructi
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { withOutputFormatContract } from '@/src/lib/server/outputFormatInstructions'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import { COURSE_IMAGE_TOOL } from '@/src/lib/sources/courseImages'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 
 export type SystemPromptCompilationContext = {
   courseDisplayName: string
@@ -20,6 +22,9 @@ export type SystemPromptCompilationContext = {
   standardModeConfig?: unknown
   answerStyle?: AnswerStyle
   answerTone?: AnswerTone
+  courseImageVision?: boolean
+  /** eLearning-origin turns stay limited to supplied and retrieved evidence. */
+  isElearningOrigin?: boolean
   /**
    * The custom modes the calling surface should compile. Participant routes
    * pass the live column; owner preview passes the saved revision so it
@@ -109,12 +114,26 @@ function compilesCustomPersona(
   )
 }
 
+function platformModePrompt(
+  selectedMode: string,
+  context: SystemPromptCompilationContext
+): string | undefined {
+  if (selectedMode === 'quizzer') {
+    return renderPromptTemplate('mode-quizzer', {
+      courseRetrievalAvailable: context.toolNames.some(isDocQueryToolName),
+      isElearningOrigin: context.isElearningOrigin === true,
+    })
+  }
+
+  return DEFAULT_PROMPT[selectedMode]?.prompt
+}
+
 function modeSections(
   systemPrompts: unknown,
   selectedMode: string,
   context: SystemPromptCompilationContext
 ): string[] {
-  const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
+  const platformMode = platformModePrompt(selectedMode, context)
   const lecturerPrompt = lecturerModePrompt(
     systemPrompts,
     selectedMode,
@@ -237,8 +256,18 @@ export function compileSystemPrompt(
   )
   const outputFormat = withOutputFormatContract(coursePolicy, customPersona)
   const citations = withCitationContract(outputFormat, context.toolNames)
+  const images =
+    context.toolNames.includes(COURSE_IMAGE_TOOL) &&
+    context.toolNames.some(isDocQueryToolName)
+      ? `${citations}\n\n${renderPromptTemplate('course-images', {
+          courseImageTool: COURSE_IMAGE_TOOL,
+          visualEvidence: context.courseImageVision
+            ? renderPromptTemplate('course-image-vision', {})
+            : '',
+        })}`
+      : citations
   return withLanguageStyleContract(
-    citations,
+    images,
     customMode(context.customModeConfig, selectedMode)?.replyLanguage ?? null
   )
 }

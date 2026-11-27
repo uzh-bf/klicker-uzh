@@ -16,14 +16,14 @@ import {
   readBudgetLedger,
   reserveProviderSpend,
   validateBudgetLedger,
-} from '../../../evaluation/evaluation-budget.mjs'
+} from '../scripts/evaluation-budget.mjs'
 import {
   createSpendGuard,
   main,
   requestReservation,
   validatePricingPolicy,
   verifyGuardQualification,
-} from '../../../evaluation/evaluation-spend-guard.mjs'
+} from '../scripts/evaluation-spend-guard.mjs'
 
 const policy = {
   version: 1,
@@ -242,6 +242,13 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
       { ...request, prompt_cache_key: '   ' },
       { ...request, prompt_cache_key: 'x'.repeat(65) },
       { ...request, prompt_cache_key: 7 },
+      { ...request, metadata: {} },
+      { ...request, metadata: { session_id: '' } },
+      { ...request, metadata: { session_id: 'x'.repeat(129) } },
+      { ...request, metadata: { session_id: 7 } },
+      { ...request, metadata: { session_id: 'trace', user: 'synthetic' } },
+      { ...request, metadata: ['trace'] },
+      { ...request, metadata: null },
       { ...request, store: true },
       { ...request, store: 'true' },
       { ...request, store: 1 },
@@ -365,11 +372,12 @@ test('unpriced, unbounded, multiple-completion and paid-tool requests never reac
   })
 })
 
-test('the two true cache-bypass flags are stripped before forwarding and the native prompt cache key is retained', async () => {
+test('the two true cache-bypass flags and the gateway session hint are stripped before forwarding and the native prompt cache key is retained', async () => {
   validatePricingPolicy(policy)
   const hinted = {
     ...request,
     cache: { 'no-cache': true, 'no-store': true },
+    metadata: { session_id: 'synthetic-trace-id' },
     prompt_cache_key: 'synthetic-prompt-cache-key',
     store: false,
   }
@@ -381,6 +389,7 @@ test('the two true cache-bypass flags are stripped before forwarding and the nat
     await response.text()
     assert.equal(calls.length, 1)
     assert.equal(calls[0].body.cache, undefined)
+    assert.equal(calls[0].body.metadata, undefined)
     assert.equal(calls[0].body.prompt_cache_key, 'synthetic-prompt-cache-key')
     assert.equal(
       (await readBudgetLedger(budgetFile)).reservedProviderMicroUsd,

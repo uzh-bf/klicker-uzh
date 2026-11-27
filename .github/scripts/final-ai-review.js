@@ -36,11 +36,12 @@ const {
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
 const {
-  MISTRAL_DEEPSEEK_MODEL,
-  MISTRAL_URL,
+  MOAT_FLASH_MODEL,
+  MOAT_URL,
   callMistral,
 } = require('./ocr-mistral-adapter.cjs')
-const FINAL_REVIEW_MODEL = MISTRAL_DEEPSEEK_MODEL
+const FINAL_REVIEW_PROFILE = 'moat-flash'
+const FINAL_REVIEW_MODEL = MOAT_FLASH_MODEL
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
@@ -82,9 +83,9 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
     '.github/open-code-review/ocr-compression.patch',
   ].sort()
 )
-const MISTRAL_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
-const MISTRAL_TOOL_CANARY_NAME = 'final_review_probe'
-const MISTRAL_TOOL_CANARY_TIMEOUT_MS = 30_000
+const MOAT_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
+const MOAT_TOOL_CANARY_NAME = 'final_review_probe'
+const MOAT_TOOL_CANARY_TIMEOUT_MS = 30_000
 const OCR_MAX_COMPLETION_TOKENS = 16_384
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
@@ -112,7 +113,7 @@ const FINDING_CATEGORIES = new Set([
 const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 const DISPOSITION_STATES = new Set(['fixed', 'follow-up', 'rejected'])
 const FINDING_CONTENT_PREFIX_RE =
-  /^Confidence: (\d{1,3})\/100\nAutofix: (mechanical|manual|not-applicable)\nMotivating line: `([^`\r\n]+)`(?:\n|$)/
+  /^Confidence: (\d{1,3})\/100\nAutofix: (mechanical|manual|not-applicable)\nMotivating line: (`+)(?!`)([^\r\n]+?)(?<!`)\3(?!`)(?:\n|$)/
 
 function buildFinalReviewEvidenceDigest(value) {
   return sha256(JSON.stringify(value))
@@ -540,7 +541,7 @@ function buildOCRPolicy() {
   return {
     language: 'English',
     llm: {
-      url: MISTRAL_URL,
+      url: MOAT_URL,
       model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
       extra_body: {
@@ -550,7 +551,7 @@ function buildOCRPolicy() {
   }
 }
 
-function buildMistralToolCanaryRequest() {
+function buildMoatToolCanaryRequest() {
   const policy = buildOCRPolicy()
   return {
     model: policy.llm.model,
@@ -563,7 +564,7 @@ function buildMistralToolCanaryRequest() {
       },
       {
         role: 'user',
-        content: `Call ${MISTRAL_TOOL_CANARY_NAME} with marker ${MISTRAL_TOOL_CANARY_MARKER}.`,
+        content: `Call ${MOAT_TOOL_CANARY_NAME} with marker ${MOAT_TOOL_CANARY_MARKER}.`,
       },
     ],
     ...policy.llm.extra_body,
@@ -571,14 +572,14 @@ function buildMistralToolCanaryRequest() {
       {
         type: 'function',
         function: {
-          name: MISTRAL_TOOL_CANARY_NAME,
+          name: MOAT_TOOL_CANARY_NAME,
           description: 'Confirm that the selected route supports tool calls.',
           parameters: {
             type: 'object',
             properties: {
               marker: {
                 type: 'string',
-                const: MISTRAL_TOOL_CANARY_MARKER,
+                const: MOAT_TOOL_CANARY_MARKER,
               },
             },
             required: ['marker'],
@@ -589,57 +590,54 @@ function buildMistralToolCanaryRequest() {
     ],
     tool_choice: {
       type: 'function',
-      function: { name: MISTRAL_TOOL_CANARY_NAME },
+      function: { name: MOAT_TOOL_CANARY_NAME },
     },
   }
 }
 
-function validateMistralToolCanaryResponse(payload) {
+function validateMoatToolCanaryResponse(payload) {
   const toolCalls = payload?.choices?.[0]?.message?.tool_calls
   if (
     payload?.model !== FINAL_REVIEW_MODEL ||
     !Array.isArray(toolCalls) ||
     toolCalls.length !== 1 ||
     toolCalls[0]?.type !== 'function' ||
-    toolCalls[0]?.function?.name !== MISTRAL_TOOL_CANARY_NAME
+    toolCalls[0]?.function?.name !== MOAT_TOOL_CANARY_NAME
   ) {
-    throw new Error('Mistral tool canary did not return the expected tool call')
+    throw new Error('Moat tool canary did not return the expected tool call')
   }
   let args
   try {
     args = JSON.parse(toolCalls[0].function.arguments)
   } catch {
-    throw new Error('Mistral tool canary did not return the expected tool call')
+    throw new Error('Moat tool canary did not return the expected tool call')
   }
   if (
     !args ||
     typeof args !== 'object' ||
     Array.isArray(args) ||
     Object.keys(args).length !== 1 ||
-    args.marker !== MISTRAL_TOOL_CANARY_MARKER
+    args.marker !== MOAT_TOOL_CANARY_MARKER
   ) {
-    throw new Error('Mistral tool canary did not return the expected tool call')
+    throw new Error('Moat tool canary did not return the expected tool call')
   }
   return {
-    provider: 'Mistral',
+    provider: FINAL_REVIEW_PROFILE,
   }
 }
 
-async function verifyMistralToolAccess({
-  token,
-  fetchImpl = globalThis.fetch,
-}) {
-  if (!token) throw new Error('MISTRAL_API_KEY is required')
+async function verifyMoatToolAccess({ token, fetchImpl = globalThis.fetch }) {
+  if (!token) throw new Error('CMD_API_KEY is required')
   if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
   const payload = await callMistral({
     apiKey: token,
-    body: buildMistralToolCanaryRequest(),
-    provider: 'mistral-deepseek',
+    body: buildMoatToolCanaryRequest(),
+    provider: FINAL_REVIEW_PROFILE,
     diagnosticsStage: 'preflight',
     fetchImpl,
-    timeoutMs: MISTRAL_TOOL_CANARY_TIMEOUT_MS,
+    timeoutMs: MOAT_TOOL_CANARY_TIMEOUT_MS,
   })
-  return validateMistralToolCanaryResponse(payload)
+  return validateMoatToolCanaryResponse(payload)
 }
 
 function buildOCRConfig() {
@@ -1014,7 +1012,7 @@ function reviewPolicySettings() {
     },
     model: FINAL_REVIEW_MODEL,
     ocr: buildOCRPolicy(),
-    mistral_url: MISTRAL_URL,
+    moat_url: MOAT_URL,
     report_limit: REPORT_LIMIT,
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
@@ -2037,7 +2035,13 @@ function validateFinding(comment, index) {
   const confidenceMatch = content.match(FINDING_CONTENT_PREFIX_RE)
   const confidence = Number(confidenceMatch?.[1])
   const threshold = severity === 'critical' ? 50 : 75
-  if (!confidenceMatch || confidence < threshold || confidence > 100) {
+  if (
+    !confidenceMatch ||
+    confidence < threshold ||
+    confidence > 100 ||
+    !confidenceMatch[4].trim() ||
+    confidenceMatch[4].includes(confidenceMatch[3])
+  ) {
     throw new Error(`Finding ${index + 1} has an invalid confidence score`)
   }
   if (
@@ -2282,7 +2286,9 @@ function validateOCRResult(result) {
   }
   validateOCRResumeEnvelope(result, coverage, 'Complete OCR result')
 
-  result.comments.forEach((comment, index) => validateFinding(comment, index))
+  result.comments.forEach((comment, index) => {
+    validateFinding(comment, index)
+  })
   return result
 }
 
@@ -2539,7 +2545,9 @@ function planOCRResume(result, maxTokensBudget) {
   if (result.comments.length > 100) {
     throw new Error('Partial OCR result has too many comments')
   }
-  result.comments.forEach((comment, index) => validateFinding(comment, index))
+  result.comments.forEach((comment, index) => {
+    validateFinding(comment, index)
+  })
   if (hasOCRBudgetExhaustion(result, coverage)) {
     throw ocrRejection(
       'budget_exhausted',
@@ -3462,11 +3470,11 @@ function runCli() {
     console.log('Ephemeral OCR configuration removed')
     return
   }
-  if (command === 'verify-mistral-tools') {
-    return verifyMistralToolAccess({
-      token: process.env.MISTRAL_API_KEY,
+  if (command === 'verify-moat-tools') {
+    return verifyMoatToolAccess({
+      token: process.env.CMD_API_KEY,
     }).then(({ provider }) => {
-      console.log(`Mistral tool canary passed via ${provider}`)
+      console.log(`Moat tool canary passed via ${provider}`)
     })
   }
   if (command === 'validate-ocr-preview') {
@@ -3654,6 +3662,7 @@ module.exports = {
   FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   FINAL_REVIEW_MODEL,
+  FINAL_REVIEW_PROFILE,
   FINAL_REVIEW_POLICY_SCHEMA,
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_WORKFLOW_PATH,
@@ -3669,7 +3678,7 @@ module.exports = {
   buildOCRPolicy,
   buildOCRConfig,
   buildOCRResultDiagnostic,
-  buildMistralToolCanaryRequest,
+  buildMoatToolCanaryRequest,
   buildReviewPlan,
   buildPlanContext,
   buildReviewBackground,
@@ -3706,6 +3715,6 @@ module.exports = {
   validateOCRResult,
   validateOCRPreview,
   validateFinding,
-  verifyMistralToolAccess,
+  verifyMoatToolAccess,
   writeOCRConfig,
 }

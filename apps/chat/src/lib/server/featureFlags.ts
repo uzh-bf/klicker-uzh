@@ -75,6 +75,39 @@ export async function getManageAssistantCapability(
   }
 }
 
+/**
+ * Interactive explanations follow the chatbot owner's rollout, evaluated at
+ * chat time so withdrawing the flag stops new explanations immediately. Any
+ * lookup or evaluation error denies.
+ */
+export async function isChatbotInteractiveExplanationsEnabled(
+  ownerId: string
+): Promise<boolean> {
+  try {
+    const owner = await prisma.user.findUnique({
+      where: { id: ownerId },
+      select: {
+        role: true,
+        catalystInstitutional: true,
+        catalystIndividual: true,
+        betaEnabled: true,
+      },
+    })
+    if (!owner) return false
+    const flags = getFeatureFlagClient()
+    await flags.initialize()
+    return flags.isEnabled('interactive-explanations', {
+      id: ownerId,
+      actorType: 'user',
+      role: owner.role,
+      catalyst: owner.catalystInstitutional || owner.catalystIndividual,
+      betaEnabled: owner.betaEnabled === true,
+    })
+  } catch {
+    return false
+  }
+}
+
 /** Graph retrieval targets the owning lecturer, independently of map visibility. */
 export async function isChatbotGraphRetrievalEnabled(
   ownerId: string

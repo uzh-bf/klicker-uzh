@@ -705,24 +705,36 @@ describe('native question manifest compatibility', () => {
         questionNativeBudgetFromEnv({
           KB_QUESTION_NATIVE_BUDGET_POLICY: JSON.stringify(rawPolicy),
         }),
-        '3562f852e6aa6c751c3bc8268ea348dc0615f21a60030badb40d3a2386fe3d9a',
+        '02dbfdd446017671f5c4aaa8e43f907467cc39f03dcf4a3aacb6c2c385d625e2',
+        'ffae86836a3f3ee8b9ab405b77dc2ab5deae03e4adb1fce6e1abad481024963e',
       ],
       [
         'unbudgeted',
         questionNativeBudgetFromEnv({}),
-        'dbc4c049ceed3e06484e701527a3a5d130c29b84084e74f79c6fca3e816dad31',
+        '7bc1f3bf6502251693f1a77eee4efb6619d2e8822c052de642ee5ef18c9cf555',
+        'd7d38a4db599c03000454b34889485af77c078f69021e18091c2480678bafd73',
       ],
     ] as const
-    const results = captures.map(([mode, nativeBudget, expected]) => {
-      const payload = questionWorkflowStartPayload(input, { nativeBudget })
-      const digest = questionWorkflowStartManifestSha256(payload, {
-        currentWorkerDefaults: true,
-      })
-      expect(digest).toBe(expected)
-      if (nativeBudget.mode === 'unbudgeted')
-        expect(payload).not.toHaveProperty('budget_policy')
-      return { mode, payload, digest }
-    })
+    const results = captures.map(
+      ([mode, nativeBudget, expected, withSlots]) => {
+        const withSpecifications = questionWorkflowStartPayload(input, {
+          nativeBudget,
+          emitSlotSpecifications: true,
+        })
+        expect(questionWorkflowStartManifestSha256(withSpecifications)).toBe(
+          withSlots
+        )
+        const payload = questionWorkflowStartPayload(input, {
+          nativeBudget,
+          emitSlotSpecifications: false,
+        })
+        const digest = questionWorkflowStartManifestSha256(payload)
+        expect(digest).toBe(expected)
+        if (nativeBudget.mode === 'unbudgeted')
+          expect(payload).not.toHaveProperty('budget_policy')
+        return { mode, payload, digest }
+      }
+    )
     // Optional local qualification output lets the locked native schema consume
     // the actual caller payload. Ordinary CI uses the protocol vectors above.
     if (process.env.KLICKER_NATIVE_HASH_CAPTURE)

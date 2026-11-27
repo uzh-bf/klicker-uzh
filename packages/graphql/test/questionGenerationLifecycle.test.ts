@@ -749,6 +749,10 @@ describe('question-generation retry lifecycle', () => {
   it('re-dispatches a failed build whose reasons the system can fix', async () => {
     let current = {
       ...failedBuild(),
+      configuration: {
+        ...fixtures.configuration,
+        nativeBudget: { mode: 'unbudgeted' },
+      },
       status: DB.ElementGenerationBuildStatus
         .FAILED as DB.ElementGenerationBuildStatus,
       errorRetryable: true,
@@ -2480,6 +2484,7 @@ describe('native question budget build lifetime', () => {
   })
 
   it.each([
+    undefined,
     '{}',
     '[]',
     'false',
@@ -2489,6 +2494,7 @@ describe('native question budget build lifetime', () => {
   ])('rejects configured policy %s before product credit, upload or provider contact', async (value) => {
     const h = harness(false)
     vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_ACTOR_ID', fixtures.ownerId)
     await expect(
       startQuestionGeneration(input as never, h.ctx as never)
     ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
@@ -2498,9 +2504,11 @@ describe('native question budget build lifetime', () => {
   })
 
   it.each([
-    undefined,
-    JSON.stringify(template),
-  ])('persists server mode before first spend for policy %s', async (value) => {
+    [fixtures.ownerId, 'budgeted'],
+    [fixtures.graphBuildId, 'unbudgeted'],
+  ] as const)('persists the server-selected mode for actor scope %s', async (actor, mode) => {
+    const value = JSON.stringify(template)
+    vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_ACTOR_ID', actor)
     const h = harness(false)
     vi.stubEnv('KB_QUESTION_NATIVE_BUDGET_POLICY', value)
     vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'true')
@@ -2515,9 +2523,8 @@ describe('native question budget build lifetime', () => {
     expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
       emit_slot_specifications: true,
     })
-    const expected = questionNativeBudgetFromEnv({
-      KB_QUESTION_NATIVE_BUDGET_POLICY: value,
-    })
+    const expected =
+      mode === 'budgeted' ? policy : { mode: 'unbudgeted' as const }
     expect(createElementGenerationBuildWithSpend).toHaveBeenCalledWith(
       h.ctx.prisma,
       expect.objectContaining({
@@ -2571,6 +2578,27 @@ describe('native question budget build lifetime', () => {
     expect(h.runtime.start.mock.calls[0]![0]).toMatchObject({
       budget_policy: policy.mode === 'budgeted' ? policy.policy : null,
     })
+  })
+
+  it.each([
+    'legacy root',
+    'budgeted revision',
+  ])('denies retry of a %s before reserving credits or dispatching', async (kind) => {
+    const h = harness()
+    if (kind === 'legacy root') {
+      Reflect.deleteProperty(h.current.configuration, 'nativeBudget')
+    } else {
+      Object.assign(h.current, { parentBuildId: fixtures.graphBuildId })
+    }
+    h.current.status = DB.ElementGenerationBuildStatus.FAILED
+    await expect(
+      retryQuestionGeneration(h.current.id, h.ctx as never)
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+    })
+    expect(reserveElementGenerationRetrySpend).not.toHaveBeenCalled()
+    expect(h.runtime.uploadCreateOnly).not.toHaveBeenCalled()
+    expect(h.runtime.start).not.toHaveBeenCalled()
   })
 
   it('recovers the exact existing native attempt without redispatching or changing policy', async () => {
@@ -2722,9 +2750,7 @@ describe('native question budget build lifetime', () => {
       expect.any(Buffer),
       expect.objectContaining({
         v3Evidence: expect.objectContaining({
-          startManifestSha256: questionWorkflowStartManifestSha256(dispatched, {
-            currentWorkerDefaults: true,
-          }),
+          startManifestSha256: questionWorkflowStartManifestSha256(dispatched),
         }),
       })
     )

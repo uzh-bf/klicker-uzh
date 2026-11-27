@@ -67,6 +67,9 @@ data:
   KB_QUESTION_INPUT_CONTAINER: {{ required "backendGraphql.elementGeneration.inputContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.inputContainer | quote }}
   KB_QUESTION_OUTPUT_CONTAINER: {{ required "backendGraphql.elementGeneration.outputContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.outputContainer | quote }}
   KB_QUESTION_OUTPUT_PREFIX: {{ required "backendGraphql.elementGeneration.outputPrefix is required when element generation is enabled" .Values.backendGraphql.elementGeneration.outputPrefix | quote }}
+  {{- if ne .Values.backendGraphql.elementGeneration.nativeBudgetActorId nil }}
+  KB_QUESTION_NATIVE_BUDGET_ACTOR_ID: {{ .Values.backendGraphql.elementGeneration.nativeBudgetActorId | quote }}
+  {{- end }}
   {{- if ne .Values.backendGraphql.elementGeneration.nativeBudgetPolicy nil }}
   KB_QUESTION_NATIVE_BUDGET_POLICY: {{ .Values.backendGraphql.elementGeneration.nativeBudgetPolicy | mustToJson | quote }}
   {{- end }}
@@ -74,4 +77,5 @@ data:
   KB_ELEMENT_GENERATION_FLASHCARD_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.flashcardMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.flashcardMinorUnits | quote }}
   KB_ELEMENT_GENERATION_FLASHCARD_RETRY_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.flashcardRetryMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.flashcardRetryMinorUnits | quote }}
   KB_ELEMENT_GENERATION_COST_PRICING_VERSION: {{ required "backendGraphql.elementGeneration.cost.pricingVersion is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.pricingVersion | quote }}
+  ELEMENT_REVISION_WORKER_ENABLED: {{ .Values.backendGraphql.elementGeneration.revisionWorkerEnabled | default false | quote }}
   {{- end }}

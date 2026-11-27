@@ -566,7 +566,7 @@ const slotSpecificationSchema = z
     bloom_level: z.string(),
     content_type: z.string(),
     difficulty_scale: z.number(),
-    difficulty_mechanism: z.string(),
+    difficulty_mechanism: z.string().nullable(),
     planned_true_count: z.number().nullable(),
     permitted_aids: z.unknown(),
     evidence_target: z.string().nullable(),
@@ -681,7 +681,10 @@ const finalBankSchema = z
       .passthrough(),
     questions: z.array(finalQuestionSchema).min(1).max(20),
   })
-  .strict()
+  // Newer workers add top-level report sections such as review_flags. Only
+  // metadata and questions are read, so unknown sections are dropped rather
+  // than failing the build.
+  .strip()
 
 export type QuestionGenerationResultManifest = {
   schemaVersion: 1 | 2

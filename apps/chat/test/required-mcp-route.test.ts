@@ -1,5 +1,8 @@
+import { readFile } from 'node:fs/promises'
+import { tool } from 'ai'
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { z } from 'zod'
 
 const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
@@ -18,6 +21,9 @@ const mocks = vi.hoisted(() => ({
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
   compileSystemPrompt: vi.fn(),
+  findResource: vi.fn(),
+  readCourseImage: vi.fn(),
+  courseImageStoreConfigured: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -38,6 +44,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
     chatThread: {
       findFirst: mocks.findThread,
     },
+    kBResource: { findFirst: mocks.findResource },
   },
 }))
 
@@ -76,11 +83,29 @@ vi.mock('@/src/lib/server/systemPromptCompiler', () => ({
   compileSystemPrompt: mocks.compileSystemPrompt,
 }))
 
+vi.mock('@/src/lib/server/courseImageStore', () => ({
+  courseImageStoreConfigured: mocks.courseImageStoreConfigured,
+  readCourseImage: mocks.readCourseImage,
+}))
+
+vi.mock('@/src/lib/server/courseImageTools', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../src/lib/server/courseImageTools')>()
+  return { ...actual, withCourseImageTool: vi.fn(actual.withCourseImageTool) }
+})
+
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
+import { withCourseImageTool } from '../src/lib/server/courseImageTools'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '../src/lib/server/mcpRuntimePolicy'
+import { courseImageCandidates } from '../src/lib/sources/courseImages'
+
+const figureResult = JSON.parse(
+  await readFile('scripts/fixtures/course-images/query-result.json', 'utf8')
+)
+const figure = courseImageCandidates(figureResult)[0]!
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
 
@@ -184,10 +209,116 @@ describe('required MCP chat preflight', () => {
     })
     mocks.failChatTurn.mockResolvedValue(undefined)
     mocks.compileSystemPrompt.mockReturnValue('COMPILED-SYSTEM-PROMPT')
+    mocks.courseImageStoreConfigured.mockReturnValue(false)
     mocks.findUnique.mockResolvedValue(createChatbot())
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
     )
+  })
+
+  test.each(
+    [false, true].flatMap((visionEnabled) =>
+      [
+        'ready',
+        'missing',
+        'withdrawn',
+        'failed',
+        'replaced',
+        'inactive version',
+      ].map((resourceState) => ({ visionEnabled, resourceState }))
+    )
+  )('validates a $resourceState figure before selection (vision: $visionEnabled)', async ({
+    visionEnabled,
+    resourceState,
+  }) => {
+    vi.stubEnv('CHAT_COURSE_IMAGE_VISION_ENABLED', String(visionEnabled))
+    mocks.courseImageStoreConfigured.mockReturnValue(true)
+    mocks.readCourseImage.mockResolvedValue(Buffer.from('validated image'))
+    const liveResource = {
+      id: figure.external_resource_id,
+      kbId: figure.kb_id,
+      resourceVersion: figure.resource_version,
+      activeResourceVersion: figure.resource_version,
+      status: 'READY',
+      deletedAt: null,
+    }
+    const resource = {
+      ...liveResource,
+      ...(resourceState === 'withdrawn' ? { deletedAt: new Date() } : {}),
+      ...(resourceState === 'failed' ? { status: 'FAILED' } : {}),
+      ...(resourceState === 'replaced' ? { resourceVersion: 999 } : {}),
+      ...(resourceState === 'inactive version'
+        ? { activeResourceVersion: 999 }
+        : {}),
+    }
+    mocks.findResource.mockImplementation(({ where }) =>
+      resourceState !== 'missing' &&
+      Object.entries(where).every(
+        ([key, value]) => Reflect.get(resource, key) === value
+      )
+        ? { id: resource.id }
+        : null
+    )
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['doc_query'],
+            parameters: {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: figure.kb_id,
+            },
+            mcpServer: createMcpServer({ name: 'KB', isActive: true }),
+          }),
+        ],
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValue({
+      tools: {
+        KB_doc_query: tool({
+          inputSchema: z.object({ query: z.string() }),
+          execute: async () => figureResult,
+        }),
+      },
+      close: mocks.closeMCPTools,
+    })
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+    await expect(
+      POST(createRequest(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    // Exercise the actual tools assembled by the route, not a separately wired validator.
+    expect(withCourseImageTool).toHaveBeenCalledOnce()
+    const tools = vi.mocked(withCourseImageTool).mock.results[0]!.value
+    const options = {
+      toolCallId: 'synthetic',
+      messages: [],
+      context: undefined,
+    }
+    await tools.KB_doc_query!.execute!({ query: 'Explain the figure' }, options)
+    const selected = await tools.show_course_image!.execute!(
+      {
+        asset_id: figure.asset_id,
+        reason: 'The retrieved figure explains the requested relationship.',
+      },
+      options
+    )
+    if (resourceState === 'ready') {
+      expect(selected).toMatchObject({ status: 'selected', image: figure })
+      expect(mocks.readCourseImage).toHaveBeenCalledWith(figure)
+    } else {
+      expect(selected).toEqual({ status: 'unavailable' })
+      expect(mocks.readCourseImage).not.toHaveBeenCalled()
+    }
+    expect(mocks.findResource).toHaveBeenCalledWith({
+      where: liveResource,
+      select: { id: true },
+    })
   })
 
   test('refuses a thread id the caller does not own before MCP work', async () => {
@@ -565,6 +696,17 @@ describe('required MCP chat preflight', () => {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
         },
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: true,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
         mcpConfigurations: [
           createMcpConfiguration({
             allowedTools: ['doc_query'],
@@ -648,12 +790,23 @@ describe('required MCP chat preflight', () => {
     expect(mocks.failChatTurn).not.toHaveBeenCalled()
   })
 
-  test('rejects Quizzer when Tutor only has a wildcard tool binding', async () => {
+  test('offers KB-free Quizzer without treating a wildcard Tutor binding as retrieval', async () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({
         systemPrompts: {
           tutor: { prompt: 'Use course material.' },
           quizzer: { prompt: 'Ask course questions.' },
+        },
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: true,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
         },
         mcpConfigurations: [
           createMcpConfiguration({
@@ -665,13 +818,107 @@ describe('required MCP chat preflight', () => {
       })
     )
 
-    const response = await POST(createRequest('quizzer'), {
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(createRequest('quizzer'), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ kbIds: undefined })
+    )
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'quizzer',
+      expect.objectContaining({
+        toolNames: expect.not.arrayContaining(['KB_doc_query']),
+      })
+    )
+  })
+
+  test('defaults an omitted request to the only approved custom mode', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_custom_only',
+              name: 'Case practice',
+              description: 'Practises a course case.',
+              personaText: 'Run a case practice.',
+            },
+          ],
+        },
+        mcpConfigurations: [],
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
+    mocks.compileSystemPrompt.mockImplementationOnce(() => {
+      throw new Error('stop after prompt compilation')
+    })
+
+    await expect(
+      POST(createRequest(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('stop after prompt compilation')
+
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.anything(),
+      'cm_custom_only',
+      expect.anything()
+    )
+  })
+
+  test('rejects a chatbot with no offered mode before thread or MCP work', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        customModeConfig: null,
+        mcpConfigurations: [],
+        standardModeConfig: {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: false,
+          explicitModeSelection: true,
+          courseName: null,
+          subjectDomain: null,
+          languageOfInstruction: null,
+          scopeNote: null,
+        },
+      })
+    )
+
+    const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({
-      error: 'Unsupported chat mode: quizzer',
+      error: 'No chat mode is available',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()

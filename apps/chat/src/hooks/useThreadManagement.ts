@@ -180,17 +180,14 @@ export function useThreadManagement(
         router.replace(`/${chatbotId}/threads/${threadId}${qs ? `?${qs}` : ''}`)
       }
 
+      let currentMessages: ExtendedThreadMessageLike[] | null
       try {
-        const addedThreadId = await addMessage(chatbotId, userMessage, threadId)
-        if (!addedThreadId) return
+        currentMessages = await addMessage(chatbotId, userMessage, threadId)
+        if (!currentMessages) return
       } catch (error) {
         console.error('Failed to add message', error)
         return
       }
-
-      const currentMessages =
-        useChatStore.getState().threads.find((t) => t.id === threadId)
-          ?.messages || []
 
       // generate response based on current conversation
       setPendingDocumentPages(userMessageId, pageImages)

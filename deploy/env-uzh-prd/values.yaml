@@ -45,10 +45,12 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.101
       resources:
+        # Near the per-pod CPU of a busy lecture, so a crowded node does not
+        # throttle this tier first. Usage above the request is still allowed.
         requests:
-          cpu: 50m
+          cpu: 75m
           memory: 512Mi
         limits:
           memory: 2Gi
@@ -86,7 +88,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.101
       resources:
         requests:
           cpu: 25m
@@ -127,7 +129,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.88
+        tag: v3.4.0-alpha.101
       resources:
         requests:
           cpu: 50m
@@ -194,7 +196,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   ingress:
     annotations:
@@ -231,9 +233,23 @@ chat:
     baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  # Metadata-only Langfuse tracing of chat turns (no prompts, answers or tool
+  # arguments/results; see docs/chat-platform.md). It starts only when
+  # secret-chat also provides LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY and
+  # LANGFUSE_BASE_URL; otherwise the pod logs a warning and stays untraced.
   telemetry:
-    enabled: false
+    enabled: true
     environment: 'production'
+    # The keys come from secret-chat; the base URL is not secret, so it is
+    # rendered into config-chat instead of an Infisical entry.
+    baseUrl: 'https://langfuse.df-app.ch'
+
+  # Offers the Tutor and Explainer the interactive-explanation tool. A chatbot
+  # still needs its own setting and the owner's `interactive-explanations`
+  # GrowthBook flag; without both, the tool stays off.
+  explainer:
+    enabled: true
+    serviceUrl: 'http://explainer-service.prd-explainer.svc.cluster.local:3018'
 
   # Account usage stays inert in production: the base-budget backfill has not
   # run there, so turning enforcement on would refuse every unbudgeted account.
@@ -267,6 +283,18 @@ chat:
     - id: auto
       deploymentId: klickeruzh/azure/auto-router-v4
       name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      usesResponsesApi: true
+      fallback: false
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 1.0
+        output: 5.0
+    - id: auto-v5
+      deploymentId: klickeruzh/azure/auto-router-v5
+      name: Auto v5
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
       usesResponsesApi: true
@@ -325,6 +353,38 @@ chat:
       cost:
         input: 2.0
         output: 10.0
+    - id: gpt-6.2-sol
+      deploymentId: klickeruzh/azure/gpt-6.2-sol
+      name: GPT-6.2 Sol
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 2.4
+        output: 12.0
+    - id: gpt-6.2-astra
+      deploymentId: klickeruzh/azure/gpt-6.2-astra
+      name: GPT-6.2 Astra
+      description: OpenAI frontier reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 9.6
+        output: 48.0
     - id: gpt-5.6-sol
       deploymentId: klickeruzh/azure/gpt-5.6-sol
       name: GPT-5.6 Sol
@@ -334,6 +394,7 @@ chat:
       supportedReasoningEfforts:
         - low
         - medium
+        - high
       fallback: false
       usageClass: ADVANCED
       maxOutputTokens: 4096
@@ -355,7 +416,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   ingress:
     annotations:
@@ -423,7 +484,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   strategy:
     type: RollingUpdate
@@ -473,7 +534,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   strategy:
     type: RollingUpdate
@@ -489,7 +550,9 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 4
+  # Three static replicas leave one voluntary disruption under the baseline
+  # budget's minimum of two; the burst tier adds up to five on spot.
+  replicaCount: 3
 
   autoscaling:
     enabled: false
@@ -499,6 +562,7 @@ frontendPWA:
   # Application excludes from replica drift.
   burst:
     enabled: true
+    maxReplicas: 5
     # Soft spread, so losing one spot node does not remove the whole tier
     # while a tight pool can still place every burst pod. The selector names
     # the tier label, so baseline pods do not count toward the skew.
@@ -536,7 +600,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.91
+    tag: v3.4.0-alpha.101
 
   ingress:
     className: haproxy
@@ -559,8 +623,10 @@ frontendPWA:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 50m
+      cpu: 150m
       memory: 320Mi
     limits:
       memory: 1Gi
@@ -594,7 +660,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   ingress:
     className: haproxy
@@ -632,7 +698,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   affinity:
     podAntiAffinity:
@@ -679,7 +745,7 @@ backendGraphql:
   priorityClassName: production-workload
 
   knowledgeGraph:
-    host: 'prd-falkordb-aigeneric-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
+    host: 'prd-falkordb-aigeneric-ha-falkordb-falkordb.prd-kb-falkordb-aigeneric.svc.cluster.local'
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
@@ -692,7 +758,7 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      semesterQuotaMinorUnits: '10000'
       pricingVersion: 'prd-graph-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
@@ -706,6 +772,7 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    revisionWorkerEnabled: true
     cost:
       questionMinorUnits: '1'
       flashcardMinorUnits: '1'
@@ -733,7 +800,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -772,8 +839,10 @@ backendGraphql:
       maxSurge: 1
 
   resources:
+    # Near the per-pod CPU of a busy lecture, so a crowded node does not
+    # throttle this tier first. Usage above the request is still allowed.
     requests:
-      cpu: 50m
+      cpu: 150m
       memory: 448Mi
     limits:
       memory: 1Gi
@@ -786,7 +855,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
 
   affinity:
     podAntiAffinity:
@@ -856,7 +925,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.89
+    tag: v3.4.0-alpha.101
 
   ingress:
     className: haproxy
@@ -888,7 +957,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.88
+    tag: v3.4.0-alpha.101
     pullPolicy: IfNotPresent
 
   affinity:
@@ -978,7 +1047,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.91
+      tag: v3.4.0-alpha.101
 
     ingress:
       className: haproxy
@@ -1073,7 +1142,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.101
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1149,7 +1218,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.88
+      tag: v3.4.0-alpha.101
 
     ingress:
       className: haproxy
@@ -1178,11 +1247,11 @@ assessment:
       limits:
         memory: 512Mi
 
-# Migration hook image: only the repo is pinned; the tag auto-tracks the
-# backendGraphql image tag above (see chart job-migrate.yaml).
+# Migration hook image: the tag defaults to the backendGraphql image tag
+# (see chart job-migrate.yaml).
 #
 # Enabled because the pinned production tags have matching migrator images; the
-# tag auto-tracks backendGraphql.image.tag. Keep this true for migrator-bearing
+# tag defaults to backendGraphql.image.tag. Keep this true for migrator-bearing
 # release tags. Rolling back to a pre-hook tag requires setting this back to
 # false and using the manual migration path. See docs/data-and-migrations.md →
 # Recovering a failed hook.
@@ -1191,6 +1260,7 @@ migrator:
   priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    tag: '' # Clear this override when the backend image reaches this version.
     pullPolicy: IfNotPresent
 
 # Modern Klicker KB retrieval authenticates with a fresh five-minute ES256

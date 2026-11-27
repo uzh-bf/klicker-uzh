@@ -20,6 +20,7 @@ import {
   edgeAskSelection,
   nextKnowledgeGraphZoom,
   nodeAskSelection,
+  readableDescription,
   relationshipLabels,
 } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphView.js'
 
@@ -673,5 +674,16 @@ describe('knowledge graph question selection', () => {
         }
       ).label
     ).toBe('P')
+  })
+})
+
+// A graph merge can store the same description fragment more than once.
+describe('knowledge graph merged descriptions', () => {
+  it('shows a repeated fragment once, in first-seen order', () => {
+    expect(
+      readableDescription(
+        'Short.<SEP>First.<SEP> Second. <SEP>First.<SEP>Second.'
+      )
+    ).toBe('Short.\n\nFirst.\n\nSecond.')
   })
 })

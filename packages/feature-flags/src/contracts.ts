@@ -26,6 +26,10 @@ export const FEATURE_FLAG_DEFAULTS = {
   // Admits new question builds and explicit retries. Existing builds retain
   // their review, polling, save and settlement paths under their access gate.
   'question-generation-admission': false,
+  // Lets lecturers offer interactive step-by-step explanations in Tutor and
+  // Explainer chats per chatbot. Without it the Manage toggle is hidden, saving
+  // the setting as enabled is denied, and chat does not offer the tool.
+  'interactive-explanations': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

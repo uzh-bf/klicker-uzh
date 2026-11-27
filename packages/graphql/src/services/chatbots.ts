@@ -10,14 +10,16 @@ import {
   CHAT_BASE_MODEL_ID,
   CHATBOT_CUSTOM_MODE_PERSONA_EXTENDED_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+  getAvailableChatbotCustomModeKeys,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
-  getWritingCoachUnavailableReason,
+  getEffectiveChatbotStandardModeFlags,
   isChatUsageClassEntitled,
   normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
   parseChatbotCustomModeConfigInput,
-  parseChatbotStandardModeConfigInput,
+  parseChatbotStandardModeConfigForStorage,
+  parseStoredChatbotStandardModeConfig,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
@@ -440,15 +442,13 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
-  mcpConfigurations: {
-    select: { chatMode: true, isEnabled: true, parameters: true },
-  },
   customModeConfig: true,
   draftConfig: true,
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
   answerPreferencesEnabled: true,
+  interactiveExplanationsEnabled: true,
   knowledgeGraphVisible: true,
   knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
@@ -476,20 +476,12 @@ type ChatbotWithOwnerCourse = {
   avatar: string | null
   systemPrompts: unknown
   standardModeConfig: unknown
-  // Required: `shapeChatbotResponse` derives the Writing Coach unavailability
-  // reason from these rows, so a caller that forgets to spread
-  // `chatbotOwnerSelect` fails to compile instead of silently reporting the
-  // mode as available.
-  mcpConfigurations: {
-    chatMode: string
-    isEnabled: boolean
-    parameters: unknown
-  }[]
   customModeConfig: unknown
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
   answerPreferencesEnabled: boolean
+  interactiveExplanationsEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -564,7 +556,6 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 ) {
   const {
     systemPrompts,
-    mcpConfigurations,
     draftConfig: _draftConfig,
     ...chatbotWithoutSystemPrompts
   } = chatbot
@@ -572,8 +563,6 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 
   return {
     ...chatbotWithoutSystemPrompts,
-    writingCoachUnavailableReason:
-      getWritingCoachUnavailableReason(mcpConfigurations),
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -652,6 +641,7 @@ function cloneJson(value: unknown): unknown {
 type ChatbotRevisionLiveFlags = Pick<
   DB.Chatbot,
   | 'answerPreferencesEnabled'
+  | 'interactiveExplanationsEnabled'
   | 'knowledgeGraphVisible'
   | 'knowledgeGraphRetrievalEnabled'
 >
@@ -767,6 +757,12 @@ function parseStoredRevision(
     return null
   }
   if (
+    value.interactiveExplanationsEnabled !== undefined &&
+    typeof value.interactiveExplanationsEnabled !== 'boolean'
+  ) {
+    return null
+  }
+  if (
     value.knowledgeGraphRetrievalEnabled !== undefined &&
     typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
   ) {
@@ -794,6 +790,10 @@ function parseStoredRevision(
       value.answerPreferencesEnabled === undefined
         ? live.answerPreferencesEnabled
         : value.answerPreferencesEnabled,
+    interactiveExplanationsEnabled:
+      value.interactiveExplanationsEnabled === undefined
+        ? live.interactiveExplanationsEnabled
+        : value.interactiveExplanationsEnabled,
     creditInitialCredits: value.creditInitialCredits as number,
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
@@ -841,6 +841,7 @@ function buildRevisionFromLive(
       chatbot.allowedReasoningEffortsByModel
     ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
     answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
+    interactiveExplanationsEnabled: chatbot.interactiveExplanationsEnabled,
     creditInitialCredits: chatbot.creditInitialCredits,
     creditResetPeriod: chatbot.creditResetPeriod,
     creditResetAmount: chatbot.creditResetAmount,
@@ -1022,6 +1023,7 @@ function revisionLiveData(
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
     answerPreferencesEnabled: revision.answerPreferencesEnabled,
+    interactiveExplanationsEnabled: revision.interactiveExplanationsEnabled,
     knowledgeGraphVisible: revision.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
@@ -1122,17 +1124,26 @@ function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
 function validateCompleteRevision(
   revision: ChatbotAuthoringRevision,
   requirePublicationFields: boolean,
-  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
+  systemPrompts: unknown
 ) {
   if (revision.name.trim().length === 0) {
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
   if (revision.standardModeConfig !== null) {
-    parseRevisionStandardModeConfig(
-      revision.standardModeConfig,
-      mcpConfigurations
-    )
+    try {
+      parseStoredChatbotStandardModeConfig(
+        revision.standardModeConfig,
+        systemPrompts
+      )
+    } catch (error) {
+      throw chatbotError(
+        error instanceof Error
+          ? error.message
+          : 'Invalid standard mode configuration',
+        'BAD_USER_INPUT'
+      )
+    }
   }
 
   if (revision.customModeConfig !== null) {
@@ -1168,6 +1179,22 @@ function validateCompleteRevision(
   }
 
   if (requirePublicationFields) {
+    const standardFlags = getEffectiveChatbotStandardModeFlags(
+      revision.standardModeConfig,
+      systemPrompts
+    )
+    const hasStandardMode = Object.values(standardFlags).some(Boolean)
+    const customModeKeys = getAvailableChatbotCustomModeKeys(
+      revision.customModeConfig,
+      systemPrompts
+    )
+    if (!hasStandardMode && customModeKeys.length === 0) {
+      throw chatbotError(
+        'Enable at least one chat mode before publication',
+        'CHATBOT_MODE_REQUIRED'
+      )
+    }
+
     const useCase = normalizedRevision.publicationUseCase
     if (
       typeof useCase !== 'string' ||
@@ -1223,6 +1250,7 @@ type RevisionModelPolicyInput = {
   modelSelection: boolean
   allowedModelIds: string[]
   answerPreferencesEnabled?: boolean | null
+  interactiveExplanationsEnabled?: boolean | null
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
     efforts: string[]
@@ -1418,18 +1446,15 @@ export async function saveChatbotRevision(
     if (input.standardModeConfig) {
       next = {
         ...next,
-        standardModeConfig: parseRevisionStandardModeConfig(
-          {
-            ...input.standardModeConfig,
-            writingCoachEnabled:
-              input.standardModeConfig.writingCoachEnabled ??
-              normalizeChatbotStandardModeConfig(
-                current.standardModeConfig,
-                chatbot.systemPrompts
-              ).writingCoachEnabled,
-          },
-          chatbot.mcpConfigurations
-        ),
+        standardModeConfig: parseRevisionStandardModeConfig({
+          ...input.standardModeConfig,
+          writingCoachEnabled:
+            input.standardModeConfig.writingCoachEnabled ??
+            normalizeChatbotStandardModeConfig(
+              current.standardModeConfig,
+              chatbot.systemPrompts
+            ).writingCoachEnabled,
+        }),
       }
     }
     // Custom-mode keys are minted here so a stale version throws before any key
@@ -1450,6 +1475,18 @@ export async function saveChatbotRevision(
       current.knowledgeGraphRetrievalEnabled,
       next.knowledgeGraphRetrievalEnabled
     )
+    // Only turning the setting on needs the flag; an unrelated save that
+    // carries an already-enabled value stays allowed.
+    if (
+      next.interactiveExplanationsEnabled &&
+      !current.interactiveExplanationsEnabled &&
+      !(await isFeatureFlagEnabled(ctx, 'interactive-explanations'))
+    ) {
+      throw chatbotError(
+        'Interactive explanations are not available',
+        'FORBIDDEN'
+      )
+    }
     await assertModelPolicyEntitled(
       tx,
       chatbot.ownerId,
@@ -1626,6 +1663,9 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
     ...(typeof args.answerPreferencesEnabled === 'boolean'
       ? { answerPreferencesEnabled: args.answerPreferencesEnabled }
       : {}),
+    ...(typeof args.interactiveExplanationsEnabled === 'boolean'
+      ? { interactiveExplanationsEnabled: args.interactiveExplanationsEnabled }
+      : {}),
     modelSelection: args.modelSelection,
     allowedModelIds,
     allowedReasoningEffortsByModel:
@@ -1641,22 +1681,10 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
 }
 
 function parseRevisionStandardModeConfig(
-  input: ChatbotStandardModeConfigInput,
-  mcpConfigurations: ChatbotRevisionRecord['mcpConfigurations']
+  input: ChatbotStandardModeConfigInput
 ) {
   try {
-    const config = parseChatbotStandardModeConfigInput(input)
-    if (
-      config.writingCoachEnabled &&
-      !config.tutorEnabled &&
-      !config.explainerEnabled &&
-      getWritingCoachUnavailableReason(mcpConfigurations)
-    ) {
-      throw new Error(
-        'Writing Coach cannot be the only conversational mode while a required tool binding makes it unavailable'
-      )
-    }
-    return config
+    return parseChatbotStandardModeConfigForStorage(input)
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1721,7 +1749,7 @@ export async function submitChatbotRevision(
     const completeRevision = validateCompleteRevision(
       revision,
       true,
-      chatbot.mcpConfigurations
+      chatbot.systemPrompts
     )
     await assertGraphRetrievalTransition(
       ctx,
@@ -1888,7 +1916,7 @@ export async function approveChatbotRevision(
     const completeRevision = validateCompleteRevision(
       revision,
       true,
-      chatbot.mcpConfigurations
+      chatbot.systemPrompts
     )
     await assertGraphRetrievalTransition(
       ctx,
@@ -1959,7 +1987,6 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
           isEnabled: true,
           priority: true,
           allowedTools: true,
-          parameters: true,
           mcpServer: {
             select: { id: true, name: true, isActive: true },
           },
@@ -1975,7 +2002,7 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
       ownerPublishingEnabled: owner.aiFeaturesEnabled,
       disclaimerTitle: disclaimer?.title ?? null,
       disclaimerIntroText: disclaimer?.introText ?? null,
-      chatbot: shapeChatbotResponse({ ...chatbot, mcpConfigurations }),
+      chatbot: shapeChatbotResponse(chatbot),
       tools: mcpConfigurations.map((config) => ({
         serverName: config.mcpServer.name,
         chatMode: config.chatMode,

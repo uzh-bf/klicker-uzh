@@ -239,6 +239,23 @@ chat:
   mcp:
     key: ''
 
+  mediaWorkloadIdentity:
+    enabled: false
+    # The infrastructure stack owns the ServiceAccount and same-named storage ConfigMap.
+    serviceAccountName: ''
+
+  videoBlob:
+    accountName: ''
+    container: ''
+    existingSecret: ''
+    accessKeyKey: BLOB_STORAGE_ACCESS_KEY
+
+  courseImages:
+    existingSecret: ''
+    connectionStringKey: connectionString
+    container: doc-processing
+    prefix: projection
+
   docQueryScope:
     issuer: ''
     audience: ''
@@ -248,6 +265,17 @@ chat:
     issuer: ''
     audience: ''
     keyId: ''
+
+  # Interactive explanations (the show_explanation tool). serviceUrl is the
+  # explainer API; the chat reads EXPLAINER_SERVICE_TOKEN from its Secret.
+  explainer:
+    enabled: false
+    serviceUrl: ''
+
+  # Structured feedback cards (the show_feedback tool) in Tutor, Quizzer and
+  # Writing Coach.
+  feedback:
+    enabled: false
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
@@ -585,6 +613,11 @@ backendGraphql:
     outputPrefix: 'question-builds'
     # Optional USD policy with decimal-string amounts and per-token prices.
     nativeBudgetPolicy: null
+    # Scope the required policy to one authenticated user. Null requires it for all new questions.
+    nativeBudgetActorId: null
+    # Lecturers can request a revision of one generated question only when the
+    # deployed question worker supports slot specifications.
+    revisionWorkerEnabled: false
     cost:
       questionMinorUnits: ''
       flashcardMinorUnits: ''

@@ -192,6 +192,21 @@ describe('issuePreviewResponseExampleReceipt', () => {
     ).resolves.toEqual({ unavailable: true })
   })
 
+  it('issues nothing for a tool-free Writing Coach answer', async () => {
+    await expect(
+      issuePreviewResponseExampleReceipt({
+        requestMessages: [userMessage('user-1', 'Check my paragraph.')],
+        responseMessage: assistantMessage({ includeCitation: false }),
+        finishReason: 'stop',
+        isAborted: false,
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        kbId: KB_ID,
+        chatMode: 'writing-coach',
+      })
+    ).resolves.toBeNull()
+  })
+
   it('stays unavailable without dedicated signing configuration', async () => {
     vi.stubEnv('RESPONSE_EXAMPLE_RECEIPT_PRIVATE_KEY', '')
 

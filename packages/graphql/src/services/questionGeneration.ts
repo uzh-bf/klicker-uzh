@@ -62,7 +62,8 @@ import {
   QuestionGenerationConfigurationError,
   type QuestionGenerationConfigurationInput,
   type QuestionNativeBudgetMetadata,
-  questionNativeBudgetFromEnv,
+  assertRevisionBudgetSupported,
+  nativeBudgetForNewQuestion,
   questionNativeBudgetMetadata,
 } from './questionGenerationConfiguration.js'
 import {
@@ -195,8 +196,7 @@ function requireRuntime(ctx: ContextWithUser): QuestionGenerationRuntime {
 }
 
 export function questionWorkflowStartManifestSha256(
-  payload: QuestionWorkflowStartPayload,
-  options: { currentWorkerDefaults?: boolean } = {}
+  payload: QuestionWorkflowStartPayload
 ): string {
   const normalized = {
     ...payload,
@@ -207,9 +207,6 @@ export function questionWorkflowStartManifestSha256(
     generation_recipe: null,
     domain_policy_digest: null,
     generation_recipe_digest: null,
-    ...(options.currentWorkerDefaults || payload.budget_policy
-      ? { question_library_snapshot: null }
-      : {}),
     models: {
       generation_model: null,
       generation_effort: null,
@@ -221,7 +218,7 @@ export function questionWorkflowStartManifestSha256(
   }
   return createHash('sha256')
     .update(
-      options.currentWorkerDefaults || payload.budget_policy
+      payload.budget_policy
         ? canonicalQuestionManifestJson(normalized)
         : JSON.stringify(canonicalElementGenerationJson(normalized))
     )
@@ -535,6 +532,7 @@ async function dispatchPreparingRevisionBuild(
 
   let graphRefs: Pick<
     SlotRevisionWorkflowPayload,
+    | 'graph_version_id'
     | 'graph_manifest'
     | 'resolved_domain_policy'
     | 'generation_recipe'
@@ -565,6 +563,7 @@ async function dispatchPreparingRevisionBuild(
       }
     )
     graphRefs = {
+      graph_version_id: build.sourceGraphBuild.id,
       graph_manifest: elementGenerationArtifactPayload(manifest),
       resolved_domain_policy: elementGenerationArtifactPayload(
         evidence.domainPolicyArtifact
@@ -584,7 +583,7 @@ async function dispatchPreparingRevisionBuild(
     parent_build_id: build.parentBuildId,
     dispatch_attempt_id: build.providerDispatchAttemptId,
     element_type: 'question',
-    question_id: slot.sourceQuestionId,
+    question_id: specification?.question_id ?? slot.sourceQuestionId,
     design_slot_id: specification?.design_slot_id ?? slot.sourceQuestionId,
     language: configuration.language,
     ...(specification
@@ -609,13 +608,15 @@ async function dispatchPreparingRevisionBuild(
           build.providerDispatchAttemptId,
           build.createdAt
         ),
-      dispatch: (beforeProviderDispatch) =>
-        startSlotRevision.call(
+      dispatch: (beforeProviderDispatch) => {
+        assertRevisionBudgetSupported(build.configuration)
+        return startSlotRevision.call(
           runtime,
           payload,
           `question-build:${build.id}`,
           beforeProviderDispatch
-        ),
+        )
+      },
     })
 
   const retryDispatch = build.stage === 'retry_dispatching'
@@ -642,6 +643,17 @@ async function dispatchPreparingRevisionBuild(
     return serviceError(
       'CONCURRENT_MODIFICATION',
       'Revision build preparation was changed by another request'
+    )
+  }
+}
+
+function assertQuestionRetrySupported(build: QuestionBuild) {
+  if (build.parentBuildId) {
+    assertRevisionBudgetSupported(build.configuration)
+  } else if (nativeBudgetMetadata(build.configuration) === null) {
+    return serviceError(
+      'QUESTION_GENERATION_UNAVAILABLE',
+      'This question build predates native budget tracking and cannot be retried'
     )
   }
 }
@@ -694,13 +706,28 @@ async function dispatchPreparingQuestionBuild(
           build.providerDispatchAttemptId,
           build.createdAt
         ),
-      dispatch: (beforeProviderDispatch) =>
-        runtime.start(
+      dispatch: async (beforeProviderDispatch) => {
+        // A transient preparation failure can clear the retry stage. The earlier
+        // spend still identifies a retry when resuming an older build.
+        if (
+          nativeBudgetMetadata(build.configuration) === null &&
+          (build.stage === 'retry_dispatching' ||
+            (await ctx.prisma.elementGenerationSpend.findFirst({
+              where: {
+                buildId: build.id,
+                dispatchAttemptId: { not: build.providerDispatchAttemptId },
+              },
+              select: { id: true },
+            })))
+        )
+          assertQuestionRetrySupported(build)
+        return runtime.start(
           payload,
           `question-build:${build.id}`,
           build.providerDispatchAttemptId,
           beforeProviderDispatch
-        ),
+        )
+      },
     })
 
   // A question retry reserves under the shared QUESTION_GENERATION spend
@@ -802,7 +829,7 @@ export async function startQuestionGeneration(
 
   let nativeBudget: QuestionNativeBudgetMetadata
   try {
-    nativeBudget = questionNativeBudgetFromEnv()
+    nativeBudget = nativeBudgetForNewQuestion(ctx.user.sub)
   } catch (error) {
     if (error instanceof QuestionGenerationConfigurationError) {
       return serviceError('CONFIGURATION_INVALID', error.message)
@@ -868,6 +895,7 @@ export async function retryQuestionGeneration(
     )
   }
   await assertElementGenerationAdmission(ctx)
+  assertQuestionRetrySupported(build)
   const dispatchAttemptId = randomUUID()
   // A revision retry is charged like the original revision: one question's
   // share of the parent build price.
@@ -1055,13 +1083,8 @@ async function synchronizeLeasedBuild(
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,
           graphSha256,
-          startManifestSha256: questionWorkflowStartManifestSha256(
-            startPayload,
-            {
-              currentWorkerDefaults:
-                nativeBudgetMetadata(build.configuration) !== null,
-            }
-          ),
+          startManifestSha256:
+            questionWorkflowStartManifestSha256(startPayload),
         }
       }
       const summary = parseQuestionGenerationPlan(artifact.bytes, {

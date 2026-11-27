@@ -107,9 +107,9 @@ Custom modes defined only in the authored preview configuration remain
 previewable, but capture is unavailable until the review mode contract supports
 them. Legacy prompt-key modes retain their existing review support.
 
-Quizzer selection and approval in response-example review use its standard-mode
-setting and the same effective document-query binding resolver as participant
-Chat. A disabled exact Quizzer binding blocks inheritance on that server.
+An enabled Quizzer appears in the mode list even without a knowledge base.
+Capturing or approving a source-backed Quizzer example also requires an effective
+document-query binding. A disabled exact Quizzer binding blocks inheritance on that server.
 Existing examples remain visible for inspection and rejection when their mode
 becomes unavailable; availability does not erase the lecturer's review record.
 
@@ -152,7 +152,7 @@ nor the default prompt-cache identity.
 
 For default requests, `POST` passes the requested deployment identity,
 transport family, cache scope (chatbot, mode and thread) and request tools (the
-MCP tools plus the Tutor and Quizzer `calculate` tool) to
+MCP tools plus the Tutor, Explainer and Quizzer `calculate` tool) to
 `buildPromptCacheRequest`. The stable instructions stay in the request's
 `instructions`, and per-turn context sits in a message before the new user
 message, so the prefix of instructions and tools is identical for every thread
@@ -287,7 +287,7 @@ type, and content unless the lecturer asks for related metadata, and SC/MC
 drafts must keep every option-feedback pair consistent with the stem and answer
 key. The live evaluator measures these behaviors through E3 grounding and E4
 proposal-quality judge cases; the current DeepEval 4.1.5 / `gpt-5.6-luna`
-baseline is recorded in `evaluation/manage-assistant/README.md`.
+baseline is recorded in `apps/chat/evaluation/manage-assistant/README.md`.
 
 ## Student practice MCP (`apps/mcp-student`)
 
@@ -594,25 +594,25 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
 checks streamed text against saved text, and requires successful `KB_doc_query`
 completion on the first turn. Follow-up turns may use existing context; any
 emitted retrieval must still complete with matching call IDs in stream and
-persistence. Disagreement between streamed and saved credits stops the run. `evaluation/data/trajectories/tutor-attribution.json` contains
+persistence. Disagreement between streamed and saved credits stops the run. `apps/chat/evaluation/trajectories/tutor-attribution.json` contains
 synthetic English/German scenarios and behavioral rubrics. These rubrics need
 assessment of meaning; exact response wording is not a test contract.
 
 For the revised fixture and numerical checks, use
-`evaluation/data/trajectories/tutor-attribution-v2.json` with its
+`apps/chat/evaluation/trajectories/tutor-attribution-v2.json` with its
 `tutor-attribution-v2-numeric.json` sidecar. The sidecar binds numerical
 obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
+`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -634,9 +634,9 @@ The default model is the fixed `gpt-6-luna` selection. Auto routing remains
 unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node evaluation/run-tutor-trajectories.mjs \
-  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
-  --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus apps/chat/evaluation/trajectories/tutor-attribution-v2.json \
+  --numeric apps/chat/evaluation/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
   --budget-file project/_local/tutor-budget.json
 ```
@@ -656,6 +656,53 @@ Freeze candidate, corpus and rubric before comparing outputs. Evaluate support
 qualification separately from answer correctness and checkpoint timing. A small
 synthetic pass does not establish learning effectiveness, production retrieval
 quality or unaided work outside the visible conversation.
+
+### Comparing models on a deployed chat
+
+The local runner above measures one fixed model behind the spend guard. Compare
+several models on the deployed path instead when a model or router exists only
+in the deployed gateway (Auto versions with their own classifier, new Azure
+deployments), or when the question is how the models behave for students.
+`apps/chat/scripts/run-model-matrix.mjs` runs a version-1 trajectory corpus
+once per model and repeat in fresh threads, in parallel across models per case.
+It logs in with the persisted login mutation, sends the chatbot's default
+reasoning effort unless `--effort <model>=<level>` overrides it, and records
+text, tool inputs, the served model, credits and latency as JSONL. A case stops
+at a failed request, an empty answer, or a turn served by another model than
+requested, which is how a zero-credit fallback or a chatbot without model
+selection shows up. A rerun with the same output resumes.
+
+1. Use a test chatbot and a synthetic test participant on staging. The chatbot
+   must allow every compared model and have model selection on; restore both
+   afterwards. Give the participant enough credits for the run on that chatbot:
+   an Auto turn costs a few hundredths of a credit and a Sol turn up to a
+   tenth, so 19 turns × 3 repeats per model need several credits per model.
+2. Run the matrix with the participant credentials injected through
+   `rs-infisical-operator` as `KLICKER_MATRIX_PARTICIPANT_USERNAME` and
+   `KLICKER_MATRIX_PARTICIPANT_PASSWORD`, plus `KLICKER_MATRIX_API_ORIGIN`,
+   `KLICKER_MATRIX_CHAT_ORIGIN`, `KLICKER_MATRIX_ALLOWED_ORIGINS` (both
+   origins) and `KLICKER_MATRIX_CHATBOT_ID`:
+
+   ```sh
+   node apps/chat/scripts/run-model-matrix.mjs \
+     --corpus apps/chat/evaluation/tutor-task-support/corpus.json \
+     --output project/_local/matrix.jsonl --repeats 3 \
+     --models gpt-6-luna,gpt-6.1-sol,gpt-6.2-sol,auto-v5
+   ```
+
+3. Score the capture with `evaluation/scripts/model-matrix-report.mjs` in
+   `klicker-uzh-catalyst`, which holds the evaluation judge and metrics. Its
+   `check` command applies the corpus's `matrix-checks.json` (result leaks,
+   exact results, required and forbidden tool inputs, empty answers, latency,
+   credits); `blind` and `merge` run blind rubric grading. See "Model
+   comparison scoring" in that repository's `evaluation/README.md`.
+
+Fix a weakness in the shared prompt when it appears on several models. Add a
+model-specific instruction only when one model fails a rule the others follow
+and the shared fix would hurt them; Auto can switch models between turns of one
+thread, so a model-specific prompt also changes the conversation mid-thread.
+Staging retrieval uses real course material, so results are not comparable with
+runs on the synthetic local fixture. Keep captures and grades outside Git.
 
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
@@ -775,16 +822,15 @@ custom modes use their configured description.
 defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and the
 approved custom-mode configuration. Participant paths offer only the custom-mode keys the chatbot
 carries as approved configuration; the owner preview may additionally offer saved but unapproved
-modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
-Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
-knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
+modes. A draft may turn off every standard mode. Submission and approval require at least one
+participant-selectable standard or custom mode. Any standard mode can stand alone. A missing or malformed value derives all three flags from legacy `enabled: false`
 opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
 derives Quizzer from its legacy opt-out/default. Custom-mode flags remain
 legacy-controlled. The resolver never suppresses a mode chatbot-wide: a mode with
 no retrieval binding of its own stays offered, and a mode whose declared
 required binding is unavailable fails closed at request time instead of
-disappearing. Quizzer remains the capability-gated exception and appears only
-with a provably restricted course `doc_query` binding. Exact Quizzer
+disappearing. Quizzer can practise a course topic or use learner-supplied material without a KB.
+An eLearning-origin conversation always follows its materials-only policy. Exact Quizzer
 configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
 required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
@@ -796,7 +842,7 @@ instead of allowing requests the server would reject.
 
 Platform standard-mode contract changes apply automatically to every chatbot that exposes that
 mode. Stored standard-mode text remains lower-priority lecturer guidance rather than replacing
-the contract; no stored prompt migration is required. Stage 1 Quizzer chooses one specific grounded
+the contract; no stored prompt migration is required. With a retrieval tool, Quizzer chooses one specific grounded
 practice topic when the student's request is unclear and asks for simple confirmation rather than
 presenting only an unprioritised menu. Agreement or no preference starts the first question. It then
 presents one concise, exam-style course question at a time from retrieved course material without a
@@ -813,9 +859,8 @@ identified from the visible attempts and grounded material, it does not issue th
 checkpoint. This checkpoint is explicitly a short-round snapshot, not a claim that the topic is
 complete, and it does not use grades, proficiency, mastery, or other broad ability claims. Quizzer
 never infers coverage from retrieval exhaustion or a partial list of retrieved topics. It does not
-present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course retrieval
-binding do not expose
-Quizzer. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
+present questions as lecturer-authored or exam-equivalent. Without retrieval, ordinary chat and owner preview use the learner’s topic or passage
+for practice and avoid claims about official course material. If an optional binding produces no `doc_query` tool during request-time discovery, Quizzer
 returns the required-tool-unavailable response instead of generating an ungrounded question. Once
 discovered, the route requires that document-query tool on Quizzer's first model step, then restores
 automatic tool selection for later steps. Optional retrieval outages can still degrade gracefully in
@@ -971,6 +1016,66 @@ when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
+
+## Framed layouts and new tabs
+
+The chat distinguishes two independent facts about where it runs. `useEmbedded`
+reads the explicit `?embed=1` contract, which selects the minimal embedded
+layout (PWA drawer, Manage assistant dock, eLearning `embed=1`). `useFramed`
+reports whether the document runs inside any host frame at all. An LMS LTI
+launch and the eLearning `embed=0` launch frame the full participant layout
+without the embed marker, usually at a fraction of a window's height.
+
+`ChatUiContext.compact` is true for the participant variant when the chat is
+framed and not embedded. It tightens the thread (top and bottom padding,
+message spacing, composer padding, 28-pixel message actions on fine pointers)
+and the sidebar (logo and legal line on one small row, title filter only past
+eight threads). The accuracy caveat under the composer is shown only while the
+thread is empty. The composer keeps its 16-pixel font because iOS Safari zooms
+on focus below that size, and touch targets stay at 44 pixels. Standalone and
+embedded layouts are unaffected. Detection is client-only; the provider mounts
+after the client-side disclaimer fetch, so there is no server-render mismatch.
+
+`ChatUiContext.headerless` is true for a compact chat. It drops the header bar: the chatbot name stays an `sr-only` level-one
+heading, and the mode menu moves to the top of the sidebar. From `md` up, the
+sidebar trigger and new-chat button float at the thread's top left while the
+sidebar is closed, and the open-in-new-tab and knowledge-graph controls float at
+the top right; the thread and the desktop history rail start below them.
+Below `md`, the same controls and the credits share one slim row in the flow.
+The standalone chat, including a tab opened from a frame, keeps the full
+header with the name, because there the title identifies the chat.
+
+Chrome controls share two primitives. Selects, including the mode menu, use
+the design-system `Select`; the mode menu shows each mode's icon and
+description in its options and only the short label in the trigger, and a
+hidden `<label>` gives the combobox its `Chat mode: <mode>` name. Icon buttons
+in the header, sidebar header, floating framed controls and embedded toolbar
+use `toolbarIconButtonClassName` (a square ghost button, 44 pixels on touch and
+32 on fine pointers; the embedded toolbar stays at 32). Message actions keep
+`actionBarButtonClassName`, and the composer keeps its round attach and send
+buttons. The embedded toolbar keeps native selects for its compact height.
+
+The `fine-pointer` variant in `globals.css` wraps its rules in `&:is(:root *)`. The
+design-system stylesheet loads after the chat stylesheet and emits the same
+base utilities (`size-11`, `h-11`, `min-h-11`) at equal specificity, so a plain
+media-query variant silently loses and every control stays at its touch size
+on desktop. Keep the raised specificity when editing the variant.
+
+`OpenInNewTabButton` opens the framed chatbot and its active thread in a new
+browser tab. A plain link would open logged out, because the frame's session
+lives in cookies partitioned to the host site (or in sessionStorage). The
+button opens the tab inside the click, then asks
+`POST /api/chatbots/:id/handoff` for a URL carrying a 60-second
+`CHAT_TAB_HANDOFF` token, minted from the caller's resolved identity.
+`/auth/handoff` re-runs `authorizeIdentityForChatbot` and sets a first-party
+session for the new tab: a guest gets a new guest token, and an account gets
+a session scoped to that chatbot, never the full `participant_token`. The
+token is not single-use because Chat has no shared store across replicas; its
+short lifetime and its own scope, which no session check accepts, limit a
+leaked URL. Hosts that sandbox their frame need `allow-popups` and
+`allow-popups-to-escape-sandbox`; upstream OpenOlat does not sandbox its LTI
+frames. The `?embed=1` layout shows no button, because its hosts (the PWA
+drawer, for example) already link to the full chat.
 
 ## Lecturer authoring and publication contract
 
@@ -1133,14 +1238,25 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. A single graph icon in the header toggles a graph dock without
-navigation or replacing the mounted conversation. Desktop shows it on the right;
-compact viewports stack graph above chat. Fullscreen expands the same graph over
-the chatbot, makes background controls inert and contains keyboard focus. Escape
-restores the dock; closing unmounts the graph and returns focus to its toggle.
-Legacy `/graph` links open the dock on entry. Reopening starts an overview.
-`ChatKnowledgeGraphPanel.tsx` owns this presentation in both standalone and
-embedded layouts. Node and relationship details can append a localized, editable
+header grid. The conversation shares its row with one workspace panel that
+shows either the knowledge graph or an interactive explanation, never both
+(`src/components/workspace/`). `ChatWorkspaceProvider` owns which item is shown
+and its size; `ChatWorkspaceLayout` is the shell for both kinds in standalone
+and embedded layouts: resize handle with a per-kind stored width, an expanded
+size that keeps the conversation in a narrow docked column with a usable
+composer, and fullscreen. Fullscreen covers the chatbot, makes background
+controls inert and contains keyboard focus; Escape returns to the previous size,
+and closing unmounts the item and returns focus to the control that opened it.
+Below `lg` the panel replaces the conversation. The graph icon in the header
+toggles the graph without navigation or replacing the mounted conversation;
+legacy `/graph` links open it on entry, and reopening starts an overview.
+An explanation's "Open beside the chat" action opens it expanded. Only one live
+copy of an explanation frame runs: while the panel shows it, its inline card
+collapses to a marker, because two copies would drift apart and narration would
+play twice. The panel steps between the thread's explanations in DOM order,
+keyed by tool call id, and an explanation arriving in a streamed answer replaces
+the one shown. Without the provider (owner preview) the card keeps its modal
+dialog. Node and relationship details can append a localized, editable
 question to the current composer, preserving its draft and attachments. The
 callback carries only bounded display labels (200 characters each), never raw
 properties or graph identifiers. Asking never sends or creates a thread; mobile
@@ -1308,13 +1424,16 @@ this order:
 3. one JSON-serialized typed lecturer context section for Tutor, Explainer, or Writing Coach, or a scope-note-only
    section for Quizzer, when valid and present;
 4. the platform-owned Tutor, Explainer, Quizzer, or Writing Coach contract from `DEFAULT_PROMPT`, or instead the
-   lecturer-defined persona for a custom mode;
+   lecturer-defined persona for a custom mode. Tutor uses `mode-tutor-v2.hbs` (attempt-first task
+   support with staged escalation to the worked solution) unless `CHAT_TUTOR_PROMPT_VERSION=v1`
+   selects the earlier `mode-tutor.hbs`; the value is read once at server start, and the Helm value
+   `chat.tutorPromptVersion` sets it for a deployment;
 5. the student answer preferences, when the student chose a non-default style or tone (see
    [Student answer style and tone](#student-answer-style-and-tone));
 6. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-7. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
-   integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+7. fixed course-scope, evidence, tool/conversation privacy, assessed-work, safety, non-disclosure,
+   and epistemic integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
 8. fixed Markdown, inline/display mathematics, chemistry and biology notation, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
 9. the conditional citation policy when a `doc_query`-style tool is available; and
@@ -1335,8 +1454,7 @@ an existing conversation. Published chatbots continue using their live configura
 saved revision is approved. Context changes do not alter a response already in flight or
 earlier messages.
 
-Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. At
-least one of Tutor, Explainer, or Writing Coach must remain enabled; Quizzer alone is invalid.
+Writing Coach (`writing-coach`) starts disabled and may be the only conversational mode. Any single standard mode or eligible custom mode can satisfy the publication rule.
 Missing historical flags normalize to false. An older mutation that omits the new flag preserves
 the stored choice. `saveChatbotRevision` locks the chatbot row and checks
 `expectedRevisionVersion`; if the revision version has advanced, it rejects the save as an edit
@@ -1349,8 +1467,9 @@ The Writing Coach prompt uses generic criteria for purpose, reasoning, organizat
 and tone. It asks for evidence-based feedback and revision strategies adapted to the excerpt,
 without replacement wording, translations or completions. Optional Notes are ordinary Markdown
 within a response; they add no separate storage or learning record. The mode uses only its exact
-MCP bindings and follows existing required-tool eligibility. It inherits no Tutor tools.
-Authoring explains a missing required binding even when the mode flag is enabled. Neither the
+MCP bindings and inherits no Tutor tools. Like every mode under ADR 0050, it stays offered when
+another mode declares a required binding, so a chatbot with an attached knowledge base can still
+offer it, tool-free. Neither the
 prompt nor source tests alone establish the quality of its feedback or adherence to its boundary.
 
 A custom-mode persona holds at most 10,000 characters. The `chatbot-long-custom-prompts` flag
@@ -1433,7 +1552,7 @@ without the solution-scope and closing-check rules, bulleted and prior-knowledge
 the Tutor's closing question and some options worked out corrected results the default left to the
 student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
 were removed afterwards. The sample was small; repeat it when the template or model changes.
-`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
+`apps/chat/scripts/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
 A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
 (`Chatbot.answerPreferencesEnabled`, default on, saved through `saveChatbotRevision` in `modelPolicy` and promoted on approval). The chat
@@ -1631,12 +1750,65 @@ which passages it drew on, and the citation contract asks it to name them rather
 span.
 Source identity deliberately stays keyed on the start page, so two `doc_query` calls returning
 overlapping chunks for one resource cannot split it into duplicate cards.
-Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
-structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
-`labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
-and prefers the structured start for the card and citation preview. Legacy results remain
+Original URLs remain unchanged. For a grouped video result, the normalizer retains each retrieved
+passage's start, optional end and excerpt in `videoPassages`. A single-source marker such as
+`[1, t. 1:30]` still renders as chip 1. `useMessageSources` checks the clock against those passages
+and shares the supported positions (`citedStartSecs`) with the card and preview. Both show the
+distinct cited times in order. The earliest supported time selects the excerpt; an exact displayed
+start takes priority where two passages meet. Without a supported clock, the first chunk's
+structured start remains the fallback. The link opens the original course page; a displayed clock
+does not add a seek parameter. Answers with video clock markers cannot be captured as saved
+examples because that format supports bare citation indexes only.
+
+Legacy results remain
 supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
 or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
+
+Retrieved recording chunks may also carry a `video_frames` descriptor. The model can call
+`show_video_frame` only with an `asset_id` returned by `doc_query` in the same turn and only for a
+knowledge base still bound to the chatbot. A successful selection is persisted in the assistant
+message. Its `placement_marker` uses the same `course-image` marker, Markdown renderer, and
+`CourseImagesSection` fallback as document images. The model places it between the paragraphs it
+illustrates; legacy answers without markers display selected frames below the answer. Both paths
+wait for the assistant message to finish and render an enlargeable still image.
+Recording citation badges, source cards, and compact source rows preview the representative frame
+and cited time range on hover/focus. Numbered citations in the answer and frame caption use the
+same `CitationChip` as document images: they scroll to and focus the matching entry in Sources.
+The full source card or compact source row opens the external recording URL supplied during
+ingestion in a new tab, preserving its timestamp fragment. Sources without a usable external URL
+retain their frame preview and citation but have no recording link. Answer frames reuse `CourseImageViewer` from the course-image feature,
+including zoom, Fit reset, keyboard panning, Escape dismissal, and focus restoration. There is no
+inline recording player. Sources with retrieved frame metadata can show a preview even when the
+model does not select a frame for the answer.
+
+The producer publishes representative JPEGs and their manifest to a content-addressed Blob
+container under `e1/v1/{frames,manifests}/sha256/...`. Full recordings remain at the lecturer's
+external recording service; Chat uses the retrieved `source_url` and does not proxy, sign, or
+serve recording bytes. Ingestion's explicit `citation_handle` mapping supplies this URL; an
+internal reference is never turned into a fabricated recording link.
+
+Chat checks message ownership and current KB scope before serving a selected frame or a retrieved
+source preview. Explicitly disabled Quizzer bindings block inheritance from Tutor, matching the
+Chat route. It reads frame artifacts on the server, enforces byte limits, and verifies SHA-256
+and manifest membership. Verified Blob manifests use an in-process LRU cache with at most 32
+entries, an 8 MB serialized-metadata budget, and a five-minute lifetime per entry. Storage
+account, endpoint, and container are part of the cache key. Failures, JPEG bytes, and local
+fixture reads are not cached. Ownership, current scope, recording/occurrence binding, and JPEG
+integrity checks still run on each request. The source-video digest identifies the frame's recording; it does not
+require a stored recording object. A representative frame may lie outside the cited transcript
+chunk's time range. The local `CHAT_VIDEO_FRAME_STORE_PATH` adapter exists for development fixtures.
+With shared-key authentication, a deployed Chat pod needs `CHAT_VIDEO_BLOB_CONTAINER`, `BLOB_STORAGE_ACCOUNT_NAME`, and
+`BLOB_STORAGE_ACCESS_KEY` for the producer's frame container. In the active v3 Helm
+chart, set `chat.videoBlob.accountName`, `chat.videoBlob.container`, and
+`chat.videoBlob.existingSecret`; the existing Secret must contain the access key
+under `chat.videoBlob.accessKeyKey` (default `BLOB_STORAGE_ACCESS_KEY`). The chart
+references that Secret without storing credentials in values. Empty defaults leave
+frame storage disabled; partial configuration fails template validation. This
+configuration stores and serves only frame JPEGs and manifests, not recordings.
+For keyless access, use the dedicated [Chat media workload identity](course-image-retrieval.md).
+Inline frames, zoomed frames, and source hover previews use the same authenticated
+image loader as document images, including Bearer-token fallback in embedded chats.
+
 A bare numeric `labeled_page_number` remains a publisher page label, never seconds; other labels
 such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
@@ -1729,7 +1901,7 @@ PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from t
 
 Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
 
-Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default is disabled; staging and production enable it, and each environment reads its Langfuse keys and base URL from `secret-chat` (use a separate Langfuse project per environment). `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 
@@ -1943,3 +2115,11 @@ parser-only freshness remain deferred. Parser changes require an explicit rebuil
 The owner's `ai-beta` access and lecturer controls govern
 student graph retrieval. Map interaction and retrieval quality remain separate
 acceptance checks.
+
+## Optional retrieved-figure visual inspection
+
+The server-only `CHAT_COURSE_IMAGE_VISION_ENABLED` experiment is default-off.
+It requires an effective model with `supportsImageAttachments` and scoped course
+image retrieval. See [Course image retrieval](./course-image-retrieval.md#optional-model-inspection-of-figure-pixels)
+for configuration, preview limits, lifecycle checks, privacy boundaries and the
+unchanged description-only fallback. It does not enable image display by itself.

@@ -270,6 +270,31 @@ describe('KB graph external dispatch', () => {
     ).resolves.toEqual(result)
   })
 
+  it('reads the failure result instead of the cancelled summary of a failed run', async () => {
+    const client = createClient()
+    const result = { contract_version: 'klicker-kb-graph/v1', status: 'FAILED' }
+    vi.mocked(client.runs.get).mockResolvedValue({
+      run: { output: {} },
+      tasks: [
+        {
+          displayName: 'summarize-kg-run-1',
+          actionId: 'course-kg-ingestion:summarize-kg-run',
+          output: [],
+        },
+        {
+          displayName: 'emit-klicker-terminal-result-on-failure-1',
+          actionId:
+            'course-kg-ingestion:emit-klicker-terminal-result-on-failure',
+          output: result,
+        },
+      ],
+    })
+
+    await expect(
+      getKBGraphTerminalResult('external-run-id', client)
+    ).resolves.toEqual(result)
+  })
+
   it('allows an unconfigured worker but rejects a partial graph integration', () => {
     expect(() => validateKBGraphWorkerConfig({})).not.toThrow()
     // The out-of-repo worker secret alone must not arm the gate: doing so would

@@ -14,6 +14,7 @@ import {
   canonicalElementGenerationJson,
   elementTypeSupportsRevision,
 } from './elementGenerationProvider.js'
+import { assertRevisionBudgetSupported } from './questionGenerationConfiguration.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import { assertQuestionGenerationPreviewAccess } from './questionGenerationGraph.js'
 
@@ -450,7 +451,13 @@ function revisionSlotSummaries(
 ) {
   const design = parent.designSummary as QuestionGenerationDesignSummary | null
   const plan = parent.planSummary as QuestionGenerationPlanSummary | null
-  const slot = design?.slots.find((entry) => entry.sourceQuestionId === slotId)
+  // A draft carries its question id; the design slot is found through the
+  // stored slot specification, whose question id names that draft's question.
+  const slot = design?.slots.find((entry) =>
+    entry.specification
+      ? entry.specification.question_id === slotId
+      : entry.sourceQuestionId === slotId
+  )
   const question = plan?.questions.find(
     (entry) => entry.sourceQuestionId === slotId
   )
@@ -532,6 +539,7 @@ export async function setGeneratedQuestionDecision(
     if (current.decision === input.decision && !isRevision) return current
 
     if (isRevision) {
+      assertRevisionBudgetSupported(current.build.configuration)
       const runtime = ctx.elementGenerationRuntime
       if (!runtime) {
         throw questionGenerationServiceError(

@@ -118,11 +118,11 @@ history, balances, and the original publication date. See
 [ADR 0043](./adr/0043-review-chatbot-revisions-before-activation.md).
 
 The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
-Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
+Tutor, Explainer, Quizzer and Writing Coach configuration: mode flags plus
 course name, subject domain, language of instruction, and an optional scope
 note. The owner-only `saveChatbotRevision` mutation accepts full replacements
 through its `standardModeConfig` section in editable first-publication or
-revision states, requires Tutor or Explainer to remain enabled, and fences every save with the authoring
+revision states and fences every save with the authoring
 version so a concurrent submission cannot be overwritten. Published changes
 remain staged until approval. Tutor and Explainer do not require
 a knowledge base, and a mode without a retrieval binding of its own is not
@@ -130,7 +130,8 @@ hidden on account of another mode's required binding, and an approved custom
 mode inherits a required Tutor or Explainer `doc_query` binding retagged to the
 selected mode. Participants see only approved custom modes, while a saved draft
 mode stays visible to the owner preview. Quizzer remains independently
-configurable but is filtered by the safe course-material capability gate.
+configurable and can serve as the only mode without a KB. Publication requires at
+least one enabled standard mode or eligible custom mode in the reviewed revision.
 Missing or malformed persisted values
 derive all three flags from legacy mode opt-outs/defaults, while valid legacy
 two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
@@ -200,7 +201,7 @@ Graph quota, AI credentials, and billing are separate concerns. Klicker enforces
 
 Element generation spends from that same lecturer-semester quota. Each initial question/flashcard dispatch and each flashcard retry reserves one configured fixed price in a separate `ElementGenerationSpend`; the provider dispatch UUID is the idempotency key. Klicker validates deterministic coordinates first, claims the spend immediately before the provider call, and settles it only after acceptance or exact-run recovery. A definite failure before the claim releases it. An uncertain claimed outcome retains the reservation and fences redispatch while the provider index becomes consistent; after a 15-minute grace, only a definitive empty exact-attempt lookup releases the hold. Review and incomplete-publication events add no spend. The lecturer config keeps persisted quota currency separate from historical graph-build cost and reports quota-currency drift as unavailable. A configured semester limit at or above the granted limit takes effect at the next admission; a lower configured limit never shrinks a granted quota, which only a deliberate administrative row change can lower. This accounting contract is recorded in [ADR 0013](./adr/0013-klicker-reserves-and-settles-graph-cost.md). For UZH-issued credentials, sensitive lecturer-to-cost-account information stays outside the Klicker database and is maintained manually in a spreadsheet for the beta. BYOK lecturers are billed by their own provider, while Klicker quota controls still apply. AI-provider credentials are a reusable platform concern shared by every AI feature, not part of the knowledge-graph model. Consumer applications retain only opaque handles and safe status; the generic custody and runtime-resolution design remains a separate work item.
 
-Question builds can also carry an optional server-owned native provider-dollar policy from `KB_QUESTION_NATIVE_BUDGET_POLICY`. New builds freeze an explicit budget mode and normalized policy in their existing configuration; recovery and retry retain that policy, build identity and native ledger destination. Invalid policy or budgeted destination drift prevents dispatch and evidence acceptance. This composes the worker's existing exposure ledger and does not change lecturer credits, historical builds, flashcards or provider billing ownership. See [ADR 0013](./adr/0013-klicker-reserves-and-settles-graph-cost.md) for admission and compatibility boundaries.
+Question builds can also carry an optional server-owned native provider-dollar policy from `KB_QUESTION_NATIVE_BUDGET_POLICY`. New builds freeze an explicit budget mode and normalized policy in their existing configuration; recovery and retry retain that policy, build identity and native ledger destination. The selected pilot actor requires a valid policy before reservation. Historical question builds without budget metadata cannot retry, and budgeted parents cannot start individual revision children. Ordinary revisions retain their existing cost and worker controls. See [ADR 0013](./adr/0013-klicker-reserves-and-settles-graph-cost.md) for admission and compatibility boundaries.
 
 The lecturer sees the cost boundary before spending: estimated maximum cost, remaining semester quota, and worst-case resulting balance. The client disables a build whose selected estimate exceeds the displayed remaining quota, while the reservation remains authoritative and returns the current remaining amount if a concurrent spend causes a rejection. Both cases show the estimate and remaining quota as one actionable explanation. After Catalyst settles the build, the lecturer sees actual usage and cost. BYOK is identified as provider-billed; UZH-issued usage is identified as semester-billed.
 

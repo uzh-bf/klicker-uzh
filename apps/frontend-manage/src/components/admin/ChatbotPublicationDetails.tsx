@@ -124,12 +124,22 @@ function ChatbotPublicationDetails({
             ? t('manage.resources.modelSelectionEnabled')
             : t('manage.resources.modelSelectionDisabled')}
         </ReviewField>
+        <ReviewField label={t('manage.resources.interactiveExplanations')}>
+          {chatbot.interactiveExplanationsEnabled
+            ? t('manage.resources.modelSelectionEnabled')
+            : t('manage.resources.modelSelectionDisabled')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.chatbotSetupModesTitle')}>
           {[
             config?.tutorEnabled && t('manage.resources.chatbotModeTutor'),
             config?.explainerEnabled &&
               t('manage.resources.chatbotModeExplainer'),
             config?.quizzerEnabled && t('manage.resources.chatbotModeQuizzer'),
+            config?.writingCoachEnabled &&
+              t('manage.resources.chatbotModeWritingCoach'),
+            ...(revision?.customModeConfig?.modes ?? []).map(
+              (mode) => mode.name
+            ),
           ]
             .filter(Boolean)
             .join(', ') || unknown}

@@ -3,6 +3,7 @@ import {
   CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
   type ChatbotStandardModeConfig,
   type ChatbotStandardModeConfigInput,
+  type StoredChatbotStandardModeConfig,
 } from '@klicker-uzh/types'
 
 export const CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH = 160
@@ -38,25 +39,6 @@ const supportedLocales = new Set<Locale>(['en', 'de'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-export function getWritingCoachUnavailableReason(
-  mcpConfigurations: readonly {
-    chatMode: string
-    isEnabled?: boolean
-    parameters?: unknown
-  }[] = []
-): 'REQUIRED_TOOL_BINDING' | null {
-  const requiredBindings = mcpConfigurations.filter(
-    (config) =>
-      config.isEnabled !== false &&
-      isRecord(config.parameters) &&
-      config.parameters.required === true
-  )
-  return requiredBindings.length > 0 &&
-    !requiredBindings.some((config) => config.chatMode === 'writing-coach')
-    ? 'REQUIRED_TOOL_BINDING'
-    : null
 }
 
 function isLegacyModeEnabled(systemPrompts: unknown, mode: string): boolean {
@@ -130,47 +112,114 @@ function normalizeLocale(value: unknown) {
   return value as Locale
 }
 
-function parseConfig(value: unknown): ChatbotStandardModeConfig {
+type ChatbotStandardModeConfigSource = 'input' | 'stored'
+
+function parseExplicitModeSelection(
+  value: Record<string, unknown>,
+  source: ChatbotStandardModeConfigSource
+) {
+  const hasMarker = Object.hasOwn(value, 'explicitModeSelection')
+  if (source === 'input') {
+    if (hasMarker) {
+      throw new Error('explicitModeSelection is internal and cannot be set')
+    }
+    return false
+  }
+
+  if (!hasMarker) return false
+  if (value.explicitModeSelection !== true) {
+    throw new Error('explicitModeSelection must be exactly true')
+  }
+
+  return true
+}
+
+function parseConfig(
+  value: unknown,
+  options: {
+    source: ChatbotStandardModeConfigSource
+    systemPrompts?: unknown
+  }
+): ChatbotStandardModeConfig {
   if (!isRecord(value)) {
     throw new Error('standardModeConfig must be an object')
   }
-  if (typeof value.tutorEnabled !== 'boolean') {
+  const persistedValue =
+    options.source === 'stored' && value.quizzerEnabled === undefined
+      ? {
+          ...value,
+          quizzerEnabled: isLegacyModeEnabled(options.systemPrompts, 'quizzer'),
+        }
+      : value
+
+  if (typeof persistedValue.tutorEnabled !== 'boolean') {
     throw new Error('tutorEnabled must be a boolean')
   }
-  if (typeof value.explainerEnabled !== 'boolean') {
+  if (typeof persistedValue.explainerEnabled !== 'boolean') {
     throw new Error('explainerEnabled must be a boolean')
   }
-  if (typeof value.quizzerEnabled !== 'boolean') {
+  if (typeof persistedValue.quizzerEnabled !== 'boolean') {
     throw new Error('quizzerEnabled must be a boolean')
   }
   if (
-    value.writingCoachEnabled != null &&
-    typeof value.writingCoachEnabled !== 'boolean'
+    persistedValue.writingCoachEnabled != null &&
+    typeof persistedValue.writingCoachEnabled !== 'boolean'
   ) {
     throw new Error('writingCoachEnabled must be a boolean')
   }
-  const writingCoachEnabled = value.writingCoachEnabled === true
-  if (!value.tutorEnabled && !value.explainerEnabled && !writingCoachEnabled) {
+  const writingCoachEnabled = persistedValue.writingCoachEnabled === true
+  const explicitModeSelection = parseExplicitModeSelection(
+    persistedValue,
+    options.source
+  )
+  if (
+    explicitModeSelection &&
+    (value.quizzerEnabled === undefined ||
+      value.writingCoachEnabled === undefined)
+  ) {
+    throw new Error(
+      'explicitModeSelection requires a complete four-mode configuration'
+    )
+  }
+  if (
+    options.source === 'stored' &&
+    !persistedValue.tutorEnabled &&
+    !persistedValue.explainerEnabled &&
+    !writingCoachEnabled &&
+    !explicitModeSelection
+  ) {
     throw new Error('Tutor, Explainer or Writing Coach must remain enabled')
+  }
+  if (
+    explicitModeSelection &&
+    (persistedValue.tutorEnabled ||
+      persistedValue.explainerEnabled ||
+      writingCoachEnabled)
+  ) {
+    throw new Error(
+      'explicitModeSelection requires Tutor, Explainer and Writing Coach to be disabled'
+    )
   }
 
   return {
-    tutorEnabled: value.tutorEnabled,
-    explainerEnabled: value.explainerEnabled,
-    quizzerEnabled: value.quizzerEnabled,
+    tutorEnabled: persistedValue.tutorEnabled,
+    explainerEnabled: persistedValue.explainerEnabled,
+    quizzerEnabled: persistedValue.quizzerEnabled,
     writingCoachEnabled,
     courseName: normalizeSingleLineText(
-      value.courseName,
+      persistedValue.courseName,
       'courseName',
       CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH
     ),
     subjectDomain: normalizeSingleLineText(
-      value.subjectDomain,
+      persistedValue.subjectDomain,
       'subjectDomain',
       CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH
     ),
-    languageOfInstruction: normalizeLocale(value.languageOfInstruction),
-    scopeNote: normalizeScopeNote(value.scopeNote),
+    languageOfInstruction: normalizeLocale(
+      persistedValue.languageOfInstruction
+    ),
+    scopeNote: normalizeScopeNote(persistedValue.scopeNote),
   }
 }
 
@@ -178,7 +227,51 @@ function parseConfig(value: unknown): ChatbotStandardModeConfig {
 export function parseChatbotStandardModeConfigInput(
   value: ChatbotStandardModeConfigInput | unknown
 ): ChatbotStandardModeConfig {
-  return parseConfig(value)
+  return parseConfig(value, { source: 'input' })
+}
+
+/** Strictly validates a value already stored in live or revision JSON. */
+export function parseStoredChatbotStandardModeConfig(
+  value: unknown,
+  systemPrompts: unknown = null
+): ChatbotStandardModeConfig {
+  return parseConfig(value, { source: 'stored', systemPrompts })
+}
+
+/** Serializes an owner's full replacement with intent for a deliberate all-off choice. */
+export function parseChatbotStandardModeConfigForStorage(
+  value: ChatbotStandardModeConfigInput | unknown
+): ChatbotStandardModeConfig &
+  Pick<StoredChatbotStandardModeConfig, 'explicitModeSelection'> {
+  const config = parseConfig(value, { source: 'input' })
+  if (
+    config.tutorEnabled ||
+    config.explainerEnabled ||
+    config.writingCoachEnabled
+  ) {
+    return config
+  }
+
+  return { ...config, explicitModeSelection: true }
+}
+
+export type ChatbotStandardModeFlags = Pick<
+  ChatbotStandardModeConfig,
+  'tutorEnabled' | 'explainerEnabled' | 'quizzerEnabled' | 'writingCoachEnabled'
+>
+
+/** Returns the standard flags a participant actually receives. */
+export function getEffectiveChatbotStandardModeFlags(
+  value: unknown,
+  systemPrompts: unknown = null
+): ChatbotStandardModeFlags {
+  const config = normalizeChatbotStandardModeConfig(value, systemPrompts)
+  return {
+    tutorEnabled: config.tutorEnabled,
+    explainerEnabled: config.explainerEnabled,
+    quizzerEnabled: config.quizzerEnabled,
+    writingCoachEnabled: config.writingCoachEnabled,
+  }
 }
 
 /**
@@ -191,16 +284,8 @@ export function normalizeChatbotStandardModeConfig(
 ): ChatbotStandardModeConfig {
   if (value === null || value === undefined) return defaultConfig(systemPrompts)
 
-  const persistedValue =
-    isRecord(value) && value.quizzerEnabled === undefined
-      ? {
-          ...value,
-          quizzerEnabled: isLegacyModeEnabled(systemPrompts, 'quizzer'),
-        }
-      : value
-
   try {
-    return parseConfig(persistedValue)
+    return parseStoredChatbotStandardModeConfig(value, systemPrompts)
   } catch {
     return defaultConfig(systemPrompts)
   }

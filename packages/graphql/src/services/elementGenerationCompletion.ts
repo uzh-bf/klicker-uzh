@@ -70,6 +70,8 @@ function draftError(message: string): never {
 // Stores each slot's specification beside its design slot summary. A
 // specification for a slot the design does not list is a contract violation.
 // Returns null when there is nothing to store, so callers keep the summary.
+// Design slots are keyed by the worker's design slot id, which differs from the
+// id of the question generated for that slot.
 export function withSlotSpecifications(
   designSummary: QuestionGenerationDesignSummary | null,
   specifications: ElementGenerationSlotSpecification[] | undefined
@@ -80,7 +82,7 @@ export function withSlotSpecifications(
   }
   const bySlot = new Map(
     specifications.map((specification) => [
-      specification.question_id,
+      specification.design_slot_id,
       specification,
     ])
   )
@@ -88,7 +90,7 @@ export function withSlotSpecifications(
     specifications.some(
       (specification) =>
         !designSummary.slots.some(
-          (slot) => slot.sourceQuestionId === specification.question_id
+          (slot) => slot.sourceQuestionId === specification.design_slot_id
         )
     )
   ) {

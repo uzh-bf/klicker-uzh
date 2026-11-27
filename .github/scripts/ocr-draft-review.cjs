@@ -8,8 +8,8 @@ const {
   startAdapter,
   createProgressReporter,
   buildCostReport,
-  MISTRAL_MODEL,
-  MISTRAL_DEEPSEEK_MODEL,
+  MOAT_ADVISOR_MODEL,
+  MOAT_FLASH_MODEL,
   createProviderAvailability,
   parseProviderPause,
   summarizePlanGuidance,
@@ -21,8 +21,8 @@ const {
   gitEnvironment,
 } = require('./ocr-runtime-config.cjs')
 
-const DRAFT_MODEL = MISTRAL_DEEPSEEK_MODEL
-const DRAFT_PROVIDER = 'mistral-deepseek'
+const DRAFT_MODEL = MOAT_FLASH_MODEL
+const DRAFT_PROVIDER = 'moat-flash'
 const DRAFT_PROFILE = Object.freeze({
   id: 'draft-v1',
   reasoning: 'max',
@@ -439,7 +439,7 @@ async function runDraftReview(options) {
         if (options.advisorApiKey) {
           advisor = await startAdapter({
             availability,
-            provider: 'mistral',
+            provider: 'moat-advisor',
             apiKey: options.advisorApiKey,
             usageJournalPath: `${advisorDiagnosticsPath}.events.jsonl`,
             ...(options.advisorFetchImpl
@@ -717,7 +717,11 @@ function summarizeCosts(temp, summary) {
     expected === 0
       ? { withCache: 0, withoutCache: 0, savings: 0 }
       : expected === 1
-        ? readReport('draft-ai-review-advisor-diagnostics.jsonl', 1, 'mistral')
+        ? readReport(
+            'draft-ai-review-advisor-diagnostics.jsonl',
+            1,
+            'moat-advisor'
+          )
         : null
   if (expected === 1)
     execFileSync(
@@ -728,7 +732,7 @@ function summarizeCosts(temp, summary) {
         path.join(temp, 'draft-ai-review-advisor-diagnostics.jsonl'),
       ],
       {
-        env: { ...process.env, OCR_ADAPTER_PROVIDER: 'mistral' },
+        env: { ...process.env, OCR_ADAPTER_PROVIDER: 'moat-advisor' },
         stdio: 'inherit',
       }
     )
@@ -744,7 +748,7 @@ function summarizeCosts(temp, summary) {
     ? `OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=${sum.withCache.toFixed(4)} estimated_without_cache_usd=${sum.withoutCache.toFixed(4)} estimated_savings_usd=${sum.savings.toFixed(4)} savings_percent=${(sum.withoutCache ? (100 * sum.savings) / sum.withoutCache : 0).toFixed(1)}`
     : 'OCR cost scope=draft_and_advisor status=unavailable'
   appendSummary(
-    `\nCombined ${DRAFT_MODEL} draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. Both models use Mistral; OCR token accounting is unchanged.`,
+    `\nCombined ${DRAFT_MODEL} draft and ${MOAT_ADVISOR_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. The draft and advisor use separate fixed profiles; OCR token accounting is unchanged.`,
     (text) => process.stdout.write(text),
     summary
   )
@@ -846,8 +850,8 @@ async function main(options = {}) {
   }
   if (command !== 'run') return 2
   const credentials = options.credentials ?? {
-    apiKey: process.env.MISTRAL_API_KEY,
-    advisorApiKey: process.env.MISTRAL_API_KEY,
+    apiKey: process.env.CMD_API_KEY,
+    advisorApiKey: process.env.CMD_API_KEY,
     context7ApiKey: process.env.CONTEXT7_API_KEY,
   }
   for (const name of Object.keys(process.env)) {

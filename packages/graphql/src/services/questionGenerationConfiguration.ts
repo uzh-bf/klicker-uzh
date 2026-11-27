@@ -14,6 +14,7 @@ import {
   QUESTION_GENERATION_CAPABILITIES,
 } from '@klicker-uzh/types'
 import { z } from 'zod'
+import { questionGenerationServiceError } from './questionGenerationErrors.js'
 
 const MAX_OBJECTIVES = 20
 const MAX_OBJECTIVE_LENGTH = 500
@@ -159,6 +160,27 @@ export function questionNativeBudgetFromEnv(
   }
 }
 
+export function nativeBudgetForNewQuestion(
+  ownerId: string,
+  env: Record<string, string | undefined> = process.env
+): QuestionNativeBudgetMetadata {
+  const pilot = env.KB_QUESTION_NATIVE_BUDGET_ACTOR_ID
+  if (pilot !== undefined) {
+    if (!z.uuid().safeParse(pilot).success) {
+      return configurationError('Native question budget actor is invalid')
+    }
+    if (pilot.toLowerCase() !== ownerId.toLowerCase())
+      return { mode: 'unbudgeted' }
+  }
+  const budget = questionNativeBudgetFromEnv(env)
+  if (budget.mode !== 'budgeted') {
+    return configurationError(
+      'A native budget policy is required for this question build'
+    )
+  }
+  return budget
+}
+
 export function questionNativeBudgetMetadata(
   configuration: unknown
 ): QuestionNativeBudgetMetadata | null {
@@ -173,6 +195,15 @@ export function questionNativeBudgetMetadata(
     return configurationError('Stored native question budget is invalid')
   }
   return parsed.data
+}
+
+export function assertRevisionBudgetSupported(configuration: unknown): void {
+  if (questionNativeBudgetMetadata(configuration)?.mode === 'budgeted') {
+    throw questionGenerationServiceError(
+      'QUESTION_GENERATION_UNAVAILABLE',
+      'Individual revisions are unavailable for budgeted question builds'
+    )
+  }
 }
 
 function isLanguage(value: string): value is QuestionGenerationLanguage {

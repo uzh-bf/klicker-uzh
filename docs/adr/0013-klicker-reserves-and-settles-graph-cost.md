@@ -53,25 +53,29 @@ price ceilings keyed by model route, and an output-token ceiling. No default
 USD amount or tariff is supplied. Decimal spelling is bounded to 256 characters
 and an exponent magnitude of 1000; amounts are normalized without binary floats.
 Invalid configured policy rejects new admission before product credits or
-provider contact. Flashcards and historical builds retain their existing path.
+provider contact. Flashcards retain their existing cost policy.
 
 Each new question build records an explicit budget mode in its existing
 configuration JSON. A budgeted build freezes its normalized policy and native
 output destination for its lifetime, including idempotent recovery and explicit
 retry. Missing or corrupt budgeted metadata and destination drift reject further
-dispatch or evidence acceptance. Metadata-absent historical builds retain their
-original manifest normalization; new builds use the current worker defaults.
+dispatch or evidence acceptance. Historical builds without budget metadata can finish. Explicit retry of such a root
+build is denied before another credit reservation or worker dispatch.
 The client cannot choose this policy. Changing or removing the server template
 does not rewrite existing builds. Settled builds remain readable after output
 configuration changes; an explicit retry still checks the bound destination
 before reserving another product spend.
 
-Deployment must pair this application with a worker whose normalized manifest
-includes `question_library_snapshot: null`, even for new unbudgeted builds.
-Control new admission across the paired rollout and rollback, and finish
-historical in-flight builds with their original manifest interpretation before
-changing workers. Omitting the budget setting keeps new builds unbudgeted;
-an empty configured value is invalid.
+The application hashes the normalized worker start manifest with the optional
+budget and slot specifications exactly as dispatched. The worker omits an absent
+question library snapshot. Verify the manifest contract when changing workers.
+
+The server can restrict the budget to the authenticated user selected by
+`backendGraphql.elementGeneration.nativeBudgetActorId`. This actor requires a
+valid policy before the first reservation. Other admitted actors create ordinary
+unbudgeted builds. With no actor selector, all new question builds require a
+policy. An invalid selector denies new question builds. Set the selector and
+verify its identity on each serving instance before opening pilot admission.
 
 The chart's optional `backendGraphql.elementGeneration.nativeBudgetPolicy`
 value delivers this JSON to the GraphQL backend. Null omits the environment
@@ -118,15 +122,9 @@ spends one `ELEMENT_REVISION` dispatch. Its price is the question price divided
 by the requested count of the parent build, rounded up (`ceil(build price /
 requested count)`), so revising a slot never costs more than generating it.
 
-Native budget accounting for individual revision children is not yet qualified.
-A child currently inherits its parent's budgeted configuration marker, but its
-revision payload does not carry `budget_policy`. That marker is therefore not
-evidence of a capped revision run. Keep `ELEMENT_REVISION_WORKER_ENABLED`
-disabled wherever budgeted parent builds can be revised, including after the
-server budget setting is removed: existing parents retain their frozen policy.
-Do not strip the inherited marker or reopen legacy retries to work around this
-limitation. Enabling budgeted revisions requires a separately qualified child
-accounting contract and worker evidence for manifests combining `budget_policy`
-with `emit_slot_specifications`. This is an operational release hold, not an
-additional runtime guard; the original-build and retry guarantees above do not
-establish revision-child accounting.
+The revision worker has no child budget accounting contract. A parent with a
+frozen native budget therefore rejects a revision request before creating a
+child or reserving credits. A previously created budget-marked child also
+rejects retry and dispatch, even if the server budget setting has since changed.
+For ordinary parents and children the existing worker capability, ownership,
+concurrency and credit rules continue to apply.

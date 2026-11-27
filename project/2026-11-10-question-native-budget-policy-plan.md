@@ -202,3 +202,14 @@ locally with Helm 4.3.0; required CI qualifies its pinned Helm 3.21.4.
 No new test file, dependency, migration or live configuration was added.
 Integrated source review and required candidate CI remain pending. Legacy
 retry reopening and all live effects remain gated.
+
+## Current compatibility update
+
+Integrate the application target and validate the normalized worker start hash
+for budgeted and unbudgeted requests with slot specifications on and off.
+Require a server-owned budget for the selected pilot actor before reservation.
+Deny root retries that lack budget metadata and revision requests, retries and
+dispatch for budgeted parents or children. Preserve ordinary revisions and
+existing build settlement. Verify through the lifecycle and accounting tests,
+independent source review and required draft PR checks. Merge, deployment and
+paid generation each require separate approval.

@@ -8,6 +8,13 @@ import {
 import { useTranslations } from 'next-intl'
 import { type FC, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { CALCULATOR_TOOL_NAME } from '@/src/lib/calculator'
+import { SHOW_EXPLANATION_TOOL_NAME } from '@/src/lib/explanations'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
+import {
+  COURSE_IMAGE_TOOL,
+  courseImageModelInput,
+} from '@/src/lib/sources/courseImages'
 import { getDocQueryResult } from '@/src/lib/sources/docQueryResult'
 import {
   countDocQueryDocuments,
@@ -18,6 +25,8 @@ import type { Translate } from '@/src/lib/sources/sourceDisplay'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import { getManageProposalResult } from '../services/manageProposalResult'
 import { DocQueryResults } from './doc-query-results'
+import { ExplanationCard, isRejectedExplanation } from './explanation-card'
+import { FeedbackCard, isRejectedFeedback } from './feedback-card'
 import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
@@ -168,6 +177,7 @@ export function parseDocQueryArgsQuery(argsText: string): string | undefined {
 
 interface ToolFallbackProps {
   toolName: string
+  toolCallId?: string
   argsText: string
   result?: unknown
   status: { type: string }
@@ -176,6 +186,7 @@ interface ToolFallbackProps {
 
 export const ToolFallback: FC<ToolFallbackProps> = ({
   toolName,
+  toolCallId,
   argsText,
   result,
   status,
@@ -187,8 +198,57 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
 
+  // The calculator chip only says that a calculation ran. Its expressions
+  // and results stay hidden, because the Tutor and Quizzer compute the
+  // correct result to judge a wrong attempt while they still withhold it.
+  if (toolName === CALCULATOR_TOOL_NAME) {
+    return (
+      <span
+        data-cy="chat-tool-call-label"
+        data-tool-kind="calculator"
+        className="inline-flex min-h-6 items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground"
+      >
+        <span className="size-3 shrink-0" aria-hidden />
+        <span
+          className="inline-flex size-3 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          {isRunning && (
+            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          )}
+          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
+        </span>
+        {isFailed
+          ? t('chat.toolFallback.failed', { tool })
+          : isRunning
+            ? t('chat.toolFallback.running', { tool })
+            : t('chat.toolFallback.done', { tool })}
+      </span>
+    )
+  }
+
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />
+  }
+
+  const explanationRejected =
+    toolName === SHOW_EXPLANATION_TOOL_NAME &&
+    isRejectedExplanation(result, isError)
+  if (toolName === SHOW_EXPLANATION_TOOL_NAME && !explanationRejected) {
+    return (
+      <ExplanationCard
+        toolCallId={toolCallId}
+        result={result}
+        status={status}
+        isError={isError}
+      />
+    )
+  }
+
+  const feedbackRejected =
+    toolName === SHOW_FEEDBACK_TOOL_NAME && isRejectedFeedback(result, isError)
+  if (toolName === SHOW_FEEDBACK_TOOL_NAME && !feedbackRejected) {
+    return <FeedbackCard result={result} status={status} isError={isError} />
   }
 
   const manageProposalResult = getManageProposalResult(result)
@@ -201,6 +261,17 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
       />
     )
   }
+  const imageModelInput =
+    toolName === COURSE_IMAGE_TOOL && !isRunning && !isFailed
+      ? courseImageModelInput(result)
+      : undefined
+  const imageInputLabel = imageModelInput
+    ? t(
+        imageModelInput === 'pixels'
+          ? 'chat.courseImages.pixelsProvided'
+          : 'chat.courseImages.descriptionOnly'
+      )
+    : undefined
   const isDocQuery = isDocQueryToolName(toolName)
 
   const docQueryState = isDocQuery
@@ -225,45 +296,61 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
 
   return (
     <div>
-      <button
-        type="button"
-        data-cy="chat-tool-call-toggle"
-        data-tool-kind={isDocQuery ? 'doc-query' : 'other'}
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        aria-expanded={!isCollapsed}
-        className={twMerge(
-          'inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
-          isFailed
-            ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-        )}
-      >
-        {/* Keep a fixed status slot so trace labels align across row types. */}
-        {isCollapsed ? (
-          <ChevronRightIcon className="size-3" aria-hidden />
-        ) : (
-          <ChevronDownIcon className="size-3" aria-hidden />
-        )}
-        <span
-          className="inline-flex size-3 shrink-0 items-center justify-center"
-          aria-hidden
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <button
+          type="button"
+          data-cy="chat-tool-call-toggle"
+          data-tool-kind={isDocQuery ? 'doc-query' : 'other'}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-expanded={!isCollapsed}
+          className={twMerge(
+            'inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
+            isFailed
+              ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
         >
-          {isRunning && (
-            <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          {/* Keep a fixed status slot so trace labels align across row types. */}
+          {isCollapsed ? (
+            <ChevronRightIcon className="size-3" aria-hidden />
+          ) : (
+            <ChevronDownIcon className="size-3" aria-hidden />
           )}
-          {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
-          {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
-            <SearchIcon className="size-3" />
-          )}
-        </span>
-        {docQueryState
-          ? docQueryChipLabel(t, docQueryState)
-          : isFailed
-            ? t('chat.toolFallback.failed', { tool })
-            : isRunning
-              ? t('chat.toolFallback.running', { tool })
-              : t('chat.toolFallback.done', { tool })}
-      </button>
+          <span
+            className="inline-flex size-3 shrink-0 items-center justify-center"
+            aria-hidden
+          >
+            {isRunning && (
+              <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+            )}
+            {isFailed && (
+              <AlertCircleIcon className="text-destructive size-3" />
+            )}
+            {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
+              <SearchIcon className="size-3" />
+            )}
+          </span>
+          {docQueryState
+            ? docQueryChipLabel(t, docQueryState)
+            : explanationRejected
+              ? t('chat.thread.explanation.rejected')
+              : feedbackRejected
+                ? t('chat.thread.feedback.rejected')
+                : isFailed
+                  ? t('chat.toolFallback.failed', { tool })
+                  : isRunning
+                    ? t('chat.toolFallback.running', { tool })
+                    : t('chat.toolFallback.done', { tool })}
+        </button>
+        {imageInputLabel && (
+          <span
+            data-cy="chat-course-image-model-input"
+            className="text-xs text-muted-foreground"
+          >
+            {imageInputLabel}
+          </span>
+        )}
+      </div>
 
       <div
         aria-hidden={isCollapsed}
@@ -276,7 +363,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
         )}
       >
-        <div className="min-h-0 overflow-hidden">
+        <div className="relative min-h-0 overflow-hidden">
           <div className="bg-muted mt-1 rounded p-2 text-xs">
             {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
                 `--muted`, under the 4.5:1 AA floor for 12px text. */}
@@ -300,6 +387,18 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
               </>
             ) : (
               <>
+                {imageInputLabel && (
+                  <p
+                    className="mb-2"
+                    data-cy="chat-course-image-model-input-explanation"
+                  >
+                    {t(
+                      imageModelInput === 'pixels'
+                        ? 'chat.courseImages.pixelsProvidedExplanation'
+                        : 'chat.courseImages.descriptionOnlyExplanation'
+                    )}
+                  </p>
+                )}
                 <p className="mb-1 font-mono">{toolName}</p>
                 <pre className="whitespace-pre-wrap">{argsText}</pre>
                 {resultText !== undefined && (

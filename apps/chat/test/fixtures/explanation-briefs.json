@@ -1,0 +1,250 @@
+[
+  {
+    "id": "npv-profile",
+    "expect": "curve",
+    "brief": {
+      "locale": "en",
+      "topic": "NPV profile and IRR",
+      "brief": "Show how a project's net present value falls as the discount rate rises, and that the rate where it reaches zero is the internal rate of return.",
+      "misconception": "Thinks a higher discount rate makes a project more valuable.",
+      "notation": "NPV = -I_0 + sum_t CF_t / (1 + r)^t",
+      "numbers": "Illustrative: I_0 = 1000, CF = 400 per year for 3 years, r from 0 to 20 %."
+    }
+  },
+  {
+    "id": "npv-crossover",
+    "expect": "curve",
+    "brief": {
+      "locale": "en",
+      "topic": "NPV crossover of two projects",
+      "brief": "Compare two projects with the same cost, one paying early and one paying late, and show the crossover rate where their ranking flips.",
+      "numbers": "Illustrative: both cost 1000; early pays 600, 500, 100; late pays 100, 400, 800."
+    }
+  },
+  {
+    "id": "bond-price-yield",
+    "expect": "curve",
+    "brief": {
+      "locale": "de",
+      "topic": "Anleihenpreis und Rendite",
+      "brief": "Zeige, dass der Preis einer Anleihe sinkt, wenn die Rendite steigt, und dass lange Laufzeiten stärker reagieren.",
+      "notation": "P = sum_t C / (1 + y)^t + N / (1 + y)^T",
+      "numbers": "Illustrativ: Nennwert 100, Kupon 4 %, Laufzeiten 2 und 10 Jahre, Rendite 0 bis 10 %."
+    }
+  },
+  {
+    "id": "loan-balance",
+    "expect": "curve",
+    "brief": {
+      "locale": "en",
+      "topic": "Annuity loan balance over time",
+      "brief": "Show how the outstanding balance of an annuity loan falls slowly at first and faster later, because the interest share of each payment shrinks.",
+      "numbers": "Illustrative: loan 200,000, 3 % interest, 20 years."
+    }
+  },
+  {
+    "id": "supply-demand",
+    "expect": "curve",
+    "brief": {
+      "locale": "en",
+      "topic": "Market equilibrium",
+      "brief": "Show where supply and demand meet, and how a rise in demand moves price and quantity.",
+      "misconception": "Thinks a higher price always lowers the quantity sold, even when demand shifts.",
+      "numbers": "Illustrative linear curves: demand p = 100 - q, supply p = 20 + 0.5 q."
+    }
+  },
+  {
+    "id": "break-even",
+    "expect": "curve",
+    "brief": {
+      "locale": "de",
+      "topic": "Break-even-Analyse",
+      "brief": "Zeige Umsatz und Gesamtkosten über der Menge und den Break-even-Punkt, an dem der Gewinn null ist.",
+      "notation": "U = p * x, K = K_f + k_v * x",
+      "numbers": "Illustrativ: p = 50, K_f = 20 000, k_v = 30."
+    }
+  },
+  {
+    "id": "compound-interest",
+    "expect": "parts",
+    "brief": {
+      "locale": "en",
+      "topic": "Compound interest",
+      "brief": "Split an end balance into principal, simple interest and interest on interest, and show that interest on interest grows faster over longer horizons.",
+      "numbers": "Illustrative: 1000 at 5 % for 10 and 30 years."
+    }
+  },
+  {
+    "id": "wacc",
+    "expect": "parts",
+    "brief": {
+      "locale": "en",
+      "topic": "Weighted average cost of capital",
+      "brief": "Show how the cost of equity and the after-tax cost of debt add up to the WACC, weighted by their shares.",
+      "notation": "WACC = E/V * r_E + D/V * r_D * (1 - t)",
+      "numbers": "Illustrative: E/V = 60 %, r_E = 9 %, r_D = 4 %, t = 20 %."
+    }
+  },
+  {
+    "id": "fx-return",
+    "expect": "parts",
+    "brief": {
+      "locale": "de",
+      "topic": "Rendite einer Fremdwährungsanlage",
+      "brief": "Zerlege die Rendite einer USD-Anlage für einen CHF-Investor in Lokalrendite und Währungseffekt, auch wenn der Währungseffekt negativ ist.",
+      "numbers": "Illustrativ: Lokalrendite 6 %, USD/CHF fällt um 4 %."
+    }
+  },
+  {
+    "id": "gdp-expenditure",
+    "expect": "parts",
+    "brief": {
+      "locale": "en",
+      "topic": "GDP by expenditure",
+      "brief": "Show GDP as consumption, investment, government spending and net exports, with net exports possibly negative.",
+      "notation": "Y = C + I + G + NX",
+      "numbers": "Illustrative shares of a 100-unit economy."
+    }
+  },
+  {
+    "id": "income-statement",
+    "expect": "parts",
+    "brief": {
+      "locale": "de",
+      "topic": "Vom Umsatz zum Reingewinn",
+      "brief": "Zeige, wie vom Umsatz Warenaufwand, Personalaufwand, Abschreibungen, Zinsen und Steuern abgehen, bis der Reingewinn bleibt.",
+      "numbers": "Illustrativ: Umsatz 1000."
+    }
+  },
+  {
+    "id": "portfolio-return",
+    "expect": "parts",
+    "brief": {
+      "locale": "en",
+      "topic": "Portfolio return contributions",
+      "brief": "Show each asset's contribution to a portfolio's return as weight times return.",
+      "numbers": "Illustrative: stocks 60 % at 8 %, bonds 30 % at 3 %, cash 10 % at 1 %."
+    }
+  },
+  {
+    "id": "bank-loan",
+    "expect": "accounts",
+    "brief": {
+      "locale": "en",
+      "topic": "How a bank loan creates a deposit",
+      "brief": "Show the bank's and the borrower's balance sheets as a loan is granted and the money is spent.",
+      "misconception": "Thinks banks lend out existing deposits.",
+      "numbers": "Illustrative: loan of 50,000."
+    }
+  },
+  {
+    "id": "share-issue",
+    "expect": "accounts",
+    "brief": {
+      "locale": "de",
+      "topic": "Kapitalerhöhung",
+      "brief": "Zeige die Bilanz einer Firma bei einer Kapitalerhöhung gegen Bargeld und danach beim Kauf einer Maschine.",
+      "numbers": "Illustrativ: 1 Mio. CHF neue Aktien, Maschine 600 000."
+    }
+  },
+  {
+    "id": "repo",
+    "expect": "accounts",
+    "brief": {
+      "locale": "en",
+      "topic": "Central bank repo",
+      "brief": "Show the central bank's and a commercial bank's balance sheets when the commercial bank borrows reserves in a repo against securities, and when it repays.",
+      "numbers": "Illustrative: 10 million."
+    }
+  },
+  {
+    "id": "depreciation",
+    "expect": "accounts",
+    "brief": {
+      "locale": "de",
+      "topic": "Abschreibung",
+      "brief": "Zeige, wie die Abschreibung einer Maschine den Buchwert und das Eigenkapital über drei Jahre senkt.",
+      "numbers": "Illustrativ: Maschine 30 000, lineare Abschreibung über 3 Jahre."
+    }
+  },
+  {
+    "id": "policy-rate",
+    "expect": "causal",
+    "brief": {
+      "locale": "en",
+      "topic": "Monetary policy transmission",
+      "brief": "Show how a policy rate rise reaches inflation through lending, the exchange rate and expectations.",
+      "misconception": "Thinks a rate rise lowers inflation immediately.",
+      "notation": "Use the course terms: policy rate, lending rates, demand, exchange rate, expectations, inflation."
+    }
+  },
+  {
+    "id": "oil-shock",
+    "expect": "causal",
+    "brief": {
+      "locale": "de",
+      "topic": "Ölpreisschock",
+      "brief": "Zeige, wie ein Ölpreisanstieg über Treibstoff, Transportkosten und Löhne die Konsumentenpreise erreicht, und dass ein Rückgang umgekehrt wirkt."
+    }
+  },
+  {
+    "id": "franc-appreciation",
+    "expect": "causal",
+    "brief": {
+      "locale": "de",
+      "topic": "Frankenaufwertung",
+      "brief": "Zeige die Wirkung einer Frankenaufwertung auf Exporte, Importpreise, Tourismus und Inflation in der Schweiz."
+    }
+  },
+  {
+    "id": "fiscal-multiplier",
+    "expect": "causal",
+    "brief": {
+      "locale": "en",
+      "topic": "Fiscal stimulus",
+      "brief": "Show how extra government spending raises income, consumption and again income, and how higher interest rates can crowd out investment."
+    }
+  },
+  {
+    "id": "fx-hedge",
+    "expect": "parts",
+    "brief": {
+      "locale": "en",
+      "topic": "Currency hedge",
+      "brief": "Show that a currency forward offsets the currency loss on a foreign investment, so the hedged return is close to the local return minus the hedge cost.",
+      "numbers": "Illustrative: local return 5 %, currency falls 6 %, hedge cost 1 %."
+    }
+  },
+  {
+    "id": "duration",
+    "expect": "curve",
+    "brief": {
+      "locale": "en",
+      "topic": "Duration and price sensitivity",
+      "brief": "Show that a bond's price change for a yield change is roughly duration times the change, and that the curve bends (convexity).",
+      "notation": "dP/P ≈ -D_mod * dy",
+      "numbers": "Illustrative: 10-year bond, 3 % coupon, yield 0 to 8 %."
+    }
+  },
+  {
+    "id": "tax-incidence",
+    "expect": "curve",
+    "brief": {
+      "locale": "de",
+      "topic": "Steuerinzidenz",
+      "brief": "Zeige, wie eine Mengensteuer die Angebotskurve verschiebt und wer die Steuer trägt, je nach Steigung von Angebot und Nachfrage.",
+      "numbers": "Illustrativ: Nachfrage p = 120 - q, Angebot p = 20 + q, Steuer 10 pro Einheit."
+    }
+  },
+  {
+    "id": "inflation-real-return",
+    "expect": "parts",
+    "brief": {
+      "locale": "en",
+      "topic": "Real return",
+      "brief": "Split a nominal return into the real return and inflation, and show that the real return can be negative.",
+      "notation": "(1 + i) = (1 + r)(1 + pi)",
+      "numbers": "Illustrative: nominal 3 %, inflation 0 to 6 %."
+    }
+  }
+]

@@ -22,7 +22,11 @@ export type ChatbotStandardModeConfig = {
 export type StoredChatbotStandardModeConfig = Omit<
   ChatbotStandardModeConfig,
   'writingCoachEnabled'
-> & { writingCoachEnabled?: boolean }
+> & {
+  writingCoachEnabled?: boolean
+  /** Distinguishes a deliberate all-off save from a legacy invalid record. */
+  explicitModeSelection?: true
+}
 
 /** Replacement input; omitted Writing Coach preserves the stored choice. */
 export type ChatbotStandardModeConfigInput = {

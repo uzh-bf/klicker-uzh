@@ -1377,14 +1377,24 @@ describe('question-generation artifact normalization', () => {
     })
     currentBank.metadata.format = 'SC'
     currentBank.metadata.item_format = 'sc'
-    const questions = parseQuestionGenerationFinalBank(bytes(currentBank), {
-      questionCount: 1,
-      sourceSnapshot,
-      expectedQuestionIds: ['q01'],
-      result,
-      lineage,
-      provenanceAuthority: provenanceAuthority(),
-    })
+    // A newer worker's extra top-level section must not fail the bank.
+    const bankWithReviewFlags = {
+      ...currentBank,
+      review_flags: [
+        { code: 'bloom_mismatch', detail: 'synthetic', question_id: 'q01' },
+      ],
+    }
+    const questions = parseQuestionGenerationFinalBank(
+      bytes(bankWithReviewFlags),
+      {
+        questionCount: 1,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01'],
+        result,
+        lineage,
+        provenanceAuthority: provenanceAuthority(),
+      }
+    )
 
     expect(questions[0]?.tags).toEqual([
       'Gärung',

@@ -1,3 +1,4 @@
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
@@ -182,6 +183,25 @@ export async function setParticipantToken(page: Page, participantId: string) {
       secure: url.protocol === 'https:',
     },
   ])
+}
+
+/** Scoped session for the seeded participant, course and chatbot. */
+export async function mintPwaEmbedSessionToken(participantId: string) {
+  const prisma = await getPrisma()
+  const chatbot = await prisma.chatbot.findUniqueOrThrow({
+    where: { id: CHATBOT_ID },
+    select: { courseId: true },
+  })
+  return new jose.SignJWT({
+    sub: participantId,
+    scope: 'PWA_CHAT_EMBED_SESSION',
+    courseId: chatbot.courseId,
+    chatbotId: CHATBOT_ID,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(chatSecret())
 }
 
 // ---------------------------------------------------------------------------
@@ -398,10 +418,7 @@ export type SeedMessage = {
         toolCallId: string
         toolName: string
         args?: Record<string, unknown>
-        result?: {
-          content?: Array<{ type: string; text: string }>
-          isError?: boolean
-        }
+        result?: Prisma.InputJsonValue
       }
   >
   parentId?: string | null
@@ -526,6 +543,8 @@ export type StreamToolCall = {
 export type StreamOptions = {
   /** Replaces the default `assistant reply #N` answer text. */
   text?: string
+  /** Overrides the answer text by request number, starting at one. */
+  textByCall?: string[]
   /** Emits the answer as separate text deltas, in order. */
   textChunks?: string[]
   /** Delays each streamed SSE line by this many milliseconds. */
@@ -609,9 +628,16 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
  * Returns distinguishable streamed reply per call (`assistant reply #1`, `#2`, …)
  * unless `options.text` overrides the answer text.
  */
-export async function mockChatStream(page: Page, options: StreamOptions = {}) {
+export async function mockChatStream(
+  page: Page,
+  options: StreamOptions = {},
+  chatbotId = CHATBOT_ID
+) {
   if (options.chunkDelayMs !== undefined) {
-    const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
+    const lines = makeStreamLines(
+      options.textByCall?.[0] ?? options.text ?? 'assistant reply #1',
+      options
+    )
 
     await page.addInitScript(
       ({
@@ -747,7 +773,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
         }
       },
       {
-        chatbotPath: `/api/chatbots/${CHATBOT_ID}/chat`,
+        chatbotPath: `/api/chatbots/${chatbotId}/chat`,
         lines,
         delayMs: options.chunkDelayMs,
         pauseAfterTextChunk: options.pauseAfterTextChunk,
@@ -758,14 +784,16 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
   }
 
   let counter = 0
-  await page.route(`**/api/chatbots/${CHATBOT_ID}/chat`, (route) => {
+  await page.route(`**/api/chatbots/${chatbotId}/chat`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
     counter += 1
     return route.fulfill({
       status: 200,
       headers: { 'content-type': 'text/event-stream' },
       body: makeStreamBody(
-        options.text ?? `assistant reply #${counter}`,
+        options.textByCall?.[counter - 1] ??
+          options.text ??
+          `assistant reply #${counter}`,
         options
       ),
     })

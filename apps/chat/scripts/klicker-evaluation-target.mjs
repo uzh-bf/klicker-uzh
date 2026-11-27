@@ -11,8 +11,8 @@ import {
   beginBudgetTurn,
   finishBudgetTurn,
   readBudgetLedger,
-} from '../../../evaluation/evaluation-budget.mjs'
-import { verifyGuardQualification } from '../../../evaluation/evaluation-spend-guard.mjs'
+} from './evaluation-budget.mjs'
+import { verifyGuardQualification } from './evaluation-spend-guard.mjs'
 
 import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
@@ -22,7 +22,7 @@ import {
 } from './klicker-evaluation-evidence.mjs'
 
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
-// Keep the local launcher fallback in util/_run_klicker_eval.sh aligned.
+// Keep the launcher fallback in klicker-uzh-catalyst's evaluation/ aligned.
 export const DEFAULT_MODEL_ID = 'gpt-6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
@@ -134,6 +134,10 @@ function yamlScalar(value) {
   return trimmed
 }
 
+// Writing Coach is tool-free, so only the canary keeps the Tutor and Explainer
+// restriction that its retrieval-tool check needs.
+const GROUND_TRUTH_MODES = ['tutor', 'explainer', 'writing-coach']
+
 export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   const normalized = text.replaceAll('\r\n', '\n')
   if (!normalized.startsWith('---\n')) {
@@ -169,7 +173,7 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
   if (!question || !mode) {
     throw evaluationError(`ground_truth_fields_missing:${basename(filePath)}`)
   }
-  if (!['tutor', 'explainer'].includes(mode)) {
+  if (!GROUND_TRUTH_MODES.includes(mode)) {
     throw evaluationError(`ground_truth_mode_invalid:${basename(filePath)}`)
   }
 

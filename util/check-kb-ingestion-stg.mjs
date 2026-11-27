@@ -122,7 +122,9 @@ for (const configMap of configMaps) {
 }
 
 const nativeBudgetKey = 'KB_QUESTION_NATIVE_BUDGET_POLICY'
-requireAbsent(backend, [nativeBudgetKey])
+const budgetActorKey = 'KB_QUESTION_NATIVE_BUDGET_ACTOR_ID'
+requireAbsent(backend, [nativeBudgetKey, budgetActorKey])
+const syntheticActor = '123e4567-e89b-42d3-a456-426614174000'
 const budgetPolicy = {
   schema_version: 1,
   budget_usd: '5.00',
@@ -133,10 +135,13 @@ const budgetPolicy = {
 }
 for (const policy of [null, budgetPolicy, {}, [], '', false, 0, 'null']) {
   const rendered = renderConfigMaps([
+    '--set-string',
+    `backendGraphql.elementGeneration.nativeBudgetActorId=${syntheticActor}`,
     '--set-json',
     `backendGraphql.elementGeneration.nativeBudgetPolicy=${JSON.stringify(policy)}`,
   ])
   const renderedBackend = findConfigMap(rendered, '-config-backend-graphql')
+  assert.equal(renderedBackend.data?.[budgetActorKey], syntheticActor)
   if (policy === null) {
     requireAbsent(renderedBackend, [nativeBudgetKey])
   } else {
@@ -146,7 +151,7 @@ for (const policy of [null, budgetPolicy, {}, [], '', false, 0, 'null']) {
   }
   for (const configMap of rendered) {
     if (configMap !== renderedBackend)
-      requireAbsent(configMap, [nativeBudgetKey])
+      requireAbsent(configMap, [nativeBudgetKey, budgetActorKey])
   }
 }
 

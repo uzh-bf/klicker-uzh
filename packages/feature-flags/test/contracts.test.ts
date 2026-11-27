@@ -15,6 +15,7 @@ describe('feature flag contracts', () => {
       'chatbot-long-custom-prompts': false,
       'question-generation': false,
       'question-generation-admission': false,
+      'interactive-explanations': false,
     })
   })
 

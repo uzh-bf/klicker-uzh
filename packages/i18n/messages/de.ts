@@ -1,15 +1,64 @@
 export default {
   chat: {
+    courseImages: {
+      pixelsProvided: 'Bildpixel an das Modell übermittelt',
+      descriptionOnly: 'Nur Beschreibung',
+      pixelsProvidedExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl in der Modelleingabe enthalten. Das belegt nicht, auf welche Eingaben sich das Modell gestützt hat.',
+      descriptionOnlyExplanation:
+        'Die Pixel dieser Abbildung waren vor der Auswahl nicht in der Modelleingabe enthalten. Dem Modell standen der abgerufene Text und gegebenenfalls die Bildunterschrift oder Beschreibung zur Verfügung.',
+      expandLabel: 'Bild vergrössern: {label}',
+      closeViewer: 'Bildansicht schliessen',
+      zoomIn: 'Vergrössern',
+      zoomOut: 'Verkleinern',
+      zoomLevel: 'Zoomstufe relativ zum eingepassten Bild',
+      fitImage: 'Bild einpassen',
+      panHint: 'Zum Erkunden des vergrösserten Bildes scrollen oder wischen.',
+      source: '{title} · Seite {page}',
+      unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
+      retry: 'Bild erneut laden',
+    },
+    workspace: {
+      toolbar: 'Bedienelemente des Bereichs',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
+      aiGenerated: 'KI-generiert',
+      aiGeneratedHint:
+        'Diese Karte wurde von KI aus Ihren Kursmaterialien erstellt. Sie kann Fehler enthalten; prüfen Sie die Quellen.',
+      aiGeneratedNote:
+        'KI-generiert aus den Kursmaterialien. Prüfen Sie die Quellen.',
       title: 'Wissensgraph',
       open: 'Wissensgraph öffnen',
       close: 'Wissensgraph schliessen',
       fullscreen: 'Graph im Vollbild anzeigen',
       restore: 'Graph in der Seitenleiste anzeigen',
+      resize: 'Grösse des Wissensgraphen ändern',
+      resizeHint:
+        'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      enlarge: 'Graph neben dem Chat vergrössern',
+      shrink: 'Graph wieder schmal anzeigen',
       ask: 'Dazu eine Frage stellen',
       showConcept: 'Begriff im Wissensgraph anzeigen',
       nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
+      nodePromptTutor:
+        'Hilf mir mit Leitfragen, den Begriff «{topic}» selbst zu erarbeiten.',
+      nodePromptExplainer:
+        'Erkläre den Begriff «{topic}» an einem einfachen Beispiel.',
+      edgePromptTutor:
+        'Hilf mir mit Leitfragen herauszufinden, wie «{source}» und «{target}» zusammenhängen («{relationship}»).',
+      edgePromptExplainer:
+        'Erkläre an einem einfachen Beispiel, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      quiz: 'Teste mich dazu',
+      allConnectionsShown: 'Alle Verbindungen angezeigt',
+      quizNodePrompt: 'Teste mich zum Begriff «{topic}».',
+      quizEdgePrompt:
+        'Teste mich dazu, wie «{source}» mit «{target}» zusammenhängt («{relationship}»).',
+      inferredRelation:
+        'Abgeleitet: Diese Beziehung ist aus den Kursunterlagen erschlossen und wird dort nicht direkt genannt.',
+      unsourcedRelation:
+        'Für diese Beziehung ist keine belegende Quelle erfasst.',
+      inferredRelationLegend: 'Gestrichelt: abgeleitet oder ohne Quelle',
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },
@@ -105,6 +154,11 @@ export default {
     },
     embedded: {
       close: 'Chat schliessen',
+    },
+    openInNewTab: {
+      label: 'In neuem Tab öffnen',
+      failed:
+        'Der neue Tab konnte nicht geöffnet werden. Erlaube Pop-ups und versuche es erneut.',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -397,6 +451,47 @@ export default {
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
+      explanation: {
+        preparing: 'Interaktive Erklärung wird vorbereitet...',
+        rejected: 'Entwurf der interaktiven Erklärung abgelehnt',
+        unavailable: 'Interaktive Erklärung nicht verfügbar',
+        fallbackTitle: 'Interaktive Erklärung',
+        header: 'Interaktive Erklärung · KI-generierter Entwurf, nicht geprüft',
+        openLarge: 'Gross öffnen',
+        close: 'Schliessen',
+        loading: 'Wird geladen...',
+        openInPanel: 'Neben dem Chat öffnen',
+        closePanel: 'Erklärungsbereich schliessen',
+        shownInPanel: 'wird neben dem Chat angezeigt',
+        aiDraft: 'KI-generierter Entwurf',
+        previous: 'Vorherige Erklärung',
+        next: 'Nächste Erklärung',
+        position: '{current} von {total}',
+        reload: 'Erklärung neu starten',
+        enlarge: 'Erklärung neben dem Chat vergrössern',
+        shrink: 'Erklärung schmaler anzeigen',
+        fullscreen: 'Erklärung im Vollbild anzeigen',
+        restore: 'Chat wieder neben der Erklärung anzeigen',
+        resize: 'Grösse der Erklärung ändern',
+        resizeHint:
+          'Zum Ändern der Grösse ziehen. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      },
+      feedback: {
+        preparing: 'Feedback wird vorbereitet...',
+        rejected: 'Feedback-Entwurf abgelehnt',
+        fallbackTitle: 'Feedback',
+        strengths: 'Was bereits gut ist',
+        criteria: 'Geprüfte Kriterien',
+        points: 'Woran du arbeiten kannst',
+        nextStep: 'Nächster Schritt',
+        copy: 'Feedback kopieren',
+        copied: 'Kopiert',
+        status: {
+          met: 'erfüllt',
+          partial: 'teilweise erfüllt',
+          missing: 'fehlt',
+        },
+      },
       learningContext: {
         refreshUnavailable:
           'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',
@@ -583,9 +678,13 @@ export default {
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
       imageAnalyzed: 'Bild analysiert',
     },
+    videoFrames: {
+      source: '{title} · Einzelbild bei {timestamp}',
+      unavailable: 'Dieses Video-Einzelbild ist derzeit nicht verfügbar.',
+      retry: 'Einzelbild erneut laden',
+    },
     sources: {
       title: 'Quellen',
-      cited: 'In dieser Antwort zitiert',
       otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
@@ -5341,8 +5440,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSummaryModesNone: 'Kein Lernmodus ist aktiv.',
       chatbotSummaryModesExtras:
         '{framing, select, set {Es gibt eine Rahmung} other {Es gibt keine Rahmung}} und {custom, plural, =0 {keine eigenen Modi} one {einen eigenen Modus} other {# eigene Modi}}.',
-      chatbotSummaryModesQuizzerNeedsKb:
-        'Quizzer braucht eine Wissensdatenbank, deshalb sehen Studierende ihn noch nicht.',
       chatbotSummaryModelFixed: 'Studierende nutzen {model}.',
       chatbotSummaryModelFixedReasoning:
         'Studierende nutzen {model} mit dem Reasoning-Level {effort}.',
@@ -5439,12 +5536,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Kurswerkzeug-Vorgaben gelten weiterhin für jeden Modus; der Quizzer benötigt zusätzlich Zugriff auf Kursmaterialien.',
+        'Wählen Sie die Lernmodi für die Teilnehmenden aus. Sie können auch ausschliesslich eigene Modi anbieten.',
       chatbotModeWritingCoach: 'Schreibcoach',
       chatbotModeWritingCoachDescription:
         'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
-      chatbotWritingCoachRequiredTool:
-        'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Führt Studierende mit Fragen, Hinweisen und Rückmeldungen.',
@@ -5455,9 +5550,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeQuizzerDescription:
         'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
       chatbotModeInvariant:
-        'Tutor, Erklärer oder Schreibcoach muss aktiviert bleiben.',
+        'Aktivieren Sie vor der Veröffentlichung mindestens einen Standardmodus oder fügen Sie einen eigenen Modus hinzu.',
       chatbotModeQuizzerCapabilityNote:
-        'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
+        'Mit einer Wissensdatenbank übt der Quizzer anhand der Kursmaterialien. Ohne Wissensdatenbank können Studierende ein Kursthema oder einen Text zum Üben angeben.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
       chatbotCustomModesTitle: 'Eigene Modi',
@@ -5741,6 +5836,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ein: Studierende können für neue Antworten Stichpunkte und einen freundlichen oder direkten Ton wählen.',
       answerPreferencesDisabledDescription:
         'Aus: Alle Studierenden erhalten dasselbe Antwortformat und denselben Ton.',
+      interactiveExplanations: 'Interaktive Erklärungen',
+      interactiveExplanationsEnabledDescription:
+        'Ein: Im Tutor- und im Erklärmodus kann der Chatbot interaktive, von KI erzeugte Erklärungen in einzelnen Schritten anzeigen.',
+      interactiveExplanationsDisabledDescription:
+        'Aus: Der Chatbot antwortet nur mit Text und zeigt keine interaktiven Erklärungen.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',
