@@ -70,6 +70,20 @@ describe('POST /api/manage/chat request boundary', () => {
     mocks.tryAcquireManageChatRequest.mockReturnValue(vi.fn())
   })
 
+  test('rejects a cross-site write before authentication or reading the request', async () => {
+    const crossSite = new NextRequest('https://chat.test/api/manage/chat', {
+      body: '{}',
+      headers: { host: 'chat.test', origin: 'https://evil.example' },
+      method: 'POST',
+    })
+
+    await expectJson(await POST(crossSite), 403, {
+      error: 'Cross-site request rejected',
+    })
+    expect(mocks.getAuthenticatedManageUser).not.toHaveBeenCalled()
+    expect(mocks.readBoundedJson).not.toHaveBeenCalled()
+  })
+
   test('returns 401 before rate limiting or reading the request', async () => {
     mocks.getAuthenticatedManageUser.mockResolvedValue(null)
 
