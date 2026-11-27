@@ -33,12 +33,14 @@ export function setRequestLogRoute(route: string): RequestHandler {
 
 export function requestLoggingMiddleware(root: AppLogger): RequestHandler {
   return (req, res, next) => {
+    // Decide before routing: a mounted handler strips its prefix from req.path.
+    const isHealthCheck = req.path === '/healthz'
     const { requestContext, log } = startRequestLog(root, {
       method: req.method,
       headers: req.headers,
       res,
       message: 'HTTP request completed',
-      skip: () => req.path === '/healthz',
+      skip: () => isHealthCheck,
       route: () => {
         const matchedRoute = req.locals.logRoute ?? req.route?.path
         return typeof matchedRoute === 'string' &&
