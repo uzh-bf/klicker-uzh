@@ -1540,9 +1540,10 @@ results in the chatbot's course.
   its length.
 - **Content** comes from `QuestionResponse`, which holds practice-quiz and
   microlearning answers only. The query filters by the authenticated
-  participant and the chatbot's course and selects no answer, solution or
-  question text. Overall counts are exact; the per-activity and per-topic
-  lines use the most recently answered questions. Flashcards are rated by the
+  participant and the chatbot's course and selects no answer, solution,
+  question text or element tag; tags are for lecturers and are never shown to
+  students. Overall counts are exact; the per-activity lines use the most
+  recently answered questions. Flashcards are rated by the
   student, so they appear on their own line. Ages are written in words because
   the model is not told the date.
 - **The student's view** (`GET /api/chatbots/:chatbotId/learner-context`, shown

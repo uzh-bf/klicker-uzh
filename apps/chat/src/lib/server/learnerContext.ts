@@ -113,7 +113,6 @@ export interface ResultTally {
 export interface PracticeResultRow {
   activityName: string
   activityKind: 'practice-quiz' | 'microlearning'
-  tags: string[]
   lastCorrectness: ResponseCorrectness
   lastAnsweredAt: Date | null
 }
@@ -123,7 +122,7 @@ export interface PracticeResults {
   totals: ResultTally
   /** Flashcards are rated by the student, so they are counted apart. */
   flashcards: ResultTally
-  /** The most recently answered questions, for the activity and topic lines. */
+  /** The most recently answered questions, for the activity lines. */
   recentRows: PracticeResultRow[]
   /** Checked practice questions currently published in the course. */
   availableQuestionCount: number
@@ -132,7 +131,6 @@ export interface PracticeResults {
 /** Newest answers first; older ones add little to what the Tutor can use. */
 const MAX_RECENT_ROWS = 400
 const MAX_ACTIVITIES = 6
-const MAX_TOPICS = 8
 const MAX_NAME_LENGTH = 80
 
 const UNCHECKED_TYPES = [ElementType.CONTENT, ElementType.FLASHCARD]
@@ -229,11 +227,6 @@ export async function loadPracticeResults(input: {
           lastResponseCorrectness: true,
           practiceQuiz: { select: { displayName: true } },
           microLearning: { select: { displayName: true } },
-          elementInstance: {
-            select: {
-              element: { select: { tags: { select: { name: true } } } },
-            },
-          },
         },
       }),
       prisma.elementInstance.count({
@@ -259,7 +252,6 @@ export async function loadPracticeResults(input: {
         response.microLearning?.displayName ??
         '',
       activityKind: response.practiceQuiz ? 'practice-quiz' : 'microlearning',
-      tags: response.elementInstance.element.tags.map((tag) => tag.name),
       lastCorrectness: response.lastResponseCorrectness,
       lastAnsweredAt: response.lastAnsweredAt,
     })),
@@ -346,7 +338,6 @@ export function formatPracticeResults(
   }
 
   const activities = new Map<string, ResultTally>()
-  const topics = new Map<string, ResultTally>()
   for (const row of results.recentRows) {
     const kind =
       row.activityKind === 'practice-quiz' ? 'practice quiz' : 'microlearning'
@@ -354,13 +345,6 @@ export function formatPracticeResults(
     const activity = activities.get(activityKey) ?? emptyTally()
     addRow(activity, row)
     activities.set(activityKey, activity)
-    for (const tag of row.tags) {
-      const topicKey = cleanName(tag)
-      if (!topicKey) continue
-      const topic = topics.get(topicKey) ?? emptyTally()
-      addRow(topic, row)
-      topics.set(topicKey, topic)
-    }
   }
   const partial =
     totals.answered > results.recentRows.length
@@ -372,15 +356,6 @@ export function formatPracticeResults(
       ...[...activities.entries()]
         .sort(byRecency)
         .slice(0, MAX_ACTIVITIES)
-        .map(([name, tally]) => groupLine(name, tally, now))
-    )
-  }
-  if (topics.size > 0) {
-    lines.push(
-      `- By topic, most recent first${partial}:`,
-      ...[...topics.entries()]
-        .sort(byRecency)
-        .slice(0, MAX_TOPICS)
         .map(([name, tally]) => groupLine(name, tally, now))
     )
   }
