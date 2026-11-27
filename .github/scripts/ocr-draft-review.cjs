@@ -739,9 +739,11 @@ async function runDraftReview(options) {
     if (adapter) {
       const diagnostics = adapter.diagnostics()
       appendSummary(summarizePlanGuidance(diagnostics), write, options.summary)
-      const { usable, skipped, repeat_skips } = diagnostics.draft_compression
+      const compression = diagnostics.draft_compression
       appendSummary(
-        `OCR draft compression usable=${usable} skipped=${skipped} repeat_skips=${repeat_skips}`,
+        compression
+          ? `OCR draft compression usable=${compression.usable} skipped=${compression.skipped} repeat_skips=${compression.repeat_skips}`
+          : 'OCR draft compression status=unavailable',
         write,
         options.summary
       )

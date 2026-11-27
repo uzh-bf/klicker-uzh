@@ -1025,6 +1025,7 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
     sawSummary = false,
     preservedEvidence = false
   let upstreamCalls = 0
+  const logs = []
   const result = await runDraftReview({
     repo: root,
     temp: root,
@@ -1032,7 +1033,7 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
     head: git('rev-parse', 'HEAD'),
     executable: process.env.OCR_TEST_BINARY,
     apiKey: 'synthetic',
-    write: () => {},
+    write: (line) => logs.push(line),
     fetchImpl: async (_url, init) => {
       const body = JSON.parse(init.body)
       const input = JSON.stringify(body.messages)
@@ -1113,6 +1114,14 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
   assert.equal(diag.completion_tokens, 12050 * upstreamCalls)
   assert.equal(diag.draft_compression.skipped, 1)
   assert.ok(diag.draft_compression.usable >= 1)
+  const { usable, skipped, repeat_skips } = diag.draft_compression
+  assert.ok(
+    logs
+      .join('')
+      .includes(
+        `OCR draft compression usable=${usable} skipped=${skipped} repeat_skips=${repeat_skips}`
+      )
+  )
 })
 
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {

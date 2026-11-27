@@ -225,6 +225,36 @@ test('only draft compression skips unusable snapshots and accounts for every ups
   }
 })
 
+test('draft compression discards private and unfinished text even without a tool call', async () => {
+  for (const [content, finish] of [
+    ['<think>synthetic reasoning</think>', 'stop'],
+    ['unfinished summary', 'length'],
+    ['interrupted summary', 'content_filter'],
+  ]) {
+    const payload = completion({ role: 'assistant', content }, finish)
+    payload.model = MOAT_FLASH_MODEL
+    const adapter = await startAdapter({
+      provider: 'moat-flash',
+      apiKey: 'synthetic',
+      guardDraftCompression: true,
+      fetchImpl: async () => jsonResponse(200, payload),
+    })
+    try {
+      const reply = await postJson(adapter, {
+        prompt_cache_key: '1234abcd-memory_compression_task-0123456789abcdef',
+        messages: [{ role: 'user', content: 'synthetic snapshot' }],
+      })
+      assert.deepEqual(reply.json.choices[0].message, {
+        role: 'assistant',
+        content: '',
+      })
+      assert.equal(adapter.diagnostics().draft_compression.skipped, 1)
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
 test('planning summary rejects missing, unfinished or inconsistent counters and reflects only fixed fields', () => {
   const plan = {
     responses: 4,
