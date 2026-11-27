@@ -40,7 +40,11 @@ function useCatalogObjectActionsDropdown({
   const router = useRouter()
 
   return useMemo(() => {
-    if (object.objectType === ObjectType.Kb) return []
+    if (
+      object.objectType === ObjectType.Kb ||
+      object.objectType === ObjectType.Chatbot
+    )
+      return []
 
     const items = []
 

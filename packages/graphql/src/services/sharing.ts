@@ -1,15 +1,15 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  type ActivityLogModificationFieldType,
+  ActivityLogModificationFieldType,
   ActivityType,
-  type CatalogObject,
-  type ObjectSharingRequest,
+  CatalogObject,
+  ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import {
   getPositiveObjectPermission,
   isSharedObjectPermissionLevel,
   MISSING_CATALOG_COLLECTION_ID,
-  type PrismaTransactionClient,
+  PrismaTransactionClient,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
@@ -1028,7 +1028,7 @@ export async function requestCatalogObject(
         existingPermission: boolean
         existingRequest: boolean
       }
-    | undefined
+    | undefined = undefined
 
   if (typeof answerCollectionId !== 'undefined') {
     // fetch the answer collection including potential pending permission requests
@@ -1920,6 +1920,7 @@ export async function changeObjectPermissionLevel(
     microLearningId,
     groupActivityId,
     kbId,
+    chatbotId,
   }: {
     permissionId: number
     permissionLevel: DB.PermissionLevel
@@ -1933,6 +1934,7 @@ export async function changeObjectPermissionLevel(
     microLearningId?: string
     groupActivityId?: string
     kbId?: string
+    chatbotId?: string
   },
   ctx: ContextWithUser
 ) {
@@ -1943,6 +1945,27 @@ export async function changeObjectPermissionLevel(
 
     const callerPermission = await getPositiveObjectPermission(
       { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+      ctx.prisma
+    )
+    if (
+      callerPermission !== DB.PermissionLevel.ADMIN &&
+      callerPermission !== DB.PermissionLevel.OWNER
+    ) {
+      return false
+    }
+  }
+
+  if (typeof chatbotId !== 'undefined') {
+    if (propagation || !isSharedObjectPermissionLevel(permissionLevel)) {
+      return false
+    }
+
+    const callerPermission = await getPositiveObjectPermission(
+      {
+        objectType: DB.ObjectType.CHATBOT,
+        objectId: chatbotId,
+        userId: ctx.user.sub,
+      },
       ctx.prisma
     )
     if (
@@ -1967,6 +1990,7 @@ export async function changeObjectPermissionLevel(
       microLearningId,
       groupActivityId,
       kbId,
+      chatbotId,
     },
   })
 
@@ -1976,7 +2000,9 @@ export async function changeObjectPermissionLevel(
 
   // fetch the user group of the updated permission
   const userGroup =
-    typeof kbId === 'undefined' && previousPermission.userGroupId !== null
+    typeof kbId === 'undefined' &&
+    typeof chatbotId === 'undefined' &&
+    previousPermission.userGroupId !== null
       ? await ctx.prisma.userGroup.findUnique({
           where: { id: previousPermission.userGroupId },
           include: { members: true, admins: true },
@@ -2003,6 +2029,23 @@ export async function changeObjectPermissionLevel(
         }
       }
 
+      if (typeof chatbotId !== 'undefined') {
+        const permissionLevel = await getPositiveObjectPermission(
+          {
+            objectType: DB.ObjectType.CHATBOT,
+            objectId: chatbotId,
+            userId: ctx.user.sub,
+          },
+          prisma
+        )
+        if (
+          permissionLevel !== DB.PermissionLevel.ADMIN &&
+          permissionLevel !== DB.PermissionLevel.OWNER
+        ) {
+          return false
+        }
+      }
+
       // update the access level of the permission
       const updatedPermission = await prisma.permission.update({
         where: {
@@ -2016,6 +2059,7 @@ export async function changeObjectPermissionLevel(
           microLearningId,
           groupActivityId,
           kbId,
+          chatbotId,
         },
         data: {
           permissionLevel,
@@ -2049,8 +2093,14 @@ export async function changeObjectPermissionLevel(
       // A group permission applies to its current members. Recompute the
       // whole KB so membership changes made before this transaction cannot
       // leave a removed member behind.
-      if (typeof kbId !== 'undefined' && updatedPermission.userId === null) {
-        await recomputeDerivedPermissions({ kbId }, prisma)
+      if (
+        (kbId !== undefined || chatbotId !== undefined) &&
+        updatedPermission.userId === null
+      ) {
+        await recomputeDerivedPermissions(
+          kbId !== undefined ? { kbId } : { chatbotId: chatbotId! },
+          prisma
+        )
       }
 
       for (const affectedUserId of affectedUserIds) {
@@ -2115,11 +2165,14 @@ export async function changeObjectPermissionLevel(
             prisma
           )
         } else if (
-          typeof kbId !== 'undefined' &&
+          (kbId !== undefined || chatbotId !== undefined) &&
           updatedPermission.userId !== null
         ) {
           await recomputeDerivedPermissions(
-            { kbId, userId: affectedUserId },
+            {
+              ...(kbId !== undefined ? { kbId } : { chatbotId: chatbotId! }),
+              userId: affectedUserId,
+            },
             prisma
           )
         }
@@ -2136,6 +2189,7 @@ export async function changeObjectPermissionLevel(
         microLearningId,
         groupActivityId,
         kbId,
+        chatbotId,
       })
       if (objectType && objectId) {
         await prisma.auditLogEntry.create({
@@ -2162,6 +2216,7 @@ export async function changeObjectPermissionLevel(
               microLearningId,
               groupActivityId,
               kbId,
+              chatbotId,
             }
           )}`
         )
@@ -2198,6 +2253,7 @@ export async function revokeObjectAccess(
     microLearningId,
     groupActivityId,
     kbId,
+    chatbotId,
   }: {
     permissionId: number
     catalogCollectionId?: string
@@ -2209,12 +2265,19 @@ export async function revokeObjectAccess(
     microLearningId?: string
     groupActivityId?: string
     kbId?: string
+    chatbotId?: string
   },
   ctx: ContextWithUser
 ) {
-  if (typeof kbId !== 'undefined') {
+  const aiObject =
+    kbId !== undefined
+      ? ({ objectType: DB.ObjectType.KB, objectId: kbId } as const)
+      : chatbotId !== undefined
+        ? ({ objectType: DB.ObjectType.CHATBOT, objectId: chatbotId } as const)
+        : undefined
+  if (aiObject) {
     const callerPermission = await getPositiveObjectPermission(
-      { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+      { ...aiObject, userId: ctx.user.sub },
       ctx.prisma
     )
     if (
@@ -2238,6 +2301,7 @@ export async function revokeObjectAccess(
       microLearningId,
       groupActivityId,
       kbId,
+      chatbotId,
     },
     include: {
       user: {
@@ -2249,7 +2313,7 @@ export async function revokeObjectAccess(
   })
 
   const userGroup =
-    typeof kbId === 'undefined' &&
+    !aiObject &&
     typeof permission?.userGroupId !== 'undefined' &&
     permission?.userGroupId !== null
       ? await ctx.prisma.userGroup.findUnique({
@@ -2265,11 +2329,10 @@ export async function revokeObjectAccess(
   // delete the direct permission and recompute derived permissions
   const deletedPermission = await ctx.prisma.$transaction(
     async (prisma) => {
-      if (typeof kbId !== 'undefined') {
+      if (aiObject) {
         const permissionLevel = await getPositiveObjectPermission(
           {
-            objectType: DB.ObjectType.KB,
-            objectId: kbId,
+            ...aiObject,
             userId: ctx.user.sub,
           },
           prisma
@@ -2283,17 +2346,19 @@ export async function revokeObjectAccess(
       }
 
       const deleted = await prisma.permission.delete({
-        where:
-          typeof kbId !== 'undefined'
-            ? { id: permissionId, kbId }
-            : { id: permissionId },
+        where: aiObject
+          ? { id: permissionId, kbId, chatbotId }
+          : { id: permissionId },
       })
 
       // A group permission applies to its current members. Recompute the
       // whole KB so the deletion removes every member grant, including users
       // who joined or left while this request was in flight.
-      if (typeof kbId !== 'undefined' && permission.userId === null) {
-        await recomputeDerivedPermissions({ kbId }, prisma)
+      if (aiObject && permission.userId === null) {
+        await recomputeDerivedPermissions(
+          kbId !== undefined ? { kbId } : { chatbotId: chatbotId! },
+          prisma
+        )
       }
 
       // add an audit log entry for the revoked permission
@@ -2307,6 +2372,7 @@ export async function revokeObjectAccess(
         microLearningId,
         groupActivityId,
         kbId,
+        chatbotId,
       })
       if (objectType && objectId) {
         await prisma.auditLogEntry.create({
@@ -2333,6 +2399,7 @@ export async function revokeObjectAccess(
               microLearningId,
               groupActivityId,
               kbId,
+              chatbotId,
             }
           )}`
         )
@@ -2411,9 +2478,12 @@ export async function revokeObjectAccess(
             },
             prisma
           )
-        } else if (typeof kbId !== 'undefined' && permission.userId !== null) {
+        } else if (aiObject && permission.userId !== null) {
           await recomputeDerivedPermissions(
-            { kbId, userId: affectedUserId },
+            {
+              ...(kbId !== undefined ? { kbId } : { chatbotId: chatbotId! }),
+              userId: affectedUserId,
+            },
             prisma
           )
         }
@@ -2735,6 +2805,43 @@ export async function getKnowledgeBasePermissions(
       isOwn: kb.owner.id === ctx.user.sub,
     },
     permissions: mapDirectPermissions(kb.directPermissions, ctx.user.sub),
+  }
+}
+
+export async function getChatbotPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const chatbot = await ctx.prisma.chatbot.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        where: { permissionLevel: { not: DB.PermissionLevel.OWNER } },
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+      owner: { select: { id: true, shortname: true, email: true } },
+    },
+  })
+
+  if (!chatbot) {
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
+  }
+
+  return {
+    isOwner: chatbot.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1,
+      userId: chatbot.owner.id,
+      username: chatbot.owner.shortname,
+      userEmail: chatbot.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: chatbot.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(chatbot.directPermissions, ctx.user.sub),
   }
 }
 
@@ -4771,14 +4878,16 @@ async function shareElementForBatch(
   }
 }
 
-async function shareKnowledgeBaseObject(
+async function shareAiObject(
   {
-    kbId,
+    objectId,
+    objectType,
     permissionLevel,
     propagation,
     target,
   }: {
-    kbId: string
+    objectId: string
+    objectType: typeof DB.ObjectType.KB | typeof DB.ObjectType.CHATBOT
     permissionLevel: DB.PermissionLevel
     propagation: boolean
     target: ResolvedSharingTarget
@@ -4791,21 +4900,22 @@ async function shareKnowledgeBaseObject(
 
   const permission = await ctx.prisma.$transaction(
     async (prisma) => {
-      const kb = await prisma.kB.findUnique({
-        where: { id: kbId },
-        select: { ownerId: true, deletedAt: true },
-      })
-
-      if (!kb || kb.deletedAt !== null) {
+      const isKb = objectType === DB.ObjectType.KB
+      const object = isKb
+        ? await prisma.kB.findFirst({
+            where: { id: objectId, deletedAt: null },
+            select: { ownerId: true },
+          })
+        : await prisma.chatbot.findUnique({
+            where: { id: objectId },
+            select: { ownerId: true },
+          })
+      if (!object || (target.kind === 'USER' && target.id === object.ownerId))
         return null
-      }
-
-      if (target.kind === 'USER' && target.id === kb.ownerId) {
-        return null
-      }
+      const selector = isKb ? { kbId: objectId } : { chatbotId: objectId }
 
       const callerPermission = await getPositiveObjectPermission(
-        { objectType: DB.ObjectType.KB, objectId: kbId, userId: ctx.user.sub },
+        { objectType, objectId, userId: ctx.user.sub },
         prisma
       )
       if (
@@ -4818,9 +4928,16 @@ async function shareKnowledgeBaseObject(
       const newPermission =
         target.kind === 'USER'
           ? await prisma.permission.upsert({
-              where: { kbId_userId: { kbId, userId: target.id } },
+              where: isKb
+                ? { kbId_userId: { kbId: objectId, userId: target.id } }
+                : {
+                    chatbotId_userId: {
+                      chatbotId: objectId,
+                      userId: target.id,
+                    },
+                  },
               create: {
-                kbId,
+                ...selector,
                 userId: target.id,
                 permissionLevel,
                 propagation: false,
@@ -4828,9 +4945,21 @@ async function shareKnowledgeBaseObject(
               update: { permissionLevel, propagation: false },
             })
           : await prisma.permission.upsert({
-              where: { kbId_userGroupId: { kbId, userGroupId: target.id } },
+              where: isKb
+                ? {
+                    kbId_userGroupId: {
+                      kbId: objectId,
+                      userGroupId: target.id,
+                    },
+                  }
+                : {
+                    chatbotId_userGroupId: {
+                      chatbotId: objectId,
+                      userGroupId: target.id,
+                    },
+                  },
               create: {
-                kbId,
+                ...selector,
                 userGroupId: target.id,
                 permissionLevel,
                 propagation: false,
@@ -4839,23 +4968,23 @@ async function shareKnowledgeBaseObject(
             })
 
       await recomputeDerivedPermissions(
-        target.kind === 'USER' ? { kbId, userId: target.id } : { kbId },
+        target.kind === 'USER' ? { ...selector, userId: target.id } : selector,
         prisma
       )
 
       await prisma.auditLogEntry.create({
         data: {
           type: DB.AuditLogType.PERMISSION_GRANTED,
-          objectType: DB.ObjectType.KB,
-          objectId: kbId,
+          objectType,
+          objectId,
           sourceUserId: ctx.user.sub,
           targetUserId: target.kind === 'USER' ? target.id : undefined,
           targetUserGroupId:
             target.kind === 'USER_GROUP' ? target.id : undefined,
           message:
             target.kind === 'USER'
-              ? `Direct permission with level ${permissionLevel} granted for ${DB.ObjectType.KB} (ID ${kbId}) by owner / admin ${ctx.user.sub} to user ${target.id}.`
-              : `Direct permission with level ${permissionLevel} granted for ${DB.ObjectType.KB} (ID ${kbId}) by owner / admin ${ctx.user.sub} to user group ${target.id}.`,
+              ? `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user ${target.id}.`
+              : `Direct permission with level ${permissionLevel} granted for ${objectType} (ID ${objectId}) by owner / admin ${ctx.user.sub} to user group ${target.id}.`,
         },
       })
 
@@ -4901,6 +5030,7 @@ export async function shareObject(
     microLearningId,
     groupActivityId,
     kbId,
+    chatbotId,
   }: {
     permissionLevel: DB.PermissionLevel
     shortnameOrEmail?: string | null
@@ -4915,6 +5045,7 @@ export async function shareObject(
     microLearningId?: string
     groupActivityId?: string
     kbId?: string
+    chatbotId?: string
   },
   ctx: ContextWithUser
 ) {
@@ -4927,10 +5058,12 @@ export async function shareObject(
     return null
   }
 
-  if (typeof kbId !== 'undefined') {
-    return await shareKnowledgeBaseObject(
+  if (kbId !== undefined || chatbotId !== undefined) {
+    return await shareAiObject(
       {
-        kbId,
+        objectId: kbId ?? chatbotId!,
+        objectType:
+          kbId !== undefined ? DB.ObjectType.KB : DB.ObjectType.CHATBOT,
         permissionLevel,
         propagation,
         target: resolvedTarget.target,

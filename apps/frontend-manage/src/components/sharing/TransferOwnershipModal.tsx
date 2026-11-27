@@ -35,7 +35,8 @@ function TransferOwnershipModal({
     onError: onTransferFailure,
   })
 
-  if (objectType === ObjectType.Kb) return null
+  if (objectType === ObjectType.Kb || objectType === ObjectType.Chatbot)
+    return null
 
   const activityTemplate =
     isTemplate &&

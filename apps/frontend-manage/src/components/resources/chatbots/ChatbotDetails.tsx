@@ -1,5 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
+import {
+  faExternalLinkAlt,
+  faShareNodes,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
@@ -9,7 +12,8 @@ import {
   GetChatAccountUsageDocument,
   MSaveChatbotRevisionDocument,
   QGetCatalystRequestAccessDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithSharingDocument,
+  ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -18,6 +22,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   Badge,
+  Button,
   Checkbox,
   H3,
   Modal,
@@ -51,6 +56,7 @@ import ChatbotCreditPolicy from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotKnowledgeBaseSetup from './ChatbotKnowledgeBaseSetup'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ChatbotSetupSection from './ChatbotSetupSection'
 import {
   getChatbotMutationErrorKey,
@@ -318,6 +324,7 @@ function ChatbotDetails({
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [openSections, setOpenSections] = useState<ChatbotSetupSectionId[]>([])
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [sharingOpen, setSharingOpen] = useState(false)
   // The student information shown in the preview dialog, captured when it
   // opens so it includes unsaved edits.
   const [studentsPreview, setStudentsPreview] =
@@ -641,6 +648,9 @@ function ChatbotDetails({
   }
 
   const enabledKnowledgeBases = chatbot.enabledKnowledgeBases ?? []
+  const isManager = chatbot.isManager === true
+  const isOwner = chatbot.isOwner === true
+  const isEditor = chatbot.isEditor === true
 
   const createdAtLabel = chatbot.createdAt
     ? dayjs(chatbot.createdAt).format('DD.MM.YYYY HH:mm')
@@ -687,7 +697,7 @@ function ChatbotDetails({
     }
   }
   const chatbotStatusLabel = t(getChatbotStatusTranslationKey(chatbot.status))
-  const modelSettingsEditable = isChatbotRevisionEditable(chatbot)
+  const modelSettingsEditable = isEditor && isChatbotRevisionEditable(chatbot)
   const revisionPending = isChatbotRevisionPending(chatbot)
   // The request card reports its submission through the authoring state.
   const publicationSubmitting = authoringNavigationState.pending
@@ -825,7 +835,7 @@ function ChatbotDetails({
             },
           },
         },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [{ query: QGetChatbotsInfoWithSharingDocument }],
         awaitRefetchQueries: true,
       })
 
@@ -853,7 +863,7 @@ function ChatbotDetails({
             },
           },
         },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [{ query: QGetChatbotsInfoWithSharingDocument }],
         awaitRefetchQueries: true,
       })
 
@@ -1321,7 +1331,7 @@ function ChatbotDetails({
         )}
       </div>
       {/* Curated response examples train reviewers to judge answer quality against the chatbot's own knowledge base, a task an ordinary lecturer does not perform. */}
-      {responseExamplesEnabled ? (
+      {responseExamplesEnabled && isOwner ? (
         <Accordion
           key={`${chatbot.id}:${focusedResponseExampleId ?? ''}`}
           type="single"
@@ -1666,7 +1676,7 @@ function ChatbotDetails({
               section: sectionTitles[id],
             }),
     }))
-  const setupEditable = modelSettingsEditable && !revisionPending
+  const setupEditable = isEditor && modelSettingsEditable && !revisionPending
   const paused = chatbot.status === ChatbotStatus.Paused
   const unsubmittedSections = sectionStatuses
     .filter(([, status]) => status === 'notSubmitted')
@@ -1684,6 +1694,7 @@ function ChatbotDetails({
   // A published chatbot has nothing to submit until a section saves a
   // revision, and a paused one cannot change.
   const showRequestCard =
+    isOwner &&
     !paused &&
     (chatbot.status !== ChatbotStatus.Published ||
       revisionPending ||
@@ -1836,11 +1847,24 @@ function ChatbotDetails({
               ) : null}
             </div>
             <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <AiSettingsModeSwitch
-                mode={settingsMode}
-                onChange={setSettingsMode}
-              />
-              {canUseChatbotOwnerPreview(scopeData?.userScope) &&
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {isManager ? (
+                  <Button
+                    type="button"
+                    onClick={() => setSharingOpen(true)}
+                    data={{ cy: 'share-chatbot' }}
+                  >
+                    <Button.Icon withoutLabel icon={faShareNodes} />
+                    <Button.Label>{t('shared.generic.sharing')}</Button.Label>
+                  </Button>
+                ) : null}
+                <AiSettingsModeSwitch
+                  mode={settingsMode}
+                  onChange={setSettingsMode}
+                />
+              </div>
+              {isOwner &&
+                canUseChatbotOwnerPreview(scopeData?.userScope) &&
                 ownerPreviewUrl &&
                 chatbot.status !== ChatbotStatus.Paused && (
                   <div className="flex w-full min-w-0 flex-col items-stretch gap-1 sm:w-auto sm:items-end">
@@ -1889,7 +1913,8 @@ function ChatbotDetails({
           >
             {visibilityLabel}
           </p>
-          {chatbot.status === ChatbotStatus.Published &&
+          {isOwner &&
+          chatbot.status === ChatbotStatus.Published &&
           (chatbot.courses?.length ?? 0) > 0 ? (
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
               {chatbot.courses?.map((course) => (
@@ -1922,7 +1947,7 @@ function ChatbotDetails({
           )}
         </div>
 
-        {chatbot.status === ChatbotStatus.Published || paused ? (
+        {isOwner && (chatbot.status === ChatbotStatus.Published || paused) ? (
           <dl
             className="flex flex-wrap gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm"
             data-cy="chatbot-usage-strip"
@@ -1968,7 +1993,7 @@ function ChatbotDetails({
               knowledgeBaseOptions={chatbot.knowledgeBaseOptions}
               connectOnSelect
               proposedKnowledgeBaseName={chatbot.name}
-              readOnly={paused}
+              readOnly={paused || !isEditor}
             />
           </ChatbotSetupSection>
 
@@ -2102,61 +2127,63 @@ function ChatbotDetails({
             </ChatbotSetupSection>
           ) : null}
 
-          <ChatbotSetupSection
-            id="usage"
-            title={sectionTitles.usage}
-            status={usageStatus}
-            summary={usageLimitsSummary}
-            applyLabel={revisionApplyLabel}
-            open={openSections.includes('usage')}
-            onOpenChange={(open) => setSetupSectionOpen('usage', open)}
-            footer={
-              setupEditable
-                ? {
-                    onSave: () => void creditFormRef.current?.submitForm(),
-                    saveDisabled:
-                      !creditNavigationState.dirty ||
-                      creditNavigationState.pending,
-                    saving: creditNavigationState.pending,
-                    dirty: creditNavigationState.dirty,
-                    onDiscard: () => creditFormRef.current?.resetForm(),
-                  }
-                : undefined
-            }
-          >
-            <p className="text-sm text-gray-600">
-              {t('manage.resources.chatbotCreditPolicyDescription')}
-            </p>
-            {chatbot.status === ChatbotStatus.Published &&
-            liveCreditPolicySummary !== usageLimitsSummary ? (
-              <p
-                className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
-                data-cy="chatbot-live-credit-policy"
-              >
-                {t('manage.resources.chatbotLiveCreditPolicy', {
-                  policy: liveCreditPolicySummary,
-                })}
+          {isOwner ? (
+            <ChatbotSetupSection
+              id="usage"
+              title={sectionTitles.usage}
+              status={usageStatus}
+              summary={usageLimitsSummary}
+              applyLabel={revisionApplyLabel}
+              open={openSections.includes('usage')}
+              onOpenChange={(open) => setSetupSectionOpen('usage', open)}
+              footer={
+                setupEditable
+                  ? {
+                      onSave: () => void creditFormRef.current?.submitForm(),
+                      saveDisabled:
+                        !creditNavigationState.dirty ||
+                        creditNavigationState.pending,
+                      saving: creditNavigationState.pending,
+                      dirty: creditNavigationState.dirty,
+                      onDiscard: () => creditFormRef.current?.resetForm(),
+                    }
+                  : undefined
+              }
+            >
+              <p className="text-sm text-gray-600">
+                {t('manage.resources.chatbotCreditPolicyDescription')}
               </p>
-            ) : null}
-            <ChatbotCreditPolicy
-              key={chatbot.id}
-              chatbot={chatbot}
-              publicationPending={publicationSubmitting}
-              embedded
-              formRef={creditFormRef}
-              onSaved={() => closeSetupSection('usage')}
-              onNavigationStateChange={setCreditNavigationState}
-              onRevisionConflict={markRevisionConflict}
-            />
-            {revisionConflict ? (
-              <ChatbotRevisionConflictNotice
-                message={t('manage.resources.chatbotRevisionConflict')}
-                onReload={() => void reloadAfterConflict()}
-                reloading={revisionReloading}
-                testId="chatbot-revision-reload-credits"
+              {chatbot.status === ChatbotStatus.Published &&
+              liveCreditPolicySummary !== usageLimitsSummary ? (
+                <p
+                  className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                  data-cy="chatbot-live-credit-policy"
+                >
+                  {t('manage.resources.chatbotLiveCreditPolicy', {
+                    policy: liveCreditPolicySummary,
+                  })}
+                </p>
+              ) : null}
+              <ChatbotCreditPolicy
+                key={chatbot.id}
+                chatbot={chatbot}
+                publicationPending={publicationSubmitting}
+                embedded
+                formRef={creditFormRef}
+                onSaved={() => closeSetupSection('usage')}
+                onNavigationStateChange={setCreditNavigationState}
+                onRevisionConflict={markRevisionConflict}
               />
-            ) : null}
-          </ChatbotSetupSection>
+              {revisionConflict ? (
+                <ChatbotRevisionConflictNotice
+                  message={t('manage.resources.chatbotRevisionConflict')}
+                  onReload={() => void reloadAfterConflict()}
+                  reloading={revisionReloading}
+                  testId="chatbot-revision-reload-credits"
+                />
+              ) : null}
+            </ChatbotSetupSection>
+          ) : null}
 
           {advancedSettings ? (
             <>
@@ -2295,6 +2322,17 @@ function ChatbotDetails({
               introText={studentsPreview?.introText ?? ''}
             />
           </Modal>
+          {sharingOpen ? (
+            <ObjectSharingModalWrapper
+              objectType={ObjectType.Chatbot}
+              objectUuid={chatbot.id}
+              objectName={chatbot.name}
+              onClose={() => {
+                setSharingOpen(false)
+                void reloadRevision()
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </div>

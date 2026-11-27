@@ -3,7 +3,7 @@ import {
   ChatbotStatus,
   MSubmitChatbotRevisionDocument,
   MWithdrawChatbotRevisionDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -230,6 +230,7 @@ function ChatbotPublicationRequest({
     useChatbotRevisionReload()
 
   const editable =
+    chatbot.isOwner !== false &&
     !isChatbotRevisionPending(chatbot) &&
     (chatbot.status === ChatbotStatus.Draft ||
       chatbot.status === ChatbotStatus.Rejected ||
@@ -290,7 +291,7 @@ function ChatbotPublicationRequest({
           chatbotId: chatbot.id,
           expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
         },
-        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        refetchQueries: [{ query: QGetChatbotsInfoWithSharingDocument }],
         awaitRefetchQueries: true,
       })
       if (!result.data?.withdrawChatbotRevision) {
@@ -306,7 +307,7 @@ function ChatbotPublicationRequest({
     }
   }
 
-  if (pending) {
+  if (pending && chatbot.isOwner !== false) {
     return (
       <div className="space-y-3" data-cy="chatbot-publication-request">
         <ChatbotPublicationReadOnly chatbot={chatbot} />
@@ -380,9 +381,7 @@ function ChatbotPublicationRequest({
               useCase: values.useCase.trim(),
               expectedStudentCount: Number(values.expectedStudentCount),
             },
-            refetchQueries: [
-              { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
-            ],
+            refetchQueries: [{ query: QGetChatbotsInfoWithSharingDocument }],
             awaitRefetchQueries: true,
           })
 

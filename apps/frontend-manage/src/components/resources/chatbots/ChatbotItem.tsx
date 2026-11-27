@@ -1,4 +1,4 @@
-import type { Chatbot } from '@klicker-uzh/graphql/dist/ops'
+import { type Chatbot, PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { KnowledgeBaseMaterialsReadiness } from '@klicker-uzh/kb-management'
 import { Badge } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -9,8 +9,28 @@ import { getChatbotStatusTranslationKey } from './chatbotStatus'
 // chatbot entity.
 type ChatbotListItem = Pick<
   Chatbot,
-  'courses' | 'enabledKnowledgeBases' | 'id' | 'name' | 'status'
+  | 'courses'
+  | 'enabledKnowledgeBases'
+  | 'id'
+  | 'name'
+  | 'status'
+  | 'ownerShortname'
+  | 'isShared'
+  | 'permissionLevel'
 >
+
+function getPermissionTranslationKey(permissionLevel?: PermissionLevel | null) {
+  switch (permissionLevel) {
+    case PermissionLevel.Read:
+      return 'shared.generic.read' as const
+    case PermissionLevel.Write:
+      return 'shared.generic.write' as const
+    case PermissionLevel.Admin:
+      return 'shared.generic.admin' as const
+    default:
+      return null
+  }
+}
 
 function ChatbotItem({
   chatbot,
@@ -24,6 +44,9 @@ function ChatbotItem({
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
   const knowledgeBase = chatbot.enabledKnowledgeBases?.[0]
+  const permissionTranslationKey = getPermissionTranslationKey(
+    chatbot.permissionLevel
+  )
   const knowledgeBaseLabel = !knowledgeBase
     ? t('manage.resources.chatbotListNoKnowledgeBase')
     : !knowledgeBase.id || !knowledgeBase.name
@@ -55,7 +78,30 @@ function ChatbotItem({
           >
             {t(getChatbotStatusTranslationKey(chatbot.status))}
           </Badge>
+          {chatbot.isShared ? (
+            <>
+              <Badge
+                className="bg-blue-50 text-blue-800 hover:bg-blue-100"
+                data-cy="chatbot-shared"
+              >
+                {t('shared.generic.shared')}
+              </Badge>
+              {permissionTranslationKey ? (
+                <Badge
+                  className="bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  data-cy="chatbot-shared-permission"
+                >
+                  {t(permissionTranslationKey)}
+                </Badge>
+              ) : null}
+            </>
+          ) : null}
         </div>
+        {chatbot.isShared && chatbot.ownerShortname ? (
+          <div className="text-sm text-gray-500" data-cy="chatbot-owner">
+            {t('shared.generic.owner')}: {chatbot.ownerShortname}
+          </div>
+        ) : null}
         <div className="text-sm text-gray-500">
           {courseNames.length > 0
             ? t('manage.resources.linkedCoursesList', {

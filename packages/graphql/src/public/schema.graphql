@@ -775,12 +775,19 @@ type Chatbot {
   expectedStudentCount: Int
   id: ID!
   interactiveExplanationsEnabled: Boolean!
+  isEditor: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isShared: Boolean
   knowledgeBaseOptions: [ChatbotKnowledgeBasePickerOption!]!
   knowledgeGraphRetrievalEnabled: Boolean!
   knowledgeGraphVisible: Boolean!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]! @deprecated(reason: "Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.")
   modelSelection: Boolean!
   name: String!
+  numSharedUsers: Int
+  ownerShortname: String
+  permissionLevel: PermissionLevel
   publicationUseCase: String
   publishedAt: Date
   reviewComment: String
@@ -3258,6 +3265,7 @@ type ObjectSharingRequest {
 enum ObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
+  CHATBOT
   COURSE
   ELEMENT
   GROUP_ACTIVITY

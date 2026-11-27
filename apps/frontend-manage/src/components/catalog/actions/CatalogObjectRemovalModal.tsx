@@ -22,7 +22,11 @@ function CatalogObjectRemovalModal({
     RemoveCatalogObjectAssignmentDocument
   )
 
-  if (object.objectType === ObjectType.Kb) return null
+  if (
+    object.objectType === ObjectType.Kb ||
+    object.objectType === ObjectType.Chatbot
+  )
+    return null
 
   return (
     <Modal

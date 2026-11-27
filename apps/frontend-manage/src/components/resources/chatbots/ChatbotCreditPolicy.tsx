@@ -3,7 +3,7 @@ import {
   ChatbotStatus,
   CreditResetPeriod,
   MSaveChatbotRevisionDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -131,7 +131,8 @@ function ChatbotCreditPolicy({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const clearSaveSuccess = useCallback(() => setSaveSuccess(false), [])
-  const editable = isChatbotRevisionEditable(chatbot)
+  const editable =
+    chatbot.isOwner !== false && isChatbotRevisionEditable(chatbot)
   const revisionPending = isChatbotRevisionPending(chatbot)
   const formDisabled =
     !editable ||
@@ -232,9 +233,7 @@ function ChatbotCreditPolicy({
                 },
               },
             },
-            refetchQueries: [
-              { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
-            ],
+            refetchQueries: [{ query: QGetChatbotsInfoWithSharingDocument }],
             awaitRefetchQueries: true,
           })
           const saved = result.data?.saveChatbotRevision

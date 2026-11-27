@@ -1133,6 +1133,7 @@ export default {
       GROUP_ACTIVITY_TEMPLATE: 'Group Activity Template',
       ANSWER_COLLECTION: 'Answer Collection',
       KB: 'Knowledge base',
+      CHATBOT: 'Chatbot',
       CATALOG_COLLECTION: 'Catalog Collection',
       ELEMENT: 'Element',
       COURSE: 'Course',
@@ -2067,7 +2068,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     title: 'Knowledge Bases',
     sharingPermissions: {
       viewAndInspect:
-        'View and inspect the knowledge base and its source material',
+        'Inspect the sources and use this knowledge base in your chatbots',
       editSources: 'Maintain the source material',
       manageAccess: 'Grant, change and revoke access',
       delete: 'Delete the knowledge base and manage its lifecycle',
@@ -6250,6 +6251,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       shareGROUP_ACTIVITY: 'Share Group Activity',
       shareCOURSE: 'Share Course',
       shareELEMENT: 'Share Element',
+      chatbotViewSetup: 'View setup',
+      chatbotEditSetup: 'Edit setup',
+      chatbotSubmit: 'Submit for publication',
+      shareCHATBOT: 'Share chatbot',
       shareKB: 'Share Knowledge Base',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
@@ -6267,6 +6272,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This view allows you to share the course "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the course or make other changes.',
       infoSharingELEMENT:
         'This view allows you to share the element "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the element, add more users or make other changes.',
+      infoSharingCHATBOT:
+        'Share the setup of <b>{objectName}</b> with lecturers or user groups.',
       infoSharingKB:
         'This view allows you to share the knowledge base "<b>{objectName}</b>" with other lecturers or user groups. Read access lets recipients inspect the knowledge base and its source material. Write access also lets them maintain the source material. Admin access also lets them grant, change and revoke access. Owners keep lifecycle and deletion controls.',
       propagatedPermissions: 'Propagated Permissions',

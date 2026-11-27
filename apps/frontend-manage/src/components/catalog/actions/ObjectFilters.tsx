@@ -28,7 +28,9 @@ function ObjectFilters({
             data: { cy: 'all-object-types' },
           },
           ...Object.values(ObjectType)
-            .filter((type) => type !== ObjectType.Kb)
+            .filter(
+              (type) => type !== ObjectType.Kb && type !== ObjectType.Chatbot
+            )
             .map((type) => ({
               label: t(`shared.types.${type}`),
               value: type,

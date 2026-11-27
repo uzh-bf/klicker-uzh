@@ -6,7 +6,7 @@ import {
   ChatbotStatus,
   LocaleType,
   MSaveChatbotRevisionDocument,
-  QGetChatbotsInfoWithKnowledgeBasesDocument,
+  QGetChatbotsInfoWithSharingDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
@@ -565,7 +565,7 @@ function CustomModesEditor({
                   },
                 },
                 refetchQueries: [
-                  { query: QGetChatbotsInfoWithKnowledgeBasesDocument },
+                  { query: QGetChatbotsInfoWithSharingDocument },
                 ],
                 awaitRefetchQueries: true,
               })
@@ -1021,7 +1021,8 @@ function ChatbotAuthoring({
   const revisionValues = getChatbotRevisionValues(chatbot)
   const revisionVersion = getChatbotRevisionVersion(chatbot)
   const revisionPending = isChatbotRevisionPending(chatbot)
-  const metadataEditable = isChatbotRevisionEditable(chatbot)
+  const metadataEditable =
+    chatbot.isEditor !== false && isChatbotRevisionEditable(chatbot)
   const modeEditable = metadataEditable
   const disclaimerEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
@@ -1261,7 +1262,7 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                              query: QGetChatbotsInfoWithSharingDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -1467,7 +1468,7 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                              query: QGetChatbotsInfoWithSharingDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -1872,7 +1873,7 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                              query: QGetChatbotsInfoWithSharingDocument,
                             },
                           ],
                           awaitRefetchQueries: true,

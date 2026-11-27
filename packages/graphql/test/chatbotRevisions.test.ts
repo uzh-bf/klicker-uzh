@@ -1,10 +1,12 @@
 import {
   ChatbotStatus,
   CreditResetPeriod,
+  PermissionLevel,
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { ContextWithUser } from '../src/lib/context.js'
 import * as service from '../src/services/chatbots.js'
+import * as responseExamples from '../src/services/responseExamples.js'
 import {
   initializePrisma,
   seedCourse,
@@ -15,6 +17,7 @@ import {
 describe('chatbot authoring revision transitions', () => {
   let dependencies: Awaited<ReturnType<typeof initializePrisma>>
   let owner: ContextWithUser
+  let editor: ContextWithUser
   let admin: ContextWithUser
 
   beforeAll(async () => {
@@ -36,9 +39,12 @@ describe('chatbot authoring revision transitions', () => {
         isEnabled: vi.fn((key) => key === 'ai-beta'),
       } as NonNullable<ContextWithUser['featureFlags']>,
     }
-    admin = {
+    editor = {
       ...contexts.userTwoCtx,
       featureFlags: owner.featureFlags,
+    }
+    admin = {
+      ...editor,
       user: { ...contexts.userTwoCtx.user, role: UserRole.ADMIN },
     }
     await dependencies.prisma.user.update({
@@ -82,6 +88,18 @@ describe('chatbot authoring revision transitions', () => {
         creditInitialCredits: 10,
         creditResetAmount: 10,
         creditMaxCredits: 100,
+      },
+    })
+  }
+  async function grantChatbotPermission(
+    chatbotId: string,
+    permissionLevel: PermissionLevel
+  ) {
+    return await dependencies.prisma.permission.create({
+      data: {
+        permissionLevel,
+        userId: editor.user.sub,
+        chatbotId,
       },
     })
   }
@@ -1518,6 +1536,88 @@ describe('chatbot authoring revision transitions', () => {
     expect(rejected.draftConfig).toMatchObject({
       customModeConfig: { modes: [{ name: 'Draft mode' }] },
     })
+  })
+
+  it('lets a shared editor save ordinary draft content but not credits or publication', async () => {
+    const bot = await seed(ChatbotStatus.DRAFT)
+    await grantChatbotPermission(bot.id, PermissionLevel.WRITE)
+
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { metadata: { description: 'Edited by a collaborator' } },
+      },
+      editor
+    )
+    expect(saved).toMatchObject({
+      permissionLevel: PermissionLevel.WRITE,
+      isEditor: true,
+      isOwner: false,
+      revisionVersion: 1,
+    })
+    expect((await read(bot.id)).draftConfig).toMatchObject({
+      description: 'Edited by a collaborator',
+    })
+
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 1,
+          input: {
+            creditPolicy: {
+              creditInitialCredits: 50,
+              creditResetPeriod: CreditResetPeriod.DAILY,
+              creditResetAmount: 50,
+              creditMaxCredits: 50,
+            },
+          },
+        },
+        editor
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'CHATBOT_CREDIT_POLICY_OWNER_ONLY' },
+    })
+    await expect(submit(bot.id, 1)).resolves.toBeTruthy()
+    const pending = await read(bot.id)
+    await expect(
+      service.withdrawChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: pending.revisionVersion,
+        },
+        editor
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_OWNER_REQUIRED' } })
+  })
+
+  it('returns a redacted shared projection and keeps response examples owner-only', async () => {
+    const bot = await seed()
+    await dependencies.prisma.responseExampleSet.create({
+      data: { chatbotId: bot.id },
+    })
+    await grantChatbotPermission(bot.id, PermissionLevel.WRITE)
+
+    const shared = (await service.getChatbotsInfo(editor))?.find(
+      (chatbot) => chatbot.id === bot.id
+    )
+    expect(shared).toMatchObject({
+      permissionLevel: PermissionLevel.WRITE,
+      ownerShortname: expect.any(String),
+      isShared: true,
+      isEditor: true,
+      isOwner: false,
+      usageSummary: null,
+      disclaimerSummary: {
+        acceptedCount: 0,
+        declinedCount: 0,
+        pendingCount: 0,
+      },
+    })
+    await expect(
+      responseExamples.getChatbotResponseExamples({ chatbotId: bot.id }, editor)
+    ).resolves.toBeNull()
   })
 })
 
