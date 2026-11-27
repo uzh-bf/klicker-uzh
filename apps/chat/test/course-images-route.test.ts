@@ -191,6 +191,31 @@ it('keeps serving an image stored before provenance markers', async () => {
   })
   expect((await GET(req, { params })).status).toBe(200)
 })
+it('requires current document access for an unmarked Quizzer image', async () => {
+  mocks.message.mockResolvedValue({
+    chatMode: 'quizzer',
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolName: 'show_course_image',
+        result: { status: 'selected', image },
+      },
+    ],
+  })
+  mocks.chatbot.mockResolvedValue({
+    knowledgeBases: [
+      { ...managedLink, createdAt: new Date('2026-05-01T00:00:00Z') },
+    ],
+    mcpConfigurations: [
+      ...legacyConfigurations,
+      { ...legacyConfigurations[0], chatMode: 'quizzer', isEnabled: false },
+    ],
+  })
+  expect((await GET(req, { params })).status).toBe(404)
+  expect(mocks.read).not.toHaveBeenCalled()
+})
+
 it('refuses an unmarked image when its KB was reattached after the message', async () => {
   mocks.message.mockResolvedValue({
     chatMode: 'tutor',

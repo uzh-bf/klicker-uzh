@@ -70,7 +70,12 @@ describePostgres('response-example PostgreSQL runtime', () => {
       data: { id: KB_ID, name: 'Synthetic runtime KB', ownerId: OWNER_ID },
     })
     await prisma.kBChatbot.create({
-      data: { kbId: KB_ID, chatbotId: CHATBOT_ID, isEnabled: true },
+      data: {
+        kbId: KB_ID,
+        chatbotId: CHATBOT_ID,
+        isEnabled: true,
+        isDefault: true,
+      },
     })
     await prisma.responseExampleSet.create({
       data: { id: SET_ID, chatbotId: CHATBOT_ID },
@@ -204,6 +209,58 @@ describePostgres('response-example PostgreSQL runtime', () => {
       ],
     })
     expect(ranked.examples[0]).not.toHaveProperty('evidenceReferences')
+
+    const secondKbId = randomUUID()
+    await prisma.kB.create({
+      data: {
+        id: secondKbId,
+        name: 'Synthetic secondary runtime KB',
+        ownerId: OWNER_ID,
+      },
+    })
+    const secondaryLink = await prisma.kBChatbot.create({
+      data: { kbId: secondKbId, chatbotId: CHATBOT_ID, isEnabled: true },
+    })
+    const withSecondSource = await skill.search('portfolio diversification')
+    expect(withSecondSource.examples.map(({ id }) => id)).toEqual([
+      questionMatch.id,
+      answerMatch.id,
+    ])
+
+    const chatMode = 'cm_case'
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: {
+        customModeConfig: {
+          modes: [
+            {
+              key: chatMode,
+              name: 'Case',
+              description: null,
+              personaText: null,
+              knowledgeBaseLinkId: secondaryLink.id,
+            },
+          ],
+        },
+      },
+    })
+    const explicitExample = await createApprovedExample({
+      chatMode,
+      kbId: secondKbId,
+      studentMessage: 'secondary reading',
+      referenceAnswer: 'Secondary answer [1].',
+    })
+    const explicitSkill = await loadResponseExampleRuntimeSkill({
+      prisma,
+      chatbotId: CHATBOT_ID,
+      chatMode,
+      role: 'included',
+    })
+    expect(
+      (await explicitSkill.search('secondary reading')).examples.map(
+        ({ id }) => id
+      )
+    ).toEqual([explicitExample.id])
 
     const tied = await Promise.all(
       ['tie-a', 'tie-b', 'tie-c', 'tie-d'].map((suffix) =>

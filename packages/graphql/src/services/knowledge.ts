@@ -1409,14 +1409,17 @@ async function reconcileDefaultKbProjection(
     )
     .map(({ key }) => key)
   if (kbId === null) {
-    // Quizzer inherits Tutor’s document scope when it has no exact KB row.
-    // Leave explicitly disabled overrides in place so they still block inheritance.
+    // Remove enabled projections that have no live source. Disabling them here
+    // would be indistinguishable from an intentional denial after reassignment.
     await prisma.chatbotMCPConfig.deleteMany({
       where: {
         chatbotId,
         mcpServerId: mcpServer.id,
-        chatMode: 'quizzer',
         isEnabled: true,
+        chatMode: {
+          in: [...modes.map(({ key }) => key), 'quizzer'],
+          notIn: explicitKeys,
+        },
       },
     })
     // An exact binding for an explicitly assigned mode is independent of the default.
@@ -1530,6 +1533,13 @@ async function ensureEnabledKbLink(
       extensions: { code: 'KB_CHATBOT_LINK_LIMIT_REACHED' },
     })
   }
+  // Publish a new parent row version when capacity changes. A Serializable
+  // provisioner waiting for this chatbot must retry its older count.
+  await prisma.chatbot.update({
+    where: { id: chatbotId },
+    data: { updatedAt: new Date() },
+    select: { id: true },
+  })
   const created = await prisma.kBChatbot.create({
     data: { kbId, chatbotId, isEnabled: true, isDefault: false },
     select: { id: true },

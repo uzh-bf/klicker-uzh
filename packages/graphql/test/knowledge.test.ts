@@ -41,13 +41,21 @@ vi.mock('@/src/lib/config/toolNames', async () =>
 vi.mock('@/src/lib/server/mcpRuntimePolicy', async () =>
   vi.importActual('../../../apps/chat/src/lib/server/mcpRuntimePolicy.ts')
 )
-const { resolveMcpScope } = await vi.importActual<{
-  resolveMcpScope: (
-    configurations: readonly unknown[],
-    selectedMode: string,
-    effectiveConfigurations: readonly unknown[]
-  ) => string[] | undefined
-}>('../../../apps/chat/src/services/mcpScope.ts')
+const { resolveMcpScope, resolveModeKnowledgeBaseScope } =
+  await vi.importActual<{
+    resolveMcpScope: (
+      configurations: readonly unknown[],
+      selectedMode: string,
+      effectiveConfigurations: readonly unknown[]
+    ) => string[] | undefined
+    resolveModeKnowledgeBaseScope: (args: {
+      customModeConfig: unknown
+      selectedMode: string
+      knowledgeBaseLinks: readonly unknown[]
+      configurations?: readonly unknown[]
+      effectiveConfigurations: readonly unknown[]
+    }) => { kbIds?: string[] }
+  }>('../../../apps/chat/src/services/mcpScope.ts')
 
 import {
   addKbLinkToChatbot,
@@ -1717,6 +1725,121 @@ describe('Integration tests for knowledge base CRUD', () => {
         )
       )
     ).toEqual([secondKb.id])
+  })
+
+  it.each([
+    true,
+    false,
+  ])('reconciles removed-source rows without reviving explicit denials (enabled: %s)', async (isEnabled) => {
+    const sourceKb = await createKb({ name: 'Source KB' }, userOneCtx)
+    const fallbackKb = await createKb({ name: 'Fallback KB' }, userOneCtx)
+    const replacementKb = await createKb({ name: 'Replacement KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const { id: chatbotId } = await prisma.chatbot.create({
+      data: {
+        name: 'Source reassignment',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+
+    const assign = (knowledgeBaseLinkId: string) =>
+      prisma.chatbot.update({
+        where: { id: chatbotId },
+        data: {
+          customModeConfig: {
+            modes: [
+              {
+                key: 'cm_reassigned',
+                name: 'Reassigned mode',
+                description: null,
+                personaText: null,
+                knowledgeBaseLinkId,
+              },
+            ],
+          },
+        },
+      })
+    const modeScope = async () => {
+      const rows = await prisma.chatbotMCPConfig.findMany({
+        where: { chatbotId, mcpServer: { name: 'KB' } },
+        include: { mcpServer: { select: { id: true, name: true } } },
+      })
+      const chatbot = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: chatbotId },
+        select: {
+          customModeConfig: true,
+          knowledgeBases: {
+            where: { isEnabled: true, kb: { deletedAt: null } },
+            select: {
+              id: true,
+              kbId: true,
+              isEnabled: true,
+              isDefault: true,
+              kb: { select: { deletedAt: true } },
+            },
+          },
+        },
+      })
+      return resolveModeKnowledgeBaseScope({
+        customModeConfig: chatbot.customModeConfig,
+        selectedMode: 'cm_reassigned',
+        knowledgeBaseLinks: chatbot.knowledgeBases,
+        configurations: rows,
+        effectiveConfigurations: resolveEffectiveMCPConfigurations(
+          rows,
+          'cm_reassigned'
+        ),
+      }).kbIds
+    }
+
+    await withPluralKbWrites(async () => {
+      const sourceBinding = await addKbLinkToChatbot(
+        { chatbotId, kbId: sourceKb.id },
+        userOneCtx
+      )
+      await addKbLinkToChatbot({ chatbotId, kbId: fallbackKb.id }, userOneCtx)
+      await setChatbotDefaultKb({ chatbotId, kbId: fallbackKb.id }, userOneCtx)
+      await assign(sourceBinding.enabledKbs[0]!.linkId)
+      const tutor = await prisma.chatbotMCPConfig.findFirstOrThrow({
+        where: { chatbotId, chatMode: 'tutor' },
+      })
+      await prisma.chatbotMCPConfig.create({
+        data: {
+          chatbotId,
+          mcpServerId: tutor.mcpServerId,
+          chatMode: 'cm_reassigned',
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: sourceKb.id,
+          },
+          isEnabled,
+        },
+      })
+
+      await detachKbFromChatbot({ chatbotId, kbId: sourceKb.id }, userOneCtx)
+      await setChatbotDefaultKb({ chatbotId, kbId: null }, userOneCtx)
+      const replacementBinding = await attachKbToChatbot(
+        { chatbotId, kbId: replacementKb.id },
+        userOneCtx
+      )
+      await assign(
+        replacementBinding.enabledKbs.find(
+          ({ kbId }) => kbId === replacementKb.id
+        )!.linkId
+      )
+
+      if (isEnabled) {
+        await expect(modeScope()).resolves.toEqual([replacementKb.id])
+      } else {
+        await expect(modeScope()).rejects.toMatchObject({
+          name: 'RequiredMCPUnavailableError',
+          reason: 'scope_violation',
+        })
+      }
+    })
   })
 
   it.each([

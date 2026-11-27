@@ -119,6 +119,16 @@ function currentModeScope(
   return modeScope(chatbot, selectedMode, ownerPreview)
 }
 
+function mediaSourceLink(
+  scope: ResolvedModeKnowledgeBaseScope<MCPScopedConfiguration>
+) {
+  return scope.hasDocQueryAccess &&
+    scope.kbIds?.length === 1 &&
+    scope.kbIds[0] === scope.link?.kbId
+    ? scope.link
+    : null
+}
+
 /**
  * Scope for media in an assistant message stored before turns carried a
  * retrieval-source marker. Each chatbot then had at most one enabled link, so
@@ -135,20 +145,10 @@ function unmarkedMessageKnowledgeBaseScope(
   const selectedMode = chatMode ?? 'tutor'
   const managed = chatbot.knowledgeBases.length > 0
   try {
-    if (!managed) return modeScope(chatbot, selectedMode, false).kbIds ?? null
-    if (!messageCreatedAt) return null
-
-    // A mode that is no longer offered keeps the chatbot default, as before
-    // per-mode sources existed. An offered mode must still resolve cleanly.
-    const link = isModeOffered(chatbot, selectedMode, false)
-      ? modeScope(chatbot, selectedMode, false).link
-      : (ownedLinks(chatbot).find(
-          (candidate) =>
-            candidate.isEnabled &&
-            candidate.isDefault &&
-            candidate.kb.deletedAt === null
-        ) ?? null)
-    if (!link) return null
+    const scope = currentModeScope(chatbot, selectedMode, false)
+    if (!managed) return scope.kbIds ?? null
+    const link = mediaSourceLink(scope)
+    if (!link || !messageCreatedAt) return null
     const row = chatbot.knowledgeBases.find(({ id }) => id === link.id)
     if (!row || row.createdAt > messageCreatedAt) return null
     return [link.kbId]
@@ -226,20 +226,16 @@ export async function readMessageKnowledgeBaseScope({
   }
 
   try {
-    const scope = currentModeScope(chatbot, provenance.chatMode, false)
-
-    // Replay needs both the producing link and its live document access.
+    const link = mediaSourceLink(
+      currentModeScope(chatbot, provenance.chatMode, false)
+    )
     if (
-      !scope.hasDocQueryAccess ||
-      scope.kbIds?.length !== 1 ||
-      scope.kbIds?.[0] !== scope.link?.kbId ||
-      !scope.link ||
-      scope.link.id !== provenance.kbLinkId ||
-      scope.link.kbId !== provenance.kbId
-    ) {
+      !link ||
+      link.id !== provenance.kbLinkId ||
+      link.kbId !== provenance.kbId
+    )
       return null
-    }
-    return [scope.link.kbId]
+    return [link.kbId]
   } catch {
     return null
   }

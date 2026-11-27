@@ -8,6 +8,7 @@ import {
   applyResponseExampleEligibilityReconciliation,
   buildResponseExampleEligibilityReconciliation,
   loadCurrentResponseExampleResources,
+  responseExampleModeSources,
   type ResponseExampleEligibilityReconciliation,
 } from '@klicker-uzh/util/response-example-eligibility'
 import {
@@ -240,19 +241,8 @@ async function searchCurrentResponseExamples(args: {
 
     const rankedRows = await args.prisma.$queryRaw<RankedResponseExampleRow[]>(
       PrismaRuntime.sql`
-        WITH enabled_kb AS (
-          SELECT binding."kbId"
-          FROM "public"."KBChatbot" AS binding
-          INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
-          WHERE binding."chatbotId" = ${args.chatbotId}::uuid
-            AND binding."isEnabled" = true
-            AND kb."deletedAt" IS NULL
-          ORDER BY binding."id" ASC
-          LIMIT 2
-        ), exact_kb AS (
-          SELECT "kbId"
-          FROM enabled_kb
-          WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
+        WITH selected_source AS (
+          ${responseExampleModeSources(args.chatbotId, [args.chatMode])}
         ), ranked AS (
           SELECT
             example."id",
@@ -268,10 +258,13 @@ async function searchCurrentResponseExamples(args: {
           FROM "public"."ResponseExample" AS example
           INNER JOIN "public"."ResponseExampleSet" AS example_set
             ON example_set."id" = example."setId"
-          CROSS JOIN exact_kb
+          CROSS JOIN selected_source
           WHERE example_set."chatbotId" = ${args.chatbotId}::uuid
             AND example."chatMode" = ${args.chatMode}
             AND example."status" = 'APPROVED'
+            AND CASE WHEN example."sourceKbLinkId" IS NULL
+                     THEN selected_source."createdAt" <= example."createdAt"
+                     ELSE selected_source.id = example."sourceKbLinkId" END
             AND EXISTS (
               SELECT 1
               FROM "public"."ResponseExampleEvidenceReference" AS evidence
@@ -282,7 +275,7 @@ async function searchCurrentResponseExamples(args: {
               FROM "public"."ResponseExampleEvidenceReference" AS evidence
               LEFT JOIN "public"."KBResource" AS resource
                 ON resource."id"::text = evidence."sourceId"
-                AND resource."kbId" = exact_kb."kbId"
+                AND resource."kbId" = selected_source."kbId"
               WHERE evidence."responseExampleId" = example."id"
                 AND (
                   evidence."evidenceEligible" IS NOT TRUE

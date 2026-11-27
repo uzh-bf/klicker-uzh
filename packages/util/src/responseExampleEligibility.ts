@@ -114,6 +114,31 @@ export function evaluateResponseExampleCurrentEligibility(
   }
 }
 
+export function responseExampleModeSources(
+  chatbotId: string,
+  chatModes: readonly string[]
+) {
+  return PrismaRuntime.sql`
+      SELECT binding.id, binding."kbId", binding."createdAt", mode.key
+      FROM "public"."Chatbot" AS bot
+      JOIN "public"."KBChatbot" AS binding ON binding."chatbotId" = bot.id AND binding."isEnabled"
+      JOIN "public"."KB" AS kb ON kb.id = binding."kbId" AND kb."deletedAt" IS NULL AND kb."ownerId" = bot."ownerId"
+      CROSS JOIN unnest(ARRAY[${PrismaRuntime.join([...new Set(chatModes)])}]::text[]) AS mode(key)
+      LEFT JOIN LATERAL (
+        SELECT lower(btrim(entry->>'knowledgeBaseLinkId')) AS link_id
+        FROM jsonb_array_elements(
+          CASE WHEN jsonb_typeof(bot."customModeConfig"->'modes') = 'array'
+               THEN bot."customModeConfig"->'modes' ELSE '[]'::jsonb END
+        ) AS entry
+        WHERE entry->>'key' = mode.key AND entry ? 'knowledgeBaseLinkId'
+        LIMIT 1
+      ) AS selection ON true
+      WHERE bot.id = ${chatbotId}::uuid
+        AND CASE WHEN selection.link_id IS NULL THEN binding."isDefault"
+                 ELSE binding.id::text = selection.link_id END
+  `
+}
+
 export async function loadCurrentResponseExampleResources(
   prisma: Pick<Prisma.TransactionClient, '$queryRaw'>,
   chatbotId: string,
@@ -124,27 +149,12 @@ export async function loadCurrentResponseExampleResources(
 
   return await prisma.$queryRaw<ResponseExampleCurrentResource[]>(
     PrismaRuntime.sql`
-      SELECT resource."id", resource."activeContentSha256", resource."deletedAt",
-             binding."id" AS "linkId", binding."createdAt" AS "linkCreatedAt", array_agg(mode.key) AS "chatModes"
-      FROM "public"."Chatbot" AS bot
-      JOIN "public"."KBChatbot" AS binding ON binding."chatbotId" = bot.id AND binding."isEnabled"
-      JOIN "public"."KB" AS kb ON kb.id = binding."kbId" AND kb."deletedAt" IS NULL AND kb."ownerId" = bot."ownerId"
-      JOIN "public"."KBResource" AS resource ON resource."kbId" = kb.id
-      CROSS JOIN unnest(ARRAY[${PrismaRuntime.join([...new Set(chatModes)])}]::text[]) AS mode(key)
-      LEFT JOIN LATERAL (
-        SELECT entry->>'knowledgeBaseLinkId' AS link_id
-        FROM jsonb_array_elements(
-          CASE WHEN jsonb_typeof(bot."customModeConfig"->'modes') = 'array'
-               THEN bot."customModeConfig"->'modes' ELSE '[]'::jsonb END
-        ) AS entry
-        WHERE entry->>'key' = mode.key
-        LIMIT 1
-      ) AS selection ON true
-      WHERE bot.id = ${chatbotId}::uuid
-        AND CASE WHEN selection.link_id IS NULL THEN binding."isDefault"
-                 ELSE binding.id::text = selection.link_id END
-        AND resource.id IN (${PrismaRuntime.join([...sourceIds])})
-      GROUP BY resource.id, binding.id
+      SELECT resource.id, resource."activeContentSha256", resource."deletedAt",
+             source.id AS "linkId", source."createdAt" AS "linkCreatedAt", array_agg(source.key) AS "chatModes"
+      FROM (${responseExampleModeSources(chatbotId, chatModes)}) AS source
+      JOIN "public"."KBResource" AS resource ON resource."kbId" = source."kbId"
+      WHERE resource.id IN (${PrismaRuntime.join([...sourceIds])})
+      GROUP BY resource.id, source.id, source."createdAt"
     `
   )
 }

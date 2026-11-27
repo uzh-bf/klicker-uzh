@@ -1,7 +1,8 @@
-import { execFileSync } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { promisify } from 'node:util'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -196,6 +197,95 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
     })
     await prisma.$disconnect()
   }, SPAWN_TIMEOUT)
+
+  it(
+    'waits for a concurrent last-slot writer and refuses to add a 33rd link',
+    async () => {
+      const ids = Array.from({ length: 32 }, () => randomUUID())
+      const snapshot = join(tmpdir(), `provision-${randomUUID()}.json`)
+      await prisma.kB.createMany({
+        data: ids.map((id) => ({
+          id,
+          name: `Capacity ${id}`,
+          ownerId: OWNER_ID,
+        })),
+      })
+      let result: Promise<{ code: number; stdout: string }> | undefined
+      try {
+        await prisma.kBChatbot.createMany({
+          data: ids
+            .slice(0, 31)
+            .map((kbId) => ({ kbId, chatbotId: CHATBOT_ID, isEnabled: true })),
+        })
+        await prisma.$transaction(
+          async (tx) => {
+            const backend = await tx.$queryRaw<
+              { pid: number }[]
+            >`SELECT pg_backend_pid() AS pid`
+            await tx.chatbot.update({
+              where: { id: CHATBOT_ID },
+              data: { updatedAt: new Date() },
+            })
+            await tx.kBChatbot.create({
+              data: { chatbotId: CHATBOT_ID, kbId: ids[31]!, isEnabled: true },
+            })
+            result = promisify(execFile)(
+              process.execPath,
+              [
+                '../../node_modules/tsx/dist/cli.mjs',
+                'provision_chatbot_knowledge_base.ts',
+                ...baseArgs,
+                '--apply',
+                '--snapshot-out',
+                snapshot,
+              ],
+              {
+                cwd: SCRIPT_DIRECTORY,
+                encoding: 'utf8',
+                timeout: SPAWN_TIMEOUT,
+                env: {
+                  ...process.env,
+                  DATABASE_URL,
+                  PER_MODE_KB_LINKS_ENABLED: 'true',
+                },
+              }
+            ).then(
+              ({ stdout }) => ({ code: 0, stdout }),
+              (error) => ({ code: error.code, stdout: error.stdout })
+            )
+
+            // Release the final slot only once the provisioner is waiting on this transaction.
+            await expect
+              .poll(
+                async () => {
+                  const [row] = await prisma.$queryRaw<{ waiting: boolean }[]>`
+            SELECT EXISTS (
+              SELECT 1 FROM pg_stat_activity WHERE ${backend[0]!.pid}::int = ANY(pg_blocking_pids(pid))
+            ) AS waiting`
+                  return row?.waiting
+                },
+                { timeout: 15000 }
+              )
+              .toBe(true)
+          },
+          { timeout: 25000 }
+        )
+        expect(await result).toMatchObject({
+          code: 1,
+          stdout: expect.stringContaining('link_limit_reached'),
+        })
+        expect(
+          await prisma.kBChatbot.count({
+            where: { chatbotId: CHATBOT_ID, isEnabled: true },
+          })
+        ).toBe(32)
+      } finally {
+        await result
+        await prisma.kB.deleteMany({ where: { id: { in: ids } } })
+      }
+    },
+    SPAWN_TIMEOUT
+  )
 
   it(
     'refuses an unknown owner without writing',

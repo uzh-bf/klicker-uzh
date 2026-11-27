@@ -151,7 +151,13 @@ function isSerializationConflict(error: unknown): boolean {
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
-    error.code === 'P2034'
+    (error.code === 'P2034' ||
+      (error.code === 'P2010' &&
+        'meta' in error &&
+        typeof error.meta === 'object' &&
+        error.meta !== null &&
+        'code' in error.meta &&
+        error.meta.code === '40001'))
   )
 }
 
@@ -169,6 +175,13 @@ async function applyInTransaction(
     try {
       return await prisma.$transaction(
         async (tx) => {
+          // Take the API's KB-then-chatbot locks before counting links. Updating
+          // the parent also forces competing Serializable provisioners to retry.
+          await tx.$queryRaw`SELECT id FROM "public"."KB" WHERE id = ${args.kbId}::uuid FOR UPDATE`
+          await tx.chatbot.updateMany({
+            where: { id: args.chatbotId, ownerId },
+            data: { updatedAt: new Date() },
+          })
           // Re-validate inside the transaction so a concurrent edit fails
           // closed instead of being overwritten.
           const state = await readState(tx, args)
