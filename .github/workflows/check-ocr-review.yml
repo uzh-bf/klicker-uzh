@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Run pinned OCR draft review
-        uses: uzh-bf/klicker-uzh/.github/actions/ocr-review@eea51398d96cf9505062fefe0d76b1017c104d0e
+        uses: uzh-bf/klicker-uzh/.github/actions/ocr-review@095b0f0c35356f9623d8d3b82ed3fdcee023be87
         with:
           cmd-api-key: ${{ secrets.CMD_API_KEY }}
           context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}
