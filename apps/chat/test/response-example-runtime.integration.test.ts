@@ -376,7 +376,7 @@ describePostgres('response-example PostgreSQL runtime', () => {
       where: {
         kbId_chatbotId: { kbId: KB_ID, chatbotId: CHATBOT_ID },
       },
-      data: { isEnabled: false },
+      data: { isEnabled: false, isDefault: false },
     })
 
     const unboundSkill = await loadResponseExampleRuntimeSkill({
