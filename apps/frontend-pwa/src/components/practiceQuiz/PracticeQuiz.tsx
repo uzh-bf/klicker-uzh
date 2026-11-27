@@ -14,7 +14,13 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
-import { useEscapeRoom } from '../hooks/useEscapeRoom'
+import {
+  getEscapeRoomStageRules,
+  getStageOutcome,
+  hasBonusStage,
+  isStageCleared,
+  useEscapeRoom,
+} from '../hooks/useEscapeRoom'
 import ElementStack from './ElementStack'
 import type { EmbedQuizNavigationState } from './embed'
 import EscapeRoomOverlay from './EscapeRoomOverlay'
@@ -121,6 +127,10 @@ function PracticeQuiz({
 
   const isEscapeRoom = !!quiz.escapeRoomConfig
   const escapeRoomHintPenalty = quiz.escapeRoomConfig?.hintPenalty ?? 120
+  const escapeTotalStacks = quiz.numOfStacks ?? quiz.stacks?.length ?? 0
+  // The bonus stage is the last stack; it is not required to complete the room
+  const escapeHasBonus = hasBonusStage(quiz.escapeRoomConfig, escapeTotalStacks)
+  const escapeRequiredStacks = escapeTotalStacks - (escapeHasBonus ? 1 : 0)
   const resolvedRefetch = refetch ?? noopRefetch
   const {
     attempt,
@@ -136,7 +146,28 @@ function PracticeQuiz({
     refetch: resolvedRefetch,
   })
 
+  // The bonus stage can be answered once after completion, while time remains
+  const [bonusActive, setBonusActive] = useState(false)
+  const bonusStack =
+    escapeHasBonus && isCompleted && quiz.stacks?.length === escapeTotalStacks
+      ? quiz.stacks[escapeTotalStacks - 1]
+      : undefined
+  const bonusOutcome = bonusStack
+    ? getStageOutcome(attempt, bonusStack.id)?.outcome
+    : undefined
+  const bonusAvailable =
+    !!bonusStack &&
+    !bonusOutcome &&
+    remainingSeconds !== null &&
+    remainingSeconds > 0
+  useEffect(() => {
+    if (bonusActive && !bonusOutcome && remainingSeconds === 0) {
+      setBonusActive(false)
+    }
+  }, [bonusActive, bonusOutcome, remainingSeconds])
+
   // Synchronize localStorage progress state with server's isCorrect fields if they differ
+  // (and mark stacks cleared by reveal or skip, which have no correct response)
   useEffect(() => {
     if (isEscapeRoom && quiz.stacks) {
       setProgressState((prev) => {
@@ -153,19 +184,30 @@ function PracticeQuiz({
               score: next[stack.id]?.score ?? null,
             }
             changed = true
+          } else if (
+            !stack.isCorrect &&
+            isStageCleared(attempt, stack.id) &&
+            currentStatus !== StackFeedbackStatus.Partial
+          ) {
+            next[stack.id] = {
+              status: StackFeedbackStatus.Partial,
+              score: next[stack.id]?.score ?? null,
+            }
+            changed = true
           }
         }
         return changed ? next : prev
       })
     }
-  }, [isEscapeRoom, quiz.stacks, setProgressState])
+  }, [isEscapeRoom, quiz.stacks, attempt, setProgressState])
 
   const handleSetCurrentIx = (ix: number) => {
     if (isEscapeRoom && ix >= 0) {
       const activeFirstUncleared =
         quiz.stacks?.findIndex(
           (stack) =>
-            progressState?.[stack.id]?.status !== StackFeedbackStatus.Correct
+            progressState?.[stack.id]?.status !== StackFeedbackStatus.Correct &&
+            !isStageCleared(attempt, stack.id)
         ) ?? 0
 
       if (activeFirstUncleared !== -1 && ix > activeFirstUncleared) {
@@ -184,14 +226,23 @@ function PracticeQuiz({
   // advance; on an incorrect answer wipe the stored evaluation and remount the
   // stack so it can be retried once the lockout elapses. Completion is
   // server-driven (attempt status flips → overlay takes over).
+  // A revealed or skipped stack counts as cleared and is never retried; the
+  // bonus stack is answered once and returns to the completion card.
   const [escapeRetryNonce, setEscapeRetryNonce] = useState(0)
-  const escapeTotalStacks = quiz.numOfStacks ?? quiz.stacks?.length ?? 0
   const handleEscapeAdvance = async (gradedStatus?: StackFeedbackStatus) => {
     if (!currentStack) return
-    const status = gradedStatus ?? progressState?.[currentStack.id]?.status
-    if (status === StackFeedbackStatus.Correct) {
+    if (bonusActive && currentStack.id === bonusStack?.id) {
       if (refetch) await refetch()
-      if (currentIx + 1 < escapeTotalStacks) {
+      setBonusActive(false)
+      return
+    }
+    const status = gradedStatus ?? progressState?.[currentStack.id]?.status
+    if (
+      status === StackFeedbackStatus.Correct ||
+      isStageCleared(attempt, currentStack.id)
+    ) {
+      if (refetch) await refetch()
+      if (currentIx + 1 < escapeRequiredStacks) {
         handleNextElement()
       }
     } else {
@@ -233,7 +284,7 @@ function PracticeQuiz({
       {isEscapeRoom && !previewOnly && (
         <EscapeRoomOverlay
           isStarted={isStarted}
-          isCompleted={isCompleted}
+          isCompleted={isCompleted && !bonusActive}
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
           timeLimit={quiz.escapeRoomConfig?.timeLimit ?? 3600}
@@ -243,13 +294,26 @@ function PracticeQuiz({
           attempt={attempt}
           clearedStacks={
             quiz.stacks?.filter(
-              (stack) =>
-                progressState?.[stack.id]?.status ===
-                StackFeedbackStatus.Correct
+              (stack, ix) =>
+                ix < escapeRequiredStacks &&
+                (stack.isCorrect || isStageCleared(attempt, stack.id))
             ).length ?? 0
           }
-          totalStacks={quiz.numOfStacks ?? quiz.stacks?.length ?? 0}
+          totalStacks={escapeRequiredStacks}
           introText={quiz.escapeRoomConfig?.introText}
+          bonus={
+            bonusStack
+              ? {
+                  seconds: quiz.escapeRoomConfig?.bonusSeconds ?? 0,
+                  available: bonusAvailable,
+                  outcome: bonusOutcome,
+                  onStart: () => {
+                    setCurrentIx(escapeTotalStacks - 1)
+                    setBonusActive(true)
+                  },
+                }
+              : undefined
+          }
         />
       )}
       <div
@@ -260,38 +324,42 @@ function PracticeQuiz({
           !embedded && 'md:border'
         )}
       >
-        <StepProgressWithScoring
-          items={
-            quiz.stacks?.map((stack) => {
-              return progressState?.[stack.id]
-                ? {
-                    status:
-                      FEEDBACK_STATUS_PROGRESS_MAP[
-                        progressState?.[stack.id].status ??
-                          StackFeedbackStatus.Unanswered
-                      ],
-                    score: progressState?.[stack.id].score ?? null,
+        {!bonusActive && (
+          <StepProgressWithScoring
+            items={
+              quiz.stacks
+                ?.slice(0, isEscapeRoom ? escapeRequiredStacks : undefined)
+                .map((stack) => {
+                  return progressState?.[stack.id]
+                    ? {
+                        status:
+                          FEEDBACK_STATUS_PROGRESS_MAP[
+                            progressState?.[stack.id].status ??
+                              StackFeedbackStatus.Unanswered
+                          ],
+                        score: progressState?.[stack.id].score ?? null,
+                      }
+                    : {
+                        status: 'unanswered',
+                      }
+                }) || []
+            }
+            currentIx={currentIx}
+            setCurrentIx={handleSetCurrentIx}
+            navigableUntilIx={navigableUntilIx}
+            readOnly={hostNavigation}
+            resetLocalStorage={
+              // hidden in escape mode: local progress mirrors the server-side
+              // attempt, so a local reset would only desync the participant view
+              showResetLocalStorage && !hostNavigation && !isEscapeRoom
+                ? () => {
+                    resetPracticeQuizLocalStorage(quiz.id)
+                    window.location.reload()
                   }
-                : {
-                    status: 'unanswered',
-                  }
-            }) || []
-          }
-          currentIx={currentIx}
-          setCurrentIx={handleSetCurrentIx}
-          navigableUntilIx={navigableUntilIx}
-          readOnly={hostNavigation}
-          resetLocalStorage={
-            // hidden in escape mode: local progress mirrors the server-side
-            // attempt, so a local reset would only desync the participant view
-            showResetLocalStorage && !hostNavigation && !isEscapeRoom
-              ? () => {
-                  resetPracticeQuizLocalStorage(quiz.id)
-                  window.location.reload()
-                }
-              : undefined
-          }
-        />
+                : undefined
+            }
+          />
+        )}
 
         {previewOnly && !focusedEmbed && (
           <PreviewMessage
@@ -330,7 +398,7 @@ function PracticeQuiz({
             stack={currentStack}
             currentStep={currentIx + 1}
             totalSteps={
-              isEscapeRoom ? escapeTotalStacks : (quiz.stacks?.length ?? 0)
+              isEscapeRoom ? escapeRequiredStacks : (quiz.stacks?.length ?? 0)
             }
             setStepStatus={(value) => {
               setProgressState((prev) => {
@@ -361,6 +429,12 @@ function PracticeQuiz({
                     activityType: 'practiceQuiz',
                     hintPenalty: escapeRoomHintPenalty,
                     onStateChanged: resolvedRefetch,
+                    ...getEscapeRoomStageRules({
+                      config: quiz.escapeRoomConfig!,
+                      attempt,
+                      stageKey: currentStack.id,
+                      isBonusStage: currentStack.id === bonusStack?.id,
+                    }),
                   }
                 : undefined
             }

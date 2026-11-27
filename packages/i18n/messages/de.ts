@@ -1393,7 +1393,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
       escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
       escapeRoomCompletedDesc:
-        'Herzlichen Glückwunsch! Du hast alle Fragen richtig beantwortet und den Escape Room abgeschlossen.',
+        'Herzlichen Glückwunsch! Du hast alle Fragen hinter dir und den Escape Room abgeschlossen.',
       escapeRoomTitle: 'Escape Room',
       escapeRoomTimeRemaining: 'Verbleibende Zeit',
       escapeRoomContactLecturer:
@@ -1409,13 +1409,40 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
       escapeRoomForbiddenToast:
         'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
-      escapeRoomRequestHint: 'Hinweis anzeigen (−{penalty}s)',
+      escapeRoomRequestHint: 'Hinweis anzeigen (+{penalty}s Wertungszeit)',
       escapeRoomHintRevealedToast:
-        'Hinweis angezeigt — {penalty}s zu deiner Zeit hinzugefügt.',
+        'Hinweis angezeigt — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+      escapeRoomNextHint:
+        'Nächsten Hinweis anzeigen (+{penalty}s Wertungszeit)',
+      escapeRoomTriesLeft:
+        '{count, plural, one {Noch ein Versuch} other {Verbleibende Versuche: #}}',
+      escapeRoomWrongTriesToast:
+        'Falsche Antwort! {count, plural, one {# Versuch} other {# Versuche}} übrig.',
+      escapeRoomRevealedNotice:
+        'Keine Versuche mehr. Die Frage gilt als abgeschlossen (+{penalty}s Wertungszeit).',
+      escapeRoomRevealedToast:
+        'Keine Versuche mehr — die Frage gilt als abgeschlossen. Weiter geht es.',
+      escapeRoomSkip: 'Frage überspringen (+{penalty}s Wertungszeit)',
+      escapeRoomSkipConfirm:
+        'Diese Frage überspringen? Sie gilt als abgeschlossen und addiert {penalty}s zu deiner Wertungszeit.',
+      escapeRoomSkipConfirmButton: 'Ja, überspringen',
+      escapeRoomSkippedToast:
+        'Frage übersprungen — {penalty}s zu deiner Wertungszeit hinzugefügt.',
+      escapeRoomSkipDisabledToast:
+        'Überspringen ist in diesem Escape Room nicht erlaubt.',
+      escapeRoomBonusOffer:
+        'Bonus: Bei richtiger Antwort −{seconds}s Wertungszeit',
+      escapeRoomBonusDesc:
+        'Eine Bonusfrage ist noch offen, solange Zeit bleibt. Du hast nur einen Versuch.',
+      escapeRoomBonusCorrect:
+        'Bonusfrage richtig beantwortet: −{seconds}s Wertungszeit.',
+      escapeRoomBonusWrong:
+        'Bonusfrage falsch beantwortet: keine Zeitgutschrift.',
+      escapeRoomBonusSubmitted: 'Bonus-Antwort abgegeben.',
       escapeRoomStagesLabel: 'Stationen',
       escapeRoomStagesCleared: 'Gelöste Stationen',
       escapeRoomClearedProgress:
-        'Du hast {cleared} von {total} Stationen gelöst, bevor die Zeit abgelaufen ist.',
+        'Du hast {cleared} von {total} Stationen abgeschlossen, bevor die Zeit abgelaufen ist.',
       escapeRoomStatsTime: 'Fluchtzeit',
       escapeRoomStatsHints: 'Genutzte Hinweise',
       escapeRoomStatsPenalty: 'Zeitstrafe',
@@ -3057,6 +3084,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomNoQrOutside:
         'QR-Scan-Fragen können nur in Escape-Room-Blöcken verwendet werden.',
       escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
+      escapeRoomHintsPlaceholder:
+        'Optionale Hinweise, einer pro Zeile (jeder kostet eine Strafe bei Anzeige; spätere Hinweise können mehr kosten)',
       escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
       escapeRoomInteger: 'Muss eine ganze Zahl sein',
       escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',
@@ -3071,6 +3100,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Stimmen Sie die Teilnehmenden ein — wird auf dem Startbildschirm vor dem Start des Timers angezeigt (Markdown wird unterstützt)',
       escapeRoomIntroTextMax:
         'Die Einleitungsgeschichte darf 5000 Zeichen nicht überschreiten',
+      escapeRoomRulesTitle: 'Bewertungsregeln',
+      escapeRoomApplyPreset: 'Klassenzimmer-Vorlage anwenden',
+      escapeRoomHintPenalties:
+        'Strafe pro Hinweis, der Reihe nach (Sekunden, durch Kommas getrennt)',
+      escapeRoomHintPenaltiesInvalid:
+        'Bis zu 10 ganze Zahlen zwischen 0 und 3600, durch Kommas getrennt',
+      escapeRoomWrongAnswerPenalty: 'Strafe pro falscher Antwort (Sekunden)',
+      escapeRoomMaxWrongAttempts:
+        'Falsche Antworten, bis die Lösung aufgedeckt wird (leer = nie)',
+      escapeRoomMaxWrongAttemptsRange:
+        'Muss eine ganze Zahl zwischen 1 und 50 sein',
+      escapeRoomRevealPenalty:
+        'Strafe, wenn die Lösung aufgedeckt wird (Sekunden)',
+      escapeRoomSkipPenalty:
+        'Strafe für das Überspringen einer Frage (Sekunden, leer = Überspringen deaktiviert)',
+      escapeRoomBonusSeconds:
+        'Zeitgutschrift für eine richtige Bonus-Schlussfrage (Sekunden, leer = kein Bonus)',
+      escapeRoomRuleSecondsRange:
+        'Muss eine ganze Zahl zwischen 0 und 3600 Sekunden sein',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityInformation:
@@ -3670,6 +3718,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       escapeRoomColHints: 'Hinweise',
       escapeRoomColPenalty: 'Strafzeit',
       escapeRoomColTime: 'Zeit',
+      escapeRoomColRank: 'Rang',
+      escapeRoomOutcomeSummary:
+        '{revealed} aufgedeckt · {skipped} übersprungen',
+      escapeRoomBonusSolved: 'Bonus gelöst',
+      escapeRoomRankedTime: 'Wertung: {time}',
       escapeRoomColActions: 'Aktionen',
       escapeRoomStatusInProgress: 'Laufend',
       escapeRoomStatusNotStarted: 'Nicht gestartet',

@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 // Pick ties the attempt fields to the generated schema so a rename breaks here.
 type EscapeRoomActivityInput = {
   id: string
-  escapeRoomConfig?: unknown
+  escapeRoomConfig?: { bonusSeconds?: number | null } | null
   escapeRoomAttempts?: Array<
     Pick<
       EscapeRoomAttempt,
@@ -24,8 +24,71 @@ type EscapeRoomActivityInput = {
       | 'completedAt'
       | 'penaltySeconds'
       | 'hintsUsed'
+      | 'stageOutcomes'
     >
   > | null
+}
+
+// A stage with an outcome (solved, revealed, skipped or bonus answered) is
+// cleared. Stage keys are the stack id in Practice Quiz and Microlearning and
+// the element instance id in Group Activity.
+export function getStageOutcome(
+  attempt: Pick<EscapeRoomAttempt, 'stageOutcomes'> | null | undefined,
+  stageKey: string | number
+) {
+  return attempt?.stageOutcomes?.find(
+    (entry) => entry.stageKey === String(stageKey)
+  )
+}
+
+export function isStageCleared(
+  attempt: Pick<EscapeRoomAttempt, 'stageOutcomes'> | null | undefined,
+  stageKey: string | number
+) {
+  return !!getStageOutcome(attempt, stageKey)?.outcome
+}
+
+// The last stage is the bonus stage when the rules grant bonus time. It is not
+// a required stage and only becomes answerable once the attempt is completed.
+export function hasBonusStage(
+  config: { bonusSeconds?: number | null } | null | undefined,
+  numOfStages: number
+) {
+  return config?.bonusSeconds != null && numOfStages > 1
+}
+
+// Scoring rules and stage state that ElementStack needs for one stack. Skipping
+// is only offered while the attempt runs and never on the bonus stage, and the
+// bonus stage has no wrong-attempt limit.
+export function getEscapeRoomStageRules({
+  config,
+  attempt,
+  stageKey,
+  isBonusStage,
+}: {
+  config: {
+    hintPenalties: number[]
+    maxWrongAttempts?: number | null
+    revealPenalty: number
+    skipPenalty?: number | null
+  }
+  attempt:
+    | Pick<EscapeRoomAttempt, 'status' | 'stageOutcomes'>
+    | null
+    | undefined
+  stageKey: string | number
+  isBonusStage: boolean
+}) {
+  return {
+    hintPenalties: config.hintPenalties,
+    maxWrongAttempts: isBonusStage ? null : (config.maxWrongAttempts ?? null),
+    revealPenalty: config.revealPenalty,
+    skipPenalty:
+      isBonusStage || attempt?.status !== EscapeRoomStatus.InProgress
+        ? null
+        : (config.skipPenalty ?? null),
+    stageOutcome: getStageOutcome(attempt, stageKey),
+  }
 }
 
 export function useEscapeRoom({
@@ -72,11 +135,13 @@ export function useEscapeRoom({
   }
 
   useEffect(() => {
-    if (
-      !isEscapeRoom ||
-      !attempt ||
-      attempt.status !== EscapeRoomStatus.InProgress
-    ) {
+    // A completed attempt keeps its clock while a bonus stage can still be
+    // answered.
+    const clockRuns =
+      attempt?.status === EscapeRoomStatus.InProgress ||
+      (attempt?.status === EscapeRoomStatus.Completed &&
+        activity?.escapeRoomConfig?.bonusSeconds != null)
+    if (!isEscapeRoom || !attempt || !clockRuns) {
       setRemainingSeconds(null)
       setExpiresInSeconds(null)
       return
@@ -111,7 +176,7 @@ export function useEscapeRoom({
     const interval = setInterval(calculateRemaining, 1000)
 
     return () => clearInterval(interval)
-  }, [isEscapeRoom, attempt, refetch])
+  }, [isEscapeRoom, attempt, activity?.escapeRoomConfig?.bonusSeconds, refetch])
 
   const isStarted = !!attempt
   const isCompleted = attempt?.status === EscapeRoomStatus.Completed

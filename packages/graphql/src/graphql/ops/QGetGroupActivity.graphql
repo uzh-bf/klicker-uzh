@@ -12,6 +12,12 @@ query GetGroupActivity($id: String!) {
       timeLimit
       hintPenalty
       lockoutSeconds
+      hintPenalties
+      wrongAnswerPenalty
+      maxWrongAttempts
+      revealPenalty
+      skipPenalty
+      bonusSeconds
       introText
     }
     clues {

@@ -23,6 +23,19 @@ export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly ElementType[] = [
 
 export const ESCAPE_ROOM_GRACE_SECONDS = 5
 
+// The lecturer-tested classroom values, offered as a preset in the editor.
+// Durations are in seconds unless the name says otherwise.
+export const ESCAPE_ROOM_CLASSROOM_PRESET = {
+  timeLimitMinutes: 45,
+  hintPenalty: 120,
+  hintPenalties: [120, 240],
+  wrongAnswerPenalty: 30,
+  maxWrongAttempts: 5,
+  revealPenalty: 480,
+  skipPenalty: 600,
+  bonusSeconds: 180,
+} as const
+
 export type EscapeRoomLifecycleTargetKind =
   | 'practiceQuiz'
   | 'microLearning'
@@ -41,14 +54,14 @@ export function isEscapeRoomExpired(
   attempt: {
     startedAt: Date | string
     timeLimit: number
-    penaltySeconds: number
+    penaltySeconds?: number
   },
   now = Date.now()
 ) {
+  // Penalties count toward the ranked time only; they never shorten play.
   const deadline =
     new Date(attempt.startedAt).getTime() +
-    (attempt.timeLimit - attempt.penaltySeconds + ESCAPE_ROOM_GRACE_SECONDS) *
-      1000
+    (attempt.timeLimit + ESCAPE_ROOM_GRACE_SECONDS) * 1000
 
   // Preserve the established action-grace contract: the exact deadline is
   // still valid; the attempt expires immediately after it.
@@ -139,6 +152,7 @@ export type ElementInstanceInput = {
   // Escape-room per-instance hint text (optional). Persisted into the instance
   // `options` on create/duplicate; see ElementInstanceOptions.escapeRoomHint.
   escapeRoomHint?: string | null
+  escapeRoomHints?: EscapeRoomHintEntry[] | null
 }
 
 export type ElementVersionInput = {
@@ -760,6 +774,32 @@ export type ElementInstanceOptions = {
   // derives a content-free `hasHint` boolean; the text is returned exclusively by
   // the `requestEscapeRoomHint` mutation after attempt-ownership checks.
   escapeRoomHint?: string | null
+  // Ordered hint list with optional per-hint penalties. When present it wins
+  // over `escapeRoomHint`, which then mirrors the first hint's text.
+  escapeRoomHints?: EscapeRoomHintEntry[] | null
+}
+
+export interface EscapeRoomHintEntry {
+  text: string
+  // Seconds; null falls back to the Escape Room's configured hint penalties.
+  penalty?: number | null
+}
+
+export function getEscapeRoomInstanceHints(options: {
+  escapeRoomHint?: string | null
+  escapeRoomHints?: EscapeRoomHintEntry[] | null
+}): EscapeRoomHintEntry[] {
+  if (Array.isArray(options.escapeRoomHints)) {
+    return options.escapeRoomHints.filter((hint) => !!hint?.text?.trim())
+  }
+  const legacyHint = options.escapeRoomHint?.trim()
+  return legacyHint ? [{ text: legacyHint, penalty: null }] : []
+}
+
+// The first hint keeps the key used before hint lists existed, so attempts
+// that revealed a single hint stay valid.
+export function getEscapeRoomHintKey(instanceId: number, hintIndex: number) {
+  return hintIndex === 0 ? String(instanceId) : `${instanceId}:${hintIndex}`
 }
 
 export type ElementResultsChoices = {

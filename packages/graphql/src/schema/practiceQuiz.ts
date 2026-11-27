@@ -13,6 +13,10 @@ import {
   StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import {
+  type EscapeRoomStageOutcomeEntry,
+  parseEscapeRoomStageOutcomes,
+} from '../services/escapeRoomStageOutcomes.js'
 import { parseGroupEscapeRoomStageResponses } from '../services/groupEscapeRoomSubmissions.js'
 import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
@@ -26,7 +30,10 @@ import {
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
-import { EscapeRoomConfigRef } from './escapeRoomConfig.js'
+import {
+  EscapeRoomConfigRef,
+  EscapeRoomHintEntryInputRef,
+} from './escapeRoomConfig.js'
 import { GroupActivityDecisionRef } from './groupActivity.js'
 import { IStackFeedback } from './evaluation.js'
 
@@ -92,6 +99,10 @@ export const ElementInstanceInput = ElementInstanceInputRef.implement({
     existingInstanceId: t.int({ required: false }),
     duplicateInstance: t.boolean({ required: true }),
     escapeRoomHint: t.string({ required: false }),
+    escapeRoomHints: t.field({
+      type: [EscapeRoomHintEntryInputRef],
+      required: false,
+    }),
   }),
 })
 
@@ -300,6 +311,18 @@ export const EscapeRoomProgressStatus = builder.enumType(
   }
 )
 
+export const EscapeRoomStageOutcomeRef =
+  builder.objectRef<EscapeRoomStageOutcomeEntry>('EscapeRoomStageOutcome')
+export const EscapeRoomStageOutcome = EscapeRoomStageOutcomeRef.implement({
+  fields: (t) => ({
+    stageKey: t.exposeString('stageKey'),
+    wrongAttempts: t.exposeInt('wrongAttempts'),
+    // SOLVED, REVEALED, SKIPPED, BONUS_CORRECT or BONUS_WRONG; null while open.
+    outcome: t.exposeString('outcome', { nullable: true }),
+    at: t.exposeString('at', { nullable: true }),
+  }),
+})
+
 export const EscapeRoomAttemptRef =
   builder.objectRef<DB.EscapeRoomAttempt>('EscapeRoomAttempt')
 export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
@@ -330,10 +353,17 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
       nullable: true,
       resolve: (parent) =>
         parent.groupId
-          ? parseGroupEscapeRoomStageResponses(parent.stageResponses).map(
-              (entry) => entry.response as GroupActivityDecisionType
+          ? parseGroupEscapeRoomStageResponses(parent.stageResponses).flatMap(
+              (entry) =>
+                entry.response
+                  ? [entry.response as GroupActivityDecisionType]
+                  : []
             )
           : null,
+    }),
+    stageOutcomes: t.field({
+      type: [EscapeRoomStageOutcomeRef],
+      resolve: (parent) => parseEscapeRoomStageOutcomes(parent.stageOutcomes),
     }),
     participantId: t.exposeString('participantId', { nullable: true }),
     groupId: t.exposeString('groupId', { nullable: true }),
@@ -352,6 +382,8 @@ export const EscapeRoomHintResultRef = builder.objectRef<IEscapeRoomHintResult>(
 export const EscapeRoomHintResult = EscapeRoomHintResultRef.implement({
   fields: (t) => ({
     hint: t.exposeString('hint'),
+    hints: t.exposeStringList('hints'),
+    hasMoreHints: t.exposeBoolean('hasMoreHints'),
     attempt: t.expose('attempt', { type: EscapeRoomAttemptRef }),
   }),
 })
@@ -374,6 +406,12 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
       hintsUsedCount: t.exposeInt('hintsUsedCount'),
       clearedStacks: t.exposeInt('clearedStacks'),
       timeSpentSeconds: t.exposeInt('timeSpentSeconds', { nullable: true }),
+      rank: t.exposeInt('rank', { nullable: true }),
+      solvedStages: t.exposeInt('solvedStages'),
+      revealedStages: t.exposeInt('revealedStages'),
+      skippedStages: t.exposeInt('skippedStages'),
+      bonusCorrect: t.exposeBoolean('bonusCorrect', { nullable: true }),
+      rankedSeconds: t.exposeInt('rankedSeconds', { nullable: true }),
     }),
   }
 )
