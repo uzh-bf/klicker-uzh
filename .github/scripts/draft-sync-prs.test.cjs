@@ -24,7 +24,9 @@ const context = {
   payload: {
     action: 'completed',
     workflow_run: {
-      name: 'Check codebase',
+      // Check codebase reports its per-run `run-name` as the run name.
+      name: 'ordinary:123456789',
+      path: '.github/workflows/check.yml',
       event: 'push',
       head_branch: 'v3-ai',
       head_repository: { full_name: repository },
@@ -712,6 +714,25 @@ test('only trusted branch push and maintained sync PR completions can write', as
     }),
     true
   )
+  for (const name of [
+    'priority:1234:0123456789abcdef:fedcba9876543210',
+    'Check codebase',
+  ]) {
+    assert.equal(
+      acceptsEvent({
+        ...context,
+        payload: {
+          ...context.payload,
+          workflow_run: {
+            ...context.payload.workflow_run,
+            name,
+            path: '.github/workflows/check.yml@refs/heads/v3-ai',
+          },
+        },
+      }),
+      true
+    )
+  }
   const denied = [
     { ...context, ref: 'refs/heads/topic' },
     { ...context, repo: { owner: 'someone', repo: 'klicker-uzh' } },
@@ -733,7 +754,8 @@ test('only trusted branch push and maintained sync PR completions can write', as
         event: 'pull_request_target',
         head_branch: 'sync/v3-into-v3-ai-0123456789',
       },
-      { name: 'Unrelated workflow' },
+      { name: 'Check codebase', path: '.github/workflows/other.yml' },
+      { path: undefined },
       { head_repository: { full_name: 'someone/klicker-uzh' } },
     ].map((override) => ({
       ...context,

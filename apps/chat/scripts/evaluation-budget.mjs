@@ -437,7 +437,7 @@ async function runAdmissionCli(argv) {
     extra.length
   ) {
     process.stderr.write(
-      'usage: node evaluation/evaluation-budget.mjs --admission-session <budgetFile> <policyHash>\n'
+      'usage: node apps/chat/scripts/evaluation-budget.mjs --admission-session <budgetFile> <policyHash>\n'
     )
     process.exitCode = 2
     return

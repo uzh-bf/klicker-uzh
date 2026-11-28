@@ -239,6 +239,11 @@ chat:
   mcp:
     key: ''
 
+  mediaWorkloadIdentity:
+    enabled: false
+    # The infrastructure stack owns the ServiceAccount and same-named storage ConfigMap.
+    serviceAccountName: ''
+
   videoBlob:
     accountName: ''
     container: ''
@@ -260,6 +265,17 @@ chat:
     issuer: ''
     audience: ''
     keyId: ''
+
+  # Interactive explanations (the show_explanation tool). serviceUrl is the
+  # explainer API; the chat reads EXPLAINER_SERVICE_TOKEN from its Secret.
+  explainer:
+    enabled: false
+    serviceUrl: ''
+
+  # Structured feedback cards (the show_feedback tool) in Tutor, Quizzer and
+  # Writing Coach.
+  feedback:
+    enabled: false
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat

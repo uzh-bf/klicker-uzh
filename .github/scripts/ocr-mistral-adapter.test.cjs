@@ -15,6 +15,8 @@ const {
   MISTRAL_MODEL,
   MISTRAL_FLASH_MODEL,
   MISTRAL_DEEPSEEK_MODEL,
+  MOAT_FLASH_MODEL,
+  MOAT_ADVISOR_MODEL,
   normalizeMistralResponse,
   translateMistralRequest,
   createHistoryStore,
@@ -128,6 +130,125 @@ test('draft plan compatibility supplies only completed final text without retrie
         if (item.outcome)
           assert.equal(diagnostic.plan_guidance[item.outcome], 1)
       }
+    } finally {
+      await adapter.close()
+    }
+  }
+})
+
+test('only draft compression skips unusable snapshots and accounts for every upstream response once', async () => {
+  const request = {
+    prompt_cache_key: '1234abcd-memory_compression_task-0123456789abcdef',
+    messages: [{ role: 'user', content: 'first snapshot' }],
+    reasoning_effort: 'max',
+    max_tokens: 16384,
+  }
+  const fetchImpl = upstream(({ body }) => {
+    const visible = body.messages[0].content === 'changed snapshot'
+    const reply = completion(
+      {
+        role: 'assistant',
+        content: visible ? 'completed summary' : '',
+        reasoning_content: 'private fixture reasoning',
+        ...(visible
+          ? {}
+          : {
+              tool_calls: [
+                {
+                  id: 'unused',
+                  type: 'function',
+                  function: { name: 'unexpected', arguments: '{}' },
+                },
+              ],
+            }),
+      },
+      visible ? 'stop' : 'tool_calls'
+    )
+    reply.model = MOAT_FLASH_MODEL
+    return jsonResponse(200, reply)
+  })
+  const adapter = await startAdapter({
+    provider: 'moat-flash',
+    apiKey: 'synthetic',
+    guardDraftCompression: true,
+    fetchImpl,
+  })
+  try {
+    const first = await postJson(adapter, request)
+    const repeat = await postJson(adapter, request)
+    assert.deepEqual(first.json.choices[0].message, {
+      role: 'assistant',
+      content: '',
+    })
+    assert.deepEqual(
+      repeat.json.choices[0].message,
+      first.json.choices[0].message
+    )
+    assert.equal(first.json.usage.total_tokens, 7)
+    assert.equal(repeat.json.usage, undefined)
+    const changed = await postJson(adapter, {
+      ...request,
+      messages: [{ role: 'user', content: 'changed snapshot' }],
+    })
+    assert.deepEqual(changed.json.choices[0].message, {
+      role: 'assistant',
+      content: 'completed summary',
+    })
+    for (const other of [
+      {
+        ...request,
+        prompt_cache_key: request.prompt_cache_key.replace(
+          'memory_compression_task',
+          'review_filter_task'
+        ),
+      },
+      {
+        ...request,
+        tools: [{ type: 'function', function: { name: 'unexpected' } }],
+      },
+    ]) {
+      const reply = await postJson(adapter, other)
+      assert.equal(reply.json.choices[0].message.tool_calls.length, 1)
+    }
+    assert.equal(fetchImpl.calls.length, 4)
+    const diag = adapter.diagnostics()
+    assert.deepEqual(diag.draft_compression, {
+      usable: 1,
+      skipped: 1,
+      repeat_skips: 1,
+    })
+    assert.equal(diag.responses, 4)
+    assert.equal(diag.prompt_tokens, 12)
+    assert.equal(diag.completion_tokens, 16)
+  } finally {
+    await adapter.close()
+  }
+})
+
+test('draft compression discards private and unfinished text even without a tool call', async () => {
+  for (const [content, finish] of [
+    ['<think>synthetic reasoning</think>', 'stop'],
+    ['unfinished summary', 'length'],
+    ['interrupted summary', 'content_filter'],
+  ]) {
+    const payload = completion({ role: 'assistant', content }, finish)
+    payload.model = MOAT_FLASH_MODEL
+    const adapter = await startAdapter({
+      provider: 'moat-flash',
+      apiKey: 'synthetic',
+      guardDraftCompression: true,
+      fetchImpl: async () => jsonResponse(200, payload),
+    })
+    try {
+      const reply = await postJson(adapter, {
+        prompt_cache_key: '1234abcd-memory_compression_task-0123456789abcdef',
+        messages: [{ role: 'user', content: 'synthetic snapshot' }],
+      })
+      assert.deepEqual(reply.json.choices[0].message, {
+        role: 'assistant',
+        content: '',
+      })
+      assert.equal(adapter.diagnostics().draft_compression.skipped, 1)
     } finally {
       await adapter.close()
     }
@@ -637,6 +758,8 @@ test('observed context results are isolated by conversation and deduplicate hist
 })
 
 for (const [provider, model] of [
+  ['moat-flash', MOAT_FLASH_MODEL],
+  ['moat-advisor', MOAT_ADVISOR_MODEL],
   ['mistral-flash', MISTRAL_FLASH_MODEL],
   ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
 ])
@@ -658,7 +781,10 @@ for (const [provider, model] of [
     assert.equal(translated.provider, undefined)
     assert.equal(translated.max_tokens, 16384)
     assert.equal(translated.prompt_cache_key, 'synthetic-session')
-    assert.equal(translated.tool_choice, 'any')
+    assert.equal(
+      translated.tool_choice,
+      provider.startsWith('moat-') ? 'required' : 'any'
+    )
     for (const [change, code] of [
       [{ reasoning_effort: 'high' }, 'invalid_request'],
       [{ model: MISTRAL_MODEL }, 'model_mismatch'],
@@ -2771,80 +2897,256 @@ test('a finished response ignoring required tool use fails without entering OCR 
   }
 })
 
-test('one length-limited tool-free turn can continue natively; a repeated failure stops', async () => {
-  for (const recover of [true, false]) {
-    const native = {
-      role: 'assistant',
-      content: 'private unfinished answer',
-      reasoning_content: 'private unfinished reasoning',
-    }
-    const fetchImpl = upstream(({ body: { messages } }) =>
-      jsonResponse(
-        200,
-        recover && messages.some((message) => message.role === 'assistant')
-          ? completion(
-              {
-                role: 'assistant',
-                content: '',
-                tool_calls: [
-                  {
-                    id: 'done',
-                    type: 'function',
-                    function: {
-                      name: 'task_done',
-                      arguments: '{"state":"DONE"}',
-                    },
-                  },
-                ],
-              },
-              'tool_calls'
-            )
-          : completion(native, 'length')
-      )
-    )
-    const adapter = await startAdapter({ apiKey: 'synthetic-key', fetchImpl })
-    const request = {
-      messages: [{ role: 'user', content: 'synthetic input' }],
-      tools: [{ type: 'function', function: { name: 'task_done' } }],
-      max_completion_tokens: 55,
-    }
-    try {
-      const first = await postJson(adapter, request)
-      assert.equal(first.status, 200)
-      assert.equal(first.json.choices[0].finish_reason, 'length')
-      assert.equal(first.json.usage.completion_tokens, 4)
-      const echoed = { ...first.json.choices[0].message }
-      delete echoed.reasoning_content
-      const next = await postJson(adapter, {
-        ...request,
-        messages: [
-          ...request.messages,
-          echoed,
-          { role: 'user', content: 'continue' },
-        ],
-      })
-      assert.equal(next.status, recover ? 200 : 422)
-      if (recover) {
-        assert.equal(
-          next.json.choices[0].message.tool_calls[0].function.name,
-          'task_done'
-        )
-      } else {
-        assert.equal(next.json.error.code, 'required_tool_call_missing')
+for (const [provider, finish, content] of [
+  ['mistral', 'length', 'private unfinished answer'],
+  ['moat-flash', 'stop', ''],
+  ['moat-flash', 'stop', 'synthetic prose'],
+]) {
+  test(`required tool continuation for ${provider} ${finish} with ${content ? 'text' : 'empty text'}`, async () => {
+    for (const recover of [true, false]) {
+      const native = {
+        role: 'assistant',
+        content,
+        reasoning_content: 'private unfinished reasoning',
       }
-      assert.equal(fetchImpl.calls.length, 2)
-      assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
-      assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
-      const receipt = adapter.diagnostics()
-      assert.equal(receipt.completion_tokens, 8)
-      assert.equal(receipt.accepted_responses, recover ? 2 : 1)
-      assert.equal(receipt.history.misses, 0)
-      assert.equal(receipt.failures.length_no_tool, recover ? 0 : 1)
-      assert.equal(receipt.failures.required_tool_call_missing, 0)
-      assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
-    } finally {
-      await adapter.close()
+      const fetchImpl = upstream(({ body: { messages } }) => {
+        const payload =
+          recover && messages.some((message) => message.role === 'assistant')
+            ? completion(
+                {
+                  role: 'assistant',
+                  content: '',
+                  tool_calls: [
+                    {
+                      id: 'done',
+                      type: 'function',
+                      function: {
+                        name: 'task_done',
+                        arguments: '{"state":"DONE"}',
+                      },
+                    },
+                  ],
+                },
+                'tool_calls'
+              )
+            : completion(native, finish)
+        if (provider === 'moat-flash') payload.model = MOAT_FLASH_MODEL
+        return jsonResponse(200, payload)
+      })
+      const adapter = await startAdapter({
+        apiKey: 'synthetic-key',
+        fetchImpl,
+        provider,
+        finalReviewContinuation: provider === 'moat-flash',
+      })
+      const request = {
+        messages: [{ role: 'user', content: 'synthetic input' }],
+        tools: [{ type: 'function', function: { name: 'task_done' } }],
+        max_completion_tokens: 55,
+        prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
+      }
+      try {
+        const first = await postJson(adapter, request)
+        assert.equal(first.status, 200)
+        assert.equal(first.json.choices[0].finish_reason, finish)
+        assert.equal(first.json.choices[0].message.tool_calls, undefined)
+        assert.equal(first.json.usage.completion_tokens, 4)
+        const echoed = { ...first.json.choices[0].message }
+        delete echoed.reasoning_content
+        const next = await postJson(adapter, {
+          ...request,
+          messages: [
+            ...request.messages,
+            echoed,
+            { role: 'user', content: 'continue' },
+          ],
+        })
+        assert.equal(next.status, recover ? 200 : 422)
+        if (recover) {
+          assert.equal(
+            next.json.choices[0].message.tool_calls[0].function.name,
+            'task_done'
+          )
+        } else {
+          assert.equal(next.json.error.code, 'required_tool_call_missing')
+        }
+        assert.equal(fetchImpl.calls.length, 2)
+        assert.deepEqual(fetchImpl.calls[1].body.messages[1], native)
+        assert.ok(fetchImpl.calls.every((call) => call.body.max_tokens === 55))
+        const receipt = adapter.diagnostics()
+        assert.equal(receipt.completion_tokens, 8)
+        assert.equal(receipt.accepted_responses, recover ? 2 : 1)
+        assert.equal(receipt.history.misses, 0)
+        assert.equal(
+          receipt.failures.length_no_tool,
+          !recover && finish === 'length' ? 1 : 0
+        )
+        assert.equal(
+          receipt.failures.required_tool_call_missing,
+          !recover && finish === 'stop' ? 1 : 0
+        )
+        assert.doesNotMatch(JSON.stringify(receipt), /private unfinished/)
+      } finally {
+        await adapter.close()
+      }
     }
+  })
+}
+
+test('draft length recovery needs a matched tool result and survives compaction only once', async (t) => {
+  const response = (message, finish) => {
+    const payload = completion(
+      { role: 'assistant', content: '', ...message },
+      finish
+    )
+    payload.model = MOAT_FLASH_MODEL
+    return jsonResponse(200, payload)
+  }
+  let reply
+  const adapter = await startAdapter({
+    provider: 'moat-flash',
+    draftToolContinuation: true,
+    apiKey: 'synthetic',
+    fetchImpl: async () => reply(),
+  })
+  t.after(() => adapter.close())
+  const request = {
+    messages: [{ role: 'user', content: 'review' }],
+    tools: ['file_find', 'task_done'].map((name) => ({
+      type: 'function',
+      function: { name },
+    })),
+    prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
+  }
+  const send = (messages) => postJson(adapter, { ...request, messages })
+  const initial = request.messages
+  const compact = [{ role: 'user', content: 'summary' }]
+
+  reply = () => response({}, 'length')
+  const first = await send(initial)
+  assert.equal(first.status, 200)
+  const retry = [
+    ...initial,
+    first.json.choices[0].message,
+    { role: 'user', content: 'continue' },
+  ]
+  assert.equal((await send(retry)).status, 422)
+  assert.equal((await send(compact)).status, 422)
+
+  const toolTurn = (name, finish, args = '{}') =>
+    response(
+      {
+        tool_calls: [
+          { id: name, type: 'function', function: { name, arguments: args } },
+        ],
+      },
+      finish
+    )
+  const receipt = {
+    role: 'tool',
+    tool_call_id: 'file_find',
+    content: 'fixture.js',
+  }
+  reply = () => toolTurn('file_find', 'length')
+  const truncatedTool = await send(retry)
+  assert.equal(truncatedTool.status, 200)
+  reply = () => response({}, 'length')
+  assert.equal(
+    (await send([...compact, truncatedTool.json.choices[0].message, receipt]))
+      .status,
+    422
+  )
+  reply = () => toolTurn('task_done', 'tool_calls', '{"state":"INVALID"}')
+  assert.equal((await send(retry)).status, 200)
+  reply = () => response({}, 'length')
+  assert.equal((await send(compact)).status, 422)
+
+  reply = () => toolTurn('file_find', 'tool_calls')
+  const tool = await send(retry)
+  assert.equal(tool.status, 200)
+  const echoed = [...compact, tool.json.choices[0].message]
+  const progress = [...echoed, receipt]
+  reply = () => response({}, 'length')
+  assert.equal((await send(echoed)).status, 422)
+  assert.equal(
+    (await send([...echoed, { ...receipt, tool_call_id: 'other' }])).status,
+    422
+  )
+  reply = () => response({ content: 'unfinished review' }, 'length')
+  assert.equal((await send(progress)).status, 422)
+  reply = () => response({}, 'stop')
+  assert.equal((await send(progress)).status, 422)
+  reply = () => response({}, 'length')
+  assert.equal(adapter.diagnostics().first_wrap_up_dispatch, null)
+  const reminder = {
+    role: 'user',
+    content: '[ocr:second-pass-wrap-up] fixture',
+  }
+  assert.equal((await send([...echoed, reminder])).status, 422)
+  const firstDispatch = adapter.diagnostics().requests
+  assert.equal(adapter.diagnostics().first_wrap_up_dispatch, firstDispatch)
+  const resumed = await send([...progress, reminder])
+  assert.equal(adapter.diagnostics().first_wrap_up_dispatch, firstDispatch)
+  assert.equal(resumed.status, 200)
+  assert.equal(resumed.json.choices[0].finish_reason, 'length')
+  assert.equal(resumed.json.choices[0].message.tool_calls, undefined)
+  assert.equal((await send(progress)).status, 422)
+  assert.equal((await send(compact)).status, 422)
+
+  // Stock OCR also completes a pass when task_done omits the state.
+  reply = () => toolTurn('task_done', 'tool_calls')
+  assert.equal((await send(progress)).status, 200)
+  const nextPass = [{ role: 'user', content: 'next pass' }]
+  reply = () => response({}, 'length')
+  const nextFirst = await send(nextPass)
+  assert.equal(nextFirst.status, 200)
+  reply = () => toolTurn('file_find', 'tool_calls')
+  const nextTool = await send([...nextPass, nextFirst.json.choices[0].message])
+  assert.equal(nextTool.status, 200)
+  reply = () => response({}, 'length')
+  assert.equal(
+    (await send([...compact, nextTool.json.choices[0].message, receipt]))
+      .status,
+    422
+  )
+})
+
+test('a final stop cannot gain a fresh continuation by dropping the echoed assistant turn', async () => {
+  const payload = completion(
+    {
+      role: 'assistant',
+      content: '',
+      reasoning_content: 'synthetic reasoning',
+    },
+    'stop'
+  )
+  payload.model = MOAT_FLASH_MODEL
+  const adapter = await startAdapter({
+    provider: 'moat-flash',
+    finalReviewContinuation: true,
+    apiKey: 'synthetic',
+    fetchImpl: async () => jsonResponse(200, payload),
+  })
+  const request = {
+    messages: [{ role: 'user', content: 'synthetic input' }],
+    tools: [{ type: 'function', function: { name: 'task_done' } }],
+    prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
+  }
+  try {
+    assert.equal((await postJson(adapter, request)).status, 200)
+    const repeat = await postJson(adapter, {
+      ...request,
+      messages: [{ role: 'user', content: 'compacted input' }],
+    })
+    assert.equal(repeat.status, 422)
+    assert.equal(repeat.json.error.code, 'required_tool_call_missing')
+    assert.equal(
+      (await postJson(adapter, { ...request, prompt_cache_key: undefined }))
+        .status,
+      422
+    )
+  } finally {
+    await adapter.close()
   }
 })
 
@@ -4999,6 +5301,7 @@ test('callMistral wraps raw fetch failures instead of leaking them', async () =>
 
 const RUN_SCRIPT =
   'process.stdout.write(JSON.stringify({' +
+  ' moatKey: process.env.CMD_API_KEY ?? null,' +
   ' key: process.env.MISTRAL_API_KEY ?? null,' +
   ' routerKey: process.env.OPENROUTER_API_KEY ?? null,' +
   ' url: process.env.OCR_LLM_URL ?? null,' +
@@ -5122,9 +5425,11 @@ test('run completes the existing OCR config per attempt and restores it on every
   }
 })
 
-test('run strips both upstream keys and injects only the selected loopback model', async () => {
+test('run strips upstream keys and injects only the selected loopback model', async () => {
   for (const [provider, model] of [
     [undefined, MISTRAL_MODEL],
+    ['moat-flash', MOAT_FLASH_MODEL],
+    ['moat-advisor', MOAT_ADVISOR_MODEL],
     ['mistral-flash', MISTRAL_FLASH_MODEL],
     ['mistral-deepseek', MISTRAL_DEEPSEEK_MODEL],
     ['openrouter', 'deepseek/deepseek-v4.1-flash-1017'],
@@ -5132,6 +5437,7 @@ test('run strips both upstream keys and injects only the selected loopback model
     const result = await runCli(
       ['run', '--', process.execPath, '-e', RUN_SCRIPT],
       {
+        CMD_API_KEY: 'synthetic-moat-key',
         MISTRAL_API_KEY: 'sk-synthetic-run',
         OPENROUTER_API_KEY: 'sk-synthetic-router',
         OCR_ADAPTER_PROVIDER: provider,
@@ -5140,6 +5446,7 @@ test('run strips both upstream keys and injects only the selected loopback model
     assert.equal(result.code, 0)
     const seen = JSON.parse(result.stdout)
     assert.equal(seen.key, null)
+    assert.equal(seen.moatKey, null)
     assert.equal(seen.routerKey, null)
     assert.match(seen.url, /^http:\/\/127\.0\.0\.1:\d+\/v1\/chat\/completions$/)
     assert.equal(seen.token, true)
@@ -5784,7 +6091,7 @@ test('direct DeepSeek calls retain native tool reasoning, usage identity and the
   )
 })
 
-test('final summary prices DeepSeek and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
+test('final summary prices MOAT Flash and advisor lifetimes once and preserves missing advisor receipts as unknown', async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-final-cost-'))
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
   const mainPath = path.join(directory, 'main.jsonl')
@@ -5794,14 +6101,16 @@ test('final summary prices DeepSeek and advisor lifetimes once and preserves mis
     mainPath,
     JSON.stringify(
       costReceipt({
-        provider: 'mistral-deepseek',
-        model: MISTRAL_DEEPSEEK_MODEL,
+        provider: 'moat-flash',
+        model: MOAT_FLASH_MODEL,
       })
     )
   )
   fs.writeFileSync(
     advisorPath,
-    JSON.stringify(costReceipt({ provider: 'mistral', model: MISTRAL_MODEL }))
+    JSON.stringify(
+      costReceipt({ provider: 'moat-advisor', model: MOAT_ADVISOR_MODEL })
+    )
   )
   fs.writeFileSync(
     `${advisorPath}.expected.json`,
@@ -5812,21 +6121,20 @@ test('final summary prices DeepSeek and advisor lifetimes once and preserves mis
   )
   const run = () =>
     runCli(['final-summary', mainPath, 'adapter=1'], {
-      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADAPTER_PROVIDER: 'moat-flash',
       OCR_ADVISOR_DIAGNOSTICS_PATH: advisorPath,
       GITHUB_STEP_SUMMARY: summary,
     })
   const complete = await run()
   assert.equal(complete.code, 0)
-  assert.match(complete.stdout, /scope=deepseek_main status=complete/)
+  assert.match(complete.stdout, /scope=glm_flash_main status=complete/)
   const cachedRate = /\$([0-9.]+) cached input/.exec(complete.stdout)
-  assert.equal(Number(cachedRate?.[1]), 0.007)
+  assert.equal(Number(cachedRate?.[1]), 0.009)
   assert.match(complete.stdout, /scope=glm_advisor status=complete/)
   assert.match(complete.stdout, /scope=final_and_advisor status=complete/)
   const sum =
-    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'mistral-deepseek')
-      .withCache +
-    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'mistral').withCache
+    estimateCost(fs.readFileSync(mainPath, 'utf8'), 'moat-flash').withCache +
+    estimateCost(fs.readFileSync(advisorPath, 'utf8'), 'moat-advisor').withCache
   assert.ok(
     complete.stdout.includes(
       `scope=final_and_advisor status=complete estimated_with_cache_usd=${sum.toFixed(4)}`
@@ -5893,13 +6201,13 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
   const head = git('rev-parse', 'HEAD')
   const config = path.join(directory, 'config.json')
   const original = JSON.stringify({
-    llm: { model: MISTRAL_DEEPSEEK_MODEL, protocol: 'openai' },
+    llm: { model: MOAT_FLASH_MODEL, protocol: 'openai' },
   })
   fs.writeFileSync(config, original, { mode: 0o600 })
   const output = path.join(directory, 'child.json')
   const previous = Object.fromEntries(
     [
-      'MISTRAL_API_KEY',
+      'CMD_API_KEY',
       'OPENROUTER_API_KEY',
       'OCR_ADAPTER_PROVIDER',
       'OCR_ADVISOR_STATE_PATH',
@@ -5914,9 +6222,9 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
   try {
     process.chdir(directory)
     Object.assign(process.env, {
-      MISTRAL_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
+      CMD_API_KEY: 'UPSTREAM_PRIVATE_SENTINEL',
       OPENROUTER_API_KEY: 'ROUTER_PRIVATE_SENTINEL',
-      OCR_ADAPTER_PROVIDER: 'mistral-deepseek',
+      OCR_ADAPTER_PROVIDER: 'moat-flash',
       OCR_ADVISOR_STATE_PATH: path.join(directory, 'state.json'),
       OCR_ADVISOR_DIAGNOSTICS_PATH: path.join(directory, 'advisor.jsonl'),
       HEAD_SHA: head,
@@ -5927,7 +6235,7 @@ test('final wrapper attaches focused tools and trusted guidance while hiding ups
       res.writeHead(500)
       res.end()
     })
-    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.MISTRAL_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
+    const program = `const fs=require('node:fs');const args=process.argv;const rule=args[args.indexOf('--rule')+1];fs.writeFileSync(${JSON.stringify(output)},JSON.stringify({config:JSON.parse(fs.readFileSync(${JSON.stringify(config)},'utf8')),rules:JSON.parse(fs.readFileSync(rule,'utf8')),key:process.env.CMD_API_KEY??null,router:process.env.OPENROUTER_API_KEY??null,state:process.env.OCR_ADVISOR_STATE_PATH??null,token:process.env.OCR_REVIEW_TOOLS_TOKEN}))`
     const result = await transport.__commandRun(
       [
         '--ocr-config',

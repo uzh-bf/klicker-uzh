@@ -2702,6 +2702,51 @@ test('default CI evidence reader decodes bounded archives and rejects ambiguous 
   await assert.rejects(readCiEvidence(args), /ambiguous/)
 })
 
+test('default CI evidence reader selects the verified attempt among re-run artifacts', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-artifact-test-'))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  const archives = {}
+  for (const attempt of [1, 2]) {
+    fs.writeFileSync(
+      path.join(dir, 'required-ci-evidence.json'),
+      JSON.stringify(await fixtureCiEvidence({ run: { id: 504, attempt } }))
+    )
+    execFileSync(
+      'zip',
+      ['-q', `evidence-${attempt}.zip`, 'required-ci-evidence.json'],
+      { cwd: dir }
+    )
+    archives[attempt] = fs.readFileSync(
+      path.join(dir, `evidence-${attempt}.zip`)
+    )
+  }
+  const artifacts = [1, 2].map((attempt) => ({
+    id: attempt,
+    name: 'required-ci-evidence',
+    expired: false,
+    size_in_bytes: archives[attempt].length,
+  }))
+  const github = {
+    paginate: async () => artifacts,
+    rest: {
+      actions: {
+        listWorkflowRunArtifacts: async () => {},
+        downloadArtifact: async ({ artifact_id }) => ({
+          data: archives[artifact_id],
+        }),
+      },
+    },
+  }
+  const args = (attempt) => ({
+    github,
+    context: reviewContext(),
+    run: { id: 504, attempt },
+  })
+  assert.equal((await readCiEvidence(args(2))).run.attempt, 2)
+  assert.equal((await readCiEvidence(args(1))).run.attempt, 1)
+  await assert.rejects(readCiEvidence(args(3)), /ambiguous/)
+})
+
 // The Sonar job delegates to the reusable analysis workflow, so GitHub reports
 // the caller and callee names joined by " / ". Both names of the delegation are
 // still reported as separate jobs, and only the trusted one proves the

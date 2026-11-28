@@ -11,6 +11,7 @@ const {
   startFocusedAdvisor,
   startReviewTools,
 } = require('./ocr-review-tools.cjs')
+const { MOAT_ADVISOR_MODEL } = require('./ocr-mistral-adapter.cjs')
 
 function fixture(t) {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-tools-'))
@@ -118,7 +119,7 @@ function providerAdvice(overrides = {}) {
   return new Response(
     JSON.stringify({
       id: 'synthetic-provider-completion',
-      model: 'zai-glm-5-3',
+      model: MOAT_ADVISOR_MODEL,
       choices: [
         {
           index: 0,
@@ -1039,7 +1040,9 @@ test('focused advisor persists two lifetimes, expects receipts, and sends only s
     .split('\n')
     .map(JSON.parse)
   assert.equal(adapterReceipts.length, 2)
-  assert.ok(adapterReceipts.every((record) => record.provider === 'mistral'))
+  assert.ok(
+    adapterReceipts.every((record) => record.provider === 'moat-advisor')
+  )
   const toolReceipts = fs
     .readFileSync(`${diagnosticsPath}.tools.jsonl`, 'utf8')
     .trim()
@@ -1195,7 +1198,7 @@ test('eight concurrent consultations keep reserved ordinals and reject the ninth
   )
   for (const body of requests) {
     assert.equal(body.reasoning_effort, 'max')
-    assert.equal(body.model, 'zai-glm-5-3')
+    assert.equal(body.model, MOAT_ADVISOR_MODEL)
     assert.equal(body.max_tokens, 16384)
     assert.equal(body.tools.length, 1)
     assert.equal(body.tool_choice.function.name, 'review_advice')
@@ -1322,6 +1325,15 @@ test('advisor validation diagnostics preserve rejection precedence and exact bou
               },
             },
           ],
+        }),
+    },
+    {
+      label:
+        'truncated advice is never usable even with complete-looking arguments',
+      reason: 'length',
+      response: () =>
+        parsedResponse((payload) => {
+          payload.choices[0].finish_reason = 'length'
         }),
     },
     {
@@ -1468,7 +1480,12 @@ test('advisor validation diagnostics preserve rejection precedence and exact bou
       },
     })
     const result = await tool('ask_review_advisor', question)
-    assert.equal(result.result.content[0].text, 'invalid_advice', label)
+    assert.equal(result.result.isError, true, label)
+    assert.equal(
+      result.result.content[0].text,
+      reason === 'length' ? 'advisor_output_truncated' : 'invalid_advice',
+      label
+    )
     assert.equal(calls, 1, label)
     assert.equal(broker.diagnostics().attempted, 1, label)
     assert.equal(broker.diagnostics().dispatched, 1, label)

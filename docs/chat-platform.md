@@ -283,25 +283,25 @@ the target process. The committed KB_doc_query canary proves synthetic
 transport and persistence only; it must not be reported as FineCo quality or
 replace an authorized EXPERT_df_fineco_expert binding.
 
-For assistance-attribution checks, `evaluation/run-tutor-trajectories.mjs`
+For assistance-attribution checks, `apps/chat/scripts/run-tutor-trajectories.mjs`
 uses the same local target directly, without extending its single-message HTTP
 API. The corpus schema, per-turn verification and trajectory driver live in
 `apps/chat/scripts/tutor-trajectory.mjs`; the target module keeps transport. It follows actual persisted replies and parent IDs across a trajectory,
 checks streamed text against saved text, and requires successful `KB_doc_query`
 completion on the first turn. Follow-up turns may use existing context; any
 emitted retrieval must still complete with matching call IDs in stream and
-persistence. Disagreement between streamed and saved credits stops the run. `evaluation/data/trajectories/tutor-attribution.json` contains
+persistence. Disagreement between streamed and saved credits stops the run. `apps/chat/evaluation/trajectories/tutor-attribution.json` contains
 synthetic English/German scenarios and behavioral rubrics. These rubrics need
 assessment of meaning; exact response wording is not a test contract.
 
 For the revised fixture and numerical checks, use
-`evaluation/data/trajectories/tutor-attribution-v2.json` with its
+`apps/chat/evaluation/trajectories/tutor-attribution-v2.json` with its
 `tutor-attribution-v2-numeric.json` sidecar. The sidecar binds numerical
 obligations to case IDs and one-based assessment turns without changing the
 strict trajectory schema. Pass it with `--numeric` so the runner rejects an
 obligation without a matching assessment turn before login. Annotate claims from visible responses, convert their
 units, then call `compareTutorNumericClaim` from
-`evaluation/tutor-numeric-reference.mjs` with the formula, explicit
+`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
 inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
 fractions and cash flows use annual periods. Missing claims remain unassessed;
 a numerical match alone does not establish correct assistance attribution.
@@ -323,9 +323,9 @@ The default model is the fixed `gpt-6-luna` selection. Auto routing remains
 unqualified for paid evaluation; an `auto` arm label does not select that route.
 
 ```sh
-node evaluation/run-tutor-trajectories.mjs \
-  --corpus evaluation/data/trajectories/tutor-attribution-v2.json \
-  --numeric evaluation/data/trajectories/tutor-attribution-v2-numeric.json \
+node apps/chat/scripts/run-tutor-trajectories.mjs \
+  --corpus apps/chat/evaluation/trajectories/tutor-attribution-v2.json \
+  --numeric apps/chat/evaluation/trajectories/tutor-attribution-v2-numeric.json \
   --output project/_local/tutor-baseline.jsonl --arm baseline --repeats 2 \
   --budget-file project/_local/tutor-budget.json
 ```
@@ -913,7 +913,7 @@ without the solution-scope and closing-check rules, bulleted and prior-knowledge
 the Tutor's closing question and some options worked out corrected results the default left to the
 student. With them, no option changed the teaching move in the rerun. The prior-knowledge options
 were removed afterwards. The sample was small; repeat it when the template or model changes.
-`evaluation/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
+`apps/chat/scripts/run-tutor-trajectories.mjs` accepts `--answer-style` and `--answer-tone` for this.
 
 A lecturer can turn both choices off for a chatbot in the manage app's advanced chatbot settings
 (`Chatbot.answerPreferencesEnabled`, default on, saved through `updateChatbotModelPolicy`). The chat
@@ -1136,7 +1136,7 @@ PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from t
 
 Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
 
-Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default is disabled; staging and production enable it, and each environment reads its Langfuse keys and base URL from `secret-chat` (use a separate Langfuse project per environment). `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 

@@ -31,23 +31,22 @@ missing assets and changed bytes are rejected. The action source must be pinned
 by its complete Git commit; mutable refs are rejected. The manifest records no
 enclosing commit hash, avoiding a self-reference.
 
-Draft and final main reviews use `deepseek-v4-1-flash-1017` at maximum reasoning.
-The fixed Mistral profile is `mistral-deepseek`; its upstream remains
-`/v1/chat/completions`. Mistral's [Responses preview](https://docs.mistral.ai/studio/conversations/responses)
-is stateless and still requires resending prior output, so it does not replace
-the adapter or reduce context automatically. Responses transport needs its own
-history, tool-call, terminal-state and usage qualification before adoption.
+Draft and final main reviews use `z-ai/glm-5.3-flash` through the fixed
+`moat-flash` profile at maximum reasoning. MOAT's OpenAI-compatible upstream is
+`https://api.commandcode.ai/inference/v1/chat/completions`. Main-review requests that offer `task_done` set
+`tool_choice` to `required`.
 
-The full `zai-glm-5-3` model is available only through focused advisor
-consultations at maximum reasoning. Each request contains one question and
-selected source excerpts; it receives neither the complete diff nor the
-reviewer conversation. The portable skill directs difficult and architectural
-questions to that advisor after source inspection.
+The full `zai-org/GLM-5.3` model is used through the `moat-advisor` profile for
+focused advisor consultations at maximum reasoning. Stack topology runs on Flash and may ask the full GLM advisor for focused advice. Each
+advisor request contains one question and selected source excerpts; it receives
+neither the complete diff nor the reviewer conversation. The portable skill
+directs difficult and architectural questions to that advisor after source
+inspection.
 
-The draft profile uses stock npm `@alibaba-group/open-code-review@1.13.0`,
-`deepseek-v4-1-flash-1017` through Mistral and the existing bounded `zai-glm-5-3` advisor.
-Verification checks the stock version and the immutable upstream publisher's
-digest. It does not claim platform-specific stock binary digest verification.
+The draft action builds OCR 1.13.0 from the pinned upstream archive with the
+draft second-pass patch and the Go version in the manifest. Installation
+verifies the draft patch identity in the executable version and the digest of
+the pinned publisher. Stock npm OCR remains a separate compatibility fixture.
 Final execution keeps its separate pinned upstream source, compression patch,
 Go toolchain and executable provenance. The shared action does not run final
 review or grant its approval. Final code review attaches the same bounded
@@ -87,7 +86,7 @@ and `publisherRoot` explicitly; the legacy runner CLI retains its prior defaults
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `verify-release`                            | Checks release assets and complete action ref; emits fixed install/publisher outputs.                                          |
 | `prepare`                                   | Validates the GitHub draft event and repository identities, freezes policy/head/base/range and validates trusted config/skill. |
-| `verify-install`                            | Verifies stock CLI version and publisher source digest.                                                                        |
+| `verify-install`                            | Verifies draft CLI patch identity and publisher source digest.                                                                 |
 | `run`                                       | Supplies frozen caller inputs to the existing runner, preserving its exit code and credential isolation.                       |
 | `validate`                                  | Produces the exact-head publication envelope, retaining partial coverage.                                                      |
 | `summary`                                   | Prints the existing estimated cost, caching savings and outcome diagnostics.                                                   |
@@ -200,8 +199,9 @@ a 45-minute timeout and `OCR_NO_UPDATE: '1'`. Its only execution step is the pin
 action with these explicit bindings:
 
 ```yaml
+uses: OWNER/REPOSITORY/.github/actions/ocr-review@FULL_COMMIT_SHA
 with:
-  mistral-api-key: ${{ secrets.MISTRAL_API_KEY }}
+  cmd-api-key: ${{ secrets.CMD_API_KEY }}
   context7-api-key: ${{ secrets.CONTEXT7_API_KEY }}
   github-token: ${{ github.token }}
   provider-paused: ${{ vars.OCR_PROVIDER_PAUSED }}
@@ -211,7 +211,9 @@ The workflow resolves the trusted repository pause variable and passes it as an
 action input. The composite reads the input only in the review step; the `vars`
 context is unavailable inside composite action metadata. Omitted
 or empty input keeps provider calls enabled, `true` pauses them, and invalid
-values fail closed.
+values fail closed. The composite maps the `cmd-api-key` action input to
+`CMD_API_KEY` only inside the review step. Pin action releases that include
+`cmd-api-key` by complete commit SHA; older runtime pins are incompatible.
 
 Do not expose these credentials through job-level environment variables.
 Repository-specific activation can narrow the normal draft expression and must

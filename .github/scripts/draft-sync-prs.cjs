@@ -29,6 +29,11 @@ function isSyncBranch(ref) {
   )
 }
 
+// Check codebase sets a per-run `run-name`, and a workflow_run payload reports
+// that run name as `name`, so the triggering workflow is identified by its
+// definition path. A path may carry an `@ref` suffix.
+const CHECK_WORKFLOW_PATH = '.github/workflows/check.yml'
+
 function acceptsEvent(context) {
   if (`${context.repo.owner}/${context.repo.repo}` !== REPOSITORY) return false
   if (context.ref !== 'refs/heads/v3') return false
@@ -38,7 +43,7 @@ function acceptsEvent(context) {
     context.eventName === 'workflow_run' &&
       context.payload.action === 'completed' &&
       run &&
-      run.name === 'Check codebase' &&
+      run.path?.split('@')[0] === CHECK_WORKFLOW_PATH &&
       run.head_repository?.full_name === REPOSITORY &&
       ((run.event === 'push' &&
         PAIRS.some(({ head, base }) =>

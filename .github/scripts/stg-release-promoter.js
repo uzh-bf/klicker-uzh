@@ -918,30 +918,50 @@ async function readCiEvidence({ github, context, run }) {
   const matches = artifacts.filter(
     (a) => a.name === 'required-ci-evidence' && !a.expired
   )
-  if (matches.length !== 1 || matches[0].size_in_bytes > 1048576) {
+  // A re-run of failed jobs uploads another evidence artifact for the same
+  // run, so every attempt's evidence is read and the verified attempt's chosen.
+  if (
+    matches.length < 1 ||
+    matches.length > 5 ||
+    matches.some((a) => a.size_in_bytes > 1048576)
+  ) {
     throw new Error('missing or ambiguous CI selection artifact')
   }
-  const response = await github.rest.actions.downloadArtifact({
-    ...context.repo,
-    artifact_id: matches[0].id,
-    archive_format: 'zip',
-  })
-  if (response.data.byteLength > 1048576)
-    throw new Error('CI selection archive too large')
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-ci-'))
-  try {
-    const archive = path.join(directory, 'evidence.zip')
-    fs.writeFileSync(archive, Buffer.from(response.data))
-    return JSON.parse(
-      execFileSync('unzip', ['-p', archive, 'required-ci-evidence.json'], {
-        encoding: 'utf8',
-        maxBuffer: 1048576,
-        timeout: 10000,
-      })
-    )
-  } finally {
-    fs.rmSync(directory, { recursive: true, force: true })
+  const candidates = []
+  for (const artifact of matches) {
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    if (response.data.byteLength > 1048576)
+      throw new Error('CI selection archive too large')
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-ci-'))
+    try {
+      const archive = path.join(directory, 'evidence.zip')
+      fs.writeFileSync(archive, Buffer.from(response.data))
+      candidates.push(
+        JSON.parse(
+          execFileSync('unzip', ['-p', archive, 'required-ci-evidence.json'], {
+            encoding: 'utf8',
+            maxBuffer: 1048576,
+            timeout: 10000,
+          })
+        )
+      )
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
   }
+  if (candidates.length === 1) return candidates[0]
+  const selected = candidates.filter(
+    (evidence) =>
+      evidence?.run?.id === run.id && evidence.run.attempt === run.attempt
+  )
+  if (selected.length !== 1) {
+    throw new Error('missing or ambiguous CI selection artifact')
+  }
+  return selected[0]
 }
 
 // Scan receipts travel as one artifact per scanned image, next to the findings
