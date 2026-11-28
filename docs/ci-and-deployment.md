@@ -999,10 +999,11 @@ The canonical workflows generate their priority-only execution envelopes with
 workflow, regenerate and format the envelopes; CI checks parsed semantic parity using
 `node .github/scripts/priority-ci-workflows.cjs`. The same check compares each
 caller's pinned executor with its generated definition and checks that the commit
-is reachable from remote `v3` or has a matching remote retention tag
-`priority-ci-executor-<full SHA>`. Direct fetches by SHA can still succeed after
-the source branch is deleted, so fetching the object alone does not establish
-retention. Priority callers use the exact reviewed SHA for runner-group access.
+is reachable from a protected remote integration branch (`v3`, `v3-ai`,
+`v3-audit`, or `v3-adaptive-learning`) or has a matching remote retention tag
+`priority-ci-executor-<full SHA>`. A direct fetch by SHA can still succeed after
+the source branch is deleted. Priority callers use the exact reviewed SHA for
+runner-group access.
 
 To update the executor and its caller in one PR, commit the generated executor
 first. With publication approval, publish a retention tag at that commit before

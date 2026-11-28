@@ -5,6 +5,12 @@ const { isDeepStrictEqual } = require('node:util')
 const { execFileSync } = require('node:child_process')
 const REQUEST =
   "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')"
+const RETAINED_BRANCH_REFS = [
+  'refs/heads/v3',
+  'refs/heads/v3-ai',
+  'refs/heads/v3-audit',
+  'refs/heads/v3-adaptive-learning',
+]
 const TERMINALS = {
   'check.yml': 'check',
   'check-gitleaks.yml': 'check-gitleaks',
@@ -120,9 +126,7 @@ function pinnedWorkflowReader(root) {
         ref
       )
   }
-  function onV3(ref) {
-    const tip = remoteRefs.get('refs/heads/v3')
-    if (!tip) throw new Error('origin does not advertise v3')
+  function isAncestor(ref, tip) {
     fetchCommit(tip)
     if (!hasCommit(ref)) return false
     try {
@@ -140,7 +144,7 @@ function pinnedWorkflowReader(root) {
         git(
           'ls-remote',
           'origin',
-          'refs/heads/v3',
+          ...RETAINED_BRANCH_REFS,
           'refs/tags/priority-ci-executor-*'
         )
           .split('\n')
@@ -152,7 +156,10 @@ function pinnedWorkflowReader(root) {
       const tag = `refs/tags/priority-ci-executor-${ref}`
       if (
         (remoteRefs.get(`${tag}^{}`) ?? remoteRefs.get(tag)) === ref ||
-        onV3(ref)
+        RETAINED_BRANCH_REFS.some((branch) => {
+          const tip = remoteRefs.get(branch)
+          return tip && isAncestor(ref, tip)
+        })
       ) {
         fetchCommit(ref)
         return git('show', `${ref}:.github/workflows/${file}`)
@@ -164,7 +171,7 @@ function pinnedWorkflowReader(root) {
     }
     throw new Error(
       `pinned priority workflow is not retained: ${file} at ${ref}. ` +
-        `Use a commit reachable from remote v3 or publish priority-ci-executor-${ref} at that commit.`
+        `Use a commit on a protected integration branch or publish priority-ci-executor-${ref} at that commit.`
     )
   }
 }

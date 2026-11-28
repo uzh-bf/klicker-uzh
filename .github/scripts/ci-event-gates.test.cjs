@@ -1620,6 +1620,9 @@ test('an executor pin survives a squash merge and deletion with remote retention
   )
   writeCallers(squash)
   assert.doesNotThrow(() => generate(checkout))
+  git('push', 'origin', `${sha}:refs/heads/v3-ai`)
+  writeCallers(sha)
+  assert.doesNotThrow(() => generate(checkout))
 })
 
 test('every discovered priority compute consumer honors the canary duration and existing defaults', () => {
