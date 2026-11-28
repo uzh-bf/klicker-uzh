@@ -3,9 +3,13 @@ import {
   GetParticipantAccountDataUseDocument,
   SetLearningAnalyticsConsentDocument,
   SetResearchConsentDocument,
+  SetTutorPersonalizationConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
   Button,
@@ -36,16 +40,30 @@ function DataUseSettings() {
     setLearningAnalyticsConsent,
     { loading: savingLearningAnalyticsConsent },
   ] = useMutation(SetLearningAnalyticsConsentDocument)
+  const [
+    setTutorPersonalizationConsent,
+    { loading: savingTutorPersonalizationConsent },
+  ] = useMutation(SetTutorPersonalizationConsentDocument)
 
   const dataUse = data?.selfAccountDataUse
   const saving =
-    savingResearchConsent || savingLearningAnalyticsConsent || reloading
+    savingResearchConsent ||
+    savingLearningAnalyticsConsent ||
+    savingTutorPersonalizationConsent ||
+    reloading
   // The disclosure text is bundled with this frontend build; if the server
   // already requires a newer version, the displayed content cannot record
   // choices until the page has been reloaded with matching content.
   const versionMismatch =
     dataUse != null &&
     dataUse.currentDisclosureVersion !== PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+  // The Tutor notice is bundled the same way. An answer is recorded only under
+  // the notice this page shows, so a newer server notice blocks the choice
+  // until the page shows that notice.
+  const tutorNoticeOutdated =
+    dataUse != null &&
+    dataUse.currentTutorPersonalizationDisclosureVersion !==
+      TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
 
   async function reloadDataUse() {
     setReloading(true)
@@ -144,6 +162,47 @@ function DataUseSettings() {
     }
   }
 
+  async function updateTutorPersonalizationConsent(consent: boolean) {
+    if (
+      !dataUse ||
+      saving ||
+      conflict ||
+      versionMismatch ||
+      tutorNoticeOutdated
+    )
+      return
+
+    try {
+      const result = await setTutorPersonalizationConsent({
+        variables: {
+          consent,
+          expectedRevision: dataUse.dataUseRevision,
+          disclosureVersion: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+        },
+      })
+
+      if (!result.data?.setTutorPersonalizationConsent)
+        throw new Error('Save failed')
+      await reloadDataUse()
+    } catch (error) {
+      if (isDataUseConflict(error)) {
+        setConflict(true)
+        toast({
+          type: 'error',
+          message: t('pwa.profile.dataUseConflict'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
+    }
+  }
+
   async function confirmLearningAnalyticsWithdrawal() {
     if (saving) return
     const saved = await updateLearningAnalyticsConsent(false)
@@ -204,7 +263,7 @@ function DataUseSettings() {
         </Prose>
       </div>
 
-      {(conflict || versionMismatch) && (
+      {(conflict || versionMismatch || tutorNoticeOutdated) && (
         <UserNotification type="error">
           <div className="flex flex-col items-start gap-2">
             <span>{t('pwa.profile.dataUseConflict')}</span>
@@ -267,6 +326,33 @@ function DataUseSettings() {
         />
         <Prose className={{ root: 'prose-sm' }}>
           {t('pwa.profile.learningAnalyticsConsentDescription')}
+        </Prose>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded border bg-white p-3">
+        <Switch
+          checked={dataUse.tutorPersonalizationConsent === true}
+          disabled={
+            saving || conflict || versionMismatch || tutorNoticeOutdated
+          }
+          onCheckedChange={(consent) =>
+            void updateTutorPersonalizationConsent(consent)
+          }
+          label={`${t('shared.tutorPersonalization.title')}: ${
+            dataUse.tutorPersonalizationConsent === true
+              ? t('shared.generic.yes')
+              : dataUse.tutorPersonalizationConsent === false
+                ? t('shared.generic.no')
+                : t('shared.tutorPersonalization.badgeUnanswered')
+          }`}
+          className={{
+            root: 'flex flex-row-reverse justify-end gap-3',
+            label: 'mr-0 font-semibold',
+          }}
+          data={{ cy: 'participant-tutor-personalization-consent' }}
+        />
+        <Prose className={{ root: 'prose-sm' }}>
+          {t('shared.tutorPersonalization.notice')}
         </Prose>
       </div>
 

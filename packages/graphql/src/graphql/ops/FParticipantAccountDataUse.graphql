@@ -8,4 +8,7 @@ fragment ParticipantAccountDataUseData on ParticipantAccountDataUse {
   dataUseAcknowledgedVersion
   currentDisclosureVersion
   isComplete
+  tutorPersonalizationConsent
+  tutorPersonalizationDisclosureVersion
+  currentTutorPersonalizationDisclosureVersion
 }

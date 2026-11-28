@@ -1,0 +1,13 @@
+mutation SetTutorPersonalizationConsent(
+  $consent: Boolean!
+  $expectedRevision: Int!
+  $disclosureVersion: String!
+) {
+  setTutorPersonalizationConsent(
+    consent: $consent
+    expectedRevision: $expectedRevision
+    disclosureVersion: $disclosureVersion
+  ) {
+    ...ParticipantAccountDataUseData
+  }
+}

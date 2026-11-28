@@ -746,6 +746,17 @@ export default {
       previous: 'Previous',
       next: 'Next',
     },
+    tutorPersonalization: {
+      title: 'Personalize the Tutor',
+      badgeUnanswered: 'Not decided',
+      badgeOn: 'On',
+      badgeOff: 'Off',
+      notice:
+        'If you agree, the Tutor adapts its explanations and hints to you. With each message, it gets a short summary of your own practice results in this course (practice quizzes and microlearnings): the topics you practised, whether your answers were correct, when you last practised, and how much of the course you have covered. The summary is created anew for each message and is not stored. It is sent with your message to the language-model provider used for this chatbot. This applies in every course whose lecturer has switched personalization on, always with that course\'s data only. Lecturers see neither the summary nor your decision. You can see what the Tutor currently receives, and change your decision, at any time in the chat settings or under "Data use and settings". A change applies from your next message. Without your agreement the Tutor works as before.',
+      controlLabel: 'Your decision',
+      yes: 'Yes, personalize',
+      no: 'No, do not personalize',
+    },
     questions: {
       roundedTo: 'Round to {accuracy} decimal places.',
       numInvalidValue:

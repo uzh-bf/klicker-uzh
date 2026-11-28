@@ -2,7 +2,11 @@
 
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import ParticipantDataUseChoices from '@klicker-uzh/shared-components/src/participant/ParticipantDataUseChoices'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
+import TutorPersonalizationChoice from '@klicker-uzh/shared-components/src/participant/TutorPersonalizationChoice'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util/participant-account-data-use'
 import {
   Button,
   Checkbox,
@@ -27,6 +31,12 @@ const choicesDataCy = {
   learningAnalyticsNo: 'chat-data-use-analytics-false',
   learningAnalyticsToggle: 'chat-data-use-analytics-toggle',
   learningAnalyticsPrivacy: 'chat-data-use-privacy-policy',
+}
+
+const personalizationDataCy = {
+  toggle: 'chat-data-use-personalization-toggle',
+  yes: 'chat-data-use-personalization-true',
+  no: 'chat-data-use-personalization-false',
 }
 
 interface DataUseResponse {
@@ -308,7 +318,7 @@ export function ParticipantDataUseSettings({
   }, [open, chatbotId])
 
   async function updateChoice(
-    purpose: 'research' | 'analytics',
+    purpose: 'research' | 'analytics' | 'personalization',
     consent: boolean
   ) {
     if (!state) return
@@ -325,7 +335,10 @@ export function ParticipantDataUseSettings({
           purpose,
           consent,
           expectedRevision: state.dataUseRevision,
-          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          disclosureVersion:
+            purpose === 'personalization'
+              ? TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
+              : PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         }),
       })
       if (!response.ok) {
@@ -412,6 +425,14 @@ export function ParticipantDataUseSettings({
                     updateChoice('analytics', consent)
                   }
                   dataCy={choicesDataCy}
+                />
+                <TutorPersonalizationChoice
+                  disabled={saving}
+                  consent={state.tutorPersonalizationConsent}
+                  onChange={(consent) =>
+                    updateChoice('personalization', consent)
+                  }
+                  dataCy={personalizationDataCy}
                 />
                 {changedElsewhere && (
                   <UserNotification

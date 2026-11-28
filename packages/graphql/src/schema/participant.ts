@@ -9,6 +9,7 @@ import {
   isParticipantDataUseComplete,
   levelFromXp,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
 } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
@@ -161,6 +162,18 @@ export const ParticipantAccountDataUse = builder
           state.learningAnalyticsChoiceAt !== null &&
           state.learningAnalyticsDisclosureVersion !== null,
       }),
+      // Null while the participant has not answered the optional choice.
+      tutorPersonalizationConsent: t.exposeBoolean(
+        'tutorPersonalizationConsent',
+        { nullable: true }
+      ),
+      tutorPersonalizationDisclosureVersion: t.exposeString(
+        'tutorPersonalizationDisclosureVersion',
+        { nullable: true }
+      ),
+      currentTutorPersonalizationDisclosureVersion: t.string({
+        resolve: () => TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+      }),
     }),
   })
 
@@ -188,6 +201,9 @@ export interface IParticipant
     | 'learningAnalyticsConsent'
     | 'learningAnalyticsChoiceAt'
     | 'learningAnalyticsDisclosureVersion'
+    | 'tutorPersonalizationConsent'
+    | 'tutorPersonalizationChoiceAt'
+    | 'tutorPersonalizationDisclosureVersion'
     | 'dataUseAcknowledgedAt'
     | 'dataUseAcknowledgedVersion'
     | 'dataUseRevision'

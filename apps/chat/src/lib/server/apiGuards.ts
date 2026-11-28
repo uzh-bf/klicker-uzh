@@ -47,6 +47,9 @@ export async function loadChatDataUseState(
       researchConsent: true,
       learningAnalyticsConsent: true,
       dataUseRevision: true,
+      tutorPersonalizationConsent: true,
+      tutorPersonalizationChoiceAt: true,
+      tutorPersonalizationDisclosureVersion: true,
     },
   })
   if (!participant) return null

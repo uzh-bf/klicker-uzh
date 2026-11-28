@@ -73,6 +73,12 @@ model Participant {
   learningAnalyticsChoiceAt          DateTime?
   learningAnalyticsDisclosureVersion String?
 
+  // Tutor personalization is optional and starts unanswered (null). Only a
+  // recorded true makes the participant eligible; false is a recorded refusal.
+  tutorPersonalizationConsent           Boolean?
+  tutorPersonalizationChoiceAt          DateTime?
+  tutorPersonalizationDisclosureVersion String?
+
   dataUseAcknowledgedAt      DateTime?
   dataUseAcknowledgedVersion String?
   dataUseRevision            Int                       @default(0)
@@ -126,6 +132,11 @@ model ParticipantDataUseEvent {
   researchConsent          Boolean
   learningAnalyticsConsent Boolean
   acknowledged             Boolean
+
+  // Snapshot of the tutor personalization choice at this revision and the
+  // notice version it was answered under; null while unanswered.
+  tutorPersonalizationConsent           Boolean?
+  tutorPersonalizationDisclosureVersion String?
   createdAt                DateTime    @default(now())
 
   analyticsWithdrawal ParticipantAnalyticsWithdrawal?

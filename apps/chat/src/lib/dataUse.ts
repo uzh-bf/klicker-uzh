@@ -16,6 +16,7 @@ export interface ChatDataUseState {
   researchChoiceRecorded: boolean
   learningAnalyticsConsent: boolean
   learningAnalyticsChoiceRecorded: boolean
+  tutorPersonalizationConsent: boolean | null
 }
 /** Project the committed decisions without a second database read. */
 export function toChatDataUseState(
@@ -29,5 +30,6 @@ export function toChatDataUseState(
     learningAnalyticsConsent: participant.learningAnalyticsConsent,
     learningAnalyticsChoiceRecorded:
       participant.learningAnalyticsChoiceAt !== null,
+    tutorPersonalizationConsent: participant.tutorPersonalizationConsent,
   }
 }

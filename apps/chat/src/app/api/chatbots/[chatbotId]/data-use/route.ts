@@ -1,6 +1,7 @@
 import {
   completeParticipantDataUse,
   updateParticipantDataUseChoice,
+  updateParticipantTutorPersonalizationChoice,
 } from '@klicker-uzh/graphql/dist/participant-data-use'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
@@ -179,23 +180,30 @@ export async function PATCH(
   }
 
   const purpose = body?.purpose
-  if (purpose !== 'research' && purpose !== 'analytics') {
+  if (
+    purpose !== 'research' &&
+    purpose !== 'analytics' &&
+    purpose !== 'personalization'
+  ) {
     return invalidInputResponse()
   }
 
   try {
-    const saved = await updateParticipantDataUseChoice(
-      purpose,
-      {
-        expectedRevision: body?.expectedRevision,
-        disclosureVersion: body?.disclosureVersion,
-        consent: body?.consent,
-      },
-      {
-        prisma,
-        user: { sub: authResult.participantId, role: UserRole.PARTICIPANT },
-      }
-    )
+    const input = {
+      expectedRevision: body?.expectedRevision,
+      disclosureVersion: body?.disclosureVersion,
+      consent: body?.consent,
+    }
+    const saved =
+      purpose === 'personalization'
+        ? await updateParticipantTutorPersonalizationChoice(input, {
+            prisma,
+            user: { sub: authResult.participantId, role: UserRole.PARTICIPANT },
+          })
+        : await updateParticipantDataUseChoice(purpose, input, {
+            prisma,
+            user: { sub: authResult.participantId, role: UserRole.PARTICIPANT },
+          })
 
     return NextResponse.json({
       state: toChatDataUseState(saved),

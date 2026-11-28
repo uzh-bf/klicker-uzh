@@ -6,6 +6,7 @@ import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import {
   isParticipantDataUseComplete,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
 } from '@klicker-uzh/util'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
@@ -13,6 +14,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   completeParticipantDataUse,
   updateParticipantDataUseChoice,
+  updateParticipantTutorPersonalizationChoice,
 } from '../src/services/participantAccountDataUse.js'
 
 const TEST_PREFIX = `participant-account-data-use-integration-${Date.now()}-${randomUUID()}`
@@ -101,6 +103,9 @@ async function readAccountDataUse(participantId: string) {
       dataUseAcknowledgedAt: true,
       dataUseAcknowledgedVersion: true,
       dataUseRevision: true,
+      tutorPersonalizationConsent: true,
+      tutorPersonalizationChoiceAt: true,
+      tutorPersonalizationDisclosureVersion: true,
     },
   })
 }
@@ -291,6 +296,144 @@ describe('complete participant account data-use PostgreSQL integration', () => {
       learningAnalyticsConsent: false,
     })
     expect((await readAccountDataUse(participant.id))?.dataUseRevision).toBe(2)
+  })
+
+  it('records the optional tutor personalization choice as unanswered, yes and no with an audit row each', async () => {
+    const participant = await createParticipant('personalization-states')
+    const ctx = contextFor(participant.id)
+    const completed = await completeParticipantDataUse(completionInput(), ctx)
+    // Completion neither answers the optional choice nor depends on it.
+    expect(isParticipantDataUseComplete(completed)).toBe(true)
+    expect(completed.tutorPersonalizationConsent).toBeNull()
+    expect(completed.tutorPersonalizationChoiceAt).toBeNull()
+
+    const input = {
+      consent: true,
+      expectedRevision: 1,
+      disclosureVersion: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+    }
+    const yes = await updateParticipantTutorPersonalizationChoice(input, ctx)
+    expect(yes).toMatchObject({
+      tutorPersonalizationConsent: true,
+      tutorPersonalizationDisclosureVersion:
+        TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+      dataUseRevision: 2,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+    })
+    expect(yes.dataUseAcknowledgedAt).toEqual(completed.dataUseAcknowledgedAt)
+    expect(yes.dataUseAcknowledgedVersion).toBe(
+      PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+    )
+
+    // An identical answer at the current revision writes nothing.
+    await updateParticipantTutorPersonalizationChoice(
+      { ...input, expectedRevision: 2 },
+      ctx
+    )
+    await expect(
+      updateParticipantTutorPersonalizationChoice(
+        { ...input, consent: false },
+        ctx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_STALE_REVISION' },
+    })
+
+    const no = await updateParticipantTutorPersonalizationChoice(
+      { ...input, consent: false, expectedRevision: 2 },
+      ctx
+    )
+    expect(no).toMatchObject({
+      tutorPersonalizationConsent: false,
+      dataUseRevision: 3,
+    })
+    expect(no.tutorPersonalizationChoiceAt).not.toEqual(
+      yes.tutorPersonalizationChoiceAt
+    )
+
+    // A later change to another purpose keeps the recorded refusal.
+    const research = await updateParticipantDataUseChoice(
+      'research',
+      {
+        consent: true,
+        expectedRevision: 3,
+        disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      },
+      ctx
+    )
+    expect(research.tutorPersonalizationConsent).toBe(false)
+
+    const events = await readEvents(participant.id)
+    expect(
+      events.map((event) => [
+        event.revision,
+        event.tutorPersonalizationConsent,
+        event.tutorPersonalizationDisclosureVersion,
+      ])
+    ).toEqual([
+      [1, null, null],
+      [2, true, TUTOR_PERSONALIZATION_DISCLOSURE_VERSION],
+      [3, false, TUTOR_PERSONALIZATION_DISCLOSURE_VERSION],
+      [4, false, TUTOR_PERSONALIZATION_DISCLOSURE_VERSION],
+    ])
+  })
+
+  it('refuses the tutor personalization choice before completion, under another notice version, and for other roles', async () => {
+    const participant = await createParticipant('personalization-guards')
+    const ctx = contextFor(participant.id)
+    const input = {
+      consent: true,
+      expectedRevision: 0,
+      disclosureVersion: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+    }
+    await expect(
+      updateParticipantTutorPersonalizationChoice(input, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' },
+    })
+    await completeParticipantDataUse(completionInput(), ctx)
+    await expect(
+      updateParticipantTutorPersonalizationChoice(
+        {
+          ...input,
+          expectedRevision: 1,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        },
+        ctx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_INVALID_INPUT' },
+    })
+    await expect(
+      updateParticipantTutorPersonalizationChoice(
+        { ...input, expectedRevision: 1 },
+        contextFor(participant.id, UserRole.USER)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_FORBIDDEN' },
+    })
+    const stored = await readAccountDataUse(participant.id)
+    expect(stored?.tutorPersonalizationConsent).toBeNull()
+    expect(stored?.dataUseRevision).toBe(1)
+
+    const saved = await graphql({
+      schema,
+      source:
+        'mutation Save($version: String!) { setTutorPersonalizationConsent(consent: true, expectedRevision: 1, disclosureVersion: $version) { tutorPersonalizationConsent tutorPersonalizationDisclosureVersion currentTutorPersonalizationDisclosureVersion dataUseRevision isComplete } }',
+      variableValues: { version: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION },
+      contextValue: ctx,
+    })
+    expect(saved.errors).toBeUndefined()
+    expect(saved.data?.setTutorPersonalizationConsent).toEqual({
+      tutorPersonalizationConsent: true,
+      tutorPersonalizationDisclosureVersion:
+        TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+      currentTutorPersonalizationDisclosureVersion:
+        TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+      dataUseRevision: 2,
+      isComplete: true,
+    })
   })
 
   it('does not renew acknowledgement through an independent choice mutation', async () => {
