@@ -12,3 +12,70 @@ model EmailTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+enum DataExportStatus {
+  PENDING
+  READY
+  RELEASED
+  FAILED
+  EXPIRED
+}
+
+model ResearchExportReceipt {
+  id          String @id @db.Uuid
+  requesterId String @db.Uuid
+  courseId    String @db.Uuid
+
+  projectTitle      String
+  responsiblePerson String
+  contactEmail      String
+  purpose           String
+  deletionDate      DateTime @db.Date
+  reference         String?
+  selectedClasses   String[]
+  disclosureVersion String
+  attestedAt        DateTime @default(now())
+
+  status      DataExportStatus @default(PENDING)
+  sha256      String?
+  byteCount   Int?
+  recordCount Int?
+  failureCode String?
+  releasedAt  DateTime?
+
+  @@index([requesterId, attestedAt])
+  @@index([courseId, attestedAt])
+}
+
+model AssessmentExportReceipt {
+  id                String   @id @db.Uuid
+  requesterId       String   @db.Uuid
+  courseId          String   @db.Uuid
+  liveQuizId        String?  @db.Uuid
+  chatbotId         String?  @db.Uuid
+  locale            String
+  disclosureVersion String
+  attestedAt        DateTime @default(now())
+
+  status      DataExportStatus @default(PENDING)
+  sha256      String?
+  byteCount   Int?
+  recordCount Int?
+  failureCode String?
+  releasedAt  DateTime?
+
+  // Asynchronous transcript exports keep their archive until the single
+  // download or until this time, whichever comes first.
+  artifactExpiresAt DateTime?
+  artifact          AssessmentExportArtifact?
+
+  @@index([requesterId, attestedAt])
+  @@index([courseId, attestedAt])
+}
+
+model AssessmentExportArtifact {
+  receiptId String                  @id @db.Uuid
+  receipt   AssessmentExportReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  content   Bytes
+  createdAt DateTime                @default(now())
+}
