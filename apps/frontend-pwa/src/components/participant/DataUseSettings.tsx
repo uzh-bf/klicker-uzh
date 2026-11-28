@@ -8,7 +8,8 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_RESULTS_VERSIONS,
 } from '@klicker-uzh/util/participant-account-data-use'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
@@ -57,13 +58,14 @@ function DataUseSettings() {
   const versionMismatch =
     dataUse != null &&
     dataUse.currentDisclosureVersion !== PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
-  // The Tutor notice is bundled the same way. An answer is recorded only under
-  // the notice this page shows, so a newer server notice blocks the choice
-  // until the page shows that notice.
+  // The Tutor notices are bundled the same way. The page shows the notice
+  // that matches the server's version and records answers under it, so a
+  // version this page has no text for blocks the choice until it is reloaded.
   const tutorNoticeOutdated =
     dataUse != null &&
-    dataUse.currentTutorPersonalizationDisclosureVersion !==
-      TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
+    !TUTOR_PERSONALIZATION_RESULTS_VERSIONS.includes(
+      dataUse.currentTutorPersonalizationDisclosureVersion
+    )
 
   async function reloadDataUse() {
     setReloading(true)
@@ -177,7 +179,8 @@ function DataUseSettings() {
         variables: {
           consent,
           expectedRevision: dataUse.dataUseRevision,
-          disclosureVersion: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+          disclosureVersion:
+            dataUse.currentTutorPersonalizationDisclosureVersion,
         },
       })
 
@@ -219,6 +222,11 @@ function DataUseSettings() {
 
     void updateLearningAnalyticsConsent(consent)
   }
+
+  // The deployment keeps learning notes, so the notice describes them.
+  const notesOffered =
+    dataUse?.currentTutorPersonalizationDisclosureVersion ===
+    TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION
 
   if (loading) {
     return (
@@ -354,6 +362,11 @@ function DataUseSettings() {
         <Prose className={{ root: 'prose-sm' }}>
           {t('shared.tutorPersonalization.notice')}
         </Prose>
+        {notesOffered && (
+          <Prose className={{ root: 'prose-sm' }}>
+            {t('shared.tutorPersonalization.noticeNotes')}
+          </Prose>
+        )}
       </div>
 
       <Modal

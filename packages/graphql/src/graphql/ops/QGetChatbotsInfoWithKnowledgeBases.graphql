@@ -41,6 +41,7 @@ query QGetChatbotsInfoWithKnowledgeBases {
     answerPreferencesEnabled
     interactiveExplanationsEnabled
     personalizationEnabled
+    learnerMemoryAvailable
     knowledgeGraphVisible
     knowledgeGraphRetrievalEnabled
     allowedModelIds

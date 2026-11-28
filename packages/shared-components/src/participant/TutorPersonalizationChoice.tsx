@@ -27,6 +27,8 @@ interface TutorPersonalizationChoiceProps {
   disabled?: boolean
   defaultOpen?: boolean
   onChange: (consent: boolean) => void
+  /** The deployment keeps learning notes, so the notice describes them. */
+  withNotes?: boolean
   dataCy: { toggle: string; yes: string; no: string }
 }
 
@@ -40,6 +42,7 @@ function TutorPersonalizationChoice({
   disabled,
   defaultOpen = false,
   onChange,
+  withNotes = false,
   dataCy,
 }: TutorPersonalizationChoiceProps) {
   const t = useTranslations()
@@ -107,7 +110,11 @@ function TutorPersonalizationChoice({
             withProse
             withLinkButtons={false}
             className={{ root: 'prose-sm' }}
-            content={t('shared.tutorPersonalization.notice')}
+            content={
+              withNotes
+                ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
+                : t('shared.tutorPersonalization.notice')
+            }
           />
           <p className="mt-3 text-sm font-medium">
             {t('shared.tutorPersonalization.controlLabel')}

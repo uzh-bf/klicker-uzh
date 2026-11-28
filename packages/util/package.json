@@ -65,6 +65,10 @@
       "types": "./dist/clientAuth.d.ts",
       "default": "./dist/clientAuth.js"
     },
+    "./learner-memory": {
+      "types": "./dist/learnerMemory.d.ts",
+      "default": "./dist/learnerMemory.js"
+    },
     "./participant-account-data-use": {
       "types": "./dist/participantAccountDataUse.d.ts",
       "default": "./dist/participantAccountDataUse.js"

@@ -9,11 +9,13 @@ import {
   isParticipantDataUseComplete,
   levelFromXp,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
 } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
-import type { ParticipantAccountDataUseFields } from '../services/participantAccountDataUse.js'
+import {
+  getCurrentTutorPersonalizationDisclosureVersion,
+  type ParticipantAccountDataUseFields,
+} from '../services/participantAccountDataUse.js'
 import {
   AchievementRef,
   type IAchievement,
@@ -172,7 +174,7 @@ export const ParticipantAccountDataUse = builder
         { nullable: true }
       ),
       currentTutorPersonalizationDisclosureVersion: t.string({
-        resolve: () => TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+        resolve: () => getCurrentTutorPersonalizationDisclosureVersion(),
       }),
     }),
   })
@@ -204,6 +206,7 @@ export interface IParticipant
     | 'tutorPersonalizationConsent'
     | 'tutorPersonalizationChoiceAt'
     | 'tutorPersonalizationDisclosureVersion'
+    | 'learnerMemoryEpoch'
     | 'dataUseAcknowledgedAt'
     | 'dataUseAcknowledgedVersion'
     | 'dataUseRevision'

@@ -48,10 +48,9 @@ is a new purpose. Three existing mechanisms looked reusable and are not:
   and appears in its change history. It stays outside the account completion
   check, so it never blocks account or chat use.
 - **Offered where it is used.** The chatbot shows the offer once per account,
-  with yes and no at equal visual weight. An answer ends the offer for good,
-  except one re-offer when notes become available to a student who agreed to
-  the version without notes. "Decide later" leaves the choice unanswered and
-  is remembered in the browser only. A control in the chat settings and on the
+  with yes and no at equal visual weight. An answer ends the offer for good.
+  "Decide later" leaves the choice unanswered and is remembered in the browser
+  only. A control in the chat settings and on the
   data-use page changes the choice at any time.
 - **Eligibility is checked on every turn and fails closed.** The learner
   context, which is the results summary plus the memory, is sent only in Tutor
@@ -74,12 +73,17 @@ is a new purpose. Three existing mechanisms looked reusable and are not:
   limited to fixed categories: topics worked on and how it went, recurring
   difficulties, and the stated learning goal. It holds no transcripts.
 - **Memory is inferred, so the student controls it.** The student can read and
-  delete it at any time and keep personalization on.
+  delete it at any time and keep personalization on. Deleting also works while
+  the account data-use notice awaits a new acknowledgement. Changing the choice
+  follows the other data-use choices and needs the current notice acknowledged
+  first; until then nothing is used and nothing new is written.
 - **Opting out stops the use in the same write as the choice.** That write
   also raises the participant's memory epoch and records a forget request in a
   table that does not depend on the participant row. Every call to the service
   carries the epoch, and the service never returns a record with an older one.
-  Deletion is requested at once and retried until the service confirms it.
+  A background task sends the request within minutes and retries until the
+  service confirms it; a deletion the student starts in the chat is sent at
+  once.
   Account deletion records a forget-everything request in the same
   transaction.
 - **Course-bound use.** The account-wide yes does not combine data across

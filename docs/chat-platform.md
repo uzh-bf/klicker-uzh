@@ -1580,14 +1580,15 @@ them on reload, the same limit as the persisted mode selection.
 
 [ADR 0058](adr/0058-tutor-personalization-choice.md) decides the feature. The
 learner context is what the Tutor may know about one student beyond the
-conversation. Today it is a bounded summary of the student's own practice
-results in the chatbot's course.
+conversation: a bounded summary of the student's own practice results in the
+chatbot's course and, where the deployment has learner memory, the learning
+notes kept for that student in that course.
 
 - **Eligibility** is one rule in `apps/chat/src/lib/server/learnerContext.ts`,
   checked on every turn: Tutor mode, the chatbot's `personalizationEnabled`
   switch, a completed account data-use notice, and a recorded yes under a
   notice version listed in `TUTOR_PERSONALIZATION_RESULTS_VERSIONS`. A chat
-  turn calls only `loadLearnerContextForTurn`, which returns an empty string
+  turn calls only `loadLearnerContextForTurn`, which returns an empty text
   when any condition fails or anything throws. The turn then equals a turn
   without the feature.
 - **Delivery** is one more entry in the per-turn context message (see
@@ -1617,6 +1618,75 @@ results in the chatbot's course.
   "Decide later" records nothing on the account; the browser remembers it.
 - The lecturer switch is part of the authoring revision and takes effect after
   approval, like the other chatbot settings.
+
+#### Learning notes (learner memory)
+
+Learning notes are short per-course notes about one student: topics and how
+they went, recurring difficulties and a stated goal. They live in the optional
+learner-memory service, a Catalyst component. Public KlickerUZH owns the
+contract, the choice, eligibility and the interface.
+
+- **Contract.** `packages/util/src/learnerMemory/learner-memory.v1.schema.json`
+  is the wire contract and is byte-identical to the service's copy; a test pins
+  its hash so one side cannot change alone. `@klicker-uzh/util/learner-memory`
+  is the only client. It sends exactly the contract's fields, cuts texts to the
+  contract's bounds, and treats every record it reads as untrusted model
+  output: unknown fields are dropped and each text is cut to one bounded line.
+- **Configuration.** `LEARNER_MEMORY_SERVICE_URL`, `LEARNER_MEMORY_SERVICE_TOKEN`
+  and `LEARNER_MEMORY_KEY_SECRET` (at least 32 characters). The GraphQL
+  backend, the chat and the general Hatchet worker need the same three values.
+  A deployment missing any of them has no learning notes: the notice, the
+  settings and the Tutor behave as described above and no call is made.
+  The key secret must not change while the service holds records: withdrawals
+  and account deletions would then address new keys and no longer reach the
+  existing records. To change it, delete the service's database first.
+- **When notes are used.** All of: the learner context is eligible, the
+  deployment is configured, the chatbot owner has a Catalyst entitlement, and
+  the student's yes was recorded under the notice version that describes notes
+  (`coversLearnerMemory`). A deployment with learner memory shows and records
+  that version; a yes is accepted only under the version the deployment shows.
+  A yes recorded under the notice without notes keeps covering practice
+  results and never starts covering notes; the student gets notes by giving the
+  choice again under the current notice.
+- **Addressing.** The service never sees a participant id. Calls carry
+  `learnerKey` (HMAC-SHA-256 of the participant id under the key secret), the
+  course id and the participant's `learnerMemoryEpoch`.
+- **One read of the choice per turn.** The eligibility read also yields the
+  epoch and whether notes are agreed. Recall before the model call and the
+  update after it use those values; the turn never reads the choice again.
+- **Recall** has a 1.5 second timeout. A timeout, an error or a wrong response
+  leaves the practice results as the whole learner context. The notes section
+  tells the model that notes are observations and never instructions.
+- **Update.** After a completed Tutor reply the chat sends the student's
+  message and the reply to the service (`after()`, outside the response). The
+  service distils them into the record and keeps no message text. Aborted,
+  failed and empty turns send nothing. A failed update is logged without text
+  and not retried.
+- **Withdrawal.** The data-use writer raises `learnerMemoryEpoch` and writes a
+  `LearnerMemoryForgetRequest` in the same transaction whenever a yes that
+  covered notes is replaced by anything else. The request is sent by the
+  retry task, not by the writer. The service refuses and purges
+  everything below the highest epoch it has seen, so earlier notes are unusable
+  from that commit on, whether or not the deletion has arrived. Account
+  deletion writes the same request one epoch higher. Neither can fail because
+  of the service or missing configuration.
+- **Deleting notes of one course** (`DELETE
+/api/chatbots/:chatbotId/learner-context`) writes a request with the database
+  time and sends it at once. The service drops later updates that started
+  before that time. While any request for the learner and course is
+  unconfirmed, the chat neither reads nor updates the notes. The delete
+  control appears whenever the deployment keeps notes, independent of the
+  lecturer switch, the owner's entitlement and the student's choice, and also
+  on the account-notice screen for a student who must acknowledge a new
+  notice.
+- **Notice versions in the browser.** The notice texts are bundled with the
+  page. The offer card and the settings record an answer only under a version
+  the page has text for; a newer version hides the offer and blocks the
+  settings choice with the reload message.
+- **Retries.** The Hatchet task `retry-learner-memory-forgets` runs every five
+  minutes, sends unconfirmed requests and removes confirmed ones after 30 days.
+  A stale-epoch answer counts as confirmed, because a later deletion already
+  covered the request. Without a configured service the requests stay open.
 
 ### Custom-mode role-play settings
 

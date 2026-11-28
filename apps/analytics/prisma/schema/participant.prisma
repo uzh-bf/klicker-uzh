@@ -79,6 +79,11 @@ model Participant {
   tutorPersonalizationChoiceAt          DateTime?
   tutorPersonalizationDisclosureVersion String?
 
+  // Orders this participant's learner-memory calls. It rises whenever consent
+  // to learning notes ends, and the memory service ignores and deletes
+  // anything stored under a lower value.
+  learnerMemoryEpoch Int @default(0)
+
   dataUseAcknowledgedAt      DateTime?
   dataUseAcknowledgedVersion String?
   dataUseRevision            Int                       @default(0)
@@ -315,4 +320,25 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@unique([participantId, courseId, endpoint])
+}
+
+// A deletion the memory service still has to confirm. The row holds the keyed
+// hash the service knows the learner by and no link to the participant, so it
+// survives account deletion and can be retried until it is confirmed.
+model LearnerMemoryForgetRequest {
+  id Int @id @default(autoincrement())
+
+  learnerKey String
+  // Null asks for every course of this learner.
+  courseId   String? @db.Uuid
+  epoch      Int
+  // Taken from the database clock in the transaction that asked.
+  requestedAt DateTime
+
+  completedAt   DateTime?
+  attempts      Int       @default(0)
+  lastAttemptAt DateTime?
+
+  @@index([completedAt])
+  @@index([learnerKey, courseId])
 }

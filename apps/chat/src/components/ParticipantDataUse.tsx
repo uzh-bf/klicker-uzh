@@ -3,10 +3,7 @@
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import ParticipantDataUseChoices from '@klicker-uzh/shared-components/src/participant/ParticipantDataUseChoices'
 import TutorPersonalizationChoice from '@klicker-uzh/shared-components/src/participant/TutorPersonalizationChoice'
-import {
-  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
-} from '@klicker-uzh/util/participant-account-data-use'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import {
   Button,
   Checkbox,
@@ -25,9 +22,14 @@ import {
   DATA_USE_CHANGED_EVENT,
   dataUseEndpoint,
   fetchDataUseState,
+  shownTutorNotice,
 } from '../lib/client/dataUse'
 import type { ChatDataUseState } from '../lib/dataUse'
-import { TutorLearnerContextView } from './tutor-personalization'
+import {
+  LearnerNotesDeletion,
+  TutorLearnerContextView,
+  useNotesDeletionMessage,
+} from './tutor-personalization'
 
 const choicesDataCy = {
   researchYes: 'chat-data-use-research-true',
@@ -85,6 +87,17 @@ export function ParticipantDataUseGate({
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
   const [conflict, setConflict] = useState(false)
+  const [notesDeletion, setNotesDeletion] = useState<
+    'deleted' | 'pending' | 'failed' | null
+  >(null)
+  const notesDeletionMessage = useNotesDeletionMessage()
+  // A student asked to acknowledge a new account notice cannot reach the
+  // settings, but may have learning notes from before. Deleting them never
+  // waits for the acknowledgement.
+  const offerNotesDeletion =
+    currentState.researchChoiceRecorded &&
+    shownTutorNotice(currentState.tutorPersonalizationCurrentVersion) ===
+      'notes'
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -240,6 +253,20 @@ export function ParticipantDataUseGate({
           </div>
         </div>
       </form>
+      {offerNotesDeletion && (
+        <div
+          className="space-y-2 rounded border p-3 text-sm"
+          data-cy="chat-data-use-notes-deletion"
+        >
+          <p>{t('chat.dataUse.notesDeletionHint')}</p>
+          {notesDeletion && <p>{notesDeletionMessage(notesDeletion)}</p>}
+          <LearnerNotesDeletion
+            chatbotId={chatbotId}
+            onStart={() => setNotesDeletion(null)}
+            onSettled={setNotesDeletion}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -272,6 +299,9 @@ export function ParticipantDataUseSettings({
   // share the sidebar's stacking context and sit behind the message composer.
   const [portalReady, setPortalReady] = useState(false)
   useEffect(() => setPortalReady(true), [])
+  const shownNotice = state
+    ? shownTutorNotice(state.tutorPersonalizationCurrentVersion)
+    : null
 
   useEffect(() => {
     if (!open) return
@@ -306,6 +336,7 @@ export function ParticipantDataUseSettings({
     consent: boolean
   ) {
     if (!state) return
+    if (purpose === 'personalization' && !shownNotice) return
 
     setSaving(true)
     setFailed(false)
@@ -321,7 +352,7 @@ export function ParticipantDataUseSettings({
           expectedRevision: state.dataUseRevision,
           disclosureVersion:
             purpose === 'personalization'
-              ? TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
+              ? state.tutorPersonalizationCurrentVersion
               : PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         }),
       })
@@ -413,9 +444,18 @@ export function ParticipantDataUseSettings({
                   }
                   dataCy={choicesDataCy}
                 />
+                {!shownNotice && (
+                  <UserNotification
+                    type="error"
+                    data={{ cy: 'chat-personalization-notice-outdated' }}
+                  >
+                    {t('pwa.profile.dataUseConflict')}
+                  </UserNotification>
+                )}
                 <TutorPersonalizationChoice
-                  disabled={saving}
+                  disabled={saving || !shownNotice}
                   consent={state.tutorPersonalizationConsent}
+                  withNotes={shownNotice === 'notes'}
                   onChange={(consent) =>
                     updateChoice('personalization', consent)
                   }

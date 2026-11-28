@@ -79,6 +79,7 @@ import { isChatbotInteractiveExplanationsEnabled } from '@/src/lib/server/featur
 import { trailingStepMessage } from '@/src/lib/server/feedbackEvidence'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import { loadLearnerContextForTurn } from '@/src/lib/server/learnerContext'
+import { observeLearnerTurn } from '@/src/lib/server/learnerMemory'
 import {
   flushLangfuseTelemetry,
   getChatTraceContext,
@@ -1442,6 +1443,7 @@ export async function POST(
       requestId,
       mode: selectedMode,
       chatbotPersonalizationEnabled: chatbot.personalizationEnabled,
+      chatbotOwnerId: chatbot.ownerId,
       participantId,
       courseId: chatbot.courseId,
     })
@@ -1487,7 +1489,8 @@ export async function POST(
       }
     }
 
-    const learnerContextPrompt = await learnerContextPromise
+    const learnerContext = await learnerContextPromise
+    const learnerContextPrompt = learnerContext.text
     logChatDev('learnerContext.resolved', {
       requestId,
       chatbotId,
@@ -2403,6 +2406,44 @@ export async function POST(
       }
     }
 
+    // Learning notes are updated after the response, from a completed Tutor
+    // exchange only. The work is registered here, inside the request scope,
+    // and waits for the stream to report how the turn ended.
+    let reportLearnerExchange: (assistantMessage: string | null) => void =
+      () => {}
+    const learnerObserve = learnerContext.observe
+    const learnerUserMessage =
+      lastMessage?.role === 'user' && typeof lastMessage.content === 'string'
+        ? lastMessage.content
+        : ''
+    if (learnerObserve && learnerUserMessage) {
+      const learnerExchange = new Promise<string | null>((resolve) => {
+        reportLearnerExchange = resolve
+      })
+      try {
+        after(async () => {
+          // A stream that ends without reporting leaves the notes untouched.
+          const assistantMessage = await Promise.race([
+            learnerExchange,
+            new Promise<null>((resolve) => setTimeout(resolve, 15_000, null)),
+          ])
+          if (!assistantMessage) return
+          await observeLearnerTurn({
+            requestId,
+            handle: learnerObserve.handle,
+            exchangeAt: learnerObserve.exchangeAt,
+            userMessage: learnerUserMessage,
+            assistantMessage,
+          })
+        })
+      } catch (error) {
+        console.error('[chat] Failed to schedule the learning-notes update:', {
+          requestId,
+          errorType: error instanceof Error ? error.name : typeof error,
+        })
+      }
+    }
+
     const turnRequest = buildChatTurnRequest({
       stableSections,
       turnContextSections,
@@ -2676,11 +2717,20 @@ export async function POST(
               stepsCount: result.steps?.length ?? 0,
             })
           }
+          // The notes are updated from the reply text as it was stored.
+          reportLearnerExchange(
+            firstError || emptyResponse
+              ? null
+              : completedContent
+                  .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+                  .join('\n\n')
+          )
         },
 
         onAbort: async (steps) => {
           await closeMcpTools()
           sawAbort = true
+          reportLearnerExchange(null)
           let rawCreditsUsed: number | null = null
           if (steps && Array.isArray(steps.steps)) {
             let totalCost = 0
@@ -2779,6 +2829,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          reportLearnerExchange(null)
           await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError

@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   after: vi.fn(),
   afterCallback: null as (() => unknown) | null,
   withChatbotAuth: vi.fn(),
+  loadLearnerContextForTurn: vi.fn(),
+  observeLearnerTurn: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   chatbotFindUnique: vi.fn(),
   threadFindFirst: vi.fn(),
@@ -51,6 +53,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
+}))
+
+vi.mock('@/src/lib/server/learnerContext', () => ({
+  loadLearnerContextForTurn: mocks.loadLearnerContextForTurn,
+}))
+
+vi.mock('@/src/lib/server/learnerMemory', () => ({
+  observeLearnerTurn: mocks.observeLearnerTurn,
 }))
 
 vi.mock('@/src/services/disclaimers', () => ({
@@ -297,6 +307,10 @@ describe('account usage chat route', () => {
       mocks.afterCallback = callback
     })
     mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
+    mocks.loadLearnerContextForTurn.mockResolvedValue({
+      text: '',
+      observe: null,
+    })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
       accepted: true,
@@ -1695,5 +1709,89 @@ describe('account usage chat route', () => {
     })
     expect(mocks.finalizeChatTurn).not.toHaveBeenCalled()
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
+  describe('learning notes after a Tutor reply', () => {
+    const observe = {
+      handle: {
+        learnerKey: 'a'.repeat(64),
+        courseId: '11111111-2222-4333-8444-555555555555',
+        epoch: 3,
+      },
+      exchangeAt: new Date('2026-11-26T12:00:00.000Z'),
+    }
+    const reply = {
+      usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      steps: [{ content: [{ type: 'text', text: 'Synthetic answer.' }] }],
+    }
+
+    /** Start a turn and return the work registered for after the response. */
+    async function startTurn() {
+      const afterResponse: Array<() => unknown> = []
+      mocks.after.mockImplementation((callback: () => unknown) => {
+        afterResponse.push(callback)
+      })
+      const response = await POST(createRequest(), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+      expect(response.status).toBe(200)
+      return async () => {
+        for (const callback of afterResponse) await callback()
+      }
+    }
+
+    test('sends the completed exchange once, addressed as the turn read the choice', async () => {
+      mocks.loadLearnerContextForTurn.mockResolvedValue({
+        text: 'Synthetic learner context.',
+        observe,
+      })
+      const runAfterResponse = await startTurn()
+
+      await streamCallbacks().onEnd(reply)
+      expect(mocks.observeLearnerTurn).not.toHaveBeenCalled()
+      await runAfterResponse()
+
+      expect(mocks.observeLearnerTurn).toHaveBeenCalledOnce()
+      expect(mocks.observeLearnerTurn).toHaveBeenCalledWith({
+        requestId: expect.any(String),
+        handle: observe.handle,
+        exchangeAt: observe.exchangeAt,
+        userMessage: 'Explain this.',
+        assistantMessage: 'Synthetic answer.',
+      })
+    })
+
+    test.each([
+      ['was stopped', () => streamCallbacks().onAbort({ steps: reply.steps })],
+      [
+        'failed at the provider',
+        () => streamCallbacks().onError(new Error('synthetic failure')),
+      ],
+      [
+        'produced no answer',
+        () => streamCallbacks().onEnd({ ...reply, steps: [] }),
+      ],
+    ])('sends nothing for a turn that %s', async (_label, finish) => {
+      mocks.loadLearnerContextForTurn.mockResolvedValue({
+        text: 'Synthetic learner context.',
+        observe,
+      })
+      const runAfterResponse = await startTurn()
+
+      await finish()
+      await runAfterResponse()
+
+      expect(mocks.observeLearnerTurn).not.toHaveBeenCalled()
+    })
+
+    test('registers nothing for a turn that may not add to the notes', async () => {
+      const runAfterResponse = await startTurn()
+
+      await streamCallbacks().onEnd(reply)
+      await runAfterResponse()
+
+      expect(mocks.after).not.toHaveBeenCalled()
+      expect(mocks.observeLearnerTurn).not.toHaveBeenCalled()
+    })
   })
 })

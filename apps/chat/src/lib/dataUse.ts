@@ -1,5 +1,8 @@
 import type { ParticipantAccountDataUseFields } from '@klicker-uzh/graphql/dist/participant-data-use'
-import { isParticipantDataUseComplete } from '@klicker-uzh/util/participant-account-data-use'
+import {
+  isParticipantDataUseComplete,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util/participant-account-data-use'
 
 /**
  * Client-safe contract for the participant data-use state. The loader lives in
@@ -17,10 +20,22 @@ export interface ChatDataUseState {
   learningAnalyticsConsent: boolean
   learningAnalyticsChoiceRecorded: boolean
   tutorPersonalizationConsent: boolean | null
+  /** The personalization notice this deployment shows; answers carry it. */
+  tutorPersonalizationCurrentVersion: string
+  /** Whether that notice also covers learning notes. */
+  tutorPersonalizationNotesOffered: boolean
 }
-/** Project the committed decisions without a second database read. */
+/**
+ * Project the committed decisions without a second database read. The server
+ * passes the notice version it currently shows, which depends on whether the
+ * deployment has learner memory.
+ */
 export function toChatDataUseState(
-  participant: Omit<ParticipantAccountDataUseFields, 'id'>
+  participant: Omit<
+    ParticipantAccountDataUseFields,
+    'id' | 'learnerMemoryEpoch'
+  >,
+  tutorPersonalizationCurrentVersion: string
 ): ChatDataUseState {
   return {
     complete: isParticipantDataUseComplete(participant),
@@ -31,5 +46,9 @@ export function toChatDataUseState(
     learningAnalyticsChoiceRecorded:
       participant.learningAnalyticsChoiceAt !== null,
     tutorPersonalizationConsent: participant.tutorPersonalizationConsent,
+    tutorPersonalizationCurrentVersion,
+    tutorPersonalizationNotesOffered:
+      tutorPersonalizationCurrentVersion ===
+      TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
   }
 }

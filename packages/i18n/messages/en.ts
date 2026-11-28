@@ -99,11 +99,15 @@ export default {
       settingsLoading: 'Loading your data use settings…',
       settingsChangedElsewhere:
         'Your choices were changed in another window. Check them below and choose again if needed.',
+      notesDeletionHint:
+        'If the Tutor kept learning notes about you in this course, you can delete them here without continuing.',
     },
     personalization: {
       offerTitle: 'Personalize the Tutor?',
       offerLead:
         'If you agree, the Tutor adapts its help to you, using a short summary of your own practice results in this course. This is optional, and the Tutor works as before without it.',
+      offerLeadNotes:
+        'If you agree, the Tutor adapts its help to you. It uses a short summary of your own practice results in this course and keeps short notes about your learning in it. This is optional, and the Tutor works as before without it.',
       offerShowDetails: 'What exactly is used?',
       offerHideDetails: 'Hide details',
       offerLater: 'Decide later',
@@ -118,6 +122,19 @@ export default {
         'You have not agreed to personalization, so the Tutor receives nothing about you.',
       viewChatbotOff:
         'Personalization is not switched on for this chatbot, so the Tutor receives nothing about you here.',
+      notesEmpty: 'There are no learning notes about you in this course yet.',
+      notesUnavailable:
+        'Your learning notes cannot be loaded right now, so the Tutor currently works without them.',
+      notesDeleting:
+        'Your learning notes for this course are being deleted. The Tutor does not use them.',
+      notesDelete: 'Delete my learning notes for this course',
+      notesDeleteConfirm:
+        'Delete all learning notes about you in this course? This cannot be undone. The Tutor starts new notes in later conversations.',
+      notesDeleteYes: 'Yes, delete',
+      notesDeleteCancel: 'Cancel',
+      notesDeleted: 'Your learning notes for this course were deleted.',
+      notesDeletePending:
+        'Your learning notes for this course are no longer used and will be deleted shortly.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -772,6 +789,8 @@ export default {
       badgeOff: 'Off',
       notice:
         'If you agree, the Tutor adapts its explanations and hints to you. With each message, it gets a short summary of your own practice results in this course (practice quizzes and microlearnings): which practice quizzes and microlearnings you worked on, how many questions you answered, whether your answers were correct, and when you last practised. The summary is created anew for each message and is not stored. It is sent with your message to the language-model provider used for this chatbot. This applies in every course whose lecturer has switched personalization on, always with that course\'s data only. Lecturers see neither the summary nor your decision. You can see what the Tutor currently receives, and change your decision, at any time in the chat settings or under "Data use and settings". A change applies from your next message. Without your agreement the Tutor works as before.',
+      noticeNotes:
+        "In courses where learning notes are available, the Tutor also keeps short notes about your learning in that course: the topics you worked on and how they went, difficulties that came up repeatedly, and a goal you mentioned. To write them, your message and the Tutor's reply are sent after each Tutor reply to a notes service operated for KlickerUZH. It updates the notes with a language model and does not keep the messages. The notes are stored per course under a pseudonymous key, are given to the Tutor with your later messages in that course, and are not visible to lecturers. You can read and delete your notes at any time in the chat settings. If you withdraw your agreement or delete your account, all your notes are deleted.",
       controlLabel: 'Your decision',
       yes: 'Yes, personalize',
       no: 'No, do not personalize',
@@ -5779,6 +5798,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       personalization: 'Tutor personalization',
       personalizationDescription:
         'For students who opt in, the Tutor uses a short summary of their own practice results in this course to adapt its help. Students decide for themselves, and you see neither their decision nor their data. Off by default.',
+      personalizationNotesAvailable:
+        'Learning notes are available for this chatbot: for students who opt in, the Tutor also keeps short notes about their learning in this course and uses them in later conversations. You do not see these notes.',
       modelSelectionParticipantDescription:
         'Students can choose between these models. Select at least one.',
       selectedModel: 'Selected model',

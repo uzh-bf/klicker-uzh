@@ -1,3 +1,7 @@
+import {
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util/participant-account-data-use'
 import type { ChatDataUseState } from '../dataUse'
 import { authedFetch } from './authedFetch'
 
@@ -24,4 +28,16 @@ export async function fetchDataUseState(
   } catch {
     return null
   }
+}
+
+/**
+ * Which Tutor notice this page shows for the server's current version. The
+ * texts are bundled with the page, so a page opened before a notice change can
+ * receive a version it has no text for; it answers null, and the choice waits
+ * until the page is reloaded. An answer always carries the version shown.
+ */
+export function shownTutorNotice(version: string): 'results' | 'notes' | null {
+  if (version === TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION) return 'notes'
+  if (version === TUTOR_PERSONALIZATION_DISCLOSURE_VERSION) return 'results'
+  return null
 }

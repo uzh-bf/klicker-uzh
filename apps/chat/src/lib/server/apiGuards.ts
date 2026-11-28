@@ -23,6 +23,7 @@ import {
   GUEST_ACCOUNT_TYPE,
   verifyChatGuestToken,
 } from '@/src/lib/server/ltiGuest'
+import { currentTutorPersonalizationVersion } from '@/src/lib/server/learnerMemory'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 
 export type { AuthMode, ChatDataUseState }
@@ -54,7 +55,7 @@ export async function loadChatDataUseState(
   })
   if (!participant) return null
 
-  return toChatDataUseState(participant)
+  return toChatDataUseState(participant, currentTutorPersonalizationVersion())
 }
 
 /**

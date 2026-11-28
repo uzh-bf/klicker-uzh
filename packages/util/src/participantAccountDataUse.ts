@@ -23,17 +23,51 @@ export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = '2026-09-08'
 export const TUTOR_PERSONALIZATION_DISCLOSURE_VERSION = '2026-11-26-results'
 
 /**
+ * The notice of a deployment with learner memory. It describes the practice
+ * results and the stored learning notes. Notes are used only for a yes
+ * recorded under this version.
+ */
+export const TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION =
+  '2026-11-26-results-notes'
+
+/**
  * Notice versions under which a recorded yes lets the Tutor use the student's
  * course results. Every later notice version whose yes still covers that use
  * is added here, also when the notice changes elsewhere, and an earlier one is
  * never removed, so a student who agreed under an earlier version keeps what
  * they agreed to. A version that no longer covers course results stays out.
- * When the current notice gets a new identifier, write the retired one into
- * this list as a literal first, because the entry below follows the constant.
+ * When a notice gets a new identifier, write the retired one into this list as
+ * a literal first, because the entries below follow their constants.
  */
 export const TUTOR_PERSONALIZATION_RESULTS_VERSIONS: readonly string[] = [
   TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
 ]
+
+/**
+ * The notice a deployment shows and records new answers under. The caller
+ * says whether the deployment has learner memory, so this module stays free of
+ * server-only code.
+ */
+export function currentTutorPersonalizationDisclosureVersion(
+  learnerMemoryAvailable: boolean
+): string {
+  return learnerMemoryAvailable
+    ? TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION
+    : TUTOR_PERSONALIZATION_DISCLOSURE_VERSION
+}
+
+/** Whether a recorded choice lets the Tutor keep and use learning notes. */
+export function coversLearnerMemory(choice: {
+  tutorPersonalizationConsent: boolean | null
+  tutorPersonalizationDisclosureVersion: string | null
+}): boolean {
+  return (
+    choice.tutorPersonalizationConsent === true &&
+    choice.tutorPersonalizationDisclosureVersion ===
+      TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION
+  )
+}
 
 export const participantAccountDataUseSelect = {
   dataUseAcknowledgedAt: true,

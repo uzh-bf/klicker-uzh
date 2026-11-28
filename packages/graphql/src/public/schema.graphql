@@ -777,6 +777,7 @@ type Chatbot {
   interactiveExplanationsEnabled: Boolean!
   knowledgeGraphRetrievalEnabled: Boolean!
   knowledgeGraphVisible: Boolean!
+  learnerMemoryAvailable: Boolean!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]! @deprecated(reason: "Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.")
   modelSelection: Boolean!
   name: String!

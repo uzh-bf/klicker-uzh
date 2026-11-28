@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
   chatbotFindUnique: vi.fn(),
   resolveLearnerContext: vi.fn(),
+  isLearnerMemoryConfigured: vi.fn(),
 }))
 
 vi.mock('@klicker-uzh/prisma', () => ({
@@ -15,6 +16,12 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
 }))
 vi.mock('@/src/lib/server/learnerContext', () => ({
   resolveLearnerContext: mocks.resolveLearnerContext,
+}))
+vi.mock('@klicker-uzh/util/learner-memory', () => ({
+  isLearnerMemoryConfigured: mocks.isLearnerMemoryConfigured,
+}))
+vi.mock('@/src/lib/server/learnerMemory', () => ({
+  requestLearnerNotesDeletion: vi.fn(),
 }))
 
 const { GET } = await import(
@@ -40,7 +47,10 @@ describe("the student's view of the learner context", () => {
       participantId: 'participant-1',
       chatbot: { courseId: COURSE_ID },
     })
-    mocks.chatbotFindUnique.mockResolvedValue({ personalizationEnabled: true })
+    mocks.chatbotFindUnique.mockResolvedValue({
+      personalizationEnabled: true,
+      ownerId: 'owner-1',
+    })
   })
 
   test('answers the guard response and resolves nothing when access is refused', async () => {
@@ -58,6 +68,7 @@ describe("the student's view of the learner context", () => {
     mocks.resolveLearnerContext.mockResolvedValue({
       eligible: true,
       text: 'Synthetic summary',
+      notes: 'not-available',
     })
 
     const response = await readView()
@@ -71,17 +82,28 @@ describe("the student's view of the learner context", () => {
       expect.objectContaining({
         mode: 'tutor',
         chatbotPersonalizationEnabled: true,
+        chatbotOwnerId: 'owner-1',
         participantId: 'participant-1',
         courseId: COURSE_ID,
-      })
+      }),
+      'view'
     )
   })
 
-  test.each([
-    ['switched off', { personalizationEnabled: false }],
-    ['missing', null],
-  ])('treats a %s chatbot as not personalized', async (_label, chatbot) => {
-    mocks.chatbotFindUnique.mockResolvedValue(chatbot)
+  test('answers not found and resolves nothing for a missing chatbot', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue(null)
+
+    const response = await readView()
+
+    expect(response.status).toBe(404)
+    expect(mocks.resolveLearnerContext).not.toHaveBeenCalled()
+  })
+
+  test('treats a switched off chatbot as not personalized', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue({
+      personalizationEnabled: false,
+      ownerId: 'owner-1',
+    })
     mocks.resolveLearnerContext.mockResolvedValue({
       eligible: false,
       reason: 'chatbot-disabled',
@@ -94,8 +116,37 @@ describe("the student's view of the learner context", () => {
       reason: 'chatbot-disabled',
     })
     expect(mocks.resolveLearnerContext).toHaveBeenCalledWith(
-      expect.objectContaining({ chatbotPersonalizationEnabled: false })
+      expect.objectContaining({ chatbotPersonalizationEnabled: false }),
+      'view'
     )
+  })
+
+  test.each([
+    ['the lecturer switched personalization off', 'chatbot-disabled'],
+    ['the student withdrew', 'no-consent'],
+    ['the account notice awaits acknowledgement', 'notice-incomplete'],
+  ])('keeps notes deletable when %s', async (_label, reason) => {
+    mocks.isLearnerMemoryConfigured.mockReturnValue(true)
+    mocks.resolveLearnerContext.mockResolvedValue({ eligible: false, reason })
+
+    const response = await readView()
+
+    expect(await response.json()).toMatchObject({
+      active: false,
+      notesDeletable: true,
+    })
+  })
+
+  test('offers no deletion on a deployment without learner memory', async () => {
+    mocks.isLearnerMemoryConfigured.mockReturnValue(false)
+    mocks.resolveLearnerContext.mockResolvedValue({
+      eligible: false,
+      reason: 'chatbot-disabled',
+    })
+
+    const response = await readView()
+
+    expect(await response.json()).toMatchObject({ notesDeletable: false })
   })
 
   test('answers a bounded error when the resolution fails', async () => {

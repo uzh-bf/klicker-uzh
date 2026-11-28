@@ -8,6 +8,7 @@ import type {
   SharingType as SharingTypeEnum,
 } from '@klicker-uzh/types'
 import { CHATBOT_CUSTOM_MODE_MEETING_CLOCKS } from '@klicker-uzh/util'
+import { isLearnerMemoryConfigured } from '@klicker-uzh/util/learner-memory'
 import builder from '../builder.js'
 import type {
   ChatAccountUsageLane,
@@ -673,6 +674,38 @@ export const Chatbot = ChatbotRef.implement({
       'interactiveExplanationsEnabled'
     ),
     personalizationEnabled: t.exposeBoolean('personalizationEnabled'),
+    // Whether students who opt in to personalization also get learning notes
+    // in this chatbot: the deployment has the learner-memory service and the
+    // chatbot owner has a Catalyst entitlement.
+    learnerMemoryAvailable: t.boolean({
+      resolve: async (chatbot, _args, ctx) => {
+        if (!isLearnerMemoryConfigured()) return false
+        try {
+          const stored = await ctx.prisma.chatbot.findUnique({
+            where: { id: chatbot.id },
+            select: {
+              owner: {
+                select: {
+                  catalystInstitutional: true,
+                  catalystIndividual: true,
+                },
+              },
+            },
+          })
+          return (
+            stored?.owner.catalystInstitutional === true ||
+            stored?.owner.catalystIndividual === true
+          )
+        } catch (error) {
+          // The field is non-null, so an error here would null the whole
+          // chatbot list it is selected in. The hint degrades instead.
+          console.warn('Failed to resolve learnerMemoryAvailable', {
+            errorType: error instanceof Error ? error.name : typeof error,
+          })
+          return false
+        }
+      },
+    }),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

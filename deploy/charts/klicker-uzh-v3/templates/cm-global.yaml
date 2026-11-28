@@ -7,6 +7,9 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   GROWTHBOOK_ENV: {{ .Values.global.deploymentEnvironment | quote }}
+  {{- if (.Values.global.learnerMemory).serviceUrl }}
+  LEARNER_MEMORY_SERVICE_URL: {{ .Values.global.learnerMemory.serviceUrl | quote }}
+  {{- end }}
 
   # Canonical app origins (single source of truth)
   APP_ORIGIN_API: {{ .Values.global.appOrigins.api | quote }}

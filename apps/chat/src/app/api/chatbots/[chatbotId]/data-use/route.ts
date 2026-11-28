@@ -12,6 +12,7 @@ import {
   loadChatDataUseState,
   withChatbotAuth,
 } from '@/src/lib/server/apiGuards'
+import { currentTutorPersonalizationVersion } from '@/src/lib/server/learnerMemory'
 
 export const maxDuration = 60
 
@@ -148,7 +149,7 @@ export async function POST(
     )
 
     return NextResponse.json({
-      state: toChatDataUseState(saved),
+      state: toChatDataUseState(saved, currentTutorPersonalizationVersion()),
     })
   } catch (error) {
     return dataUseWriteErrorResponse(
@@ -206,7 +207,7 @@ export async function PATCH(
           })
 
     return NextResponse.json({
-      state: toChatDataUseState(saved),
+      state: toChatDataUseState(saved, currentTutorPersonalizationVersion()),
     })
   } catch (error) {
     return dataUseWriteErrorResponse(

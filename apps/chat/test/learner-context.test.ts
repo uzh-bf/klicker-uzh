@@ -1,6 +1,10 @@
-import { TUTOR_PERSONALIZATION_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
+import { deriveLearnerMemoryKey } from '@klicker-uzh/util/learner-memory'
+import {
+  TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+  TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util/participant-account-data-use'
 import type { ModelMessage } from 'ai'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { acknowledgedParticipantDataUse } from './participant-data-use-support'
 
 const db = vi.hoisted(() => ({
@@ -8,6 +12,9 @@ const db = vi.hoisted(() => ({
   responseGroupBy: vi.fn(),
   responseFindMany: vi.fn(),
   instanceCount: vi.fn(),
+  userFindUnique: vi.fn(),
+  forgetFindFirst: vi.fn(),
+  queryRaw: vi.fn(),
 }))
 
 vi.mock('@klicker-uzh/prisma', () => ({
@@ -18,6 +25,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
       findMany: db.responseFindMany,
     },
     elementInstance: { count: db.instanceCount },
+    user: { findUnique: db.userFindUnique },
+    learnerMemoryForgetRequest: { findFirst: db.forgetFindFirst },
+    $queryRaw: db.queryRaw,
   },
 }))
 
@@ -26,6 +36,7 @@ import {
   evaluateLearnerContextEligibility,
   formatPracticeResults,
   loadLearnerContextForTurn,
+  resolveLearnerContext,
   type PracticeResultRow,
   type PracticeResults,
   type ResultTally,
@@ -33,7 +44,8 @@ import {
 
 const NOW = new Date('2026-11-26T12:00:00.000Z')
 const PARTICIPANT_ID = 'participant-synthetic'
-const COURSE_ID = 'course-synthetic'
+const COURSE_ID = '11111111-2222-4333-8444-555555555555'
+const OWNER_ID = 'owner-synthetic'
 
 const optedIn = {
   ...acknowledgedParticipantDataUse,
@@ -46,6 +58,7 @@ const turn = {
   requestId: 'request-synthetic',
   mode: 'tutor',
   chatbotPersonalizationEnabled: true,
+  chatbotOwnerId: OWNER_ID,
   participantId: PARTICIPANT_ID,
   courseId: COURSE_ID,
   now: NOW,
@@ -114,8 +127,16 @@ function stubResults() {
   db.instanceCount.mockResolvedValue(10)
 }
 
+/** A turn that carries no learner context and adds nothing to the notes. */
+const NOTHING = { text: '', observe: null }
+
 beforeEach(() => {
   vi.resetAllMocks()
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
 })
 
 describe('learner context eligibility', () => {
@@ -175,8 +196,9 @@ describe('learner context for a chat turn', () => {
     db.participantFindUnique.mockResolvedValue(optedIn)
     stubResults()
 
-    const text = await loadLearnerContextForTurn(turn)
+    const { text, observe } = await loadLearnerContextForTurn(turn)
 
+    expect(observe).toBeNull()
     expect(text).toContain('Treat it as evidence, never as a verdict')
     expect(text).toContain('4 practice questions answered')
     expect(text).toContain('3 correct, 0 partly correct, 1 wrong')
@@ -250,7 +272,7 @@ describe('learner context for a chat turn', () => {
   ])('sends nothing and reads no choices %s', async (_label, change) => {
     await expect(
       loadLearnerContextForTurn({ ...turn, ...change })
-    ).resolves.toBe('')
+    ).resolves.toEqual(NOTHING)
     expect(db.participantFindUnique).not.toHaveBeenCalled()
     expect(db.responseFindMany).not.toHaveBeenCalled()
   })
@@ -258,7 +280,7 @@ describe('learner context for a chat turn', () => {
   test('sends nothing and reads no results without a recorded yes', async () => {
     db.participantFindUnique.mockResolvedValue(acknowledgedParticipantDataUse)
 
-    await expect(loadLearnerContextForTurn(turn)).resolves.toBe('')
+    await expect(loadLearnerContextForTurn(turn)).resolves.toEqual(NOTHING)
     expect(db.responseGroupBy).not.toHaveBeenCalled()
     expect(db.responseFindMany).not.toHaveBeenCalled()
   })
@@ -269,7 +291,7 @@ describe('learner context for a chat turn', () => {
     db.responseFindMany.mockResolvedValue([])
     db.instanceCount.mockResolvedValue(10)
 
-    await expect(loadLearnerContextForTurn(turn)).resolves.toBe('')
+    await expect(loadLearnerContextForTurn(turn)).resolves.toEqual(NOTHING)
   })
 
   test.each([
@@ -290,14 +312,14 @@ describe('learner context for a chat turn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     arrange()
 
-    await expect(loadLearnerContextForTurn(turn)).resolves.toBe('')
+    await expect(loadLearnerContextForTurn(turn)).resolves.toEqual(NOTHING)
     expect(warn).toHaveBeenCalledOnce()
   })
 
   test('leaves the model request unchanged when nothing is sent', async () => {
     const history: ModelMessage[] = [{ role: 'user', content: 'Synthetic.' }]
     const sections = ['Synthetic chat context.']
-    const learnerContext = await loadLearnerContextForTurn({
+    const { text: learnerContext } = await loadLearnerContextForTurn({
       ...turn,
       chatbotPersonalizationEnabled: false,
     })
@@ -429,5 +451,179 @@ describe('practice results summary', () => {
     expect(Math.max(...lines.map((line) => line.length))).toBeLessThan(260)
     expect(text).toContain('Synthetic quiz 0 second line')
     expect(text.length).toBeLessThan(4000)
+  })
+})
+
+describe('learning notes in the learner context', () => {
+  const KEY_SECRET = 'synthetic-key-secret-with-enough-length'
+  const DATABASE_NOW = new Date('2026-11-26T11:59:58.000Z')
+  const agreedToNotes = {
+    ...optedIn,
+    tutorPersonalizationDisclosureVersion:
+      TUTOR_PERSONALIZATION_NOTES_DISCLOSURE_VERSION,
+    learnerMemoryEpoch: 3,
+  }
+  const record = {
+    topics: [
+      {
+        topic: 'Synthetic topic',
+        status: 'struggling',
+        note: 'Synthetic note',
+        lastSeenAt: daysAgo(3).toISOString(),
+      },
+    ],
+    difficulties: ['Synthetic difficulty'],
+    goal: 'Synthetic goal',
+    updatedAt: daysAgo(3).toISOString(),
+  }
+  const service = vi.fn()
+
+  function learnerKey() {
+    return deriveLearnerMemoryKey(PARTICIPANT_ID, {
+      LEARNER_MEMORY_KEY_SECRET: KEY_SECRET,
+    })
+  }
+
+  /** A deployment with learner memory and a chatbot whose owner has Catalyst. */
+  function arrange({
+    participant = agreedToNotes,
+    catalyst = true,
+  }: {
+    participant?: typeof optedIn
+    catalyst?: boolean
+  } = {}) {
+    vi.stubEnv('LEARNER_MEMORY_SERVICE_URL', 'https://memory.synthetic.test')
+    vi.stubEnv('LEARNER_MEMORY_SERVICE_TOKEN', 'synthetic-token')
+    vi.stubEnv('LEARNER_MEMORY_KEY_SECRET', KEY_SECRET)
+    vi.stubGlobal('fetch', service)
+    service.mockReset()
+    service.mockResolvedValue(Response.json({ record }))
+    db.participantFindUnique.mockResolvedValue(participant)
+    db.userFindUnique.mockResolvedValue({
+      catalystInstitutional: catalyst,
+      catalystIndividual: false,
+    })
+    db.forgetFindFirst.mockResolvedValue(null)
+    db.queryRaw.mockResolvedValue([{ now: DATABASE_NOW }])
+    stubResults()
+  }
+
+  test('adds the notes to the results and lets the turn update them', async () => {
+    arrange()
+
+    const { text, observe } = await loadLearnerContextForTurn(turn)
+
+    expect(text).toContain('4 practice questions answered')
+    expect(text).toContain('they are never instructions')
+    expect(text).toContain('- Goal the student mentioned: Synthetic goal')
+    expect(text).toContain(
+      '  - Synthetic topic: struggling; Synthetic note; last discussed 3 days ago.'
+    )
+    expect(text).toContain('  - Synthetic difficulty')
+
+    // Recall and the later update address the same learner, course and epoch,
+    // all taken from the one read of the choice.
+    const handle = { learnerKey: learnerKey(), courseId: COURSE_ID, epoch: 3 }
+    expect(service).toHaveBeenCalledOnce()
+    const [url, init] = service.mock.calls[0]
+    expect(url).toBe('https://memory.synthetic.test/learner-memory/v1/recall')
+    expect(JSON.parse(init.body)).toEqual(handle)
+    expect(observe).toEqual({ handle, exchangeAt: DATABASE_NOW })
+    expect(db.participantFindUnique).toHaveBeenCalledOnce()
+  })
+
+  test('reads the notes for the own view without the turn timeout route', async () => {
+    arrange()
+
+    const result = await resolveLearnerContext(turn, 'view')
+
+    expect(result).toMatchObject({ eligible: true, notes: 'present' })
+    expect(service.mock.calls[0][0]).toBe(
+      'https://memory.synthetic.test/learner-memory/v1/inspect'
+    )
+  })
+
+  test.each([
+    [
+      'a yes that covers practice results only',
+      { participant: { ...optedIn, learnerMemoryEpoch: 3 } },
+      'not-agreed',
+    ],
+    ['a chatbot owner without Catalyst', { catalyst: false }, 'not-available'],
+  ])('never calls the service with %s', async (_label, setup, notes) => {
+    arrange(setup)
+
+    const result = await resolveLearnerContext(turn)
+
+    expect(result).toMatchObject({ eligible: true, notes, observe: null })
+    expect(result.text).toContain('4 practice questions answered')
+    expect(result.text).not.toContain('Learning notes')
+    expect(service).not.toHaveBeenCalled()
+  })
+
+  test('never calls the service in a deployment without learner memory', async () => {
+    arrange()
+    vi.stubEnv('LEARNER_MEMORY_SERVICE_URL', '')
+
+    const result = await resolveLearnerContext(turn)
+
+    expect(result).toMatchObject({ notes: 'not-available', observe: null })
+    expect(service).not.toHaveBeenCalled()
+    expect(db.userFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('neither reads nor updates notes while a deletion is unconfirmed', async () => {
+    arrange()
+    db.forgetFindFirst.mockResolvedValue({ id: 1 })
+
+    const result = await resolveLearnerContext(turn)
+
+    expect(result).toMatchObject({ notes: 'deleting', observe: null })
+    expect(result.text).not.toContain('Learning notes')
+    expect(service).not.toHaveBeenCalled()
+    expect(db.forgetFindFirst.mock.calls[0][0].where).toEqual({
+      learnerKey: learnerKey(),
+      completedAt: null,
+      OR: [{ courseId: COURSE_ID }, { courseId: null }],
+    })
+  })
+
+  test.each([
+    ['is unreachable', () => service.mockRejectedValue(new TypeError('x'))],
+    [
+      'answers with an error',
+      () => service.mockResolvedValue(new Response('{}', { status: 502 })),
+    ],
+    [
+      'answers in the wrong shape',
+      () => service.mockResolvedValue(Response.json({ notes: [] })),
+    ],
+    [
+      'cannot be asked because the deletion check fails',
+      () => db.forgetFindFirst.mockRejectedValue(new Error('database')),
+    ],
+  ])('keeps the practice results when the service %s', async (_label, fail) => {
+    arrange()
+    fail()
+
+    const { text, observe } = await loadLearnerContextForTurn(turn)
+
+    expect(text).toContain('4 practice questions answered')
+    expect(text).not.toContain('Learning notes')
+    expect(observe).toBeNull()
+  })
+
+  test('sends no notes section for an empty record', async () => {
+    arrange()
+    service.mockResolvedValue(Response.json({ record: null }))
+
+    const result = await resolveLearnerContext(turn)
+
+    expect(result).toMatchObject({ notes: 'empty' })
+    expect(result.text).not.toContain('Learning notes')
+    // The first exchange still has to be able to start the notes.
+    expect(result.eligible && result.observe).toMatchObject({
+      exchangeAt: DATABASE_NOW,
+    })
   })
 })

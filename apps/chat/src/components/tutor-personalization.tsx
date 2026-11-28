@@ -1,7 +1,6 @@
 'use client'
 
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { TUTOR_PERSONALIZATION_DISCLOSURE_VERSION } from '@klicker-uzh/util/participant-account-data-use'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -10,6 +9,7 @@ import {
   DATA_USE_CHANGED_EVENT,
   dataUseEndpoint,
   fetchDataUseState,
+  shownTutorNotice,
 } from '../lib/client/dataUse'
 import type { ChatDataUseState } from '../lib/dataUse'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -93,7 +93,7 @@ export function TutorPersonalizationOffer({
             purpose: 'personalization',
             consent,
             expectedRevision,
-            disclosureVersion: TUTOR_PERSONALIZATION_DISCLOSURE_VERSION,
+            disclosureVersion: state.tutorPersonalizationCurrentVersion,
           }),
         })
       try {
@@ -106,7 +106,10 @@ export function TutorPersonalizationOffer({
             setFailed(true)
             return
           }
-          if (current.tutorPersonalizationConsent !== null) {
+          if (
+            current.tutorPersonalizationConsent !==
+            state.tutorPersonalizationConsent
+          ) {
             setState(current)
             return
           }
@@ -127,14 +130,18 @@ export function TutorPersonalizationOffer({
     [state, chatbotId]
   )
 
-  if (
-    !offered ||
-    postponed ||
-    !state?.complete ||
-    state.tutorPersonalizationConsent !== null
-  ) {
-    return null
-  }
+  if (!offered || !state?.complete) return null
+
+  // A notice this page has no text for is not offered; the settings explain
+  // that the page needs a reload.
+  const shown = shownTutorNotice(state.tutorPersonalizationCurrentVersion)
+  if (!shown) return null
+  const notice =
+    shown === 'notes'
+      ? `${t('shared.tutorPersonalization.notice')}\n\n${t('shared.tutorPersonalization.noticeNotes')}`
+      : t('shared.tutorPersonalization.notice')
+
+  if (postponed || state.tutorPersonalizationConsent !== null) return null
 
   return (
     <section
@@ -149,7 +156,13 @@ export function TutorPersonalizationOffer({
         >
           {t('chat.personalization.offerTitle')}
         </h2>
-        <p className="text-sm">{t('chat.personalization.offerLead')}</p>
+        <p className="text-sm">
+          {t(
+            shown === 'notes'
+              ? 'chat.personalization.offerLeadNotes'
+              : 'chat.personalization.offerLead'
+          )}
+        </p>
         <div>
           <button
             type="button"
@@ -170,10 +183,7 @@ export function TutorPersonalizationOffer({
               id="tutor-personalization-offer-notice"
               className="prose prose-sm mt-2 max-w-none"
             >
-              <DynamicMarkdown
-                withLinkButtons={false}
-                content={t('shared.tutorPersonalization.notice')}
-              />
+              <DynamicMarkdown withLinkButtons={false} content={notice} />
             </div>
           )}
         </div>
@@ -217,8 +227,102 @@ export function TutorPersonalizationOffer({
 }
 
 type LearnerContextView =
-  | { active: true; text: string }
-  | { active: false; reason: string }
+  | { active: true; text: string; notes: string; notesDeletable: boolean }
+  | { active: false; reason: string; notesDeletable: boolean }
+
+type NotesDeletionOutcome = 'deleted' | 'pending' | 'failed'
+
+/**
+ * Deletes the student's learning notes for the chatbot's course after an
+ * inline confirmation. It is shown wherever notes may exist, independent of
+ * whether the Tutor may currently use them, so a student can always delete.
+ */
+export function LearnerNotesDeletion({
+  chatbotId,
+  onStart,
+  onSettled,
+}: {
+  chatbotId: string
+  /** Called when the student asks to delete, before confirming. */
+  onStart?: () => void
+  onSettled: (outcome: NotesDeletionOutcome) => void
+}) {
+  const t = useTranslations()
+  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function deleteNotes() {
+    setDeleting(true)
+    let outcome: NotesDeletionOutcome = 'failed'
+    try {
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/learner-context`,
+        { method: 'DELETE' }
+      )
+      const status = response.ok
+        ? ((await response.json()) as { status: string }).status
+        : null
+      if (status === 'deleted' || status === 'pending') outcome = status
+    } catch {
+      outcome = 'failed'
+    } finally {
+      setDeleting(false)
+      setConfirming(false)
+    }
+    onSettled(outcome)
+  }
+
+  if (!confirming) {
+    return (
+      <div>
+        <Button
+          type="button"
+          data={{ cy: 'chat-personalization-notes-delete' }}
+          onClick={() => {
+            onStart?.()
+            setConfirming(true)
+          }}
+        >
+          {t('chat.personalization.notesDelete')}
+        </Button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded border p-2">
+      <p>{t('chat.personalization.notesDeleteConfirm')}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          disabled={deleting}
+          data={{ cy: 'chat-personalization-notes-delete-confirm' }}
+          onClick={() => void deleteNotes()}
+        >
+          {t('chat.personalization.notesDeleteYes')}
+        </Button>
+        <Button
+          type="button"
+          disabled={deleting}
+          data={{ cy: 'chat-personalization-notes-delete-cancel' }}
+          onClick={() => setConfirming(false)}
+        >
+          {t('chat.personalization.notesDeleteCancel')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** The message for a finished deletion request. */
+export function useNotesDeletionMessage() {
+  const t = useTranslations()
+  return (outcome: NotesDeletionOutcome) =>
+    outcome === 'deleted'
+      ? t('chat.personalization.notesDeleted')
+      : outcome === 'pending'
+        ? t('chat.personalization.notesDeletePending')
+        : t('shared.generic.systemError')
+}
 
 /**
  * Lets the student read what the Tutor would receive about them with their
@@ -231,6 +335,8 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const [open, setOpen] = useState(false)
+  const [deletion, setDeletion] = useState<NotesDeletionOutcome | null>(null)
+  const deletionMessage = useNotesDeletionMessage()
 
   // Two choices saved in quick succession start two reads. Only the newest
   // one may answer, so the view never shows a state that no longer holds.
@@ -262,11 +368,24 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
   // A changed choice changes what the Tutor receives, so re-read while open.
   useEffect(() => {
     if (!open) return
+    // The outcome of an earlier deletion describes a state that may have
+    // changed since, so a reopened view starts from what it reads now.
+    setDeletion(null)
     void load()
     const reload = () => void load()
     window.addEventListener(DATA_USE_CHANGED_EVENT, reload)
     return () => window.removeEventListener(DATA_USE_CHANGED_EVENT, reload)
   }, [open, load])
+
+  const notes = view?.active ? view.notes : null
+  const notesMessage =
+    notes === 'unavailable'
+      ? t('chat.personalization.notesUnavailable')
+      : notes === 'deleting' && deletion === null
+        ? t('chat.personalization.notesDeleting')
+        : notes === 'empty' && deletion === null
+          ? t('chat.personalization.notesEmpty')
+          : null
 
   const inactiveMessage =
     view && !view.active
@@ -318,6 +437,24 @@ export function TutorLearnerContextView({ chatbotId }: { chatbotId: string }) {
               </pre>
             </>
           ) : null}
+          {!failed && notesMessage && (
+            <p data-cy="chat-personalization-notes-state">{notesMessage}</p>
+          )}
+          {deletion && (
+            <p data-cy="chat-personalization-notes-deletion">
+              {deletionMessage(deletion)}
+            </p>
+          )}
+          {!failed && view?.notesDeletable && (
+            <LearnerNotesDeletion
+              chatbotId={chatbotId}
+              onStart={() => setDeletion(null)}
+              onSettled={(outcome) => {
+                setDeletion(outcome)
+                void load()
+              }}
+            />
+          )}
         </div>
       )}
     </div>

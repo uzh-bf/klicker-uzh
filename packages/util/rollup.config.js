@@ -13,6 +13,7 @@ const config = defineConfig([
       'src/auth.ts',
       'src/citations.ts',
       'src/clientAuth.ts',
+      'src/learnerMemory.ts',
       'src/participantAccountDataUse.ts',
       'src/publicUrl.ts',
       'src/responseExampleDigest.ts',
