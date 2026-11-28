@@ -6,6 +6,7 @@ import type {
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import {
+  assertElementGenerationAdmission,
   canonicalElementGenerationJson,
   elementGenerationArtifactPayload,
   elementGenerationOutputBlobName,
@@ -405,6 +406,8 @@ export async function startFlashcardGeneration(
       ? resumePreparingBuild(existing, runtime, ctx)
       : existing
   }
+
+  await assertElementGenerationAdmission(ctx)
 
   const buildId = randomUUID()
   const creation = await createElementGenerationBuildWithSpend(ctx.prisma, {
@@ -811,6 +814,8 @@ export async function retryFlashcardGeneration(
       'Only a resumable flashcard build can be retried'
     )
   }
+  await assertElementGenerationAdmission(ctx)
+
   const dispatchAttemptId = randomUUID()
   const claimed = await reserveFlashcardRetrySpend(ctx.prisma, {
     buildId: build.id,

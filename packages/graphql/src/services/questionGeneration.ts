@@ -24,6 +24,7 @@ import {
   releaseElementGenerationLease,
 } from './elementGenerationLease.js'
 import {
+  assertElementGenerationAdmission,
   canonicalElementGenerationJson,
   elementGenerationArtifactPayload,
   isElementRevisionWorkerEnabled,
@@ -60,6 +61,10 @@ import {
   normalizeQuestionGenerationConfiguration,
   QuestionGenerationConfigurationError,
   type QuestionGenerationConfigurationInput,
+  type QuestionNativeBudgetMetadata,
+  assertRevisionBudgetSupported,
+  nativeBudgetForNewQuestion,
+  questionNativeBudgetMetadata,
 } from './questionGenerationConfiguration.js'
 import {
   QuestionGenerationServiceError,
@@ -212,8 +217,73 @@ export function questionWorkflowStartManifestSha256(
     },
   }
   return createHash('sha256')
-    .update(JSON.stringify(canonicalElementGenerationJson(normalized)))
+    .update(
+      payload.budget_policy
+        ? canonicalQuestionManifestJson(normalized)
+        : JSON.stringify(canonicalElementGenerationJson(normalized))
+    )
     .digest('hex')
+}
+
+// Python sorts Unicode code points and retains that order even for numeric
+// object keys. Build the JSON directly instead of relying on JS object order.
+function canonicalQuestionManifestJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalQuestionManifestJson).join(',')}]`
+  }
+  if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const keys = Object.keys(record).sort((a, b) => {
+      const left = Array.from(a, (c) => c.codePointAt(0)!)
+      const right = Array.from(b, (c) => c.codePointAt(0)!)
+      for (let i = 0; i < Math.min(left.length, right.length); i++) {
+        if (left[i] !== right[i]) return left[i]! - right[i]!
+      }
+      return left.length - right.length
+    })
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalQuestionManifestJson(record[key])}`).join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
+function nativeBudgetMetadata(configuration: unknown) {
+  try {
+    return questionNativeBudgetMetadata(configuration)
+  } catch (error) {
+    if (error instanceof QuestionGenerationConfigurationError) {
+      return serviceError('CONFIGURATION_INVALID', error.message)
+    }
+    throw error
+  }
+}
+
+function questionBuildOutput(
+  build: Pick<
+    QuestionBuild,
+    'id' | 'configuration' | 'outputArtifactContainer' | 'outputArtifactPrefix'
+  >,
+  runtime: QuestionGenerationRuntime
+) {
+  if (nativeBudgetMetadata(build.configuration)?.mode === 'budgeted') {
+    const expectedPrefix = `${runtime.questionOutputPrefix}/${build.id}`
+    if (
+      build.outputArtifactContainer !== runtime.questionOutputContainer ||
+      build.outputArtifactPrefix !== expectedPrefix
+    ) {
+      return serviceError(
+        'CONFIGURATION_INVALID',
+        'Native question budget output destination changed'
+      )
+    }
+    return {
+      containerName: build.outputArtifactContainer,
+      blobPrefix: build.outputArtifactPrefix.slice(0, -(build.id.length + 1)),
+    }
+  }
+  return {
+    containerName: runtime.questionOutputContainer,
+    blobPrefix: runtime.questionOutputPrefix,
+  }
 }
 
 function artifactsEqual(
@@ -265,6 +335,9 @@ async function findOwnedBuild(buildId: string, ctx: ContextWithUser) {
       'Question-generation build not found'
     )
   }
+  nativeBudgetMetadata(build.configuration)
+  if (ctx.elementGenerationRuntime && !TERMINAL_STATUSES.has(build.status))
+    questionBuildOutput(build, ctx.elementGenerationRuntime)
   return build
 }
 
@@ -336,6 +409,7 @@ export function questionWorkflowStartPayload(
   },
   options: {
     allowPartialResults?: boolean
+    nativeBudget?: QuestionNativeBudgetMetadata | null
     emitSlotSpecifications?: boolean
   } = {}
 ): QuestionWorkflowStartPayload {
@@ -359,6 +433,9 @@ export function questionWorkflowStartPayload(
     },
     language: input.language,
     ...(allowPartialResults ? { allow_partial_results: true } : {}),
+    ...(options.nativeBudget?.mode === 'budgeted'
+      ? { budget_policy: options.nativeBudget.policy }
+      : {}),
     ...(emitSlotSpecifications ? { emit_slot_specifications: true } : {}),
   }
 }
@@ -366,7 +443,12 @@ export function questionWorkflowStartPayload(
 function questionWorkflowPayload(
   build: Pick<
     QuestionBuild,
-    'id' | 'blueprintArtifact' | 'configuration' | 'sourceGraphBuild'
+    | 'id'
+    | 'blueprintArtifact'
+    | 'configuration'
+    | 'sourceGraphBuild'
+    | 'outputArtifactContainer'
+    | 'outputArtifactPrefix'
   >,
   runtime: QuestionGenerationRuntime,
   emitSlotSpecifications: boolean
@@ -389,13 +471,13 @@ function questionWorkflowPayload(
       graphManifest: build.sourceGraphBuild.graphManifestArtifact,
       storageName: build.sourceGraphBuild.graphBundleStorageName,
       blueprint: build.blueprintArtifact,
-      output: {
-        containerName: runtime.questionOutputContainer,
-        blobPrefix: runtime.questionOutputPrefix,
-      },
+      output: questionBuildOutput(build, runtime),
       language: configuration.language,
     },
-    { emitSlotSpecifications }
+    {
+      emitSlotSpecifications,
+      nativeBudget: nativeBudgetMetadata(build.configuration),
+    }
   )
 }
 
@@ -526,13 +608,15 @@ async function dispatchPreparingRevisionBuild(
           build.providerDispatchAttemptId,
           build.createdAt
         ),
-      dispatch: (beforeProviderDispatch) =>
-        startSlotRevision.call(
+      dispatch: (beforeProviderDispatch) => {
+        assertRevisionBudgetSupported(build.configuration)
+        return startSlotRevision.call(
           runtime,
           payload,
           `question-build:${build.id}`,
           beforeProviderDispatch
-        ),
+        )
+      },
     })
 
   const retryDispatch = build.stage === 'retry_dispatching'
@@ -563,12 +647,24 @@ async function dispatchPreparingRevisionBuild(
   }
 }
 
+function assertQuestionRetrySupported(build: QuestionBuild) {
+  if (build.parentBuildId) {
+    assertRevisionBudgetSupported(build.configuration)
+  } else if (nativeBudgetMetadata(build.configuration) === null) {
+    return serviceError(
+      'QUESTION_GENERATION_UNAVAILABLE',
+      'This question build predates native budget tracking and cannot be retried'
+    )
+  }
+}
+
 async function dispatchPreparingQuestionBuild(
   build: QuestionBuild,
   runtime: QuestionGenerationRuntime,
   leaseOwner: string,
   ctx: ContextWithUser
 ) {
+  questionBuildOutput(build, runtime)
   if (build.parentBuildId) {
     return dispatchPreparingRevisionBuild(build, runtime, leaseOwner, ctx)
   }
@@ -594,7 +690,7 @@ async function dispatchPreparingQuestionBuild(
     await runtime.downloadVerified(blueprintArtifact)
   }
 
-  const slotSpecificationsRequested = isElementRevisionWorkerEnabled()
+  const slotSpecificationsRequested = build.slotSpecificationsRequested === true
   const payload = questionWorkflowPayload(
     { ...build, blueprintArtifact },
     runtime,
@@ -610,13 +706,28 @@ async function dispatchPreparingQuestionBuild(
           build.providerDispatchAttemptId,
           build.createdAt
         ),
-      dispatch: (beforeProviderDispatch) =>
-        runtime.start(
+      dispatch: async (beforeProviderDispatch) => {
+        // A transient preparation failure can clear the retry stage. The earlier
+        // spend still identifies a retry when resuming an older build.
+        if (
+          nativeBudgetMetadata(build.configuration) === null &&
+          (build.stage === 'retry_dispatching' ||
+            (await ctx.prisma.elementGenerationSpend.findFirst({
+              where: {
+                buildId: build.id,
+                dispatchAttemptId: { not: build.providerDispatchAttemptId },
+              },
+              select: { id: true },
+            })))
+        )
+          assertQuestionRetrySupported(build)
+        return runtime.start(
           payload,
           `question-build:${build.id}`,
           build.providerDispatchAttemptId,
           beforeProviderDispatch
-        ),
+        )
+      },
     })
 
   // A question retry reserves under the shared QUESTION_GENERATION spend
@@ -656,6 +767,7 @@ async function resumePreparingQuestionBuild(
   runtime: QuestionGenerationRuntime,
   ctx: ContextWithUser
 ) {
+  questionBuildOutput(build, runtime)
   const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
     buildId: build.id,
     ownerId: ctx.user.sub,
@@ -701,6 +813,9 @@ export async function startQuestionGeneration(
     include: buildInclude,
   })
   if (existing) {
+    nativeBudgetMetadata(existing.configuration)
+    if (!TERMINAL_STATUSES.has(existing.status))
+      questionBuildOutput(existing, runtime)
     assertMatchingIdempotentBuild(existing, {
       configurationHash: normalized.configurationHash,
       graphBuildId: graph.id,
@@ -710,7 +825,19 @@ export async function startQuestionGeneration(
       : existing
   }
 
+  await assertElementGenerationAdmission(ctx)
+
+  let nativeBudget: QuestionNativeBudgetMetadata
+  try {
+    nativeBudget = nativeBudgetForNewQuestion(ctx.user.sub)
+  } catch (error) {
+    if (error instanceof QuestionGenerationConfigurationError) {
+      return serviceError('CONFIGURATION_INVALID', error.message)
+    }
+    throw error
+  }
   const buildId = randomUUID()
+  const configuration = { ...normalized.configuration, nativeBudget }
   const creation = await createElementGenerationBuildWithSpend(ctx.prisma, {
     ownerId: ctx.user.sub,
     idempotencyKey,
@@ -722,7 +849,8 @@ export async function startQuestionGeneration(
       elementType: normalized.configuration.itemType,
       idempotencyKey,
       configurationHash: normalized.configurationHash,
-      configuration: normalized.configuration,
+      configuration,
+      slotSpecificationsRequested: isElementRevisionWorkerEnabled(),
       requestedElementCount: normalized.configuration.questionCount,
       inputArtifactContainer: runtime.questionInputContainer,
       inputArtifactPrefix: `question-builds/${buildId}`,
@@ -756,6 +884,7 @@ export async function retryQuestionGeneration(
   const runtime = requireRuntime(ctx)
   const build = await findOwnedBuild(buildId, ctx)
   assertElementGenerationCostAccounted(build)
+  questionBuildOutput(build, runtime)
   if (
     build.status !== DB.ElementGenerationBuildStatus.FAILED ||
     build.errorRetryable !== true
@@ -765,6 +894,8 @@ export async function retryQuestionGeneration(
       'Only a retryable failed question build can be retried'
     )
   }
+  await assertElementGenerationAdmission(ctx)
+  assertQuestionRetrySupported(build)
   const dispatchAttemptId = randomUUID()
   // A revision retry is charged like the original revision: one question's
   // share of the parent build price.
@@ -808,6 +939,8 @@ async function synchronizeLeasedBuild(
   ctx: ContextWithUser
 ) {
   const configuration = build.configuration as QuestionGenerationConfiguration
+  const output = questionBuildOutput(build, runtime)
+  const outputRuntime = { ...runtime, questionOutputPrefix: output.blobPrefix }
   let workflowSucceeded = false
   const artifactPath = (
     suffix: string
@@ -816,8 +949,8 @@ async function synchronizeLeasedBuild(
     bytes: Buffer
   }> =>
     runtime.downloadImmutable(
-      runtime.questionOutputContainer,
-      elementGenerationOutputBlobName(runtime, build.id, suffix)
+      output.containerName,
+      elementGenerationOutputBlobName(outputRuntime, build.id, suffix)
     )
 
   try {
@@ -941,22 +1074,10 @@ async function synchronizeLeasedBuild(
         // The provenance check recomputes the dispatched start-manifest hash,
         // so this payload must be built by the same function as the dispatch
         // payload above; otherwise the optional rollout-gated fields diverge.
-        const startPayload = questionWorkflowStartPayload(
-          {
-            buildId: build.id,
-            graphVersionId: build.sourceGraphBuild.id,
-            graphManifest,
-            storageName: build.sourceGraphBuild.graphBundleStorageName!,
-            blueprint,
-            output: {
-              containerName: runtime.questionOutputContainer,
-              blobPrefix: runtime.questionOutputPrefix,
-            },
-            language: configuration.language,
-          },
-          // The value dispatched with this build; builds that predate it
-          // never asked for slot specifications.
-          { emitSlotSpecifications: build.slotSpecificationsRequested === true }
+        const startPayload = questionWorkflowPayload(
+          build,
+          runtime,
+          build.slotSpecificationsRequested === true
         )
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
@@ -1040,10 +1161,10 @@ async function synchronizeLeasedBuild(
           )
         }
         if (
-          finalQuestions.containerName !== runtime.questionOutputContainer ||
+          finalQuestions.containerName !== output.containerName ||
           finalQuestions.blobName !==
             elementGenerationOutputBlobName(
-              runtime,
+              outputRuntime,
               build.id,
               'questions/final.json'
             )
@@ -1058,11 +1179,10 @@ async function synchronizeLeasedBuild(
         if (
           (graphAvailable &&
             (provenanceIndex === null ||
-              provenanceIndex.containerName !==
-                runtime.questionOutputContainer ||
+              provenanceIndex.containerName !== output.containerName ||
               provenanceIndex.blobName !==
                 elementGenerationOutputBlobName(
-                  runtime,
+                  outputRuntime,
                   build.id,
                   'questions/question_provenance_index.json'
                 ))) ||

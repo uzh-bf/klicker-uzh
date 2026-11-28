@@ -262,6 +262,46 @@ describe('revision request decision', () => {
     expect(stored.decision).toBe(DB.GeneratedElementDecision.REVISION_REQUESTED)
   })
 
+  it('denies revisions of budgeted parents before reserving quota or changing the draft', async () => {
+    const draft = await createDraft()
+    await prisma.elementGenerationBuild.update({
+      where: { id: parentId },
+      data: {
+        configuration: {
+          ...configuration,
+          nativeBudget: {
+            mode: 'budgeted',
+            policy: {
+              budget_usd: '1',
+              price_ceilings: { synthetic: { prompt: '0', completion: '0' } },
+            },
+          },
+        } as never,
+      },
+    })
+    await expect(
+      setGeneratedQuestionDecision(
+        {
+          draftId: draft.id,
+          decision: 'REVISION_REQUESTED',
+        },
+        ctx()
+      )
+    ).rejects.toMatchObject({ code: 'QUESTION_GENERATION_UNAVAILABLE' })
+    expect(
+      await prisma.elementGenerationBuild.count({
+        where: { parentBuildId: parentId },
+      })
+    ).toBe(0)
+    expect(
+      (
+        await prisma.generatedElementDraft.findUniqueOrThrow({
+          where: { id: draft.id },
+        })
+      ).decision
+    ).toBe(draft.decision)
+  })
+
   it('refuses a revision request until the element type supports it', async () => {
     vi.stubEnv('ELEMENT_REVISION_WORKER_ENABLED', 'false')
     const draft = await createDraft()
@@ -1250,6 +1290,7 @@ describe('slot-specification request switch', () => {
         idempotencyKey: `switch-${buildId}`,
         configurationHash: 'switch',
         configuration: configuration as never,
+        slotSpecificationsRequested: true,
         requestedElementCount: 1,
         inputArtifactContainer: 'question-inputs',
         inputArtifactPrefix: `question-builds/${buildId}`,

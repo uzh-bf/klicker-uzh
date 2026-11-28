@@ -14,6 +14,7 @@ import {
   canonicalElementGenerationJson,
   elementTypeSupportsRevision,
 } from './elementGenerationProvider.js'
+import { assertRevisionBudgetSupported } from './questionGenerationConfiguration.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import { assertQuestionGenerationPreviewAccess } from './questionGenerationGraph.js'
 
@@ -538,6 +539,7 @@ export async function setGeneratedQuestionDecision(
     if (current.decision === input.decision && !isRevision) return current
 
     if (isRevision) {
+      assertRevisionBudgetSupported(current.build.configuration)
       const runtime = ctx.elementGenerationRuntime
       if (!runtime) {
         throw questionGenerationServiceError(
