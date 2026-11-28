@@ -4,6 +4,7 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   normalizeEmail,
+  previewCookieName,
   processElementData,
   recomputeDerivedPermissions,
   signJWT,
@@ -37,7 +38,7 @@ const COOKIE_SETTINGS: CookieOptions = {
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
-  ctx.res.cookie('next-auth.session-token', 'logoutString', {
+  ctx.res.cookie(previewCookieName('next-auth.session-token'), 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
@@ -90,8 +91,11 @@ async function doParticipantLogin(
   })
 
   const jwt = await createParticipantToken(participantId)
-  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-  ctx.res.cookie('lti-token', '', { ...COOKIE_SETTINGS, maxAge: 0 })
+  ctx.res.cookie(previewCookieName('participant_token'), jwt, COOKIE_SETTINGS)
+  ctx.res.cookie(previewCookieName('lti-token'), '', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
   return jwt
@@ -210,7 +214,11 @@ export async function loginTemporaryParticipant(
 
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
-  ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
+  ctx.res.cookie(
+    previewCookieName('temporary_participant_token'),
+    jwt,
+    COOKIE_SETTINGS
+  )
   return jwt
 }
 
@@ -390,16 +398,20 @@ export async function activateParticipantAccount(
 
 export async function logoutParticipant(ctx: ContextWithUser) {
   // invalidate regular participant token
-  ctx.res.cookie('participant_token', 'logoutString', {
+  ctx.res.cookie(previewCookieName('participant_token'), 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
   // invalidate assessment / Edu-ID participant token
-  ctx.res.cookie('next-auth.participant-session-token', 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
+  ctx.res.cookie(
+    previewCookieName('next-auth.participant-session-token'),
+    'logoutString',
+    {
+      ...COOKIE_SETTINGS,
+      maxAge: 0,
+    }
+  )
 
   return ctx.user.sub
 }
@@ -428,10 +440,14 @@ export async function logoutTemporaryParticipant(
   })
 
   // delete the cookie
-  ctx.res.cookie('temporary_participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
-    maxAge: 0,
-  })
+  ctx.res.cookie(
+    previewCookieName('temporary_participant_token'),
+    'logoutString',
+    {
+      ...COOKIE_SETTINGS,
+      maxAge: 0,
+    }
+  )
 
   return true
 }
@@ -546,13 +562,13 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
 
   if (!participant) return false
 
-  ctx.res.cookie('participant_token', 'logoutString', {
+  ctx.res.cookie(previewCookieName('participant_token'), 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
   // if a participant group is empty after the participant leaves it, delete the group as well
-  let deletionPromises: any[] = []
+  const deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
     if (group.participants.length === 1) {
       deletionPromises.push(

@@ -5,6 +5,7 @@ const {
   attributeDivergence,
   evaluateParity,
   normalizeDeployFile,
+  isParityPath,
 } = require('./deploy-parity.cjs')
 
 const CHART_TEMPLATE =
@@ -38,6 +39,25 @@ describe('deploy parity between the integration branches', () => {
     const { violations, environmentOwned } = evaluateParity([])
     assert.deepEqual(violations, [])
     assert.deepEqual(environmentOwned, [])
+  })
+
+  it('excludes preview files while retaining production changes', () => {
+    const { violations } = evaluateParity([
+      { status: 'A', path: 'deploy/northflank/preview.json' },
+      { status: 'D', path: 'deploy/northflank/old.json' },
+      { status: 'M', path: 'deploy/northflank/Dockerfile' },
+      { status: 'A', path: CHART_TEMPLATE },
+      { status: 'M', path: ENV_VALUES, candidateText: 'replicas: 2' },
+      { status: 'A', path: 'deploy/northflank-extra/values.yaml' },
+    ])
+    assert.deepEqual(violations, [
+      { path: CHART_TEMPLATE, kind: 'only-candidate' },
+      { path: ENV_VALUES, kind: 'content' },
+      { path: 'deploy/northflank-extra/values.yaml', kind: 'only-candidate' },
+    ])
+    assert.equal(isParityPath('deploy/northflank/preview.json'), false)
+    assert.equal(isParityPath(CHART_TEMPLATE), true)
+    assert.equal(isParityPath(ENV_VALUES), true)
   })
 
   it('fails on a listed difference outside the environment values', () => {

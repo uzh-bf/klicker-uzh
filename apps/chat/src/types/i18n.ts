@@ -1,9 +1,9 @@
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import de from '@klicker-uzh/i18n/messages/de'
 import en from '@klicker-uzh/i18n/messages/en'
+import { cookies } from 'next/headers'
 import { hasLocale } from 'next-intl'
 import { getRequestConfig } from 'next-intl/server'
-import { cookies } from 'next/headers'
 
 // Statically import both catalogs and select by locale instead of re-exporting
 // the shared `@klicker-uzh/i18n/request`. That shared config resolves messages

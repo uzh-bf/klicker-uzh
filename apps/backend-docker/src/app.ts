@@ -1,15 +1,15 @@
+import { createRequire } from 'node:module'
 // import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import { verifyJWT } from '@klicker-uzh/util'
+import { previewCookieName, verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
-import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -86,13 +86,16 @@ function prepareApp({
           process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
         )
       ) {
-        token = req.cookies?.['next-auth.session-token']
+        token = req.cookies?.[previewCookieName('next-auth.session-token')]
       } else if (
         req.headers.origin?.includes(
           process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
         )
       ) {
-        token = req.cookies?.['next-auth.participant-session-token']
+        token =
+          req.cookies?.[
+            previewCookieName('next-auth.participant-session-token')
+          ]
       }
     } else {
       if (
@@ -103,14 +106,14 @@ function prepareApp({
           process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
         )
       ) {
-        token = req.cookies?.['next-auth.session-token']
+        token = req.cookies?.[previewCookieName('next-auth.session-token')]
       } else if (
         req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
       ) {
         token =
-          req.cookies?.['participant_token'] ??
-          req.cookies?.['temporary_participant_token'] ??
-          req.cookies?.['next-auth.session-token']
+          req.cookies?.[previewCookieName('participant_token')] ??
+          req.cookies?.[previewCookieName('temporary_participant_token')] ??
+          req.cookies?.[previewCookieName('next-auth.session-token')]
       }
     }
 
@@ -202,7 +205,7 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
 

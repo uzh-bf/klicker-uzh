@@ -1,12 +1,33 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   audienceCookieNames,
   audienceCookieOptions,
   cookieNamePrefix,
+  previewCsrfCookieOptions,
   resolveSecureCookies,
 } from '../src/lib/authCookies'
 
 describe('audience cookie configuration', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('preview cookie names remain separate across concurrent environments', () => {
+    vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', 'preview-a')
+    const first = audienceCookieNames('participant', true)
+    const csrf = previewCsrfCookieOptions(true)
+    vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', 'preview-b')
+    const second = audienceCookieNames('participant', true)
+    for (const name of Object.values(first)) {
+      expect(Object.values(second)).not.toContain(name)
+      expect(name.startsWith('__Secure-')).toBe(true)
+    }
+    expect(csrf.csrfToken?.name.startsWith('__Host-klicker-preview-a.')).toBe(
+      true
+    )
+    expect(csrf.csrfToken?.options).not.toHaveProperty('domain')
+    expect(csrf.csrfToken?.options.httpOnly).toBe(true)
+    vi.stubEnv('NEXT_PUBLIC_PREVIEW_ID', '')
+    expect(previewCsrfCookieOptions(true)).toEqual({})
+  })
   test('secure derivation follows the next-auth URL convention', () => {
     expect(resolveSecureCookies('https://auth.klicker.uzh.ch')).toBe(true)
     expect(resolveSecureCookies('http://localhost:3010')).toBe(false)

@@ -1,3 +1,4 @@
+import { previewCookieName } from '@klicker-uzh/util'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
@@ -20,7 +21,7 @@ export default async function ChatLayout({
 
   const cookieStore = await cookies()
   const authResult = await withChatbotTokenAuth(
-    cookieStore.get('participant_token')?.value,
+    cookieStore.get(previewCookieName('participant_token'))?.value,
     chatbotId
   )
   if ('response' in authResult) notFound()
