@@ -10,6 +10,7 @@ import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import { pickVerifiedToken, readCookieValues } from './cookieTokens.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -108,7 +109,10 @@ function prepareApp({
         req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
       ) {
         token =
-          req.cookies?.['participant_token'] ??
+          (await pickVerifiedToken(
+            readCookieValues(req.headers.cookie, 'participant_token'),
+            (value) => verifyJWT(value, process.env.APP_SECRET as string)
+          )) ??
           req.cookies?.['temporary_participant_token'] ??
           req.cookies?.['next-auth.session-token']
       }
