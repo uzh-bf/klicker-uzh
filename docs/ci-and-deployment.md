@@ -426,10 +426,11 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   cancellation while preserving existing client errors and counters. Older
   receipts report unknown outcome details. Advice validation reasons distinguish
   finish status, tool count/name, argument JSON, object shape, assessment, answer
-  type/length, evidence array/count and source evidence. These fixed codes retain
-  the client error `invalid_advice`; receipts include no answer, source or private
-  reasoning. Older generic `invalid_advice` receipts cannot identify which check
-  failed. Tool discovery describes the complete
+  type/length, evidence array/count and source evidence. An output-limit finish
+  returns `advisor_output_truncated` to the reviewer and retains `length` in
+  the receipt. Other advice validation failures return `invalid_advice`.
+  Receipts omit answers, source and private reasoning. Older generic
+  `invalid_advice` receipts cannot identify which check failed. Tool discovery describes the complete
   16 KiB serialized request bound, including overhead, the 256 KiB source-file
   bound and each range's 120-line/8 KiB bound; prefer minimal sufficient ranges.
   Bracket paths such as Next.js dynamic routes retain the same immutable-source
@@ -565,8 +566,15 @@ tool turn may instead match within its validated conversation key; cross-task
 and ambiguous matches remain rejected. Main-review requests offering
 `task_done` force tool use with `tool_choice: required`; a length-limited
 response without a tool call may enter OCR's existing continuation loop once per
-replayed chain, retaining its native history and billable usage. A finished
-tool-free response or another tool-free turn in that chain still fails closed.
+replayed chain, retaining its native history and billable usage. In draft reviews,
+one additional empty length-limited response per main task can continue when
+OCR returns a matching result from the latest tool-call turn since the first
+truncation. Consecutive truncations fail, and compression cannot renew the
+allowance. Only an actual completion tool call can finish the pass. For manual
+MOAT final code reviews, the first tool-free main response may also finish with
+`stop`. OCR asks for a real tool call on the next iteration under the same
+limits. Empty text and prose carry no verdict. Another tool-free `stop` in that
+scope fails closed even if compression has removed the earlier turn.
 Auxiliary grouping, planning, filtering and compression requests remain
 unchanged. Manual jobs retain seven-day aggregate execution counters for request
 counts, input/output usage, missing tools, length finishes and history
@@ -776,7 +784,11 @@ Sticky summaries, incremental comment deduplication, low-severity routing and
 existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
 
 The draft adapter recognizes the pinned CLI's planning task affinity shape and
-supplies guidance only from a `stop` response with nonempty final text. Truncated
+returns a local outline for a one-file group with at least 500 added and removed
+lines combined. It lists changed hunk coordinates and available declaration
+landmarks from the supplied diff. The full diff remains in the review.
+`local_outlines` counts these substitutions separately from provider usage.
+Other planning calls supply guidance only from a `stop` response with nonempty final text. Truncated
 or empty plans reach the stock CLI as an empty answer without reasoning, using
 its existing continue-without-plan path. HTTP success, original finish reason,
 returned usage and private native history remain intact; this adds no provider
@@ -791,6 +803,28 @@ keys or response content. The CLI's `phase_completed phase=planning` progress
 event records that its planning request returned; it alone does not prove usable
 guidance. Raw usage journals retain the original response sizes and finish reason
 before the compatibility projection, and aggregate accounting remains unchanged.
+
+The draft job builds the pinned OCR source with its draft-only patch and checks
+the executable's patch identity before starting the review. A successful first
+pass with no confirmed findings finishes without a second-pass event. In the
+second pass, Flash checks each selected file for an additional concrete failure mode. It
+reports a verified defect immediately and closes a ruled-out case once the files
+are checked. On the first model dispatch with four minutes or less left on the
+group deadline, the CLI appends one reminder to finish the
+current candidate. An in-flight request receives the reminder on its next turn
+if time remains. The draft adapter receipt records the first request that
+dispatched the reminder in `first_wrap_up_dispatch`, or `null` if none did.
+The reviewer still has to call the completion tool itself.
+
+For stock draft memory compression, the adapter returns summary text only when
+the provider finishes with `stop`, supplies visible text and requests no tools.
+An unusable answer returns empty text, so OCR keeps its working history. A
+repeat of a recently skipped, identical compression request returns empty
+locally. The adapter retains only request digests for this check.
+`OCR draft compression` reports usable replies, skipped replies and local repeat
+skips. These counters describe what the adapter sent to the CLI. The CLI decides
+whether to install a summary in a continuing review. Paid responses keep
+their original usage receipts.
 
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor

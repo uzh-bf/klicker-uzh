@@ -10,7 +10,11 @@ const {
   readPolicyBlob,
 } = require('./ocr-runtime-config.cjs')
 
-const { runDraftReview, summarizeCoverage } = require('./ocr-draft-review.cjs')
+const {
+  runDraftReview,
+  singleFileOutline,
+  summarizeCoverage,
+} = require('./ocr-draft-review.cjs')
 const {
   MOAT_ADVISOR_MODEL,
   MOAT_FLASH_MODEL,
@@ -774,6 +778,36 @@ test('repository configuration is strict and frozen at the trusted policy rather
   )
 })
 
+test('outline selection uses the selected group, line churn and stock path identity', () => {
+  const key = require('node:crypto')
+    .createHash('sha256')
+    .update('a.ts')
+    .digest('hex')
+    .slice(0, 16)
+  const block = (count) =>
+    '<file path="a.ts">\ndiff --git a/a.ts b/a.ts\n@@ -1 +1,' +
+    count +
+    ' @@\n-old\n' +
+    '+x\n'.repeat(count) +
+    '</file>'
+  const plan = (group) => [
+    {
+      role: 'user',
+      content:
+        '<other_changed_files>\n</other_changed_files>\n\n' +
+        group +
+        '\n\nCurrent time in the real world: fixture',
+    },
+  ]
+  assert.equal(singleFileOutline(plan(block(498)), key), null)
+  assert.ok(singleFileOutline(plan(block(499)), key))
+  assert.equal(singleFileOutline(plan(block(499)), '0000000000000000'), null)
+  assert.equal(
+    singleFileOutline(plan(block(499) + '\n\n' + block(499)), key),
+    null
+  )
+})
+
 test('stock OCR consumes final plans and continues without truncated or empty guidance', {
   skip: !process.env.OCR_TEST_BINARY,
   timeout: 60000,
@@ -805,14 +839,27 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
   )
   git('add', '.')
   git('commit', '-m', 'test: synthetic candidate')
-  const head = git('rev-parse', 'HEAD')
+  let head = git('rev-parse', 'HEAD')
   for (const [content, finish, outcome] of [
     ['SYNTHETIC_FINAL_PLAN', 'stop', 'usable'],
     ['', 'length', 'length'],
     ['SYNTHETIC_PARTIAL_PLAN', 'length', 'length'],
     ['', 'stop', 'empty'],
     [' \n ', 'stop', 'empty'],
+    ['', 'stop', 'outline'],
   ]) {
+    const localOutline = outcome === 'outline'
+    if (localOutline) {
+      fs.appendFileSync(
+        path.join(repo, 'source.js'),
+        Array.from(
+          { length: 500 },
+          (_, i) => `export function section${i}() {}\n`
+        ).join('')
+      )
+      git('commit', '-am', 'test: large single-file change')
+      head = git('rev-parse', 'HEAD')
+    }
     const temp = fs.mkdtempSync(path.join(root, 'review-'))
     const logs = []
     let calls = 0,
@@ -835,6 +882,7 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
           (tool) => tool.function.name === 'task_done'
         )
         if (!main) {
+          assert.equal(localOutline, false)
           plans++
           assert.match(
             body.prompt_cache_key,
@@ -843,6 +891,11 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
         } else {
           reviews++
           const input = JSON.stringify(body.messages)
+          if (localOutline) {
+            assert.match(input, /value0 L1/)
+            assert.match(input, /section499 L565/)
+            assert.match(input, /-1(?:,1)? \+1,565/)
+          }
           assert.equal(
             input.includes('SYNTHETIC_FINAL_PLAN'),
             outcome === 'usable'
@@ -897,17 +950,25 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
     assert.equal(result.coverage.selected, 1)
     assert.equal(result.coverage.completed, 1)
     assert.equal(result.coverage.failed, 0)
-    assert.deepEqual([calls, plans, reviews], [2, 1, 1])
+    assert.deepEqual(
+      [calls, plans, reviews],
+      localOutline ? [1, 0, 1] : [2, 1, 1]
+    )
     const diagnostic = JSON.parse(
       fs.readFileSync(
         path.join(temp, 'draft-ai-review-adapter-diagnostics.jsonl')
       )
     )
-    assert.equal(diagnostic.upstream_attempts, 2)
-    assert.equal(diagnostic.responses, 2)
-    assert.equal(diagnostic.prompt_tokens, 200)
-    assert.equal(diagnostic.cached_prompt_tokens, 160)
-    assert.equal(diagnostic.completion_tokens, 16404)
+    assert.equal(diagnostic.upstream_attempts, calls)
+    assert.equal(diagnostic.responses, calls)
+    assert.equal(diagnostic.prompt_tokens, 100 * calls)
+    assert.equal(diagnostic.cached_prompt_tokens, 80 * calls)
+    assert.equal(diagnostic.completion_tokens, localOutline ? 20 : 16404)
+    if (localOutline) {
+      assert.equal(diagnostic.plan_guidance.local_outlines, 1)
+      assert.equal(diagnostic.plan_guidance.responses, 0)
+      continue
+    }
     assert.equal(diagnostic.plan_guidance.responses, 1)
     assert.equal(diagnostic.plan_guidance[outcome], 1)
     assert.match(logs.join(''), /OCR planning status=complete responses=1 /)
@@ -934,6 +995,308 @@ test('stock OCR consumes final plans and continues without truncated or empty gu
     )
   }
 })
+
+function initFixtureGit(root) {
+  const git = (...args) =>
+    execFileSync('git', args, {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    }).trim()
+  git('init', '-b', 'main')
+  git('config', 'user.name', 'Synthetic fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('config', 'core.hooksPath', '/dev/null')
+  return git
+}
+
+test('stock OCR retains draft evidence after an empty tool-call compression and consumes the next visible summary', {
+  skip: !process.env.OCR_TEST_BINARY,
+  timeout: 60000,
+}, async (t) => {
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'ocr-visible-compression-')
+  )
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const git = initFixtureGit(root)
+  git('commit', '--allow-empty', '-m', 'test: base')
+  const from = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(root, 'source.js'), 'export const value = 1\n')
+  git('add', 'source.js')
+  git('commit', '-m', 'test: candidate')
+
+  let compressions = 0,
+    mainTurns = 0,
+    sawSummary = false,
+    preservedEvidence = false
+  let upstreamCalls = 0
+  const logs = []
+  const result = await runDraftReview({
+    repo: root,
+    temp: root,
+    from,
+    head: git('rev-parse', 'HEAD'),
+    executable: process.env.OCR_TEST_BINARY,
+    apiKey: 'synthetic',
+    write: (line) => logs.push(line),
+    fetchImpl: async (_url, init) => {
+      const body = JSON.parse(init.body)
+      const input = JSON.stringify(body.messages)
+      assert.equal(body.reasoning_effort, 'max')
+      assert.equal(body.max_tokens, 16384)
+      let message, finish
+      const toolCall = (name, args) => ({
+        id: 'call-' + upstreamCalls,
+        type: 'function',
+        function: { name, arguments: JSON.stringify(args) },
+      })
+      if (body.prompt_cache_key?.includes('-memory_compression_task-')) {
+        compressions++
+        if (compressions === 1) {
+          assert.ok(input.includes('EARLY_EVIDENCE'))
+          message = {
+            content: '',
+            reasoning_content: 'UNFINISHED_PRIVATE_SUMMARY',
+            tool_calls: [toolCall('unexpected', {})],
+          }
+          finish = 'tool_calls'
+        } else {
+          preservedEvidence ||= input.includes('EARLY_EVIDENCE')
+          message = {
+            content: 'VISIBLE_COMPLETE_SUMMARY',
+            reasoning_content: 'UNFINISHED_PRIVATE_SUMMARY',
+          }
+          finish = 'stop'
+        }
+      } else {
+        mainTurns++
+        assert.ok(mainTurns <= 35)
+        assert.ok(!input.includes('UNFINISHED_PRIVATE_SUMMARY'))
+        sawSummary ||= input.includes('VISIBLE_COMPLETE_SUMMARY')
+        // Grow actual stock history past its compression threshold using
+        // synthetic turns within the existing per-response ceiling.
+        message = {
+          content: mainTurns === 1 ? 'EARLY_EVIDENCE' : '',
+          reasoning_content: ' x'.repeat(12000),
+          tool_calls: [
+            sawSummary
+              ? toolCall('task_done', {})
+              : toolCall('file_find', { pattern: 'source.js' }),
+          ],
+        }
+        finish = 'tool_calls'
+        // The stock CLI must echo the intervening file_find result before
+        // the adapter admits the second empty response.
+        if (mainTurns === 2 || mainTurns === 4) {
+          message = { content: '', reasoning_content: 'unfinished' }
+          finish = 'length'
+        }
+      }
+      upstreamCalls++
+      return new Response(
+        JSON.stringify({
+          model: MOAT_FLASH_MODEL,
+          choices: [
+            {
+              index: 0,
+              finish_reason: finish,
+              message: { role: 'assistant', ...message },
+            },
+          ],
+          usage: {
+            prompt_tokens: 20,
+            completion_tokens: 12050,
+            total_tokens: 12070,
+            prompt_tokens_details: { cached_tokens: 10 },
+          },
+        })
+      )
+    },
+  })
+  assert.equal(result.coverage.completed, 1)
+  assert.ok(preservedEvidence && sawSummary)
+  const diag = JSON.parse(
+    fs.readFileSync(
+      path.join(root, 'draft-ai-review-adapter-diagnostics.jsonl')
+    )
+  )
+  assert.equal(diag.main_no_tool_responses, 2)
+  assert.equal(diag.failures.length_no_tool, 0)
+  assert.equal(diag.upstream_attempts, upstreamCalls)
+  assert.equal(diag.responses, upstreamCalls)
+  assert.equal(diag.completion_tokens, 12050 * upstreamCalls)
+  assert.equal(diag.draft_compression.skipped, 1)
+  assert.ok(diag.draft_compression.usable >= 1)
+  const { usable, skipped, repeat_skips } = diag.draft_compression
+  assert.ok(
+    logs
+      .join('')
+      .includes(
+        `OCR draft compression usable=${usable} skipped=${skipped} repeat_skips=${repeat_skips}`
+      )
+  )
+})
+
+test('required draft qualification verifies the executable before accepting its results', {
+  skip: process.env.OCR_REQUIRE_DRAFT_BINARY !== '1',
+}, () => {
+  const executable = process.env.OCR_TEST_DRAFT_BINARY
+  assert.ok(executable, 'required draft OCR binary is missing')
+  const version = execFileSync(executable, ['version'], {
+    env: { ...process.env, OCR_NO_UPDATE: '1' },
+    encoding: 'utf8',
+    timeout: 5000,
+  })
+  require('./install-patched-ocr.cjs').verifyDraftVersion(version)
+})
+
+for (const divisor of [0, 1]) {
+  test(`draft second pass closes a ${divisor ? 'ruled-out' : 'verified'} candidate`, {
+    skip: !process.env.OCR_TEST_DRAFT_BINARY,
+    timeout: 60000,
+  }, async (t) => {
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-second-pass-'))
+    t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+    const git = initFixtureGit(repo)
+    fs.writeFileSync(
+      path.join(repo, 'settings.js'),
+      `export const divisor = ${divisor}\n`
+    )
+    git('add', 'settings.js')
+    git('commit', '-m', 'test: settings')
+    const from = git('rev-parse', 'HEAD')
+    const first = 'export const first = 1 / 0'
+    const second = 'export const second = 1 / divisor'
+    fs.writeFileSync(
+      path.join(repo, 'calc.js'),
+      ["import { divisor } from './settings.js'", first, second, ''].join('\n')
+    )
+    git('add', 'calc.js')
+    git('commit', '-m', 'test: candidate')
+    const turns = [[], []]
+    const progress = []
+    const guidedPasses = new Set()
+    let evidenceRead
+    let id = 0
+    const outcome = await runDraftReview({
+      repo,
+      temp: repo,
+      from,
+      head: git('rev-parse', 'HEAD'),
+      executable: process.env.OCR_TEST_DRAFT_BINARY,
+      apiKey: 'synthetic',
+      write: (line) => progress.push(line),
+      fetchImpl: async (_url, init) => {
+        const body = JSON.parse(init.body)
+        const names = body.tools.map((tool) => tool.function.name)
+        let name = 'approve_all_comments',
+          args = {}
+        if (names.includes('task_done')) {
+          const inSecond = body.messages.some(
+            (m) =>
+              m.role === 'user' && m.content.includes('<confirmed_findings>')
+          )
+          const pass = Number(inSecond)
+          if (
+            body.messages.some(
+              (m) =>
+                m.role === 'user' &&
+                m.content.includes('[ocr:second-pass-closure]')
+            )
+          )
+            guidedPasses.add(pass)
+          const trace = turns[pass]
+          if (trace.at(-1) === 'file_read')
+            evidenceRead = body.messages.at(-1).content
+          if (trace.length === 0 && inSecond) {
+            name = 'file_read'
+            args = { file_path: 'settings.js' }
+          } else if (
+            trace.length === 0 ||
+            (trace.at(-1) === 'file_read' &&
+              body.messages.at(-1).content.includes('divisor = 0'))
+          ) {
+            name = 'code_comment'
+            args = {
+              comments: [
+                {
+                  path: 'calc.js',
+                  existing_code: inSecond ? second : first,
+                  severity: 'medium',
+                  category: 'bug',
+                  content: 'Division by zero produces a non-finite result.',
+                },
+              ],
+            }
+          } else {
+            name = 'task_done'
+            args = { state: 'DONE' }
+          }
+          trace.push(name)
+        } else {
+          assert.ok(names.includes(name))
+        }
+        return new Response(
+          JSON.stringify({
+            model: MOAT_FLASH_MODEL,
+            choices: [
+              {
+                index: 0,
+                finish_reason: 'tool_calls',
+                message: {
+                  role: 'assistant',
+                  content: '',
+                  tool_calls: [
+                    {
+                      id: `call-${++id}`,
+                      type: 'function',
+                      function: { name, arguments: JSON.stringify(args) },
+                    },
+                  ],
+                },
+              },
+            ],
+            usage: {
+              prompt_tokens: 100,
+              completion_tokens: 20,
+              total_tokens: 120,
+            },
+          })
+        )
+      },
+    })
+    assert.equal(outcome.code, 0)
+    assert.equal(outcome.coverage.completed, 1)
+    assert.deepEqual(
+      progress.filter((line) =>
+        line.startsWith('OCR progress event=second_pass_')
+      ),
+      [
+        'OCR progress event=second_pass_started\n',
+        'OCR progress event=second_pass_completed\n',
+      ]
+    )
+    assert.deepEqual([...guidedPasses], [1])
+    assert.ok(evidenceRead?.includes(`export const divisor = ${divisor}`))
+    assert.deepEqual(turns[0], ['code_comment', 'task_done'])
+    assert.deepEqual(
+      turns[1],
+      divisor
+        ? ['file_read', 'task_done']
+        : ['file_read', 'code_comment', 'task_done']
+    )
+    const result = JSON.parse(fs.readFileSync(outcome.resultPath))
+    assert.ok(!result.warnings?.some((w) => w.type === 'review_round_failed'))
+    assert.deepEqual(
+      result.comments
+        .map(({ path, existing_code }) => [path, existing_code])
+        .sort(),
+      (divisor ? [first] : [first, second])
+        .map((code) => ['calc.js', code])
+        .sort()
+    )
+  })
+}
 
 test('pinned OCR registers and invokes reviewer tools with trusted rules and complete accounting', {
   skip: !process.env.OCR_TEST_BINARY,

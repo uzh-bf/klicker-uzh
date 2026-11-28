@@ -3420,6 +3420,7 @@ async function callTopologyModel({
             'invalid_question',
             'advisor_quota_exhausted',
             'advisor_unavailable',
+            'advisor_output_truncated',
             'invalid_advice',
             'response_too_large',
             'broker_unavailable',

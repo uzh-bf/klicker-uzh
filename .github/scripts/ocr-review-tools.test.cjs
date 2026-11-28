@@ -1328,6 +1328,15 @@ test('advisor validation diagnostics preserve rejection precedence and exact bou
         }),
     },
     {
+      label:
+        'truncated advice is never usable even with complete-looking arguments',
+      reason: 'length',
+      response: () =>
+        parsedResponse((payload) => {
+          payload.choices[0].finish_reason = 'length'
+        }),
+    },
+    {
       label: 'finish reason precedes malformed calls',
       reason: 'invalid_finish_reason',
       response: () =>
@@ -1471,7 +1480,12 @@ test('advisor validation diagnostics preserve rejection precedence and exact bou
       },
     })
     const result = await tool('ask_review_advisor', question)
-    assert.equal(result.result.content[0].text, 'invalid_advice', label)
+    assert.equal(result.result.isError, true, label)
+    assert.equal(
+      result.result.content[0].text,
+      reason === 'length' ? 'advisor_output_truncated' : 'invalid_advice',
+      label
+    )
     assert.equal(calls, 1, label)
     assert.equal(broker.diagnostics().attempted, 1, label)
     assert.equal(broker.diagnostics().dispatched, 1, label)
