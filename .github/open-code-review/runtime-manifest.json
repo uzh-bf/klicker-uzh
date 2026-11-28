@@ -32,7 +32,7 @@
     ".github/actions/ocr-review/action.yml": "439b8b39e6bd5ef47ae0d0992dfc0a7dfa236bf5ab094db4d194239e90db9234",
     ".github/scripts/ocr-controller.cjs": "8b9582ab4dda9ed5411da65930753de2925d34ed4da0da532b15be6779c254db",
     ".github/scripts/ocr-draft-review.cjs": "647041d8350af8cd2c2976200d5e67bb8c3f3ad4fc6574543de6d13661134a10",
-    ".github/scripts/ocr-mistral-adapter.cjs": "a632ab7dbbd2d98d46e96036e9ce83eefe50cc7ad097f1155419c3f9bd289d20",
+    ".github/scripts/ocr-mistral-adapter.cjs": "0e0df0d37e6d4ac33ca6292da948ce2724d1050b67f58c5e5bf2beff36178e83",
     ".github/scripts/ocr-review-tools.cjs": "0eeb1eb05949ef58f5904156c3063de244434f490999898863455d910b2f36d6",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",

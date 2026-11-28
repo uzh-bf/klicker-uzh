@@ -907,7 +907,7 @@ function translateMistralRequest(
 function isDraftCheckpoint(call) {
   if (call.function.name !== 'task_done') return false
   try {
-    const args = JSON.parse(call.function.arguments)
+    const args = JSON.parse(call.function.arguments) ?? {}
     return (
       isPlainObject(args) && [undefined, 'DONE', 'FAILED'].includes(args.state)
     )
@@ -1439,7 +1439,9 @@ async function startAdapter(options = {}) {
     ? { usable: 0, skipped: 0, repeat_skips: 0 }
     : null
   // A main-task key spans both review passes and survives history compression.
-  const draftContinuations = new Map()
+  const continuations = new Map()
+  const maxContinuationTasks =
+    options.maxHistoryEntries ?? DEFAULT_MAX_HISTORY_ENTRIES
   const skippedSnapshots = new Set()
   const pendingRequests = new Set()
   const active = new Set()
@@ -1831,9 +1833,12 @@ async function startAdapter(options = {}) {
           'completion was truncated'
         )
       }
-      const draftScope =
-        options.draftToolContinuation && mainTaskScope && conversation
-      const continuation = draftScope && draftContinuations.get(conversation)
+      const taskKey = mainTaskScope ? body.prompt_cache_key : null
+      const draftScope = options.draftToolContinuation && taskKey
+      const finalScope = options.finalReviewContinuation && taskKey
+      const continuation = taskKey && continuations.get(taskKey)
+      const canTrackTask =
+        continuation || continuations.size < maxContinuationTasks
       let extraContinuation = false
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
@@ -1841,10 +1846,12 @@ async function startAdapter(options = {}) {
         // A final-review scope survives transcript compression, so a missing
         // echoed assistant message cannot renew the stop continuation.
         const firstFinalStop =
-          options.finalReviewContinuation &&
+          finalScope &&
           choice.finish_reason === 'stop' &&
-          mainTaskScope &&
-          conversations.get(conversation)?.main_no_tool_responses === 1
+          !continuation?.finalNoTool
+        if (finalScope && canTrackTask) {
+          continuations.set(taskKey, { ...continuation, finalNoTool: true })
+        }
         if (
           continuation?.toolTurn &&
           !continuation.extraUsed &&
@@ -1874,6 +1881,7 @@ async function startAdapter(options = {}) {
               )
         }
         const firstContinuation =
+          (!(draftScope || finalScope) || canTrackTask) &&
           !continuation?.inPass &&
           (choice.finish_reason === 'length' || firstFinalStop) &&
           !body.messages.some(
@@ -1896,7 +1904,8 @@ async function startAdapter(options = {}) {
       history.remember(body.messages, message, body.prompt_cache_key)
       if (draftScope) {
         if (!choice.message.tool_calls?.length) {
-          draftContinuations.set(conversation, {
+          continuations.set(taskKey, {
+            ...continuations.get(taskKey),
             extraUsed: extraContinuation || Boolean(continuation?.extraUsed),
             inPass: true,
             toolTurn: null,

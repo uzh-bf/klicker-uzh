@@ -1137,8 +1137,9 @@ test('stock OCR retains draft evidence after an empty tool-call compression and 
   )
 })
 
-test('required draft qualification verifies the executable before accepting its results', () => {
-  if (process.env.OCR_REQUIRE_DRAFT_BINARY !== '1') return
+test('required draft qualification verifies the executable before accepting its results', {
+  skip: process.env.OCR_REQUIRE_DRAFT_BINARY !== '1',
+}, () => {
   const executable = process.env.OCR_TEST_DRAFT_BINARY
   assert.ok(executable, 'required draft OCR binary is missing')
   const version = execFileSync(executable, ['version'], {
@@ -1286,7 +1287,14 @@ for (const divisor of [0, 1]) {
     )
     const result = JSON.parse(fs.readFileSync(outcome.resultPath))
     assert.ok(!result.warnings?.some((w) => w.type === 'review_round_failed'))
-    assert.equal(result.comments.length, divisor ? 1 : 2)
+    assert.deepEqual(
+      result.comments
+        .map(({ path, existing_code }) => [path, existing_code])
+        .sort(),
+      (divisor ? [first] : [first, second])
+        .map((code) => ['calc.js', code])
+        .sort()
+    )
   })
 }
 

@@ -3093,8 +3093,8 @@ test('draft length recovery needs a matched tool result and survives compaction 
   assert.equal((await send(progress)).status, 422)
   assert.equal((await send(compact)).status, 422)
 
-  // Stock OCR also completes a pass when task_done omits the state.
-  reply = () => toolTurn('task_done', 'tool_calls')
+  // Stock OCR treats null arguments as an empty map and completes the pass.
+  reply = () => toolTurn('task_done', 'tool_calls', 'null')
   assert.equal((await send(progress)).status, 200)
   const nextPass = [{ role: 'user', content: 'next pass' }]
   reply = () => response({}, 'length')
@@ -3111,7 +3111,7 @@ test('draft length recovery needs a matched tool result and survives compaction 
   )
 })
 
-test('a final stop cannot gain a fresh continuation by dropping the echoed assistant turn', async () => {
+test('a final stop gets one continuation even after diagnostic conversation sampling fills', async () => {
   const payload = completion(
     {
       role: 'assistant',
@@ -3133,6 +3133,13 @@ test('a final stop cannot gain a fresh continuation by dropping the echoed assis
     prompt_cache_key: '1234abcd-main_task-0123456789abcdef',
   }
   try {
+    for (let index = 0; index < 256; index++) {
+      const sample = await postJson(adapter, {
+        messages: request.messages,
+        prompt_cache_key: `sample-${index}`,
+      })
+      assert.equal(sample.status, 200)
+    }
     assert.equal((await postJson(adapter, request)).status, 200)
     const repeat = await postJson(adapter, {
       ...request,

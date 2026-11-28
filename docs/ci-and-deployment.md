@@ -805,8 +805,9 @@ guidance. Raw usage journals retain the original response sizes and finish reaso
 before the compatibility projection, and aggregate accounting remains unchanged.
 
 The draft job builds the pinned OCR source with its draft-only patch and checks
-the executable's patch identity before starting the review. In the second pass,
-Flash checks each selected file for an additional concrete failure mode. It
+the executable's patch identity before starting the review. A successful first
+pass with no confirmed findings finishes without a second-pass event. In the
+second pass, Flash checks each selected file for an additional concrete failure mode. It
 reports a verified defect immediately and closes a ruled-out case once the files
 are checked. On the first model dispatch with four minutes or less left on the
 group deadline, the CLI appends one reminder to finish the
