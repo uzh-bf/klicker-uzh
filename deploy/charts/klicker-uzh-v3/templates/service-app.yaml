@@ -49,6 +49,25 @@ spec:
     {{- include "chart.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: chat
 ---
+{{- if .Values.chatAssessment.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-chat-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.chatAssessment.service.type }}
+  ports:
+    - port: {{ .Values.chatAssessment.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: chat-assessment
+---
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:

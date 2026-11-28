@@ -1,0 +1,98 @@
+{{- if .Values.chatAssessment.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-chat-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chat-assessment
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.chatAssessment.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if hasKey .Values.chatAssessment "replicaCount" }}
+  replicas: {{ .Values.chatAssessment.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: chat-assessment
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-chat.yaml") . | sha256sum }}
+        checksum/config-assessment: {{ include (print $.Template.BasePath "/cm-chat-assessment.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.chatAssessment.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: chat-assessment
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.chat.terminationGracePeriodSeconds }}
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.chatAssessment.priorityClassName }}
+      {{- with .Values.chat.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.chat.podSecurityContext | nindent 8 }}
+      containers:
+        - name: chat-assessment
+          securityContext:
+            {{- toYaml .Values.chat.securityContext | nindent 12 }}
+          image: "{{ .Values.chat.image.repository }}:{{ .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.chat.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          {{- if .Values.chat.courseImages.existingSecret }}
+          env:
+            - name: COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chat.courseImages.existingSecret | quote }}
+                  key: {{ .Values.chat.courseImages.connectionStringKey | quote }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-chat
+            # Last, so the exam deployment's settings win over the regular chat's.
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-chat-assessment
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-chat
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          resources:
+            {{- toYaml .Values.chatAssessment.resources | nindent 12 }}
+      {{- with .Values.chatAssessment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.chatAssessment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.chatAssessment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -44,9 +44,13 @@ const COURSE_CHAT_DIALOG_ID = 'course-chatbot-dialog'
 export function CourseChatDrawer({
   courseId,
   context,
-  enabled = true,
+  enabled: enabledProp = true,
   embedded = false,
 }: CourseChatDrawerProps) {
+  // The exam deployment opens the chatbot full-page on the assessment chat;
+  // the embedded drawer is not offered there.
+  const enabled =
+    enabledProp && process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
   const t = useTranslations()
   const router = useRouter()
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
