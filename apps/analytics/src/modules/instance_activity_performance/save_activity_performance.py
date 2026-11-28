@@ -1,4 +1,14 @@
-def save_activity_performance(db, activity_performance, course_id, practice_quiz_id=None, microlearning_id=None):
+from ..analytics_eligibility import AnalyticsEligibilityContext, publish_analytics
+
+
+def save_activity_performance(
+    db,
+    activity_performance,
+    course_id,
+    practice_quiz_id=None,
+    microlearning_id=None,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
     values = {
         "totalErrorRate": activity_performance.totalErrorRate,
         "totalPartialRate": activity_performance.totalPartialRate,
@@ -33,7 +43,10 @@ def save_activity_performance(db, activity_performance, course_id, practice_quiz
             "Either practice_quiz_id or microlearning_id must be provided for activity performance creation/update"
         )
 
-    db.activityperformance.upsert(
-        where=where_clause,
-        data={"create": create_values, "update": values},
-    )
+    def write(transaction):
+        transaction.activityperformance.upsert(
+            where=where_clause,
+            data={"create": create_values, "update": values},
+        )
+
+    publish_analytics(db, eligibility, (course_id,), write)

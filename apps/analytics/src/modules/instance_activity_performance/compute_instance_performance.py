@@ -1,7 +1,21 @@
 import pandas as pd
 
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+    filter_activity_by_eligibility,
+)
 
-def compute_instance_performance(db, activity, total_only=False):
+
+def compute_instance_performance(
+    db,
+    activity,
+    total_only=False,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
+    activity = filter_activity_by_eligibility(activity, eligibility)
+
     # initialize dataframes for performance tracking
     df_instance_performance = pd.DataFrame(
         columns=[
