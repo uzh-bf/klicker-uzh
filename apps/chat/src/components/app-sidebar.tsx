@@ -21,6 +21,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 import { CreditsFooter } from './credits-footer'
 import { ModeSwitcher } from './mode-switcher'
+import { ParticipantDataUseSettings } from './ParticipantDataUse'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -64,12 +65,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {authMode === 'anonymous' && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="ml-2 inline-flex shrink-0 items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
-                      Guest
+                    <span
+                      tabIndex={0}
+                      data-cy="chat-guest-account"
+                      className="ml-2 inline-flex shrink-0 items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+                    >
+                      {t('chat.sidebar.guestLabel')}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    Signed in via LTI. Chats stay separate from any account.
+                  <TooltipContent className="max-w-xs">
+                    {t('chat.sidebar.guestAccountHint')}
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -115,6 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarRail aria-label={t('chat.sidebar.toggleSidebar')} />
       <SidebarFooter className="p-0">
+        <ParticipantDataUseSettings chatbotId={chatbotId} />
         <SettingsPanel />
         <CreditsFooter />
         {compact ? (

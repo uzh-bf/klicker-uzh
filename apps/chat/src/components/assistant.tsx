@@ -20,6 +20,7 @@ import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
 import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
 import type { ChatModeOptions } from '../lib/config/modes'
+import type { ChatDataUseState } from '../lib/dataUse'
 import { getKlickerChatContextLabel } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
@@ -32,6 +33,10 @@ import { HandoffPrefill } from './handoff-prefill'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import { ModeSwitcher } from './mode-switcher'
 import { OpenInNewTabButton } from './open-in-new-tab-button'
+import {
+  ParticipantDataUseGate,
+  ParticipantDataUseSettings,
+} from './ParticipantDataUse'
 import { Thread } from './thread'
 import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -63,6 +68,12 @@ interface AssistantProps {
   readonly initialModeOptions: ChatModeOptions
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
+  /**
+   * Resolved on the server so the gate can render before any chat request is
+   * attempted; the same state is enforced again by every attributed route.
+   */
+  readonly dataUseState: ChatDataUseState
+  readonly isGuest: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -85,6 +96,8 @@ export function Assistant({
   initialModeOptions,
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
+  dataUseState,
+  isGuest,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -108,7 +121,11 @@ export function Assistant({
     setShowDisclaimerModal,
     handleAcceptDisclaimer,
     handleDeclineDisclaimer,
-  } = useDisclaimerGate(chatbot.id, participationRequired)
+  } = useDisclaimerGate(
+    chatbot.id,
+    participationRequired,
+    dataUseState.complete
+  )
 
   if (participationRequired) {
     return (
@@ -118,6 +135,16 @@ export function Assistant({
           participationMessage ??
           t('chat.assistant.participationRequiredDefaultMessage')
         }
+      />
+    )
+  }
+
+  if (!dataUseState.complete) {
+    return (
+      <ParticipantDataUseGate
+        chatbotId={chatbot.id}
+        isGuest={isGuest}
+        state={dataUseState}
       />
     )
   }
@@ -180,7 +207,11 @@ export function Assistant({
   )
 }
 
-function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
+function useDisclaimerGate(
+  chatbotId: string,
+  participationRequired: boolean,
+  dataUseComplete: boolean
+) {
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
     useState<DisclaimerStatus | null>(null)
@@ -216,14 +247,17 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
       }
     }
 
-    if (participationRequired) {
-      setIsLoading(false)
+    // Both blocking steps keep the gate from fetching: the disclaimer route
+    // denies an account that has not completed the data-use disclosure, so the
+    // request could only fail until the completion step is behind us.
+    if (participationRequired || !dataUseComplete) {
+      setIsLoading(true)
       return
     }
 
     setIsLoading(true)
     void fetchDisclaimerInfo()
-  }, [chatbotId, participationRequired])
+  }, [chatbotId, participationRequired, dataUseComplete])
 
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
@@ -710,8 +744,9 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center border-b px-3 py-2">
+      <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-3 py-2">
         <EmbeddedToolbar />
+        <ParticipantDataUseSettings chatbotId={chatbot.id} compact />
       </div>
       <main
         id="main-content"
