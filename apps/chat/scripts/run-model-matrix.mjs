@@ -135,6 +135,7 @@ export function parseArguments(argv) {
 export function parseChatStream(body) {
   let text = ''
   const parts = []
+  const toolParts = new Map()
   const tools = []
   const errors = []
   let meta = {}
@@ -154,21 +155,28 @@ export function parseChatStream(body) {
       const last = parts.at(-1)
       if (last?.type === 'text') last.text += event.delta ?? ''
       else parts.push({ type: 'text', text: event.delta ?? '' })
-    } else if (event.type === 'tool-input-available') {
-      tools.push({
-        id: event.toolCallId,
-        name: event.toolName,
-        input: event.input,
-      })
+    } else if (
+      event.type === 'tool-input-start' ||
+      event.type === 'tool-input-available'
+    ) {
+      if (!toolParts.has(event.toolCallId)) {
+        const part = { type: 'tool-call', toolName: event.toolName }
+        parts.push(part)
+        toolParts.set(event.toolCallId, part)
+      }
+      if (event.type === 'tool-input-available') {
+        tools.push({
+          id: event.toolCallId,
+          name: event.toolName,
+          input: event.input,
+        })
+      }
     } else if (event.type === 'tool-output-available') {
+      const part = toolParts.get(event.toolCallId)
+      if (part) part.result = event.output
       const tool = tools.find((entry) => entry.id === event.toolCallId)
       if (tool) {
         tool.output = JSON.stringify(event.output ?? {}).slice(0, 2000)
-        parts.push({
-          type: 'tool-call',
-          toolName: tool.name,
-          result: event.output,
-        })
       }
     } else if (event.type === 'error') {
       errors.push(String(event.errorText ?? 'stream_error').slice(0, 300))
@@ -245,11 +253,11 @@ async function runCase({ target, testCase, repeat, effort }) {
       message: turn.message,
       effort,
     })
-    const { userMessage, assistantMessageId, answer, ...record } = result
+    const { userMessage, assistantMessageId, ...record } = result
     turns.push({ student: turn.message, ...record })
     const servedOther =
       record.servedModelId !== null && record.servedModelId !== target.modelId
-    if (record.status !== 200 || !answer.trim() || servedOther) {
+    if (record.status !== 200 || !record.answer.trim() || servedOther) {
       stoppedAt = {
         turn: turns.length,
         reason:
@@ -264,7 +272,7 @@ async function runCase({ target, testCase, repeat, effort }) {
     history.push(userMessage, {
       id: assistantMessageId,
       role: 'assistant',
-      content: answer,
+      content: record.answer,
     })
     parentId = assistantMessageId
   }
