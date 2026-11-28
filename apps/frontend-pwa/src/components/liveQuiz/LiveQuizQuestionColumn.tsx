@@ -2,13 +2,13 @@ import { faCheck, faClock, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementBlockStatus,
-  ElementType,
+  type ElementType,
   type GetRunningLiveQuizQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { H2, StepProgress, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import QuestionArea from './QuestionArea'
 
@@ -30,7 +30,13 @@ interface LiveQuizQuestionColumnProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
+    submissionId: string
+  }) => Promise<{
+    statusCode: number
+    responseTimestamp?: number
+    submissionId?: string
+    hatchetEventId?: string
+  }>
   className?: string
 }
 

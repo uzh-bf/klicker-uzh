@@ -10,6 +10,7 @@ import {
   videoAssetIdSchema,
   videoFrameCandidates,
 } from '@/src/lib/sources/videoFrames'
+import { logger } from './logger'
 
 /** Request-local registry. Only frames returned by this turn's scoped search are selectable. */
 export function withVideoFrameTool(
@@ -66,10 +67,14 @@ export function withVideoFrameTool(
           selected.add(asset_id)
           return true
         } catch (error) {
-          console.error('[chat] video frame selection failed', {
-            assetId: asset_id,
-            error,
-          })
+          logger.error(
+            {
+              event: 'chat.video_frame.selection_failed',
+              assetId: asset_id,
+              err: error,
+            },
+            'Video frame selection failed'
+          )
           return false
         } finally {
           pendingReads.delete(asset_id)

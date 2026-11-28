@@ -1,0 +1,8 @@
+mutation DuplicateCompetenceTree(
+  $id: String!
+  $input: DuplicateCompetenceTreeInput
+) {
+  duplicateCompetenceTree(id: $id, input: $input) {
+    ...CompetenceTreeData
+  }
+}

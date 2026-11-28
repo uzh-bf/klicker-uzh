@@ -26,11 +26,14 @@ describe('chat media workload identity storage', () => {
       resolveChatMediaWorkloadIdentityStorage(
         {
           CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+          AZURE_CLIENT_ID: 'synthetic-client',
+          AZURE_TENANT_ID: 'synthetic-tenant',
+          AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
           COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME: 'syntheticacct',
           BLOB_STORAGE_ACCOUNT_URL: 'https://redirected.example',
         },
         'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
-        'course-images'
+        ' course-images '
       )
     ).toEqual({
       accountName: 'syntheticacct',
@@ -44,9 +47,13 @@ describe('chat media workload identity storage', () => {
     ['too short', 'ab', 'course-images'],
     ['missing container', 'syntheticacct', undefined],
     ['blank container', 'syntheticacct', '  '],
+    ['invalid container', 'syntheticacct', 'course--images'],
   ])('fails closed for %s workload identity configuration', (_, account, container) => {
     const env = {
       CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+      AZURE_CLIENT_ID: 'synthetic-client',
+      AZURE_TENANT_ID: 'synthetic-tenant',
+      AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
       COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME: account,
     }
     expect(() =>
@@ -61,6 +68,28 @@ describe('chat media workload identity storage', () => {
         env,
         'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
         container
+      )
+    ).toBe(false)
+  })
+
+  it.each([
+    'AZURE_CLIENT_ID',
+    'AZURE_TENANT_ID',
+    'AZURE_FEDERATED_TOKEN_FILE',
+  ])('keeps media disabled without %s', (missing) => {
+    const env = {
+      CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED: 'true',
+      AZURE_CLIENT_ID: 'synthetic-client',
+      AZURE_TENANT_ID: 'synthetic-tenant',
+      AZURE_FEDERATED_TOKEN_FILE: '/tmp/synthetic-token',
+      BLOB_STORAGE_ACCOUNT_NAME: 'syntheticacct',
+      [missing]: '',
+    }
+    expect(
+      chatMediaWorkloadIdentityStorageConfigured(
+        env,
+        'BLOB_STORAGE_ACCOUNT_NAME',
+        'course-images'
       )
     ).toBe(false)
   })

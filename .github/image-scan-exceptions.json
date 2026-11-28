@@ -1,0 +1,8 @@
+[
+  {
+    "ids": ["CVE-2026-109461", "GHSA-xcx6-jx8p-x3h5"],
+    "package": "@azure/msal-node",
+    "expires": "2027-01-31",
+    "reason": "Fixed only in @azure/msal-node 7.1.0, which no @azure/identity release accepts yet. The audit package uses DefaultAzureCredential, whose chain does not include the affected authorization-code flow. Remove this entry once @azure/identity allows msal-node >= 7.1.0."
+  }
+]

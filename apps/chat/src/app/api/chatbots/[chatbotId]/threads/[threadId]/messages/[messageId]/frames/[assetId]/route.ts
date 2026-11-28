@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { logger } from '@/src/lib/server/logger'
 import { readVideoFrame } from '@/src/lib/server/videoFrameStore'
 import { resolveAuthorizedVideoFrame } from '@/src/lib/server/videoMessageFrame'
 import { videoAssetIdSchema } from '@/src/lib/sources/videoFrames'
@@ -49,7 +50,10 @@ export async function GET(
     })
   } catch (error) {
     // Keep the client response non-enumerable while retaining the full server-side stack.
-    console.error('[chat] video frame failed', error)
+    logger.error(
+      { event: 'chat.video_frame.serve_failed', err: error },
+      '[chat] video frame failed'
+    )
     return missing()
   }
 }

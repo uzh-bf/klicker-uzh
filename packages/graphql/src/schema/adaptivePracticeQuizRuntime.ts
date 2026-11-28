@@ -1,0 +1,50 @@
+import { createAdaptivePracticeQuizRuntimeSchema } from '@klicker-uzh/adaptive-server/schema/adaptivePracticeQuizRuntime'
+import builder from '../builder.js'
+import { AdaptiveLevelMappingRule, AdaptiveNodeKind } from './competenceTree.js'
+import {
+  ElementDisplayMode,
+  ElementType,
+  FreeTextRestrictions,
+  NumericalRestrictions,
+} from './elementData.js'
+
+export const {
+  AdaptivePracticeQuizAttemptStatus,
+  AdaptivePracticeQuizStopReason,
+  AdaptiveEstimateNodeKind,
+  AdaptiveResultConfidenceType,
+  AdaptiveResultClassificationType,
+  AdaptivePrivacyFieldType,
+  AdaptivePrivacySuppressionReasonType,
+  AdaptivePrivacySuppressionType,
+  AdaptivePracticeQuizResponseInputRef,
+  AdaptivePracticeQuizResponseInput,
+  AdaptiveParticipantChoiceType,
+  AdaptiveChoicesOptionsType,
+  AdaptiveNumericalOptionsType,
+  AdaptiveFreeTextOptionsType,
+  AdaptiveParticipantElementOptions,
+  AdaptiveParticipantElementType,
+  AdaptiveSubmittedResponseFeedbackType,
+  AdaptivePracticeQuizAttemptStateRef,
+  AdaptivePracticeQuizAttemptStateType,
+  AdaptiveResultLevelBandType,
+  AdaptiveResultTrajectoryPointType,
+  AdaptiveStudentResultNodeType,
+  AdaptiveStudentResultRef,
+  AdaptiveStudentResultType,
+  AdaptiveCohortLevelBucketType,
+  AdaptiveCohortNodeDistributionType,
+  AdaptiveCohortAttemptSummaryType,
+  AdaptivePilotMetricsType,
+  AdaptiveItemDiagnosticType,
+  AdaptiveCohortResultsRef,
+  AdaptiveCohortResultsType,
+} = createAdaptivePracticeQuizRuntimeSchema(builder, {
+  AdaptiveLevelMappingRule,
+  AdaptiveNodeKind,
+  ElementDisplayMode,
+  ElementType,
+  FreeTextRestrictions,
+  NumericalRestrictions,
+})
