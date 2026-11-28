@@ -64,6 +64,7 @@ interface AssistantProps {
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
   readonly pwaUrl: string
+  readonly assessment?: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -74,6 +75,7 @@ interface ParticipationRequiredProps {
 
 interface DisclaimerDeclinedProps {
   readonly embedded: boolean
+  readonly assessment: boolean
   readonly disclaimer: ChatbotDisclaimer | null
   readonly showDisclaimerModal: boolean
   readonly actionError: boolean
@@ -88,6 +90,7 @@ export function Assistant({
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
   pwaUrl,
+  assessment = false,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -136,6 +139,7 @@ export function Assistant({
     return (
       <DisclaimerDeclined
         embedded={embedded}
+        assessment={assessment}
         disclaimer={disclaimer}
         showDisclaimerModal={showDisclaimerModal}
         actionError={disclaimerActionError}
@@ -148,7 +152,7 @@ export function Assistant({
 
   return (
     <>
-      <ChatUiProvider>
+      <ChatUiProvider assessment={assessment}>
         <RuntimeProvider
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
@@ -173,6 +177,7 @@ export function Assistant({
         <DisclaimerModal
           disclaimer={disclaimer}
           isOpen={showDisclaimerModal}
+          assessment={assessment}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
           errorMessage={
@@ -418,6 +423,7 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
 
 function DisclaimerDeclined({
   embedded,
+  assessment,
   disclaimer,
   showDisclaimerModal,
   actionError,
@@ -472,6 +478,7 @@ function DisclaimerDeclined({
         <DisclaimerModal
           disclaimer={disclaimer}
           isOpen={showDisclaimerModal}
+          assessment={assessment}
           onAccept={onAccept}
           onDecline={onDecline}
           errorMessage={actionError ? t('chat.disclaimer.actionError') : null}
@@ -522,7 +529,7 @@ function SidebarMain({
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
-  const { headerless } = useChatUi()
+  const { assessment, headerless } = useChatUi()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const createThread = useChatStore((state) => state.createThread)
@@ -542,7 +549,8 @@ function SidebarMain({
     }
   }
 
-  const newChatButton = (
+  // The exam chat keeps one conversation per student, so it offers no new chat.
+  const newChatButton = assessment ? null : (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
@@ -665,6 +673,9 @@ function SidebarMain({
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              {...(assessment
+                ? { maxImageAttachments: 0, allowDocumentAttachments: false }
+                : {})}
             />
           </ChatWorkspaceLayout>
         </div>
@@ -685,7 +696,7 @@ function AssistantLayout({
   knowledgeGraphVisible: boolean
 }) {
   const t = useTranslations('chat.thread.learningContext')
-  const { showSidebar } = useChatUi()
+  const { showSidebar, assessment } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
@@ -744,6 +755,9 @@ function AssistantLayout({
               contextualSuggestions={hasQuestionContext}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              {...(assessment
+                ? { maxImageAttachments: 0, allowDocumentAttachments: false }
+                : {})}
             />
           </ChatWorkspaceLayout>
         </div>

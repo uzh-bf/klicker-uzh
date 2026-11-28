@@ -398,10 +398,15 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   const row = (await prisma.chatbot.findUnique({
     where: {
       id: parsedId.data,
-      // The exam chat serves only chatbots of assessment-enabled courses.
-      course: isAssessmentMode()
-        ? { deletionRequestedAt: null, isAssessmentEnabled: true }
-        : { deletionRequestedAt: null },
+      // Assessment-enabled courses are served only by the exam chat, and the
+      // exam chat serves nothing else.
+      course: {
+        deletionRequestedAt: null,
+        isAssessmentEnabled: isAssessmentMode(),
+      },
+      // Exam students must accept the identified-export notice, which the
+      // chat shows only through an attached disclaimer.
+      ...(isAssessmentMode() ? { disclaimerId: { not: null } } : {}),
     },
     // `status` is always selected on top of the caller's projection so this one
     // guard can enforce publication for every participant route.

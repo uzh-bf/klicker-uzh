@@ -2094,7 +2094,7 @@ const UserMessage: FC = () => {
 
 const UserActionBar: FC = () => {
   const t = useTranslations()
-  const { showMessageActions } = useChatUi()
+  const { showMessageActions, assessment } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
   const hasAvailableMode = useHasAvailableChatMode()
@@ -2110,38 +2110,40 @@ const UserActionBar: FC = () => {
       hideWhenRunning
       className="text-muted-foreground flex items-center gap-1"
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {editDisabled ? (
-            <button
-              type="button"
-              aria-disabled="true"
-              className={twMerge(
-                actionBarButtonClassName,
-                'cursor-not-allowed opacity-50'
-              )}
-            >
-              <PencilOffIcon />
-              <span className="sr-only">
-                {t('chat.message.editUnavailable')}
-              </span>
-            </button>
-          ) : (
-            <ActionBarPrimitive.Edit asChild>
+      {!assessment && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {editDisabled ? (
               <button
-                data-cy="chat-edit-message-button"
-                className={actionBarButtonClassName}
+                type="button"
+                aria-disabled="true"
+                className={twMerge(
+                  actionBarButtonClassName,
+                  'cursor-not-allowed opacity-50'
+                )}
               >
-                <PencilIcon />
-                <span className="sr-only">{t('chat.message.edit')}</span>
+                <PencilOffIcon />
+                <span className="sr-only">
+                  {t('chat.message.editUnavailable')}
+                </span>
               </button>
-            </ActionBarPrimitive.Edit>
-          )}
-        </TooltipTrigger>
-        <TooltipContent>
-          {getEditTooltip(t, hasAvailableMode, editDisabled)}
-        </TooltipContent>
-      </Tooltip>
+            ) : (
+              <ActionBarPrimitive.Edit asChild>
+                <button
+                  data-cy="chat-edit-message-button"
+                  className={actionBarButtonClassName}
+                >
+                  <PencilIcon />
+                  <span className="sr-only">{t('chat.message.edit')}</span>
+                </button>
+              </ActionBarPrimitive.Edit>
+            )}
+          </TooltipTrigger>
+          <TooltipContent>
+            {getEditTooltip(t, hasAvailableMode, editDisabled)}
+          </TooltipContent>
+        </Tooltip>
+      )}
 
       <Tooltip>
         <TooltipTrigger asChild>
@@ -2556,7 +2558,7 @@ const AssistantMessage: FC<{
 
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
-  const { showMessageActions } = useChatUi()
+  const { showMessageActions, assessment } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const hasAvailableMode = useHasAvailableChatMode()
   if (!showMessageActions) return null
@@ -2635,7 +2637,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
             <TooltipContent>{t('chat.message.stopReadAloud')}</TooltipContent>
           </Tooltip>
         </AuiIf>
-        {!hideAnswerActions && hasAvailableMode && (
+        {!hideAnswerActions && hasAvailableMode && !assessment && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>
@@ -2747,5 +2749,7 @@ const MessageRatingButtons: FC = () => {
 
 const BranchPickerWrapper: FC = () => {
   const message = useAuiState((s) => s.message)
+  const { assessment } = useChatUi()
+  if (assessment) return null
   return <BranchPicker messageId={message.id} />
 }

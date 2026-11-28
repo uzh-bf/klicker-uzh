@@ -199,7 +199,10 @@ describe('required MCP chat preflight', () => {
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(true)
     mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
-    mocks.createThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.createThread.mockResolvedValue({
+      thread: { id: 'thread-1' },
+      created: true,
+    })
     mocks.findFailedTurnThreadId.mockResolvedValue(null)
     mocks.deleteThread.mockResolvedValue(true)
     mocks.findThread.mockResolvedValue({ id: 'thread-1' })

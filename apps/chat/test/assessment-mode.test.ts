@@ -205,14 +205,21 @@ describe('getChatbotOr404 assessment gating', () => {
       deletionRequestedAt: null,
       isAssessmentEnabled: true,
     })
+    expect(mocks.chatbotFindUnique.mock.calls[0][0].where.disclaimerId).toEqual(
+      { not: null }
+    )
   })
 
-  test('does not filter on assessment in regular mode', async () => {
+  test('refuses assessment-enabled courses in regular mode', async () => {
     mocks.chatbotFindUnique.mockResolvedValue(null)
     await getChatbotOr404(CHATBOT_ID, { id: true })
     expect(mocks.chatbotFindUnique.mock.calls[0][0].where.course).toEqual({
       deletionRequestedAt: null,
+      isAssessmentEnabled: false,
     })
+    expect(mocks.chatbotFindUnique.mock.calls[0][0].where).not.toHaveProperty(
+      'disclaimerId'
+    )
   })
 })
 

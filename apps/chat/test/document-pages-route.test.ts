@@ -174,7 +174,10 @@ describe('chat route document pages', () => {
         },
       ],
     })
-    mocks.createThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.createThread.mockResolvedValue({
+      thread: { id: 'thread-1' },
+      created: true,
+    })
     mocks.findFailedTurnThreadId.mockResolvedValue(null)
     mocks.deleteThread.mockResolvedValue(true)
     mocks.findThread.mockResolvedValue({ id: 'thread-1' })

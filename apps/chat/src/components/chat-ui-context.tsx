@@ -23,6 +23,8 @@ interface ChatUiContextValue {
   showMinimalSettings: boolean
   showMessageActions: boolean
   variant: ChatUiVariant
+  /** Exam deployment: one linear conversation, no attachments. */
+  assessment: boolean
 }
 
 type ChatUiVariant = 'participant' | 'owner-preview'
@@ -32,9 +34,11 @@ const ChatUiContext = createContext<ChatUiContextValue | null>(null)
 export function ChatUiProvider({
   children,
   variant = 'participant',
+  assessment = false,
 }: {
   children: ReactNode
   variant?: ChatUiVariant
+  assessment?: boolean
 }) {
   const embedded = useEmbedded()
   const framed = useFramed()
@@ -49,8 +53,9 @@ export function ChatUiProvider({
       showMinimalSettings: embedded && !ownerPreview,
       showMessageActions: !embedded && !ownerPreview,
       variant,
+      assessment,
     }),
-    [embedded, framed, ownerPreview, variant]
+    [assessment, embedded, framed, ownerPreview, variant]
   )
 
   return (

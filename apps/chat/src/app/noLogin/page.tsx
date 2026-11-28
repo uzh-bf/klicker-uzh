@@ -40,8 +40,8 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const loginBaseUrl = getPwaBaseUrl()
   const assessment = isAssessmentMode()
   // The exam chat has no login of its own: the assessment PWA signs students
-  // in and brings them back through the course chatbot page.
-  const redirectUrl = assessment ? undefined : getChatRedirectUrl(redirectTo)
+  // in through Edu-ID and returns them to the chat page they opened.
+  const redirectUrl = getChatRedirectUrl(redirectTo)
   const t = await getTranslations()
 
   let loginHref = `${loginBaseUrl}/login`
