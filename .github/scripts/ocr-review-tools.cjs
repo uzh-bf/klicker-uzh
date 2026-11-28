@@ -11,6 +11,7 @@ const {
   validContextPath: validPath,
   validLibraryId,
 } = require('./ocr-runtime-config.cjs')
+const { MOAT_ADVISOR_MODEL } = require('./ocr-mistral-adapter.cjs')
 
 const ADVISOR_MAX_ATTEMPTS = 8
 const ALLOWANCE_SCHEMA = 'ocr-advisor-allowance/v1'
@@ -403,12 +404,13 @@ async function readBody(stream, limit, controller) {
 function validateAdvice(payload, context) {
   const choice = payload?.choices?.[0]
   const calls = choice?.message?.tool_calls
-  function invalid(reason) {
-    return Object.assign(failure('invalid_advice'), {
+  function invalid(reason, code = 'invalid_advice') {
+    return Object.assign(failure(code), {
       diagnosticReason: reason,
     })
   }
-  if (choice?.finish_reason === 'length') throw invalid('length')
+  if (choice?.finish_reason === 'length')
+    throw invalid('length', 'advisor_output_truncated')
   if (choice?.finish_reason !== 'tool_calls')
     throw invalid('invalid_finish_reason')
   if (calls?.length !== 1) throw invalid('invalid_tool_call_count')
@@ -1035,7 +1037,7 @@ async function startReviewTools(options = {}) {
       )
       attemptOutcome.stage = 'request'
       const body = {
-        model: 'zai-glm-5-3',
+        model: MOAT_ADVISOR_MODEL,
         reasoning_effort: 'max',
         max_tokens: 16384,
         messages: [
@@ -1167,6 +1169,7 @@ async function startReviewTools(options = {}) {
     'invalid_signal',
     'invalid_deadline',
     'advisor_unavailable',
+    'advisor_output_truncated',
     'invalid_advice',
     'cancelled',
     'response_too_large',
@@ -1462,7 +1465,7 @@ async function startFocusedAdvisor(options = {}) {
     const { startAdapter } = require('./ocr-mistral-adapter.cjs')
     if (signal?.aborted) throw failure('cancelled')
     adapter = await startAdapter({
-      provider: 'mistral',
+      provider: 'moat-advisor',
       apiKey,
       ...(options.availability ? { availability: options.availability } : {}),
       usageJournalPath: `${diagnosticsPath}.events.jsonl`,

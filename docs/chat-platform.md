@@ -657,6 +657,53 @@ qualification separately from answer correctness and checkpoint timing. A small
 synthetic pass does not establish learning effectiveness, production retrieval
 quality or unaided work outside the visible conversation.
 
+### Comparing models on a deployed chat
+
+The local runner above measures one fixed model behind the spend guard. Compare
+several models on the deployed path instead when a model or router exists only
+in the deployed gateway (Auto versions with their own classifier, new Azure
+deployments), or when the question is how the models behave for students.
+`apps/chat/scripts/run-model-matrix.mjs` runs a version-1 trajectory corpus
+once per model and repeat in fresh threads, in parallel across models per case.
+It logs in with the persisted login mutation, sends the chatbot's default
+reasoning effort unless `--effort <model>=<level>` overrides it, and records
+text, tool inputs, the served model, credits and latency as JSONL. A case stops
+at a failed request, an empty answer, or a turn served by another model than
+requested, which is how a zero-credit fallback or a chatbot without model
+selection shows up. A rerun with the same output resumes.
+
+1. Use a test chatbot and a synthetic test participant on staging. The chatbot
+   must allow every compared model and have model selection on; restore both
+   afterwards. Give the participant enough credits for the run on that chatbot:
+   an Auto turn costs a few hundredths of a credit and a Sol turn up to a
+   tenth, so 19 turns × 3 repeats per model need several credits per model.
+2. Run the matrix with the participant credentials injected through
+   `rs-infisical-operator` as `KLICKER_MATRIX_PARTICIPANT_USERNAME` and
+   `KLICKER_MATRIX_PARTICIPANT_PASSWORD`, plus `KLICKER_MATRIX_API_ORIGIN`,
+   `KLICKER_MATRIX_CHAT_ORIGIN`, `KLICKER_MATRIX_ALLOWED_ORIGINS` (both
+   origins) and `KLICKER_MATRIX_CHATBOT_ID`:
+
+   ```sh
+   node apps/chat/scripts/run-model-matrix.mjs \
+     --corpus apps/chat/evaluation/tutor-task-support/corpus.json \
+     --output project/_local/matrix.jsonl --repeats 3 \
+     --models gpt-6-luna,gpt-6.1-sol,gpt-6.2-sol,auto-v5
+   ```
+
+3. Score the capture with `evaluation/scripts/model-matrix-report.mjs` in
+   `klicker-uzh-catalyst`, which holds the evaluation judge and metrics. Its
+   `check` command applies the corpus's `matrix-checks.json` (result leaks,
+   exact results, required and forbidden tool inputs, empty answers, latency,
+   credits); `blind` and `merge` run blind rubric grading. See "Model
+   comparison scoring" in that repository's `evaluation/README.md`.
+
+Fix a weakness in the shared prompt when it appears on several models. Add a
+model-specific instruction only when one model fails a rule the others follow
+and the shared fix would hurt them; Auto can switch models between turns of one
+thread, so a model-specific prompt also changes the conversation mid-thread.
+Staging retrieval uses real course material, so results are not comparable with
+runs on the synthetic local fixture. Keep captures and grades outside Git.
+
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
 without adding a request-level effort that would flatten Auto's Luna/Sol tier
@@ -1191,10 +1238,23 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. The conversation shares its row with one workspace panel that
-shows either the knowledge graph or an interactive explanation, never both
-(`src/components/workspace/`). `ChatWorkspaceProvider` owns which item is shown
-and its size; `ChatWorkspaceLayout` is the shell for both kinds in standalone
+header grid. The conversation shares its row with one workspace panel, the
+canvas, that shows either the knowledge graph or one artifact of the thread,
+such as an interactive explanation, never two at once
+(`src/components/workspace/`). An artifact is identified by its type and tool
+call id. A new artifact type adds its data to `ChatCanvasArtifactData` and its
+open size in `chat-workspace-context.tsx`, and its panel (title, actions,
+content, stored-width key) to `WORKSPACE_PANELS` in `chat-workspace-layout.tsx`;
+its message card registers through `artifacts.register` and marks its root and
+open control with `data-canvas-artifact`, `data-canvas-artifact-id` and
+`data-canvas-artifact-open`, which give stepping its thread order and closing
+its focus target. Feedback cards (`show_feedback`, `feedback/1`) are the second
+artifact type. The card finds the reviewed passage in the learner's earlier
+messages on the client, with the same quote normalization the server uses to
+accept quotes (`src/lib/feedback.ts`), so stored cards need no extra data: it
+marks the quotes in that passage and keeps the remarks without a found quote as
+notes. Without a found quote it shows its list layout. `ChatWorkspaceProvider` owns which item is shown
+and its size; `ChatWorkspaceLayout` is the shell for every kind in standalone
 and embedded layouts: resize handle with a per-kind stored width, an expanded
 size that keeps the conversation in a narrow docked column with a usable
 composer, and fullscreen. Fullscreen covers the chatbot, makes background
@@ -1854,7 +1914,7 @@ PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from t
 
 Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
 
-Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default is disabled; staging and production enable it, and each environment reads its Langfuse keys and base URL from `secret-chat` (use a separate Langfuse project per environment). `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
 
 The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
 

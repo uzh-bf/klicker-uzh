@@ -1266,6 +1266,29 @@ describe('account usage chat route', () => {
     })
   })
 
+  test('makes the last allowed step write text instead of calling tools', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+      steps: unknown[]
+      initialMessages: unknown[]
+      responseMessages: unknown[]
+    }) => { toolChoice?: unknown }
+    const step = (stepNumber: number) =>
+      prepareStep({
+        stepNumber,
+        steps: [],
+        initialMessages: [{ role: 'user', content: 'Question' }],
+        responseMessages: [],
+      })
+    expect(step(4).toolChoice).toBeUndefined()
+    expect(step(5).toolChoice).toBe('none')
+  })
+
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({

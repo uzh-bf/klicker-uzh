@@ -9,10 +9,12 @@ import {
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
+  type ComponentType,
   type CSSProperties,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -24,12 +26,15 @@ import {
   ExplanationPanelTitle,
   forgetExplanationPlace,
 } from '../explanation-card'
+import { FeedbackPanelContent, FeedbackPanelTitle } from '../feedback-card'
 import { ChatGraphConceptContext } from '../knowledge-graph/ChatGraphConcepts'
 import {
   ChatKnowledgeGraphPanelContent,
   ChatKnowledgeGraphPanelTitle,
 } from '../knowledge-graph/ChatKnowledgeGraphPanel'
 import {
+  type ChatCanvasArtifact,
+  type ChatWorkspaceItem,
   type ChatWorkspaceSize,
   useChatWorkspace,
 } from './chat-workspace-context'
@@ -86,6 +91,128 @@ function writeStoredWidth(key: string, width: number | undefined) {
   }
 }
 
+/** The concept map in the shared panel shell. */
+function GraphPanel() {
+  const t = useTranslations('chat.graphPanel')
+  return (
+    <WorkspacePanel
+      config={{
+        id: 'chat-knowledge-graph-panel',
+        testId: 'chat-knowledge-graph-panel',
+        testIdPrefix: 'knowledge-graph',
+        storageKey: 'klicker-chat-graph-panel-width',
+        dockedClassName: 'lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem]',
+        labels: {
+          region: t('title'),
+          enlarge: t('enlarge'),
+          shrink: t('shrink'),
+          fullscreen: t('fullscreen'),
+          restore: t('restore'),
+          close: t('close'),
+          resize: t('resize'),
+          resizeHint: t('resizeHint'),
+        },
+        title: <ChatKnowledgeGraphPanelTitle />,
+        content: <ChatKnowledgeGraphPanelContent />,
+      }}
+    />
+  )
+}
+
+/** An interactive explanation in the shared panel shell. */
+function ExplanationPanel({
+  item,
+}: {
+  item: ChatCanvasArtifact<'explanation'>
+}) {
+  const t = useTranslations('chat.thread.explanation')
+  // Reloading remounts the explanation's frame, which restarts its page.
+  const [reload, setReload] = useState(0)
+  return (
+    <WorkspacePanel
+      config={{
+        id: 'chat-explanation-panel',
+        testId: 'chat-explanation-panel',
+        testIdPrefix: 'explanation-panel',
+        storageKey: 'klicker-chat-explanation-panel-width',
+        dockedClassName: 'lg:w-[55%] lg:min-w-[30rem]',
+        labels: {
+          region: item.title,
+          enlarge: t('enlarge'),
+          shrink: t('shrink'),
+          fullscreen: t('fullscreen'),
+          restore: t('restore'),
+          close: t('closePanel'),
+          resize: t('resize'),
+          resizeHint: t('resizeHint'),
+        },
+        title: <ExplanationPanelTitle item={item} />,
+        actions: (
+          <ExplanationPanelActions
+            item={item}
+            onReload={() => {
+              forgetExplanationPlace(item.id)
+              setReload((value) => value + 1)
+            }}
+          />
+        ),
+        content: (
+          <ExplanationFrame
+            key={`${item.id}:${reload}`}
+            html={item.html}
+            title={item.title}
+            placeId={item.id}
+            className="min-h-0 w-full flex-1 border-0 bg-white"
+          />
+        ),
+      }}
+    />
+  )
+}
+
+/** A feedback card in the shared panel shell, with room for its margin. */
+function FeedbackPanel({ item }: { item: ChatCanvasArtifact<'feedback'> }) {
+  const t = useTranslations('chat.thread.feedback')
+  return (
+    <WorkspacePanel
+      config={{
+        id: 'chat-feedback-panel',
+        testId: 'chat-feedback-panel',
+        testIdPrefix: 'feedback-panel',
+        storageKey: 'klicker-chat-feedback-panel-width',
+        dockedClassName: 'lg:w-[55%] lg:min-w-[30rem]',
+        labels: {
+          region: item.title,
+          enlarge: t('enlarge'),
+          shrink: t('shrink'),
+          fullscreen: t('fullscreen'),
+          restore: t('restore'),
+          close: t('closePanel'),
+          resize: t('resize'),
+          resizeHint: t('resizeHint'),
+        },
+        title: <FeedbackPanelTitle item={item} />,
+        content: <FeedbackPanelContent key={item.id} item={item} />,
+      }}
+    />
+  )
+}
+
+/**
+ * The panel of each workspace item kind: the concept map and every canvas
+ * artifact type. A panel passes its title, actions and content to the shared
+ * shell; switching kinds mounts the other panel.
+ */
+const WORKSPACE_PANELS: {
+  [K in ChatWorkspaceItem['kind']]: ComponentType<{
+    item: Extract<ChatWorkspaceItem, { kind: K }>
+  }>
+} = {
+  graph: GraphPanel,
+  explanation: ExplanationPanel,
+  feedback: FeedbackPanel,
+}
+
 /**
  * The conversation with the workspace panel docked beside it. From the lg
  * breakpoint the two share the row; below it the panel replaces the
@@ -93,11 +220,7 @@ function writeStoredWidth(key: string, width: number | undefined) {
  */
 export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
   const workspace = useChatWorkspace()
-  const tGraph = useTranslations('chat.graphPanel')
-  const tExplanation = useTranslations('chat.thread.explanation')
   const { item, graph, chatbotId } = workspace
-  // Reloading remounts the explanation's frame, which restarts its page.
-  const [reload, setReload] = useState(0)
 
   const conceptContext = useMemo(
     () =>
@@ -107,78 +230,23 @@ export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
     [chatbotId, graph.focusConcept]
   )
 
-  let config: PanelConfig | null = null
-  if (item?.kind === 'graph') {
-    config = {
-      id: 'chat-knowledge-graph-panel',
-      testId: 'chat-knowledge-graph-panel',
-      testIdPrefix: 'knowledge-graph',
-      storageKey: 'klicker-chat-graph-panel-width',
-      dockedClassName: 'lg:w-[42%] lg:min-w-[25rem] lg:max-w-[35rem]',
-      labels: {
-        region: tGraph('title'),
-        enlarge: tGraph('enlarge'),
-        shrink: tGraph('shrink'),
-        fullscreen: tGraph('fullscreen'),
-        restore: tGraph('restore'),
-        close: tGraph('close'),
-        resize: tGraph('resize'),
-        resizeHint: tGraph('resizeHint'),
-      },
-      title: <ChatKnowledgeGraphPanelTitle />,
-      content: <ChatKnowledgeGraphPanelContent />,
-    }
-  } else if (item?.kind === 'explanation') {
-    config = {
-      id: 'chat-explanation-panel',
-      testId: 'chat-explanation-panel',
-      testIdPrefix: 'explanation-panel',
-      storageKey: 'klicker-chat-explanation-panel-width',
-      dockedClassName: 'lg:w-[55%] lg:min-w-[30rem]',
-      labels: {
-        region: item.title,
-        enlarge: tExplanation('enlarge'),
-        shrink: tExplanation('shrink'),
-        fullscreen: tExplanation('fullscreen'),
-        restore: tExplanation('restore'),
-        close: tExplanation('closePanel'),
-        resize: tExplanation('resize'),
-        resizeHint: tExplanation('resizeHint'),
-      },
-      title: <ExplanationPanelTitle item={item} />,
-      actions: (
-        <ExplanationPanelActions
-          item={item}
-          onReload={() => {
-            forgetExplanationPlace(item.id)
-            setReload((value) => value + 1)
-          }}
-        />
-      ),
-      content: (
-        <ExplanationFrame
-          key={`${item.id}:${reload}`}
-          html={item.html}
-          title={item.title}
-          placeId={item.id}
-          className="min-h-0 w-full flex-1 border-0 bg-white"
-        />
-      ),
-    }
-  }
-
-  const expanded = config !== null && workspace.size === 'expanded'
+  const Panel = item
+    ? (WORKSPACE_PANELS[item.kind] as ComponentType<{
+        item: ChatWorkspaceItem
+      }>)
+    : null
+  const expanded = item !== null && workspace.size === 'expanded'
 
   return (
     <div
       className="relative flex min-h-0 flex-1 flex-col lg:flex-row"
       data-cy="chat-graph-layout"
-      data-workspace-size={config ? workspace.size : undefined}
+      data-workspace-size={item ? workspace.size : undefined}
     >
       <div
         className={twMerge(
           'relative flex min-h-0 min-w-0 flex-1 flex-col',
-          config && 'hidden lg:flex',
+          item && 'hidden lg:flex',
           // Expanded, the conversation keeps a narrow column with its
           // composer, like a chat docked beside a document.
           expanded && 'lg:w-[26rem] lg:flex-none lg:shrink-0'
@@ -189,7 +257,12 @@ export function ChatWorkspaceLayout({ children }: { children: ReactNode }) {
           {children}
         </ChatGraphConceptContext.Provider>
       </div>
-      {config ? <WorkspacePanel config={config} /> : null}
+      {item && Panel ? (
+        // Concept links in panel text open the graph, as in the thread.
+        <ChatGraphConceptContext.Provider value={conceptContext}>
+          <Panel item={item} />
+        </ChatGraphConceptContext.Provider>
+      ) : null}
     </div>
   )
 }
@@ -205,7 +278,9 @@ function WorkspacePanel({ config }: { config: PanelConfig }) {
   const fullscreenRef = useRef<HTMLButtonElement>(null)
   const { storageKey, testIdPrefix, labels } = config
 
-  useEffect(() => {
+  // Read before paint: switching kinds mounts a new panel, which must not
+  // flash its default width first.
+  useLayoutEffect(() => {
     setPanelWidth(readStoredWidth(storageKey))
   }, [storageKey])
 

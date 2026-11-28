@@ -13,15 +13,38 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { MessageSources } from '@/src/hooks/useMessageSources'
+import type { FeedbackAnnotation, FeedbackContent } from '@/src/lib/feedback'
+
+/**
+ * What a message card hands the canvas to show one of its artifacts, per
+ * artifact type. A new type adds its entry here, its open size below and its
+ * panel in `chat-workspace-layout.tsx`.
+ */
+export type ChatCanvasArtifactData = {
+  explanation: { title: string; html: string }
+  feedback: {
+    title: string
+    content: FeedbackContent
+    annotation: FeedbackAnnotation | null
+    sources: MessageSources
+  }
+}
+
+export type ChatCanvasArtifactType = keyof ChatCanvasArtifactData
+
+/** An artifact of a message, identified by its type and tool call id. */
+export type ChatCanvasArtifact<
+  K extends ChatCanvasArtifactType = ChatCanvasArtifactType,
+> = { [T in K]: { kind: T; id: string } & ChatCanvasArtifactData[T] }[K]
 
 /**
  * The docked workspace beside the conversation shows one item at a time: the
- * knowledge graph or an interactive explanation. Two side panels would leave
- * neither usable, so opening one replaces the other.
+ * knowledge graph or one artifact of the thread, such as an interactive
+ * explanation. Two side panels would leave neither usable, so opening one
+ * replaces the other.
  */
-export type ChatWorkspaceItem =
-  | { kind: 'graph' }
-  | { kind: 'explanation'; id: string; title: string; html: string }
+export type ChatWorkspaceItem = { kind: 'graph' } | ChatCanvasArtifact
 
 /**
  * docked: the panel's own (resizable) width beside the conversation.
@@ -31,15 +54,32 @@ export type ChatWorkspaceItem =
  */
 export type ChatWorkspaceSize = 'docked' | 'expanded' | 'fullscreen'
 
-export type ChatWorkspaceExplanation = { title: string; html: string }
+/** The size each artifact type opens at, unless the panel is fullscreen. */
+const ARTIFACT_OPEN_SIZE: Record<
+  ChatCanvasArtifactType,
+  Exclude<ChatWorkspaceSize, 'fullscreen'>
+> = {
+  explanation: 'expanded',
+  feedback: 'expanded',
+}
 
 type PendingFocus = 'composer' | 'opener' | null
 
 const COMPOSER_SELECTOR = '[data-cy="chat-composer-input"]'
 const GRAPH_OPENER_SELECTOR = '[data-cy="knowledge-graph-mode-link"]'
 
-export const explanationOpenerSelector = (id: string) =>
-  `[data-explanation-id="${CSS.escape(id)}"] [data-cy="explanation-open"]`
+/** Cards mark their root and their open control with these attributes. */
+export const canvasArtifactCardSelector = (
+  kind: ChatCanvasArtifactType,
+  id: string
+) =>
+  `[data-canvas-artifact="${kind}"][data-canvas-artifact-id="${CSS.escape(id)}"]`
+
+const artifactOpenerSelector = (kind: ChatCanvasArtifactType, id: string) =>
+  `${canvasArtifactCardSelector(kind, id)} [data-canvas-artifact-open]`
+
+const registryKey = (kind: ChatCanvasArtifactType, id: string) =>
+  `${kind}:${id}`
 
 /** The split layout needs this width; below it the panel replaces the chat. */
 export const WORKSPACE_SPLIT_QUERY = '(min-width: 1024px)'
@@ -61,13 +101,24 @@ export type ChatWorkspaceValue = {
     /** Absent when the concept map is disabled, which also disables links. */
     focusConcept?: (response: KnowledgeGraphResponse, nodeId: string) => void
   }
-  explanations: {
-    activeId: string | null
-    open: (id: string, explanation: ChatWorkspaceExplanation) => void
-    /** Cards register their loaded page so the panel can step between them. */
-    register: (id: string, explanation: ChatWorkspaceExplanation) => () => void
-    /** The registered explanations in thread order. */
-    ordered: () => Array<{ id: string } & ChatWorkspaceExplanation>
+  artifacts: {
+    /** The artifact the panel shows, if it shows one. */
+    active: ChatCanvasArtifact | null
+    open: <K extends ChatCanvasArtifactType>(
+      kind: K,
+      id: string,
+      data: ChatCanvasArtifactData[K]
+    ) => void
+    /** Cards register their ready artifact so the panel can step between them. */
+    register: <K extends ChatCanvasArtifactType>(
+      kind: K,
+      id: string,
+      data: ChatCanvasArtifactData[K]
+    ) => () => void
+    /** The registered artifacts of one type in thread order. */
+    ordered: <K extends ChatCanvasArtifactType>(
+      kind: K
+    ) => Array<ChatCanvasArtifact<K>>
   }
 }
 
@@ -102,7 +153,7 @@ export function ChatWorkspaceProvider({
   const [focusRequest, setFocusRequest] = useState<KnowledgeGraphFocusRequest>()
   const pendingFocus = useRef<PendingFocus>(null)
   const openerSelector = useRef<string | null>(null)
-  const registry = useRef(new Map<string, ChatWorkspaceExplanation>())
+  const registry = useRef(new Map<string, ChatCanvasArtifact>())
 
   // A disabled concept map never shows, even through the /graph deep link.
   const visibleItem = item?.kind === 'graph' && !graphEnabled ? null : item
@@ -180,37 +231,47 @@ export function ChatWorkspaceProvider({
     }
   }, [close, graphOpen, show])
 
-  const openExplanation = useCallback(
-    (id: string, explanation: ChatWorkspaceExplanation) =>
+  const openArtifact = useCallback(
+    <K extends ChatCanvasArtifactType>(
+      kind: K,
+      id: string,
+      data: ChatCanvasArtifactData[K]
+    ) =>
       show(
-        { kind: 'explanation', id, ...explanation },
-        'expanded',
-        explanationOpenerSelector(id)
+        { kind, id, ...data } as ChatCanvasArtifact,
+        ARTIFACT_OPEN_SIZE[kind],
+        artifactOpenerSelector(kind, id)
       ),
     [show]
   )
 
-  const activeExplanationId =
-    visibleItem?.kind === 'explanation' ? visibleItem.id : null
-  const activeIdRef = useRef(activeExplanationId)
+  const activeArtifact =
+    visibleItem && visibleItem.kind !== 'graph' ? visibleItem : null
+  const activeKey = activeArtifact
+    ? registryKey(activeArtifact.kind, activeArtifact.id)
+    : null
+  const activeKeyRef = useRef(activeKey)
   useEffect(() => {
-    activeIdRef.current = activeExplanationId
-  }, [activeExplanationId])
+    activeKeyRef.current = activeKey
+  }, [activeKey])
 
   const register = useCallback(
-    (id: string, explanation: ChatWorkspaceExplanation) => {
-      registry.current.set(id, explanation)
+    <K extends ChatCanvasArtifactType>(
+      kind: K,
+      id: string,
+      data: ChatCanvasArtifactData[K]
+    ) => {
+      const key = registryKey(kind, id)
+      registry.current.set(key, { kind, id, ...data } as ChatCanvasArtifact)
       return () => {
-        registry.current.delete(id)
-        // A card leaves when the thread changes; its explanation then has no
+        registry.current.delete(key)
+        // A card leaves when the thread changes; its artifact then has no
         // place in the chat anymore. The check waits a tick, so a remount of
         // the same card (React strict mode) does not close the panel.
         setTimeout(() => {
-          if (activeIdRef.current === id && !registry.current.has(id)) {
+          if (activeKeyRef.current === key && !registry.current.has(key)) {
             setItem((current) =>
-              current?.kind === 'explanation' && current.id === id
-                ? null
-                : current
+              current?.kind === kind && current.id === id ? null : current
             )
             setSizeState('docked')
           }
@@ -220,15 +281,20 @@ export function ChatWorkspaceProvider({
     []
   )
 
-  const ordered = useCallback(() => {
-    const ids = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-explanation-id]')
-    ).map((element) => element.dataset.explanationId ?? '')
-    return ids.flatMap((id) => {
-      const explanation = registry.current.get(id)
-      return explanation ? [{ id, ...explanation }] : []
-    })
-  }, [])
+  const ordered = useCallback(
+    <K extends ChatCanvasArtifactType>(kind: K) =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-canvas-artifact="${kind}"]`
+        )
+      ).flatMap((element) => {
+        const artifact = registry.current.get(
+          registryKey(kind, element.dataset.canvasArtifactId ?? '')
+        )
+        return artifact ? [artifact as unknown as ChatCanvasArtifact<K>] : []
+      }),
+    []
+  )
 
   const value = useMemo<ChatWorkspaceValue>(
     () => ({
@@ -245,9 +311,9 @@ export function ChatWorkspaceProvider({
         focusRequest: graphOpen ? focusRequest : undefined,
         focusConcept: graphEnabled ? focusConcept : undefined,
       },
-      explanations: {
-        activeId: activeExplanationId,
-        open: openExplanation,
+      artifacts: {
+        active: activeArtifact,
+        open: openArtifact,
         register,
         ordered,
       },
@@ -264,8 +330,8 @@ export function ChatWorkspaceProvider({
       toggleGraph,
       focusRequest,
       focusConcept,
-      activeExplanationId,
-      openExplanation,
+      activeArtifact,
+      openArtifact,
       register,
       ordered,
     ]

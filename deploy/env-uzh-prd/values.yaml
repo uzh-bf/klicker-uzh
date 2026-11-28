@@ -45,7 +45,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.97
+        tag: v3.4.0-alpha.101
       resources:
         # Near the per-pod CPU of a busy lecture, so a crowded node does not
         # throttle this tier first. Usage above the request is still allowed.
@@ -88,7 +88,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.97
+        tag: v3.4.0-alpha.101
       resources:
         requests:
           cpu: 25m
@@ -129,7 +129,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.97
+        tag: v3.4.0-alpha.101
       resources:
         requests:
           cpu: 50m
@@ -208,7 +208,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   ingress:
     annotations:
@@ -245,9 +245,16 @@ chat:
     baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  # Metadata-only Langfuse tracing of chat turns (no prompts, answers or tool
+  # arguments/results; see docs/chat-platform.md). It starts only when
+  # secret-chat also provides LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY and
+  # LANGFUSE_BASE_URL; otherwise the pod logs a warning and stays untraced.
   telemetry:
-    enabled: false
+    enabled: true
     environment: 'production'
+    # The keys come from secret-chat; the base URL is not secret, so it is
+    # rendered into config-chat instead of an Infisical entry.
+    baseUrl: 'https://langfuse.df-app.ch'
 
   # Offers the Tutor and Explainer the interactive-explanation tool. A chatbot
   # still needs its own setting and the owner's `interactive-explanations`
@@ -421,7 +428,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.100
+    tag: v3.4.0-alpha.101
 
   ingress:
     annotations:
@@ -489,7 +496,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   strategy:
     type: RollingUpdate
@@ -539,7 +546,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   strategy:
     type: RollingUpdate
@@ -605,7 +612,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   ingress:
     className: haproxy
@@ -665,7 +672,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   ingress:
     className: haproxy
@@ -703,7 +710,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   affinity:
     podAntiAffinity:
@@ -805,7 +812,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -860,7 +867,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   affinity:
     podAntiAffinity:
@@ -930,7 +937,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
 
   ingress:
     className: haproxy
@@ -962,7 +969,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.97
+    tag: v3.4.0-alpha.101
     pullPolicy: IfNotPresent
 
   affinity:
@@ -1052,7 +1059,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.97
+      tag: v3.4.0-alpha.101
 
     ingress:
       className: haproxy
@@ -1147,7 +1154,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.97
+      tag: v3.4.0-alpha.101
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1223,7 +1230,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.97
+      tag: v3.4.0-alpha.101
 
     ingress:
       className: haproxy
@@ -1265,7 +1272,7 @@ migrator:
   priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
-    tag: v3.4.0-alpha.98 # Clear this override when the backend image reaches this version.
+    tag: '' # Clear this override when the backend image reaches this version.
     pullPolicy: IfNotPresent
 
 # Modern Klicker KB retrieval authenticates with a fresh five-minute ES256

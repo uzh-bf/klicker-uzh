@@ -1,12 +1,14 @@
 import { jsonSchema, tool } from 'ai'
 import { z } from 'zod'
-import { parseMessageDocuments } from '@/src/lib/attachments/documentText'
 import {
   CRITERION_STATUSES,
   FEEDBACK_FORMAT,
   type FeedbackContent,
   type FeedbackToolResult,
+  learnerPassages,
   MAX_FEEDBACK_ATTEMPTS,
+  MIN_QUOTE_WORD_CHARACTERS,
+  normalizeForQuote,
   SHOW_FEEDBACK_TOOL_NAME,
 } from '@/src/lib/feedback'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
@@ -56,42 +58,6 @@ const feedbackSchema = z
   )
 
 /**
- * Quotes are compared after Unicode normalization and after unifying
- * whitespace, quotation marks, dashes and "ß"/"ss" (Swiss German spelling),
- * and with invisible characters such as soft hyphens from PDFs removed, so a
- * quote that differs only in these still counts as verbatim. Everything else,
- * including case, must match.
- */
-export function normalizeForQuote(text: string): string {
-  return text
-    .normalize('NFKC')
-    .replace(/[\u00AD\u200B-\u200D\u2060\uFEFF]/g, '')
-    .replace(/[‘’‚′]/g, "'")
-    .replace(/[“”„«»″]/g, '"')
-    .replace(/[\u2010-\u2015\u2212]/g, '-')
-    .replace(/ß/g, 'ss')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/** A quote must name a passage, not just a letter or punctuation. */
-const MIN_QUOTE_WORD_CHARACTERS = 3
-
-/**
- * The passages a quote may come from: each message's typed text and each
- * attached document on its own, without the markers around documents, so a
- * quote cannot span two passages or include a marker.
- */
-function learnerPassages(learnerMessages: readonly string[]): string[] {
-  return learnerMessages.flatMap((message) => {
-    const { question, documents } = parseMessageDocuments(message)
-    return [question, ...documents.map((document) => document.text)].map(
-      normalizeForQuote
-    )
-  })
-}
-
-/**
  * Checks the shape and that every quote appears within one passage of the
  * learner's own messages. A quote the
  * learner never wrote is a misquote, which feedback must not show as their
@@ -111,7 +77,7 @@ export function validateFeedback(
     }
   }
   const content = parsed.data as FeedbackContent
-  const sources = learnerPassages(learnerMessages)
+  const sources = learnerPassages(learnerMessages).map(normalizeForQuote)
   const errors: string[] = []
   const check = (path: string, value: string) => {
     if (!value) return
@@ -155,7 +121,7 @@ export function createShowFeedbackTool({
       type: 'text' as const,
       value:
         output.kind === 'feedback'
-          ? 'The feedback is shown to the learner. Do not repeat its content; add at most one short sentence.'
+          ? 'The feedback is shown to the learner. Do not repeat its content, its summary or its next step; add at most one short sentence, or nothing.'
           : `The feedback was not shown. Fix every error and call ${SHOW_FEEDBACK_TOOL_NAME} again with the complete object:\n${output.errors.join('\n')}`,
     }),
   })

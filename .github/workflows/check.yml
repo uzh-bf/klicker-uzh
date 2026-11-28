@@ -376,7 +376,7 @@ jobs:
         id: ocr_engine
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^\.github/(scripts/(install-patched-ocr\.cjs|ocr-self-update-guard\.test\.cjs)|open-code-review/ocr-compression\.patch|workflows/check(-ocr-final-review)?\.yml)$'
+          pattern: '^\.github/(scripts/(ocr-self-update-guard\.test|install-patched-ocr|ocr-draft-review(\.test)?|ocr-(mistral-adapter|runtime-config|review-shared|review-tools))\.cjs|open-code-review/ocr-(compression|second-pass)\.patch|actions/ocr-review/action\.yml|workflows/check(-execution|-ocr-final-review)?\.yml)$'
 
       - name: Set up pinned OCR build toolchain
         if: steps.ocr_engine.outputs.should_run != 'false'
@@ -389,6 +389,19 @@ jobs:
         timeout-minutes: 25
         if: steps.ocr_engine.outputs.should_run != 'false'
         run: node .github/scripts/install-patched-ocr.cjs "${RUNNER_TEMP}/patched-ocr"
+
+      - name: Qualify the pinned draft review engine
+        timeout-minutes: 25
+        if: steps.ocr_engine.outputs.should_run != 'false'
+        env:
+          TURBO_TOKEN: ''
+          TURBO_TEAM: ''
+        run: |
+          set -euo pipefail
+          node .github/scripts/install-patched-ocr.cjs qualify-draft "${RUNNER_TEMP}/qualified-draft-ocr"
+          export OCR_TEST_DRAFT_BINARY="${RUNNER_TEMP}/qualified-draft-ocr/ocr"
+          export OCR_REQUIRE_DRAFT_BINARY=1
+          node --test .github/scripts/ocr-draft-review.test.cjs
 
       # The chart is what production consumes from this branch, and nothing
       # else renders it: a scheduling policy reaches a pod spec only when a
@@ -609,7 +622,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@af7c0462accdc98d6518fb3ecb4e02c6b0eb2906
+    uses: uzh-bf/klicker-uzh/.github/workflows/check-execution.yml@08566df35091d259cc8973ece52e2bfb6e633ceb
     secrets: inherit
 
   priority-status:
