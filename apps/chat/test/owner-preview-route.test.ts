@@ -246,6 +246,7 @@ function createApprovedCustomModeChatbot() {
 describe('POST owner preview chat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('CHAT_FEEDBACK_TOOL', '0')
     mocks.withOwnerPreviewAuth.mockResolvedValue({
       scope: 'ACCOUNT_OWNER',
       userId: 'owner-id',
@@ -548,6 +549,33 @@ describe('POST owner preview chat', () => {
     expect(mocks.createChatMessage).not.toHaveBeenCalled()
     expect(mocks.createChatThread).not.toHaveBeenCalled()
     expect(mocks.createParticipant).not.toHaveBeenCalled()
+  })
+
+  it('offers the feedback card tool like the participant chat when enabled', async () => {
+    vi.stubEnv('CHAT_FEEDBACK_TOOL', '1')
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    await response.text()
+
+    expect(response.status).toBe(200)
+    const streamOptions = mocks.streamText.mock.calls[0]?.[0]
+    expect(Object.keys(streamOptions.tools)).toContain('show_feedback')
+    // Quotes are checked against the owner's own words in the preview.
+    expect(
+      streamOptions.tools.show_feedback.execute({
+        format: 'feedback/1',
+        title: '',
+        summary: '',
+        strengths: [],
+        criteria: [],
+        improvements: [
+          { label: 'Topic', comment: 'Name the topic.', quote: 'this topic' },
+        ],
+        nextStep: '',
+      })
+    ).toMatchObject({ kind: 'feedback' })
   })
 
   it('continues without response examples when the included skill is unavailable', async () => {

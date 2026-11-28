@@ -4,6 +4,12 @@ import {
   MAX_IMAGE_DATA_URL_CHARACTERS,
   MAX_MANAGE_IMAGE_ATTACHMENTS,
 } from '@/src/lib/config/attachmentLimits'
+import {
+  asFeedbackResult,
+  FEEDBACK_HISTORY_LABELS,
+  feedbackToText,
+  SHOW_FEEDBACK_TOOL_NAME,
+} from '@/src/lib/feedback'
 import { getManageProposalTokenFromToolPart } from '@/src/services/manageProposalResult'
 
 export const MANAGE_CHAT_MAX_BODY_BYTES = 16 * 1024 * 1024
@@ -258,6 +264,28 @@ export const manageChatRequestSchema = z
     }
   })
 
+/**
+ * A feedback card shown in an earlier preview turn, as the same history text
+ * the participant chat sends (see `historyTextFromParts`), so a follow-up
+ * about the card reaches the model with its content.
+ */
+function feedbackCardHistoryText(part: UIMessage['parts'][number]) {
+  if (
+    part.type !== `tool-${SHOW_FEEDBACK_TOOL_NAME}` ||
+    !('state' in part) ||
+    part.state !== 'output-available'
+  )
+    return null
+  const result = asFeedbackResult(part.output)
+  if (result?.kind !== 'feedback') return null
+  try {
+    return `\n[Feedback card shown]\n${feedbackToText(result.content, FEEDBACK_HISTORY_LABELS)}\n`
+  } catch {
+    // A malformed client-supplied card is left out of the history.
+    return null
+  }
+}
+
 export async function validateManageChatRequest(
   value: unknown
 ): Promise<ValidatedManageChatRequest | null> {
@@ -282,6 +310,8 @@ export async function validateManageChatRequest(
         if (part.type === 'text') {
           parts.push({ text: part.text, type: 'text' })
         }
+        const card = feedbackCardHistoryText(part)
+        if (card !== null) parts.push({ text: card, type: 'text' })
 
         const proposalToken = getManageProposalTokenFromToolPart(part)
         if (proposalToken) {

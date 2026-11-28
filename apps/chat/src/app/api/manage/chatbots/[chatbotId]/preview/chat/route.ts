@@ -17,6 +17,7 @@ import {
   DEFAULT_ANSWER_STYLE,
   DEFAULT_ANSWER_TONE,
 } from '@/src/lib/config/answerStyles'
+import { SHOW_FEEDBACK_TOOL_NAME } from '@/src/lib/feedback'
 import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import {
   answerStyleSchema,
@@ -69,6 +70,11 @@ import {
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { chatModelUnavailableResponse } from '@/src/services/accountUsage'
+import {
+  createShowFeedbackTool,
+  feedbackAttemptsLeft,
+  isFeedbackToolEnabled,
+} from '@/src/services/feedbackTool'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -537,6 +543,26 @@ export async function POST(
       formatMeetingClock(turnSettings.meetingClock ?? null, null, new Date())
     )
 
+    // The same feedback card as the participant chat, so owners preview what
+    // learners will see. Quotes are checked against the owner's own messages.
+    // Added after the system prompt, like in the participant chat, so course
+    // grounding rules still see only course tools.
+    const feedbackToolActive = isFeedbackToolEnabled(selectedMode)
+    const modelTools: ToolSet = feedbackToolActive
+      ? {
+          ...tools,
+          [SHOW_FEEDBACK_TOOL_NAME]: createShowFeedbackTool({
+            learnerMessages: parsed.messages
+              .filter((message) => message.role === 'user')
+              .map((message) =>
+                message.parts
+                  .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+                  .join('\n')
+              ),
+          }),
+        }
+      : tools
+
     const modelMessages = await convertToModelMessages(parsed.messages, {
       ignoreIncompleteToolCalls: true,
     })
@@ -553,7 +579,7 @@ export async function POST(
               mode: selectedMode,
               threadId: 'owner-preview',
             },
-            tools,
+            tools: modelTools,
           })
         : null
 
@@ -585,7 +611,9 @@ export async function POST(
             : {}),
         },
       },
-      stopWhen: isStepCount(5),
+      // Each feedback attempt is a step; three attempts plus retrieval and the
+      // closing text need more than the usual five.
+      stopWhen: isStepCount(feedbackToolActive ? 7 : 5),
       // Same provider-refusal replacement as the participant chat.
       experimental_transform: providerRefusalTransform(
         providerRefusalDeflection(
@@ -621,6 +649,13 @@ export async function POST(
               },
             }
           : {}),
+        ...(feedbackToolActive && !feedbackAttemptsLeft(steps)
+          ? {
+              activeTools: Object.keys(modelTools).filter(
+                (name) => name !== SHOW_FEEDBACK_TOOL_NAME
+              ),
+            }
+          : {}),
         messages: [
           ...initialMessages,
           ...(docQueryToolName && stepNumber > 0
@@ -629,7 +664,7 @@ export async function POST(
           languageReminder,
         ],
       }),
-      tools: promptCacheRequest?.tools ?? tools,
+      tools: promptCacheRequest?.tools ?? modelTools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,
       onAbort: closeMcpTools,
