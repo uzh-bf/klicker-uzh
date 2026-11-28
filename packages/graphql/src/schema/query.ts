@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
+import * as ActivityArtifactService from '../services/activityArtifacts.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
@@ -33,6 +34,10 @@ import {
   CourseActivityList,
   UserActivityList,
 } from './activities.js'
+import {
+  ActivityArtifactInstanceResult,
+  ActivityArtifactRevision,
+} from './activityArtifact.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -1034,6 +1039,56 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           // access validation to the activity that contains this instance is performed inside the serive function
           return await ElementService.getSingleElementInstance(args, ctx)
+        },
+      }),
+
+      // Lecturer lookup of the latest authorized revision behind a canonical
+      // author link (`https://{publisher origin}/a/{uuid}`).
+      previewActivityArtifact: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityArtifactRevision,
+        args: {
+          url: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivityArtifactService.previewActivityArtifactByUrl(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      // Staff lookup used by the fixed Manage landing page
+      // /artifacts/[artifactId].
+      staffActivityArtifact: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityArtifactRevision,
+        args: {
+          artifactId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivityArtifactService.resolveStaffActivityArtifact(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      // Participant run read. Participant, course and instance are derived
+      // server-side; the pinned revision is served only after enrollment and
+      // activity checks. An authorized pinned instance retains a generic
+      // unavailable result while the pilot flag is off.
+      activityArtifactForInstance: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ActivityArtifactInstanceResult,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivityArtifactService.getActivityArtifactForInstance(
+            args,
+            ctx
+          )
         },
       }),
 

@@ -5,9 +5,32 @@ import type {
   JsonObject,
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+
+export interface ActivityArtifactAssignmentRuntime {
+  assign(input: {
+    subject: string
+    courseId: string
+    instanceId: string
+    artifactId: string
+    revisionId: string
+  }): Promise<'bound' | 'conflict'>
+}
+
+export interface ActivityArtifactFeatureFlagEvaluator {
+  isEnabled(
+    key: 'activity-artifacts',
+    attributes: {
+      id: string
+      actorType: 'user'
+      catalyst: boolean
+      role: UserRole
+      betaEnabled: boolean
+    }
+  ): boolean
+}
 
 export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
@@ -18,6 +41,8 @@ export interface HatchetHandlerGlobalContext {
   redisCache?: Redis
   prisma: PrismaClient
   tasks: PreparedHatchetTasks
+  activityArtifactRuntime?: ActivityArtifactAssignmentRuntime
+  featureFlags?: ActivityArtifactFeatureFlagEvaluator
 }
 
 export const MAX_KB_RESOURCE_COUNT = 1000

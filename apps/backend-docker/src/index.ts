@@ -6,6 +6,7 @@ import { createRedisCache } from '@envelop/response-cache-redis'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
+  createActivityArtifactRuntimeFromEnv,
   createElementGenerationRuntimeFromEnv,
   enhanceContext,
   getChatModelRegistry,
@@ -39,6 +40,10 @@ const featureFlags = new NodeFeatureFlagClient({
 })
 process.once('exit', () => featureFlags.destroy())
 const elementGenerationRuntime = createElementGenerationRuntimeFromEnv(
+  process.env
+)
+// Absent publisher configuration leaves every artifact surface disabled.
+const activityArtifactRuntime = createActivityArtifactRuntimeFromEnv(
   process.env
 )
 
@@ -161,6 +166,8 @@ const tasks = prepareHatchetTasks({
   redisCache,
   redisExec,
   redisAssessmentExec,
+  activityArtifactRuntime,
+  featureFlags,
   handlers,
   getKBGraphTerminalResult,
   settleKBGraphTerminalResult: ({
@@ -189,6 +196,7 @@ const { app, yogaApp } = prepareApp({
   emitter,
   hatchet: hatchetClient,
   elementGenerationRuntime,
+  activityArtifactRuntime,
   tasks,
   featureFlags,
 })
@@ -217,6 +225,7 @@ const server = app.listen(3000, () => {
         pubSub,
         emitter,
         elementGenerationRuntime,
+        activityArtifactRuntime,
         tasks,
         featureFlags,
       }),

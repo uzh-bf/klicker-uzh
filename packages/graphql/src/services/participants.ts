@@ -12,6 +12,10 @@ import {
   type ParticipantDataUseFields,
   participantDataUseSelect,
 } from '../lib/learningAnalytics.js'
+import {
+  getActivityArtifactCheckInstanceIds,
+  hasActivityArtifactPin,
+} from './activityArtifacts.js'
 
 dayjs.extend(isoWeek)
 
@@ -540,6 +544,9 @@ export async function getBookmarkedElementStacks(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  const includeActivityArtifactContext =
+    ctx.user.role === DB.UserRole.PARTICIPANT &&
+    ctx.activityArtifactRuntime !== undefined
   const participation = await ctx.prisma.participation.findFirst({
     where: {
       courseId,
@@ -549,6 +556,17 @@ export async function getBookmarkedElementStacks(
     include: {
       bookmarkedElementStacks: {
         include: {
+          microLearning: includeActivityArtifactContext
+            ? {
+                select: {
+                  id: true,
+                  status: true,
+                  isDeleted: true,
+                  scheduledStartAt: true,
+                  scheduledEndAt: true,
+                },
+              }
+            : false,
           elements: {
             include:
               ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
@@ -569,7 +587,56 @@ export async function getBookmarkedElementStacks(
     },
   })
 
-  return participation?.bookmarkedElementStacks ?? []
+  const stacks = participation?.bookmarkedElementStacks ?? []
+  if (!includeActivityArtifactContext || stacks.length === 0) return stacks
+
+  const now = new Date()
+  const checkInstances = stacks.flatMap((stack) => {
+    const microLearning = (
+      stack as typeof stack & {
+        microLearning?: {
+          id: string
+          status: DB.PublicationStatus
+          isDeleted: boolean
+          scheduledStartAt: Date
+          scheduledEndAt: Date
+        } | null
+      }
+    ).microLearning
+    if (
+      stack.type !== DB.ElementStackType.MICROLEARNING ||
+      !microLearning ||
+      microLearning.status !== DB.PublicationStatus.PUBLISHED ||
+      microLearning.isDeleted ||
+      microLearning.scheduledStartAt > now ||
+      microLearning.scheduledEndAt < now
+    ) {
+      return []
+    }
+
+    return stack.elements.map((instance) => ({
+      id: instance.id,
+      microLearningId: microLearning.id,
+      elementType: instance.elementType,
+      elementData: instance.elementData,
+    }))
+  })
+  if (!hasActivityArtifactPin(checkInstances)) return stacks
+
+  const checkInstanceIds = await getActivityArtifactCheckInstanceIds(
+    checkInstances,
+    ctx.prisma
+  )
+  if (checkInstanceIds.size === 0) return stacks
+
+  return stacks.map((stack) => ({
+    ...stack,
+    elements: stack.elements.map((instance) =>
+      checkInstanceIds.has(instance.id)
+        ? { ...instance, checkActivityArtifact: true }
+        : instance
+    ),
+  }))
 }
 
 export async function flagElement(

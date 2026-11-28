@@ -229,6 +229,18 @@ query GetSingleElement($id: Int!) {
       isManager
       isEditor
 
+      hasActivityArtifact
+      activityArtifact {
+        artifactId
+        revisionId
+        digest
+        version
+        title
+        url
+        renderedDigest
+        exercise
+      }
+
       tags {
         id
         name

@@ -1,8 +1,30 @@
-import {
+import type {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { ActivityArtifactExercise } from '@klicker-uzh/types'
+
+// The exact revision the lecturer reviewed. It is only sent when the lecturer
+// explicitly confirms an attach or upgrade.
+export type ActivityArtifactFormValue = {
+  url: string
+  artifactId: string
+  revisionId: string
+  version: number
+}
+
+// Pin loaded with the element. Display only; ordinary edits never resend it.
+export type ActivityArtifactPinSummary = {
+  artifactId: string
+  revisionId: string
+  digest: string
+  version: number
+  title: string
+  url: string
+  renderedDigest: string
+  exercise: ActivityArtifactExercise
+}
 
 interface SharedQuestionFormProps {
   name: string
@@ -130,6 +152,9 @@ export interface ElementFormTypesFlashcard extends SharedQuestionFormProps {
 
 export interface ElementFormTypesContent extends SharedQuestionFormProps {
   type: ElementType.Content
+  hasActivityArtifact?: boolean
+  currentActivityArtifact?: ActivityArtifactPinSummary | null
+  pendingActivityArtifact?: ActivityArtifactFormValue
 }
 
 export type ElementBatchOperationActions = {

@@ -16,6 +16,7 @@
       "!**/server.json",
       "!packages/prisma/src/prisma/client/**",
       "!packages/graphql/instrumented/**",
+      "!apps/artifact-pilot/styles.css",
       "!packages/markdown/components.css",
       "!packages/markdown/utilities.css",
       "!**/public/**",

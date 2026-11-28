@@ -1675,6 +1675,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetAnswers: 'Antworten zurücksetzen',
       markAllAsRead: 'Alle als gelesen markieren',
       read: 'Gelesen',
+      activityArtifactUnavailable:
+        'Dieser Inhalt enthält ein Aktivitätsartefakt, das derzeit nicht verfügbar ist.',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
       flagElement: 'Fehler melden',
@@ -2474,6 +2476,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
   manage: {
+    artifacts: {
+      title: 'Aktivitätsartefakt',
+      unavailable: 'Dieses Artefakt konnte nicht geöffnet werden.',
+      resolving: 'Artefakt wird aufgelöst…',
+      accessDenied:
+        'Dieses Artefakt konnte nicht geöffnet werden. Melden Sie sich mit einem verknüpften Dozierendenkonto an und prüfen Sie, ob das Artefakt vorhanden ist.',
+      details: '{title} · Revision v{version} · Prüfsumme {digest}…',
+    },
     assistant: {
       open: 'Assistent',
       title: 'KlickerUZH Assistant',
@@ -2645,6 +2655,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für einige der in dieser Vorlage enthaltenen Elemente sind neuere Versionen in der Bibliothek verfügbar. Dies passiert, wenn Sie ein Element editieren, ohne die Aktualisierungen in Vorlagen zu aktivieren.<ul><li>Um veraltete Versionen von Elementen zu aktualisieren, erstellen Sie die Vorlage erneut.</li><li>Alternativ können Sie beim Ändern der entsprechenden Elemente auch wählen, die in Vorlagen enthaltenen Instanzen zu aktualisieren.</li><li>Um eine Liste aller veralteten Instanzen zu erhalten, öffnen Sie bitte die Übersicht, indem Sie auf den Titel der Vorlage in der Liste klicken.</li></ul>',
       automaticPublicationAt: 'Automatische Veröffentlichung am {date}',
       availability: 'Verfügbarkeit: {startDate} - {endDate}',
+      publicationDelayed:
+        'Die Veröffentlichung ist verzögert. Setzen Sie dieses Microlearning auf Entwurf zurück und veröffentlichen Sie es erneut, sobald der Aktivitätsartefakt-Dienst und das Feature-Flag wieder verfügbar sind.',
       removeActivity: 'Aktivität entfernen',
       confirmActivityRemoval:
         'Bitte bestätigen Sie die folgenden Konsequenzen der Entfernung der Aktivität <b>{name}</b> aus Ihrem Benutzerkonto.',
@@ -3791,6 +3803,46 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       scoringDocumentation: 'Dokumentation zur Bewertung',
       questionPlaceholder: 'Fragetext hier eingeben…',
       contentPlaceholder: 'Inhalt hier eingeben…',
+      activityArtifact: {
+        attachedTitle: 'Angehängtes Aktivitätsartefakt',
+        attachTitle: 'Aktivitätsartefakt anhängen',
+        tooltip:
+          'Hängen Sie diesem Inhaltselement eine unveränderliche Revision aus dem Publisher an. Lernende erhalten ausschliesslich die vertrauenswürdige Darstellung.',
+        unavailableTitle: 'Aktivitätsartefakt nicht verfügbar',
+        unavailableNotice:
+          'Diesem Element ist ein Artefakt zugeordnet, seine Steuerung und Details sind derzeit jedoch nicht verfügbar. Die bestehende Verknüpfung bleibt unverändert.',
+        usingRevision: 'Aktuell verwendet: v{version}',
+        latestRevisionAvailable: 'v{version} verfügbar',
+        noArtifactAttached:
+          'Kein Aktivitätsartefakt angehängt. Das Element stellt weiterhin seinen Markdown-Inhalt dar.',
+        selectedRevision:
+          'v{version} ist ausgewählt. Speichern Sie das Element, um die Auswahl zu übernehmen.',
+        linkLabel: 'Link zum Aktivitätsartefakt',
+        linkPlaceholder:
+          'https://publisher.example/a/00000000-0000-4000-8000-000000000000',
+        linkHint:
+          'Fügen Sie den dauerhaften Autorenlink ein, der neben dem gespeicherten Artefakt angezeigt wird.',
+        resolving: 'Wird aufgelöst…',
+        previewLatestRevision: 'Neueste Revision anzeigen',
+        attachArtifact: 'Artefakt anhängen',
+        previewRevision: 'v{version} anzeigen',
+        titleVersion: '{title} · v{version}',
+        updateRevision: 'Auf v{version} aktualisieren',
+        attachRevision: 'v{version} anhängen',
+        cancel: 'Abbrechen',
+        keepCurrentPin:
+          'Wenn Sie speichern, ohne eine Revision zu bestätigen, bleibt die aktuelle Verknüpfung erhalten.',
+        selectedToast:
+          'v{version} ist ausgewählt. Speichern Sie das Element, um die Auswahl zu übernehmen.',
+        errorInvalidLink:
+          'Geben Sie einen gültigen kanonischen Publisher-Link für ein Artefakt ein und versuchen Sie es erneut.',
+        errorForbidden:
+          'Sie haben keine Berechtigung, dieses Artefakt zu öffnen. Melden Sie sich mit einem Konto an, das darauf zugreifen kann.',
+        errorUnavailable:
+          'Aktivitätsartefakte sind vorübergehend nicht verfügbar. Versuchen Sie es später erneut.',
+        errorGeneric:
+          'Das Artefakt konnte nicht aufgelöst werden. Prüfen Sie, ob der Link ein kanonischer Publisher-Link für ein autorisiertes Artefakt ist.',
+      },
       instructionsPlaceholder: 'Instruktionen hier eingeben…',
       explanationTooltip:
         'Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Übungs-Quizzen und Microlearnings als Erklärung der Lösung angezeigt wird.',
@@ -5161,7 +5213,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmPublishingMicrolearning:
         'Bitte bestätigen Sie, dass Sie das Microlearning <b>{name}</b> veröffentlichen möchten. Diese Aktion macht es für alle Teilnehmenden im folgenden Zeitfenster verfügbar:',
       microlearningPublishingHint:
-        'Dieser Prozess kann nur rückgängig gemacht werden, wenn das Startdatum in der Zukunft liegt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
+        'Ein geplantes Microlearning kann bis zur Veröffentlichung auf Entwurf zurückgesetzt werden, auch nach dem Startzeitpunkt. Änderungen am Inhalt der enthaltenen Elemente sind nach der Veröffentlichung nicht mehr möglich.',
+      publishArtifactForbidden:
+        'Diese Aktivität kann mit dem angehängten Aktivitätsartefakt nicht veröffentlicht werden. Prüfen Sie, ob Aktivitätsartefakte für die verknüpfte Erstellerin oder den verknüpften Ersteller aktiviert sind und ob Sie diese Aktivität verwalten dürfen, und versuchen Sie es anschliessend erneut.',
+      publishArtifactInvalid:
+        'Das angehängte Aktivitätsartefakt ist ungültig oder passt nicht mehr zu dieser Aktivität. Hängen Sie die vorgesehene Revision erneut an und versuchen Sie es nochmals.',
+      publishArtifactUnavailable:
+        'Aktivitätsartefakte sind vorübergehend nicht verfügbar. Versuchen Sie es später erneut.',
       confirmPublishingGroupActivity:
         'Bitte bestätigen Sie, dass Sie die Gruppenaktivität <b>{name}</b> veröffentlichen möchten. Diese Aktion macht sie für alle Gruppen im folgenden Zeitfenster verfügbar:',
       groupActivityPublishingHint:

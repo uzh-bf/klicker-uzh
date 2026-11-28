@@ -4,7 +4,7 @@ import type {
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import type { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import CaseStudyQuestion from './CaseStudyQuestion'
 import ChoicesQuestion from './ChoicesQuestion'
 import ContentElement from './ContentElement'
@@ -91,6 +91,7 @@ interface StudentElementBaseProps {
   sequential?: boolean
   preview?: boolean
   compact?: boolean
+  renderActivityArtifact?: (elementInstanceId: number) => ReactNode
 }
 
 interface StudentElementStackProps extends StudentElementBaseProps {
@@ -124,6 +125,7 @@ function StudentElement({
   sequential = false, // chose cases of case study element sequentially to student
   preview = false,
   compact = false,
+  renderActivityArtifact,
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
@@ -470,6 +472,7 @@ function StudentElement({
         }}
         elementIx={elementIx}
         hideReadButton={hideReadButton}
+        renderActivityArtifact={renderActivityArtifact}
       />
     )
   } else {

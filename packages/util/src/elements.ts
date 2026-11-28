@@ -14,6 +14,7 @@ import {
   type ElementKeys,
   type ElementOptionsCaseStudy,
   type ElementOptionsChoices,
+  type ElementOptionsContent,
   type ElementOptionsFreeText,
   type ElementOptionsNumerical,
   type ElementOptionsSelection,
@@ -89,11 +90,18 @@ export function processElementData(
       elementId: element.id,
     }
   } else if (element.type === PrismaElementType.CONTENT) {
+    // Content elements snapshot the attached activity artifact with the
+    // activity, so a later element upgrade cannot change a published run.
+    const contentOptions = (element.options ?? {}) as ElementOptionsContent
+
     return {
       ...pick(element, CONTENT_KEYS),
       type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
+      options: contentOptions.activityArtifact
+        ? { activityArtifact: contentOptions.activityArtifact }
+        : {},
     }
   } else if (
     element.type === PrismaElementType.SELECTION &&

@@ -1,0 +1,13 @@
+query StaffActivityArtifact($artifactId: String!) {
+  staffActivityArtifact(artifactId: $artifactId) {
+    artifactId
+    revisionId
+    digest
+    version
+    title
+    url
+    renderedDigest
+    frameUrl
+    exercise
+  }
+}

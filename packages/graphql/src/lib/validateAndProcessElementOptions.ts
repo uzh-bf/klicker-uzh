@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ElementOptionsInput } from '@klicker-uzh/types'
+import { sanitizeActivityArtifactPin } from './activityArtifacts.js'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
 import validateKPRIMOptions from './validateKPRIMOptions.js'
@@ -120,6 +121,21 @@ function validateAndProcessElementOptions(
           solutions: options.hasSampleSolution ? caseItem.solutions : undefined,
         })),
       }
+    }
+
+    case DB.ElementType.CONTENT: {
+      const artifactPin =
+        options && 'activityArtifact' in options
+          ? (options as { activityArtifact?: unknown }).activityArtifact
+          : undefined
+
+      // An ordinary content edit passes no options, which keeps the stored pin.
+      if (typeof artifactPin === 'undefined') return {}
+
+      const sanitizedPin = sanitizeActivityArtifactPin(artifactPin)
+      if (!sanitizedPin) return null
+
+      return { activityArtifact: sanitizedPin }
     }
 
     default: {

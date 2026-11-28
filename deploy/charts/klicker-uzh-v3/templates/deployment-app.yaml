@@ -409,6 +409,14 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            {{- if .Values.backendGraphql.activityArtifact.enabled }}
+            - name: ACTIVITY_ARTIFACT_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "backendGraphql.activityArtifact.serviceTokenSecret.name is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.serviceTokenSecret.name | quote }}
+                  key: {{ required "backendGraphql.activityArtifact.serviceTokenSecret.key is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.serviceTokenSecret.key | quote }}
+                  optional: true
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global

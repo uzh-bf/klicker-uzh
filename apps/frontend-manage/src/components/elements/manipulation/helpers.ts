@@ -40,6 +40,15 @@ export function prepareContentArgs({
     basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
     tags: values.tags,
+    // Undefined keeps the stored pin, so ordinary content edits never touch
+    // the attached revision.
+    activityArtifact: values.pendingActivityArtifact
+      ? {
+          url: values.pendingActivityArtifact.url,
+          artifactId: values.pendingActivityArtifact.artifactId,
+          revisionId: values.pendingActivityArtifact.revisionId,
+        }
+      : undefined,
   }
 }
 

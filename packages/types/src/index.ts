@@ -242,7 +242,8 @@ export type ElementOptionsInput = OptionsChoicesInput &
   OptionsNumericalInput &
   OptionsFreeTextInput &
   OptionsSelectionInput &
-  OptionsCaseStudyInput
+  OptionsCaseStudyInput &
+  ElementOptionsContent
 
 export type ElementManipulationInput = {
   id?: number | null
@@ -609,7 +610,43 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
 }
 
 export interface ElementOptionsFlashcard {}
-export interface ElementOptionsContent {}
+export type ActivityArtifactCashflow = {
+  when: 'maturity' | 'year-end'
+  amount: 'face' | number
+}
+
+/**
+ * Declarative bond exercise accepted by the publisher's trusted frame. The
+ * host validates exactly these fields before handing the definition to the
+ * isolated renderer.
+ */
+export type ActivityArtifactExercise = {
+  title: string
+  years: number
+  face: number
+  cashflows: ActivityArtifactCashflow[]
+}
+
+/**
+ * Immutable revision captured for a Content Element. `subject` is the mapped
+ * lecturer the revision was resolved for. It stays server-side and is reused
+ * for later authorized reads.
+ */
+export type ActivityArtifactPin = {
+  artifactId: string
+  revisionId: string
+  digest: string
+  version: number
+  title: string
+  url: string
+  renderedDigest: string
+  exercise: ActivityArtifactExercise
+  subject: string
+}
+
+export interface ElementOptionsContent {
+  activityArtifact?: ActivityArtifactPin | null
+}
 
 export type ElementOptions =
   | ElementOptionsChoices

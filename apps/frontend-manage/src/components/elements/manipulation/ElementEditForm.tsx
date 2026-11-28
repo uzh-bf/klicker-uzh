@@ -31,6 +31,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
+import ActivityArtifactAttachment from './ActivityArtifactAttachment'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
@@ -335,6 +336,16 @@ function ElementEditForm({
                         values={values}
                         setFieldValue={setFieldValue}
                       />
+                      {values.type === ElementType.Content && !isTemplate ? (
+                        <ActivityArtifactAttachment
+                          elementId={elementId}
+                          disabled={inputsDisabled}
+                          hasStoredArtifact={values.hasActivityArtifact}
+                          currentArtifact={values.currentActivityArtifact}
+                          pendingArtifact={values.pendingActivityArtifact}
+                          setFieldValue={setFieldValue}
+                        />
+                      ) : null}
                       <ElementExplanationField
                         disabled={inputsDisabled}
                         values={values}

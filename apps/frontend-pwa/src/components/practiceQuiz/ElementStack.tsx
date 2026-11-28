@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   type CaseStudyCaseResponse,
-  type ElementStack as ElementStackType,
+  type ElementStack as ElementStackData,
+  ElementStackType,
   ElementType,
   FlashcardCorrectness,
   FlashcardCorrectnessType,
@@ -29,6 +30,7 @@ import {
 } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
+import ActivityArtifactInstance from '../microLearning/ActivityArtifactInstance'
 import Bookmark from './Bookmark'
 import type { EmbedQuizNavigationState } from './embed'
 import InstanceHeader from './InstanceHeader'
@@ -45,7 +47,7 @@ interface ElementStackProps {
   parentId: string
   courseId: string
   embedded?: boolean
-  stack: ElementStackType
+  stack: ElementStackData
   currentStep: number
   totalSteps: number
   setStepStatus?: ({
@@ -685,6 +687,18 @@ function ElementStack({
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
+                    renderActivityArtifact={
+                      stack.type === ElementStackType.Microlearning &&
+                      withParticipant &&
+                      !previewOnly &&
+                      element.checkActivityArtifact
+                        ? (elementInstanceId) => (
+                            <ActivityArtifactInstance
+                              elementInstanceId={elementInstanceId}
+                            />
+                          )
+                        : undefined
+                    }
                     preview={
                       embedded &&
                       (focusedPresentation

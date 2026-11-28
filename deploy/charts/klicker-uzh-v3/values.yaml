@@ -574,6 +574,17 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
+  # Trusted activity artifacts are opt-in. The publisher origin is public and
+  # HTTPS only; the backend reaches the publisher through the cluster service
+  # URL. The service token is supplied separately by the host Secret.
+  activityArtifact:
+    enabled: false
+    publisherOrigin: ''
+    serviceUrl: ''
+    serviceTokenSecret:
+      name: ''
+      key: ACTIVITY_ARTIFACT_SERVICE_TOKEN
+
   knowledgeGraph:
     host: ''
     port: '6379'

@@ -19,6 +19,10 @@ data:
   HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.general.durableSlots | quote }}
   HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.general.healthPort | quote }}
   HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.general.startupTimeoutMs | quote }}
+  {{- if .Values.backendGraphql.activityArtifact.enabled }}
+  ACTIVITY_ARTIFACT_ORIGIN: {{ required "backendGraphql.activityArtifact.publisherOrigin is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.publisherOrigin | quote }}
+  ACTIVITY_ARTIFACT_SERVICE_URL: {{ required "backendGraphql.activityArtifact.serviceUrl is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.serviceUrl | quote }}
+  {{- end }}
   {{- if .Values.hatchet.kbIngestion }}
   {{- if .Values.hatchet.kbIngestion.workerDisabled }}
   KB_INGESTION_WORKER_DISABLED: {{ .Values.hatchet.kbIngestion.workerDisabled | quote }}

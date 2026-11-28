@@ -1651,6 +1651,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       resetAnswers: 'Reset answers',
       markAllAsRead: 'Mark all as read',
       read: 'Read',
+      activityArtifactUnavailable:
+        'This content includes an activity artifact that is currently unavailable.',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       feedbackRequired: 'Please add a text to your feedback.',
       flagElement: 'Report element',
@@ -2433,6 +2435,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Adding new content to knowledge bases is temporarily disabled.',
   },
   manage: {
+    artifacts: {
+      title: 'Activity artifact',
+      unavailable: 'This artifact could not be opened.',
+      resolving: 'Resolving artifact…',
+      accessDenied:
+        'This artifact could not be opened. Sign in with a linked lecturer account and check that the artifact exists.',
+      details: '{title} · revision v{version} · digest {digest}…',
+    },
     assistant: {
       open: 'Assistant',
       title: 'KlickerUZH Assistant',
@@ -2601,6 +2611,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'For some of the elements included in this template, newer versions are available in the library. This happens when you modify an elements without enabling updates in templates.<ul><li>To update outdated versions of elements, re-create the template.</li><li>Alternatively, when modifying the corresponding elements, you can also choose to update the instances included in templates.</li><li>To get a list of all outdated instances, please check out the template information by clicking on the template title in the overview.</li></ul>',
       automaticPublicationAt: 'Automatic publication at {date}',
       availability: 'Availability: {startDate} - {endDate}',
+      publicationDelayed:
+        'Publication is delayed. Return this microlearning to draft, then publish it again once the activity artifact service and feature flag are available.',
       removeActivity: 'Remove Activity',
       confirmActivityRemoval:
         'Please confirm the following consequences of removing the activity <b>{name}</b> from your user account.',
@@ -3721,6 +3733,45 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       scoringDocumentation: 'Scoring documentation',
       questionPlaceholder: 'Enter your question here...',
       contentPlaceholder: 'Enter your content here...',
+      activityArtifact: {
+        attachedTitle: 'Attached artifact',
+        attachTitle: 'Attach artifact',
+        tooltip:
+          'Attach an immutable publisher revision to this content element. Students receive only the trusted renderer.',
+        unavailableTitle: 'Activity artifact unavailable',
+        unavailableNotice:
+          'An artifact is attached to this element, but its controls and details are currently unavailable. The existing attachment will remain unchanged.',
+        usingRevision: 'Using v{version}',
+        latestRevisionAvailable: 'v{version} available',
+        noArtifactAttached:
+          'No artifact attached. The element renders its Markdown content as before.',
+        selectedRevision:
+          'v{version} is selected. Save the element to store it.',
+        linkLabel: 'Artifact link',
+        linkPlaceholder:
+          'https://publisher.example/a/00000000-0000-4000-8000-000000000000',
+        linkHint:
+          'Paste the permanent author link shown beside the saved artifact.',
+        resolving: 'Resolving…',
+        previewLatestRevision: 'Preview latest revision',
+        attachArtifact: 'Attach artifact',
+        previewRevision: 'Preview v{version}',
+        titleVersion: '{title} · v{version}',
+        updateRevision: 'Update to v{version}',
+        attachRevision: 'Attach v{version}',
+        cancel: 'Cancel',
+        keepCurrentPin:
+          'Saving without confirming a revision keeps the current pin.',
+        selectedToast: 'v{version} is selected. Save the element to store it.',
+        errorInvalidLink:
+          'Enter a valid canonical publisher link for an artifact and try again.',
+        errorForbidden:
+          'You do not have permission to open this artifact. Sign in with an account that can access it.',
+        errorUnavailable:
+          'Activity artifacts are temporarily unavailable. Try again later.',
+        errorGeneric:
+          'The artifact could not be resolved. Check that the link is a canonical publisher link for an authorized artifact.',
+      },
       instructionsPlaceholder: 'Enter your instructions here...',
       explanationTooltip:
         'Enter a generic explanation of your question here, which will be displayed to students in practice quizzes and microlearning regardless of their answer as an explanation of the correct solution.',
@@ -5048,7 +5099,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       confirmPublishingMicrolearning:
         'Please confirm that you want to publish the microlearning <b>{name}</b>. This action will make it available to all participants in the following time window:',
       microlearningPublishingHint:
-        'This process can only be undone if the start time is in the future. Changes to the content of contained elements are no longer possible after publishing.',
+        'A scheduled microlearning can be returned to draft until it has been published, including after its start time. Changes to the content of contained elements are no longer possible after publishing.',
+      publishArtifactForbidden:
+        'This activity cannot be published with its attached activity artifact. Check that activity artifacts are enabled for the linked artifact owner and that you may administer this activity, then try again.',
+      publishArtifactInvalid:
+        'The attached activity artifact is invalid or no longer matches this activity. Reattach the intended revision and try again.',
+      publishArtifactUnavailable:
+        'Activity artifacts are temporarily unavailable. Try again later.',
       confirmPublishingGroupActivity:
         'Please confirm that you want to publish the group activity <b>{name}</b>. This action will make it available to all groups in the following time window:',
       groupActivityPublishingHint:

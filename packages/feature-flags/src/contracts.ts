@@ -27,6 +27,12 @@ export const FEATURE_FLAG_DEFAULTS = {
   // Explainer chats per chatbot. Without it the Manage toggle is hidden, saving
   // the setting as enabled is denied, and chat does not offer the tool.
   'interactive-explanations': false,
+  // Admits the activity-artifact pilot: attaching a publisher artifact to a
+  // Content Element in Manage, the canonical author landing page, and the
+  // trusted renderer students receive for published activities. Without it the
+  // attach surface is hidden, every artifact resolution is denied, and student
+  // reads return nothing.
+  'activity-artifacts': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

@@ -1,14 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  HatchetHandlers,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -19,6 +19,13 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import {
+  assertActivityArtifactPinsAccessible,
+  assertActivityArtifactPinsPublishable,
+  assignActivityArtifactPinsForPublication,
+  getActivityArtifactCheckInstanceIds,
+  hasActivityArtifactPin,
+} from './activityArtifacts.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -56,17 +63,65 @@ export async function getMicroLearningData(
     },
   })
 
-  return microLearning
-    ? {
-        ...microLearning,
-        isOwner:
-          ctx.user?.sub &&
-          (ctx.user.role === DB.UserRole.USER ||
-            ctx.user.role === DB.UserRole.ADMIN)
-            ? ctx.user.sub === microLearning.ownerId
-            : false,
-      }
-    : null
+  if (!microLearning) return null
+
+  const now = new Date()
+  const checkInstances = microLearning.stacks.flatMap((stack) =>
+    stack.elements.map((instance) => ({
+      id: instance.id,
+      microLearningId: microLearning.id,
+      elementType: instance.elementType,
+      elementData: instance.elementData,
+    }))
+  )
+  let checkInstanceIds = new Set<number>()
+
+  if (
+    ctx.user?.role === DB.UserRole.PARTICIPANT &&
+    ctx.activityArtifactRuntime &&
+    microLearning.status === DB.PublicationStatus.PUBLISHED &&
+    !microLearning.isDeleted &&
+    microLearning.scheduledStartAt <= now &&
+    microLearning.scheduledEndAt >= now &&
+    hasActivityArtifactPin(checkInstances)
+  ) {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: microLearning.courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      select: { id: true },
+    })
+    if (participation) {
+      checkInstanceIds = await getActivityArtifactCheckInstanceIds(
+        checkInstances,
+        ctx.prisma
+      )
+    }
+  }
+
+  return {
+    ...microLearning,
+    stacks:
+      checkInstanceIds.size > 0
+        ? microLearning.stacks.map((stack) => ({
+            ...stack,
+            elements: stack.elements.map((instance) =>
+              checkInstanceIds.has(instance.id)
+                ? { ...instance, checkActivityArtifact: true }
+                : instance
+            ),
+          }))
+        : microLearning.stacks,
+    isOwner:
+      ctx.user?.sub &&
+      (ctx.user.role === DB.UserRole.USER ||
+        ctx.user.role === DB.UserRole.ADMIN)
+        ? ctx.user.sub === microLearning.ownerId
+        : false,
+  }
 }
 
 export async function getMicroLearningEvaluation(
@@ -404,6 +459,7 @@ export async function manipulateMicroLearning(
       { microLearningId: upsertedMicrolearning.id },
       prisma
     )
+    await assertActivityArtifactPinsAccessible(upsertedMicrolearning.id, prisma)
 
     return upsertedMicrolearning
   }
@@ -476,7 +532,20 @@ export async function publishMicroLearning(
     return null
   }
 
-  if (microLearning.scheduledStartAt > new Date()) {
+  const now = new Date()
+  const schedulePublication = microLearning.scheduledStartAt > now
+  const endPublication = microLearning.scheduledEndAt < now
+
+  if (schedulePublication) {
+    await assertActivityArtifactPinsPublishable(
+      id,
+      ctx.activityArtifactRuntime,
+      ctx.featureFlags,
+      ctx.prisma
+    )
+  }
+
+  if (schedulePublication) {
     // schedule the task to publish the microlearning at the scheduled start date (as well as a completion task)
     try {
       // schedule hatchet task for automated publication
@@ -510,7 +579,7 @@ export async function publishMicroLearning(
       console.error(`Failed to schedule task for microlearning ${id}:`, error)
       return null
     }
-  } else if (microLearning.scheduledEndAt < new Date()) {
+  } else if (endPublication) {
     // if the scheduled end date is in the past, set the status to ended
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
       where: { id },
@@ -520,6 +589,16 @@ export async function publishMicroLearning(
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning
   }
+
+  // Bind pinned revisions before scheduling completion or publishing the
+  // activity. The publisher accepts a same-pin retry after a failed database
+  // update; a different pin fails instead of publishing an unbound instance.
+  await assignActivityArtifactPinsForPublication(
+    id,
+    ctx.activityArtifactRuntime,
+    ctx.featureFlags,
+    ctx.prisma
+  )
 
   // if the start date is in the past, but the end date is in the future, schedule the completion task
   const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
@@ -1004,11 +1083,30 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
         )
       }
 
-      // publish the microlearning
-      await globalCtx.prisma.microLearning.update({
-        where: { id: microLearningId },
+      await assignActivityArtifactPinsForPublication(
+        microLearningId,
+        globalCtx.activityArtifactRuntime,
+        globalCtx.featureFlags,
+        globalCtx.prisma
+      )
+      // Publish only while the row is still scheduled at the start time this
+      // worker observed. A lecturer returning the activity to draft or
+      // rescheduling it concurrently must win over the worker's stale read.
+      const publication = await globalCtx.prisma.microLearning.updateMany({
+        where: {
+          id: microLearningId,
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledStartAt: microLearning.scheduledStartAt,
+        },
         data: { status: DB.PublicationStatus.PUBLISHED },
       })
+
+      if (publication.count === 0) {
+        console.warn(
+          `Microlearning ${microLearningId} is no longer scheduled at the expected start time; skipping publication`
+        )
+        return false
+      }
 
       // send a teams notification
       await sendTeamsNotification({

@@ -706,6 +706,14 @@ frontendControl:
 backendGraphql:
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
+  # Keep artifact traffic off until the publisher service and flag are ready.
+  # The dedicated host Secret is named here so enabling the block is one
+  # values change once the publisher service URL and public origin are known.
+  activityArtifact:
+    enabled: false
+    serviceTokenSecret:
+      name: app-klicker-klicker-uzh-v2-secret-artifact-pilot
+      key: ACTIVITY_ARTIFACT_SERVICE_TOKEN
   podAnnotations:
     rollout.klicker.uzh.ch/release: '047f147261bd'
 

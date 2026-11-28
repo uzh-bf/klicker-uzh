@@ -1,6 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  DisplayMode,
   type BaseElementData,
   type CaseStudyCaseCriterionSolution as CaseStudyCaseCriterionSolutionType,
   type CaseStudyCaseSolution as CaseStudyCaseSolutionType,
@@ -8,6 +7,7 @@ import {
   type CaseStudyCriterionLabels as CaseStudyCriterionLabelsType,
   type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
+  DisplayMode,
   type ElementInstanceOptions as ElementInstanceOptionsType,
   type ElementOptionsAnswerCollectionEntry as ElementOptionsAnswerCollectionEntryType,
   type ElementOptionsAnswerCollection as ElementOptionsAnswerCollectionType,

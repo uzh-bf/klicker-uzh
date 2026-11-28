@@ -1,4 +1,5 @@
 fragment ElementDataWithoutSolutions on ElementInstance {
+  checkActivityArtifact
   elementData {
     ... on ChoicesElementData {
       __typename

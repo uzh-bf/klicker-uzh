@@ -1,0 +1,13 @@
+query PreviewActivityArtifact($url: String!) {
+  previewActivityArtifact(url: $url) {
+    artifactId
+    revisionId
+    digest
+    version
+    title
+    url
+    renderedDigest
+    frameUrl
+    exercise
+  }
+}

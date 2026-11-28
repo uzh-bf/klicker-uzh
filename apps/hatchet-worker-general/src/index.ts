@@ -3,6 +3,7 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
+  createActivityArtifactRuntimeFromEnv,
   handlers,
   settleKbKnowledgeGraphResult,
   sweepKbGraphPreparation,
@@ -98,6 +99,10 @@ async function main() {
 
   logger.info('Connecting to Hatchet...')
 
+  const activityArtifactRuntime = createActivityArtifactRuntimeFromEnv(
+    process.env
+  )
+
   const preparedWorkflows = prepareHatchetTasks({
     hatchet: hatchetClient,
     pubSub,
@@ -105,6 +110,8 @@ async function main() {
     redisExec,
     redisAssessmentExec,
     redisCache,
+    activityArtifactRuntime,
+    featureFlags,
     handlers,
     getKBGraphTerminalResult,
     kbIngestionDispatchEnabled: !integrationState.ingestionDisabled,

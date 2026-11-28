@@ -1,7 +1,11 @@
 import type { FeatureFlagKey } from '@klicker-uzh/feature-flags'
 import type { UserRole } from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
-import type { ContextWithUser, FeatureFlagEvaluator } from './context.js'
+import type {
+  Context,
+  ContextWithUser,
+  FeatureFlagEvaluator,
+} from './context.js'
 
 type FeatureFlagAccessContext = Pick<
   ContextWithUser,
@@ -65,7 +69,7 @@ export interface FeatureFlagAccount {
 // attributes come from the account row, and evaluation fails closed exactly
 // like the session path.
 export function isFeatureFlagEnabledForAccount(
-  featureFlags: FeatureFlagEvaluator | undefined,
+  featureFlags: Pick<FeatureFlagEvaluator, 'isEnabled'> | undefined,
   account: FeatureFlagAccount,
   key: FeatureFlagKey
 ): boolean {
@@ -95,5 +99,29 @@ export async function requireFeatureFlagAccess(
     throw new GraphQLError('Forbidden', {
       extensions: { code: 'FORBIDDEN' },
     })
+  }
+}
+
+// Participant sessions use their own audience attributes. Evaluation remains
+// synchronous because response metadata that depends on the flag must fail
+// closed without introducing an extra database read per element.
+export function isParticipantFeatureFlagEnabled(
+  ctx: Pick<Context, 'featureFlags' | 'user'>,
+  key: FeatureFlagKey
+): boolean {
+  try {
+    if (!ctx.user) return false
+    return (
+      ctx.featureFlags?.isEnabled(key, {
+        id: ctx.user.sub,
+        actorType: 'participant',
+        role: ctx.user.role,
+      }) ?? false
+    )
+  } catch {
+    console.warn(
+      `[feature-flags] Evaluation failed for "${key}"; denying access`
+    )
+    return false
   }
 }

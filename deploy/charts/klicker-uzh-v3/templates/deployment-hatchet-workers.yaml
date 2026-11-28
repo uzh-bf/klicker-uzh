@@ -66,13 +66,22 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 3
-          {{- if .Values.backendGraphql.elementGeneration.enabled }}
+          {{- if or .Values.backendGraphql.elementGeneration.enabled .Values.backendGraphql.activityArtifact.enabled }}
           env:
+            {{- if .Values.backendGraphql.elementGeneration.enabled }}
             - name: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
                   name: {{ include "chart.fullname" . }}-secret-backend-graphql
                   key: KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING
+            {{- end }}
+            {{- if .Values.backendGraphql.activityArtifact.enabled }}
+            - name: ACTIVITY_ARTIFACT_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "backendGraphql.activityArtifact.serviceTokenSecret.name is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.serviceTokenSecret.name | quote }}
+                  key: {{ required "backendGraphql.activityArtifact.serviceTokenSecret.key is required when activity artifacts are enabled" .Values.backendGraphql.activityArtifact.serviceTokenSecret.key | quote }}
+            {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:

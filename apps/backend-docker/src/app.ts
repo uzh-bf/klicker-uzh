@@ -29,6 +29,7 @@ function prepareApp({
   emitter,
   hatchet,
   elementGenerationRuntime,
+  activityArtifactRuntime,
   tasks,
   featureFlags,
 }: any) {
@@ -195,6 +196,7 @@ function prepareApp({
       emitter,
       hatchet,
       elementGenerationRuntime,
+      activityArtifactRuntime,
       tasks,
       featureFlags,
     }),
