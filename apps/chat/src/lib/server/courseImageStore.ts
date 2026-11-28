@@ -6,6 +6,12 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import { COURSE_IMAGE_DIGEST_REGEX } from '@/src/lib/sources/courseImageIdentity'
 import type { CourseImage } from '@/src/lib/sources/courseImages'
 import {
+  isChatMediaS3NotFound,
+  readChatMediaS3Object,
+  resolveChatMediaBackend,
+  resolveChatMediaS3Storage,
+} from './chatMediaStorage'
+import {
   chatMediaWorkloadIdentityEnabled,
   chatMediaWorkloadIdentityStorageConfigured,
   createChatMediaWorkloadIdentityBlobClient,
@@ -27,17 +33,36 @@ function record(value: unknown): Record<string, unknown> | undefined {
 export function courseImageStoreConfigured(
   env: Readonly<Record<string, string | undefined>> = process.env
 ) {
-  if (chatMediaWorkloadIdentityEnabled(env)) {
-    return chatMediaWorkloadIdentityStorageConfigured(
-      env,
-      'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
-      env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
+  try {
+    const backend = resolveChatMediaBackend(env)
+    if (backend === 's3') {
+      return Boolean(resolveChatMediaS3Storage(env, 'course-images'))
+    }
+    if (backend === 'local') return Boolean(env.CHAT_COURSE_IMAGE_STORE_PATH)
+    if (backend === 'azure-blob') {
+      return Boolean(
+        chatMediaWorkloadIdentityStorageConfigured(
+          env,
+          'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
+          env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
+        ) ||
+          (projectionConnectionString(env) && projectionContainer(env))
+      )
+    }
+    if (chatMediaWorkloadIdentityEnabled(env)) {
+      return chatMediaWorkloadIdentityStorageConfigured(
+        env,
+        'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
+        env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
+      )
+    }
+    return Boolean(
+      env.CHAT_COURSE_IMAGE_STORE_PATH ||
+        (projectionConnectionString(env) && projectionContainer(env))
     )
+  } catch {
+    return false
   }
-  return Boolean(
-    env.CHAT_COURSE_IMAGE_STORE_PATH ||
-      (projectionConnectionString(env) && projectionContainer(env))
-  )
 }
 
 function projectionConnectionString(
@@ -73,12 +98,29 @@ export async function readCourseImage(
   image: CourseImage,
   root = process.env.CHAT_COURSE_IMAGE_STORE_PATH
 ): Promise<Buffer> {
-  const workloadIdentity = resolveChatMediaWorkloadIdentityStorage(
-    process.env,
-    'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
-    process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
-  )
-  const base = !workloadIdentity && root ? await realpath(root) : undefined
+  const backend = resolveChatMediaBackend()
+  const s3 = resolveChatMediaS3Storage(process.env, 'course-images')
+  const workloadIdentity =
+    backend === 'azure-blob' || backend === 'legacy'
+      ? resolveChatMediaWorkloadIdentityStorage(
+          process.env,
+          'COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME',
+          process.env.COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER
+        )
+      : undefined
+  const useLocal =
+    backend === 'local' ||
+    (backend === 'legacy' && !workloadIdentity && Boolean(root))
+  const useAzure =
+    backend === 'azure-blob' ||
+    (backend === 'legacy' && (Boolean(workloadIdentity) || !root))
+  if (backend === 'local' && !root)
+    throw new Error('Course image storage unavailable')
+  if (backend === 's3' && !s3)
+    throw new Error('Course image storage unavailable')
+  if (useAzure && !workloadIdentity && !projectionConnectionString())
+    throw new Error('Course image storage unavailable')
+  const base = useLocal && root ? await realpath(root) : undefined
   let generation: (typeof PROJECTION_GENERATIONS)[number] =
     PROJECTION_GENERATIONS[0]
   async function object(
@@ -90,7 +132,17 @@ export async function readCourseImage(
     if (!COURSE_IMAGE_DIGEST_REGEX.test(hash))
       throw new Error('Invalid image reference')
     let bytes: Buffer
-    if (base) {
+    if (s3) {
+      const key = [
+        (
+          process.env.COURSE_IMAGE_PROJECTION_STORAGE_PREFIX ?? 'projection'
+        ).replace(/^\/+|\/+$/g, ''),
+        projectionObjectPath(kind, hash, extension, generation),
+      ]
+        .filter(Boolean)
+        .join('/')
+      bytes = await readChatMediaS3Object(s3, key, limit)
+    } else if (base) {
       const filename = await realpath(
         path.join(base, projectionObjectPath(kind, hash, extension, generation))
       )
@@ -106,7 +158,7 @@ export async function readCourseImage(
       } finally {
         await file.close()
       }
-    } else {
+    } else if (useAzure) {
       const container = workloadIdentity?.container ?? projectionContainer()
       let blobServiceClient: BlobServiceClient
       if (workloadIdentity) {
@@ -146,6 +198,8 @@ export async function readCourseImage(
       bytes = await client.downloadToBuffer(0, contentLength, {
         conditions: { ifMatch: etag },
       })
+    } else {
+      throw new Error('Course image storage unavailable')
     }
     if (
       bytes.length > limit ||
@@ -169,7 +223,8 @@ export async function readCourseImage(
       const missing =
         error instanceof Error &&
         (('code' in error && error.code === 'ENOENT') ||
-          ('statusCode' in error && error.statusCode === 404))
+          ('statusCode' in error && error.statusCode === 404) ||
+          isChatMediaS3NotFound(error))
       if (!missing) throw error
     }
   }

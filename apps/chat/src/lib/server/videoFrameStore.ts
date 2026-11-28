@@ -6,6 +6,11 @@ import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { z } from 'zod'
 import type { VideoFrame } from '@/src/lib/sources/videoFrames'
 import {
+  readChatMediaS3Object,
+  resolveChatMediaBackend,
+  resolveChatMediaS3Storage,
+} from './chatMediaStorage'
+import {
   chatMediaWorkloadIdentityEnabled,
   chatMediaWorkloadIdentityStorageConfigured,
   createChatMediaWorkloadIdentityBlobClient,
@@ -84,6 +89,10 @@ async function readVerifiedManifest(
 ): Promise<Manifest> {
   let cache: Map<string, CachedManifest> | undefined
   const key = JSON.stringify([
+    process.env.CHAT_MEDIA_BACKEND,
+    process.env.CHAT_MEDIA_S3_ENDPOINT,
+    process.env.CHAT_MEDIA_S3_REGION,
+    process.env.CHAT_MEDIA_S3_VIDEO_FRAMES_BUCKET,
     process.env.BLOB_STORAGE_ACCOUNT_NAME,
     process.env.BLOB_STORAGE_ACCOUNT_URL,
     process.env.CHAT_VIDEO_BLOB_CONTAINER,
@@ -125,6 +134,15 @@ type VideoFrameStoreEnvironment = Partial<
     | 'CHAT_VIDEO_FRAME_STORE_PATH'
     | 'CHAT_VIDEO_BLOB_CONTAINER'
     | 'CHAT_MEDIA_WORKLOAD_IDENTITY_ENABLED'
+    | 'CHAT_MEDIA_BACKEND'
+    | 'CHAT_MEDIA_S3_ACCESS_KEY_ID'
+    | 'CHAT_MEDIA_S3_COURSE_IMAGES_BUCKET'
+    | 'CHAT_MEDIA_S3_ENDPOINT'
+    | 'CHAT_MEDIA_S3_FORCE_PATH_STYLE'
+    | 'CHAT_MEDIA_S3_REGION'
+    | 'CHAT_MEDIA_S3_SECRET_ACCESS_KEY'
+    | 'CHAT_MEDIA_S3_SESSION_TOKEN'
+    | 'CHAT_MEDIA_S3_VIDEO_FRAMES_BUCKET'
     | 'BLOB_STORAGE_ACCOUNT_NAME'
     | 'BLOB_STORAGE_ACCESS_KEY'
   >
@@ -133,19 +151,40 @@ type VideoFrameStoreEnvironment = Partial<
 export function videoFrameStoreConfigured(
   env: VideoFrameStoreEnvironment = process.env as VideoFrameStoreEnvironment
 ) {
-  if (chatMediaWorkloadIdentityEnabled(env)) {
-    return chatMediaWorkloadIdentityStorageConfigured(
-      env,
-      'BLOB_STORAGE_ACCOUNT_NAME',
-      env.CHAT_VIDEO_BLOB_CONTAINER
+  try {
+    const backend = resolveChatMediaBackend(env)
+    if (backend === 's3') {
+      return Boolean(resolveChatMediaS3Storage(env, 'video-frames'))
+    }
+    if (backend === 'local') return Boolean(env.CHAT_VIDEO_FRAME_STORE_PATH)
+    if (backend === 'azure-blob') {
+      return Boolean(
+        chatMediaWorkloadIdentityStorageConfigured(
+          env,
+          'BLOB_STORAGE_ACCOUNT_NAME',
+          env.CHAT_VIDEO_BLOB_CONTAINER
+        ) ||
+          (env.CHAT_VIDEO_BLOB_CONTAINER &&
+            env.BLOB_STORAGE_ACCOUNT_NAME &&
+            env.BLOB_STORAGE_ACCESS_KEY)
+      )
+    }
+    if (chatMediaWorkloadIdentityEnabled(env)) {
+      return chatMediaWorkloadIdentityStorageConfigured(
+        env,
+        'BLOB_STORAGE_ACCOUNT_NAME',
+        env.CHAT_VIDEO_BLOB_CONTAINER
+      )
+    }
+    return Boolean(
+      env.CHAT_VIDEO_FRAME_STORE_PATH ||
+        (env.CHAT_VIDEO_BLOB_CONTAINER &&
+          env.BLOB_STORAGE_ACCOUNT_NAME &&
+          env.BLOB_STORAGE_ACCESS_KEY)
     )
+  } catch {
+    return false
   }
-  return Boolean(
-    env.CHAT_VIDEO_FRAME_STORE_PATH ||
-      (env.CHAT_VIDEO_BLOB_CONTAINER &&
-        env.BLOB_STORAGE_ACCOUNT_NAME &&
-        env.BLOB_STORAGE_ACCESS_KEY)
-  )
 }
 
 function assertInside(base: string, candidate: string) {
@@ -227,6 +266,12 @@ async function readBlobObject(key: string, limit: number) {
   return Buffer.concat(chunks, size)
 }
 
+async function readS3FrameObject(key: string, limit: number) {
+  const storage = resolveChatMediaS3Storage(process.env, 'video-frames')
+  if (!storage) throw new Error('Video frame storage unavailable')
+  return readChatMediaS3Object(storage, key, limit)
+}
+
 async function readObject(
   root: string | undefined,
   kind: 'manifests' | 'frames',
@@ -253,10 +298,21 @@ export async function readVideoFrame(
   root = process.env.CHAT_VIDEO_FRAME_STORE_PATH,
   blobReader = readBlobObject
 ): Promise<Buffer> {
-  const effectiveRoot = chatMediaWorkloadIdentityEnabled(process.env)
-    ? undefined
-    : root
-  const manifest = await readVerifiedManifest(frame, effectiveRoot, blobReader)
+  const backend = resolveChatMediaBackend()
+  const s3 = resolveChatMediaS3Storage(process.env, 'video-frames')
+  if (backend === 'local' && !root)
+    throw new Error('Video frame storage unavailable')
+  const effectiveRoot =
+    backend === 'local' ||
+    (backend === 'legacy' && !chatMediaWorkloadIdentityEnabled(process.env))
+      ? root
+      : undefined
+  const effectiveBlobReader = s3 ? readS3FrameObject : blobReader
+  const manifest = await readVerifiedManifest(
+    frame,
+    effectiveRoot,
+    effectiveBlobReader
+  )
   if (
     manifest.schema_version !== 'video_frame_assets.v1' ||
     manifest.source_video_sha256 !== frame.source_video_sha256
@@ -282,7 +338,7 @@ export async function readVideoFrame(
     frame.frame_sha256,
     'jpg',
     MAX_FRAME_BYTES,
-    blobReader
+    effectiveBlobReader
   )
   if (!bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])))
     throw new Error('Invalid JPEG')

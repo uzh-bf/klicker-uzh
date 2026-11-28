@@ -239,6 +239,23 @@ chat:
   mcp:
     key: ''
 
+  mediaStorage:
+    # Deployment-owned backend selection. Azure Blob retains the existing
+    # image and frame configuration below; S3 requires the endpoint and
+    # separate bucket configuration under `s3`.
+    backend: azure-blob
+    s3:
+      endpoint: ''
+      region: us-east-1
+      forcePathStyle: true
+      existingSecret: ''
+      accessKeyIdKey: CHAT_MEDIA_S3_ACCESS_KEY_ID
+      secretAccessKeyKey: CHAT_MEDIA_S3_SECRET_ACCESS_KEY
+      sessionTokenKey: ''
+      courseImagesBucket: ''
+      videoFramesBucket: ''
+      courseImagesPrefix: projection
+
   mediaWorkloadIdentity:
     enabled: false
     # The infrastructure stack owns the ServiceAccount and same-named storage ConfigMap.
