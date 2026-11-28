@@ -8,10 +8,8 @@ on:
     branches:
       - v3
       - v3-ai
-      - v3-audit
       - v3-adaptive-learning
       - 'sync/v3-into-v3-ai-*'
-      - 'sync/v3-ai-into-v3-audit-*'
       - 'sync/v3-ai-into-v3-adaptive-learning-*'
   workflow_dispatch:
     inputs:

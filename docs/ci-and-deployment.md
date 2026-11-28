@@ -55,8 +55,9 @@ and cached-token accounting.
 ## Draft sync PR maintenance
 
 `maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
-`v3-ai`, `v3-ai` -> `v3-audit`, and `v3-ai` -> `v3-adaptive-learning`. Each
-sync PR's head is a bot-owned branch,
+`v3-ai` and `v3-ai` -> `v3-adaptive-learning`. `v3-audit` is retired as a sync
+target; its content is re-landed in `v3-ai` through `v3-audit-merge` pull
+requests. Each sync PR's head is a bot-owned branch,
 `sync/<source>-into-<target>-<sha10>`, never the long-lived source branch. The
 suffix is the source SHA the PR started from, so every new sync PR gets a fresh
 branch. Branches that merely resemble this prefix without the hexadecimal SHA
@@ -132,7 +133,7 @@ Resolve conflicts directly on the sync branch.
 The controller runs from `v3` after Check codebase completes for a push to any
 configured source or target branch, or for a same-repository PR on a maintained
 sync branch, regardless of the check result. Completion is a wakeup,
-not a merge-readiness signal. All three pairs are reconciled against current refs on
+not a merge-readiness signal. Both pairs are reconciled against current refs on
 every run; delayed or coalesced events do not replay old heads. The workflow
 checks out its own trusted workflow SHA, including `.versionrc.js` for categories,
 never the triggering branch or its artifacts. Invalid or missing category config

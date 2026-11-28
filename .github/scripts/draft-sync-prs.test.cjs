@@ -227,14 +227,13 @@ function fixture({
   }
 }
 
-test('creates only the three forward pairs as drafts and preserves ready PRs on rerun', async () => {
+test('creates only the two forward pairs as drafts and preserves ready PRs on rerun', async () => {
   const state = fixture()
   const first = await maintainDraftSyncPrs({ ...state, context, dryRun: false })
   assert.deepEqual(
     first.map(({ head, base }) => [head, base]),
     [
       ['v3', 'v3-ai'],
-      ['v3-ai', 'v3-audit'],
       ['v3-ai', 'v3-adaptive-learning'],
     ]
   )
@@ -244,7 +243,6 @@ test('creates only the three forward pairs as drafts and preserves ready PRs on 
     state.creates.map(({ head }) => head),
     [
       'sync/v3-into-v3-ai-aaaaaaaaaa',
-      'sync/v3-ai-into-v3-audit-bbbbbbbbbb',
       'sync/v3-ai-into-v3-adaptive-learning-bbbbbbbbbb',
     ]
   )
@@ -256,8 +254,8 @@ test('creates only the three forward pairs as drafts and preserves ready PRs on 
     dryRun: false,
   })
   assert.ok(second.every(({ action }) => action === 'existing'))
-  assert.equal(state.creates.length, 3)
-  assert.equal(state.comparisons.length, 3)
+  assert.equal(state.creates.length, 2)
+  assert.equal(state.comparisons.length, 2)
   assert.equal(state.prs[0].draft, false)
   assert.equal(state.updates.length, 0)
   assert.equal(state.closes, 2)
@@ -270,11 +268,7 @@ test('default preview reads live comparisons without writing', async () => {
   assert.equal(state.creates.length, 0)
   assert.deepEqual(
     state.comparisons.map(({ basehead }) => basehead),
-    [
-      `v3-ai...${sourceTip}`,
-      `v3-audit...${integrationTip}`,
-      `v3-adaptive-learning...${integrationTip}`,
-    ]
+    [`v3-ai...${sourceTip}`, `v3-adaptive-learning...${integrationTip}`]
   )
   assert.equal(state.refWrites.length, 0)
 })
@@ -297,7 +291,7 @@ test('advances an open sync head without ever writing the source branch', async 
     })
     assert.ok(results.every(({ action }) => action === expected))
     assert.deepEqual(
-      state.descriptions.slice(-3).map(({ headSha }) => headSha),
+      state.descriptions.slice(-2).map(({ headSha }) => headSha),
       state.prs.map(({ head }) => state.refs.get(head.ref))
     )
     const written = [
@@ -367,7 +361,7 @@ test('regenerates controller-owned bodies and the synchronize bounce makes no fu
   assert.equal(state.updates.length, 0)
   assert.equal(state.refWrites.length, 0)
   assert.equal(state.merges.length, 0)
-  assert.equal(state.creates.length, 3)
+  assert.equal(state.creates.length, 2)
 })
 
 test('uses stable canonical refs when PR revision metadata lags an advanced head or target', async () => {
@@ -522,7 +516,7 @@ test('revalidates new-PR snapshots and refreshes duplicate-create candidates', a
     dryRun: false,
   })
   assert.ok(results.every(({ description }) => description === 'updated'))
-  assert.equal(raced.updates.length, 3)
+  assert.equal(raced.updates.length, 2)
   assert.deepEqual(
     raced.prs.map(({ body }) => JSON.parse(body).headSha),
     raced.prs.map(({ head }) => raced.refs.get(head.ref))
@@ -564,7 +558,7 @@ test('description failures preserve branch reconciliation and other pairs withou
   })
   assert.equal(results[0].action, 'description-error')
   assert.ok(fresh.creates.every(({ base }) => base !== 'v3-ai'))
-  assert.equal(fresh.creates.length, 2)
+  assert.equal(fresh.creates.length, 1)
 })
 
 test('existing-PR previews describe the actual head and perform no writes', async () => {
@@ -586,7 +580,7 @@ test('leaves pull requests headed by the source branch itself untouched', async 
   state.prs.push({
     number: 99,
     head: { ref: 'v3-ai', repo: { full_name: repository } },
-    base: { ref: 'v3-audit', repo: { full_name: repository } },
+    base: { ref: 'v3-adaptive-learning', repo: { full_name: repository } },
   })
   const results = await maintainDraftSyncPrs({
     ...state,
@@ -595,20 +589,14 @@ test('leaves pull requests headed by the source branch itself untouched', async 
   })
   assert.deepEqual(results[1], {
     head: 'v3-ai',
-    base: 'v3-audit',
+    base: 'v3-adaptive-learning',
     branch: 'v3-ai',
     action: 'legacy',
     number: 99,
   })
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    [
-      syncBranch({ head: 'v3', base: 'v3-ai' }, sourceTip),
-      syncBranch(
-        { head: 'v3-ai', base: 'v3-adaptive-learning' },
-        integrationTip
-      ),
-    ]
+    [syncBranch({ head: 'v3', base: 'v3-ai' }, sourceTip)]
   )
 })
 
@@ -624,10 +612,7 @@ test('never overwrites a leftover sync branch at another commit', async () => {
   assert.equal(state.refs.get('sync/v3-into-v3-ai-aaaaaaaaaa'), 'someone-else')
   assert.deepEqual(
     state.creates.map(({ head }) => head),
-    [
-      'sync/v3-ai-into-v3-audit-bbbbbbbbbb',
-      'sync/v3-ai-into-v3-adaptive-learning-bbbbbbbbbb',
-    ]
+    ['sync/v3-ai-into-v3-adaptive-learning-bbbbbbbbbb']
   )
 })
 
@@ -688,7 +673,7 @@ test('ignores same-named fork PRs and lookalike human branches', async () => {
   }
   state.prs.push(human)
   await maintainDraftSyncPrs({ ...state, context, dryRun: false })
-  assert.equal(state.creates.length, 3)
+  assert.equal(state.creates.length, 2)
   assert.deepEqual(JSON.parse(human.body), { manual: true })
   assert.ok(state.refWrites.every(({ name }) => name !== human.head.ref))
   assert.ok(state.merges.every(({ base }) => base !== human.head.ref))
@@ -704,10 +689,8 @@ test('only trusted branch push and maintained sync PR completions can write', as
     true
   )
   for (const [event, head_branch] of [
-    ['push', 'v3-audit'],
     ['push', 'v3-adaptive-learning'],
     ['pull_request', 'sync/v3-into-v3-ai-0123456789'],
-    ['pull_request', 'sync/v3-ai-into-v3-audit-0123456789'],
     ['pull_request', 'sync/v3-ai-into-v3-adaptive-learning-0123456789'],
   ]) {
     assert.equal(
@@ -757,9 +740,15 @@ test('only trusted branch push and maintained sync PR completions can write', as
     ...[
       { event: 'pull_request' },
       { head_branch: 'v3-new' },
+      // v3-audit is no longer a sync target.
+      { head_branch: 'v3-audit' },
       {
         event: 'pull_request',
-        head_branch: 'sync/v3-ai-into-v3-audit-invalid',
+        head_branch: 'sync/v3-ai-into-v3-audit-0123456789',
+      },
+      {
+        event: 'pull_request',
+        head_branch: 'sync/v3-ai-into-v3-adaptive-learning-invalid',
       },
       {
         event: 'pull_request_target',
@@ -838,11 +827,11 @@ test('workflow entrypoint creates drafts on automatic runs and previews manual d
     `return (${step.env.DRY_RUN.slice(3, -2)})`
   )
   for (const [eventName, input, expectedCreates, scenario] of [
-    ['workflow_run', undefined, 3],
+    ['workflow_run', undefined, 2],
     ['workflow_dispatch', true, 0],
-    ['workflow_dispatch', false, 3],
-    ['workflow_run', undefined, 2, 'analysis-failure'],
-    ['workflow_run', undefined, 2, 'target-moved'],
+    ['workflow_dispatch', false, 2],
+    ['workflow_run', undefined, 1, 'analysis-failure'],
+    ['workflow_run', undefined, 1, 'target-moved'],
   ]) {
     const state = fixture()
     const failures = []
