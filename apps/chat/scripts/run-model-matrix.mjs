@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs'
 import { appendFile, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { historyTextFromParts } from '../src/lib/feedback.ts'
+import { historyTextFromParts } from '../src/lib/feedbackProjection.ts'
 import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
   evaluationError,
