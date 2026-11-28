@@ -54,18 +54,18 @@ const receiptSources = createProofReceiptSources({
   environment: 'prd',
   collection: 'klicker_course_materials_v1',
   passedCounts:
-    '{kbExpected:15,kbPassed:15,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:15,excludedExpected:2,positivePassed:15,isolationPassed:15,rejectionsPassed:7,directCallsAttempted:37}',
+    '{kbExpected:15,kbPassed:15,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:15,excludedExpected:2,positivePassed:15,isolationPassed:15,directCallsAttempted:30}',
   failedCounts:
-    '{kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0}',
+    '{kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,directCallsAttempted:0}',
   proofMode: 'full',
 })
 const canaryReceiptSources = createProofReceiptSources({
   environment: 'prd',
   collection: 'klicker_course_materials_v1',
   passedCounts:
-    '{kbExpected:15,kbPassed:1,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:1,excludedExpected:2,positivePassed:1,isolationPassed:1,rejectionsPassed:7,directCallsAttempted:9}',
+    '{kbExpected:15,kbPassed:1,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:1,excludedExpected:2,positivePassed:1,isolationPassed:1,directCallsAttempted:2}',
   failedCounts:
-    '{kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0}',
+    '{kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,directCallsAttempted:0}',
   proofMode: 'canary-only',
 })
 const proofRegistry = createTemporaryDirectoryRegistry()
@@ -113,18 +113,18 @@ describe('PRD Doc Query proof transport', () => {
       }
     }
 
-    const headers = { authorization: 'Bearer dummy-transport-token' }
+    const mintScopeToken = async () => 'scope'
     createMcpTransport(
-      headers,
+      mintScopeToken,
       RecordingTransport as unknown as Parameters<typeof createMcpTransport>[1]
     )
 
     expect(capturedOptions).toMatchObject({
-      requestInit: { headers, redirect: 'error' },
+      requestInit: { redirect: 'error' },
       reconnectionOptions: { maxRetries: 0 },
     })
     expect(capturedUrl?.toString()).toBe(
-      'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+      'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
     )
     expect(capturedOptions.fetch).toBeTypeOf('function')
   })
@@ -146,19 +146,31 @@ describe('PRD Doc Query proof transport', () => {
           capturedOptions = options
         }
       }
+      let minted = 0
       createMcpTransport(
-        { authorization: 'Bearer dummy-transport-token' },
+        async () => String(++minted),
         RecordingTransport as unknown as Parameters<
           typeof createMcpTransport
         >[1]
       )
-      await capturedOptions.fetch?.('https://example.test/mcp', {
-        method: 'GET',
-      })
-      expect(capturedInit).toMatchObject({
-        method: 'GET',
-        redirect: 'error',
-      })
+      const target =
+        'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
+      for (const sequence of [1, 2]) {
+        await capturedOptions.fetch?.(target, {
+          method: 'GET',
+          headers: { Authorization: 'unused' },
+        })
+        expect(capturedInit?.redirect).toBe('error')
+        const headers = new Headers(capturedInit?.headers)
+        expect(headers.has('authorization')).toBe(false)
+        expect(headers.get('X-Doc-Query-Scope-Token')).toBe(
+          `Bearer ${sequence}`
+        )
+      }
+      await expect(
+        capturedOptions.fetch?.('https://example.test/mcp')
+      ).rejects.toThrow()
+      expect(minted).toBe(2)
     } finally {
       globalThis.fetch = originalFetch
     }
@@ -177,12 +189,9 @@ describe('PRD Doc Query proof matrix', () => {
     const receipt = await runProofMatrix({
       manifest: validated,
       environment,
-      invoke: async ({ question, override }) => {
+      invoke: async ({ question }) => {
         call += 1
         questions.add(question)
-        if ((call >= 3 && call <= 8) || override) {
-          return override ? rejected('invalid arguments') : rejected()
-        }
         const positive = question.startsWith('positive')
         return {
           content: [
@@ -194,10 +203,15 @@ describe('PRD Doc Query proof matrix', () => {
                 sources: [
                   positive
                     ? {
+                        kb_id: validated.cases[0].kbId,
                         reference: 'safe-positive-reference',
                         chunks: [{ content: 'positive-marker-1' }],
                       }
-                    : { reference: 'safe-foreign-reference', chunks: [] },
+                    : {
+                        kb_id: validated.cases[0].kbId,
+                        reference: 'safe-foreign-reference',
+                        chunks: [],
+                      },
                 ],
               }),
             },
@@ -206,7 +220,7 @@ describe('PRD Doc Query proof matrix', () => {
       },
     })
 
-    expect(call).toBe(9)
+    expect(call).toBe(2)
     expect([...questions].sort()).toEqual([
       'foreign fixture 1',
       'positive fixture 1',
@@ -224,44 +238,9 @@ describe('PRD Doc Query proof matrix', () => {
         excludedExpected: 2,
         positivePassed: 1,
         isolationPassed: 1,
-        rejectionsPassed: 7,
-        directCallsAttempted: 9,
+        directCallsAttempted: 2,
       },
     })
-  })
-
-  test('does not accept an unrelated tool error as an auth rejection', async () => {
-    const validated = validateTestManifest(manifest())
-    const environment = await proofDummyEnvironmentWithPin()
-    let call = 0
-    const receipt = await runProofMatrix({
-      manifest: validated,
-      environment,
-      invoke: async ({ question }: { question: string }) => {
-        call += 1
-        if (call === 3) return rejected('backend unavailable')
-        const positive = question.startsWith('positive')
-        const marker = question.replace(
-          positive ? 'positive fixture ' : 'foreign fixture ',
-          positive ? 'positive-marker-' : 'safe-marker-'
-        )
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                mode: 'documents',
-                summary: { sources_returned: 1, chunks_returned: 1 },
-                sources: [{ reference: marker, chunks: [] }],
-              }),
-            },
-          ],
-        }
-      },
-    })
-    expect(receipt.failureClass).toBe('rejection_failed')
-    expect(receipt.failedRejectionClass).toBe('missing')
-    expect(call).toBe(3)
   })
 
   test('classifies signer setup failures without serializing their value', async () => {
@@ -296,7 +275,8 @@ describe('PRD Doc Query proof matrix', () => {
         }
         return 'synthetic-scope-token'
       },
-      invoke: async () => {
+      invoke: async ({ mintScopeToken }) => {
+        await mintScopeToken()
         throw new Error(sensitiveValue)
       },
     })
@@ -319,8 +299,7 @@ defineProofMatrixSuite(
     manifest,
     environment: proofDummyEnvironmentWithPin,
     rejection: rejected,
-    rejectionWithArguments: () => rejected('invalid arguments'),
-    expectedDirectCalls: 37,
+    expectedDirectCalls: 30,
     expectedMode: 'full',
     expectedCounts: {
       kbPassed: 15,
@@ -329,8 +308,7 @@ defineProofMatrixSuite(
       representativeChatbotsPassed: 15,
       positivePassed: 15,
       isolationPassed: 15,
-      rejectionsPassed: 7,
-      directCallsAttempted: 37,
+      directCallsAttempted: 30,
     },
   }
 )
@@ -402,7 +380,7 @@ describe('PRD Doc Query proof supervisor', () => {
       mode: 'canary-only',
       result: 'passed',
       failureClass: 'none',
-      counts: { kbPassed: 1, directCallsAttempted: 9 },
+      counts: { kbPassed: 1, directCallsAttempted: 2 },
     })
   })
 
@@ -413,11 +391,11 @@ describe('PRD Doc Query proof supervisor', () => {
       'full',
     ],
     [
-      'canary counters outside the nine-call contract',
+      'canary counters outside the two-call contract',
       () =>
         canaryReceiptSources
           .passedReceiptSource()
-          .replace('directCallsAttempted:9', 'directCallsAttempted:10'),
+          .replace('directCallsAttempted:2', 'directCallsAttempted:10'),
       'canary-only',
     ],
   ])('rejects %s', async (_name, source, selectedMode) => {
@@ -446,7 +424,7 @@ describe('PRD Doc Query proof supervisor', () => {
     const child = new EventEmitter() as EventEmitter & { pid: number }
     child.pid = 12345
     const failedReceipt = {
-      receiptVersion: 1,
+      receiptVersion: 2,
       environment: 'prd',
       collection: 'klicker_course_materials_v1',
       mode: 'full',
@@ -455,7 +433,6 @@ describe('PRD Doc Query proof supervisor', () => {
       failureClass: 'canary_positive_failed',
       diagnosticClass: 'none',
       failedCaseId: 'corpus_1',
-      failedRejectionClass: null,
       counts: {
         kbExpected: 15,
         kbPassed: 0,
@@ -465,17 +442,7 @@ describe('PRD Doc Query proof supervisor', () => {
         excludedExpected: 2,
         positivePassed: 0,
         isolationPassed: 0,
-        rejectionsPassed: 0,
         directCallsAttempted: 0,
-      },
-      rejections: {
-        missing: 'not_run',
-        expired: 'not_run',
-        forged: 'not_run',
-        wrong_issuer: 'not_run',
-        wrong_audience: 'not_run',
-        unknown_key: 'not_run',
-        trusted_filter_override: 'not_run',
       },
       preservation: {
         databaseWrites: 0,

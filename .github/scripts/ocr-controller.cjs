@@ -19,6 +19,7 @@ const ASSETS = [
   '.github/scripts/ocr-runtime-config.cjs',
   '.github/scripts/install-patched-ocr.cjs',
   '.github/open-code-review/ocr-compression.patch',
+  '.github/open-code-review/ocr-second-pass.patch',
   SKILL,
 ]
 const SHA = /^[a-f0-9]{40}$/
@@ -83,6 +84,11 @@ function verifyRelease(root = ROOT) {
     manifest.draft.publisher.revision !==
       '1672852136fc87748249d22bce0819f33419ea79' ||
     manifest.draft.publisher.sha256 !== runner.PUBLISHER_SHA256 ||
+    manifest.draft.source !== installer.SOURCE_COMMIT ||
+    manifest.draft.archive_sha256 !== installer.SOURCE_SHA256 ||
+    manifest.draft.go !== installer.GO_VERSION ||
+    manifest.draft.patch_sha256 !==
+      manifest.assets['.github/open-code-review/ocr-second-pass.patch'] ||
     manifest.final.source !== installer.SOURCE_COMMIT ||
     manifest.final.archive_sha256 !== installer.SOURCE_SHA256 ||
     manifest.final.go !== installer.GO_VERSION ||

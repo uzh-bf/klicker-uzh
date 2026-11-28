@@ -59,6 +59,12 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" prepare
 
+    - name: Set up pinned draft OCR build toolchain
+      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      with:
+        go-version: '1.26.9'
+        cache: false
+
     - name: Install pinned OpenCodeReview CLI
       shell: bash
       env:
@@ -66,11 +72,12 @@ runs:
         OCR_ACTION_REF: ${{ github.action_ref }}
         OCR_ACTION_REPOSITORY: ${{ github.action_repository }}
         OCR_NO_UPDATE: '1'
-        OCR_PACKAGE: ${{ steps.release.outputs.package }}
       run: |
         set -euo pipefail
-        npm install -g "${OCR_PACKAGE}"
-        ocr version
+        draft_bin="${RUNNER_TEMP}/ocr-draft-bin"
+        node "${OCR_ACTION_PATH}/../../scripts/install-patched-ocr.cjs" draft "${draft_bin}"
+        echo "${draft_bin}" >> "${GITHUB_PATH}"
+        export PATH="${draft_bin}:${PATH}"
         node "${OCR_ACTION_PATH}/../../scripts/ocr-controller.cjs" verify-install
 
     - name: Run bounded draft review
