@@ -1,4 +1,311 @@
 export default {
+  dpoDraft: {
+    participant: {
+      connectedTitle: 'SWITCH edu-ID connected',
+      connectedEmail: 'student-0042@example.invalid',
+      eduid: {
+        title: 'Create an account with SWITCH edu-ID',
+        context:
+          'Planned extension: ordinary account creation through SWITCH edu-ID, without assessment mode. The sign-in route alone does not make activities grade-relevant. Research is allowed by default; Learning Analytics requires an explicit choice.',
+        connectedHelp:
+          'You do not need an additional password. This example has the username lernende_0042 assigned.',
+        collection:
+          'We store the identity details transmitted by SWITCH edu-ID for your account as well as data from your courses and activities, such as groups, answers, their evaluation, points and feedback. Your points and personal statistics remain available independently of joining a leaderboard. Your leaderboard information becomes visible to other participants only when you join.',
+        submit: 'Create account',
+        result: 'The account is created.',
+      },
+      assessment: {
+        title: 'Activate access to the assessment',
+        context:
+          "Review question: Is the same text sufficient for assessment accounts if the assessment's purpose, identity, access and retention are explained as well? Access remains locked until the choices are complete.",
+        accessTitle: 'Your access',
+        connectedHelp: 'You do not need a password or any further input.',
+        collection:
+          'We store the identity details transmitted by SWITCH edu-ID as well as answers, their evaluation, points and technical log data required to conduct, evaluate and document the assessment. This storage does not depend on joining a leaderboard.',
+        visibility:
+          'Authorised assessment staff see your identity details, answers, corrections and results to the extent required for the assessment. Other participants do not see these details. Learning Analytics shows lecturers only aggregated group values.',
+        purpose:
+          'We use your data to operate your account and to conduct, evaluate and document activities relevant to the assessment or grades. Research and Learning Analytics follow your choice on this page. This choice does not affect points, grades or access to the assessment.',
+        retention:
+          'Your assessment account and assessment data are stored for conducting, correcting and documenting the assessment and during applicable objection and retention periods. During this time, deletion may be restricted or refused. Afterwards, the data are deleted or changed so that they can no longer be associated with a person.',
+        submit: 'Activate access',
+        result: 'Assessment access is activated.',
+      },
+      gate: {
+        title: 'Before you continue',
+        context:
+          'This page adds missing choices and records confirmation of the current privacy policy and terms of service. Saved choices remain unchanged. This applies to ordinary login and edu-ID, including assessment mode.',
+        scenarioLabel: 'Example state',
+        scenarios: {
+          legacy: 'Legacy account without choices',
+          saved: 'Choices present: research objected, LA no',
+        },
+        intro: 'Please review the choices for your account',
+        username: 'lernende_0042',
+        destination:
+          'for research and Learning Analytics and confirm the current privacy policy and terms of service. You then return directly to Chat · Benibot.',
+        submit: 'Save and continue',
+        result: 'Returning to Chat · Benibot.',
+      },
+      settings: {
+        title: 'Settings',
+        context:
+          'Both choices remain changeable. Each change writes a log entry.',
+        dataHeading: 'Your data',
+        researchTitle: 'Data for research',
+        researchMarker: 'Research:',
+        researchDescription:
+          'Your current choice is checked immediately before every new research export. If you object, your data will not be included in research datasets provided later. If you agree again later, all suitable data then available may be included in later exports. Data already provided without direct identifiers is governed by the respective research project. Results already provided that passed a documented disclosure review and do not allow conclusions about individuals cannot subsequently be associated with a person or removed for that person.',
+        allowed: 'Allowed',
+        objected: 'Objected',
+        researchEnabled:
+          'Saved: allowed. From now on, your older suitable data may also be included in later research exports. This change is logged.',
+        researchDisabled:
+          'Saved: objected. Your data will not be included in any research dataset provided later. This change is logged.',
+        analyticsTitle: 'Learning Analytics',
+        analyticsDescription:
+          'Learning Analytics gives you private insights into your exercises. Lecturers see protected group reports only. Your choice applies to all courses. If you switch it off, no further activities are included in LA; your personal LA data and insights are deleted after the change has been processed. Released, reviewed group reports remain available. When you switch it on again, only new activities count.',
+        analyticsGuide: 'More about your choice',
+        analyticsMarker: 'Learning Analytics:',
+        confirmTitle: 'Switch off Learning Analytics?',
+        confirmText:
+          'Your personal LA data and insights are deleted after the change has been processed. Released, reviewed group reports remain available. Your answers for course operations remain stored.',
+        disable: 'Switch off',
+        keepEnabled: 'Keep enabled',
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+        analyticsDisabled:
+          'Saved: switched off. Your derived personal Learning Analytics data are deleted after processing. This change is logged.',
+        analyticsEnabled:
+          'Saved: switched on. From now on, only new activities are considered; earlier activities are not backfilled. This change is logged.',
+      },
+      leaderboard: {
+        title: 'Join the leaderboard for “Test course autumn 2026”',
+        context:
+          'Agreed target behaviour: joining controls visibility in the leaderboard, not the collection or storage of personal points. The backend change is still pending.',
+        description:
+          'Participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining the leaderboard. If you join, other participants see your username lernende_0042, your rank, points and achievements in the leaderboard. You can leave and rejoin at any time. After leaving, you no longer appear in the leaderboard; your points and personal statistics remain available. Your research and Learning Analytics choices are unaffected.',
+        join: 'Join leaderboard',
+        decline: 'Do not join',
+        leave: 'Leave leaderboard',
+        rejoin: 'Rejoin leaderboard',
+        close: 'Close',
+        open: 'Open join dialog',
+        readoutTitle: 'Synthetic status',
+        notJoinedReadout:
+          'Not joined. Your personal points and statistics remain private.',
+        joinedReadout:
+          'Joined. Your personal points count immediately in the leaderboard.',
+        leftReadout:
+          'Left. Your personal points and statistics remain available and private.',
+        unchangedChoices:
+          'Your research and Learning Analytics choices remain unchanged.',
+        personalPointsLabel: 'Personal points',
+        rankingPointsLabel: 'Ranking points',
+        awardsLabel: 'Rank-dependent awards',
+        declinedResult:
+          'Leaderboard not joined. Personal points and statistics remain private.',
+        joinedResult:
+          'Leaderboard joined. Historical points count immediately; there are no retroactive rank-dependent awards.',
+        leftResult:
+          'Leaderboard left. Personal points and statistics remain available and private.',
+        rejoinedResult:
+          'Leaderboard rejoined. Historical points count immediately; there are no retroactive rank-dependent awards.',
+      },
+    },
+    lecturer: {
+      assessment: {
+        context:
+          'For review: confirmation for exporting directly identifiable personal data and assessment- or grade-relevant results. Technical export details are outside the scope of this text approval.',
+        open: 'Export assessment results',
+        title: 'Export assessment results',
+        classification: 'Directly identifiable personal data',
+        assessmentLabel: 'Assessment',
+        assessmentValue:
+          'Grade-relevant course activities · Foundations (example)',
+        scopeLabel: 'Scope',
+        scopeValue: 'Selected results with identity details and point values',
+        lead: 'This file contains directly identifiable personal data and assessment results. It is exclusively intended for conducting, assessing and carrying out necessary follow-up work for this assessment.',
+        attestationsHeading: 'By downloading, I confirm:',
+        attestations: {
+          purposeLabel: 'Purpose limitation.',
+          purposeText:
+            'I use the file only for this assessment and not for research.',
+          accessLabel: 'Restricted access.',
+          accessText:
+            'Only people who need these data to conduct, assess or carry out necessary follow-up work for the assessment receive access.',
+          storageLabel: 'Secure storage.',
+          storageText:
+            'I store and process the file only on UZH devices and storage locations approved for this purpose and protect it from unauthorised access.',
+          retentionLabel: 'Retention and deletion.',
+          retentionText:
+            'I keep the file only for as long as it is needed for the stated purpose or because of a retention obligation, and then delete it securely.',
+        },
+        logging:
+          'Your export request and this confirmation are logged with your account, the time and the data scope.',
+        acknowledgement: 'I confirm these four points for this export.',
+        acknowledgementRequired: 'Confirm the four points before continuing.',
+        cancel: 'Cancel',
+        submit: 'Export',
+        result:
+          'Export request confirmed (prototype). The confirmation applies to the displayed data scope. No export was created.',
+      },
+      research: {
+        context:
+          'Review question: Which data classes may be released for research without direct identifiers, and what additional review is needed for conversational free text? The research choice is checked immediately before release; accounts without a decision remain excluded.',
+        open: 'Export research data',
+        title: 'Export research data',
+        classification: 'Personal data without direct identifiers',
+        classificationLabel: 'Classification',
+        classificationWithTranscripts:
+          'Personal data without direct identifiers, including conversational data (free text)',
+        projectHeading: 'Research project details',
+        projectNotice:
+          "These details are stored with every export. KlickerUZH has no approval procedure; you are responsible for your project's permissibility.",
+        projectTitleLabel: 'Project title (required)',
+        projectTitlePlaceholder: 'Title of your research project',
+        responsiblePersonLabel: 'Responsible person (required)',
+        contactAddressLabel: 'Contact address (required)',
+        purposeLabel: 'Purpose (required, 1–2 sentences)',
+        deletionDateLabel: 'Planned deletion date (required)',
+        referenceLabel: 'Reference (optional: ethics, approval or DMP number)',
+        referencePlaceholder: 'e.g. ethics committee 2026-xx',
+        dataClassesLegend:
+          'Required data classes (examples, select at least one)',
+        dataClasses: {
+          liveQuizAnswers: 'Live quiz answers',
+          asynchronousAnswers:
+            'Asynchronous answers (learning elements, microlearning)',
+          learningAnalytics:
+            'Learning Analytics data (individual and group values)',
+          chatTranscripts: 'Chat transcripts',
+        },
+        transcriptWarning:
+          'Conversational free text may contain personal information even when account identifiers have been removed. Limit the selection to the data required for your project. The specific data scope and safeguards are defined separately.',
+        scopeLabel: 'Data scope',
+        scopeValue:
+          'Test course autumn 2026, test course spring 2027 · 2026-02-01 to 2026-12-31 (based on your selection)',
+        lead: 'This file contains personal data without direct identifiers. Individual people may nevertheless be recognisable. The data may only be used for the stated research project and by its staff.',
+        attestationsHeading: 'By downloading, I confirm:',
+        attestations: {
+          purposeLabel: 'Purpose limitation.',
+          purposeText:
+            'I use the data only for the research project stated above and only for the stated purpose.',
+          noReidentificationLabel:
+            'No re-identification or impermissible linkage.',
+          noReidentificationText:
+            'I do not try to identify people and do not link the file with other data that could enable identification.',
+          accessLabel: 'Restricted access and no disclosure.',
+          accessText:
+            'I make the file accessible only to staff of the stated project and do not disclose it outside the project.',
+          securityLabel:
+            'Security, removal of personal references and deletion.',
+          securityText:
+            'I process the file only in a suitable, protected environment, remove the personal reference as early as possible, and delete it by the stated date at the latest unless a retention obligation prevents this. Only results that do not allow conclusions about individuals are published.',
+        },
+        logging:
+          "Your export request and this confirmation are logged with your project details, account, the time and the requested data scope. The participants' current research choice applies when the data are provided.",
+        acknowledgement: 'I confirm these four points for this export.',
+        acknowledgementRequired: 'Confirm the four points before continuing.',
+        required: 'This field is required.',
+        invalidEmail: 'Please enter a valid email address.',
+        deletionDateTooEarly:
+          "The planned deletion date may not be before today's local date.",
+        dataClassRequired: 'Select at least one data class.',
+        cancel: 'Cancel',
+        submit: 'Export research data',
+        result:
+          'Export request confirmed (prototype). The confirmation applies to your project details and the selected data classes. The format and technical provision are defined separately. No export was created.',
+      },
+      knowledgeBase: {
+        context:
+          'Proposal for legal review: notice before the first and every subsequent upload into a knowledge base. Copyright permissibility is clarified with specialist lawyers. Ordinary author names and bibliographic details are permitted; other personal data are not intended for this upload. The prototype does not upload files.',
+        open: 'Provide materials for the knowledge base',
+        title: 'Provide materials for the knowledge base',
+        scenarioDescription:
+          'Synthetic scenario. No file is selected or uploaded.',
+        scenarios: {
+          initial: 'First upload',
+          additional: 'Additional upload',
+          replacement: 'Replace a file',
+          import: 'Import into a knowledge base',
+        },
+        lead: 'Upload only materials that you may use for the intended purpose in this knowledge base and make accessible to the intended students.',
+        rightsHeading: 'Copyright and usage rights',
+        rightsParagraphOne:
+          'Observe the rules for providing teaching materials to students, including when distributing them through a learning management system. Also clarify whether your authorisation covers processing in the AI-supported knowledge base and using content in answers. Permission to store material in the LMS does not automatically cover this use.',
+        rightsParagraphTwo:
+          'Comply with licence conditions, source references, and restrictions on the user group and duration of use. If the rights for this use are unclear, upload the material only after obtaining legal clarification.',
+        privacyHeading: 'Protection of personal data',
+        privacyParagraph:
+          'Ordinary author names and bibliographic details may be included and should be retained. Do not upload other personal data, such as student data, private correspondence or case descriptions with identifiable people. Also check filenames, metadata, comments, images and embedded content. Removing direct identifiers is not sufficient if people remain identifiable.',
+        disclaimer:
+          'The confirmation replaces neither clarification of usage rights nor checking the files for personal data.',
+        rightsAcknowledgement:
+          'I am authorised for the intended use and comply with the stated usage conditions and restrictions.',
+        privacyAcknowledgement:
+          'I have checked the selected files. Apart from ordinary author names and bibliographic details, they contain no personal data.',
+        acknowledgementRequired: 'Confirm both points before continuing.',
+        cancel: 'Cancel',
+        submit: 'Upload materials',
+        result: 'Confirmed (prototype). No files were uploaded.',
+      },
+    },
+
+    switchLocale: 'Deutsch',
+    reviewTitle: 'Data use – app draft',
+    reviewNotice:
+      'Local review draft with synthetic examples. All actions are simulated in memory only. No accounts are created, preferences saved, access activated, exports generated or files uploaded. The notices have not yet been approved.',
+    simulatedResult: 'Confirmed in the draft. Nothing was saved or activated.',
+    required: 'Required',
+    invalidEmail: 'Please enter a valid email address.',
+    usernameLength: 'The username must be between 5 and 15 characters long.',
+    usernameTaken: 'This username is already taken in the local example.',
+    passwordLength: 'The password must be at least 8 characters long.',
+    choices: {
+      research: 'Data for research',
+      allowed: 'Allowed',
+      objected: 'Objected',
+      allow: 'Allow',
+      object: 'Object',
+      researchDescription:
+        'KlickerUZH may provide your usage and learning data for research projects at the University of Zurich. Direct account identifiers are removed or replaced; free text may still contain personal information and requires special safeguards. Only results that do not allow conclusions about individuals are published. You can object or agree again at any time. Your current choice applies to datasets provided afterwards. Data already provided is governed by the rules of the respective research project.',
+      analytics: 'Learning Analytics',
+      required: 'Decision required',
+      enabled: 'Participation: yes',
+      disabled: 'Participation: no',
+      analyticsDescription:
+        'Learning Analytics helps you understand your exercises and progress. Only you can see your personal insights. Lecturers receive protected group reports, for example showing where many learners struggle during practice. Individual values and chat content are not part of these reports. Your choice applies to all courses and can be changed at any time. If you choose "No", courses, chat and points remain available; personal LA data is deleted after the change has been processed. Released, reviewed group reports remain available. When you enable participation, only new activities count.',
+      guide: 'What you and your lecturers see (German draft)',
+      yes: 'Yes, participate',
+      no: 'No, do not participate',
+      yesDescription: 'Private insights and protected group reports.',
+      noDescription: 'Courses, points and chat work as usual.',
+    },
+    account: {
+      title: 'Your account',
+      email: 'Email',
+      username: 'Username',
+      usernameHelp: 'Displayed in the course leaderboard when you join.',
+      password: 'Password',
+      choicesTitle: 'Data use and settings',
+      collectionTitle: 'What data is collected about me?',
+      collection:
+        'We store your account data and data from your courses and activities, such as groups, answers, their evaluation, points and feedback. Your points and personal statistics are retained independently of joining a leaderboard. Your leaderboard information becomes visible to other participants only when you join.',
+      visibilityTitle: 'Who can see my data?',
+      visibility:
+        'Lecturers and other authorised people see the information they need to run and evaluate the course. When you join a leaderboard, other participants see your username and leaderboard information. Learning Analytics shows lecturers only aggregated group values.',
+      purposeTitle: 'What is my data used for?',
+      purpose:
+        'We use your data to operate your account and run and evaluate course activities. Research and Learning Analytics follow your choices on this page. These choices do not affect points, grades or course access.',
+      retentionTitle: 'How long is my data stored?',
+      retention:
+        'Your account data and answers are stored for as long as your account exists. Data may remain stored until legal or contractual retention periods expire. It is then deleted or changed so that it can no longer be associated with a person. You can request deletion of your account and data.',
+      acknowledgement:
+        'I have read the <privacy>KlickerUZH privacy policy</privacy>, accept the <terms>terms of service</terms> and confirm my choices. Account and activity data is necessary to use the service; research and Learning Analytics are voluntary and can be declined.',
+      submit: 'Create account',
+    },
+  },
   chat: {
     common: {
       opensInNewTab: '(opens in new tab)',
