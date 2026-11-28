@@ -5,6 +5,12 @@ const { isDeepStrictEqual } = require('node:util')
 const { execFileSync } = require('node:child_process')
 const REQUEST =
   "vars.PRIORITY_CI_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.state == 'open' && github.event.pull_request.draft == false && github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && contains(github.event.pull_request.labels.*.name, 'ci:priority') && (github.event.action != 'labeled' || github.event.label.name == 'ci:priority')"
+const RETAINED_BRANCH_REFS = [
+  'refs/heads/v3',
+  'refs/heads/v3-ai',
+  'refs/heads/v3-audit',
+  'refs/heads/v3-adaptive-learning',
+]
 const TERMINALS = {
   'check.yml': 'check',
   'check-gitleaks.yml': 'check-gitleaks',
@@ -89,37 +95,97 @@ function execution(source, terminal) {
     )
   )
 }
-function readPinnedWorkflow(root, ref, file) {
+function pinnedWorkflowReader(root) {
   const options = {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, GODEBUG: 'netdns=go' },
+    env: { ...process.env, GODEBUG: 'netdns=go', GIT_NO_REPLACE_OBJECTS: '1' },
     stdio: ['ignore', 'pipe', 'ignore'],
     timeout: 60_000,
     maxBuffer: 1024 * 1024,
   }
-  try {
+  const git = (...args) => execFileSync('git', args, options).trimEnd()
+  let remoteRefs
+  function hasCommit(ref) {
     try {
-      execFileSync('git', ['cat-file', '-e', `${ref}^{commit}`], options)
+      git('cat-file', '-e', `${ref}^{commit}`)
+      return true
     } catch {
-      // A published executor can sit outside the current squash history.
-      // Fetch its exact object without making a complete checkout shallow.
-      execFileSync(
-        'git',
-        ['fetch', '--no-tags', '--no-write-fetch-head', 'origin', ref],
-        options
-      )
+      return false
     }
-    return execFileSync(
-      'git',
-      ['show', `${ref}:.github/workflows/${file}`],
-      options
+  }
+  function fetchCommit(ref) {
+    if (!hasCommit(ref))
+      git(
+        'fetch',
+        '--no-tags',
+        '--no-recurse-submodules',
+        '--no-write-fetch-head',
+        '--refmap=',
+        'origin',
+        ref
+      )
+  }
+  function isAncestor(ref, tip) {
+    fetchCommit(tip)
+    if (!hasCommit(ref)) return false
+    try {
+      git('merge-base', '--is-ancestor', ref, tip)
+      return true
+    } catch (error) {
+      if (error.status !== 1) throw error
+      return false
+    }
+  }
+  return (ref, file) => {
+    let shallow
+    try {
+      // A fetch by SHA can succeed even after the only branch is deleted.
+      remoteRefs ??= new Map(
+        git(
+          'ls-remote',
+          'origin',
+          ...RETAINED_BRANCH_REFS,
+          'refs/tags/priority-ci-executor-*'
+        )
+          .split('\n')
+          .map((line) => {
+            const [sha, name] = line.split('\t')
+            return [name, sha]
+          })
+      )
+      const tag = `refs/tags/priority-ci-executor-${ref}`
+      if (
+        (remoteRefs.get(`${tag}^{}`) ?? remoteRefs.get(tag)) === ref ||
+        RETAINED_BRANCH_REFS.some((branch) => {
+          const tip = remoteRefs.get(branch)
+          return tip && isAncestor(ref, tip)
+        })
+      ) {
+        fetchCommit(ref)
+        return git('show', `${ref}:.github/workflows/${file}`)
+      }
+      shallow = git('rev-parse', '--is-shallow-repository') === 'true'
+    } catch (cause) {
+      throw new Error(`pinned priority workflow is unavailable: ${file}`, {
+        cause,
+      })
+    }
+    if (shallow)
+      throw new Error(
+        `cannot verify retention of priority workflow ${file} at ${ref} in a shallow checkout. Use a full checkout or a matching remote retention tag.`
+      )
+    throw new Error(
+      `pinned priority workflow is not retained: ${file} at ${ref}. ` +
+        `Use a commit on a protected integration branch or publish priority-ci-executor-${ref} at that commit.`
     )
-  } catch {
-    throw new Error('pinned priority workflow is unavailable: ' + file)
   }
 }
-function generate(root, write = false, readPinned = readPinnedWorkflow) {
+function generate(
+  root,
+  write = false,
+  readPinned = pinnedWorkflowReader(root)
+) {
   for (const [file, terminal] of Object.entries(TERMINALS)) {
     const source = fs.readFileSync(
       path.join(root, '.github/workflows', file),
@@ -149,9 +215,7 @@ function generate(root, write = false, readPinned = readPinnedWorkflow) {
         throw new Error(
           'priority workflow requires an exact executor SHA: ' + file
         )
-      if (
-        !isDeepStrictEqual(YAML.parse(readPinned(root, ref, executor)), parsed)
-      )
+      if (!isDeepStrictEqual(YAML.parse(readPinned(ref, executor)), parsed))
         throw new Error('pinned priority workflow differs: ' + file)
     }
   }

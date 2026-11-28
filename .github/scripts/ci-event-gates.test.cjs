@@ -4,6 +4,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const YAML = require('yaml')
+const { execFileSync } = require('node:child_process')
 
 const root = path.join(__dirname, '../..')
 
@@ -1511,7 +1512,7 @@ test('regenerated executors cannot hide stale or mutable published execution ref
       if (name.endsWith('-execution.yml')) pinned.set(name, source)
     }
   }
-  const readPinned = (_root, _ref, file) => pinned.get(file)
+  const readPinned = (_ref, file) => pinned.get(file)
   assert.doesNotThrow(() => generate(fixture, false, readPinned))
 
   const file = path.join(directory, 'test-unit.yml')
@@ -1532,6 +1533,116 @@ test('regenerated executors cannot hide stale or mutable published execution ref
     () => generate(fixture, false, readPinned),
     /priority workflow requires an exact executor SHA: test-unit.yml/
   )
+})
+
+test('an executor pin survives a squash merge and deletion with remote retention', (t) => {
+  const { generate, TERMINALS } = require('./priority-ci-workflows.cjs')
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'priority-pin-'))
+  t.after(() => fs.rmSync(fixture, { recursive: true, force: true }))
+  const origin = path.join(fixture, 'origin.git')
+  const checkout = path.join(fixture, 'checkout')
+  fs.mkdirSync(checkout)
+  const git = (...args) =>
+    execFileSync(
+      'git',
+      [
+        '-c',
+        'user.name=Test',
+        '-c',
+        'user.email=test@example.invalid',
+        ...args,
+      ],
+      { cwd: checkout, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+    ).trimEnd()
+
+  git('init', '--bare', origin)
+  git('init', '--initial-branch=v3')
+  git('remote', 'add', 'origin', origin)
+  git('commit', '--allow-empty', '-m', 'base')
+  git('push', 'origin', 'v3')
+  git('switch', '-c', 'task')
+  const directory = path.join(checkout, '.github/workflows')
+  fs.mkdirSync(directory, { recursive: true })
+  for (const file of Object.keys(TERMINALS)) {
+    const executor = file.replace('.yml', '-execution.yml')
+    fs.copyFileSync(
+      path.join(root, '.github/workflows', executor),
+      path.join(directory, executor)
+    )
+  }
+  git('add', '.github/workflows')
+  git('commit', '-m', 'executor')
+  const sha = git('rev-parse', 'HEAD')
+  const tag = `priority-ci-executor-${sha}`
+  const writeCallers = (ref) => {
+    for (const file of Object.keys(TERMINALS)) {
+      const workflow = readWorkflow(file)
+      workflow.jobs['priority-execution'].uses =
+        `uzh-bf/klicker-uzh/.github/workflows/${file.replace('.yml', '-execution.yml')}@${ref}`
+      fs.writeFileSync(path.join(directory, file), YAML.stringify(workflow))
+    }
+  }
+  git('push', 'origin', 'task')
+  writeCallers(sha)
+  assert.throws(
+    () => generate(checkout),
+    /pinned priority workflow is not retained/
+  )
+
+  git('tag', '-a', '-m', 'retain executor', tag, sha)
+  git('push', 'origin', `refs/tags/${tag}`)
+  assert.doesNotThrow(() => generate(checkout))
+  git('add', '.github/workflows')
+  git('commit', '-m', 'pin executor')
+  git('switch', 'v3')
+  git('merge', '--squash', 'task')
+  git('commit', '-m', 'squash task')
+  git('push', 'origin', 'v3', ':refs/heads/task')
+  const fresh = path.join(fixture, 'fresh')
+  git(
+    'clone',
+    '--no-local',
+    '--single-branch',
+    '--no-tags',
+    '-b',
+    'v3',
+    origin,
+    fresh
+  )
+  assert.throws(() => git('-C', fresh, 'cat-file', '-e', sha))
+  assert.doesNotThrow(() => generate(fresh))
+
+  const squash = git('rev-parse', 'HEAD')
+  git('push', 'origin', `+${squash}:refs/tags/${tag}`)
+  assert.throws(
+    () => generate(checkout),
+    /pinned priority workflow is not retained/
+  )
+  writeCallers(squash)
+  assert.doesNotThrow(() => generate(checkout))
+  git('add', '.github/workflows')
+  git('commit', '-m', 'pin protected history')
+  git('push', 'origin', 'v3')
+  const shallow = path.join(fixture, 'shallow')
+  git(
+    'clone',
+    '--no-local',
+    '--depth=1',
+    '--no-tags',
+    '-b',
+    'v3',
+    origin,
+    shallow
+  )
+  git('-C', shallow, 'fetch', '--no-tags', 'origin', squash)
+  assert.throws(
+    () => generate(shallow),
+    /cannot verify retention .* shallow checkout/
+  )
+
+  git('push', 'origin', `${sha}:refs/heads/v3-ai`)
+  writeCallers(sha)
+  assert.doesNotThrow(() => generate(checkout))
 })
 
 test('every discovered priority compute consumer honors the canary duration and existing defaults', () => {
