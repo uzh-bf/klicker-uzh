@@ -3405,7 +3405,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId('student-submit-answer').click()
     await page.waitForTimeout(500)
     await expectByAssertion(
-      page.getByText(messages.pwa.liveQuiz.allQuestionsAnswered).first(),
+      page.getByTestId('live-quiz-block-submitted'),
       'exist'
     )
     await page.getByTestId('mobile-menu-feedbacks').click()
@@ -3573,12 +3573,12 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.getByTestId('student-submit-answer').click()
     await page.waitForTimeout(500)
     await expectByAssertion(
-      page.getByText(messages.pwa.liveQuiz.allQuestionsAnswered).first(),
+      page.getByTestId('live-quiz-block-submitted'),
       'exist'
     )
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expectByAssertion(
-      page.getByText(messages.pwa.liveQuiz.allQuestionsAnswered).first(),
+      page.getByTestId('live-quiz-block-submitted'),
       'exist'
     )
     await rememberStudentPwaState(page)
