@@ -43,11 +43,10 @@ neither the complete diff nor the reviewer conversation. The portable skill
 directs difficult and architectural questions to that advisor after source
 inspection.
 
-Draft execution uses stock npm `@alibaba-group/open-code-review@1.13.0`,
-`z-ai/glm-5.3-flash` through `moat-flash` and the existing bounded
-`zai-org/GLM-5.3` advisor through `moat-advisor`.
-Verification checks the stock version and the immutable upstream publisher's
-digest. It does not claim platform-specific stock binary digest verification.
+The draft action builds OCR 1.13.0 from the pinned upstream archive with the
+draft second-pass patch and the Go version in the manifest. Installation
+verifies the draft patch identity in the executable version and the digest of
+the pinned publisher. Stock npm OCR remains a separate compatibility fixture.
 Final execution keeps its separate pinned upstream source, compression patch,
 Go toolchain and executable provenance. The shared action does not run final
 review or grant its approval. Final code review attaches the same bounded
@@ -87,7 +86,7 @@ and `publisherRoot` explicitly; the legacy runner CLI retains its prior defaults
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `verify-release`                            | Checks release assets and complete action ref; emits fixed install/publisher outputs.                                          |
 | `prepare`                                   | Validates the GitHub draft event and repository identities, freezes policy/head/base/range and validates trusted config/skill. |
-| `verify-install`                            | Verifies stock CLI version and publisher source digest.                                                                        |
+| `verify-install`                            | Verifies draft CLI patch identity and publisher source digest.                                                                 |
 | `run`                                       | Supplies frozen caller inputs to the existing runner, preserving its exit code and credential isolation.                       |
 | `validate`                                  | Produces the exact-head publication envelope, retaining partial coverage.                                                      |
 | `summary`                                   | Prints the existing estimated cost, caching savings and outcome diagnostics.                                                   |

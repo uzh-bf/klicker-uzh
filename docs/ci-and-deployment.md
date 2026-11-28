@@ -801,6 +801,17 @@ event records that its planning request returned; it alone does not prove usable
 guidance. Raw usage journals retain the original response sizes and finish reason
 before the compatibility projection, and aggregate accounting remains unchanged.
 
+The draft job builds the pinned OCR source with its draft-only patch and checks
+the executable's patch identity before starting the review. In the second pass,
+Flash checks each selected file for an additional concrete failure mode. It
+reports a verified defect immediately and closes a ruled-out case once the files
+are checked. On the first model dispatch with four minutes or less left on the
+group deadline, the CLI appends one reminder to finish the
+current candidate. An in-flight request receives the reminder on its next turn
+if time remains. The draft adapter receipt records the first request that
+dispatched the reminder in `first_wrap_up_dispatch`, or `null` if none did.
+The reviewer still has to call the completion tool itself.
+
 For stock draft memory compression, the adapter returns summary text only when
 the provider finishes with `stop`, supplies visible text and requests no tools.
 An unusable answer returns empty text, so OCR keeps its working history. A

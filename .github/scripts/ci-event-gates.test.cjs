@@ -1365,7 +1365,16 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
   const pattern = new RegExp(selector.with.pattern)
   for (const file of [
     '.github/scripts/install-patched-ocr.cjs',
+    '.github/scripts/ocr-draft-review.cjs',
+    '.github/scripts/ocr-draft-review.test.cjs',
+    '.github/scripts/ocr-mistral-adapter.cjs',
+    '.github/scripts/ocr-runtime-config.cjs',
+    '.github/scripts/ocr-review-shared.cjs',
+    '.github/scripts/ocr-review-tools.cjs',
+    '.github/actions/ocr-review/action.yml',
+    '.github/workflows/check-execution.yml',
     '.github/open-code-review/ocr-compression.patch',
+    '.github/open-code-review/ocr-second-pass.patch',
     '.github/workflows/check.yml',
     '.github/workflows/check-ocr-final-review.yml',
   ])
@@ -1376,6 +1385,7 @@ test('OCR engine qualification only runs for related paths or an unproven diff',
   for (const name of [
     'Set up pinned OCR build toolchain',
     'Qualify the pinned OCR compression engine',
+    'Qualify the pinned draft review engine',
   ]) {
     const gate = steps.find((step) => step.name === name).if
     assert.equal(
