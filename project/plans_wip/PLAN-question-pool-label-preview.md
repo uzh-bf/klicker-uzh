@@ -28,7 +28,9 @@ Fable 5.2 and Gemini 4 Neon agreed on that sequence. Fable emphasized measuring 
 
 ### Sampling and validation
 
-Start with 10 distinct families for each selected format. Offer five as a short annotation session and up to 20 when more topics need coverage. Cap the request at the number of eligible families. Select by topic first, then use wording, forecast bands and within-band probabilities to reduce repetition. Include questions with missing forecasts and report their coverage separately.
+Use one deterministic sampler for blind lecturer ratings. Select ten distinct SC families and ten distinct KPRIM families per course, or every eligible family when fewer exist. Group by source lineage and normalized keyed duplicates within each format. On each pick, maximize the number of uncovered lecturer tags, then the minimum stem word-set distance to an already selected family, then newly covered words. Resolve remaining ties by the stable family key. Pin the assignments when the session starts. This sampling rule runs without forecasts, response data or embeddings.
+
+Revisit selection only if a blinded study with real lecturers on fresh courses shows a prespecified, meaningful improvement in held-out difficulty and Bloom predictions at the same rating workload. Use the planned Gemini vectors for that comparison and split by family. [Question revision embeddings](PLAN-question-revision-embeddings.md) has its own delivery and processing-boundary decision.
 
 Reserve a separate random audit sample within topics before choosing the diverse examples for fitting. Count audit ratings and second ratings in the workload shown to the lecturer. Keep all revisions and near duplicates of a family on one side. Where topics are sampled at different rates, weight the audit back to the course pool and report the denominators by course and format. A diverse review queue answers which examples to show a lecturer. A representative audit answers how the approach performs across their pool.
 
