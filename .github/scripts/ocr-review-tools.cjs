@@ -404,12 +404,13 @@ async function readBody(stream, limit, controller) {
 function validateAdvice(payload, context) {
   const choice = payload?.choices?.[0]
   const calls = choice?.message?.tool_calls
-  function invalid(reason) {
-    return Object.assign(failure('invalid_advice'), {
+  function invalid(reason, code = 'invalid_advice') {
+    return Object.assign(failure(code), {
       diagnosticReason: reason,
     })
   }
-  if (choice?.finish_reason === 'length') throw invalid('length')
+  if (choice?.finish_reason === 'length')
+    throw invalid('length', 'advisor_output_truncated')
   if (choice?.finish_reason !== 'tool_calls')
     throw invalid('invalid_finish_reason')
   if (calls?.length !== 1) throw invalid('invalid_tool_call_count')
@@ -1168,6 +1169,7 @@ async function startReviewTools(options = {}) {
     'invalid_signal',
     'invalid_deadline',
     'advisor_unavailable',
+    'advisor_output_truncated',
     'invalid_advice',
     'cancelled',
     'response_too_large',
