@@ -10,6 +10,7 @@ import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import { pickVerifiedToken, readCookieValues } from './cookieTokens.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -74,6 +75,10 @@ function prepareApp({
 
   // Custom JWT middleware to replace passport-jwt
   async function jwtMiddleware(req: any, res: any, next: any) {
+    // One verification for both choosing among duplicate cookies and
+    // authenticating the request, so the two can never disagree.
+    const verifyToken = (value: string) =>
+      verifyJWT(value, process.env.APP_SECRET as string)
     let token = null
 
     // Assessment mode: only check for student NextAuth cookie
@@ -108,7 +113,10 @@ function prepareApp({
         req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
       ) {
         token =
-          req.cookies?.['participant_token'] ??
+          (await pickVerifiedToken(
+            readCookieValues(req.headers.cookie, 'participant_token'),
+            verifyToken
+          )) ??
           req.cookies?.['temporary_participant_token'] ??
           req.cookies?.['next-auth.session-token']
       }
@@ -121,7 +129,7 @@ function prepareApp({
     let user = null
     if (token) {
       try {
-        user = await verifyJWT(token, process.env.APP_SECRET as string)
+        user = await verifyToken(token)
       } catch (error) {
         // JWT verification failed, continue with user = null
         console.log('JWT verification failed:', error)
