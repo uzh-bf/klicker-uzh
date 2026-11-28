@@ -63,8 +63,12 @@ When necessary source is absent from that revision, state the limitation and
 continue inspecting available evidence.
 
 Use consultations across distinct difficult parts, respecting the configured
-shared allowance and input bounds. Failures consume attempts. Validate returned
-evidence against source and resolve any disagreement before reporting a defect.
+shared allowance and input bounds. Failures consume attempts. If the tool returns
+`advisor_output_truncated`, continue the source review locally. Consult again
+on that candidate only when you can ask a narrower question whose answer would
+change the finding and supply the decisive source lines. Otherwise move on.
+Validate returned evidence against source and resolve any disagreement before
+reporting a defect.
 An `uncertain` answer or unavailable tool does not establish a defect or a clean
 review. Continue ordinary source review when consultation is unavailable.
 Advice never grants final-review approval or permission to publish, merge or
