@@ -11,7 +11,7 @@ const expectedApiHostByChatHost = {
   'chat.klicker.uzh.ch': 'backend-sls.klicker.uzh.ch',
 }
 
-function parseOrigin(rawUrl, variableName) {
+export function parseOrigin(rawUrl, variableName) {
   const value = (rawUrl || '').trim()
   const match = value.match(/^(https?):\/\/([^/?#]+)\/?$/i)
   if (!match) {
@@ -51,7 +51,7 @@ function parseOrigin(rawUrl, variableName) {
   return { protocol, hostname: normalizedHostname, port, origin }
 }
 
-function isProductionHostname(hostname) {
+export function isProductionHostname(hostname) {
   return hostname === 'klicker.uzh.ch' || hostname.endsWith('.klicker.uzh.ch')
 }
 
