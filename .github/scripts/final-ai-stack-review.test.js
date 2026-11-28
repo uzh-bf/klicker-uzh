@@ -4389,6 +4389,7 @@ test('topology continues past bounded advisor errors and honors the remaining sh
   for (const error of [
     'advisor_quota_exhausted',
     'advisor_unavailable',
+    'advisor_output_truncated',
     'source_unavailable',
     'cancelled',
     'tool_failed',
