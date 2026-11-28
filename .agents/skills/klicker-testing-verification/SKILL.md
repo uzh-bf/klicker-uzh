@@ -9,6 +9,8 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 ## Route the change
 
+Apply the [test-scope policy in AGENTS.md](../../../AGENTS.md#tests) before choosing new Playwright coverage.
+
 | You changed…                                                                      | Run                                                                                                                                                                                         |
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |

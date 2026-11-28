@@ -70,7 +70,7 @@ function WizardElementList({
   return (
     <div
       className={twMerge(
-        'max-h-30 my-2 flex flex-1 flex-col overflow-y-auto',
+        'max-h-30 my-2 flex flex-1 flex-col overflow-y-auto pr-4',
         selectionActive ? 'max-h-22' : ''
       )}
     >
@@ -96,7 +96,7 @@ function WizardElementList({
           >
             <Ellipsis
               maxLines={1}
-              className={{ content: 'mr-auto text-xs' }}
+              className={{ trigger: 'min-w-0', content: 'mr-auto text-xs' }}
               withMarkdown={false}
               withMarkdownTooltip={false}
             >
