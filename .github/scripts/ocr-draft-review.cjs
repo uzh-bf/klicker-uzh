@@ -8,8 +8,8 @@ const {
   startAdapter,
   createProgressReporter,
   buildCostReport,
-  MISTRAL_MODEL,
-  MISTRAL_DEEPSEEK_MODEL,
+  MOAT_ADVISOR_MODEL,
+  MOAT_FLASH_MODEL,
   createProviderAvailability,
   parseProviderPause,
   summarizePlanGuidance,
@@ -21,8 +21,8 @@ const {
   gitEnvironment,
 } = require('./ocr-runtime-config.cjs')
 
-const DRAFT_MODEL = MISTRAL_DEEPSEEK_MODEL
-const DRAFT_PROVIDER = 'mistral-deepseek'
+const DRAFT_MODEL = MOAT_FLASH_MODEL
+const DRAFT_PROVIDER = 'moat-flash'
 const DRAFT_PROFILE = Object.freeze({
   id: 'draft-v1',
   reasoning: 'max',
@@ -32,6 +32,73 @@ const DRAFT_PROFILE = Object.freeze({
 })
 const PUBLISHER_SHA256 =
   '1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2'
+
+// Stock OCR 1.13 renders one diff block per selected file in PLAN_TASK.
+// Read only the group before the PR background and corroborate the path with
+// the CLI's scope hash. Unknown prompt shapes use the ordinary planner.
+function singleFileOutline(messages, scope) {
+  const prompt = messages.at(-1)
+  if (prompt?.role !== 'user' || typeof prompt.content !== 'string') return null
+  const marker = '\n</other_changed_files>\n\n'
+  const start = prompt.content.indexOf(marker)
+  if (start < 0) return null
+  const group = prompt.content.slice(start + marker.length)
+  const close = '\n</file>'
+  const end = group.indexOf(close)
+  if (
+    end < 0 ||
+    !group.startsWith('\n\nCurrent time in the real world:', end + close.length)
+  )
+    return null
+  const lines = group.slice(0, end).split('\n')
+  const file = /^<file path="([^"\n]+)">$/.exec(lines[0])?.[1]
+  if (!file || !lines[1]?.startsWith('diff --git ')) return null
+  const hash = require('node:crypto')
+    .createHash('sha256')
+    .update(file)
+    .digest('hex')
+  if (hash.slice(0, 16) !== scope) return null
+
+  let changed = 0
+  let line = null
+  const hunks = []
+  const symbols = []
+  for (const entry of lines) {
+    const hunk = /^@@ (-\d+(?:,\d+)?) (\+(\d+)(?:,\d+)?) @@/.exec(entry)
+    if (hunk) {
+      hunks.push(`${hunk[1]} ${hunk[2]}`)
+      line = Number(hunk[3])
+    } else if (line !== null) {
+      if (entry.startsWith('-')) changed++
+      if (entry.startsWith('+')) {
+        changed++
+        const symbol =
+          /^\+(?:export (?:default )?)?(?:async )?(?:function\*?|class|interface|type|def|func|fn|struct|enum|const) ([A-Za-z_$][\w$]{0,79})\b/.exec(
+            entry
+          )
+        if (symbol) symbols.push(`${symbol[1]} L${line}`)
+      }
+      if (entry.startsWith('+') || entry.startsWith(' ')) line++
+    }
+  }
+  if (changed < 500) return null
+  // Sample across the whole file so a large new module has landmarks near
+  // its end as well as its imports and declarations at the top.
+  const sample = (items) =>
+    items.length <= 24
+      ? items
+      : Array.from(
+          { length: 24 },
+          (_, i) => items[Math.round((i * (items.length - 1)) / 23)]
+        )
+  return [
+    `Changed hunks (old/new coordinates, ${hunks.length} total): ${sample(hunks).join('; ')}`,
+    ...(symbols.length
+      ? [`Declaration landmarks: ${sample(symbols).join(', ')}`]
+      : []),
+    'Use the full supplied diff to review every changed region.',
+  ].join('\n')
+}
 
 function summarizeCoverage(result) {
   return buildOCRResultDiagnostic('draft', { result, status: result?.status })
@@ -392,6 +459,9 @@ async function runDraftReview(options) {
     adapter = await startAdapter({
       availability,
       finalPlanGuidance: true,
+      guardDraftCompression: true,
+      draftToolContinuation: true,
+      singleFileOutline,
       provider: DRAFT_PROVIDER,
       apiKey: options.apiKey,
       usageJournalPath: `${diagnosticsPath}.events.jsonl`,
@@ -439,7 +509,7 @@ async function runDraftReview(options) {
         if (options.advisorApiKey) {
           advisor = await startAdapter({
             availability,
-            provider: 'mistral',
+            provider: 'moat-advisor',
             apiKey: options.advisorApiKey,
             usageJournalPath: `${advisorDiagnosticsPath}.events.jsonl`,
             ...(options.advisorFetchImpl
@@ -667,12 +737,18 @@ async function runDraftReview(options) {
     appendSummary(summarizeDocs(toolsState.docs), write, options.summary)
     await advisor?.close()
     await adapter?.close()
-    if (adapter)
+    if (adapter) {
+      const diagnostics = adapter.diagnostics()
+      appendSummary(summarizePlanGuidance(diagnostics), write, options.summary)
+      const compression = diagnostics.draft_compression
       appendSummary(
-        summarizePlanGuidance(adapter.diagnostics()),
+        compression
+          ? `OCR draft compression usable=${compression.usable} skipped=${compression.skipped} repeat_skips=${compression.repeat_skips}`
+          : 'OCR draft compression status=unavailable',
         write,
         options.summary
       )
+    }
     if (resultFd !== undefined) fs.closeSync(resultFd)
     if (stderrFd !== undefined) fs.closeSync(stderrFd)
     fs.rmSync(home, { recursive: true, force: true })
@@ -717,7 +793,11 @@ function summarizeCosts(temp, summary) {
     expected === 0
       ? { withCache: 0, withoutCache: 0, savings: 0 }
       : expected === 1
-        ? readReport('draft-ai-review-advisor-diagnostics.jsonl', 1, 'mistral')
+        ? readReport(
+            'draft-ai-review-advisor-diagnostics.jsonl',
+            1,
+            'moat-advisor'
+          )
         : null
   if (expected === 1)
     execFileSync(
@@ -728,7 +808,7 @@ function summarizeCosts(temp, summary) {
         path.join(temp, 'draft-ai-review-advisor-diagnostics.jsonl'),
       ],
       {
-        env: { ...process.env, OCR_ADAPTER_PROVIDER: 'mistral' },
+        env: { ...process.env, OCR_ADAPTER_PROVIDER: 'moat-advisor' },
         stdio: 'inherit',
       }
     )
@@ -744,7 +824,7 @@ function summarizeCosts(temp, summary) {
     ? `OCR cost scope=draft_and_advisor status=complete estimated_with_cache_usd=${sum.withCache.toFixed(4)} estimated_without_cache_usd=${sum.withoutCache.toFixed(4)} estimated_savings_usd=${sum.savings.toFixed(4)} savings_percent=${(sum.withoutCache ? (100 * sum.savings) / sum.withoutCache : 0).toFixed(1)}`
     : 'OCR cost scope=draft_and_advisor status=unavailable'
   appendSummary(
-    `\nCombined ${DRAFT_MODEL} draft and ${MISTRAL_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. Both models use Mistral; OCR token accounting is unchanged.`,
+    `\nCombined ${DRAFT_MODEL} draft and ${MOAT_ADVISOR_MODEL} advisor reference estimate:\n\n${line}\n\nAdvisor usage retains its separate application allowance and accounting. The draft and advisor use separate fixed profiles; OCR token accounting is unchanged.`,
     (text) => process.stdout.write(text),
     summary
   )
@@ -788,6 +868,11 @@ async function main(options = {}) {
       encoding: 'utf8',
       timeout: 5000,
     })
+    try {
+      require('./install-patched-ocr.cjs').verifyDraftVersion(version)
+    } catch {
+      throw new Error('invalid_install')
+    }
     const publisher = fs.readFileSync(
       path.join(
         options.publisherRoot ?? path.join(repo, '.ocr-upstream'),
@@ -795,7 +880,6 @@ async function main(options = {}) {
       )
     )
     if (
-      !/^open-code-review v?1\.13\.0(?: \(|\s|$)/.test(version) ||
       require('node:crypto')
         .createHash('sha256')
         .update(publisher)
@@ -846,8 +930,8 @@ async function main(options = {}) {
   }
   if (command !== 'run') return 2
   const credentials = options.credentials ?? {
-    apiKey: process.env.MISTRAL_API_KEY,
-    advisorApiKey: process.env.MISTRAL_API_KEY,
+    apiKey: process.env.CMD_API_KEY,
+    advisorApiKey: process.env.CMD_API_KEY,
     context7ApiKey: process.env.CONTEXT7_API_KEY,
   }
   for (const name of Object.keys(process.env)) {
@@ -878,6 +962,7 @@ async function main(options = {}) {
 module.exports = {
   main,
   runDraftReview,
+  singleFileOutline,
   summarizeCoverage,
   DRAFT_PROFILE,
   PUBLISHER_SHA256,

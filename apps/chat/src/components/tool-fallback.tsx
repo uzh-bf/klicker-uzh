@@ -235,7 +235,14 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const feedbackRejected =
     toolName === SHOW_FEEDBACK_TOOL_NAME && isRejectedFeedback(result, isError)
   if (toolName === SHOW_FEEDBACK_TOOL_NAME && !feedbackRejected) {
-    return <FeedbackCard result={result} status={status} isError={isError} />
+    return (
+      <FeedbackCard
+        toolCallId={toolCallId}
+        result={result}
+        status={status}
+        isError={isError}
+      />
+    )
   }
 
   const manageProposalResult = getManageProposalResult(result)

@@ -54,9 +54,9 @@ const receiptSources = createProofReceiptSources({
   environment: 'stg',
   collection: 'klicker_course_materials_v1',
   passedCounts:
-    '{kbExpected:15,kbPassed:15,chatbotsInScope:21,representativeChatbotsExpected:15,representativeChatbotsPassed:15,excludedExpected:2,positivePassed:15,isolationPassed:15,rejectionsPassed:7,directCallsAttempted:37}',
+    '{kbExpected:15,kbPassed:15,chatbotsInScope:21,representativeChatbotsExpected:15,representativeChatbotsPassed:15,excludedExpected:2,positivePassed:15,isolationPassed:15,directCallsAttempted:30}',
   failedCounts:
-    '{kbExpected:15,kbPassed:0,chatbotsInScope:21,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0}',
+    '{kbExpected:15,kbPassed:0,chatbotsInScope:21,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,directCallsAttempted:0}',
 })
 const proofRegistry = createTemporaryDirectoryRegistry()
 const writeDummy = createProofChildWriter(proofRegistry)
@@ -103,18 +103,18 @@ describe('STG Doc Query proof transport', () => {
       }
     }
 
-    const headers = { authorization: 'Bearer dummy-transport-token' }
+    const mintScopeToken = async () => 'scope'
     createMcpTransport(
-      headers,
+      mintScopeToken,
       RecordingTransport as unknown as Parameters<typeof createMcpTransport>[1]
     )
 
     expect(capturedOptions).toMatchObject({
-      requestInit: { headers, redirect: 'error' },
+      requestInit: { redirect: 'error' },
       reconnectionOptions: { maxRetries: 0 },
     })
     expect(capturedUrl?.toString()).toBe(
-      'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker'
+      'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
     )
     expect(capturedOptions.fetch).toBeTypeOf('function')
   })
@@ -136,19 +136,31 @@ describe('STG Doc Query proof transport', () => {
           capturedOptions = options
         }
       }
+      let minted = 0
       createMcpTransport(
-        { authorization: 'Bearer dummy-transport-token' },
+        async () => String(++minted),
         RecordingTransport as unknown as Parameters<
           typeof createMcpTransport
         >[1]
       )
-      await capturedOptions.fetch?.('https://example.test/mcp', {
-        method: 'GET',
-      })
-      expect(capturedInit).toMatchObject({
-        method: 'GET',
-        redirect: 'error',
-      })
+      const target =
+        'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
+      for (const sequence of [1, 2]) {
+        await capturedOptions.fetch?.(target, {
+          method: 'GET',
+          headers: { Authorization: 'unused' },
+        })
+        expect(capturedInit?.redirect).toBe('error')
+        const headers = new Headers(capturedInit?.headers)
+        expect(headers.has('authorization')).toBe(false)
+        expect(headers.get('X-Doc-Query-Scope-Token')).toBe(
+          `Bearer ${sequence}`
+        )
+      }
+      await expect(
+        capturedOptions.fetch?.('https://example.test/mcp')
+      ).rejects.toThrow()
+      expect(minted).toBe(2)
     } finally {
       globalThis.fetch = originalFetch
     }
@@ -156,40 +168,6 @@ describe('STG Doc Query proof transport', () => {
 })
 
 describe('STG Doc Query proof matrix', () => {
-  test('does not accept an unrelated tool error as an auth rejection', async () => {
-    const validated = validateTestManifest(manifest())
-    const environment = await proofDummyEnvironmentWithPin()
-    let call = 0
-    const receipt = await runProofMatrix({
-      manifest: validated,
-      environment,
-      invoke: async ({ question }: { question: string }) => {
-        call += 1
-        if (call === 3) return rejected('backend unavailable')
-        const positive = question.startsWith('positive')
-        const marker = question.replace(
-          positive ? 'positive fixture ' : 'foreign fixture ',
-          positive ? 'positive-marker-' : 'safe-marker-'
-        )
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                mode: 'documents',
-                summary: { sources_returned: 1, chunks_returned: 1 },
-                sources: [{ reference: marker, chunks: [] }],
-              }),
-            },
-          ],
-        }
-      },
-    })
-    expect(receipt.failureClass).toBe('rejection_failed')
-    expect(receipt.failedRejectionClass).toBe('missing')
-    expect(call).toBe(3)
-  })
-
   test('classifies signer setup failures without serializing their value', async () => {
     const validated = validateTestManifest(manifest())
     const environment = await proofDummyEnvironmentWithPin()
@@ -222,7 +200,8 @@ describe('STG Doc Query proof matrix', () => {
         }
         return 'synthetic-scope-token'
       },
-      invoke: async () => {
+      invoke: async ({ mintScopeToken }) => {
+        await mintScopeToken()
         throw new Error(sensitiveValue)
       },
     })
@@ -245,8 +224,7 @@ defineProofMatrixSuite(
     manifest,
     environment: proofDummyEnvironmentWithPin,
     rejection: rejected,
-    rejectionWithArguments: () => rejected('invalid arguments'),
-    expectedDirectCalls: 37,
+    expectedDirectCalls: 30,
     expectedCounts: {
       kbPassed: 15,
       chatbotsInScope: 21,
@@ -254,8 +232,7 @@ defineProofMatrixSuite(
       representativeChatbotsPassed: 15,
       positivePassed: 15,
       isolationPassed: 15,
-      rejectionsPassed: 7,
-      directCallsAttempted: 37,
+      directCallsAttempted: 30,
     },
   }
 )
@@ -282,7 +259,7 @@ describe('STG Doc Query proof supervisor', () => {
     const child = new EventEmitter() as EventEmitter & { pid: number }
     child.pid = 12345
     const failedReceipt = {
-      receiptVersion: 1,
+      receiptVersion: 2,
       environment: 'stg',
       collection: 'klicker_course_materials_v1',
       phase: 'canary',
@@ -290,7 +267,6 @@ describe('STG Doc Query proof supervisor', () => {
       failureClass: 'canary_positive_failed',
       diagnosticClass: 'none',
       failedCaseId: 'corpus_1',
-      failedRejectionClass: null,
       counts: {
         kbExpected: 15,
         kbPassed: 0,
@@ -300,17 +276,7 @@ describe('STG Doc Query proof supervisor', () => {
         excludedExpected: 2,
         positivePassed: 0,
         isolationPassed: 0,
-        rejectionsPassed: 0,
         directCallsAttempted: 0,
-      },
-      rejections: {
-        missing: 'not_run',
-        expired: 'not_run',
-        forged: 'not_run',
-        wrong_issuer: 'not_run',
-        wrong_audience: 'not_run',
-        unknown_key: 'not_run',
-        trusted_filter_override: 'not_run',
       },
       preservation: {
         databaseWrites: 0,

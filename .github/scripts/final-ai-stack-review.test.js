@@ -11,9 +11,9 @@ const {
   FINAL_REVIEW_MODEL,
   mergeOCRResumeResults,
 } = require('./final-ai-review.js')
-const { MISTRAL_DEEPSEEK_MODEL } = require('./ocr-mistral-adapter.cjs')
 const {
   FINAL_STACK_REVIEW_MODEL,
+  FINAL_STACK_REVIEW_PROFILE,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
   STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
@@ -778,7 +778,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     { evidence_digest: 'e'.repeat(64) },
     { policy_digest: 'e'.repeat(64) },
     { background_digest: 'e'.repeat(64) },
-    { model: 'zai-glm-5-3-flash' },
+    { model: 'zai-org/GLM-5.3' },
   ]) {
     state.checkRuns[0] = {
       ...trustedCheck,
@@ -802,7 +802,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     ...trustedStatus,
     description: trustedStatus.description.replace(
       STACK_REVIEW_CLEAN_STATUS_PREFIX,
-      'zai-glm-5-3-flash stack review clean; evidence='
+      'zai-org/GLM-5.3 stack review clean; evidence='
     ),
   }
   assert.equal(
@@ -1576,14 +1576,27 @@ test('keeps actions read permission for stack revalidation', () => {
   }
 })
 
-test('uses DeepSeek for individual and cumulative stack review jobs', () => {
+test('uses MOAT Flash for topology and individual and cumulative stack review jobs', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
 
   assert.equal(FINAL_STACK_REVIEW_MODEL, FINAL_REVIEW_MODEL)
-  assert.equal(FINAL_STACK_REVIEW_MODEL, MISTRAL_DEEPSEEK_MODEL)
+  assert.equal(FINAL_STACK_REVIEW_MODEL, 'z-ai/glm-5.3-flash')
+  assert.equal(FINAL_STACK_REVIEW_PROFILE, 'moat-flash')
+  const stackJobEnv =
+    workflow.match(
+      /\n {2}review_stack:\n {4}env:\n([\s\S]*?)(?=\n {4}if:)/
+    )?.[1] ?? ''
+  const topology =
+    workflow.match(
+      / {6}- name: Run strict topology review\n([\s\S]*?)(?=\n {6}- name:|\n {2}finalize_stack:)/
+    )?.[0] ?? ''
+  assert.match(stackJobEnv, /OCR_ADAPTER_PROVIDER: moat-flash/)
+  assert.doesNotMatch(topology, /OCR_ADAPTER_PROVIDER:/)
+  assert.doesNotMatch(workflow, /OCR_ADAPTER_PROVIDER: moat-advisor/)
+  assert.match(workflow, /CMD_API_KEY: \$\{\{ secrets\.CMD_API_KEY \}\}/)
   assert.doesNotMatch(workflow, /anthropic\/claude-opus-4\.6/)
   assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
 })
@@ -3709,7 +3722,10 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
     manifestBundle,
     rulesText: 'test rules',
     fetchImpl: async (_url, options) => {
-      assert.equal(_url, 'https://api.mistral.ai/v1/chat/completions')
+      assert.equal(
+        _url,
+        'https://api.commandcode.ai/inference/v1/chat/completions'
+      )
       assert.equal(options.redirect, 'error')
       fetchCalls += 1
       request = JSON.parse(options.body)
@@ -3903,7 +3919,7 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   assert.deepEqual(receipts[0], {
     schema_version: 1,
     stage: 'topology',
-    provider: 'mistral-deepseek',
+    provider: FINAL_STACK_REVIEW_PROFILE,
     model: FINAL_STACK_REVIEW_MODEL,
     requests: 1,
     upstream_attempts: 1,
@@ -3921,7 +3937,7 @@ test('sends strict max-reasoning topology requests and rejects invalid owners', 
   })
 })
 
-test('continues topology review through the advisor and returns aggregate DeepSeek usage', async (t) => {
+test('continues topology review through the advisor and returns aggregate Flash usage', async (t) => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
     github,
@@ -4029,7 +4045,7 @@ test('continues topology review through the advisor and returns aggregate DeepSe
   assert.equal(fetchCalls, 2)
   assert.equal(consultations.length, 1)
   assert.equal(consultations[0].id, 'call_topology_1')
-  assert.equal(requests[0].model, MISTRAL_DEEPSEEK_MODEL)
+  assert.equal(requests[0].model, FINAL_STACK_REVIEW_MODEL)
   assert.equal(requests[0].tools[0].function.name, 'ask_review_advisor')
   assert.equal(requests[0].max_tokens, 65_536)
   assert.equal(requests[1].max_tokens, 65_496)
@@ -4047,7 +4063,7 @@ test('continues topology review through the advisor and returns aggregate DeepSe
     {
       schema_version: 1,
       stage: 'topology',
-      provider: 'mistral-deepseek',
+      provider: FINAL_STACK_REVIEW_PROFILE,
       model: FINAL_STACK_REVIEW_MODEL,
       provider_availability: { reason: null, status: 'available' },
       requests: 2,
@@ -4373,6 +4389,7 @@ test('topology continues past bounded advisor errors and honors the remaining sh
   for (const error of [
     'advisor_quota_exhausted',
     'advisor_unavailable',
+    'advisor_output_truncated',
     'source_unavailable',
     'cancelled',
     'tool_failed',
@@ -4516,7 +4533,7 @@ test('forces a tool-free ninth topology turn and aggregates all Flash turns', as
     {
       schema_version: 1,
       stage: 'topology',
-      provider: 'mistral-deepseek',
+      provider: FINAL_STACK_REVIEW_PROFILE,
       model: FINAL_STACK_REVIEW_MODEL,
       provider_availability: { reason: null, status: 'available' },
       requests: 9,
@@ -4613,7 +4630,7 @@ test('retains topology usage when caller validation rejects the answer', async (
     assert.deepEqual(receipt, {
       schema_version: 1,
       stage: 'topology',
-      provider: 'mistral-deepseek',
+      provider: FINAL_STACK_REVIEW_PROFILE,
       model: FINAL_STACK_REVIEW_MODEL,
       requests: 1,
       upstream_attempts: 1,

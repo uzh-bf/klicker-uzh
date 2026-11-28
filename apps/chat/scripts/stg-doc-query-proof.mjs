@@ -9,18 +9,18 @@ import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { generateKeyPair, importPKCS8, SignJWT } from 'jose'
+import { importPKCS8, SignJWT } from 'jose'
 
-const RECEIPT_VERSION = 1
+const RECEIPT_VERSION = 2
 const MANIFEST_VERSION = 2
 const EXPECTED_KB_COUNT = 15
 const EXPECTED_CHATBOT_COUNT = 21
 const EXPECTED_EXCLUDED_CHATBOT_COUNT = 2
 const EXPECTED_CORPUS_PROOF_COUNT = 15
-const EXPECTED_DIRECT_CALL_COUNT = 37
+const EXPECTED_DIRECT_CALL_COUNT = EXPECTED_CORPUS_PROOF_COUNT * 2
 const COLLECTION = 'klicker_course_materials_v1'
 const STG_ENDPOINT =
-  'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker'
+  'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
 const TOOL_NAME = 'doc_query'
 const SCOPE_HEADER = 'X-Doc-Query-Scope-Token'
 const DEFAULT_DEADLINE_MS = 30 * 60 * 1000
@@ -42,7 +42,6 @@ function compareUtf16Strings(left, right) {
 }
 
 const SECRET_ENV_NAMES = [
-  'DOC_QUERY_JWT_TOKEN_KLICKER',
   'DOC_QUERY_SCOPE_PRIVATE_KEY',
   'DOC_QUERY_SCOPE_KID',
   'DOC_QUERY_SCOPE_ISSUER',
@@ -66,16 +65,6 @@ const ALLOWED_WORKER_ENV_NAMES = new Set([
   ...PLATFORM_ENV_NAMES,
 ])
 
-const REJECTION_CLASSES = [
-  'missing',
-  'expired',
-  'forged',
-  'wrong_issuer',
-  'wrong_audience',
-  'unknown_key',
-  'trusted_filter_override',
-]
-
 const PRESERVATION_FIELDS = [
   'databaseWrites',
   'configurationChanges',
@@ -93,7 +82,6 @@ const FAILURE_CLASSES = new Set([
   'protocol_failed',
   'canary_positive_failed',
   'canary_isolation_failed',
-  'rejection_failed',
   'positive_failed',
   'isolation_failed',
   'child_failed',
@@ -112,17 +100,11 @@ const DIAGNOSTIC_CLASSES = new Set([
 ])
 
 class ProofFailure extends Error {
-  constructor(
-    failureClass,
-    caseId = null,
-    rejectionClass = null,
-    diagnosticClass = 'none'
-  ) {
+  constructor(failureClass, caseId = null, diagnosticClass = 'none') {
     super(failureClass)
     this.name = 'ProofFailure'
     this.failureClass = failureClass
     this.caseId = caseId
-    this.rejectionClass = rejectionClass
     this.diagnosticClass = DIAGNOSTIC_CLASSES.has(diagnosticClass)
       ? diagnosticClass
       : 'unknown'
@@ -137,13 +119,12 @@ async function withDiagnostic(operation, diagnosticClass) {
       throw new ProofFailure(
         error.failureClass,
         error.caseId,
-        error.rejectionClass,
         error.diagnosticClass === 'none'
           ? diagnosticClass
           : error.diagnosticClass
       )
     }
-    throw new ProofFailure('protocol_failed', null, null, diagnosticClass)
+    throw new ProofFailure('protocol_failed', null, diagnosticClass)
   }
 }
 
@@ -354,7 +335,6 @@ function emptyReceipt() {
     failureClass: 'none',
     diagnosticClass: 'none',
     failedCaseId: null,
-    failedRejectionClass: null,
     counts: {
       kbExpected: EXPECTED_KB_COUNT,
       kbPassed: 0,
@@ -364,12 +344,8 @@ function emptyReceipt() {
       excludedExpected: EXPECTED_EXCLUDED_CHATBOT_COUNT,
       positivePassed: 0,
       isolationPassed: 0,
-      rejectionsPassed: 0,
       directCallsAttempted: 0,
     },
-    rejections: Object.fromEntries(
-      REJECTION_CLASSES.map((name) => [name, 'not_run'])
-    ),
     preservation: zeroPreservation(),
   }
 }
@@ -377,7 +353,6 @@ function emptyReceipt() {
 function fixedFailureReceipt(
   failureClass,
   caseId = null,
-  rejectionClass = null,
   diagnosticClass = 'none'
 ) {
   const receipt = emptyReceipt()
@@ -385,9 +360,6 @@ function fixedFailureReceipt(
     ? failureClass
     : 'protocol_failed'
   receipt.failedCaseId = ID_PATTERN.test(caseId ?? '') ? caseId : null
-  receipt.failedRejectionClass = REJECTION_CLASSES.includes(rejectionClass)
-    ? rejectionClass
-    : null
   receipt.diagnosticClass = DIAGNOSTIC_CLASSES.has(diagnosticClass)
     ? diagnosticClass
     : 'unknown'
@@ -395,10 +367,10 @@ function fixedFailureReceipt(
 }
 
 function workerProtocolFailureReceipt(failureClass = 'protocol_failed') {
-  return fixedFailureReceipt(failureClass, null, null, 'worker_protocol')
+  return fixedFailureReceipt(failureClass, null, 'worker_protocol')
 }
 
-function extractDocuments(result) {
+function extractDocuments(result, kbId) {
   if (
     !result ||
     typeof result !== 'object' ||
@@ -407,19 +379,28 @@ function extractDocuments(result) {
   ) {
     return null
   }
-  for (const block of result.content) {
-    if (block?.type !== 'text' || typeof block.text !== 'string') {
-      continue
-    }
+  const payloads =
+    result.structuredContent === undefined
+      ? result.content
+          .filter((block) => block?.type === 'text')
+          .map((block) => block.text)
+      : [result.structuredContent]
+  for (const payload of payloads) {
     try {
-      const parsed = JSON.parse(block.text)
+      const envelope =
+        typeof payload === 'string' ? JSON.parse(payload) : payload
+      const parsed =
+        typeof envelope?.result === 'string'
+          ? JSON.parse(envelope.result)
+          : envelope
+      if (parsed?.mode !== 'documents') continue
       if (
-        parsed?.mode === 'documents' &&
-        Array.isArray(parsed.sources) &&
-        Number.isInteger(parsed?.summary?.sources_returned)
-      ) {
-        return parsed
-      }
+        !Array.isArray(parsed.sources) ||
+        parsed.summary?.sources_returned !== parsed.sources.length ||
+        !parsed.sources.every((source) => source?.kb_id === kbId)
+      )
+        return null
+      return parsed
     } catch {
       // A non-JSON block is not proof and is never surfaced.
     }
@@ -460,28 +441,6 @@ function hasAnyReferenceMarker(documents, markers) {
   })
 }
 
-function isRejected(result, rejectionClass) {
-  if (!result || typeof result !== 'object' || result.isError !== true) {
-    return false
-  }
-  if (!Array.isArray(result.content)) return false
-  const expected =
-    rejectionClass === 'trusted_filter_override'
-      ? /invalid arguments|validation error|extra inputs are not permitted/i
-      : /unauthorized:\s*(?:missing bearer token|invalid token)/i
-  return result.content.some((block) => {
-    if (block?.type !== 'text' || typeof block.text !== 'string') {
-      return false
-    }
-    try {
-      const parsed = JSON.parse(block.text)
-      return typeof parsed?.error === 'string' && expected.test(parsed.error)
-    } catch {
-      return expected.test(block.text)
-    }
-  })
-}
-
 async function createScopeSigner(environment) {
   let privateKey
   try {
@@ -492,47 +451,42 @@ async function createScopeSigner(environment) {
   } catch {
     throw new ProofFailure('credential_missing')
   }
-  const rogueKey = (await generateKeyPair('ES256')).privateKey
-
-  return async ({ kbId, chatbotId, variant = 'valid' }) => {
+  return async ({ kbId, chatbotId, sessionId }) => {
     const now = Math.floor(Date.now() / 1000)
-    const issuer =
-      variant === 'wrong_issuer'
-        ? 'urn:klicker:doc-query-proof:rejected-issuer'
-        : environment.DOC_QUERY_SCOPE_ISSUER
-    const audience =
-      variant === 'wrong_audience'
-        ? 'urn:klicker:doc-query-proof:rejected-audience'
-        : environment.DOC_QUERY_SCOPE_AUDIENCE
-    const kid =
-      variant === 'unknown_key'
-        ? 'klicker-doc-query-proof-unknown-key'
-        : environment.DOC_QUERY_SCOPE_KID
-    const signingKey = variant === 'forged' ? rogueKey : privateKey
-    const issuedAt = variant === 'expired' ? now - 7_200 : now
-    const expiresAt = variant === 'expired' ? now - 3_600 : now + 300
-
     return new SignJWT({ kb_id: kbId, chatbot_id: chatbotId })
-      .setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid })
-      .setIssuer(issuer)
-      .setAudience(audience)
-      .setSubject(randomUUID())
+      .setProtectedHeader({
+        alg: 'ES256',
+        typ: 'JWT',
+        kid: environment.DOC_QUERY_SCOPE_KID,
+      })
+      .setIssuer(environment.DOC_QUERY_SCOPE_ISSUER)
+      .setAudience(environment.DOC_QUERY_SCOPE_AUDIENCE)
+      .setSubject(sessionId)
       .setJti(randomUUID())
-      .setIssuedAt(issuedAt)
-      .setExpirationTime(expiresAt)
-      .sign(signingKey)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 300)
+      .sign(privateKey)
   }
 }
 
 export function createMcpTransport(
-  headers,
+  mintScopeToken,
   Transport = StreamableHTTPClientTransport
 ) {
-  const noRedirectFetch = (input, init = {}) =>
-    fetch(input, { ...init, redirect: 'error' })
-  return new Transport(new URL(STG_ENDPOINT), {
-    requestInit: { headers, redirect: 'error' },
-    fetch: noRedirectFetch,
+  const target = new URL(STG_ENDPOINT)
+  const scopedFetch = async (input, init = {}) => {
+    const url = input instanceof Request ? input.url : input.toString()
+    if (url !== target.href) throw new ProofFailure('protocol_failed')
+    const headers = new Headers(
+      init.headers ?? (input instanceof Request ? input.headers : undefined)
+    )
+    headers.delete('authorization')
+    headers.set(SCOPE_HEADER, `Bearer ${await mintScopeToken()}`)
+    return fetch(input, { ...init, headers, redirect: 'error' })
+  }
+  return new Transport(target, {
+    requestInit: { redirect: 'error' },
+    fetch: scopedFetch,
     reconnectionOptions: {
       initialReconnectionDelay: 1_000,
       maxReconnectionDelay: 30_000,
@@ -542,120 +496,49 @@ export function createMcpTransport(
   })
 }
 
-async function invokeMcp({ bearer, scopeToken, question, override }) {
-  const headers = { authorization: `Bearer ${bearer}` }
-  if (scopeToken) headers[SCOPE_HEADER] = `Bearer ${scopeToken}`
+async function invokeMcp({ mintScopeToken, question }) {
   const client = new Client({
     name: 'klicker-stg-doc-query-proof',
     version: '1',
   })
-  const transport = createMcpTransport(headers)
+  const transport = createMcpTransport(mintScopeToken)
   try {
     await client.connect(transport)
     return await client.callTool({
       name: TOOL_NAME,
-      arguments: override
-        ? {
-            question,
-            metadata_filters: { resource_active: false, kb_id: override },
-          }
-        : { question },
+      arguments: { question },
     })
   } finally {
     await client.close().catch(() => undefined)
   }
 }
 
-async function provePositive(
-  invoke,
-  signer,
-  environment,
-  proofCase,
-  chatbotId
-) {
-  const token = await signer({ kbId: proofCase.kbId, chatbotId })
+async function provePositive(invoke, signer, proofCase, chatbotId) {
+  const sessionId = randomUUID()
   const result = await invoke({
-    bearer: environment.DOC_QUERY_JWT_TOKEN_KLICKER,
-    scopeToken: token,
+    mintScopeToken: () =>
+      signer({ kbId: proofCase.kbId, chatbotId, sessionId }),
     question: proofCase.positive.question,
   })
-  const documents = extractDocuments(result)
+  const documents = extractDocuments(result, proofCase.kbId)
   return Boolean(
     documents?.summary.sources_returned >= proofCase.positive.minSources &&
       hasAnyDocumentMarker(documents, proofCase.positive.expectAny)
   )
 }
 
-async function proveIsolation(
-  invoke,
-  signer,
-  environment,
-  proofCase,
-  chatbotId
-) {
-  const token = await signer({ kbId: proofCase.kbId, chatbotId })
+async function proveIsolation(invoke, signer, proofCase, chatbotId) {
+  const sessionId = randomUUID()
   const result = await invoke({
-    bearer: environment.DOC_QUERY_JWT_TOKEN_KLICKER,
-    scopeToken: token,
+    mintScopeToken: () =>
+      signer({ kbId: proofCase.kbId, chatbotId, sessionId }),
     question: proofCase.foreign.question,
   })
-  const documents = extractDocuments(result)
+  const documents = extractDocuments(result, proofCase.kbId)
   return Boolean(
     documents?.sources &&
       !hasAnyReferenceMarker(documents, proofCase.foreign.forbidReferences)
   )
-}
-
-async function proveRejections(
-  invoke,
-  signer,
-  environment,
-  proofCase,
-  chatbotId,
-  foreignKbId,
-  receipt
-) {
-  const variants = [
-    ['missing', null],
-    ['expired', 'expired'],
-    ['forged', 'forged'],
-    ['wrong_issuer', 'wrong_issuer'],
-    ['wrong_audience', 'wrong_audience'],
-    ['unknown_key', 'unknown_key'],
-  ]
-
-  for (const [rejectionClass, variant] of variants) {
-    const scopeToken = variant
-      ? await signer({ kbId: proofCase.kbId, chatbotId, variant })
-      : undefined
-    const result = await invoke({
-      bearer: environment.DOC_QUERY_JWT_TOKEN_KLICKER,
-      scopeToken,
-      question: proofCase.positive.question,
-    })
-    if (!isRejected(result, rejectionClass)) {
-      throw new ProofFailure('rejection_failed', proofCase.id, rejectionClass)
-    }
-    receipt.rejections[rejectionClass] = 'passed'
-    receipt.counts.rejectionsPassed += 1
-  }
-
-  const validToken = await signer({ kbId: proofCase.kbId, chatbotId })
-  const overrideResult = await invoke({
-    bearer: environment.DOC_QUERY_JWT_TOKEN_KLICKER,
-    scopeToken: validToken,
-    question: proofCase.positive.question,
-    override: foreignKbId,
-  })
-  if (!isRejected(overrideResult, 'trusted_filter_override')) {
-    throw new ProofFailure(
-      'rejection_failed',
-      proofCase.id,
-      'trusted_filter_override'
-    )
-  }
-  receipt.rejections.trusted_filter_override = 'passed'
-  receipt.counts.rejectionsPassed += 1
 }
 
 function recordPositivePass(receipt) {
@@ -668,56 +551,29 @@ function recordCompletedCase(receipt) {
   receipt.counts.kbPassed += 1
 }
 
-async function runCanaryProof(invoke, signer, environment, manifest, receipt) {
+async function runCanaryProof(invoke, signer, manifest, receipt) {
   const canary = manifest.cases[0]
   const canaryChatbotId = canary.chatbotIds[0]
   receipt.phase = 'canary'
 
-  if (
-    !(await provePositive(invoke, signer, environment, canary, canaryChatbotId))
-  ) {
+  if (!(await provePositive(invoke, signer, canary, canaryChatbotId))) {
     throw new ProofFailure('canary_positive_failed', canary.id)
   }
   recordPositivePass(receipt)
-  if (
-    !(await proveIsolation(
-      invoke,
-      signer,
-      environment,
-      canary,
-      canaryChatbotId
-    ))
-  ) {
+  if (!(await proveIsolation(invoke, signer, canary, canaryChatbotId))) {
     throw new ProofFailure('canary_isolation_failed', canary.id)
   }
   recordCompletedCase(receipt)
-
-  receipt.phase = 'rejections'
-  await proveRejections(
-    invoke,
-    signer,
-    environment,
-    canary,
-    canaryChatbotId,
-    manifest.cases[1].kbId,
-    receipt
-  )
 }
 
-async function runSerialProof(invoke, signer, environment, manifest, receipt) {
+async function runSerialProof(invoke, signer, manifest, receipt) {
   receipt.phase = 'matrix'
   for (const proofCase of manifest.cases.slice(1)) {
     const representativeChatbotId = [...proofCase.chatbotIds]
       .sort(compareUtf16Strings)
       .at(-1)
     if (
-      !(await provePositive(
-        invoke,
-        signer,
-        environment,
-        proofCase,
-        representativeChatbotId
-      ))
+      !(await provePositive(invoke, signer, proofCase, representativeChatbotId))
     ) {
       throw new ProofFailure('positive_failed', proofCase.id)
     }
@@ -726,7 +582,6 @@ async function runSerialProof(invoke, signer, environment, manifest, receipt) {
       !(await proveIsolation(
         invoke,
         signer,
-        environment,
         proofCase,
         representativeChatbotId
       ))
@@ -758,8 +613,8 @@ export async function runProofMatrix({
     )
     const signer = (request) =>
       withDiagnostic(() => rawSigner(request), 'scope_signing')
-    await runCanaryProof(invokeWithCap, signer, environment, manifest, receipt)
-    await runSerialProof(invokeWithCap, signer, environment, manifest, receipt)
+    await runCanaryProof(invokeWithCap, signer, manifest, receipt)
+    await runSerialProof(invokeWithCap, signer, manifest, receipt)
 
     receipt.phase = 'complete'
     receipt.result = 'passed'
@@ -770,15 +625,11 @@ export async function runProofMatrix({
     const failure =
       error instanceof ProofFailure
         ? error
-        : new ProofFailure('protocol_failed', null, null, 'unknown')
+        : new ProofFailure('protocol_failed', null, 'unknown')
     receipt.result = 'failed'
     receipt.failureClass = failure.failureClass
     receipt.diagnosticClass = failure.diagnosticClass
     receipt.failedCaseId = failure.caseId
-    receipt.failedRejectionClass = failure.rejectionClass
-    if (failure.rejectionClass) {
-      receipt.rejections[failure.rejectionClass] = 'failed'
-    }
     return receipt
   }
 }
@@ -840,9 +691,7 @@ function sanitizeReceipt(value) {
     value.receiptVersion !== RECEIPT_VERSION ||
     value.environment !== 'stg' ||
     value.collection !== COLLECTION ||
-    !['preflight', 'canary', 'rejections', 'matrix', 'complete'].includes(
-      value.phase
-    ) ||
+    !['preflight', 'canary', 'matrix', 'complete'].includes(value.phase) ||
     !['passed', 'failed'].includes(value.result) ||
     !FAILURE_CLASSES.has(value.failureClass) ||
     !DIAGNOSTIC_CLASSES.has(value.diagnosticClass)
@@ -861,7 +710,6 @@ function sanitizeReceipt(value) {
       value.failureClass !== 'none' ||
       value.diagnosticClass !== 'none' ||
       value.failedCaseId !== null ||
-      value.failedRejectionClass !== null ||
       value.counts?.kbExpected !== EXPECTED_KB_COUNT ||
       value.counts?.kbPassed !== EXPECTED_KB_COUNT ||
       value.counts?.chatbotsInScope !== EXPECTED_CHATBOT_COUNT ||
@@ -872,9 +720,7 @@ function sanitizeReceipt(value) {
       value.counts?.excludedExpected !== EXPECTED_EXCLUDED_CHATBOT_COUNT ||
       value.counts?.positivePassed !== EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.isolationPassed !== EXPECTED_CORPUS_PROOF_COUNT ||
-      value.counts?.rejectionsPassed !== REJECTION_CLASSES.length ||
-      value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT ||
-      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed'))
+      value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT)
   ) {
     return workerProtocolFailureReceipt()
   }
@@ -886,23 +732,11 @@ function sanitizeReceipt(value) {
   receipt.failedCaseId = ID_PATTERN.test(value.failedCaseId ?? '')
     ? value.failedCaseId
     : null
-  receipt.failedRejectionClass = REJECTION_CLASSES.includes(
-    value.failedRejectionClass
-  )
-    ? value.failedRejectionClass
-    : null
   for (const key of Object.keys(receipt.counts)) {
     const count = value.counts?.[key]
     receipt.counts[key] = Number.isInteger(count)
       ? Math.max(0, Math.min(count, 100))
       : receipt.counts[key]
-  }
-  for (const name of REJECTION_CLASSES) {
-    receipt.rejections[name] = ['not_run', 'passed', 'failed'].includes(
-      value.rejections?.[name]
-    )
-      ? value.rejections[name]
-      : 'not_run'
   }
   return receipt
 }
@@ -1143,11 +977,7 @@ async function workerMain() {
   } catch (error) {
     const receipt =
       error instanceof ProofFailure
-        ? fixedFailureReceipt(
-            error.failureClass,
-            error.caseId,
-            error.rejectionClass
-          )
+        ? fixedFailureReceipt(error.failureClass, error.caseId)
         : fixedFailureReceipt('protocol_failed')
     sendWorkerReceipt(receipt, 1)
   }

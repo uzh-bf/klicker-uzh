@@ -398,7 +398,7 @@ see **Bounded codebase check** below. Pushes always run the full suite.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
 
-- **AI review**: While a PR is a draft, OpenCodeReview runs DeepSeek V4.1 Flash 1017 (`deepseek-v4-1-flash-1017`) through Mistral at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to Mistral and incur usage cost. New commits (`synchronize`) on same-repository `sync/` branches skip automatic draft review; their initial opening, reopening or conversion to draft remains eligible. Ordinary feature PRs retain automatic review on new commits. Manual final review remains a separate gate for the current head.
+- **AI review**: While a PR is a draft, OpenCodeReview runs `z-ai/glm-5.3-flash` through MOAT's `moat-flash` profile at max reasoning through a runner-local adapter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new automatic reviews. Draft review diffs are sent to MOAT and incur usage cost. New commits (`synchronize`) on same-repository `sync/` branches skip automatic draft review; their initial opening, reopening or conversion to draft remains eligible. Ordinary feature PRs retain automatic review on new commits. Manual final review remains a separate gate for the current head.
 - **Draft advisor and repository context**: The trusted draft runner bootstraps
   `.agents/skills/ocr-reviewer/SKILL.md` as merged review rules. Its
   `read_review_context` MCP tool reads bounded Markdown from the trusted policy
@@ -406,7 +406,8 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   The reviewer may ask `ask_review_advisor` a focused question with up to three
   source ranges from the immutable PR head. One broker shares eight attempted
   consultations across planning and all four review workers. It consults
-  Mistral `zai-glm-5-3` at max reasoning with a 16 KiB complete request bound,
+  `zai-org/GLM-5.3` through `moat-advisor` at max reasoning with a 16 KiB
+  complete request bound,
   16,384-token output cap, 480-second deadline and no retries. Failures consume
   a slot; malformed, truncated or unsupported evidence is rejected. The advisor
   prompt asks for one direct answer in two to four short sentences with decisive
@@ -426,16 +427,17 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   cancellation while preserving existing client errors and counters. Older
   receipts report unknown outcome details. Advice validation reasons distinguish
   finish status, tool count/name, argument JSON, object shape, assessment, answer
-  type/length, evidence array/count and source evidence. These fixed codes retain
-  the client error `invalid_advice`; receipts include no answer, source or private
-  reasoning. Older generic `invalid_advice` receipts cannot identify which check
-  failed. Tool discovery describes the complete
+  type/length, evidence array/count and source evidence. An output-limit finish
+  returns `advisor_output_truncated` to the reviewer and retains `length` in
+  the receipt. Other advice validation failures return `invalid_advice`.
+  Receipts omit answers, source and private reasoning. Older generic
+  `invalid_advice` receipts cannot identify which check failed. Tool discovery describes the complete
   16 KiB serialized request bound, including overhead, the 256 KiB source-file
   bound and each range's 120-line/8 KiB bound; prefer minimal sufficient ranges.
   Bracket paths such as Next.js dynamic routes retain the same immutable-source
   and traversal checks. Draft and advisor costs use separate provider rates; a
   combined estimate is unavailable when either expected usage receipt is incomplete. Advisor usage has its own quota and does
-  not change OCR's existing token accounting. This adds Mistral provider usage
+  not change OCR's existing token accounting. This adds MOAT provider usage
   to draft review; source configuration becomes active only after merge.
 - **Trusted review configuration**: `.github/open-code-review/repository.json`
   is read from the frozen trusted policy commit. The `ocr-repository/v1` schema
@@ -451,8 +453,8 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   policy digest includes their source. Final admission and its individual/stack
   execution contracts stay in the existing GitHub controller.
   The [shared runtime](ocr-runtime.md) packages these contracts as a pinned
-  composite action and release manifest. Klicker's draft caller selects release
-  `0032c990d40985ce120179ded2c9d4b6e6a1d940`; CI checks the caller against that
+  composite action and release manifest. Klicker's draft caller selects a release
+  that includes the `cmd-api-key` input; CI checks the caller against that
   published controller and verifies its trusted configuration and portable skill.
   Actual remote-action execution remains a separate ordinary post-merge receipt.
 - **Public library documentation**: `lookup_library_docs` uses Context7's
@@ -492,13 +494,13 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   cost and cache-savings formula remains scoped to those two models. Docs consume
   ordinary model context within the existing OCR ceilings. GitLab adopters can
   reuse the broker and skill with their own trusted CI and publisher.
-- **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `deepseek-v4-1-flash-1017` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
+- **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `z-ai/glm-5.3-flash` through `moat-flash` with max reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.13.0 and use its low review-effort preset for one review round; this does not lower the model's max reasoning setting. Both manual command paths use OCR's 200,000-token prompt ceiling, with estimated compression thresholds at 120,000 and 160,000 tokens. The separate completion cap remains 16,384 tokens. Before paid execution, one offline preview runs at the same prompt limit; malformed selection data or any `too_large` size exclusion stops the review. Other intentional rule and path exclusions remain valid: `final-review-rules.json` excludes unit tests and their support code (`*.test.*`, `__tests__`, `__mocks__`, `test/` directories and `tests/` directories under `apps/` and `packages/`) and documentation, in addition to OCR's default filters. Its `include` entry `playwright/**/*.ts` bypasses OCR's built-in test filter, so Playwright specs, helpers and configuration are reviewed. User excludes take precedence over `include`, so no exclude pattern may match `playwright/`. A successful selection preview does not prove that rendered group prompts fit or that the review completed. Each individual OCR task has a 45-minute deadline, and an individual range has a 10,000,000-token aggregate ceiling on billable tokens (uncached input plus output; see the cache accounting below). When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 90-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The result CLI commands also emit a bounded JSON diagnostic to stderr
   with status, coverage counts, allowlisted failure classifications, resume outcome
   and a fixed rejection code. A still-partial resume has a terminal-status rejection
   rather than an identity error. The two-line resume-plan and JSON merge stdout
-  protocols, coverage requirements and retry decisions remain unchanged. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `MISTRAL_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `deepseek-v4-1-flash-1017 final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
+  protocols, coverage requirements and retry decisions remain unchanged. The mode-0600 OCR config contains an environment-based loopback token command, never the upstream key. Each OCR attempt starts its own adapter and removes `CMD_API_KEY` from OCR's child environment. The wrapper closes the listener before returning, and always-run configuration cleanup must succeed before publication. Keep these jobs on fresh GitHub-hosted runners. If no actionable findings exist, it records an evidence-bound clean success status with description `z-ai/glm-5.3-flash final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
 - **Individual requirements context**: `/final-review` sends the normalized PR title and up to 8,000 Unicode code points of the description as untrusted context. Put the problem, intended behavior, boundaries and acceptance criteria first. Hidden HTML comments and image embeds are omitted before truncation; fenced and inline code examples remain data. The structured context marks descriptions as complete, truncated or absent; missing descriptions retain a title-only fallback. Links and images are never fetched. Description text cannot override trusted review rules, waive findings, change settings or grant authority. The effective background digest binds authorization, startup, evidence reuse, publication and finalization; an effective context edit during the run prevents stale success. The individual review also appends the pull request's changed `project/**/*-plan.md` documents, read from the head commit, as untrusted context: hidden comments and images are removed, and all plans share 16,000 code points in path order, so the earliest-dated plan comes first. At most ten plan files are read, a plan larger than 256 KiB is omitted, and only the first 65,536 code points of a plan are normalized, which bounds the cost of crafted content. The plans are context, not reviewed files; the background digest still covers only the title and description, because plan content is fixed by the bound head commit. Cumulative `/final-review-stack` retains its existing background and per-layer topology descriptions.
-- **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `deepseek-v4-1-flash-1017` with max reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `deepseek-v4-1-flash-1017 stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external Mistral request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
+- **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `z-ai/glm-5.3-flash` through `moat-flash` for both the code pass and stack topology at max reasoning. Topology may consult the bounded full GLM advisor. It assigns cross-layer findings to exact layer deltas and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `z-ai/glm-5.3-flash stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external MOAT request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
 - **Stack topology evidence**: The topology pass receives unified Git diffs for
   every frozen layer, including unchanged lower layers during incremental repair.
   The root diff starts at the verified merge base; upper diffs use their recorded
@@ -523,7 +525,7 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
   policy, context, digest and reviewed-path validation remain required. A green
   workflow can otherwise appear stale when its returned URL is compared only
   with the requested workflow URL.
-- **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. An allowed resume that remains partial is reported as an incomplete review instead of an identity mismatch. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, Mistral configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
+- **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. An allowed resume that remains partial is reported as an incomplete review instead of an identity mismatch. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, MOAT configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
 - **Final-review compression engine**: The manual individual and stack jobs build OCR 1.13.0 from immutable upstream commit `1672852136fc87748249d22bce0819f33419ea79` using Go 1.26.9, a verified source archive and the repository's compression patch. Installation runs the affected upstream race tests and fails closed; it never falls back to an unpatched executable. The installer and patch participate in review policy identity, and every attempt checks the executable's source/patch version marker. The compressor preserves the original review instructions, reserves their context cost, keeps one rolling summary in compressible history and includes evicted tool calls and results in the next summary. Group dispatch reserves rendered rules and maximum plan output before splitting oversized groups without excluding any selected path; oversized singletons still fail. Prompt, completion and aggregate ceilings, model, reasoning effort and complete-coverage validation remain unchanged. Synthetic request/token improvements establish an execution regression fix; complete live review remains a separate activation check.
 - **Compression telemetry**: Patched manual binaries emit fixed lifecycle records with estimated context tokens before and after each compression computation. The adapter exposes sanitized progress events and bounded aggregate counts in the existing execution artifact and job summary. `rebuilt` means a usable snapshot was produced; a background snapshot can later be discarded, so these estimates are neither applied-context reductions nor billable usage or USD savings. Failed, cancelled and unchanged computations retain distinct counts. A version marker and fully drained, balanced records establish complete telemetry, including zero attempts. Missing instrumentation, malformed records, overflow or an incomplete stderr drain reports telemetry as unavailable while preserving cost accounting and the review outcome. Released draft binaries remain uninstrumented.
 - **Legacy generated staging promotion**: Phase 1 supersedes the annotation-write-back mechanism and removes its `Verified generated staging promotion` no-report exemption. The successor creates no pull request, and a legacy-named promotion pull request follows ordinary final-review policy. Its privileged `workflow_run` executes only trusted default-branch control code; candidate Git objects and API metadata are inputs, never executable policy.
@@ -535,37 +537,51 @@ trusted helper suites dependency-free. YAML-based workflow assertions belong in
 `ocr-self-update-guard.test.cjs`, which runs after dependency installation in
 the codebase check.
 
-The draft workflow selects `OCR_ADAPTER_PROVIDER=mistral-deepseek` for both startup
-and the separate summary process. Drafts and the advisor require only
-`MISTRAL_API_KEY`. The draft endpoint is
-`https://api.mistral.ai/v1/chat/completions`, the model is
-`deepseek-v4-1-flash-1017`, and `reasoning_effort` is fixed to `max`.
-Manual final, stack code, topology and preflight reviews select the same DeepSeek
-profile with maximum reasoning. Full `zai-glm-5-3` at maximum reasoning is used
-only for focused advisor questions. The advisor receives one question and up to
-three source ranges, each at most 120 lines and 8 KiB; the complete request is
-at most 16 KiB. Eight attempted consultations are shared across the job's
-workers, ranges, resume and topology. Its separate allowance is initialized
-once and cannot reset on a missing or corrupt continuation state. The portable
-reviewer skill directs difficult and architectural questions to the advisor
-after source inspection. The main reviewer validates the advice and owns all
-coverage and final findings. See [the runtime guide](ocr-runtime.md). Unknown
-profiles and missing selected credentials fail closed without a provider switch.
+The draft workflow selects `OCR_ADAPTER_PROVIDER=moat-flash` for both startup
+and the separate summary process. Draft and manual main reviews use MOAT at
+`https://api.commandcode.ai/inference/v1/chat/completions` with model
+`z-ai/glm-5.3-flash` and `reasoning_effort` fixed to `max`. Manual final review,
+stack code review, topology and the tool preflight use `moat-flash` with maximum reasoning.
+Focused advisor questions select `moat-advisor` with
+`zai-org/GLM-5.3` at maximum reasoning. The workflow supplies `CMD_API_KEY` to
+the action through the `cmd-api-key` input, and the composite places it in the
+review step only.
+The advisor receives one question and up to three source ranges, each at most
+120 lines and 8 KiB; the complete request is at most 16 KiB. Eight attempted
+consultations are shared across the job's workers, ranges, resume and topology.
+Its separate allowance is initialized once and cannot reset on a missing or
+corrupt continuation state. The portable reviewer skill directs difficult and
+architectural questions to the advisor after source inspection. The main
+reviewer validates the advice and owns all coverage and final findings. See
+[the runtime guide](ocr-runtime.md). Unknown profiles and missing selected
+credentials fail closed without a provider switch.
 The adapter converts OCR's `max_completion_tokens` to `max_tokens` and exposes
-only final text plus separate reasoning metadata. OpenRouter's native
-`reasoning_details` stay intact in memory; OCR-facing reasoning prefers its
-nonempty `reasoning` string, then text/summary details, then legacy
-`reasoning_content`, avoiding duplicate reasoning. Complete native turns stay in
-bounded process memory and are restored on conversation replay; missing or
-ambiguous history fails closed. OCR compression rewrites the conversation prefix;
-a retained turn may then match one native payload by exact assistant identity
-and reasoning hash. When the SDK omits reasoning, an exact tool turn may instead
-match within its validated conversation key; cross-task and ambiguous matches
-remain rejected. Main review requests offering `task_done` force tool use with `tool_choice: any` for Mistral and `required` for OpenRouter; a length-limited response without a tool call may enter OCR's existing continuation loop once per replayed chain, retaining its native history and billable usage. A finished tool-free response or another tool-free turn in that chain still fails closed. Auxiliary grouping, planning, filtering and compression requests remain unchanged. Manual jobs retain seven-day aggregate execution counters for request counts, input/output usage, missing tools, length finishes and history restoration. These receipts contain no prompts, code, reasoning traces, credentials or raw provider errors. The trusted draft runner starts its adapters and broker in the parent process,
-gives OCR an isolated temporary home and scoped loopback capabilities, and closes
-those listeners during bounded cleanup. Neither upstream keys nor native
-history are persisted. Live qualification of a changed draft route requires trusted default-branch
-activation; branch CI runs the current default-branch policy.
+only final text plus separate reasoning metadata. Native reasoning metadata stays
+intact in bounded process memory; OCR-facing reasoning prefers its nonempty
+`reasoning` string, then text/summary details, then legacy `reasoning_content`,
+avoiding duplicate reasoning. Complete native turns are restored on conversation
+replay; missing or ambiguous history fails closed. OCR compression rewrites the
+conversation prefix; a retained turn may then match one native payload by exact
+assistant identity and reasoning hash. When the SDK omits reasoning, an exact
+tool turn may instead match within its validated conversation key; cross-task
+and ambiguous matches remain rejected. Main-review requests offering
+`task_done` force tool use with `tool_choice: required`; a length-limited
+response without a tool call may enter OCR's existing continuation loop once per
+replayed chain, retaining its native history and billable usage. In draft reviews,
+one additional empty length-limited response per main task can continue when
+OCR returns a matching result from the latest tool-call turn since the first
+truncation. Consecutive truncations fail, and compression cannot renew the
+allowance. Only an actual completion tool call can finish the pass. For manual
+MOAT final code reviews, the first tool-free main response may also finish with
+`stop`. OCR asks for a real tool call on the next iteration under the same
+limits. Empty text and prose carry no verdict. Another tool-free `stop` in that
+scope fails closed even if compression has removed the earlier turn.
+Auxiliary grouping, planning, filtering and compression requests remain
+unchanged. Manual jobs retain seven-day aggregate execution counters for request
+counts, input/output usage, missing tools, length finishes and history
+restoration. These receipts contain no prompts, code, reasoning traces,
+credentials or raw provider errors. The trusted draft runner starts its adapters
+and broker in the parent process,
 
 Manual jobs pass the private configuration to the adapter's
 `run --ocr-config <path> -- <command>` option. Each attempt atomically fills in
@@ -593,8 +609,7 @@ valid cache report; consult `cache_usage_responses`, `missing_cache_usage` and
 `invalid_cache_usage` before interpreting them. Cache keys and raw provider metadata
 are never copied into those diagnostics. New receipts include only the
 fixed profile and model identifiers so cost reporting can reject mismatched
-receipts. OpenRouter uses the forwarded key for provider sticky routing; cache
-hits remain opportunistic across endpoints.
+receipts. MOAT profile cache hits remain opportunistic.
 
 Draft reviews use the same bounded, sanitized PR-description context as manual
 reviews, with the existing absent-description fallback. The description remains
@@ -626,23 +641,18 @@ are kept.
 
 Adapter receipts retain the latest observed rejection as `last_upstream_error`
 with an integer HTTP status and an allowlisted numeric `error.code`, or `unknown`.
-Only codes 400, 401, 402, 403, 408, 429, 502 and 503 are retained from the top-level
-JSON error envelope ([OpenRouter error codes](https://openrouter.ai/docs/api_reference/errors-and-debugging)). For OpenRouter HTTP 402/403, a fixed `reason` distinguishes
-`key_budget_exhausted`, `guardrail_budget_exhausted`,
-`in_flight_budget_exhausted` and `credits_insufficient` from the documented
-`error.metadata.limit_source` allowlist. HTTP 403 can also identify a key cap
-from the documented leading `Key limit exceeded` phrase when structured limit
-evidence is absent. Unknown or malformed structured evidence blocks that legacy
-fallback; an arbitrary 403 remains `unknown`. These classifications follow the
-[OpenRouter limits contract](https://openrouter.ai/docs/api_reference/limits).
-Messages, metadata values, account amounts and arbitrary codes are discarded. Parsing
-uses at most 16 KiB of an already bounded response; a body read failure preserves
-the observed HTTP status. Concurrent rejection bodies cannot overwrite a later
-observed rejection. The `OCR upstream_error` summary revalidates these fields and
-uses the last non-null rejection in receipt order, separately from cost and usage
-accounting. Older receipts with status/code but no reason report `reason=unknown`;
-receipts without status/code report this diagnostic as unavailable. Preflight and
-stack topology `callMistral` receipts retain their existing behavior.
+Only codes 400, 401, 402, 403, 408, 429, 502 and 503 are retained from the
+standard JSON error envelope. Messages, metadata values, account amounts and
+arbitrary codes are discarded. Parsing uses at most 16 KiB of an already bounded
+response; a body read failure preserves the observed HTTP status. Concurrent
+rejection bodies cannot overwrite a later observed rejection. The
+`OCR upstream_error` summary revalidates these fields and uses the last non-null
+rejection in receipt order, separately from cost and usage accounting.
+OpenRouter-specific `reason` parsing remains limited to historical receipts from
+that retired route. Older receipts with status/code but no `reason` report
+`reason=unknown`; receipts without status/code report this diagnostic as
+unavailable. Preflight and stack topology receipts retain their existing bounded
+diagnostic behavior.
 
 Draft `OCR coverage` log and summary lines also include the existing sanitized
 `failure_classes` counts (`budget`, `provider`, `timeout`, or `other`) from the
@@ -712,24 +722,17 @@ paths and unknown receipt fields never enter these records. The CLI form is
 `summary <receipt-path> adapter=N [preflight=N] [topology=N]`; draft reporting
 defaults to one adapter lifetime.
 
-`MISTRAL_PRICING` and each profile in `PROVIDERS` in
-`ocr-mistral-adapter.cjs` hold profile-specific USD reference rates and dates,
-sourced from [Mistral's model pricing](https://docs.mistral.ai/models/zai-glm-5-3)
-and [OpenRouter's snapshot catalog](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017). Main reviews use
-[Mistral DeepSeek pricing](https://docs.mistral.ai/models/deepseek-v4-flash-1017):
-$0.30 input, $0.007 cached input and $1.20 output per million tokens, checked
-2026-10-28. The historical GLM Flash profile retains its own rates for explicit
-receipt interpretation; it is not an automatic fallback. New receipts include exact profile/model identity; legacy receipts
-without identity are accepted only for full GLM. Main-review and advisor estimates
-remain separate before combining, even when they share one Mistral key.
-OpenRouter estimates use the catalog reference rates of $0.15 input, $0.003 cached
-input and $0.60 output per million tokens, checked 2026-10-17. Actual endpoint
-prices and time-based overrides vary, so these estimates are labelled as
-reference-price comparisons. Summaries retain three-decimal rate precision and
-refuse to apply a profile's rates to another profile's receipts.
-Refresh the rates and date together when provider pricing changes.
-Summaries label the pricing date and exclude account discounts, taxes, and runner
-costs; these are estimates, not billing receipts.
+Each MOAT profile in `ocr-mistral-adapter.cjs` holds its USD reference rates per
+million tokens from [MOAT's pricing reference](https://commandcode.ai/docs/moat),
+checked 2026-11-26. `moat-flash` maps `z-ai/glm-5.3-flash` to $0.045 fresh
+input, $0.009 cached input and $0.15 output. `moat-advisor` maps
+`zai-org/GLM-5.3` to $0.49 fresh input, $0.091 cached input and $1.54 output.
+Main-review and advisor estimates remain separate before combining, even though
+both use `CMD_API_KEY`. New receipts include exact profile/model identity, and
+summaries refuse to apply one profile's rates to another profile's receipts.
+Refresh the rates and snapshot marker together when MOAT pricing changes.
+These estimates use membership token rates and exclude the membership fee,
+taxes and runner costs.
 
 ### Provider unavailable or paused
 
@@ -782,7 +785,11 @@ Sticky summaries, incremental comment deduplication, low-severity routing and
 existing OCR reasoning, budgets, timeouts and retry behavior are preserved.
 
 The draft adapter recognizes the pinned CLI's planning task affinity shape and
-supplies guidance only from a `stop` response with nonempty final text. Truncated
+returns a local outline for a one-file group with at least 500 added and removed
+lines combined. It lists changed hunk coordinates and available declaration
+landmarks from the supplied diff. The full diff remains in the review.
+`local_outlines` counts these substitutions separately from provider usage.
+Other planning calls supply guidance only from a `stop` response with nonempty final text. Truncated
 or empty plans reach the stock CLI as an empty answer without reasoning, using
 its existing continue-without-plan path. HTTP success, original finish reason,
 returned usage and private native history remain intact; this adds no provider
@@ -797,6 +804,28 @@ keys or response content. The CLI's `phase_completed phase=planning` progress
 event records that its planning request returned; it alone does not prove usable
 guidance. Raw usage journals retain the original response sizes and finish reason
 before the compatibility projection, and aggregate accounting remains unchanged.
+
+The draft job builds the pinned OCR source with its draft-only patch and checks
+the executable's patch identity before starting the review. A successful first
+pass with no confirmed findings finishes without a second-pass event. In the
+second pass, Flash checks each selected file for an additional concrete failure mode. It
+reports a verified defect immediately and closes a ruled-out case once the files
+are checked. On the first model dispatch with four minutes or less left on the
+group deadline, the CLI appends one reminder to finish the
+current candidate. An in-flight request receives the reminder on its next turn
+if time remains. The draft adapter receipt records the first request that
+dispatched the reminder in `first_wrap_up_dispatch`, or `null` if none did.
+The reviewer still has to call the completion tool itself.
+
+For stock draft memory compression, the adapter returns summary text only when
+the provider finishes with `stop`, supplies visible text and requests no tools.
+An unusable answer returns empty text, so OCR keeps its working history. A
+repeat of a recently skipped, identical compression request returns empty
+locally. The adapter retains only request digests for this check.
+`OCR draft compression` reports usable replies, skipped replies and local repeat
+skips. These counters describe what the adapter sent to the CLI. The CLI decides
+whether to install a summary in a continuing review. Paid responses keep
+their original usage receipts.
 
 Manual individual and stack code reviews use human-audience progress through the
 adapter's `OCR_ADAPTER_PROGRESS_FD=3` opt-in. Their shell functions bind descriptor
