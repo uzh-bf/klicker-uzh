@@ -792,116 +792,120 @@ export async function applyActivityBatchOperations(
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
-    const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
-      // check if the course is different from before
-      const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
+    const updatedLiveQuiz = await ctx.prisma.$transaction(
+      async (tx) => {
+        // check if the course is different from before
+        const isCourseChanged =
+          !!newCourse && liveQuiz.courseId !== newCourse.id
 
-      // if required, find a new pin code for the live quiz that is still available
-      let newPinCode: string | null = null
-      if (isCourseChanged && newCourse.isAssessmentEnabled) {
-        let pinValid = false
+        // if required, find a new pin code for the live quiz that is still available
+        let newPinCode: string | null = null
+        if (isCourseChanged && newCourse.isAssessmentEnabled) {
+          let pinValid = false
 
-        for (let attempt = 0; attempt < 10; attempt++) {
-          // generate a new pin code
-          newPinCode = generatePassword.generate({
-            uppercase: true,
-            lowercase: false,
-            numbers: true,
-            symbols: false,
-            length: 6,
-          })
+          for (let attempt = 0; attempt < 10; attempt++) {
+            // generate a new pin code
+            newPinCode = generatePassword.generate({
+              uppercase: true,
+              lowercase: false,
+              numbers: true,
+              symbols: false,
+              length: 6,
+            })
 
-          // check if the pin code is still available
-          const existingLiveQuiz = await tx.liveQuiz.findUnique({
-            where: { pinCode: newPinCode },
-          })
-          if (!existingLiveQuiz) {
-            pinValid = true
-            break
+            // check if the pin code is still available
+            const existingLiveQuiz = await tx.liveQuiz.findUnique({
+              where: { pinCode: newPinCode },
+            })
+            if (!existingLiveQuiz) {
+              pinValid = true
+              break
+            }
+          }
+
+          // if the pin is still invalid, return null and abort the transaction
+          if (!pinValid) {
+            throw new Error('Could not find available pin code for live quiz')
           }
         }
 
-        // if the pin is still invalid, return null and abort the transaction
-        if (!pinValid) {
-          throw new Error('Could not find available pin code for live quiz')
-        }
-      }
-
-      const modifiedLiveQuiz = await tx.liveQuiz.update({
-        where: { id: liveQuiz.id },
-        data: {
-          // course re-assignment (including update of gamification and assessment flags)
-          course: isCourseChanged
-            ? { connect: { id: newCourse.id } }
-            : undefined,
-          isGamificationEnabled: isCourseChanged
-            ? { set: newCourse.isGamificationEnabled }
-            : undefined,
-          isAssessmentEnabled: isCourseChanged
-            ? { set: newCourse.isAssessmentEnabled }
-            : undefined,
-          // if the course is changed to an assessment course, assign a pin
-          pinCode: isCourseChanged ? newPinCode : undefined,
-          // multiplier updates
-          pointsMultiplier: setMultiplier
-            ? { set: Math.max(multiplier, 1) }
-            : undefined,
-          // if defined, set custom grading logic components
-          defaultPoints: setLiveQuizPoints
-            ? { set: Math.max(basePoints, 0) }
-            : undefined,
-          defaultCorrectPoints: setLiveQuizPoints
-            ? { set: Math.max(correctnessPoints, 0) }
-            : undefined,
-          maxBonusPoints: setLiveQuizPoints
-            ? { set: Math.max(bonusPoints, 0) }
-            : undefined,
-          timeToZeroBonus: setLiveQuizPoints
-            ? { set: Math.max(timeToZeroBonus, 1) }
-            : undefined,
-          // if set before, update the review status
-          reviewStatus:
-            liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
-              ? {
-                  set: isCourseChanged
-                    ? DB.ReviewStatus.INCOMPLETE
-                    : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
-                }
+        const modifiedLiveQuiz = await tx.liveQuiz.update({
+          where: { id: liveQuiz.id },
+          data: {
+            // course re-assignment (including update of gamification and assessment flags)
+            course: isCourseChanged
+              ? { connect: { id: newCourse.id } }
               : undefined,
-        },
-      })
-
-      // if the multiplier was changed, update the instances of the live quiz accordingly
-      if (setMultiplier) {
-        // get all instances that have a pointsMultiplier defined
-        const instances = liveQuiz.blocks
-          .flatMap((block) => block.elements)
-          .filter(
-            (instance) =>
-              'options' in instance &&
-              instance.options &&
-              'pointsMultiplier' in instance.options
-          )
-
-        await updateInstanceMultipliers(
-          {
-            instances,
-            newActivityMultiplier: modifiedLiveQuiz.pointsMultiplier,
+            isGamificationEnabled: isCourseChanged
+              ? { set: newCourse.isGamificationEnabled }
+              : undefined,
+            isAssessmentEnabled: isCourseChanged
+              ? { set: newCourse.isAssessmentEnabled }
+              : undefined,
+            // if the course is changed to an assessment course, assign a pin
+            pinCode: isCourseChanged ? newPinCode : undefined,
+            // multiplier updates
+            pointsMultiplier: setMultiplier
+              ? { set: Math.max(multiplier, 1) }
+              : undefined,
+            // if defined, set custom grading logic components
+            defaultPoints: setLiveQuizPoints
+              ? { set: Math.max(basePoints, 0) }
+              : undefined,
+            defaultCorrectPoints: setLiveQuizPoints
+              ? { set: Math.max(correctnessPoints, 0) }
+              : undefined,
+            maxBonusPoints: setLiveQuizPoints
+              ? { set: Math.max(bonusPoints, 0) }
+              : undefined,
+            timeToZeroBonus: setLiveQuizPoints
+              ? { set: Math.max(timeToZeroBonus, 1) }
+              : undefined,
+            // if set before, update the review status
+            reviewStatus:
+              liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+                ? {
+                    set: isCourseChanged
+                      ? DB.ReviewStatus.INCOMPLETE
+                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                  }
+                : undefined,
           },
-          tx
-        )
-      }
+        })
 
-      // if the course assignment was changed, update the derived pemissions on the quiz
-      if (newCourse) {
-        await recomputeDerivedPermissions(
-          { liveQuizId: modifiedLiveQuiz.id },
-          tx
-        )
-      }
+        // if the multiplier was changed, update the instances of the live quiz accordingly
+        if (setMultiplier) {
+          // get all instances that have a pointsMultiplier defined
+          const instances = liveQuiz.blocks
+            .flatMap((block) => block.elements)
+            .filter(
+              (instance) =>
+                'options' in instance &&
+                instance.options &&
+                'pointsMultiplier' in instance.options
+            )
 
-      return modifiedLiveQuiz
-    })
+          await updateInstanceMultipliers(
+            {
+              instances,
+              newActivityMultiplier: modifiedLiveQuiz.pointsMultiplier,
+            },
+            tx
+          )
+        }
+
+        // if the course assignment was changed, update the derived pemissions on the quiz
+        if (newCourse) {
+          await recomputeDerivedPermissions(
+            { liveQuizId: modifiedLiveQuiz.id },
+            tx
+          )
+        }
+
+        return modifiedLiveQuiz
+      },
+      { timeout: 60000 }
+    )
 
     updatedLiveQuizzes.push(updatedLiveQuiz.id)
   }
@@ -909,207 +913,216 @@ export async function applyActivityBatchOperations(
   if (!setLiveQuizPoints) {
     // update practice quizzes (including gamification / assessment flags & all instances - depending on the required updates)
     for (const practiceQuiz of practiceQuizzes) {
-      const updatedPracticeQuiz = await ctx.prisma.$transaction(async (tx) => {
-        // check if the course is different from before
-        const isCourseChanged =
-          !!newCourse && practiceQuiz.courseId !== newCourse.id
+      const updatedPracticeQuiz = await ctx.prisma.$transaction(
+        async (tx) => {
+          // check if the course is different from before
+          const isCourseChanged =
+            !!newCourse && practiceQuiz.courseId !== newCourse.id
 
-        const modifiedPracticeQuiz = await tx.practiceQuiz.update({
-          where: { id: practiceQuiz.id },
-          data: {
-            // course re-assignment (including update of gamification and assessment flags)
-            course: isCourseChanged
-              ? { connect: { id: newCourse.id } }
-              : undefined,
-            isGamificationEnabled: isCourseChanged
-              ? { set: newCourse.isGamificationEnabled }
-              : undefined,
-            isAssessmentEnabled: isCourseChanged
-              ? { set: newCourse.isAssessmentEnabled }
-              : undefined,
-            // multiplier updates
-            pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
-            // if set before, update the review status
-            reviewStatus:
-              practiceQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
-                ? {
-                    set: isCourseChanged
-                      ? DB.ReviewStatus.INCOMPLETE
-                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
-                  }
+          const modifiedPracticeQuiz = await tx.practiceQuiz.update({
+            where: { id: practiceQuiz.id },
+            data: {
+              // course re-assignment (including update of gamification and assessment flags)
+              course: isCourseChanged
+                ? { connect: { id: newCourse.id } }
                 : undefined,
-          },
-        })
-
-        // if the multiplier was changed, update the instances of the practice quiz accordingly
-        if (setMultiplier) {
-          // get all instances that have a pointsMultiplier defined
-          const instances = practiceQuiz.stacks
-            .flatMap((stack) => stack.elements)
-            .filter(
-              (instance) =>
-                'options' in instance &&
-                instance.options &&
-                'pointsMultiplier' in instance.options
-            )
-
-          await updateInstanceMultipliers(
-            {
-              instances,
-              newActivityMultiplier: modifiedPracticeQuiz.pointsMultiplier,
+              isGamificationEnabled: isCourseChanged
+                ? { set: newCourse.isGamificationEnabled }
+                : undefined,
+              isAssessmentEnabled: isCourseChanged
+                ? { set: newCourse.isAssessmentEnabled }
+                : undefined,
+              // multiplier updates
+              pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+              // if set before, update the review status
+              reviewStatus:
+                practiceQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+                  ? {
+                      set: isCourseChanged
+                        ? DB.ReviewStatus.INCOMPLETE
+                        : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                    }
+                  : undefined,
             },
-            tx
-          )
-        }
+          })
 
-        // if the course assignment was changed, update the derived pemissions on the quiz
-        if (newCourse) {
-          await recomputeDerivedPermissions(
-            { practiceQuizId: modifiedPracticeQuiz.id },
-            tx
-          )
-        }
+          // if the multiplier was changed, update the instances of the practice quiz accordingly
+          if (setMultiplier) {
+            // get all instances that have a pointsMultiplier defined
+            const instances = practiceQuiz.stacks
+              .flatMap((stack) => stack.elements)
+              .filter(
+                (instance) =>
+                  'options' in instance &&
+                  instance.options &&
+                  'pointsMultiplier' in instance.options
+              )
 
-        return modifiedPracticeQuiz
-      })
+            await updateInstanceMultipliers(
+              {
+                instances,
+                newActivityMultiplier: modifiedPracticeQuiz.pointsMultiplier,
+              },
+              tx
+            )
+          }
+
+          // if the course assignment was changed, update the derived pemissions on the quiz
+          if (newCourse) {
+            await recomputeDerivedPermissions(
+              { practiceQuizId: modifiedPracticeQuiz.id },
+              tx
+            )
+          }
+
+          return modifiedPracticeQuiz
+        },
+        { timeout: 60000 }
+      )
 
       updatedPracticeQuizzes.push(updatedPracticeQuiz.id)
     }
 
     // update microlearnings (including gamification / assessment flags & all instances - depending on the required updates)
     for (const microLearning of microLearnings) {
-      const updatedMicroLearning = await ctx.prisma.$transaction(async (tx) => {
-        // check if the course is different from before
-        const isCourseChanged =
-          !!newCourse && microLearning.courseId !== newCourse.id
+      const updatedMicroLearning = await ctx.prisma.$transaction(
+        async (tx) => {
+          // check if the course is different from before
+          const isCourseChanged =
+            !!newCourse && microLearning.courseId !== newCourse.id
 
-        const modifiedMicroLearning = await tx.microLearning.update({
-          where: { id: microLearning.id },
-          data: {
-            // course re-assignment (including update of gamification and assessment flags)
-            course: isCourseChanged
-              ? { connect: { id: newCourse.id } }
-              : undefined,
-            isGamificationEnabled: isCourseChanged
-              ? { set: newCourse.isGamificationEnabled }
-              : undefined,
-            isAssessmentEnabled: isCourseChanged
-              ? { set: newCourse.isAssessmentEnabled }
-              : undefined,
-            // multiplier updates
-            pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
-            // if set before, update the review status
-            reviewStatus:
-              microLearning.reviewStatus === DB.ReviewStatus.REVIEWED
-                ? {
-                    set: isCourseChanged
-                      ? DB.ReviewStatus.INCOMPLETE
-                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
-                  }
+          const modifiedMicroLearning = await tx.microLearning.update({
+            where: { id: microLearning.id },
+            data: {
+              // course re-assignment (including update of gamification and assessment flags)
+              course: isCourseChanged
+                ? { connect: { id: newCourse.id } }
                 : undefined,
-          },
-        })
-
-        // if the multiplier was changed, update the instances of the microlearning accordingly
-        if (setMultiplier) {
-          // get all instances that have a pointsMultiplier defined
-          const instances = microLearning.stacks
-            .flatMap((stack) => stack.elements)
-            .filter(
-              (instance) =>
-                'options' in instance &&
-                instance.options &&
-                'pointsMultiplier' in instance.options
-            )
-
-          await updateInstanceMultipliers(
-            {
-              instances,
-              newActivityMultiplier: modifiedMicroLearning.pointsMultiplier,
+              isGamificationEnabled: isCourseChanged
+                ? { set: newCourse.isGamificationEnabled }
+                : undefined,
+              isAssessmentEnabled: isCourseChanged
+                ? { set: newCourse.isAssessmentEnabled }
+                : undefined,
+              // multiplier updates
+              pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+              // if set before, update the review status
+              reviewStatus:
+                microLearning.reviewStatus === DB.ReviewStatus.REVIEWED
+                  ? {
+                      set: isCourseChanged
+                        ? DB.ReviewStatus.INCOMPLETE
+                        : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                    }
+                  : undefined,
             },
-            tx
-          )
-        }
+          })
 
-        // if the course assignment was changed, update the derived pemissions on the quiz
-        if (newCourse) {
-          await recomputeDerivedPermissions(
-            { microLearningId: modifiedMicroLearning.id },
-            tx
-          )
-        }
+          // if the multiplier was changed, update the instances of the microlearning accordingly
+          if (setMultiplier) {
+            // get all instances that have a pointsMultiplier defined
+            const instances = microLearning.stacks
+              .flatMap((stack) => stack.elements)
+              .filter(
+                (instance) =>
+                  'options' in instance &&
+                  instance.options &&
+                  'pointsMultiplier' in instance.options
+              )
 
-        return modifiedMicroLearning
-      })
+            await updateInstanceMultipliers(
+              {
+                instances,
+                newActivityMultiplier: modifiedMicroLearning.pointsMultiplier,
+              },
+              tx
+            )
+          }
+
+          // if the course assignment was changed, update the derived pemissions on the quiz
+          if (newCourse) {
+            await recomputeDerivedPermissions(
+              { microLearningId: modifiedMicroLearning.id },
+              tx
+            )
+          }
+
+          return modifiedMicroLearning
+        },
+        { timeout: 60000 }
+      )
 
       updatedMicroLearnings.push(updatedMicroLearning.id)
     }
 
     // update group activities (including gamification / assessment flags & all instances - depending on the required updates)
     for (const groupActivity of groupActivities) {
-      const updatedGroupActivity = await ctx.prisma.$transaction(async (tx) => {
-        // check if the course is different from before
-        const isCourseChanged =
-          !!newCourse && groupActivity.courseId !== newCourse.id
+      const updatedGroupActivity = await ctx.prisma.$transaction(
+        async (tx) => {
+          // check if the course is different from before
+          const isCourseChanged =
+            !!newCourse && groupActivity.courseId !== newCourse.id
 
-        const modifiedGroupActivity = await tx.groupActivity.update({
-          where: { id: groupActivity.id },
-          data: {
-            // course re-assignment (including update of gamification and assessment flags)
-            course: isCourseChanged
-              ? { connect: { id: newCourse.id } }
-              : undefined,
-            isGamificationEnabled: isCourseChanged
-              ? { set: newCourse.isGamificationEnabled }
-              : undefined,
-            isAssessmentEnabled: isCourseChanged
-              ? { set: newCourse.isAssessmentEnabled }
-              : undefined,
-            // multiplier updates
-            pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
-            // if set before, update the review status
-            reviewStatus:
-              groupActivity.reviewStatus === DB.ReviewStatus.REVIEWED
-                ? {
-                    set: isCourseChanged
-                      ? DB.ReviewStatus.INCOMPLETE
-                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
-                  }
+          const modifiedGroupActivity = await tx.groupActivity.update({
+            where: { id: groupActivity.id },
+            data: {
+              // course re-assignment (including update of gamification and assessment flags)
+              course: isCourseChanged
+                ? { connect: { id: newCourse.id } }
                 : undefined,
-          },
-        })
-
-        // if the multiplier was changed, update the instances of the group activity accordingly
-        if (setMultiplier) {
-          // get all instances that have a pointsMultiplier defined
-          const instances = groupActivity.stacks
-            .flatMap((stack) => stack.elements)
-            .filter(
-              (instance) =>
-                'options' in instance &&
-                instance.options &&
-                'pointsMultiplier' in instance.options
-            )
-
-          await updateInstanceMultipliers(
-            {
-              instances,
-              newActivityMultiplier: modifiedGroupActivity.pointsMultiplier,
+              isGamificationEnabled: isCourseChanged
+                ? { set: newCourse.isGamificationEnabled }
+                : undefined,
+              isAssessmentEnabled: isCourseChanged
+                ? { set: newCourse.isAssessmentEnabled }
+                : undefined,
+              // multiplier updates
+              pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
+              // if set before, update the review status
+              reviewStatus:
+                groupActivity.reviewStatus === DB.ReviewStatus.REVIEWED
+                  ? {
+                      set: isCourseChanged
+                        ? DB.ReviewStatus.INCOMPLETE
+                        : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                    }
+                  : undefined,
             },
-            tx
-          )
-        }
+          })
 
-        // if the course assignment was changed, update the derived pemissions on the quiz
-        if (newCourse) {
-          await recomputeDerivedPermissions(
-            { groupActivityId: modifiedGroupActivity.id },
-            tx
-          )
-        }
+          // if the multiplier was changed, update the instances of the group activity accordingly
+          if (setMultiplier) {
+            // get all instances that have a pointsMultiplier defined
+            const instances = groupActivity.stacks
+              .flatMap((stack) => stack.elements)
+              .filter(
+                (instance) =>
+                  'options' in instance &&
+                  instance.options &&
+                  'pointsMultiplier' in instance.options
+              )
 
-        return modifiedGroupActivity
-      })
+            await updateInstanceMultipliers(
+              {
+                instances,
+                newActivityMultiplier: modifiedGroupActivity.pointsMultiplier,
+              },
+              tx
+            )
+          }
+
+          // if the course assignment was changed, update the derived pemissions on the quiz
+          if (newCourse) {
+            await recomputeDerivedPermissions(
+              { groupActivityId: modifiedGroupActivity.id },
+              tx
+            )
+          }
+
+          return modifiedGroupActivity
+        },
+        { timeout: 60000 }
+      )
 
       updatedGroupActivities.push(updatedGroupActivity.id)
     }
