@@ -1,0 +1,6 @@
+query LecturerRatingCourses {
+  lecturerRatingCourses {
+    id
+    name
+  }
+}

@@ -13,6 +13,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LecturerRatingService from '../services/lecturerRatings.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
@@ -83,6 +84,7 @@ import {
   LiveQuizInfo,
   LiveQuizSummary,
 } from './liveQuiz.js'
+import { LecturerRatingCourse } from './lecturerRating.js'
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
@@ -147,6 +149,7 @@ export const Query = builder.queryType({
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
 
     return {
       self: t.field({
@@ -481,6 +484,13 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.getActiveUserCourses(args, ctx)
+        },
+      }),
+
+      lecturerRatingCourses: t.withAuth(asUserFullAccess).field({
+        type: [LecturerRatingCourse],
+        resolve: async (_, __, ctx) => {
+          return await LecturerRatingService.lecturerRatingCourses(ctx)
         },
       }),
 

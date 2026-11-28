@@ -1,0 +1,23 @@
+mutation StartLecturerRatingSession($courseId: String!) {
+  startLecturerRatingSession(courseId: $courseId) {
+    id
+    courseId
+    items {
+      id
+      format
+      position
+      elementVersion
+      ratingVersion
+      title
+      stem
+      choices {
+        text
+        correct
+      }
+      difficulty
+      bloom
+      reviewed
+      unavailable
+    }
+  }
+}

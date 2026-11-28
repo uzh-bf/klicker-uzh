@@ -13,6 +13,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LecturerRatingService from '../services/lecturerRatings.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
@@ -64,6 +65,7 @@ import {
   LiveQuiz,
   LiveQuizMeta,
 } from './liveQuiz.js'
+import { LecturerRatingItem, LecturerRatingSession } from './lecturerRating.js'
 import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
@@ -1752,6 +1754,33 @@ export const Mutation = builder.mutationType({
             args,
             ctx
           )
+        },
+      }),
+
+      startLecturerRatingSession: t.withAuth(asUserFullAccess).field({
+        type: LecturerRatingSession,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LecturerRatingService.startLecturerRatingSession(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      saveLecturerRating: t.withAuth(asUserFullAccess).field({
+        type: LecturerRatingItem,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          itemId: t.arg.string({ required: true }),
+          expectedVersion: t.arg.string({ required: true }),
+          difficulty: t.arg.int({ required: false }),
+          bloom: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LecturerRatingService.saveLecturerRating(args, ctx)
         },
       }),
 

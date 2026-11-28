@@ -28,7 +28,9 @@ Fable 5.2 and Gemini 4 Neon agreed on that sequence. Fable emphasized measuring 
 
 ### Sampling and validation
 
-Start with 10 distinct families for each selected format. Offer five as a short annotation session and up to 20 when more topics need coverage. Cap the request at the number of eligible families. Select by topic first, then use wording, forecast bands and within-band probabilities to reduce repetition. Include questions with missing forecasts and report their coverage separately.
+Use one deterministic sampler for blind lecturer ratings. Select ten distinct SC families and ten distinct KPRIM families per course, or every eligible family when fewer exist. Group by source lineage and normalized keyed duplicates within each format. On each pick, maximize the number of uncovered lecturer tags, then the minimum stem word-set distance to an already selected family, then newly covered words. Resolve remaining ties by the stable family key. Pin the assignments when the session starts. This sampling rule runs without forecasts, response data or embeddings.
+
+Revisit selection only if a blinded study with real lecturers on fresh courses shows a prespecified, meaningful improvement in held-out difficulty and Bloom predictions at the same rating workload. Use the planned EmbeddingGemma 2 vectors for that comparison and split by family. [Question revision embeddings](PLAN-question-revision-embeddings.md) has a separate Azure Spot batch delivery plan.
 
 Reserve a separate random audit sample within topics before choosing the diverse examples for fitting. Count audit ratings and second ratings in the workload shown to the lecturer. Keep all revisions and near duplicates of a family on one side. Where topics are sampled at different rates, weight the audit back to the course pool and report the denominators by course and format. A diverse review queue answers which examples to show a lecturer. A representative audit answers how the approach performs across their pool.
 
@@ -39,3 +41,11 @@ Reserve a separate random audit sample within topics before choosing the diverse
 3. **Decide whether to offer an adjustment.** Require repeatable lecturer ratings and a meaningful gain over both baselines on unseen families, with an uncertainty interval for the paired gain. Compare model–lecturer disagreement with rater–rater disagreement, and check separately for harm on hard items and individual courses. A quarter-band mean error reduction is a proposed target to agree before the pilot. An inconclusive audit keeps annotation and the original estimate available. A positive audit warrants testing a reversible, explicitly enabled course suggestion. It does not authorize changes to student grading or automatic activation.
 
 The private sampler’s five-fit/three-holdout minimum is adequate for exercising the workflow. A single one-band error changes mean absolute error by one third of a band on three audit items. That split cannot justify promoting a correction into the question pool.
+
+## Blind rating sessions
+
+The first annotation milestone offers up to ten SC and ten KPRIM families per lecturer and course. Operators enable pilot courses by passing their UUIDs as a JSON array in `LECTURER_RATING_COURSE_IDS_JSON` to the backend. An empty list disables entry. Finance I and Banking & Insurance use this same setting independently of the Finance I probability correction.
+
+A course manager can review current keyed revisions used in that course's activities and accessible in their question pool. Sampling groups related copies and equivalent keyed items by format, then favors uncovered tags and distinct wording. A saved session pins the selected revisions. Missing permissions, removed activity membership or changed questions make those assignments unavailable. Small pools contribute all eligible families up to the limit.
+
+The reviewer sees the wording, options and key. D and Bloom can be rated independently. Saving both blank records an explicit skip. Reopening the session restores progress and permits changes to the reviewer's own annotations. Only assignment references, revision, family fingerprint and human ratings are stored. The preview and grading paths do not consume these ratings. Any cross-family adjustment is still an offline research decision.

@@ -136,6 +136,7 @@ model User {
   chatAccountUsages          ChatAccountUsage[]
   chatbotDisclaimers         ChatbotDisclaimer[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
+  lecturerRatingSessions     LecturerRatingSession[]
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")
