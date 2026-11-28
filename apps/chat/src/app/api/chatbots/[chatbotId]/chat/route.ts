@@ -188,6 +188,47 @@ export const runtime = 'nodejs'
 
 export const maxDuration = 60
 
+class MCPDiscoveryDeadlineError extends Error {
+  constructor() {
+    super('MCP discovery exceeded the turn deadline')
+    this.name = 'MCPDiscoveryDeadlineError'
+  }
+}
+
+/**
+ * Rejects with MCPDiscoveryDeadlineError once the turn deadline passes. A
+ * discovery that resolves after the deadline closes its clients, because the
+ * request no longer owns them.
+ */
+function boundMCPDiscoveryByDeadline(
+  discovery: Promise<MCPToolsHandle>,
+  deadlineMs: number
+): Promise<MCPToolsHandle> {
+  return new Promise((resolve, reject) => {
+    let expired = false
+    const timer = setTimeout(
+      () => {
+        expired = true
+        reject(new MCPDiscoveryDeadlineError())
+      },
+      Math.max(0, deadlineMs - Date.now())
+    )
+    discovery.then(
+      (handle) => {
+        clearTimeout(timer)
+        if (!expired) return resolve(handle)
+        Promise.resolve()
+          .then(() => handle.close())
+          .catch(() => {})
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        if (!expired) reject(error)
+      }
+    )
+  })
+}
+
 type IncomingImageAttachment = {
   imageBase64: string
   imagePreviewBase64: string | null
@@ -1418,7 +1459,7 @@ export async function POST(
 
     let mcpTools: ToolSet = {}
     try {
-      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
+      const mcpDiscovery = getAggregatedMCPTools(mcpServersWithConfigs, {
         chatbotId,
         participantId,
         authMode,
@@ -1427,8 +1468,24 @@ export async function POST(
         knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
         courseId: chatbot.courseId,
       })
+      // An exam turn shares one deadline across preparation and streaming;
+      // otherwise slow discovery keeps the claim IN_PROGRESS past the bound
+      // after which a resend treats it as abandoned.
+      mcpToolsHandle = await (assessment
+        ? boundMCPDiscoveryByDeadline(mcpDiscovery, turnDeadlineMs)
+        : mcpDiscovery)
       mcpTools = mcpToolsHandle.tools
     } catch (error) {
+      if (error instanceof MCPDiscoveryDeadlineError) {
+        await failOrDiscardUnstartedClaim('mcp.deadline')
+        return NextResponse.json(
+          {
+            error: 'Required MCP tool unavailable',
+            code: REQUIRED_MCP_UNAVAILABLE_CODE,
+          },
+          { status: 503 }
+        )
+      }
       if (!(error instanceof RequiredMCPUnavailableError)) throw error
       // Only plain unavailability may be softened for an eLearning-origin
       // question; a scope or isolation violation stays fail-closed here.
