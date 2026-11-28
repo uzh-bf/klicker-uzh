@@ -37,6 +37,7 @@ import {
   ParticipantDataUseGate,
   ParticipantDataUseSettings,
 } from './ParticipantDataUse'
+import { TutorPersonalizationOffer } from './tutor-personalization'
 import { Thread } from './thread'
 import { toolbarIconButtonClassName } from './ui/toolbar-icon-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -691,6 +692,10 @@ function SidebarMain({
               <ThreadSkeleton />
             </div>
           )}
+          <TutorPersonalizationOffer
+            chatbotId={chatbot.id}
+            tutorAvailable={Object.hasOwn(initialModeOptions, 'tutor')}
+          />
           <ChatWorkspaceLayout>
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
@@ -767,6 +772,10 @@ function AssistantLayout({
               <ThreadSkeleton />
             </div>
           )}
+          <TutorPersonalizationOffer
+            chatbotId={chatbot.id}
+            tutorAvailable={Object.hasOwn(initialModeOptions, 'tutor')}
+          />
           {/* Embedded mode shows no graph toggle, but the /graph deep link
               stays reachable for direct embedding of the graph pane. */}
           <ChatWorkspaceLayout>

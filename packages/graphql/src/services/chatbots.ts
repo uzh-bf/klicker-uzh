@@ -449,6 +449,7 @@ const chatbotOwnerSelect = {
   allowedReasoningEffortsByModel: true,
   answerPreferencesEnabled: true,
   interactiveExplanationsEnabled: true,
+  personalizationEnabled: true,
   knowledgeGraphVisible: true,
   knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
@@ -482,6 +483,7 @@ type ChatbotWithOwnerCourse = {
   allowedReasoningEffortsByModel: unknown
   answerPreferencesEnabled: boolean
   interactiveExplanationsEnabled: boolean
+  personalizationEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -642,6 +644,7 @@ type ChatbotRevisionLiveFlags = Pick<
   DB.Chatbot,
   | 'answerPreferencesEnabled'
   | 'interactiveExplanationsEnabled'
+  | 'personalizationEnabled'
   | 'knowledgeGraphVisible'
   | 'knowledgeGraphRetrievalEnabled'
 >
@@ -763,6 +766,12 @@ function parseStoredRevision(
     return null
   }
   if (
+    value.personalizationEnabled !== undefined &&
+    typeof value.personalizationEnabled !== 'boolean'
+  ) {
+    return null
+  }
+  if (
     value.knowledgeGraphRetrievalEnabled !== undefined &&
     typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
   ) {
@@ -794,6 +803,10 @@ function parseStoredRevision(
       value.interactiveExplanationsEnabled === undefined
         ? live.interactiveExplanationsEnabled
         : value.interactiveExplanationsEnabled,
+    personalizationEnabled:
+      value.personalizationEnabled === undefined
+        ? live.personalizationEnabled
+        : value.personalizationEnabled,
     creditInitialCredits: value.creditInitialCredits as number,
     creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
     creditResetAmount: value.creditResetAmount as number,
@@ -842,6 +855,7 @@ function buildRevisionFromLive(
     ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
     answerPreferencesEnabled: chatbot.answerPreferencesEnabled,
     interactiveExplanationsEnabled: chatbot.interactiveExplanationsEnabled,
+    personalizationEnabled: chatbot.personalizationEnabled,
     creditInitialCredits: chatbot.creditInitialCredits,
     creditResetPeriod: chatbot.creditResetPeriod,
     creditResetAmount: chatbot.creditResetAmount,
@@ -1024,6 +1038,7 @@ function revisionLiveData(
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
     answerPreferencesEnabled: revision.answerPreferencesEnabled,
     interactiveExplanationsEnabled: revision.interactiveExplanationsEnabled,
+    personalizationEnabled: revision.personalizationEnabled,
     knowledgeGraphVisible: revision.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
@@ -1251,6 +1266,7 @@ type RevisionModelPolicyInput = {
   allowedModelIds: string[]
   answerPreferencesEnabled?: boolean | null
   interactiveExplanationsEnabled?: boolean | null
+  personalizationEnabled?: boolean | null
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
     efforts: string[]
@@ -1665,6 +1681,9 @@ function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
       : {}),
     ...(typeof args.interactiveExplanationsEnabled === 'boolean'
       ? { interactiveExplanationsEnabled: args.interactiveExplanationsEnabled }
+      : {}),
+    ...(typeof args.personalizationEnabled === 'boolean'
+      ? { personalizationEnabled: args.personalizationEnabled }
       : {}),
     modelSelection: args.modelSelection,
     allowedModelIds,

@@ -31,6 +31,7 @@ query GetPendingChatbotRevisionReviewsWithPreferences {
       modelSelection
       answerPreferencesEnabled
       interactiveExplanationsEnabled
+      personalizationEnabled
       knowledgeGraphVisible
       knowledgeGraphRetrievalEnabled
       allowedModelIds

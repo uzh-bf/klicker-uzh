@@ -101,6 +101,25 @@ export default {
       settingsChangedElsewhere:
         'Deine Auswahl wurde in einem anderen Fenster geändert. Prüfe sie unten und wähle bei Bedarf erneut.',
     },
+    personalization: {
+      offerTitle: 'Tutor personalisieren?',
+      offerLead:
+        'Wenn du zustimmst, passt der Tutor seine Hilfe an dich an. Dazu nutzt er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs. Das ist freiwillig, und ohne Zustimmung funktioniert der Tutor wie bisher.',
+      offerShowDetails: 'Was genau wird verwendet?',
+      offerHideDetails: 'Details ausblenden',
+      offerLater: 'Später entscheiden',
+      viewShow: 'Anzeigen, was der Tutor aktuell erhält',
+      viewHide: 'Ausblenden, was der Tutor aktuell erhält',
+      viewLoading: 'Wird geladen…',
+      viewIntro:
+        'Mit deiner nächsten Nachricht im Tutor-Modus erhält der Tutor genau den folgenden Text über dich. Er ist auf Englisch verfasst, unabhängig von deiner Chat-Sprache.',
+      viewEmpty:
+        'Du hast in diesem Kurs noch keine Übungsergebnisse. Der Tutor erhält deshalb aktuell nichts über dich.',
+      viewNoConsent:
+        'Du hast der Personalisierung nicht zugestimmt. Der Tutor erhält deshalb nichts über dich.',
+      viewChatbotOff:
+        'Für diesen Chatbot ist die Personalisierung nicht eingeschaltet. Der Tutor erhält hier deshalb nichts über dich.',
+    },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',
@@ -770,7 +789,7 @@ export default {
       badgeOn: 'Ein',
       badgeOff: 'Aus',
       notice:
-        'Wenn du zustimmst, passt der Tutor seine Erklärungen und Hinweise an dich an. Mit jeder Nachricht erhält er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs (Übungsquizzes und Microlearnings): welche Themen du geübt hast, ob deine Antworten richtig waren, wann du zuletzt geübt hast und wie viel vom Kurs du schon bearbeitet hast. Die Zusammenfassung wird für jede Nachricht neu erstellt und nicht gespeichert. Sie wird zusammen mit deiner Nachricht an den Sprachmodell-Anbieter gesendet, den dieser Chatbot nutzt. Das gilt in allen Kursen, in denen die Lehrperson die Personalisierung eingeschaltet hat, immer nur mit den Daten des jeweiligen Kurses. Lehrpersonen sehen weder die Zusammenfassung noch deine Entscheidung. Du kannst jederzeit in den Chat-Einstellungen oder unter «Datennutzung und Einstellungen» sehen, was der Tutor aktuell erhält, und deine Entscheidung ändern. Eine Änderung gilt ab deiner nächsten Nachricht. Ohne deine Zustimmung funktioniert der Tutor wie bisher.',
+        'Wenn du zustimmst, passt der Tutor seine Erklärungen und Hinweise an dich an. Mit jeder Nachricht erhält er eine kurze Zusammenfassung deiner eigenen Übungsergebnisse in diesem Kurs (Übungsquizzes und Microlearnings): welche Übungsquizzes und Microlearnings du bearbeitet hast, wie viele Fragen du beantwortet hast, ob deine Antworten richtig waren und wann du zuletzt geübt hast. Die Zusammenfassung wird für jede Nachricht neu erstellt und nicht gespeichert. Sie wird zusammen mit deiner Nachricht an den Sprachmodell-Anbieter gesendet, den dieser Chatbot nutzt. Das gilt in allen Kursen, in denen die Lehrperson die Personalisierung eingeschaltet hat, immer nur mit den Daten des jeweiligen Kurses. Lehrpersonen sehen weder die Zusammenfassung noch deine Entscheidung. Du kannst jederzeit in den Chat-Einstellungen oder unter «Datennutzung und Einstellungen» sehen, was der Tutor aktuell erhält, und deine Entscheidung ändern. Eine Änderung gilt ab deiner nächsten Nachricht. Ohne deine Zustimmung funktioniert der Tutor wie bisher.',
       controlLabel: 'Deine Entscheidung',
       yes: 'Ja, personalisieren',
       no: 'Nein, nicht personalisieren',
@@ -5896,6 +5915,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ein: Im Tutor- und im Erklärmodus kann der Chatbot interaktive, von KI erzeugte Erklärungen in einzelnen Schritten anzeigen.',
       interactiveExplanationsDisabledDescription:
         'Aus: Der Chatbot antwortet nur mit Text und zeigt keine interaktiven Erklärungen.',
+      personalization: 'Tutor-Personalisierung',
+      personalizationDescription:
+        'Für Studierende, die zustimmen, nutzt der Tutor eine kurze Zusammenfassung ihrer eigenen Übungsergebnisse in diesem Kurs, um seine Hilfe anzupassen. Die Studierenden entscheiden selbst, und Sie sehen weder ihre Entscheidung noch ihre Daten. Standardmässig ausgeschaltet.',
       modelSelectionParticipantDescription:
         'Studierende können zwischen diesen Modellen wählen. Wählen Sie mindestens eines.',
       selectedModel: 'Ausgewähltes Modell',

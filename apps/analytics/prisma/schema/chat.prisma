@@ -215,6 +215,10 @@ model Chatbot {
   // Lets the chat offer interactive step-by-step explanations in Tutor and
   // Explainer modes. Off by default; no existing chatbot is switched on.
   interactiveExplanationsEnabled Boolean @default(false)
+  // Lets the Tutor use a student's own course results, and their learning
+  // notes where available, for students who opted in. Off by default; no
+  // existing chatbot is switched on.
+  personalizationEnabled Boolean @default(false)
   // Independent lecturer controls for the participant concept map and for
   // graph-assisted document search; not the KB's own graph-generation flag.
   // The default keeps existing chatbots on the map they already had.

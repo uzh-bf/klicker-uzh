@@ -129,6 +129,11 @@ function ChatbotPublicationDetails({
             ? t('manage.resources.modelSelectionEnabled')
             : t('manage.resources.modelSelectionDisabled')}
         </ReviewField>
+        <ReviewField label={t('manage.resources.personalization')}>
+          {chatbot.personalizationEnabled
+            ? t('manage.resources.modelSelectionEnabled')
+            : t('manage.resources.modelSelectionDisabled')}
+        </ReviewField>
         <ReviewField label={t('manage.resources.chatbotSetupModesTitle')}>
           {[
             config?.tutorEnabled && t('manage.resources.chatbotModeTutor'),

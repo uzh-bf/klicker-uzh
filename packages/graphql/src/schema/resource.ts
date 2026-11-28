@@ -321,6 +321,7 @@ export const ChatbotRevisionModelPolicyInput =
       allowedModelIds: t.stringList({ required: true }),
       answerPreferencesEnabled: t.boolean({ required: false }),
       interactiveExplanationsEnabled: t.boolean({ required: false }),
+      personalizationEnabled: t.boolean({ required: false }),
       allowedReasoningEffortsByModel: t.field({
         type: [ChatbotReasoningConfigInputRef],
         required: false,
@@ -429,6 +430,7 @@ export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
     interactiveExplanationsEnabled: t.exposeBoolean(
       'interactiveExplanationsEnabled'
     ),
+    personalizationEnabled: t.exposeBoolean('personalizationEnabled'),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (revision) =>
@@ -496,6 +498,7 @@ export interface IChatbot {
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
   answerPreferencesEnabled: boolean
   interactiveExplanationsEnabled: boolean
+  personalizationEnabled: boolean
   knowledgeGraphVisible: boolean
   knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
@@ -669,6 +672,7 @@ export const Chatbot = ChatbotRef.implement({
     interactiveExplanationsEnabled: t.exposeBoolean(
       'interactiveExplanationsEnabled'
     ),
+    personalizationEnabled: t.exposeBoolean('personalizationEnabled'),
     allowedReasoningEffortsByModel: t.field({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],

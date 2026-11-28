@@ -21,7 +21,13 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { authedFetch } from '../lib/client/authedFetch'
+import {
+  DATA_USE_CHANGED_EVENT,
+  dataUseEndpoint,
+  fetchDataUseState,
+} from '../lib/client/dataUse'
 import type { ChatDataUseState } from '../lib/dataUse'
+import { TutorLearnerContextView } from './tutor-personalization'
 
 const choicesDataCy = {
   researchYes: 'chat-data-use-research-true',
@@ -41,28 +47,6 @@ const personalizationDataCy = {
 
 interface DataUseResponse {
   state: ChatDataUseState
-}
-
-function dataUseEndpoint(chatbotId: string) {
-  return `/api/chatbots/${chatbotId}/data-use`
-}
-
-/**
- * Reload the persisted state through the same route the completion writes to.
- * A stale revision can only be answered with the current revision and the
- * choices that belong to it, so the caller decides what to do with a failure.
- */
-async function fetchDataUseState(
-  chatbotId: string
-): Promise<ChatDataUseState | null> {
-  try {
-    const response = await authedFetch(dataUseEndpoint(chatbotId))
-    if (!response.ok) return null
-    const data = (await response.json()) as DataUseResponse
-    return data.state ?? null
-  } catch {
-    return null
-  }
 }
 
 interface ParticipantDataUseGateProps {
@@ -349,6 +333,8 @@ export function ParticipantDataUseSettings({
           const reloaded = await fetchDataUseState(chatbotId)
           if (reloaded) {
             setState(reloaded)
+            // Another surface saved a choice, so open surfaces re-read too.
+            window.dispatchEvent(new Event(DATA_USE_CHANGED_EVENT))
             setConflict(false)
             setFailed(false)
             setChangedElsewhere(true)
@@ -364,6 +350,7 @@ export function ParticipantDataUseSettings({
       }
       const data = (await response.json()) as DataUseResponse
       setState(data.state)
+      window.dispatchEvent(new Event(DATA_USE_CHANGED_EVENT))
     } catch {
       setFailed(true)
     } finally {
@@ -442,6 +429,7 @@ export function ParticipantDataUseSettings({
                     {t('chat.dataUse.settingsChangedElsewhere')}
                   </UserNotification>
                 )}
+                <TutorLearnerContextView chatbotId={chatbotId} />
                 {failed && (
                   <UserNotification type="error">
                     {t(

@@ -1576,6 +1576,48 @@ flag off until the chatbot has loaded, so the controls do not flash.
 The preferences are per browser. Embedded iframes whose browser blocks third-party storage can lose
 them on reload, the same limit as the persisted mode selection.
 
+### Tutor personalization (learner context)
+
+[ADR 0058](adr/0058-tutor-personalization-choice.md) decides the feature. The
+learner context is what the Tutor may know about one student beyond the
+conversation. Today it is a bounded summary of the student's own practice
+results in the chatbot's course.
+
+- **Eligibility** is one rule in `apps/chat/src/lib/server/learnerContext.ts`,
+  checked on every turn: Tutor mode, the chatbot's `personalizationEnabled`
+  switch, a completed account data-use notice, and a recorded yes under a
+  notice version listed in `TUTOR_PERSONALIZATION_RESULTS_VERSIONS`. A chat
+  turn calls only `loadLearnerContextForTurn`, which returns an empty string
+  when any condition fails or anything throws. The turn then equals a turn
+  without the feature.
+- **Delivery** is one more entry in the per-turn context message (see
+  [Provider request cache boundaries](#provider-request-cache-boundaries)).
+  The rules for how the Tutor may use it travel in the same entry, so the
+  stable instructions and the tool list stay identical for every student. The
+  context message is built for the model request and is not part of the stored
+  conversation. The turn's model call records neither inputs nor outputs in
+  its trace, and logs carry only whether a learner context was included and
+  its length.
+- **Content** comes from `QuestionResponse`, which holds practice-quiz and
+  microlearning answers only. The query filters by the authenticated
+  participant and the chatbot's course and selects no answer, solution,
+  question text or element tag; tags are for lecturers and are never shown to
+  students. Only questions with a sample solution count: without one, every
+  answer is saved as correct, so it says nothing about the student. Overall
+  counts are exact; the per-activity lines use the most recently answered
+  questions and keep activities with the same name apart. Flashcards are rated by the
+  student, so they appear on their own line. Ages are written in words because
+  the model is not told the date.
+- **The student's view** (`GET /api/chatbots/:chatbotId/learner-context`, shown
+  in the data-use dialog) runs the same resolution and shows the text
+  unchanged, so it cannot drift from what a turn sends. It is rate-limited per
+  participant because every view runs the summary queries.
+- **The offer** is a card above the thread. It appears only while the choice is
+  unanswered, in a chatbot with the switch on and the Tutor mode available.
+  "Decide later" records nothing on the account; the browser remembers it.
+- The lecturer switch is part of the authoring revision and takes effect after
+  approval, like the other chatbot settings.
+
 ### Custom-mode role-play settings
 
 Custom modes compile persona variants of two shared contracts. The course policy keeps the same
