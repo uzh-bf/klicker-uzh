@@ -9,7 +9,7 @@
  */
 
 import * as DB from '@klicker-uzh/prisma/client'
-import { type PrismaTransactionClient } from '../types.js'
+import type { PrismaTransactionClient } from '../types.js'
 import {
   inversePermissionLevelMap,
   permissionLevelMap,
@@ -215,8 +215,8 @@ export function getActivityAccessFromCourse({
   coursePermissionLevel: DB.PermissionLevel
   directCoursePermission?: DB.Permission | null
 }) {
-  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
-  let parentPermissionId: number | undefined = undefined
+  let maxAccessLevel: DB.PermissionLevel | undefined
+  let parentPermissionId: number | undefined
   let derived = false
 
   switch (coursePermissionLevel) {
@@ -288,8 +288,8 @@ export function getActivityPermissionsUser({
   })[]
 }) {
   // determine the maximum access level of the user
-  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
-  let parentPermissionId: number | undefined = undefined
+  let maxAccessLevel: DB.PermissionLevel | undefined
+  let parentPermissionId: number | undefined
   let derived = false
 
   // if user is answer collection owner, set the corresponding permission
@@ -370,8 +370,8 @@ export async function propagateActivityToElementsUser(
     updateAccessRequests,
   }: {
     stacks:
-      | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
-      | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
+      | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] })[]
+      | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] })[]
     userId: string
     updateAccessRequests: boolean
   },
@@ -487,8 +487,8 @@ export async function propagateActivityToElements(
     updateAccessRequests,
   }: {
     stacks:
-      | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
-      | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
+      | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] })[]
+      | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] })[]
     updateAccessRequests: boolean
   },
   prisma: PrismaTransactionClient
