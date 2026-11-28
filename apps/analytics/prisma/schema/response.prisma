@@ -27,10 +27,17 @@ model QuestionResponse {
   wrongCount  Int       @default(0)
   lastWrongAt DateTime?
 
-  // spaced repetition parameters
-  eFactor   Float     @default(2.5)
-  interval  Int       @default(1)
+  // spaced repetition
   nextDueAt DateTime?
+
+  // spaced repetition: SM-2 state
+  eFactor  Float @default(2.5)
+  interval Int   @default(1)
+
+  // spaced repetition: FSRS-7 memory state
+  fsrsStability     Float?
+  fsrsStabilityFast Float?
+  fsrsDifficulty    Float?
 
   /// [PrismaSingleQuestionResponse]
   firstResponse            Json

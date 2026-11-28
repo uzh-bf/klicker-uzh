@@ -23,7 +23,8 @@ import { prop, sortBy } from 'remeda'
 import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { computeRanks, orderStacks } from '../lib/util.js'
+import { orderStacks } from '../lib/spacedRepetition.js'
+import { computeRanks } from '../lib/util.js'
 import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,

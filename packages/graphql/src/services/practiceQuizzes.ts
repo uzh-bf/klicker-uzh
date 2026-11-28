@@ -14,7 +14,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { orderStacks } from '../lib/util.js'
+import { orderStacks } from '../lib/spacedRepetition.js'
 import {
   deleteWithPublicationStatusGuard,
   persistActivityWithPermissions,
