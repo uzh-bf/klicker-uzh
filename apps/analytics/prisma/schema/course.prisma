@@ -65,6 +65,7 @@ model Course {
   catalogAssignments CatalogCollectionAssignment[]
   activityLog        ActivityLogEntry[]
   verificationRecords VerifiableCredential[]
+  lecturerRatingSessions LecturerRatingSession[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?

@@ -44,6 +44,7 @@ model Element {
 
   elementInstances ElementInstance[]
   feedbacks        ElementFeedback[]
+  lecturerRatingItems LecturerRatingItem[]
 
   answerCollectionItems AnswerCollectionEntry[] @relation("ElementAnswerCollectionUsedItems")
   answerCollection      AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -60,6 +61,50 @@ model Element {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model LecturerRatingSession {
+  id String @id @default(uuid()) @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  reviewer   User   @relation(fields: [reviewerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reviewerId String @db.Uuid
+
+  items LecturerRatingItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, reviewerId])
+  @@index([reviewerId])
+}
+
+model LecturerRatingItem {
+  id String @id @default(uuid()) @db.Uuid
+
+  session   LecturerRatingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String                @db.Uuid
+
+  element          Element @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId        Int
+  elementVersion   Int
+  familyKey        String
+  format           String
+  position         Int
+  difficulty       Int?
+  bloom            String?
+  reviewedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, elementId])
+  @@unique([sessionId, familyKey])
+  @@unique([sessionId, position])
+  @@index([elementId])
+  @@index([sessionId, reviewedAt])
 }
 
 enum ElementInstanceType {

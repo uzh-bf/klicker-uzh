@@ -2363,6 +2363,87 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       labelPreviewBloom: 'Bloom-Stufe',
       labelPreviewError:
         'Die Vorschau konnte nicht erstellt werden. Die Frage wurde möglicherweise geändert oder ihr Typ wird nicht unterstützt. Schliessen Sie die Vorschau und versuchen Sie es im aktuellen Fragenpool erneut.',
+      ratingEntryTitle: 'Blinde Schwierigkeits- und Bloom-Beurteilung',
+      ratingEntryDescription:
+        'Beurteilen Sie SC- und KPRIM-Fragen in einer blinden Sitzung anhand der formatspezifischen Rubrik.',
+      ratingEntryAction: 'Fragen bewerten',
+      ratingTitle: 'Blinde Fragenbeurteilung',
+      ratingBlindDescription:
+        'Bewerten Sie Schwierigkeit, Bloom-Niveau oder beides. Wählen Sie eine Bewertung erneut, um sie zu entfernen, oder überspringen Sie die Frage.',
+      ratingCourse: 'Kurs',
+      ratingSelectCourse: 'Berechtigten Kurs auswählen',
+      ratingStartResume: 'Sitzung starten oder fortsetzen',
+      ratingCoursesLoading: 'Berechtigte Kurse werden geladen…',
+      ratingCoursesError:
+        'Die berechtigten Kurse konnten nicht geladen werden.',
+      ratingNoCourses:
+        'Für die Fragenbeurteilung ist kein berechtigter Kurs verfügbar.',
+      ratingCourseChanged:
+        'Der ausgewählte Kurs ist nicht mehr berechtigt. Wählen Sie einen anderen Kurs oder schliessen Sie die Beurteilung.',
+      ratingUnknownCourse: 'Ausgewählter Kurs',
+      ratingProgress: '{completed} von {total} bearbeitet',
+      ratingProgressDetail:
+        '{reviewed} beurteilt oder übersprungen · {unavailable} nicht verfügbar',
+      ratingQuestionPosition: 'Frage {current} von {total}',
+      ratingSessionOverview: 'Sitzungsübersicht',
+      ratingQuestionNavigation: 'Fragen in dieser Beurteilungssitzung',
+      ratingStatusUnrated: 'Nicht beurteilt',
+      ratingStatusRated: 'Beurteilt',
+      ratingStatusSkipped: 'Übersprungen',
+      ratingStatusUnavailable: 'Nicht verfügbar',
+      ratingQuestionUnavailable:
+        'Diese Frage wurde geändert oder Ihr Zugriff wurde entfernt. Sie kann in dieser Sitzung nicht beurteilt werden.',
+      ratingNoQuestions:
+        'Für diesen Kurs sind keine berechtigten SC- oder KPRIM-Fragen verfügbar.',
+      ratingComplete:
+        'Alle verfügbaren Fragen wurden bearbeitet. Wählen Sie oben eine Frage aus, um ihre Beurteilung erneut zu öffnen oder zu ändern.',
+      ratingElementVersion: 'Fragenversion {version}',
+      ratingStemLabel: 'Fragestellung',
+      ratingAnswerKey: 'Lösungsschlüssel',
+      ratingCorrect: 'Richtig',
+      ratingIncorrect: 'Falsch',
+      ratingDifficulty: 'Schwierigkeit',
+      ratingDifficultyDescription:
+        'Welcher Anteil der Studierenden in diesem Kurs würde beim ersten Versuch die volle Punktzahl erreichen? Bei KPRIM müssen dafür alle vier Aussagen richtig beurteilt werden.',
+      ratingDifficultyScD1: 'Ab 85 %',
+      ratingDifficultyScD2: '70 % bis unter 85 %',
+      ratingDifficultyScD3: '55 % bis unter 70 %',
+      ratingDifficultyScD4: '40 % bis unter 55 %',
+      ratingDifficultyScD5: 'Unter 40 %',
+      ratingDifficultyKprimD1: 'Ab 70 %',
+      ratingDifficultyKprimD2: '55 % bis unter 70 %',
+      ratingDifficultyKprimD3: '40 % bis unter 55 %',
+      ratingDifficultyKprimD4: 'Unter 40 %',
+      ratingBloom: 'Bloom-Stufe',
+      ratingBloomDescription:
+        'Welcher Denkprozess ist für die volle Punktzahl erforderlich, gemessen am Unterrichtsstoff?',
+      ratingBloomRemember: 'Erinnern',
+      ratingBloomRememberDescription:
+        'Fakten, Begriffe oder Definitionen abrufen.',
+      ratingBloomUnderstand: 'Verstehen',
+      ratingBloomUnderstandDescription:
+        'Erklären, klassifizieren, zusammenfassen oder interpretieren.',
+      ratingBloomApply: 'Anwenden',
+      ratingBloomApplyDescription:
+        'Ein Verfahren oder Konzept in einer vertrauten Situation einsetzen.',
+      ratingBloomEvaluate: 'Bewerten',
+      ratingBloomEvaluateDescription:
+        'Eine Aussage oder Entscheidung anhand von Kriterien beurteilen.',
+      ratingBloomAnalyze: 'Analysieren',
+      ratingBloomAnalyzeDescription:
+        'Material in Teile zerlegen und Beziehungen unterscheiden.',
+      ratingSkip: 'Überspringen',
+      ratingSaveNext: 'Speichern und weiter',
+      ratingNextQuestion: 'Nächste Frage',
+      ratingRetry: 'Erneut versuchen',
+      ratingErrorStart:
+        'Die Beurteilungssitzung konnte nicht geladen werden. Versuchen Sie es erneut.',
+      ratingErrorSave:
+        'Die Beurteilung konnte nicht gespeichert werden. Ihre Auswahl bleibt erhalten, damit Sie es erneut versuchen können.',
+      ratingErrorStale:
+        'Der Kurs oder die Frage wurde während dieser Sitzung geändert. Laden Sie die Sitzung neu, um fortzufahren.',
+      ratingErrorUnauthorized:
+        'Der Zugriff auf diesen Kurs oder diese Frage hat sich geändert. Schliessen Sie die Beurteilung und öffnen Sie sie erneut im Fragenpool.',
       moreActions: 'Weitere Aktionen für {name}',
       elementTypes: 'Elementtypen',
       elementStatus: 'Status',

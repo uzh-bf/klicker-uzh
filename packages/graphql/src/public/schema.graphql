@@ -1900,6 +1900,37 @@ type LeaveCourseParticipation {
   participation: Participation!
 }
 
+type LecturerRatingChoice {
+  correct: Boolean!
+  text: String!
+}
+
+type LecturerRatingCourse {
+  id: String!
+  name: String!
+}
+
+type LecturerRatingItem {
+  bloom: String
+  choices: [LecturerRatingChoice!]!
+  difficulty: Int
+  elementVersion: Int!
+  format: String!
+  id: String!
+  position: Int!
+  ratingVersion: String!
+  reviewed: Boolean!
+  stem: String!
+  title: String!
+  unavailable: Boolean!
+}
+
+type LecturerRatingSession {
+  courseId: String!
+  id: String!
+  items: [LecturerRatingItem!]!
+}
+
 type Level {
   avatar: String
   id: Int!
@@ -2168,6 +2199,7 @@ type Mutation {
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, introText: String!, title: String!): Chatbot
+  saveLecturerRating(bloom: String, courseId: String!, difficulty: Int, expectedVersion: String!, itemId: String!): LecturerRatingItem!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -2180,6 +2212,7 @@ type Mutation {
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
+  startLecturerRatingSession(courseId: String!): LecturerRatingSession!
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
@@ -2759,6 +2792,7 @@ type Query {
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
+  lecturerRatingCourses: [LecturerRatingCourse!]!
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]

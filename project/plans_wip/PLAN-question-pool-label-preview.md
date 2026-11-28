@@ -39,3 +39,11 @@ Reserve a separate random audit sample within topics before choosing the diverse
 3. **Decide whether to offer an adjustment.** Require repeatable lecturer ratings and a meaningful gain over both baselines on unseen families, with an uncertainty interval for the paired gain. Compare model–lecturer disagreement with rater–rater disagreement, and check separately for harm on hard items and individual courses. A quarter-band mean error reduction is a proposed target to agree before the pilot. An inconclusive audit keeps annotation and the original estimate available. A positive audit warrants testing a reversible, explicitly enabled course suggestion. It does not authorize changes to student grading or automatic activation.
 
 The private sampler’s five-fit/three-holdout minimum is adequate for exercising the workflow. A single one-band error changes mean absolute error by one third of a band on three audit items. That split cannot justify promoting a correction into the question pool.
+
+## Blind rating sessions
+
+The first annotation milestone offers up to ten SC and ten KPRIM families per lecturer and course. Operators enable pilot courses by passing their UUIDs as a JSON array in `LECTURER_RATING_COURSE_IDS_JSON` to the backend. An empty list disables entry. Finance I and Banking & Insurance use this same setting independently of the Finance I probability correction.
+
+A course manager can review current keyed revisions used in that course's activities and accessible in their question pool. Sampling groups related copies and equivalent keyed items by format, then favors uncovered tags and distinct wording. A saved session pins the selected revisions. Missing permissions, removed activity membership or changed questions make those assignments unavailable. Small pools contribute all eligible families up to the limit.
+
+The reviewer sees the wording, options and key. D and Bloom can be rated independently. Saving both blank records an explicit skip. Reopening the session restores progress and permits changes to the reviewer's own annotations. Only assignment references, revision, family fingerprint and human ratings are stored. The preview and grading paths do not consume these ratings. Any cross-family adjustment is still an offline research decision.

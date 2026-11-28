@@ -1,0 +1,31 @@
+mutation SaveLecturerRating(
+  $courseId: String!
+  $itemId: String!
+  $expectedVersion: String!
+  $difficulty: Int
+  $bloom: String
+) {
+  saveLecturerRating(
+    courseId: $courseId
+    itemId: $itemId
+    expectedVersion: $expectedVersion
+    difficulty: $difficulty
+    bloom: $bloom
+  ) {
+    id
+    format
+    position
+    elementVersion
+    ratingVersion
+    title
+    stem
+    choices {
+      text
+      correct
+    }
+    difficulty
+    bloom
+    reviewed
+    unavailable
+  }
+}

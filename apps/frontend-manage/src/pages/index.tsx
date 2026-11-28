@@ -31,6 +31,7 @@ import ElementEditModal, {
   ElementEditMode,
 } from '../components/elements/manipulation/ElementEditModal'
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
+import LecturerRatingEntry from '../components/elements/LecturerRatingSession'
 import {
   isQuestionPoolLabelPreviewSupported,
   QuestionPoolLabelPreviewControls,
@@ -523,6 +524,7 @@ function Index() {
             onEnabledChange={handleQuestionPoolLabelPreviewEnabledChange}
             onCourseChange={handleQuestionPoolLabelPreviewCourseChange}
           />
+          <LecturerRatingEntry />
           <FilterList
             key={creationMode}
             defaultValue={

@@ -2343,6 +2343,83 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       labelPreviewBloom: 'Bloom level',
       labelPreviewError:
         'The preview could not be generated. The question may have changed, or its type may not be supported. Close this preview and try again from the current question pool.',
+      ratingEntryTitle: 'Blind difficulty and Bloom review',
+      ratingEntryDescription:
+        'Rate SC and KPRIM questions against the format-specific rubric in a blind review session.',
+      ratingEntryAction: 'Rate questions',
+      ratingTitle: 'Blind question review',
+      ratingBlindDescription:
+        'Rate difficulty, Bloom, or both. Select a rating again to clear it, or skip this question.',
+      ratingCourse: 'Course',
+      ratingSelectCourse: 'Select an eligible course',
+      ratingStartResume: 'Start or resume session',
+      ratingCoursesLoading: 'Loading eligible courses…',
+      ratingCoursesError: 'The eligible courses could not be loaded.',
+      ratingNoCourses: 'No eligible course is available for question review.',
+      ratingCourseChanged:
+        'The selected course is no longer eligible. Choose another course or close this review.',
+      ratingUnknownCourse: 'Selected course',
+      ratingProgress: 'Processed {completed} of {total}',
+      ratingProgressDetail:
+        '{reviewed} rated or skipped · {unavailable} unavailable',
+      ratingQuestionPosition: 'Question {current} of {total}',
+      ratingSessionOverview: 'Session overview',
+      ratingQuestionNavigation: 'Questions in this rating session',
+      ratingStatusUnrated: 'Not reviewed',
+      ratingStatusRated: 'Rated',
+      ratingStatusSkipped: 'Skipped',
+      ratingStatusUnavailable: 'Unavailable',
+      ratingQuestionUnavailable:
+        'This question changed or your access was removed. It cannot be rated in this session.',
+      ratingNoQuestions:
+        'No eligible SC or KPRIM questions are available for this course.',
+      ratingComplete:
+        'All available questions have been handled. Select an item above to revisit and edit your rating.',
+      ratingElementVersion: 'Question version {version}',
+      ratingStemLabel: 'Question stem',
+      ratingAnswerKey: 'Answer key',
+      ratingCorrect: 'Correct',
+      ratingIncorrect: 'Incorrect',
+      ratingDifficulty: 'Difficulty',
+      ratingDifficultyDescription:
+        'What share of students in this course would earn full credit on their first attempt? For KPRIM, full credit requires all four judgments to be correct.',
+      ratingDifficultyScD1: '85% or more',
+      ratingDifficultyScD2: '70% to below 85%',
+      ratingDifficultyScD3: '55% to below 70%',
+      ratingDifficultyScD4: '40% to below 55%',
+      ratingDifficultyScD5: 'Below 40%',
+      ratingDifficultyKprimD1: '70% or more',
+      ratingDifficultyKprimD2: '55% to below 70%',
+      ratingDifficultyKprimD3: '40% to below 55%',
+      ratingDifficultyKprimD4: 'Below 40%',
+      ratingBloom: 'Bloom level',
+      ratingBloomDescription:
+        'Which cognitive process is necessary for full credit, given what was taught?',
+      ratingBloomRemember: 'Remember',
+      ratingBloomRememberDescription: 'Recall facts, terms, or definitions.',
+      ratingBloomUnderstand: 'Understand',
+      ratingBloomUnderstandDescription:
+        'Explain, classify, summarize, or interpret.',
+      ratingBloomApply: 'Apply',
+      ratingBloomApplyDescription:
+        'Use a procedure or concept in a familiar situation.',
+      ratingBloomEvaluate: 'Evaluate',
+      ratingBloomEvaluateDescription:
+        'Judge a claim or decision using criteria.',
+      ratingBloomAnalyze: 'Analyze',
+      ratingBloomAnalyzeDescription:
+        'Break material into parts and distinguish relationships.',
+      ratingSkip: 'Skip',
+      ratingSaveNext: 'Save and next',
+      ratingNextQuestion: 'Next question',
+      ratingRetry: 'Retry',
+      ratingErrorStart: 'The rating session could not be loaded. Try again.',
+      ratingErrorSave:
+        'The rating could not be saved. Your selections are preserved, so you can retry.',
+      ratingErrorStale:
+        'The course or question changed during this session. Reload the session to continue.',
+      ratingErrorUnauthorized:
+        'Access to this course or question has changed. Close this review and reopen it from the question pool.',
       moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',
