@@ -19,11 +19,16 @@ const DynamicKnowledgeGraphViewer = dynamic(
         role="status"
         data-cy="chat-knowledge-graph-loading"
       >
-        Loading knowledge graph…
+        <LoadingLabel />
       </div>
     ),
   }
 )
+
+function LoadingLabel() {
+  const t = useTranslations('chat.graphPanel.viewer')
+  return t('loading')
+}
 
 export function ChatKnowledgeGraphViewer({
   dataSource,
@@ -37,6 +42,8 @@ export function ChatKnowledgeGraphViewer({
   focusRequest?: KnowledgeGraphFocusRequest
 }) {
   const t = useTranslations('chat.graphPanel')
+  const tv = useTranslations('chat.graphPanel.viewer')
+  const td = useTranslations('chat.graphPanel.details')
   return (
     <DynamicKnowledgeGraphViewer
       dataSource={dataSource}
@@ -44,8 +51,86 @@ export function ChatKnowledgeGraphViewer({
       onQuiz={onQuiz}
       focusRequest={focusRequest}
       labels={{
+        explorerAriaLabel: tv('explorerAriaLabel'),
+        searchAriaLabel: tv('searchAriaLabel'),
+        searchLabel: tv('searchLabel'),
+        searchPlaceholder: tv('searchPlaceholder'),
+        searching: tv('searching'),
+        search: tv('search'),
+        truncatedNotice: tv('truncatedNotice'),
+        viewLimitNotice: tv('viewLimitNotice'),
+        suggestionsAriaLabel: tv('suggestionsAriaLabel'),
+        noSuggestions: tv('noSuggestions'),
+        suggestionsUnavailable: tv('suggestionsUnavailable'),
+        backToOverview: tv('backToOverview'),
+        retry: tv('retry'),
+        canvasAriaLabel: tv('canvasAriaLabel'),
+        zoomInAriaLabel: tv('zoomInAriaLabel'),
+        zoomIn: tv('zoomIn'),
+        zoomOutAriaLabel: tv('zoomOutAriaLabel'),
+        zoomOut: tv('zoomOut'),
+        fitView: tv('fitView'),
+        resetLayout: tv('resetLayout'),
+        legendAriaLabel: tv('legendAriaLabel'),
+        conceptTypes: tv('conceptTypes'),
         inferredRelationLegend: t('inferredRelationLegend'),
+        shapeCircle: tv('shapeCircle'),
+        shapeDiamond: tv('shapeDiamond'),
+        shapeRoundedSquare: tv('shapeRoundedSquare'),
+        shapeHexagon: tv('shapeHexagon'),
+        shapeTriangle: tv('shapeTriangle'),
+        shapePentagon: tv('shapePentagon'),
+        shapeStar: tv('shapeStar'),
+        shapeOctagon: tv('shapeOctagon'),
+        loading: tv('loading'),
+        searchFirstPrompt: tv('searchFirstPrompt'),
+        unavailableTitle: tv('unavailableTitle'),
+        notReadyTitle: tv('notReadyTitle'),
+        checkAgain: tv('checkAgain'),
+        searchResults: tv('searchResults'),
+        showAsList: tv('showAsList'),
+        loadedConcepts: (count) => tv('loadedConcepts', { count }),
+        noConceptsLoaded: tv('noConceptsLoaded'),
+        loadedRelationships: (count) => tv('loadedRelationships', { count }),
+        noRelationshipsLoaded: tv('noRelationshipsLoaded'),
+        selectRelationshipAriaLabel: (source, target, label, symmetric) =>
+          symmetric
+            ? tv('selectSymmetricRelationship', { source, target, label })
+            : tv('selectRelationship', { source, target, label }),
+        searchUnavailable: tv('searchUnavailable'),
+        connectionsUnavailable: tv('connectionsUnavailable'),
+        graphUnavailable: tv('graphUnavailable'),
+        searchResultsLoadedAnnouncement: (count) =>
+          tv('searchResultsLoadedAnnouncement', { count }),
+        conceptsLoadedAnnouncement: (count) =>
+          tv('conceptsLoadedAnnouncement', { count }),
+        selectedConceptAnnouncement: (label) =>
+          tv('selectedConceptAnnouncement', { label }),
+        selectedRelationshipAnnouncement: tv(
+          'selectedRelationshipAnnouncement'
+        ),
+        detailsClosedAnnouncement: tv('detailsClosedAnnouncement'),
+        defaultUnavailableMessage: tv('notAvailableYet'),
         details: {
+          detailsFallback: td('detailsFallback'),
+          ariaLabel: td('ariaLabel'),
+          relationship: td('relationship'),
+          concept: td('concept'),
+          closeAriaLabel: td('closeAriaLabel'),
+          type: td('type'),
+          connections: td('connections'),
+          summary: td('summary'),
+          content: td('content'),
+          sources: td('sources'),
+          loadingConnections: td('loadingConnections'),
+          expandConnections: td('expandConnections'),
+          from: td('from'),
+          to: td('to'),
+          concepts: td('concepts'),
+          evidence: td('evidence'),
+          pages: (pages) =>
+            td('pages', { count: pages.length, pages: pages.join(', ') }),
+          properties: td('properties'),
           quiz: t('quiz'),
           allConnectionsShown: t('allConnectionsShown'),
           inferredRelation: t('inferredRelation'),
@@ -81,7 +166,7 @@ export function ChatKnowledgeGraphViewer({
       initialView="overview"
       searchSuggestions
       overviewNavigation
-      unavailableMessage="The knowledge graph is not available yet. Please try again later or contact your lecturer."
+      unavailableMessage={tv('notAvailableYet')}
       className="!min-h-0 flex-1"
     />
   )
