@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client'
 import {
   type Course,
+  type GetBasicCourseInformationQuery,
   SelfDocument,
-  type StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
@@ -22,7 +22,7 @@ interface LayoutProps {
   embeddedAutoResize?: boolean
   course?:
     | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
-    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+    | NonNullable<GetBasicCourseInformationQuery['basicCourseInformation']>
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
