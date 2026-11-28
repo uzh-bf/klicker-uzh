@@ -9,7 +9,6 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  ManageFeaturePreferencesDocument,
   type ManageUserProfileQuery,
   UserLoginScope,
   UserRole,
@@ -23,10 +22,12 @@ import {
   Tooltip,
 } from '@uzh-bf/design-system'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useManageAiCapability } from '../featureFlags/ManageFeatureFlagProvider'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
@@ -42,8 +43,17 @@ function Header({
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const { state: aiCapability, betaEnabled } = useManageAiCapability()
+  const showBroaderAi =
+    aiCapability === 'enabled' || aiCapability === 'temporarilyUnavailable'
   const aiBetaEnabled = useFeatureFlag('ai-beta')
-  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
+  const canAuthorChatbots =
+    showBroaderAi &&
+    aiBetaEnabled &&
+    betaEnabled &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -66,21 +76,6 @@ function Header({
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(aiBetaEnabled &&
-    preferences?.userProfile?.betaEnabled === true &&
-    user?.catalyst === true &&
-    (userScope === UserLoginScope.FullAccess ||
-      userScope === UserLoginScope.AccountOwner)
-      ? [
-          {
-            key: 'chatbots-item',
-            type: 'link' as const,
-            label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
-            data: { cy: 'chatbots' },
-          },
-        ]
-      : []),
     {
       key: 'catalog-item',
       type: 'link' as const,
@@ -126,6 +121,24 @@ function Header({
         badge: 'bg-green-700 hover:bg-green-800',
       },
     },
+    ...(showBroaderAi
+      ? [
+          {
+            key: 'knowledge-bases-item',
+            disabled: aiCapability !== 'enabled',
+            type: 'link' as const,
+            label: t('kb.title'),
+            onClick: () => router.push('/resources/knowledgeBases'),
+            badge: t('manage.general.betaFeatures'),
+            data: { cy: 'knowledge-bases' },
+            className: {
+              label: 'bg-opacity-100',
+              text: 'mr-8',
+              badge: 'bg-green-700 hover:bg-green-800',
+            },
+          },
+        ]
+      : []),
   ]
 
   const leftNavigation: NavigationItemProps[] = [
@@ -134,7 +147,8 @@ function Header({
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname == '/',
+      active:
+        router.pathname === '/' || router.pathname === '/elements/generate',
       data: { cy: 'library' },
     },
     {
@@ -142,7 +156,7 @@ function Header({
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
       onClick: () => router.push('/activities'),
-      active: router.pathname == '/activities',
+      active: router.pathname === '/activities',
       data: { cy: 'activities' },
     },
     {
@@ -150,32 +164,32 @@ function Header({
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
       onClick: () => router.push('/courses'),
-      active: router.pathname == '/courses',
+      active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
-
-    {
-      type: 'dropdown',
-      key: 'resources-menubar-item',
-      label: t('manage.general.resources'),
-      icon: faBolt,
-      active:
-        router.pathname == '/resources/answerCollections' ||
-        router.pathname === '/resources/chatbots' ||
-        router.pathname === '/resources/catalog' ||
-        router.pathname === '/resources/userGroups' ||
-        router.pathname === '/resources/mediaLibrary',
-      notification:
-        pendingRequestData &&
-        pendingRequestData.countCatalogSharingRequests !== 0,
-      elements: resourceElements,
-      data: { cy: 'resources' },
-      className: {
-        icon: 'text-orange-400',
-        content: 'flex flex-col gap-0.5',
-      },
-    },
   ]
+
+  const resourcesNavigation: NavigationDropdownItemProps = {
+    type: 'dropdown',
+    key: 'resources-menubar-item',
+    label: t('manage.general.resources'),
+    icon: faBolt,
+    active:
+      router.pathname === '/resources/answerCollections' ||
+      router.pathname === '/resources/catalog' ||
+      router.pathname === '/resources/userGroups' ||
+      router.pathname === '/resources/mediaLibrary' ||
+      router.pathname.startsWith('/resources/knowledgeBases'),
+    notification:
+      pendingRequestData &&
+      pendingRequestData.countCatalogSharingRequests !== 0,
+    elements: resourceElements,
+    data: { cy: 'resources' },
+    className: {
+      icon: 'text-orange-400',
+      content: 'flex flex-col gap-0.5',
+    },
+  }
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [
     ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
@@ -299,11 +313,12 @@ function Header({
           type: 'link',
           label: t('shared.generic.logout'),
           onClick: () =>
-            router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
+            router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}/logout`),
           data: { cy: 'logout' },
         },
       ],
       className: {
+        label: 'hidden lg:block',
         content: 'mr-1',
       },
     },
@@ -312,10 +327,10 @@ function Header({
   return (
     <>
       <div
-        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
+        className="print:hidden! flex h-full w-full flex-row flex-wrap items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
-        <div className="ml-4 flex flex-row items-center gap-1.5">
+        <div className="ml-4 flex min-w-0 max-w-[calc(100%-1rem)] flex-row items-center gap-1.5 overflow-x-auto max-sm:flex-wrap">
           <Image
             priority
             src="/img/klicker_icon_transparent.png"
@@ -327,8 +342,23 @@ function Header({
           />
           <Navigation
             items={leftNavigation}
-            className={{ root: 'shadow-none' }}
+            className={{
+              root: 'shadow-none max-sm:gap-0 max-sm:px-0 max-sm:[&>button]:px-2',
+            }}
           />
+          {canAuthorChatbots && (
+            <Link
+              href="/resources/chatbots"
+              aria-current={
+                router.pathname === '/resources/chatbots' ? 'page' : undefined
+              }
+              data-cy="chatbots"
+              className="shrink-0 rounded-sm px-3 py-1 text-base font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:-outline-offset-2 aria-[current=page]:text-black aria-[current=page]:underline"
+            >
+              {t('manage.resources.chatbots')}
+            </Link>
+          )}
+          <Navigation items={[resourcesNavigation]} />
           {learningAnalyticsEnabled ? (
             analyticsMenu
           ) : (
@@ -344,7 +374,7 @@ function Header({
         </div>
         <Navigation
           items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          className={{ root: '-gap-1 ml-auto flex h-10 flex-row shadow-none' }}
         />
       </div>
       {showSupportModal && (

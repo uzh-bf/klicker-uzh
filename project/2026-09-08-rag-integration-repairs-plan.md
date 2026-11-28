@@ -1,0 +1,64 @@
+# Restore post-integration acceptance checks
+
+## Approval summary
+
+Repair the CI setup failures found after integrating the RAG display changes into `v3-ai`. Restore lecturer MCP disposable-database wiring and OLAT container dependency setup. Reproduce the Chat streaming-scroll and Single Choice editing failures before changing their behavior.
+
+Preserve database safety guards, strict dependency verification, existing chat history and citation contracts. Do not add dependencies, migrations, change deployment configuration, or integrate newer `v3` changes.
+
+The user approved these further fixes. Authority covers local implementation, isolated synthetic verification, ordinary task-branch commits and push, and a reviewed draft PR against `v3-ai`. Merge, protected pushes, deployments, cluster changes, connectivity setup and deletion of retained data remain outside this package.
+
+Completion requires successful focused setup and browser acceptance, independent applicable reviews, and draft publication. Missing required runtime evidence means `delivery_pending`, not acceptance. The main session owns execution and boundary decisions.
+
+## Execution details
+
+### Baseline and evidence
+
+Worktree: `trees/rs/rag-integration-repairs`; branch: `rs/rag-integration-repairs`; target: `v3-ai`. Baseline is `35fec95491ee014e7462a90e9c32e78d7619c9f9`. Remote refs refreshed on September 8; target matches baseline. Default `v3` comparison is 153 ahead and 2 behind; this does not authorize integration.
+
+The MCP workflow resets `klicker-prod` without provisioning the guarded disposable database. OLAT skips installation for mounted host dependencies and fails strict workspace verification. Chat fails its streaming bottom-distance assertion before final sources arrive. Single Choice feedback editing fails before a subsequent persistence test. Browser root causes remain unproven.
+
+### Ownership and verification portfolio
+
+| Slice | Owner | Acceptance and test obligation |
+| --- | --- | --- |
+| MCP disposable setup | executor | Extend appropriate existing workflow contracts after inspecting them. Preserve guard tests. Verify provisioning order, consistent downstream URLs, failure propagation and helper/init path filters; prove reset, seed, readiness and both smoke commands. |
+| OLAT isolated runner | main, after executor checkpoint | Preserve strict dependency verification. Repair install/mount seam and launcher status handling. Prove setup success, deliberate test-service failure, correct exit status and cleanup of only the uniquely named disposable Compose project. Extend the stable launcher contract where missing. |
+| Browser regressions | main, with existing explore diagnosis | Reproduce ordered Single Choice file using fresh synthetic fixtures; distinguish independent failure from cascade. Preserve Chat bottom-follow, final-source placement and reload/history assertions. Reuse existing behavioral tests; no speculative edits or assertion weakening. |
+| Integration and delivery | main | Inspect exact diff and independent checks; complete applicable committed-slice risk review and simplification, then integrated final review before draft publication. |
+
+MCP uses `.github/scripts/provision-disposable-postgres.sh` and retains its `klicker-prod` bootstrap connection. Destructive operations use marked `klicker_test`, with `klicker_test_shadow` where required. No guard changes are allowed.
+
+OLAT must return the `test` service's actual exit status and clean up on failure. It must not stop another runtime. Its workflow skips draft PRs, so draft creation cannot substitute for isolated local execution.
+
+Main retains browser fixes because their root causes are unresolved. Stop the exact task runtime after verification; never use broad cleanup. No external model credentials or real course data are needed.
+
+### Sequence and boundaries
+
+Commit this approved plan separately, then commit each verified repair slice. Use one cohesive CI-unblocking package, not a stack of partial repairs. Missing capability, newly required data access, architecture changes or authority beyond the summary are pause conditions. Routine failing checks continue the approved correction loop.
+
+No product primitive or ADR change is planned: this restores established contracts. A changed product or data contract reopens that decision. Use sliced-development and model-routing skills for ownership and reviews, runtime lifecycle and repository testing skills for actual runtime proof. No new knowledge document is required unless diagnosis reveals a durable non-obvious lesson.
+
+## Review provenance
+
+Planner Newton reviewed the frozen scope in two rounds. Round one requested stronger OLAT exit/cleanup proof, complete MCP wiring protection, explicit local proof despite draft CI skips, and the full ordered browser regression sequence. All four findings were accepted and incorporated. Round two returned `DONE — VERDICT APPROVED`.
+
+Optional cross-provider challenge returned no usable report: the first invocation rejected the model/effort spelling; the exact high-effort catalog variant then completed without output and could not read the isolated review directory. It is not a passed review. Required native gates remain intact.
+
+## Progress
+
+Plan committed at `b307431472`; MCP repair committed at `d462db6b39`. Independent workflow suite passes 4 tests, provisioning contracts pass 19 and in-container disposable guard tests pass 16. Exact guarded reset and `seed:test` pass. Against that reseeded state, local MCP positive smoke passes 9 checks and negative smoke passes 15 with the namespaced issuer. MCP unit tests pass 42 checks. Workflow/plan Prettier check, diff check and Git identity check pass. These use the managed development server, not the workflow's production server boot.
+
+Fresh host Chromium verification passes the full ordered Single Choice file (6 tests) and focused Chat streaming-citation case (1 test), with unchanged assertions. No browser defect reproduced; no UI edit justified. Explorer completed source diagnosis without a proven root cause.
+
+Runtime: exact repair checkout, Devsy workspace `rs-rag-integration-repairs`, Compose project `default-rs-0eb7e`, profile `chat,manage`, installed Devrouter 0.0.60. The default Blob port 10003 collided; supported `KB_GRAPH_BLOB_HOST_PORT=19003` succeeded. The host launcher reconciled its own dependencies. A lifecycle-lock refusal was resolved by exact non-destructive stop and resume; ensure returned ready with no drift. Runtime remains active for OLAT verification and must be stopped and checked before handoff.
+
+Executor Parfit completed MCP and was closed after the OLAT checkpoint produced no patch. Main owns OLAT, integration, reviews and delivery. OLAT repair is committed at `3ccae89445`. It preserves the host install's absolute path, returns the test-service exit code and cleans only its unique Compose project, including failure paths. Launcher contract passes five scenarios. An isolated network-disabled pnpm 11.5.0 fixture passes at the install path and reproduces the exact workspace-structure failure when mounted at the former `/usr/src/app` path. No dependency guard was weakened.
+
+OLAT build passes. Its first managed-container test attempt passed all 22 assertions but exited 1 because the server collided with the existing backend on port 3000; that run is not accepted. A separate temporary container, using the exact task runtime's dependencies and marked test database with unchanged `NODE_ENV=test`, passes 22 tests and exits 0. That container was automatically removed. A real two-container Compose fixture returns the deliberately chosen test-service status 37 and confirms scoped cleanup leaves no containers. The workflow, launcher and provisioning contract suites pass 24 checks together. These split local checks do not claim an exact hosted workflow pass.
+
+Simplifier Copernicus returned one optional finding: remove the redundant whole-job step-ID assertion. Main verified and applied it at `181e81ca7d`; five focused contract tests pass. The risk-selected slice reviewer Hilbert returned DONE with no blocking findings on `b307431472..181e81ca7d`. Final reviewer Gibbs passed the integrated range through `58ed27dd86` for draft publication with no source findings. Hosted verification and managed-runtime cleanup remain distinct obligations. Only evidence bookkeeping changed after final review.
+
+Automatic permission review timed out before starting the exact managed-runtime stop, including the one permitted retry. A subsequent exact-container inspection confirms it remains running; user guidance is needed before another stop attempt. An additional fresh standalone PostgreSQL provisioning proof initially raced database initialization because `pg_isready` does not prove the named database exists. The temporary instance was removed. After the test-only readiness check required a successful bootstrap-database query, the actual provisioning helper passed on a fresh instance and both database markers were verified. That instance was removed and no auxiliary verification containers remain. Existing managed bootstrap/reset/seed/smoke and guard evidence above remains valid.
+
+Required delivery: reviewed draft PR; publication is next. Live staging deployment and post-merge staging acceptance remain unverified and separate. Local plan/CI commits use focused checks and staged secret scanning instead of the full root hooks; no full-root check or build pass is claimed.

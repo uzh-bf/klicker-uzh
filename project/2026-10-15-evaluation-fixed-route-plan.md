@@ -9,9 +9,11 @@ route for OpenAI's default tier, while continuing to reject routing controls
 supplied by the application. Each attempt, including retries, still consumes
 the existing durable reservation before forwarding.
 
-The existing $5 hard ceiling, text-only contract, framework interface and normal
-application routing remain unchanged. Prices must conservatively include every
-eligible endpoint, long-context override, cache charge and applicable fee.
+The default $5/120-turn budget, text-only contract, framework interface and
+normal application routing remain unchanged. A separately approved new experiment
+may initialize the supported $55/48-turn pair; each ledger retains its configured
+ceiling. Prices must conservatively include every eligible endpoint,
+long-context override, cache charge and applicable fee.
 Provider price filters alone do not establish that all-in bound. Dated tariff
 evidence and its freshness remain an operator readiness gate; this package does
 not implement automatic tariff discovery or expiry enforcement.
@@ -78,7 +80,7 @@ boundary, using that snapshot for hashing, reservation, status and forwarding.
 | Product primitive | Disposition | Contract delta | Consumers and evidence |
 | --- | --- | --- | --- |
 | Evaluation pricing policy | Extend | Explicit guard-owned route required for OpenRouter; reject unrelated hosts while retaining exact loopback qualification | Existing guard and pricing-policy validator |
-| Experiment budget | Reuse | Existing monotonic $5 ceiling and per-attempt reservations | Existing ledger and runner; no new algorithm |
+| Experiment budget | Reuse | Existing configured ledger ceiling and per-attempt reservations | Existing ledger and runner; no new algorithm |
 
 No ADR: this is a small, reversible extension of the existing evaluation-only
 guard. A general multi-provider pricing service would reopen the architecture
@@ -153,7 +155,8 @@ and verification because the conflict resolution and source-equivalence checks
 share one critical path. Adopt the upstream workflow and test exactly, removing
 the duplicate branch implementation while retaining upstream caching and
 concurrency changes. Reuse unchanged guard reviews and fake-only application
-evidence; rerun focused tests and exact-head CI. Keep the draft and $5 ceiling.
+evidence; rerun focused tests and exact-head CI. Keep the draft and configured
+budget limit.
 
 The user subsequently approved resolving the hostname-policy review comment
 while preserving loopback qualification, replying to and resolving that thread,
@@ -167,7 +170,8 @@ or application startup is required. Prior application qualification is historica
 new startup-admission and fake-HTTP tests qualify this changed predicate while
 forwarding and budget behavior remain unchanged. Complete the bounded source
 reviews, ordinary push, review-thread resolution, draft-body update, exact-head
-CI disposition and checkpoint sync. Draft state and the $5 ceiling remain.
+CI disposition and checkpoint sync. Draft state and the configured budget limit
+remain.
 
 ### Planning review
 

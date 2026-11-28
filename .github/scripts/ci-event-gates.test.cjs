@@ -681,6 +681,26 @@ test('ready_for_review lists only workflows with a documented lifecycle role', (
   )
 })
 
+// GitHub evaluates every pull request in a stack against the stack base's
+// required checks, but an upper layer targets the branch below it. A branch
+// filter on the pull_request trigger skips the suite whenever that layer is
+// pushed before it joins the stack, so the required context never appears and
+// the stack cannot merge.
+test('required check workflows run for pull requests into any branch', () => {
+  for (const name of [
+    'check.yml',
+    'check-gitleaks.yml',
+    'test-unit.yml',
+    'test-graphql.yml',
+    'test-olat-api.yml',
+    'test-intl-production.yml',
+    'test-playwright.yml',
+    'v3_images-stg.yml',
+  ]) {
+    assert.equal(readWorkflow(name).on.pull_request.branches, undefined, name)
+  }
+})
+
 test('graphql validation re-runs neither on edits nor at the ready boundary', () => {
   const workflow = readWorkflow('test-graphql.yml')
   // The suite runs identically for drafts and ready PRs, so the ready

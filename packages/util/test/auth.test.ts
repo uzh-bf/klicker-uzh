@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  LTI_PROBE_COOKIE_NAME,
+  cookieSecurityOptions,
+  cookiesAvailableViaLtiProbe,
   deriveCookieDomainFromURL,
+  extractBearerToken,
   extractProviderFromAffiliationId,
   generateRandomString,
+  isUzhAffiliated,
   parseCookiesHeader,
   parseCsvHosts,
   reduceCatalyst,
@@ -62,6 +67,28 @@ describe('Auth helpers', () => {
     })
   })
 
+  describe('isUzhAffiliated', () => {
+    it('accepts uzh.ch and its subdomains from email or affiliation', () => {
+      expect(isUzhAffiliated({ email: 'lecturer@UZH.ch' })).toBe(true)
+      expect(isUzhAffiliated({ email: 'lecturer@df.uzh.ch' })).toBe(true)
+      expect(
+        isUzhAffiliated({
+          email: 'lecturer@example.com',
+          affiliations: ['staff@ifi.uzh.ch'],
+        })
+      ).toBe(true)
+    })
+
+    it('rejects USZ and look-alike domains', () => {
+      expect(isUzhAffiliated({ email: 'lecturer@usz.ch' })).toBe(false)
+      expect(isUzhAffiliated({ email: 'lecturer@notuzh.ch' })).toBe(false)
+      expect(
+        isUzhAffiliated({ email: null, affiliations: ['staff@uzh.ch.example'] })
+      ).toBe(false)
+      expect(isUzhAffiliated({})).toBe(false)
+    })
+  })
+
   describe('generateRandomString', () => {
     it('generates correct length and charset', () => {
       const s = generateRandomString(16)
@@ -90,6 +117,50 @@ describe('Auth helpers', () => {
       expect(deriveCookieDomainFromURL('http://localhost:3000')).toBeUndefined()
       expect(deriveCookieDomainFromURL('http://127.0.0.1')).toBeUndefined()
       expect(deriveCookieDomainFromURL('https://example.com')).toBeUndefined()
+    })
+  })
+
+  describe('extractBearerToken', () => {
+    it('extracts bearer tokens case-insensitively and trims whitespace', () => {
+      expect(extractBearerToken('Bearer abc.def')).toBe('abc.def')
+      expect(extractBearerToken('  bearer   token-value  ')).toBe('token-value')
+    })
+
+    it('returns null for empty or non-bearer authorization headers', () => {
+      expect(extractBearerToken(null)).toBeNull()
+      expect(extractBearerToken('')).toBeNull()
+      expect(extractBearerToken('Basic abc')).toBeNull()
+      expect(extractBearerToken('Bearer')).toBeNull()
+    })
+  })
+
+  describe('cookiesAvailableViaLtiProbe', () => {
+    it('detects the shared LTI probe cookie', () => {
+      expect(
+        cookiesAvailableViaLtiProbe({ [LTI_PROBE_COOKIE_NAME]: '1' })
+      ).toBe(true)
+      expect(cookiesAvailableViaLtiProbe({ other: '1' })).toBe(false)
+      expect(
+        cookiesAvailableViaLtiProbe({ [LTI_PROBE_COOKIE_NAME]: undefined })
+      ).toBe(false)
+    })
+  })
+
+  describe('cookieSecurityOptions', () => {
+    it('returns iframe-safe cookie options in production', () => {
+      expect(cookieSecurityOptions({ isProduction: true })).toEqual({
+        secure: true,
+        sameSite: 'none',
+        partitioned: true,
+      })
+    })
+
+    it('returns local-development cookie options outside production', () => {
+      expect(cookieSecurityOptions({ isProduction: false })).toEqual({
+        secure: false,
+        sameSite: 'lax',
+        partitioned: false,
+      })
     })
   })
 })

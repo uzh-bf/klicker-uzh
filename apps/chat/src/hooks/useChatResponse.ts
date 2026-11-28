@@ -1,5 +1,5 @@
-import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useCallback, useRef } from 'react'
 import {
   hasAllImageAttachmentsHydrated,
@@ -10,19 +10,28 @@ import {
   type ImageSupport,
   withoutPageReview,
 } from '../lib/attachments/documentText'
-import { type ReasoningEffort } from '../lib/config/reasoning'
+import { authedFetch } from '../lib/client/authedFetch'
+import type { ReasoningEffort } from '../lib/config/reasoning'
+import { historyTextFromParts } from '../lib/feedback'
 import { readHandoffSource } from '../lib/handoff'
+import {
+  hasMeaningfulAssistantContent,
+  withEmptyResponseError,
+} from '../lib/server/persistedAssistantContent'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
+import { useChatContextStore } from '../stores/chatContextStore'
 import {
-  useChatStore,
   type ExtendedThreadMessageLike,
+  type MeetingClockAnchor,
   type ThreadRunOutcome,
+  useChatStore,
 } from '../stores/chatStore'
 import {
   selectModelReadsDocumentPages,
   useSettingsStore,
 } from '../stores/settingsStore'
+import { requestFreshElearningChatContext } from './useEmbeddedChatContext'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
@@ -49,6 +58,7 @@ export function useChatResponse(
   selectedReasoningEffort: ReasoningEffort
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
+  const chatContext = useChatContextStore((state) => state.context)
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
@@ -150,23 +160,7 @@ export function useChatResponse(
             return String(message.content ?? '')
           }
 
-          return message.content
-            .filter(
-              (
-                part
-              ): part is {
-                type: 'text'
-                text: string
-              } =>
-                typeof part === 'object' &&
-                part !== null &&
-                'type' in part &&
-                part.type === 'text' &&
-                'text' in part &&
-                typeof part.text === 'string'
-            )
-            .map((part) => part.text)
-            .join('')
+          return historyTextFromParts(message.content)
         }
 
         // Pages that will not be sent must not stay announced as reviewed.
@@ -266,10 +260,23 @@ export function useChatResponse(
 
         // Hydration can restore stored headers from an earlier attempt.
         if (documentPages.length === 0) dropPageReview()
+        // A new embedded eLearning question re-requests the page snapshot from
+        // the host: the launch snapshot can expire or describe a page the
+        // student has left, and a completion change arrives without navigation.
+        // Edits and regenerations keep the server-side historical context.
+        const isBranchOrRegeneration = Boolean(
+          options.allowRegeneration ||
+            resolvedTriggerMessage?.attachmentSourceMessageId
+        )
+        const requestChatContext =
+          !isBranchOrRegeneration &&
+          (chatContext?.source === 'elearning' || chatContext == null)
+            ? await requestFreshElearningChatContext()
+            : chatContext
 
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
-        const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
+        const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
@@ -295,7 +302,12 @@ export function useChatResponse(
             reasoningEffort: selectedReasoningEffort,
             answerStyle,
             answerTone,
+            chatContext: requestChatContext ?? undefined,
             parentId: parentId || undefined,
+            // A branch (edit) keeps the original question's learning context
+            // instead of the page that happens to be live now.
+            sourceMessageId:
+              resolvedTriggerMessage?.attachmentSourceMessageId || undefined,
             assistantMessageId,
             ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
             ...(handoffSource ? { handoffSource } : {}),
@@ -387,6 +399,7 @@ export function useChatResponse(
         let currentTextContent = ''
         let currentReasoningContent = ''
         const toolCallsMap: Map<string, any> = new Map()
+        const completedToolCalls = new Set<string>()
         let finishReason: string | null = null
         let messageMetadata: {
           chatMode?: string | null
@@ -397,6 +410,7 @@ export function useChatResponse(
         } | null = null
         let hasFinishEvent = false
         let hasStreamError = false
+        let meetingClock: MeetingClockAnchor | null = null
 
         const buildAssistantMessage = (): ExtendedThreadMessageLike => ({
           id: assistantMessageId,
@@ -411,6 +425,7 @@ export function useChatResponse(
             (messageMetadata?.reasoningContent ?? currentReasoningContent) ||
             null,
           creditsUsed: messageMetadata?.creditsUsed ?? null,
+          meetingClock,
         })
 
         if (reader) {
@@ -536,8 +551,10 @@ export function useChatResponse(
                       type: 'text',
                       text: currentTextContent,
                     })
-                    currentTextContent = ''
                   }
+                  // Text after the tool starts a new part, so it must not
+                  // repeat the text before it.
+                  currentTextContent = ''
 
                   // create tool call object and track by ID
                   const toolCall = {
@@ -572,6 +589,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     const output = normalizeLiveToolOutput(jsonData.output)
+                    completedToolCalls.add(jsonData.toolCallId)
                     existingToolCall.result = output.result
                     existingToolCall.isError = output.isError
 
@@ -585,6 +603,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     const output = normalizeLiveToolOutput(undefined, true)
+                    completedToolCalls.add(jsonData.toolCallId)
                     existingToolCall.result = output.result
                     existingToolCall.isError = output.isError
 
@@ -668,6 +687,18 @@ export function useChatResponse(
                 } else if (jsonData.type === 'message-metadata') {
                   // No UI update needed
                 } else if (
+                  jsonData.type === 'start' &&
+                  typeof jsonData.messageMetadata?.meetingClockStartedAt ===
+                    'string' &&
+                  typeof jsonData.messageMetadata?.serverNow === 'string'
+                ) {
+                  meetingClock = {
+                    startedAt: jsonData.messageMetadata.meetingClockStartedAt,
+                    skewMs:
+                      Date.parse(jsonData.messageMetadata.serverNow) -
+                      Date.now(),
+                  }
+                } else if (
                   [
                     'start', // stream started
                     'start-step', // processing step started
@@ -720,7 +751,22 @@ export function useChatResponse(
             })
           }
 
-          if (finishReason === 'length') {
+          if (
+            hasFinishEvent &&
+            !hasStreamError &&
+            !hasMeaningfulAssistantContent(
+              orderedContentParts.filter(
+                (part) =>
+                  part.type !== 'tool-call' ||
+                  completedToolCalls.has(part.toolCallId)
+              )
+            )
+          ) {
+            hasStreamError = true
+            orderedContentParts.push(...withEmptyResponseError([]))
+          }
+
+          if (finishReason === 'length' && !hasStreamError) {
             orderedContentParts.push({
               type: 'text',
               text: `\n\n_(${t('chat.response.truncated')})_`,
@@ -934,6 +980,7 @@ export function useChatResponse(
       answerStyle,
       answerTone,
       chatbotId,
+      chatContext,
       loadCredits,
       t,
     ]

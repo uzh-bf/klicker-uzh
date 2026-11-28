@@ -6,5 +6,6 @@ query GetChatModelRegistry {
     fallback
     supportsReasoning
     supportedReasoningEfforts
+    usageClass
   }
 }

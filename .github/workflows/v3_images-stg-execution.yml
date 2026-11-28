@@ -290,6 +290,32 @@ jobs:
           SHA: ${{ github.sha }}
         shell: bash
         run: .github/scripts/stg-image-publish-guard.sh
+      - name: Resolve the previous release image
+        id: previous_release
+        if: matrix.releaseAssets
+        env:
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The image at the stg-release SHA is what staging currently runs.
+          # A commit merged directly into stg-release has no image, and Argo
+          # then keeps running the last one that had, so walk back along the
+          # first-parent history to the newest commit with an image. Without
+          # a usable image the build starts a fresh asset history.
+          image=""
+          if git fetch --quiet --no-tags --depth=20 origin stg-release; then
+            for sha in $(git rev-list --first-parent FETCH_HEAD); do
+              if docker buildx imagetools inspect "${IMAGE}:${sha}" >/dev/null 2>&1; then
+                image="${IMAGE}:${sha}"
+                break
+              fi
+            done
+          fi
+          if [ -z "$image" ]; then
+            echo "::warning::no image found in recent stg-release history; building without release history"
+          fi
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
       - name: Build and push Docker image
         id: build
         if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
@@ -300,6 +326,12 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
+          build-args: |
+            NEXT_PUBLIC_ENV=staging
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
+            PREVIOUS_IMAGE=${{ steps.previous_release.outputs.image }}
           cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
           cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}

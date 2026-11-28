@@ -38,6 +38,8 @@ const runRatingRequest = createRatingRequestCoordinator<MessageRating | null>()
 /**
  * Extended thread message type that includes parentId for conversation branching
  */
+export type MeetingClockAnchor = { startedAt: string; skewMs: number }
+
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
   attachmentSourceMessageId?: string | null
@@ -47,6 +49,11 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Server start of a custom mode's meeting clock, received with a streamed
+  // answer, and the offset of the server clock from this browser's clock.
+  meetingClock?: MeetingClockAnchor | null
+  // Verified learning-context snapshot on eLearning-origin user messages.
+  learningContext?: unknown
   imageAttachments?: {
     id?: string
     type: 'image'
@@ -75,6 +82,7 @@ export interface Thread {
   createdAt: Date
   updatedAt: Date
   lastChatMode?: string | null // mode of the thread's most recent message (D6)
+  origin?: string | null // where the conversation began ('elearning' | 'pwa')
   lastRunOutcome?: ThreadRunOutcome | null // reset when a new run starts
 }
 
@@ -84,6 +92,12 @@ interface ChatState {
   isLoading: boolean
   participationRequired: boolean
   participationMessage: string | null
+  /**
+   * KG workspace entry point: a 403 on the knowledge-graph read means the
+   * guest/participant has no course participation. Delegates to the shared
+   * participation notice (or clears it when the read succeeds again).
+   */
+  setParticipationRequired: (required: boolean, message?: string) => void
   /**
    * Set when `loadThreads` fails for a reason other than the 403
    * participation case (which `handleApiError` already surfaces via
@@ -99,7 +113,10 @@ interface ChatState {
   ratingErrors: Record<string, boolean>
 
   // thread management actions
-  createThread: (chatbotId: string) => Promise<string>
+  createThread: (
+    chatbotId: string,
+    options?: { background?: boolean }
+  ) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
   switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
   /**
@@ -121,7 +138,7 @@ interface ChatState {
     chatbotId: string,
     message: ExtendedThreadMessageLike,
     targetThreadId?: string
-  ) => Promise<string | null>
+  ) => Promise<ExtendedThreadMessageLike[] | null>
   ensureFullImageAttachments: (
     chatbotId: string,
     threadId: string,
@@ -168,6 +185,15 @@ export const useChatStore = create<ChatState>((set, get) => {
       // instead of an English string the store cannot translate.
       participationMessage: message?.trim() ? message : null,
     })
+  }
+
+  const setParticipationRequired = (required: boolean, message?: string) => {
+    if (required) {
+      markParticipationRequired(message)
+      return
+    }
+
+    clearParticipationNotice()
   }
 
   const clearParticipationNotice = () => {
@@ -266,6 +292,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     isLoading: false,
     participationRequired: false,
     participationMessage: null,
+    setParticipationRequired,
     threadsLoadError: false,
     ratingErrors: {},
 
@@ -276,9 +303,12 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param chatbotId - The ID of the chatbot to create the thread for
      * @returns Promise<string> The ID of the created thread
      */
-    createThread: async (chatbotId: string) => {
+    createThread: async (
+      chatbotId: string,
+      options?: { background?: boolean }
+    ) => {
       try {
-        set({ isLoading: true })
+        if (!options?.background) set({ isLoading: true })
         const apiThread = await apiCall<ApiThread>(
           `/chatbots/${chatbotId}/threads`,
           {
@@ -439,19 +469,10 @@ export const useChatStore = create<ChatState>((set, get) => {
         )
         const allMessages = apiMessages.map(convertApiMessageToMessage)
 
+        // An empty response may predate the first local message. There is
+        // nothing to hydrate, so keep any message appended during the fetch.
         if (allMessages.length === 0) {
-          set((state) => ({
-            threads: state.threads.map((thread) =>
-              thread.id === threadId
-                ? {
-                    ...thread,
-                    allMessages: [],
-                    messages: [],
-                  }
-                : thread
-            ),
-            isLoading: false,
-          }))
+          set({ isLoading: false })
           return true
         }
 
@@ -560,7 +581,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      *
      * @param chatbotId - The chatbot ID for thread operations
      * @param message - The message to add to the conversation
-     * @returns Promise<string | null> The ID of the thread the message was added to
+     * @returns The conversation path for this submission, including the new message
      */
     addMessage: async (chatbotId: string, message, targetThreadId?: string) => {
       const state = get()
@@ -590,12 +611,13 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
 
       // add message to both current path and all messages
+      const submittedPath = [...activeThread.messages, message]
       set((state) => ({
         threads: state.threads.map((thread) =>
           thread.id === currentThreadId
             ? {
                 ...thread,
-                messages: [...thread.messages, message],
+                messages: submittedPath,
                 allMessages: [...thread.allMessages, message],
                 updatedAt: new Date(),
                 // Keep the thread's mode in sync with the message just sent so
@@ -638,7 +660,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         }
       }
 
-      return currentThreadId
+      return submittedPath
     },
 
     ensureFullImageAttachments: async (

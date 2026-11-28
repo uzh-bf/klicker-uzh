@@ -27,6 +27,7 @@ const COMMON_FIELDS = [
   'parallel_tool_calls',
   'cache',
   'prompt_cache_key',
+  'metadata',
 ]
 const REQUEST_FIELDS = {
   '/v1/responses': [
@@ -164,7 +165,8 @@ export function requestReservation(policy, pathname, body) {
   if (!model) throw budgetError('provider_model_unqualified')
   if (body.n !== undefined && body.n !== 1)
     throw budgetError('provider_request_unbounded')
-  if (body.store === true) throw budgetError('provider_request_unqualified')
+  if (body.store !== undefined && body.store !== false)
+    throw budgetError('provider_request_unqualified')
   if (body.truncation !== undefined && body.truncation !== 'disabled')
     throw budgetError('provider_request_unbounded')
   if (
@@ -200,10 +202,33 @@ export function requestReservation(policy, pathname, body) {
   ) {
     throw budgetError('provider_request_unqualified')
   }
+  // Chat's default route sends LiteLLM's `metadata.session_id` so one answer's
+  // tool loop stays on one routed model. It is a gateway-only routing hint with
+  // no cost effect; only that exact shape is accepted, and the guard strips it
+  // before the native upstream call.
+  if (
+    body.metadata !== undefined &&
+    (typeof body.metadata !== 'object' ||
+      body.metadata === null ||
+      Array.isArray(body.metadata) ||
+      Object.keys(body.metadata).length !== 1 ||
+      typeof body.metadata.session_id !== 'string' ||
+      !body.metadata.session_id.trim() ||
+      body.metadata.session_id.length > 128)
+  ) {
+    throw budgetError('provider_request_unqualified')
+  }
   const input = pathname === '/v1/responses' ? body.input : body.messages
   if (!(typeof input === 'string' || Array.isArray(input)))
     throw budgetError('provider_input_invalid')
-  const checkModalities = (value, depth = 0) => {
+  const isToolSchemaPath = (path) =>
+    path[0] === 'tools' &&
+    /^(?:0|[1-9]\d*)$/.test(path[1]) &&
+    (pathname === '/v1/responses'
+      ? path.length === 3 && path[2] === 'parameters'
+      : path.length === 4 && path[2] === 'function' && path[3] === 'parameters')
+  const checkModalities = (value, depth = 0, path = []) => {
+    if (isToolSchemaPath(path)) return
     if (depth > 64) throw budgetError('provider_request_invalid')
     if (!value || typeof value !== 'object') return
     if (Object.hasOwn(value, 'cache_control'))
@@ -216,7 +241,8 @@ export function requestReservation(policy, pathname, body) {
     ) {
       throw budgetError('provider_modality_unqualified')
     }
-    for (const entry of Object.values(value)) checkModalities(entry, depth + 1)
+    for (const [key, entry] of Object.entries(value))
+      checkModalities(entry, depth + 1, [...path, key])
   }
   checkModalities(body)
   const output =
@@ -314,9 +340,11 @@ export async function createSpendGuard({
       const body = await requestBody(request)
       const microUsd = requestReservation(policy, url.pathname, body)
       await reserveProviderSpend(budgetFile, policyHash, microUsd)
-      // The guard consumes the proxy-only `cache` hint; the native upstream
-      // does not support it, so forward the reserved request without it.
+      // The guard consumes the proxy-only `cache` and gateway `metadata`
+      // hints; the native upstream does not use them, so forward the reserved
+      // request without them.
       delete body.cache
+      delete body.metadata
       if (policy.fixedRoute) {
         const model = policy.models[body.model]
         body.service_tier = 'default'
