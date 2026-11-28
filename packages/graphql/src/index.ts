@@ -86,6 +86,7 @@ import {
   handleSendPushNotifications,
   handleSendTeamsNotification,
 } from './services/notifications.js'
+import { handleParticipantAnalyticsWithdrawals } from './services/participantAnalyticsWithdrawal.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 
@@ -96,6 +97,7 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleParticipantAnalyticsWithdrawals,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
