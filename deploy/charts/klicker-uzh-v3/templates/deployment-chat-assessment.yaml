@@ -33,7 +33,13 @@ spec:
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: chat-assessment
+        {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+        azure.workload.identity/use: "true"
+        {{- end }}
     spec:
+      {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+      serviceAccountName: {{ required "chat.mediaWorkloadIdentity.serviceAccountName is required" .Values.chat.mediaWorkloadIdentity.serviceAccountName | quote }}
+      {{- end }}
       terminationGracePeriodSeconds: {{ .Values.chat.terminationGracePeriodSeconds }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.chatAssessment.priorityClassName }}
       {{- with .Values.chat.imagePullSecrets }}
@@ -52,13 +58,32 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          {{- if .Values.chat.courseImages.existingSecret }}
+          {{- /* Same media wiring as the regular chat pod, so exam answers can use course images and video frames. */}}
+          {{- if or .Values.chat.mediaWorkloadIdentity.enabled .Values.chat.courseImages.existingSecret .Values.chat.videoBlob.existingSecret }}
           env:
+            {{- if .Values.chat.mediaWorkloadIdentity.enabled }}
+            {{- range $key := list "COURSE_IMAGE_PROJECTION_STORAGE_ACCOUNT_NAME" "COURSE_IMAGE_PROJECTION_STORAGE_CONTAINER" "COURSE_IMAGE_PROJECTION_STORAGE_PREFIX" "BLOB_STORAGE_ACCOUNT_NAME" "CHAT_VIDEO_BLOB_CONTAINER" }}
+            - name: {{ $key }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ $.Values.chat.mediaWorkloadIdentity.serviceAccountName | quote }}
+                  key: {{ $key }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.chat.courseImages.existingSecret }}
             - name: COURSE_IMAGE_PROJECTION_STORAGE_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.chat.courseImages.existingSecret | quote }}
                   key: {{ .Values.chat.courseImages.connectionStringKey | quote }}
+            {{- end }}
+            {{- if .Values.chat.videoBlob.existingSecret }}
+            - name: BLOB_STORAGE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chat.videoBlob.existingSecret | quote }}
+                  key: {{ required "chat.videoBlob.accessKeyKey is required for video frame storage" .Values.chat.videoBlob.accessKeyKey | quote }}
+            {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:

@@ -1900,6 +1900,35 @@ describe('assessment chat route', () => {
     )
   })
 
+  test('fails the exam turn when MCP discovery outlives the turn deadline', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      let resolveDiscovery!: (handle: unknown) => void
+      mocks.getAggregatedMCPTools.mockReturnValue(
+        new Promise((resolve) => {
+          resolveDiscovery = resolve
+        })
+      )
+
+      const pending = POST(assessmentRequest(), params)
+      await vi.advanceTimersByTimeAsync(61_000)
+      const response = await pending
+
+      expect(response.status).toBe(503)
+      expect(mocks.streamText).not.toHaveBeenCalled()
+      expect(mocks.failChatTurn).toHaveBeenCalledWith(
+        expect.objectContaining({ keepFailedMarker: true })
+      )
+
+      // Clients discovered after the deadline are closed, not leaked.
+      resolveDiscovery({ tools: {}, close: mocks.closeMCPTools })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mocks.closeMCPTools).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   test('records an exam answer without visible text as failed', async () => {
     const response = await POST(assessmentRequest(), params)
     expect(response.status).toBe(200)
