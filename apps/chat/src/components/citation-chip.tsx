@@ -65,7 +65,8 @@ export function CitationChip({ index }: { index: number }) {
     // the panel first, then go to the card once the conversation is back.
     if (
       workspace?.item &&
-      (target.closest('[inert]') || !target.checkVisibility())
+      (target.closest('[inert]') ||
+        !(target.checkVisibility?.() ?? target.getClientRects().length > 0))
     ) {
       workspace.close()
       requestAnimationFrame(() =>
