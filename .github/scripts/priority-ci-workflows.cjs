@@ -89,37 +89,90 @@ function execution(source, terminal) {
     )
   )
 }
-function readPinnedWorkflow(root, ref, file) {
+function pinnedWorkflowReader(root) {
   const options = {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, GODEBUG: 'netdns=go' },
+    env: { ...process.env, GODEBUG: 'netdns=go', GIT_NO_REPLACE_OBJECTS: '1' },
     stdio: ['ignore', 'pipe', 'ignore'],
     timeout: 60_000,
     maxBuffer: 1024 * 1024,
   }
-  try {
+  const git = (...args) => execFileSync('git', args, options).trimEnd()
+  let remoteRefs
+  function hasCommit(ref) {
     try {
-      execFileSync('git', ['cat-file', '-e', `${ref}^{commit}`], options)
+      git('cat-file', '-e', `${ref}^{commit}`)
+      return true
     } catch {
-      // A published executor can sit outside the current squash history.
-      // Fetch its exact object without making a complete checkout shallow.
-      execFileSync(
-        'git',
-        ['fetch', '--no-tags', '--no-write-fetch-head', 'origin', ref],
-        options
-      )
+      return false
     }
-    return execFileSync(
-      'git',
-      ['show', `${ref}:.github/workflows/${file}`],
-      options
+  }
+  function fetchCommit(ref) {
+    if (!hasCommit(ref))
+      git(
+        'fetch',
+        '--no-tags',
+        '--no-recurse-submodules',
+        '--no-write-fetch-head',
+        '--refmap=',
+        'origin',
+        ref
+      )
+  }
+  function onV3(ref) {
+    const tip = remoteRefs.get('refs/heads/v3')
+    if (!tip) throw new Error('origin does not advertise v3')
+    fetchCommit(tip)
+    if (!hasCommit(ref)) return false
+    try {
+      git('merge-base', '--is-ancestor', ref, tip)
+      return true
+    } catch (error) {
+      if (error.status !== 1) throw error
+      return false
+    }
+  }
+  return (ref, file) => {
+    try {
+      // A fetch by SHA can succeed even after the only branch is deleted.
+      remoteRefs ??= new Map(
+        git(
+          'ls-remote',
+          'origin',
+          'refs/heads/v3',
+          'refs/tags/priority-ci-executor-*'
+        )
+          .split('\n')
+          .map((line) => {
+            const [sha, name] = line.split('\t')
+            return [name, sha]
+          })
+      )
+      const tag = `refs/tags/priority-ci-executor-${ref}`
+      if (
+        (remoteRefs.get(`${tag}^{}`) ?? remoteRefs.get(tag)) === ref ||
+        onV3(ref)
+      ) {
+        fetchCommit(ref)
+        return git('show', `${ref}:.github/workflows/${file}`)
+      }
+    } catch (cause) {
+      throw new Error(`pinned priority workflow is unavailable: ${file}`, {
+        cause,
+      })
+    }
+    throw new Error(
+      `pinned priority workflow is not retained: ${file} at ${ref}. ` +
+        `Use a commit reachable from remote v3 or publish priority-ci-executor-${ref} at that commit.`
     )
-  } catch {
-    throw new Error('pinned priority workflow is unavailable: ' + file)
   }
 }
-function generate(root, write = false, readPinned = readPinnedWorkflow) {
+function generate(
+  root,
+  write = false,
+  readPinned = pinnedWorkflowReader(root)
+) {
   for (const [file, terminal] of Object.entries(TERMINALS)) {
     const source = fs.readFileSync(
       path.join(root, '.github/workflows', file),
@@ -149,9 +202,7 @@ function generate(root, write = false, readPinned = readPinnedWorkflow) {
         throw new Error(
           'priority workflow requires an exact executor SHA: ' + file
         )
-      if (
-        !isDeepStrictEqual(YAML.parse(readPinned(root, ref, executor)), parsed)
-      )
+      if (!isDeepStrictEqual(YAML.parse(readPinned(ref, executor)), parsed))
         throw new Error('pinned priority workflow differs: ' + file)
     }
   }
