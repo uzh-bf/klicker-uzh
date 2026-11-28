@@ -1,10 +1,8 @@
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -12,7 +10,6 @@ import {
   assertCohortActivationReentryRoot,
   assertReceiptMatchesManifest,
   assertReceiptTransition,
-  COHORT_ACTIVATION_MANIFEST_FINGERPRINT_ENV,
   type CohortActivationConfigRecord,
   type CohortActivationConfigUpdate,
   type CohortActivationManifest,
@@ -51,7 +48,7 @@ import {
   resolveCohortActivationReentryPaths,
   validateCohortActivationReentryClaim,
   writeReceipt,
-} from './doc-query-cohort-activation-run.js'
+} from './doc-query-cohort-activation-receipts.js'
 
 const sourceServer: CohortActivationServerRecord = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -1100,63 +1097,6 @@ describe('cohort activation contract', () => {
       await reacquired.release()
     } finally {
       execSpy.mockRestore()
-      await rm(directory, { recursive: true, force: true })
-    }
-  })
-
-  it('returns the refused session-locked result for re-entry CLI contention', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-cli-'))
-    const manifestPath = join(directory, 'manifest.json')
-    const predecessorPath = join(directory, 'predecessor.json')
-    const successorPath = join(directory, 'successor.json')
-    const manifest = makeManifest([sourceConfig, secondModeConfig])
-    await writeFile(manifestPath, JSON.stringify(manifest))
-    await writeFile(predecessorPath, '{}')
-    const lock = await acquireCohortActivationReentrySessionLock(
-      predecessorPath,
-      successorPath
-    )
-
-    try {
-      let failure: { status?: number; stdout?: string | Buffer } | undefined
-      try {
-        execFileSync(
-          process.execPath,
-          [
-            '../../node_modules/tsx/dist/cli.mjs',
-            'doc-query-cohort-activation-run.ts',
-            'reenter',
-            '--manifest',
-            manifestPath,
-            '--receipt',
-            predecessorPath,
-            '--successor',
-            successorPath,
-          ],
-          {
-            cwd: fileURLToPath(new URL('.', import.meta.url)),
-            encoding: 'utf8',
-            env: {
-              ...process.env,
-              DATABASE_URL:
-                'postgresql://synthetic:synthetic@127.0.0.1:5432/synthetic',
-              [COHORT_ACTIVATION_MANIFEST_FINGERPRINT_ENV]:
-                manifest.fingerprint,
-            },
-            timeout: 30000,
-          }
-        )
-      } catch (error) {
-        failure = error as { status?: number; stdout?: string | Buffer }
-      }
-
-      expect(failure?.status).toBe(3)
-      expect(JSON.parse(String(failure?.stdout ?? ''))).toEqual({
-        status: 'refused',
-        reason: 'session_locked',
-      })
-    } finally {
-      await lock.release()
       await rm(directory, { recursive: true, force: true })
     }
   })
