@@ -131,8 +131,10 @@ export default {
         connectionsUnavailable:
           'Connections are temporarily unavailable. Try again.',
         graphUnavailable: 'The knowledge graph is temporarily unavailable.',
-        searchResultsLoadedAnnouncement: '{count} search results loaded.',
-        conceptsLoadedAnnouncement: '{count} concepts loaded.',
+        searchResultsLoadedAnnouncement:
+          '{count, plural, one {# search result loaded.} other {# search results loaded.}}',
+        conceptsLoadedAnnouncement:
+          '{count, plural, one {# concept loaded.} other {# concepts loaded.}}',
         selectedConceptAnnouncement: 'Selected {label}.',
         selectedRelationshipAnnouncement: 'Selected relationship.',
         detailsClosedAnnouncement: 'Details closed.',
@@ -156,7 +158,7 @@ export default {
         to: 'To',
         concepts: 'Concepts',
         evidence: 'Evidence',
-        pages: '{count, plural, one {Page} other {Pages}} {pages}',
+        pages: '{count, plural, one {Page {pages}} other {Pages {pages}}}',
         properties: 'Properties',
       },
       edgePrompt:

@@ -135,8 +135,10 @@ export default {
         connectionsUnavailable:
           'Verbindungen sind vorübergehend nicht verfügbar. Versuchen Sie es erneut.',
         graphUnavailable: 'Der Wissensgraph ist vorübergehend nicht verfügbar.',
-        searchResultsLoadedAnnouncement: '{count} Suchergebnisse geladen.',
-        conceptsLoadedAnnouncement: '{count} Begriffe geladen.',
+        searchResultsLoadedAnnouncement:
+          '{count, plural, one {# Suchergebnis geladen.} other {# Suchergebnisse geladen.}}',
+        conceptsLoadedAnnouncement:
+          '{count, plural, one {# Begriff geladen.} other {# Begriffe geladen.}}',
         selectedConceptAnnouncement: '{label} ausgewählt.',
         selectedRelationshipAnnouncement: 'Beziehung ausgewählt.',
         detailsClosedAnnouncement: 'Details geschlossen.',
@@ -160,7 +162,7 @@ export default {
         to: 'Zu',
         concepts: 'Begriffe',
         evidence: 'Belege',
-        pages: '{count, plural, one {Seite} other {Seiten}} {pages}',
+        pages: '{count, plural, one {Seite {pages}} other {Seiten {pages}}}',
         properties: 'Eigenschaften',
       },
       edgePrompt:
