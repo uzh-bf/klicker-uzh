@@ -58,6 +58,26 @@ export default {
       unsourcedRelation:
         'No supporting source is recorded for this relationship.',
       inferredRelationLegend: 'Dashed: inferred or without a source',
+      relationTypes: {
+        prerequisite_of: 'Prerequisite of',
+        part_of: 'Part of',
+        example_of: 'Example of',
+        applies_to: 'Applies to',
+        is_a: 'Is a',
+        has_formula: 'Has formula',
+        has_variable: 'Has variable',
+        decision_rule: 'Decision rule for',
+        advantage_of: 'Advantage of',
+        disadvantage_of: 'Disadvantage of',
+        contrasts_with: 'Contrasts with',
+        synonym_of: 'Synonym of',
+        related: 'Related',
+      },
+      relationStatuses: {
+        source: 'Stated in the source',
+        inferred: 'Inferred',
+        extracted: 'Co-occurs in the source',
+      },
       edgePrompt:
         'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
     },

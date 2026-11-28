@@ -53,6 +53,26 @@ export function ChatKnowledgeGraphViewer({
           ask: t('ask'),
           missingEndpoint: t('missingEndpoint'),
           aiGeneratedNote: t('aiGeneratedNote'),
+          relationTypes: {
+            prerequisite_of: t('relationTypes.prerequisite_of'),
+            part_of: t('relationTypes.part_of'),
+            example_of: t('relationTypes.example_of'),
+            applies_to: t('relationTypes.applies_to'),
+            is_a: t('relationTypes.is_a'),
+            has_formula: t('relationTypes.has_formula'),
+            has_variable: t('relationTypes.has_variable'),
+            decision_rule: t('relationTypes.decision_rule'),
+            advantage_of: t('relationTypes.advantage_of'),
+            disadvantage_of: t('relationTypes.disadvantage_of'),
+            contrasts_with: t('relationTypes.contrasts_with'),
+            synonym_of: t('relationTypes.synonym_of'),
+            related: t('relationTypes.related'),
+          },
+          relationStatuses: {
+            source: t('relationStatuses.source'),
+            inferred: t('relationStatuses.inferred'),
+            extracted: t('relationStatuses.extracted'),
+          },
         },
       }}
       detailsLayout="contained"

@@ -59,6 +59,26 @@ export default {
       unsourcedRelation:
         'Für diese Beziehung ist keine belegende Quelle erfasst.',
       inferredRelationLegend: 'Gestrichelt: abgeleitet oder ohne Quelle',
+      relationTypes: {
+        prerequisite_of: 'Voraussetzung für',
+        part_of: 'Teil von',
+        example_of: 'Beispiel für',
+        applies_to: 'Gilt für',
+        is_a: 'Ist ein(e)',
+        has_formula: 'Hat Formel',
+        has_variable: 'Hat Variable',
+        decision_rule: 'Entscheidungsregel für',
+        advantage_of: 'Vorteil von',
+        disadvantage_of: 'Nachteil von',
+        contrasts_with: 'Im Gegensatz zu',
+        synonym_of: 'Synonym für',
+        related: 'Verwandt mit',
+      },
+      relationStatuses: {
+        source: 'In der Quelle genannt',
+        inferred: 'Abgeleitet',
+        extracted: 'Gemeinsam in der Quelle erwähnt',
+      },
       edgePrompt:
         'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
     },

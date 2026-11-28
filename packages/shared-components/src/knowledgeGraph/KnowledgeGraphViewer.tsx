@@ -182,8 +182,8 @@ function heightCoveredByDetailsSheet(container: HTMLElement | null): number {
 }
 
 /**
- * Centers a node in the part of the canvas a bottom details sheet leaves
- * visible, so the selected concept never sits behind its own details.
+ * Centers a concept or relationship in the part of the canvas a bottom
+ * details sheet leaves visible, so it never sits behind its own details.
  */
 function centerInVisibleArea(
   cy: cytoscape.Core,
@@ -196,7 +196,7 @@ function centerInVisibleArea(
   if (covered > 0) cy.panBy({ x: 0, y: -covered / 2 })
 }
 
-/** True when a bottom details sheet covers the node or its label. */
+/** True when a bottom details sheet covers the element or its label. */
 function isBehindDetailsSheet(
   cy: cytoscape.Core,
   node: cytoscape.CollectionReturnValue,
@@ -894,6 +894,14 @@ export function KnowledgeGraphViewer({
       )
       if (isBehindDetailsSheet(cy, selectedNode, containerRef.current)) {
         centerInVisibleArea(cy, selectedNode, containerRef.current)
+      }
+    } else if (state.selectedEdgeId !== null) {
+      // The same applies to a tapped relationship and its label.
+      const selectedEdge = cy.getElementById(
+        cytoscapeEdgeId(state.selectedEdgeId)
+      )
+      if (isBehindDetailsSheet(cy, selectedEdge, containerRef.current)) {
+        centerInVisibleArea(cy, selectedEdge, containerRef.current)
       }
     }
   }, [state.focusedNodeId, state.selectedEdgeId, state.selectedNodeId])
