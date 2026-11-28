@@ -36,6 +36,36 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
+// Subscriptions keep reconnecting through a long outage instead of giving up
+// after a few attempts. The backoff is capped at 10 seconds, and the random
+// part spreads the reconnects of all clients that lost the same server.
+async function waitBeforeSubscriptionReconnect(retries: number) {
+  const delay =
+    Math.min(1000 * 2 ** retries, 10_000) + 300 + Math.random() * 2700
+  await new Promise((resolve) => setTimeout(resolve, delay))
+}
+
+let catchUpTimer: ReturnType<typeof setTimeout> | undefined
+let lastCatchUp = 0
+
+// The server does not replay events published while the socket was down, so
+// the active queries are reloaded after a reconnect. The short delay lets the
+// resent subscriptions register first, and the 10-second spacing keeps a
+// flapping connection from reloading every query on each reconnect.
+function catchUpAfterReconnect() {
+  if (catchUpTimer) return
+  const wait = Math.max(500, lastCatchUp + 10_000 - Date.now())
+  catchUpTimer = setTimeout(() => {
+    catchUpTimer = undefined
+    lastCatchUp = Date.now()
+    void apolloClient
+      ?.refetchQueries({ include: 'active' })
+      .catch((error) =>
+        console.error('Failed to refetch after subscription reconnect', error)
+      )
+  }, wait)
+}
+
 function createIsomorphLink(ctx?: GetServerSidePropsContext) {
   const isBrowser = typeof window !== 'undefined'
 
@@ -173,6 +203,18 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         //     Authorization: `Bearer ${session.token}`,
         //   };
         // },
+        retryAttempts: Infinity,
+        // A failed reconnect reports a socket error event before its close
+        // event, and the default only retries close events, so the first
+        // failed attempt would end every subscription. Errors the client
+        // throws itself, such as protocol violations, still end it.
+        shouldRetry: (errOrCloseEvent) => !(errOrCloseEvent instanceof Error),
+        retryWait: waitBeforeSubscriptionReconnect,
+        on: {
+          connected: (_socket, _payload, wasRetry) => {
+            if (wasRetry) catchUpAfterReconnect()
+          },
+        },
       })
     )
 
