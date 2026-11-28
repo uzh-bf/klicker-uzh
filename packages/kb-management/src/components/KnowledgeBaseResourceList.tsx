@@ -802,16 +802,24 @@ function ResourceListContent({
   )
 }
 
+/**
+ * Manages resource actions and pagination while polling active ingestion.
+ * Uses the unfiltered active count across filter changes and reconciles all
+ * loaded pages before notifying the parent that ingestion has settled.
+ * Failed reconciliation retains the active state so polling can retry.
+ */
 function KnowledgeBaseResourceList({
   kbId,
   refreshKey,
   onMetricsChanged,
+  onIngestionSettled,
   onAddResource,
   advanced = false,
 }: {
   kbId: string
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
+  onIngestionSettled: () => void
   onAddResource: (trigger: HTMLElement) => void
   // New resources queue themselves, and each row keeps its own retry action,
   // so search, filters and the ingestion summary with its bulk trigger are
@@ -843,6 +851,8 @@ function KnowledgeBaseResourceList({
     Record<string, number>
   >({})
   const pollInFlightRef = useRef(false)
+  const pollErrorShownRef = useRef(false)
+  const wasPollingRef = useRef(false)
   const loadMoreInFlightRef = useRef(false)
   const refreshAfterLoadMoreRef = useRef(false)
   const pollTickRef = useRef(0)
@@ -866,11 +876,18 @@ function KnowledgeBaseResourceList({
     status: statusFilter || null,
     materialType: materialTypeFilter || null,
   }
-  const { data, loading, error, fetchMore, networkStatus, updateQuery } =
-    useQuery(GetKbResourcesDocument, {
-      variables,
-      notifyOnNetworkStatusChange: true,
-    })
+  const {
+    data,
+    previousData,
+    loading,
+    error,
+    fetchMore,
+    networkStatus,
+    updateQuery,
+  } = useQuery(GetKbResourcesDocument, {
+    variables,
+    notifyOnNetworkStatusChange: true,
+  })
   const apolloClient = useApolloClient()
   const [ingestResource] = useMutation(IngestKbResourceDocument)
   const [ingestAllResources, { loading: bulkIngesting }] = useMutation(
@@ -881,7 +898,11 @@ function KnowledgeBaseResourceList({
   const resources = connection?.items ?? []
   const loadedResourceCountRef = useRef(resources.length)
   loadedResourceCountRef.current = resources.length
-  const polling = resources.some(isActiveResource)
+  // A filter cache miss is an unknown count, not completed ingestion.
+  const polling =
+    (connection?.inProgressCount ??
+      previousData?.getKbResources.inProgressCount ??
+      0) > 0
   const loadingMore = networkStatus === NetworkStatus.fetchMore
   const inspectorResource = useMemo(
     () => resources.find(({ id }) => id === inspectorId) ?? null,
@@ -1082,6 +1103,16 @@ function KnowledgeBaseResourceList({
 
       if (requestId !== refreshRequestRef.current) return false
 
+      // An untracked page may have changed since the last full walk. Reconcile
+      // it before publishing zero and stopping the interval. A failed walk
+      // leaves the previous count intact, so the next tick retries it.
+      if (
+        page0Connection?.inProgressCount === 0 &&
+        targetPages.length < loadedPageCount
+      ) {
+        return refreshLoadedResources()
+      }
+
       fetchedByPage.forEach((items, pageIndex) => {
         if (items.some(isActiveResource)) {
           activePageIndexesRef.current.add(pageIndex)
@@ -1107,6 +1138,15 @@ function KnowledgeBaseResourceList({
             // so page 0's connection (always fetched) always carries it.
             totalCount:
               page0Connection?.totalCount ?? previous.getKbResources.totalCount,
+            needsIngestionCount:
+              page0Connection?.needsIngestionCount ??
+              previous.getKbResources.needsIngestionCount,
+            failedIngestionCount:
+              page0Connection?.failedIngestionCount ??
+              previous.getKbResources.failedIngestionCount,
+            inProgressCount:
+              page0Connection?.inProgressCount ??
+              previous.getKbResources.inProgressCount,
             // pageInfo describes the window after whichever page it came
             // from -- taking it from page 0 would corrupt loadMore's
             // endCursor unless page 0 is also the tail page, so only take
@@ -1147,11 +1187,11 @@ function KnowledgeBaseResourceList({
         // on pages the bounded poll doesn't track, and bounds the staleness
         // of totalCount/pageInfo, restoring parity with polling every loaded
         // page at a fixed bound.
-        if (pollTickRef.current % 10 === 0) {
-          await refreshLoadedResources()
-        } else {
-          await pollActivePages()
-        }
+        const refreshed =
+          pollTickRef.current % 10 === 0
+            ? await refreshLoadedResources()
+            : await pollActivePages()
+        if (refreshed) pollErrorShownRef.current = false
       } finally {
         pollInFlightRef.current = false
       }
@@ -1160,6 +1200,10 @@ function KnowledgeBaseResourceList({
     const intervalId = window.setInterval(() => {
       void pollCurrentPage().catch((pollError) => {
         console.error('Failed to poll KB resource operations', pollError)
+        if (!pollErrorShownRef.current) {
+          pollErrorShownRef.current = true
+          toast({ type: 'error', message: t('kb.resourcesLoadError') })
+        }
       })
     }, 2000)
     return () => {
@@ -1167,7 +1211,14 @@ function KnowledgeBaseResourceList({
       refreshRequestRef.current += 1
       pollInFlightRef.current = false
     }
-  }, [polling, pollActivePages, refreshLoadedResources])
+  }, [polling, pollActivePages, refreshLoadedResources, t])
+
+  useEffect(() => {
+    if (!connection) return
+    const wasPolling = wasPollingRef.current
+    wasPollingRef.current = polling
+    if (wasPolling && !polling) onIngestionSettled()
+  }, [connection, onIngestionSettled, polling])
 
   // These values are intentionally effect triggers: the reset clears state
   // that belongs to the previous query context without otherwise reading them.
