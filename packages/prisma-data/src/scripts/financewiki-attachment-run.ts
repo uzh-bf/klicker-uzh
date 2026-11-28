@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { createPrismaCohortActivationStore } from './doc-query-cohort-activation-prisma.js'
-import { acquireCohortActivationSessionLock } from './doc-query-cohort-activation-run.js'
+import { acquireCohortActivationSessionLock } from './doc-query-cohort-activation-receipts.js'
 import {
   applyFinanceWikiAttachment,
   createFileFinanceWikiAttachmentReceiptStore,

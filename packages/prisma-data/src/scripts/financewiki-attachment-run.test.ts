@@ -5,7 +5,7 @@ import {
 } from './financewiki-attachment-run.js'
 
 const acquireLock = vi.hoisted(() => vi.fn())
-vi.mock('./doc-query-cohort-activation-run.js', () => ({
+vi.mock('./doc-query-cohort-activation-receipts.js', () => ({
   acquireCohortActivationSessionLock: acquireLock,
 }))
 
