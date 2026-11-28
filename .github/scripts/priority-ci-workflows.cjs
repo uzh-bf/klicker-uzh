@@ -138,6 +138,7 @@ function pinnedWorkflowReader(root) {
     }
   }
   return (ref, file) => {
+    let shallow
     try {
       // A fetch by SHA can succeed even after the only branch is deleted.
       remoteRefs ??= new Map(
@@ -164,11 +165,16 @@ function pinnedWorkflowReader(root) {
         fetchCommit(ref)
         return git('show', `${ref}:.github/workflows/${file}`)
       }
+      shallow = git('rev-parse', '--is-shallow-repository') === 'true'
     } catch (cause) {
       throw new Error(`pinned priority workflow is unavailable: ${file}`, {
         cause,
       })
     }
+    if (shallow)
+      throw new Error(
+        `cannot verify retention of priority workflow ${file} at ${ref} in a shallow checkout. Use a full checkout or a matching remote retention tag.`
+      )
     throw new Error(
       `pinned priority workflow is not retained: ${file} at ${ref}. ` +
         `Use a commit on a protected integration branch or publish priority-ci-executor-${ref} at that commit.`

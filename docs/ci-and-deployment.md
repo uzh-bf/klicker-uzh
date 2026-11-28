@@ -1002,8 +1002,9 @@ caller's pinned executor with its generated definition and checks that the commi
 is reachable from a protected remote integration branch (`v3`, `v3-ai`,
 `v3-audit`, or `v3-adaptive-learning`) or has a matching remote retention tag
 `priority-ci-executor-<full SHA>`. A direct fetch by SHA can still succeed after
-the source branch is deleted. Priority callers use the exact reviewed SHA for
-runner-group access.
+the source branch is deleted. Use a full-history checkout for local validation
+when the pin relies on branch ancestry. Priority callers use the exact reviewed
+SHA for runner-group access.
 
 To update the executor and its caller in one PR, commit the generated executor
 first. With publication approval, publish a retention tag at that commit before

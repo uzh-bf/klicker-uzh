@@ -1620,6 +1620,26 @@ test('an executor pin survives a squash merge and deletion with remote retention
   )
   writeCallers(squash)
   assert.doesNotThrow(() => generate(checkout))
+  git('add', '.github/workflows')
+  git('commit', '-m', 'pin protected history')
+  git('push', 'origin', 'v3')
+  const shallow = path.join(fixture, 'shallow')
+  git(
+    'clone',
+    '--no-local',
+    '--depth=1',
+    '--no-tags',
+    '-b',
+    'v3',
+    origin,
+    shallow
+  )
+  git('-C', shallow, 'fetch', '--no-tags', 'origin', squash)
+  assert.throws(
+    () => generate(shallow),
+    /cannot verify retention .* shallow checkout/
+  )
+
   git('push', 'origin', `${sha}:refs/heads/v3-ai`)
   writeCallers(sha)
   assert.doesNotThrow(() => generate(checkout))
