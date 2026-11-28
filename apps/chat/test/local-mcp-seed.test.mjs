@@ -363,6 +363,7 @@ describe('repairLocalMcpSeed', () => {
       kbId: SYNTHETIC_FIXTURE.kbId,
       chatbotId: SYNTHETIC_FIXTURE.chatbotId,
       isEnabled: true,
+      isDefault: true,
     })
     const fixtureBindings = createdData(calls, 'chatbotMCPConfig').filter(
       (configuration) => configuration.chatbotId === SYNTHETIC_FIXTURE.chatbotId

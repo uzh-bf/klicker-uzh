@@ -29,7 +29,8 @@ export function withCourseImageTool(
   kbIds: readonly string[],
   readImage: (image: CourseImage) => Promise<unknown>,
   visionEnabled = false,
-  hasPixelInput: (image: CourseImage) => boolean = () => false
+  hasPixelInput: (image: CourseImage) => boolean = () => false,
+  revalidateScope?: () => Promise<void>
 ): ToolSet {
   if (Object.hasOwn(tools, COURSE_IMAGE_TOOL)) {
     throw new Error(`Tool name conflict: ${COURSE_IMAGE_TOOL}`)
@@ -114,7 +115,10 @@ export function withCourseImageTool(
           model_input: hasPixelInput(image) ? 'pixels' : 'description_only',
         }
         validation = Promise.resolve()
-          .then(() => readImage(image))
+          .then(async () => {
+            if (revalidateScope) await revalidateScope()
+            return readImage(image)
+          })
           .then(() => {
             selected.set(asset_id, selection)
             return selection

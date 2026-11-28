@@ -13,7 +13,8 @@ vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
   signDocQueryScopeToken: signDocQueryScopeTokenMock,
 }))
 
-vi.mock('@klicker-uzh/util', () => ({
+vi.mock('@klicker-uzh/util', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@klicker-uzh/util')>()),
   safeDecrypt: safeDecryptMock,
 }))
 
@@ -31,8 +32,11 @@ import {
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   DOC_QUERY_TOOL_NAME,
   normalizeDocQueryKbId,
+  type MCPScopedConfiguration,
+  resolveGraphKnowledgeBaseChoices,
   resolveMcpScope,
   resolveMcpScopeSessionId,
+  resolveModeKnowledgeBaseScope,
 } from '../src/services/mcpScope'
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
@@ -221,7 +225,7 @@ describe('current-v3 Doc Query scope', () => {
     await handle.close()
   })
 
-  test('keeps bearer transport auth separate from the scope token header', async () => {
+  test('keeps the bearer transport credential separate from per-request scope tokens', async () => {
     await getAggregatedMCPTools([createServer()], CHATBOT_ID, {
       kbIds: [KB_ID],
       sessionId: SESSION_ID,
@@ -234,19 +238,119 @@ describe('current-v3 Doc Query scope', () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer opaque-transport-token',
-          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
         },
+        fetch: expect.any(Function),
         redirect: 'error',
       },
     })
-    expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
-      kbIds: [KB_ID],
-      chatbotId: CHATBOT_ID,
-      sessionId: SESSION_ID,
-      jti: expect.any(String),
-    })
+    expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
     expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
     expect(clientToolsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('revalidates and mints a fresh scope token for every bearer request', async () => {
+    const sentRequests: Array<RequestInit | undefined> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+        sentRequests.push(init)
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    try {
+      const revalidate = vi.fn().mockResolvedValue(undefined)
+      await getAggregatedMCPTools([createServer()], {
+        chatbotId: CHATBOT_ID,
+        authMode: 'account',
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+        revalidateKnowledgeBaseScope: revalidate,
+      })
+      const transport = (
+        createSDKMCPClientMock.mock.calls[0]?.[0] as {
+          transport: {
+            fetch?: (url: string | URL, init?: RequestInit) => Promise<Response>
+          }
+        }
+      ).transport
+
+      signDocQueryScopeTokenMock.mockResolvedValueOnce('first-token')
+      await transport.fetch?.('https://mcp.example.test', { method: 'POST' })
+      signDocQueryScopeTokenMock.mockResolvedValueOnce('second-token')
+      await transport.fetch?.(new URL('https://mcp.example.test'), {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer stale',
+          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer stale-scope',
+        },
+      })
+
+      expect(revalidate).toHaveBeenCalledTimes(2)
+      expect(signDocQueryScopeTokenMock).toHaveBeenCalledTimes(2)
+      expect(revalidate.mock.invocationCallOrder[0]).toBeLessThan(
+        signDocQueryScopeTokenMock.mock.invocationCallOrder[0]!
+      )
+      expect(signDocQueryScopeTokenMock).toHaveBeenNthCalledWith(1, {
+        kbIds: [KB_ID],
+        chatbotId: CHATBOT_ID,
+        sessionId: SESSION_ID,
+        jti: expect.any(String),
+      })
+      const [firstInit, secondInit] = sentRequests
+      const firstHeaders = new Headers(firstInit?.headers)
+      const secondHeaders = new Headers(secondInit?.headers)
+      expect(firstHeaders.get('authorization')).toBe(
+        'Bearer opaque-transport-token'
+      )
+      expect(firstHeaders.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer first-token'
+      )
+      expect(secondHeaders.get('authorization')).toBe(
+        'Bearer opaque-transport-token'
+      )
+      expect(secondHeaders.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer second-token'
+      )
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  test('fails closed before the network when bearer scope revalidation is revoked', async () => {
+    const fetchSpy = vi.fn(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchSpy)
+
+    try {
+      const revalidate = vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('source revoked'))
+      await getAggregatedMCPTools([createServer()], {
+        chatbotId: CHATBOT_ID,
+        authMode: 'account',
+        kbIds: [KB_ID],
+        sessionId: SESSION_ID,
+        revalidateKnowledgeBaseScope: revalidate,
+      })
+      const transport = (
+        createSDKMCPClientMock.mock.calls[0]?.[0] as {
+          transport: {
+            fetch?: (url: string | URL, init?: RequestInit) => Promise<Response>
+          }
+        }
+      ).transport
+
+      await transport.fetch?.('https://mcp.example.test', { method: 'POST' })
+      await expect(
+        transport.fetch?.('https://mcp.example.test', { method: 'POST' })
+      ).rejects.toThrow('source revoked')
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(signDocQueryScopeTokenMock).toHaveBeenCalledOnce()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   test('emits a multi-knowledge-base scope through one client and tool discovery', async () => {
@@ -267,6 +371,18 @@ describe('current-v3 Doc Query scope', () => {
       CHATBOT_ID,
       { kbIds: [KB_ID, secondKbId], sessionId: SESSION_ID }
     )
+
+    const transport = (
+      createSDKMCPClientMock.mock.calls[0]?.[0] as {
+        transport: { fetch: (input: string) => Promise<Response> }
+      }
+    ).transport
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}')))
+    try {
+      await transport.fetch('https://mcp.example.test')
+    } finally {
+      vi.unstubAllGlobals()
+    }
 
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
       kbIds: [KB_ID, secondKbId],
@@ -661,6 +777,184 @@ describe('current-v3 Doc Query scope', () => {
 
   test('keeps the citation card aligned with the runtime tool name', () => {
     expect(DOC_QUERY_TOOL_NAME).toBe('KB_doc_query')
+  })
+
+  describe('mode knowledge-base selection', () => {
+    const KB_B = '0b6c4c1a-9d3e-4f1e-9b0c-1d2e3f4a5b6c'
+    const LINK_A = '4c1f2f0e-6d1a-4a56-9a2f-7d2b6f2f6f01'
+    const LINK_B = '9a5f2b31-0c86-4f2b-8a10-c3d0e5f5b902'
+    const link = (id: string, kbId: string, isDefault: boolean) => ({
+      id,
+      kbId,
+      isEnabled: true,
+      isDefault,
+      kb: {
+        deletedAt: null,
+        knowledgeGraphEnabled: true,
+        name: kbId === KB_ID ? 'Casebook A' : 'Casebook B',
+      },
+    })
+    const caseConfiguration = {
+      chatMode: 'cm_case',
+      isEnabled: true,
+      allowedTools: ['doc_query'],
+      parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+      priority: 0,
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+    const modeConfig = (linkId: string | null) => ({
+      modes: [
+        {
+          key: 'cm_case',
+          name: 'Case discussion',
+          knowledgeBaseLinkId: linkId,
+        },
+      ],
+    })
+
+    function resolveFor(
+      selectedMode: string,
+      customModeConfig: unknown,
+      knowledgeBaseLinks: ReturnType<typeof link>[],
+      effectiveConfigurations: MCPScopedConfiguration[] = [caseConfiguration]
+    ) {
+      return resolveModeKnowledgeBaseScope({
+        customModeConfig,
+        selectedMode,
+        knowledgeBaseLinks,
+        configurations: effectiveConfigurations,
+        effectiveConfigurations,
+      })
+    }
+
+    test('sends exactly the explicitly selected live source', () => {
+      const links = [link(LINK_A, KB_ID, false), link(LINK_B, KB_B, false)]
+      const configuration = { ...caseConfiguration, chatMode: 'cm_case' }
+
+      const scopeA = resolveFor('cm_case', modeConfig(LINK_A), links, [
+        configuration,
+      ])
+      expect(scopeA.kbIds).toEqual([KB_ID])
+      expect(scopeA.link?.id).toBe(LINK_A)
+      expect(scopeA.effectiveConfigurations[0]?.parameters).toEqual(
+        expect.objectContaining({ kb_id: KB_ID })
+      )
+
+      const scopeB = resolveFor('cm_case', modeConfig(LINK_B), links, [
+        configuration,
+      ])
+      expect(scopeB.kbIds).toEqual([KB_B])
+      expect(scopeB.effectiveConfigurations).toHaveLength(1)
+      expect(
+        Object.hasOwn(
+          scopeB.effectiveConfigurations[0]?.parameters as object,
+          'kb_ids'
+        )
+      ).toBe(false)
+    })
+
+    test('fails closed for an explicit link that is no longer live', () => {
+      const links = [link(LINK_A, KB_ID, false)]
+      expect(() =>
+        resolveFor('cm_case', modeConfig(LINK_B), links)
+      ).toThrowError(RequiredMCPUnavailableError)
+
+      const disabled = [{ ...link(LINK_A, KB_ID, false), isEnabled: false }]
+      expect(() =>
+        resolveFor('cm_case', modeConfig(LINK_A), disabled)
+      ).toThrowError(RequiredMCPUnavailableError)
+    })
+
+    test('follows the live default for inheritance and stops without one', () => {
+      const linked = resolveFor(
+        'tutor',
+        null,
+        [link(LINK_A, KB_ID, true)],
+        [{ ...caseConfiguration, chatMode: 'tutor' }]
+      )
+      expect(linked.kbIds).toEqual([KB_ID])
+      expect(linked.link?.id).toBe(LINK_A)
+
+      const unlinked = resolveFor(
+        'tutor',
+        null,
+        [link(LINK_A, KB_ID, false)],
+        [{ ...caseConfiguration, chatMode: 'tutor' }]
+      )
+      expect(unlinked.link).toBeNull()
+      expect(unlinked.kbIds).toBeUndefined()
+      expect(unlinked.hasDocQueryAccess).toBe(false)
+      expect(unlinked.effectiveConfigurations).toHaveLength(0)
+    })
+
+    test('keeps unrelated MCP restrictions while rewriting only Doc Query', () => {
+      const other = {
+        chatMode: 'tutor',
+        isEnabled: true,
+        allowedTools: ['search'],
+        parameters: { required: false },
+        priority: 1,
+        mcpServer: { id: 'other-server', name: 'Search' },
+      }
+      const scope = resolveFor(
+        'tutor',
+        null,
+        [link(LINK_A, KB_ID, true)],
+        [{ ...caseConfiguration, chatMode: 'tutor' }, other]
+      )
+
+      expect(scope.effectiveConfigurations).toEqual(
+        expect.arrayContaining([other])
+      )
+      expect(
+        scope.effectiveConfigurations.find(
+          (configuration) => configuration.mcpServer?.name === 'KB'
+        )?.allowedTools
+      ).toEqual(['doc_query'])
+    })
+
+    test('keeps the legacy path when the chatbot has no managed link rows', () => {
+      const legacyConfiguration = {
+        ...caseConfiguration,
+        chatMode: 'tutor',
+      }
+      const scope = resolveFor('tutor', null, [], [legacyConfiguration])
+
+      expect(scope.mode).toBe('legacy')
+      expect(scope.kbIds).toEqual([KB_ID])
+      expect(scope.hasDocQueryAccess).toBe(true)
+    })
+
+    test('offers graph sources only for approved modes that resolve them', () => {
+      const links = [link(LINK_A, KB_ID, true), link(LINK_B, KB_B, false)]
+      const configurations = [
+        { ...caseConfiguration, chatMode: 'tutor' },
+        { ...caseConfiguration, chatMode: 'cm_case' },
+      ]
+
+      expect(
+        resolveGraphKnowledgeBaseChoices({
+          modes: ['tutor', 'cm_case'],
+          customModeConfig: modeConfig(LINK_B),
+          knowledgeBaseLinks: links,
+          mcpConfigurations: configurations,
+        })
+      ).toEqual([
+        { id: KB_ID, name: 'Casebook A' },
+        { id: KB_B, name: 'Casebook B' },
+      ])
+
+      // Attaching a source without any approved mode resolving it never
+      // exposes it in the graph picker.
+      expect(
+        resolveGraphKnowledgeBaseChoices({
+          modes: ['tutor'],
+          customModeConfig: null,
+          knowledgeBaseLinks: links,
+          mcpConfigurations: configurations,
+        })
+      ).toEqual([{ id: KB_ID, name: 'Casebook A' }])
+    })
   })
 
   test('never signs a client-supplied foreign thread as the session subject', () => {

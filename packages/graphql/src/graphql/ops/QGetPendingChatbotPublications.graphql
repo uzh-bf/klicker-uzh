@@ -40,6 +40,20 @@ query GetPendingChatbotPublications {
         languageOfInstruction
         scopeNote
       }
+      customModeConfig {
+        modes {
+          key
+          name
+          knowledgeBaseLinkId
+        }
+      }
+      enabledKnowledgeBases {
+        id
+        kbId
+        linkId
+        name
+        isDefault
+      }
       courses {
         id
         name

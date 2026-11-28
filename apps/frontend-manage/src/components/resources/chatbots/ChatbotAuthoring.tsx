@@ -131,6 +131,7 @@ type CustomModeFormValues = {
     showReasoning: boolean
     replyLanguage: ReplyLanguageOption
     meetingClock: MeetingClockOption
+    knowledgeBaseLinkId: string
   }[]
 }
 
@@ -138,6 +139,59 @@ type CustomModeFormValues = {
 // a non-empty value of its own and is sent as null.
 type ReplyLanguageOption = LocaleType | 'FOLLOW'
 type MeetingClockOption = ChatbotCustomModeMeetingClock | 'OFF'
+const INHERIT_KNOWLEDGE_BASE = 'inherit-knowledge-base'
+
+type KnowledgeBaseLinkOption = {
+  id: string
+  kbId?: string
+  linkId: string
+  name: string
+  isDefault?: boolean
+}
+
+function getKnowledgeBaseOptions(
+  chatbot: Pick<RevisionChatbot, 'enabledKnowledgeBases'>
+): KnowledgeBaseLinkOption[] {
+  return (chatbot.enabledKnowledgeBases ?? []) as KnowledgeBaseLinkOption[]
+}
+
+function getKnowledgeBaseLinkId(link: KnowledgeBaseLinkOption) {
+  return link.linkId
+}
+
+function getKnowledgeBaseLinkForMode(
+  mode: { knowledgeBaseLinkId?: string | null },
+  knowledgeBases: KnowledgeBaseLinkOption[]
+) {
+  return mode.knowledgeBaseLinkId
+    ? (knowledgeBases.find(
+        (knowledgeBase) =>
+          getKnowledgeBaseLinkId(knowledgeBase) === mode.knowledgeBaseLinkId
+      ) ?? null)
+    : null
+}
+
+export function formatCustomModeKnowledgeBaseSource(
+  t: ReturnType<typeof useTranslations<never>>,
+  mode: { knowledgeBaseLinkId?: string | null },
+  knowledgeBases: readonly KnowledgeBaseLinkOption[]
+): string {
+  const links = [...knowledgeBases]
+  if (!mode.knowledgeBaseLinkId) {
+    const defaultKnowledgeBase =
+      links.find((knowledgeBase) => knowledgeBase.isDefault === true) ?? null
+    return defaultKnowledgeBase
+      ? t('manage.resources.chatbotKnowledgeBaseDefaultNamed', {
+          kbName: defaultKnowledgeBase.name,
+        })
+      : t('manage.resources.chatbotKnowledgeBaseDefaultNone')
+  }
+
+  const selected = getKnowledgeBaseLinkForMode(mode, links)
+  return selected
+    ? selected.name
+    : t('manage.resources.chatbotKnowledgeBaseUnavailable')
+}
 
 const REPLY_LANGUAGE_LABELS = {
   FOLLOW: 'manage.resources.chatbotCustomModeReplyLanguageFollow',
@@ -187,6 +241,7 @@ function getCustomModeFormValues(
       showReasoning: mode.showReasoning,
       replyLanguage: mode.replyLanguage ?? 'FOLLOW',
       meetingClock: mode.meetingClock ?? 'OFF',
+      knowledgeBaseLinkId: mode.knowledgeBaseLinkId ?? INHERIT_KNOWLEDGE_BASE,
     })),
   }
 }
@@ -208,6 +263,10 @@ function getCustomModeInputs(
     showReasoning: mode.showReasoning,
     replyLanguage: mode.replyLanguage === 'FOLLOW' ? null : mode.replyLanguage,
     meetingClock: mode.meetingClock === 'OFF' ? null : mode.meetingClock,
+    knowledgeBaseLinkId:
+      mode.knowledgeBaseLinkId === INHERIT_KNOWLEDGE_BASE
+        ? null
+        : mode.knowledgeBaseLinkId,
   }))
 }
 
@@ -494,6 +553,7 @@ function SetupStepFooter({
 function CustomModesEditor({
   chatbot,
   disabled,
+  savingStandardModes,
   initialValues,
   formRef,
   hideFooter = false,
@@ -503,6 +563,7 @@ function CustomModesEditor({
 }: {
   chatbot: RevisionChatbot
   disabled: boolean
+  savingStandardModes: boolean
   initialValues: CustomModeFormValues
   // Lets the standard modes save include these modes in the same revision.
   formRef?: ChatbotFormRef
@@ -523,6 +584,9 @@ function CustomModesEditor({
   const [saveSuccess, setSaveSuccess] = useState(false)
   const nextClientKey = useRef(0)
   const clearSaveSuccess = useCallback(() => setSaveSuccess(false), [])
+  const knowledgeBases = getKnowledgeBaseOptions(chatbot)
+  const defaultKnowledgeBase =
+    knowledgeBases.find((knowledgeBase) => knowledgeBase.isDefault) ?? null
 
   return (
     <div className="space-y-3 border-t border-gray-200 pt-4">
@@ -589,7 +653,7 @@ function CustomModesEditor({
             values,
             setFieldValue,
           }) => {
-            const controlsDisabled = disabled || isSubmitting
+            const controlsDisabled = savingStandardModes || isSubmitting
             const formError =
               saveError ??
               (typeof errors.modes === 'string' ? errors.modes : null)
@@ -878,6 +942,72 @@ function CustomModesEditor({
                             </p>
                           </div>
                         </div>
+                        <div>
+                          <FormikSelectField
+                            name={`modes[${index}].knowledgeBaseLinkId`}
+                            className={{ select: { trigger: 'w-full' } }}
+                            label={t(
+                              'manage.resources.chatbotCustomModeKnowledgeBase'
+                            )}
+                            labelType="small"
+                            disabled={controlsDisabled}
+                            items={[
+                              {
+                                value: INHERIT_KNOWLEDGE_BASE,
+                                label: defaultKnowledgeBase
+                                  ? t(
+                                      'manage.resources.chatbotCustomModeKnowledgeBaseInheritNamed',
+                                      { kbName: defaultKnowledgeBase.name }
+                                    )
+                                  : t(
+                                      'manage.resources.chatbotCustomModeKnowledgeBaseInheritNone'
+                                    ),
+                                data: {
+                                  cy: `chatbot-custom-mode-kb-inherit-${index}`,
+                                },
+                              },
+                              ...knowledgeBases.map((knowledgeBase) => ({
+                                value: getKnowledgeBaseLinkId(knowledgeBase),
+                                label: knowledgeBase.isDefault
+                                  ? t(
+                                      'manage.resources.chatbotCustomModeKnowledgeBaseOptionDefault',
+                                      { kbName: knowledgeBase.name }
+                                    )
+                                  : knowledgeBase.name,
+                                data: {
+                                  cy: `chatbot-custom-mode-kb-${index}-${getKnowledgeBaseLinkId(knowledgeBase)}`,
+                                },
+                              })),
+                              ...(mode.knowledgeBaseLinkId !==
+                                INHERIT_KNOWLEDGE_BASE &&
+                              !knowledgeBases.some(
+                                (knowledgeBase) =>
+                                  getKnowledgeBaseLinkId(knowledgeBase) ===
+                                  mode.knowledgeBaseLinkId
+                              )
+                                ? [
+                                    {
+                                      value: mode.knowledgeBaseLinkId,
+                                      label: t(
+                                        'manage.resources.chatbotKnowledgeBaseUnavailable'
+                                      ),
+                                      data: {
+                                        cy: `chatbot-custom-mode-kb-unavailable-${index}`,
+                                      },
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                            data={{
+                              cy: `chatbot-custom-mode-knowledge-base-${index}`,
+                            }}
+                          />
+                          <p className="mt-1 text-sm text-gray-600">
+                            {t(
+                              'manage.resources.chatbotCustomModeKnowledgeBaseDescription'
+                            )}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -904,6 +1034,7 @@ function CustomModesEditor({
                           showReasoning: false,
                           replyLanguage: 'FOLLOW',
                           meetingClock: 'OFF',
+                          knowledgeBaseLinkId: INHERIT_KNOWLEDGE_BASE,
                         },
                       ])
                     }}
@@ -1027,6 +1158,17 @@ function ChatbotAuthoring({
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
   const customModeConfig = getCustomModeFormValues(chatbot)
+  const reviewCustomModes = (revisionValues.customModeConfig?.modes ?? []).map(
+    (mode) => ({
+      ...mode,
+      description: mode.description ?? '',
+      welcomeMessage: mode.welcomeMessage ?? '',
+      starterPrompts: [...(mode.starterPrompts ?? [])],
+    })
+  )
+  const liveCustomModesByKey = new Map(
+    (chatbot.customModeConfig?.modes ?? []).map((mode) => [mode.key, mode])
+  )
   const disclaimerInitialValues = {
     title:
       revisionValues.disclaimerTitle ??
@@ -1770,6 +1912,7 @@ function ChatbotAuthoring({
                   disabled={
                     !modeEditable || revisionPending || publicationPending
                   }
+                  savingStandardModes={embedded && modeNavigationState.pending}
                   initialValues={customModeConfig}
                   formRef={customModesFormRef}
                   hideFooter={embedded}
@@ -2164,7 +2307,7 @@ function ChatbotAuthoring({
                       </Button.Label>
                     </Button>
                   </div>
-                  {customModeConfig.modes.length === 0 ? (
+                  {reviewCustomModes.length === 0 ? (
                     <p
                       className="text-sm text-gray-900"
                       data-cy="chatbot-review-custom-modes-empty"
@@ -2173,7 +2316,7 @@ function ChatbotAuthoring({
                     </p>
                   ) : (
                     <ul className="space-y-3">
-                      {customModeConfig.modes.map((mode, index) => (
+                      {reviewCustomModes.map((mode, index) => (
                         <li
                           key={mode.key}
                           className="text-sm"
@@ -2237,6 +2380,55 @@ function ChatbotAuthoring({
                           >
                             {formatCustomModeSettings(t, mode)}
                           </div>
+                          <div
+                            className="mt-1 text-gray-700"
+                            data-cy={`chatbot-review-custom-mode-knowledge-base-${index}`}
+                          >
+                            <span className="font-medium text-gray-600">
+                              {t(
+                                'manage.resources.chatbotCustomModeKnowledgeBase'
+                              )}
+                            </span>{' '}
+                            {formatCustomModeKnowledgeBaseSource(
+                              t,
+                              mode,
+                              getKnowledgeBaseOptions(chatbot)
+                            )}
+                          </div>
+                          {(() => {
+                            const liveMode = liveCustomModesByKey.get(mode.key)
+                            if (!liveMode) return null
+                            const sourceChanged =
+                              (mode.knowledgeBaseLinkId ?? null) !==
+                              (liveMode.knowledgeBaseLinkId ?? null)
+                            if (!sourceChanged) return null
+                            const currentSource =
+                              formatCustomModeKnowledgeBaseSource(
+                                t,
+                                mode,
+                                getKnowledgeBaseOptions(chatbot)
+                              )
+                            const previousSource =
+                              formatCustomModeKnowledgeBaseSource(
+                                t,
+                                liveMode,
+                                getKnowledgeBaseOptions(chatbot)
+                              )
+                            return (
+                              <div
+                                className="mt-1 text-amber-700"
+                                data-cy={`chatbot-review-custom-mode-knowledge-base-change-${index}`}
+                              >
+                                {t(
+                                  'manage.resources.chatbotCustomModeKnowledgeBaseChanged',
+                                  {
+                                    previous: previousSource,
+                                    current: currentSource,
+                                  }
+                                )}
+                              </div>
+                            )
+                          })()}
                         </li>
                       ))}
                     </ul>

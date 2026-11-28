@@ -1,11 +1,11 @@
 /**
- * Adopt or create the knowledge base of an existing course chatbot, bind it,
- * and project the Doc Query scope from that binding.
+ * Adopt or create the knowledge base of an existing course chatbot, make its
+ * link the default, and project the Doc Query scope from that default.
  *
  * This is the operational script for chatbots whose Doc Query scope was served
  * from a hard-coded, unregistered knowledge-base id: it turns that id into a
  * real knowledge base (with the passed id, so already-served rows stay in
- * scope), binds it to the chatbot, repairs the Doc Query configuration
+ * scope), links it to the chatbot, repairs the Doc Query configuration
  * parameters so they match the binding, and retires a named legacy Doc Query
  * server for this chatbot once nothing enabled depends on it.
  *
@@ -26,6 +26,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import {
+  assertRollbackTarget,
   buildSnapshot,
   DOC_QUERY_SERVER_NAME,
   DOC_QUERY_TOOL_ALIAS,
@@ -90,7 +91,7 @@ async function readState(
   })
   const bindings = await client.kBChatbot.findMany({
     where: { chatbotId: args.chatbotId },
-    select: { id: true, kbId: true, isEnabled: true },
+    select: { id: true, kbId: true, isEnabled: true, isDefault: true },
   })
   const kbServerConfigs = await client.chatbotMCPConfig.findMany({
     where: {
@@ -150,7 +151,13 @@ function isSerializationConflict(error: unknown): boolean {
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
-    error.code === 'P2034'
+    (error.code === 'P2034' ||
+      (error.code === 'P2010' &&
+        'meta' in error &&
+        typeof error.meta === 'object' &&
+        error.meta !== null &&
+        'code' in error.meta &&
+        error.meta.code === '40001'))
   )
 }
 
@@ -160,7 +167,7 @@ async function applyInTransaction(
 ): Promise<{
   kbId: string
   bindingId: string
-  snapshot: ProvisionSnapshot
+  snapshot: ProvisionSnapshot & { appliedBindingId: string }
   configIds: string[]
 }> {
   let lastError: unknown
@@ -168,10 +175,19 @@ async function applyInTransaction(
     try {
       return await prisma.$transaction(
         async (tx) => {
+          // Take the API's KB-then-chatbot locks before counting links. Updating
+          // the parent also forces competing Serializable provisioners to retry.
+          await tx.$queryRaw`SELECT id FROM "public"."KB" WHERE id = ${args.kbId}::uuid FOR UPDATE`
+          await tx.chatbot.updateMany({
+            where: { id: args.chatbotId, ownerId },
+            data: { updatedAt: new Date() },
+          })
           // Re-validate inside the transaction so a concurrent edit fails
           // closed instead of being overwritten.
           const state = await readState(tx, args)
           const plan = planProvision(state, {
+            allowSecondaryLinks:
+              process.env.PER_MODE_KB_LINKS_ENABLED === 'true',
             kbId: args.kbId,
             kbName: args.kbName,
             legacyServerName: args.legacyServerName,
@@ -198,17 +214,34 @@ async function applyInTransaction(
             })
           }
 
-          let bindingId = snapshot.binding?.id ?? null
+          let bindingId =
+            state.bindings.find((binding) => binding.kbId === args.kbId)?.id ??
+            null
+          if (plan.replaceDisabledBinding && bindingId !== null) {
+            await tx.kBChatbot.delete({ where: { id: bindingId } })
+            bindingId = null
+          }
           if (bindingId === null) {
             const created = await tx.kBChatbot.create({
-              data: { kbId: args.kbId, chatbotId: args.chatbotId },
+              data: {
+                kbId: args.kbId,
+                chatbotId: args.chatbotId,
+                isEnabled: true,
+                isDefault: false,
+              },
               select: { id: true },
             })
             bindingId = created.id
-          } else if (snapshot.binding?.isEnabled !== true) {
+          }
+
+          if (plan.setDefault) {
+            await tx.kBChatbot.updateMany({
+              where: { chatbotId: args.chatbotId, isDefault: true },
+              data: { isDefault: false },
+            })
             await tx.kBChatbot.update({
               where: { id: bindingId },
-              data: { isEnabled: true },
+              data: { isEnabled: true, isDefault: true },
             })
           }
 
@@ -240,7 +273,10 @@ async function applyInTransaction(
           return {
             kbId: args.kbId,
             bindingId,
-            snapshot,
+            snapshot: {
+              ...snapshot,
+              appliedBindingId: bindingId,
+            },
             configIds: plan.configUpdates.map(({ id }) => id),
           }
         },
@@ -275,10 +311,19 @@ async function verifyApplied(args: ProvisionArgs, ownerId: string) {
   }
   const binding = await prisma.kBChatbot.findUnique({
     where: { kbId_chatbotId: { kbId: args.kbId, chatbotId: args.chatbotId } },
-    select: { id: true, isEnabled: true },
+    select: { id: true, isEnabled: true, isDefault: true },
   })
-  if (!binding || binding.isEnabled !== true) {
+  if (!binding || binding.isEnabled !== true || binding.isDefault !== true) {
     throw new ProvisionFailure('post_apply_readback_mismatch', 'binding')
+  }
+  const defaultCount = await prisma.kBChatbot.count({
+    where: { chatbotId: args.chatbotId, isDefault: true },
+  })
+  if (defaultCount !== 1) {
+    throw new ProvisionFailure(
+      'post_apply_readback_mismatch',
+      'default_count=' + defaultCount
+    )
   }
 
   const state = await readState(prisma, args)
@@ -328,19 +373,6 @@ async function rollback(snapshotPath: string) {
     throw new ProvisionFailure('snapshot_unreadable')
   }
 
-  const kb = await prisma.kB.findUnique({
-    where: { id: snapshot.kbId },
-    select: { id: true, _count: { select: { resources: true } } },
-  })
-  const foreignBindings = kb
-    ? await prisma.kBChatbot.count({
-        where: {
-          kbId: snapshot.kbId,
-          chatbotId: { not: snapshot.chatbotId },
-        },
-      })
-    : 0
-
   const result = await prisma.$transaction(
     async (tx) => {
       for (const config of snapshot.configs) {
@@ -365,25 +397,90 @@ async function rollback(snapshotPath: string) {
         })
       }
 
+      const priorTarget = snapshot.bindings.find(
+        (binding) => binding.kbId === snapshot.kbId
+      )
+      const currentTarget = await tx.kBChatbot.findUnique({
+        where: {
+          kbId_chatbotId: {
+            kbId: snapshot.kbId,
+            chatbotId: snapshot.chatbotId,
+          },
+        },
+        select: { id: true },
+      })
+      assertRollbackTarget(snapshot, currentTarget)
+
       let bindingRestored = false
-      let kbRemoved = false
-      if (snapshot.binding) {
-        const restored = await tx.kBChatbot.updateMany({
-          where: { id: snapshot.binding.id },
-          data: { isEnabled: snapshot.binding.isEnabled },
+      if (priorTarget) {
+        if (!currentTarget) {
+          throw new ProvisionFailure(
+            'rollback_concurrent_change',
+            'target binding was removed after apply'
+          )
+        }
+        if (currentTarget.id === priorTarget.id) {
+          const restored = await tx.kBChatbot.updateMany({
+            where: {
+              id: priorTarget.id,
+              chatbotId: snapshot.chatbotId,
+            },
+            data: {
+              isEnabled: priorTarget.isEnabled,
+              isDefault: priorTarget.isDefault,
+            },
+          })
+          bindingRestored = restored.count === 1
+        } else {
+          await tx.kBChatbot.delete({ where: { id: currentTarget.id } })
+          await tx.kBChatbot.create({
+            data: {
+              id: priorTarget.id,
+              kbId: snapshot.kbId,
+              chatbotId: snapshot.chatbotId,
+              isEnabled: priorTarget.isEnabled,
+              isDefault: priorTarget.isDefault,
+            },
+          })
+          bindingRestored = true
+        }
+      } else if (currentTarget) {
+        await tx.kBChatbot.delete({ where: { id: currentTarget.id } })
+      }
+
+      // Applying the default clears every other default flag. Restore only the
+      // links captured by the snapshot that previously held the default.
+      for (const prior of snapshot.bindings) {
+        if (prior.kbId === snapshot.kbId || !prior.isDefault) continue
+        await tx.kBChatbot.updateMany({
+          where: { id: prior.id, chatbotId: snapshot.chatbotId },
+          data: { isDefault: true },
         })
-        bindingRestored = restored.count === 1
-      } else if (snapshot.kbWasCreated && kb) {
+      }
+
+      let kbRemoved = false
+      if (snapshot.kbWasCreated && !priorTarget) {
+        const kb = await tx.kB.findUnique({
+          where: { id: snapshot.kbId },
+          select: { id: true, _count: { select: { resources: true } } },
+        })
+        const foreignBindings = await tx.kBChatbot.count({
+          where: {
+            kbId: snapshot.kbId,
+            chatbotId: { not: snapshot.chatbotId },
+          },
+        })
         // Only a knowledge base this run created, with no uploaded resource
         // and no other chatbot attached, may disappear again.
-        if (kb._count.resources > 0 || foreignBindings > 0) {
+        if (kb && (kb._count.resources > 0 || foreignBindings > 0)) {
           throw new ProvisionFailure('rollback_kb_in_use')
         }
-        await tx.kBChatbot.deleteMany({
-          where: { kbId: snapshot.kbId, chatbotId: snapshot.chatbotId },
-        })
-        const removed = await tx.kB.deleteMany({ where: { id: snapshot.kbId } })
-        kbRemoved = removed.count === 1
+        if (kb) {
+          const removed = await tx.kB.deleteMany({
+            where: { id: snapshot.kbId },
+          })
+          kbRemoved = removed.count === 1
+        }
       }
 
       return { bindingRestored, kbRemoved }
@@ -406,6 +503,7 @@ async function main() {
 
   const state = await readState(prisma, args)
   const plan = planProvision(state, {
+    allowSecondaryLinks: process.env.PER_MODE_KB_LINKS_ENABLED === 'true',
     kbId: args.kbId,
     kbName: args.kbName,
     legacyServerName: args.legacyServerName,

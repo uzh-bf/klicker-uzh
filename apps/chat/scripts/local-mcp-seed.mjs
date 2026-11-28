@@ -528,6 +528,7 @@ async function createKnowledgeBase(tx) {
       kbId: LOCAL_KB_ID,
       chatbotId: LOCAL_CHATBOT_ID,
       isEnabled: true,
+      isDefault: true,
     },
   })
 }
@@ -569,6 +570,7 @@ async function createFixtureIdentity(tx, fixture, interrupted) {
       kbId: fixture.kbId,
       chatbotId: fixture.chatbotId,
       isEnabled: true,
+      isDefault: true,
     },
   })
   assertNotInterrupted(interrupted)

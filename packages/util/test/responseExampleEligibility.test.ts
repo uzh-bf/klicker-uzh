@@ -16,6 +16,35 @@ const example = {
   ],
 }
 
+it('checks the selected mode and original link when reusing evidence', () => {
+  const resource = {
+    id: 'source-1',
+    activeContentSha256: 'hash-1',
+    deletedAt: null,
+    linkId: 'original-link',
+    chatModes: ['case'],
+  }
+  const captured = {
+    ...example,
+    chatMode: 'case',
+    sourceKbLinkId: resource.linkId,
+  }
+  expect(
+    evaluateResponseExampleCurrentEligibility(captured, [resource]).eligible
+  ).toBe(true)
+  expect(
+    evaluateResponseExampleCurrentEligibility(
+      { ...captured, chatMode: 'exam' },
+      [resource]
+    ).eligible
+  ).toBe(false)
+  expect(
+    evaluateResponseExampleCurrentEligibility(captured, [
+      { ...resource, linkId: 'new-link' },
+    ]).eligible
+  ).toBe(false)
+})
+
 it('accepts complete citations backed by one current active resource', () => {
   expect(
     evaluateResponseExampleCurrentEligibility(example, [

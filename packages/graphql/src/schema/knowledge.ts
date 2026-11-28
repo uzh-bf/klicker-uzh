@@ -329,13 +329,53 @@ export const KBIngestAllResult = KBIngestAllResultRef.implement({
   }),
 })
 
+interface IKBChatbotModeBacklink {
+  key: string
+  name: string
+}
+
+export const KBChatbotModeBacklinkRef =
+  builder.objectRef<IKBChatbotModeBacklink>('KBChatbotModeBacklink')
+export const KBChatbotModeBacklink = KBChatbotModeBacklinkRef.implement({
+  fields: (t) => ({
+    key: t.exposeString('key'),
+    name: t.exposeString('name'),
+  }),
+})
+
+interface IKBChatbotKnowledgeBaseLink {
+  id: string
+  linkId: string
+  kbId: string
+  name: string
+  isDefault: boolean
+  modeBacklinks: IKBChatbotModeBacklink[]
+}
+
+export const KBChatbotKnowledgeBaseLinkRef =
+  builder.objectRef<IKBChatbotKnowledgeBaseLink>('KBChatbotKnowledgeBaseLink')
+export const KBChatbotKnowledgeBaseLink =
+  KBChatbotKnowledgeBaseLinkRef.implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      linkId: t.exposeID('linkId'),
+      kbId: t.exposeID('kbId'),
+      name: t.exposeString('name'),
+      isDefault: t.exposeBoolean('isDefault'),
+      modeBacklinks: t.field({
+        type: [KBChatbotModeBacklinkRef],
+        resolve: (link) => link.modeBacklinks,
+      }),
+    }),
+  })
+
 interface IKBChatbotBinding {
   chatbotId: string
   chatbotName: string
   chatbotStatus: DB.ChatbotStatus
   enabledKbId: string | null
   enabledKbName: string | null
-  enabledKbs: { id: string; name: string }[]
+  enabledKbs: IKBChatbotKnowledgeBaseLink[]
 }
 
 export const KBChatbotBindingRef =
@@ -354,7 +394,7 @@ export const KBChatbotBinding = KBChatbotBindingRef.implement({
       deprecationReason: 'Use enabledKbs for all attached knowledge bases.',
     }),
     enabledKbs: t.field({
-      type: [ChatbotKnowledgeBaseSummaryRef],
+      type: [KBChatbotKnowledgeBaseLinkRef],
       resolve: (binding) => binding.enabledKbs,
     }),
   }),

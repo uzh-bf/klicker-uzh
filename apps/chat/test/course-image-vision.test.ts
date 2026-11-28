@@ -136,6 +136,34 @@ describe('request-local course figure vision', () => {
     expect(read).not.toHaveBeenCalled()
   })
 
+  it('revalidates the live source before reading pixels for model input', async () => {
+    const revalidate = vi.fn().mockResolvedValue(undefined)
+    const read = vi.fn().mockResolvedValue(original)
+    const vision = createCourseImageVision({
+      kbIds: [image.kb_id],
+      readImage: read,
+      revalidateScope: revalidate,
+    })
+    expect((await vision.prepareMessages(messages, steps())).previewCount).toBe(
+      1
+    )
+    expect(revalidate).toHaveBeenCalledOnce()
+    expect(revalidate.mock.invocationCallOrder[0]).toBeLessThan(
+      read.mock.invocationCallOrder[0]!
+    )
+
+    const revokedRead = vi.fn().mockResolvedValue(original)
+    const denied = createCourseImageVision({
+      kbIds: [image.kb_id],
+      readImage: revokedRead,
+      revalidateScope: vi.fn().mockRejectedValue(new Error('source revoked')),
+    })
+    expect((await denied.prepareMessages(messages, steps())).previewCount).toBe(
+      0
+    )
+    expect(revokedRead).not.toHaveBeenCalled()
+  })
+
   it('uses retrieval order and bounds reads to three distinct occurrences across concurrent preparation', async () => {
     const read = vi.fn().mockResolvedValue(original)
     const { prepareMessages: prepare } = createCourseImageVision({

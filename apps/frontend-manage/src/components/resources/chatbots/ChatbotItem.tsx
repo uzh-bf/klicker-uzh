@@ -23,7 +23,10 @@ function ChatbotItem({
 }) {
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
-  const knowledgeBase = chatbot.enabledKnowledgeBases?.[0]
+  const knowledgeBases = chatbot.enabledKnowledgeBases ?? []
+  const knowledgeBase = knowledgeBases.find(
+    ({ isDefault }) => isDefault === true
+  )
 
   return (
     <button
@@ -57,7 +60,9 @@ function ChatbotItem({
             ? t('manage.resources.chatbotListKnowledgeBase', {
                 kbName: knowledgeBase.name,
               })
-            : t('manage.resources.chatbotListNoKnowledgeBase')}
+            : knowledgeBases.length > 0
+              ? t('manage.resources.chatbotListNoDefaultKnowledgeBase')
+              : t('manage.resources.chatbotListNoKnowledgeBase')}
         </div>
         {knowledgeBase?.materialsReadiness ? (
           <KnowledgeBaseMaterialsReadiness

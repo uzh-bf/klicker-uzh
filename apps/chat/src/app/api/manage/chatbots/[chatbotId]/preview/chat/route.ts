@@ -1,3 +1,7 @@
+import {
+  loadCanonicalModeDocQuery,
+  revalidateModeSource,
+} from '@/src/lib/server/currentChatModeSource'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import { isChatUsageClassEntitled } from '@klicker-uzh/util'
@@ -47,6 +51,7 @@ import {
 import {
   isToolAllowed,
   REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
@@ -76,7 +81,9 @@ import {
 } from '@/src/services/mcpClients'
 import {
   DOC_QUERY_MCP_SERVER_NAME,
-  resolveMcpScope,
+  knowledgeBaseScopeMatches,
+  resolveModeKnowledgeBaseScope,
+  ownedKnowledgeBaseLinks,
 } from '@/src/services/mcpScope'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 
@@ -235,11 +242,24 @@ export async function POST(
         select: { displayName: true },
       },
       knowledgeBases: {
-        where: { isEnabled: true, kb: { deletedAt: null } },
-        select: { kbId: true },
+        // Owner preview resolves the saved draft's selection, so it needs every
+        // managed row. A disabled or stale explicit link must fail closed
+        // rather than look like a chatbot without links.
+        select: {
+          id: true,
+          kbId: true,
+          isEnabled: true,
+          isDefault: true,
+          kb: {
+            select: {
+              deletedAt: true,
+              ownerId: true,
+              name: true,
+              knowledgeGraphEnabled: true,
+            },
+          },
+        },
         orderBy: { id: 'asc' },
-        // A second binding makes capture ambiguous, independently of preview scope.
-        take: 2,
       },
       mcpConfigurations: {
         include: { mcpServer: true },
@@ -257,9 +277,6 @@ export async function POST(
     )
   }
 
-  const enabledMCPConfigurations = chatbot.mcpConfigurations.filter(
-    (configuration) => configuration.isEnabled !== false
-  )
   const previewModeConfigurations =
     resolveOwnerPreviewModeConfigurations(chatbot)
   const modeOptions = resolveEffectiveChatModeOptions(
@@ -302,6 +319,64 @@ export async function POST(
       { status: 503 }
     )
   }
+
+  // Preview resolves the saved draft's mode selection. An explicit link that is
+  // disabled, deleted or detached fails closed here instead of silently
+  // previewing another source.
+  const previewKnowledgeBaseScope = (() => {
+    try {
+      return resolveModeKnowledgeBaseScope({
+        customModeConfig: previewModeConfigurations.customModeConfig,
+        selectedMode,
+        knowledgeBaseLinks: ownedKnowledgeBaseLinks(
+          chatbot.knowledgeBases ?? [],
+          chatbot.ownerId
+        ),
+        configurations: chatbot.mcpConfigurations,
+        effectiveConfigurations: modeConfigurations,
+      })
+    } catch (error) {
+      if (error instanceof RequiredMCPUnavailableError) return null
+      throw error
+    }
+  })()
+  if (!previewKnowledgeBaseScope) {
+    return NextResponse.json(
+      {
+        error: 'Required MCP tool unavailable',
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      },
+      { status: 503 }
+    )
+  }
+
+  // Published response examples belong to the approved scope. A draft that
+  // repoints the mode to another live link must not borrow them.
+  const approvedKnowledgeBaseScope = (() => {
+    try {
+      return resolveModeKnowledgeBaseScope({
+        customModeConfig: chatbot.customModeConfig,
+        selectedMode,
+        knowledgeBaseLinks: ownedKnowledgeBaseLinks(
+          chatbot.knowledgeBases ?? [],
+          chatbot.ownerId
+        ),
+        configurations: chatbot.mcpConfigurations,
+        effectiveConfigurations: resolveEffectiveMCPConfigurations(
+          chatbot.mcpConfigurations,
+          selectedMode
+        ),
+      })
+    } catch {
+      return null
+    }
+  })()
+  const examplesMatchApprovedScope =
+    approvedKnowledgeBaseScope !== null &&
+    knowledgeBaseScopeMatches(
+      previewKnowledgeBaseScope,
+      approvedKnowledgeBaseScope
+    )
 
   const models = getModelsForChatbot(chatbot).map((model) => {
     return {
@@ -357,38 +432,41 @@ export async function POST(
     return chatModelUnavailableResponse(selectedModel.usageClass)
   }
 
-  const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
-    .filter(
-      (configuration) =>
-        configuration.mcpServer.name === DOC_QUERY_MCP_SERVER_NAME
-    )
-    .flatMap((configuration) => {
-      const allowedTools = previewDocQueryAllowedTools(configuration)
-      return allowedTools === null
-        ? []
-        : [
-            {
-              server: {
-                id: configuration.mcpServer.id,
-                name: configuration.mcpServer.name,
-                url: configuration.mcpServer.url,
-                authType: configuration.mcpServer.authType,
-                authSecret: configuration.mcpServer.authSecret ?? '',
-                parameters: configuration.mcpServer.parameters,
-                isActive: configuration.mcpServer.isActive,
-                passChatbotId: configuration.mcpServer.passChatbotId,
-                chatbotIdHeader:
-                  configuration.mcpServer.chatbotIdHeader ?? undefined,
+  const kbConfigurations: MCPServerWithConfig[] =
+    previewKnowledgeBaseScope.effectiveConfigurations
+      .filter(
+        (configuration) =>
+          configuration.mcpServer.name === DOC_QUERY_MCP_SERVER_NAME
+      )
+      .flatMap((configuration) => {
+        const allowedTools = previewDocQueryAllowedTools(configuration)
+        return allowedTools === null
+          ? []
+          : [
+              {
+                server: {
+                  id: configuration.mcpServer.id,
+                  name: configuration.mcpServer.name,
+                  url: configuration.mcpServer.url,
+                  authType: configuration.mcpServer.authType,
+                  authSecret: configuration.mcpServer.authSecret ?? '',
+                  parameters: configuration.mcpServer.parameters,
+                  isActive: configuration.mcpServer.isActive,
+                  passChatbotId: configuration.mcpServer.passChatbotId,
+                  chatbotIdHeader:
+                    configuration.mcpServer.chatbotIdHeader ?? undefined,
+                },
+                config: {
+                  allowedTools,
+                  parameters: configuration.parameters,
+                  priority: configuration.priority,
+                },
               },
-              config: {
-                allowedTools,
-                parameters: configuration.parameters,
-                priority: configuration.priority,
-              },
-            },
-          ]
-    })
-  const configuredDocumentsBinding = kbConfigurations.length > 0
+            ]
+      })
+  const configuredDocumentsBinding =
+    kbConfigurations.length > 0 ||
+    previewKnowledgeBaseScope.useCanonicalDocQuery === true
 
   let mcpToolsHandle: MCPToolsHandle | undefined
   const closeMcpTools = async () => {
@@ -398,34 +476,51 @@ export async function POST(
   }
 
   let tools: ToolSet = {}
-  let captureKbId: string | undefined
+  // Review accepts standard modes and legacy prompt keys, but not newly
+  // authored custom modes that exist only in the preview configuration.
+  const captureModeSupported =
+    ['tutor', 'explainer', 'quizzer'].includes(selectedMode) ||
+    (chatbot.systemPrompts !== null &&
+      typeof chatbot.systemPrompts === 'object' &&
+      !Array.isArray(chatbot.systemPrompts) &&
+      Object.hasOwn(chatbot.systemPrompts, selectedMode))
+  // A receipt binds the exact live link that served the preview. Without one
+  // there is no capture, even when the mode used to be single-KB.
+  const captureSource =
+    captureModeSupported && previewKnowledgeBaseScope.link
+      ? previewKnowledgeBaseScope.link
+      : undefined
+  const kbIds = previewKnowledgeBaseScope.kbIds
   try {
-    const kbIds = resolveMcpScope(
-      enabledMCPConfigurations,
-      selectedMode,
-      modeConfigurations
-    )
-    // Review accepts standard modes and legacy prompt keys, but not newly
-    // authored custom modes that exist only in the preview configuration.
-    const captureModeSupported =
-      ['tutor', 'explainer', 'quizzer'].includes(selectedMode) ||
-      (chatbot.systemPrompts !== null &&
-        typeof chatbot.systemPrompts === 'object' &&
-        !Array.isArray(chatbot.systemPrompts) &&
-        Object.hasOwn(chatbot.systemPrompts, selectedMode))
-    captureKbId =
-      captureModeSupported &&
-      kbIds?.length === 1 &&
-      chatbot.knowledgeBases.length === 1 &&
-      chatbot.knowledgeBases[0]?.kbId === kbIds[0]
-        ? kbIds[0]
-        : undefined
+    if (
+      previewKnowledgeBaseScope.useCanonicalDocQuery &&
+      previewKnowledgeBaseScope.link
+    ) {
+      kbConfigurations.push(
+        await loadCanonicalModeDocQuery(previewKnowledgeBaseScope.link.kbId)
+      )
+    }
     if (kbConfigurations.length > 0) {
       mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
         chatbotId,
         authMode: 'account',
         ownerPreviewUserId: auth.userId,
+        ...(previewKnowledgeBaseScope.link
+          ? {
+              revalidateKnowledgeBaseScope: () =>
+                revalidateModeSource(
+                  chatbotId,
+                  selectedMode,
+                  previewKnowledgeBaseScope,
+                  auth.userId
+                ),
+            }
+          : {}),
+        chatMode: selectedMode,
         kbIds,
+        ...(previewKnowledgeBaseScope.link
+          ? { kbLinkId: previewKnowledgeBaseScope.link.id }
+          : {}),
         sessionId: randomUUID(),
         knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
       })
@@ -446,13 +541,19 @@ export async function POST(
   try {
     let responseExampleSummary = ''
     try {
-      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
-        prisma,
-        chatbotId,
-        chatMode: selectedMode,
-        role: 'included',
-      })
-      if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
+      // Published examples were reconciled against the approved link. A draft
+      // that repoints its mode keeps them out of this preview.
+      const responseExampleSkill = examplesMatchApprovedScope
+        ? await loadResponseExampleRuntimeSkill({
+            prisma,
+            chatbotId,
+            chatMode: selectedMode,
+            role: 'included',
+          })
+        : null
+      if (!responseExampleSkill) {
+        responseExampleSummary = ''
+      } else if (Object.hasOwn(tools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
         console.warn(
           'Response-example skill name conflicts with an existing tool; continuing without response examples',
           { chatbotId }
@@ -552,6 +653,13 @@ export async function POST(
               chatbotId,
               mode: selectedMode,
               threadId: 'owner-preview',
+              revisionVersion: chatbot.revisionVersion,
+              ...(previewKnowledgeBaseScope.link
+                ? {
+                    knowledgeBaseId: previewKnowledgeBaseScope.link.kbId,
+                    knowledgeBaseLinkId: previewKnowledgeBaseScope.link.id,
+                  }
+                : {}),
             },
             tools,
           })
@@ -675,7 +783,8 @@ export async function POST(
               isAborted: completedResponse.isAborted,
               ownerId: auth.userId,
               chatbotId,
-              kbId: captureKbId,
+              kbId: captureSource?.kbId,
+              kbLinkId: captureSource?.id,
               chatMode: selectedMode,
             })
             if (receipt) {

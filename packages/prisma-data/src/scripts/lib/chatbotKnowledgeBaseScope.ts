@@ -15,6 +15,7 @@ import type { Prisma } from '@klicker-uzh/prisma/client'
 export const DOC_QUERY_SERVER_NAME = 'KB'
 export const DOC_QUERY_TOOL_ALIAS = 'doc_query'
 export const SNAPSHOT_VERSION = 1 as const
+export const MAX_CHATBOT_KB_LINKS = 32
 
 const APPLY_FLAG = '--apply'
 const ROLLBACK_FLAG = '--rollback'
@@ -195,6 +196,7 @@ export type BindingRecord = {
   id: string
   kbId: string
   isEnabled: boolean
+  isDefault: boolean
 }
 
 export type ProvisionState = {
@@ -233,6 +235,8 @@ export type ProvisionPlan = {
   refusal: string | null
   createKb: boolean
   createBinding: boolean
+  replaceDisabledBinding: boolean
+  setDefault: boolean
   configUpdates: PlannedConfigUpdate[]
   legacyConfigDisables: Array<{ id: string; chatMode: string }>
   deactivateLegacyServer: boolean
@@ -240,12 +244,19 @@ export type ProvisionPlan = {
 
 export function planProvision(
   state: ProvisionState,
-  target: { kbId: string; kbName: string; legacyServerName: string | null }
+  target: {
+    kbId: string
+    kbName: string
+    legacyServerName: string | null
+    allowSecondaryLinks?: boolean
+  }
 ): ProvisionPlan {
   const refusal = (code: string): ProvisionPlan => ({
     refusal: code,
     createKb: false,
     createBinding: false,
+    replaceDisabledBinding: false,
+    setDefault: false,
     configUpdates: [],
     legacyConfigDisables: [],
     deactivateLegacyServer: false,
@@ -269,8 +280,25 @@ export function planProvision(
   }
   if (state.kbNameConflictIds.length > 0) return refusal('kb_name_conflict')
 
-  if (state.bindings.some((binding) => binding.kbId !== target.kbId)) {
+  if (
+    !target.allowSecondaryLinks &&
+    state.bindings.some(
+      (binding) => binding.isEnabled && binding.kbId !== target.kbId
+    )
+  ) {
     return refusal('binding_conflict')
+  }
+  const targetBinding = state.bindings.find(
+    (binding) => binding.kbId === target.kbId
+  )
+  const enabledBindingCount = state.bindings.filter(
+    (binding) => binding.isEnabled
+  ).length
+  if (
+    (!targetBinding || !targetBinding.isEnabled) &&
+    enabledBindingCount >= MAX_CHATBOT_KB_LINKS
+  ) {
+    return refusal('link_limit_reached')
   }
 
   if (state.kbServerConfigs.length === 0) return refusal('kb_config_missing')
@@ -317,9 +345,14 @@ export function planProvision(
   return {
     refusal: null,
     createKb: !state.kbById,
-    createBinding: !state.bindings.some(
-      (binding) => binding.kbId === target.kbId
-    ),
+    createBinding: targetBinding === undefined,
+    replaceDisabledBinding: targetBinding?.isEnabled === false,
+    setDefault:
+      targetBinding?.isDefault !== true ||
+      targetBinding?.isEnabled !== true ||
+      state.bindings.some(
+        (binding) => binding.kbId !== target.kbId && binding.isDefault
+      ),
     configUpdates,
     legacyConfigDisables,
     deactivateLegacyServer,
@@ -356,6 +389,12 @@ export function describePlan(
       `  action=disable_legacy_config config=${legacy.id} mode=${legacy.chatMode}`
     )
   }
+  if (plan.replaceDisabledBinding) {
+    lines.push('  action=replace_disabled_binding')
+  }
+  if (plan.setDefault) {
+    lines.push('  action=set_default')
+  }
   if (plan.deactivateLegacyServer) {
     lines.push(
       `  action=deactivate_legacy_server server=${state.legacyServer?.id ?? 'unknown'}`
@@ -372,6 +411,13 @@ export type ProvisionSnapshot = {
   kbName: string
   kbWasCreated: boolean
   binding: { id: string; isEnabled: boolean } | null
+  appliedBindingId?: string
+  bindings: Array<{
+    id: string
+    kbId: string
+    isEnabled: boolean
+    isDefault: boolean
+  }>
   configs: Array<{
     id: string
     chatMode: string
@@ -398,8 +444,17 @@ export function buildSnapshot(
     kbName: target.kbName,
     kbWasCreated: plan.createKb,
     binding: existingBinding
-      ? { id: existingBinding.id, isEnabled: existingBinding.isEnabled }
+      ? {
+          id: existingBinding.id,
+          isEnabled: existingBinding.isEnabled,
+        }
       : null,
+    bindings: state.bindings.map(({ id, kbId, isEnabled, isDefault }) => ({
+      id,
+      kbId,
+      isEnabled,
+      isDefault,
+    })),
     configs: state.kbServerConfigs.map((config) => ({
       id: config.id,
       chatMode: config.chatMode,
@@ -428,13 +483,28 @@ export function parseSnapshot(raw: string): ProvisionSnapshot {
   }
   const candidate = parsed as Partial<ProvisionSnapshot>
   const binding = candidate.binding
+  const bindings = candidate.bindings
   if (
     candidate.version !== SNAPSHOT_VERSION ||
     typeof candidate.chatbotId !== 'string' ||
     typeof candidate.kbId !== 'string' ||
     typeof candidate.kbName !== 'string' ||
     typeof candidate.kbWasCreated !== 'boolean' ||
+    (candidate.appliedBindingId !== undefined &&
+      typeof candidate.appliedBindingId !== 'string') ||
     !Array.isArray(candidate.configs) ||
+    !(
+      bindings === undefined ||
+      (Array.isArray(bindings) &&
+        bindings.every(
+          (entry) =>
+            isPlainObject(entry) &&
+            typeof entry.id === 'string' &&
+            typeof entry.kbId === 'string' &&
+            typeof entry.isEnabled === 'boolean' &&
+            typeof entry.isDefault === 'boolean'
+        ))
+    ) ||
     !(
       binding === null ||
       binding === undefined ||
@@ -445,5 +515,52 @@ export function parseSnapshot(raw: string): ProvisionSnapshot {
   ) {
     throw new ProvisionFailure('snapshot_invalid', 'snapshot shape mismatch')
   }
-  return { ...candidate, binding: binding ?? null } as ProvisionSnapshot
+  const normalizedBindings =
+    bindings ??
+    (binding
+      ? [
+          {
+            id: binding.id,
+            kbId: candidate.kbId,
+            isEnabled: binding.isEnabled,
+            isDefault: binding.isEnabled,
+          },
+        ]
+      : [])
+  return {
+    ...candidate,
+    binding: binding ?? null,
+    bindings: normalizedBindings,
+  } as ProvisionSnapshot
+}
+
+export function assertRollbackTarget(
+  snapshot: ProvisionSnapshot,
+  currentTarget: { id: string } | null
+): void {
+  const priorTarget = snapshot.bindings.find(
+    (binding) => binding.kbId === snapshot.kbId
+  )
+  if (
+    snapshot.appliedBindingId !== undefined &&
+    currentTarget?.id !== snapshot.appliedBindingId
+  ) {
+    throw new ProvisionFailure(
+      'rollback_concurrent_change',
+      currentTarget
+        ? 'target binding was relinked after apply'
+        : 'target binding was removed after apply'
+    )
+  }
+  // Older snapshots can identify a pre-existing link only by its original ID.
+  if (
+    priorTarget &&
+    snapshot.appliedBindingId === undefined &&
+    currentTarget?.id !== priorTarget.id
+  ) {
+    throw new ProvisionFailure(
+      'rollback_concurrent_change',
+      'legacy snapshot cannot verify a relinked target'
+    )
+  }
 }

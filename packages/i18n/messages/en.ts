@@ -901,6 +901,7 @@ export default {
       confirm: 'Confirm',
       close: 'Close',
       approve: 'Approve',
+      none: 'None',
       apply: 'Apply',
       sendAnswer: 'Send answer',
       begin: 'Begin',
@@ -2324,6 +2325,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileSize: 'File size',
     createdAt: 'Created',
     chatbotsTitle: 'Connected chatbots',
+    chatbotsModeSourcesDescription:
+      'Link this source to a chatbot to make it available in the custom-mode editor.',
     chatbotsDescription:
       'Choose which chatbot can use this knowledge base. A chatbot can use one knowledge base at a time.',
     chatbotsLoadError: 'The chatbots could not be loaded.',
@@ -2345,6 +2348,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     chatbotAttachError: 'The chatbot could not be connected.',
     chatbotDetachSuccess: 'Chatbot disconnected from the knowledge base.',
     chatbotDetachError: 'The chatbot could not be disconnected.',
+    chatbotDefaultBadge: 'Default',
+    chatbotDefaultSuccess: 'The chatbot default was changed.',
+    chatbotDefaultCleared: 'The chatbot default was cleared.',
+    chatbotDefaultError: 'The chatbot default could not be changed.',
+    allChatbotsLinked: 'This knowledge base is linked to every chatbot.',
+    makeChatbotDefault: 'Make default',
+    clearChatbotDefault: 'Clear default',
+    chatbotDetachTitle: 'Disconnect chatbot',
+    chatbotDetachDescription:
+      'Disconnect “{name}” from this knowledge base? Existing links and defaults on other chatbots are unchanged.',
+    defaultChangeImpact:
+      'Changing the default affects standard modes that use course material and these inheriting custom modes: {modes}.',
+    chatbotDetachAffectedModes:
+      'Published or draft custom modes using this source: {modes}.',
+    chatbotDetachConsequence:
+      'The affected references stay visibly unavailable until a lecturer selects another source. New retrieval stops immediately.',
     previewAccessError:
       'The knowledge base workspace is not available for your account yet.',
     graphTitle: 'Knowledge graph',
@@ -5328,6 +5347,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSectionRequest: 'Request publication',
       chatbotSummaryMaterialsNone:
         'No knowledge base is connected. Answers use general model knowledge.',
+      chatbotSummaryMaterialsNoDefault:
+        'No default knowledge base is set. Modes that use the chatbot default answer without retrieval.',
       chatbotSummaryMaterialsConnected: 'Uses the knowledge base {name}.',
       chatbotSummaryMaterialsReadiness:
         '{total, plural, =0 {It has no resources yet.} one {{ready} of 1 resource is ready{failed, plural, =0 {} other {, # failed}}.} other {{ready} of # resources {ready, plural, one {is} other {are}} ready{failed, plural, =0 {} other {, # failed}}.}}',
@@ -5388,6 +5409,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseConnect: 'Connect',
       chatbotKnowledgeBaseReplace: 'Replace',
       chatbotKnowledgeBaseDisconnect: 'Disconnect',
+      chatbotKnowledgeBaseAddLink: 'Add knowledge base',
+      chatbotKnowledgeBaseNoneLinked:
+        'No knowledge base is linked to this chatbot yet.',
+      chatbotKnowledgeBaseDefaultBadge: 'Default',
+      chatbotKnowledgeBaseDefaultNamed: 'Chatbot default ({kbName})',
+      chatbotKnowledgeBaseDefaultNone: 'Chatbot default (no default set)',
+      chatbotKnowledgeBaseUnavailable: 'Unavailable knowledge base',
+      chatbotKnowledgeBaseMakeDefault: 'Make default',
+      chatbotKnowledgeBaseClearDefault: 'Clear default',
+      chatbotKnowledgeBaseDefaultSuccess:
+        'The default knowledge base was changed.',
+      chatbotKnowledgeBaseDefaultCleared:
+        'The default knowledge base was cleared.',
+      chatbotKnowledgeBaseDefaultError:
+        'The default knowledge base could not be changed.',
+      chatbotKnowledgeBaseDetachTitle: 'Disconnect knowledge base',
+      chatbotKnowledgeBaseDetachDescription:
+        'Disconnect “{kbName}” from this chatbot?',
+      chatbotKnowledgeBaseDetachApprovedModes:
+        'Approved custom modes that explicitly select this link: {modes}.',
+      chatbotKnowledgeBaseDetachDraftModes:
+        'Draft custom modes that explicitly select this link: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultApprovedModes:
+        'Approved standard and custom modes that use this default source: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultDraftModes:
+        'Draft standard and custom modes that use this default source: {modes}.',
+      chatbotKnowledgeBaseDetachConsequence:
+        'Removing the link takes effect for new retrieval and media reads. Existing broken references remain visible until reassigned.',
       chatbotKnowledgeBaseReplacementWarning:
         'This chatbot currently uses “{kbName}”. Connecting another knowledge base replaces it.',
       chatbotKnowledgeBaseLiveChangeNote:
@@ -5405,6 +5454,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseCardReusable:
         'A knowledge base is a reusable collection of materials. Other chatbots can use it too.',
       chatbotKnowledgeBaseCardOpen: 'Open knowledge base',
+      chatbotKnowledgeBaseDetailsFor: 'Details for {name}',
+      chatbotKnowledgeBaseActionsFor: 'Actions for {name}',
+      chatbotKnowledgeBaseNoResources: 'No resources',
+      chatbotKnowledgeBaseReadyCount:
+        '{ready, number} of {total, number} ready',
       chatbotKnowledgeBaseCardResources: 'Resources',
       chatbotKnowledgeBaseCardReady: 'Ready',
       chatbotKnowledgeBaseCardProcessing: 'Processing',
@@ -5496,6 +5550,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCustomModeMeetingClockElapsed: 'Elapsed minutes',
       chatbotCustomModeMeetingClockElapsedAndTime:
         'Elapsed minutes and time of day',
+      chatbotCustomModeKnowledgeBase: 'Knowledge base',
+      chatbotCustomModeKnowledgeBaseDescription:
+        'Choose one linked source for this mode, or follow the chatbot default. The selected source is reviewed with the mode.',
+      chatbotCustomModeKnowledgeBaseInheritNamed:
+        'Use chatbot default ({kbName})',
+      chatbotCustomModeKnowledgeBaseInheritNone:
+        'Use chatbot default (no default set)',
+      chatbotCustomModeKnowledgeBaseOptionDefault: '{kbName} (default)',
+      chatbotCustomModeKnowledgeBaseChanged:
+        'Knowledge base changed: {previous} → {current}',
       chatbotCustomModeAdd: 'Add custom mode',
       chatbotCustomModeRemove: 'Remove',
       chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
@@ -5696,6 +5760,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
       chatbotListKnowledgeBase: 'Materials: {kbName}',
+      chatbotListNoDefaultKnowledgeBase: 'Materials: no default selected.',
       chatbotListNoKnowledgeBase: 'No materials connected yet.',
       chatbotStatusDraft: 'Draft',
       chatbotStatusPendingApproval: 'Pending approval',

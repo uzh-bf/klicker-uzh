@@ -1,0 +1,5 @@
+mutation SetChatbotDefaultKb($chatbotId: ID!, $kbId: ID) {
+  setChatbotDefaultKb(chatbotId: $chatbotId, kbId: $kbId) {
+    chatbotId
+  }
+}

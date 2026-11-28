@@ -184,8 +184,13 @@ describe('response-example foundation', () => {
         ownerId: userOneCtx.user.sub,
       },
     })
-    await prisma.kBChatbot.create({
-      data: { kbId: kb.id, chatbotId: chatbot.id, isEnabled: true },
+    const link = await prisma.kBChatbot.create({
+      data: {
+        kbId: kb.id,
+        chatbotId: chatbot.id,
+        isEnabled: true,
+        isDefault: true,
+      },
     })
     const currentResource = await prisma.kBResource.create({
       data: {
@@ -245,7 +250,7 @@ describe('response-example foundation', () => {
     const refreshedSet = await refreshResponseExampleSetDigest(prisma, set.id)
     if (!refreshedSet) throw new Error('Failed to refresh response-example set')
 
-    return { chatbot, kb, currentResource, set: refreshedSet }
+    return { link, chatbot, kb, currentResource, set: refreshedSet }
   }
 
   async function buildCaptureInput({
@@ -273,6 +278,7 @@ describe('response-example foundation', () => {
       ownerId: userOneCtx.user.sub,
       chatbotId: seeded.chatbot.id,
       kbId: seeded.kb.id,
+      kbLinkId: seeded.link.id,
       chatMode,
       question,
       answer,
@@ -420,6 +426,23 @@ describe('response-example foundation', () => {
       where: { id: capture.set.id },
     })
     expect(refreshedSet.digest).not.toBe(beforeDigest)
+  })
+
+  it('rejects a previously issued receipt after detaching and relinking the same KB', async () => {
+    const capture = await buildCaptureInput()
+    await prisma.kBChatbot.delete({ where: { id: capture.link.id } })
+    await prisma.kBChatbot.create({
+      data: {
+        chatbotId: capture.chatbot.id,
+        kbId: capture.kb.id,
+        isDefault: true,
+      },
+    })
+    await expect(
+      captureResponseExample(capture.args, userOneCtx, receiptSettings)
+    ).rejects.toMatchObject({
+      extensions: { code: 'RESPONSE_EXAMPLE_CAPTURE_STALE' },
+    })
   })
 
   it('captures and approves an enabled standard mode without legacy prompts', async () => {
@@ -1182,7 +1205,7 @@ describe('response-example foundation', () => {
 
     await prisma.kBChatbot.update({
       where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
-      data: { isEnabled: false },
+      data: { isEnabled: false, isDefault: false },
     })
     const replacementKb = await prisma.kB.create({
       data: {
@@ -1219,7 +1242,7 @@ describe('response-example foundation', () => {
     )!
     await prisma.kBChatbot.update({
       where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
-      data: { isEnabled: false },
+      data: { isEnabled: false, isDefault: false },
     })
 
     await expect(

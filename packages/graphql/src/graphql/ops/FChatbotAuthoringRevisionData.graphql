@@ -26,6 +26,7 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
       showReasoning
       replyLanguage
       meetingClock
+      knowledgeBaseLinkId
     }
   }
   modelSelection

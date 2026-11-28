@@ -1,17 +1,21 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  AddKbLinkToChatbotDocument,
   AttachKbToChatbotDocument,
   ChatbotStatus,
   DetachKbFromChatbotDocument,
   QGetKbChatbotBindingsWithKnowledgeBasesDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
+  SetChatbotDefaultKbDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
+  Badge,
   Button,
+  Modal,
   SelectField,
   Skeleton,
-  UserNotification,
   toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
@@ -21,38 +25,62 @@ import { refreshAfterMutation } from '../refreshAfterMutation'
 function KnowledgeBaseChatbotBindings({
   kbId,
   onChanged,
+  perModeKbLinksEnabled,
+  perModeKbLinksCapabilityError = false,
 }: {
   kbId: string
   onChanged: () => Promise<unknown>
+  perModeKbLinksEnabled?: boolean
+  perModeKbLinksCapabilityError?: boolean
 }) {
   const t = useTranslations()
   const [selectedChatbotId, setSelectedChatbotId] = useState<
     string | undefined
   >()
+  const [detachTarget, setDetachTarget] = useState<
+    | {
+        chatbotId: string
+        chatbotName: string
+        linkId: string
+        modeNames: string[]
+      }
+    | undefined
+  >()
   const { data, loading, error } = useQuery(
     QGetKbChatbotBindingsWithKnowledgeBasesDocument,
-    {
-      variables: { kbId },
-    }
+    { variables: { kbId } }
   )
-  const [attachKb, { loading: attaching }] = useMutation(
+  const [addKbLink, { loading: attaching }] = useMutation(
+    AddKbLinkToChatbotDocument
+  )
+  const [attachKb, { loading: attachingLegacy }] = useMutation(
     AttachKbToChatbotDocument
+  )
+  const [setDefaultKb, { loading: settingDefault }] = useMutation(
+    SetChatbotDefaultKbDocument
   )
   const [detachKb, { loading: detaching }] = useMutation(
     DetachKbFromChatbotDocument
   )
   const bindings = data?.getKbChatbotBindings ?? []
+  const linkedBindings = bindings.flatMap((binding) => {
+    const link = binding.enabledKbs.find(
+      (knowledgeBase) => knowledgeBase.kbId === kbId
+    )
+    return link ? [{ binding, link }] : []
+  })
+  const unlinkedChatbots = bindings.filter(
+    ({ chatbotId }) =>
+      !linkedBindings.some(({ binding }) => binding.chatbotId === chatbotId)
+  )
   const selectedBinding = bindings.find(
     ({ chatbotId }) => chatbotId === selectedChatbotId
   )
-  const linkedBindings = bindings.filter(({ enabledKbs }) =>
-    enabledKbs.some(({ id }) => id === kbId)
+  const selectedOtherKnowledgeBase = selectedBinding?.enabledKbs.find(
+    ({ kbId: linkedKbId }) => linkedKbId !== kbId
   )
-  const replacementKb = selectedBinding?.enabledKbs.find(
-    ({ id }) => id !== kbId
-  )
-  const replacing = replacementKb != null
-  const mutating = attaching || detaching
+  const mutating = attaching || attachingLegacy || settingDefault || detaching
+  const capabilityResolved = perModeKbLinksEnabled !== undefined
   const summary = loading
     ? t('shared.generic.loading')
     : error
@@ -70,13 +98,20 @@ function KnowledgeBaseChatbotBindings({
   ]
 
   const handleAttach = async () => {
-    if (!selectedChatbotId || mutating) return
+    if (!capabilityResolved || !selectedChatbotId || mutating) return
 
     try {
-      await attachKb({
-        variables: { kbId, chatbotId: selectedChatbotId },
-        refetchQueries,
-      })
+      if (perModeKbLinksEnabled) {
+        await addKbLink({
+          variables: { kbId, chatbotId: selectedChatbotId },
+          refetchQueries,
+        })
+      } else {
+        await attachKb({
+          variables: { kbId, chatbotId: selectedChatbotId },
+          refetchQueries,
+        })
+      }
     } catch (mutationError) {
       console.error('Failed to attach KB to chatbot', mutationError)
       toast({ type: 'error', message: t('kb.chatbotAttachError') })
@@ -88,12 +123,46 @@ function KnowledgeBaseChatbotBindings({
     toast({ type: 'success', message: t('kb.chatbotAttachSuccess') })
   }
 
-  const handleDetach = async (chatbotId: string) => {
+  const handleSetDefault = async (chatbotId: string, isDefault: boolean) => {
+    if (mutating) return
+
+    try {
+      await setDefaultKb({
+        variables: { chatbotId, kbId: isDefault ? null : kbId },
+        refetchQueries,
+      })
+    } catch (mutationError) {
+      console.error(
+        'Failed to change the default knowledge base',
+        mutationError
+      )
+      toast({ type: 'error', message: t('kb.chatbotDefaultError') })
+      return
+    }
+
+    await refreshAfterMutation(
+      onChanged,
+      'KB chatbot default after default change'
+    )
+    toast({
+      type: 'success',
+      message: isDefault
+        ? t('kb.chatbotDefaultCleared')
+        : t('kb.chatbotDefaultSuccess'),
+    })
+  }
+
+  const handleDetach = async () => {
+    if (!detachTarget) return
     if (mutating) return
 
     try {
       await detachKb({
-        variables: { kbId, chatbotId },
+        variables: {
+          kbId,
+          chatbotId: detachTarget.chatbotId,
+          expectedLinkId: detachTarget.linkId,
+        },
         refetchQueries,
       })
     } catch (mutationError) {
@@ -103,6 +172,7 @@ function KnowledgeBaseChatbotBindings({
     }
 
     await refreshAfterMutation(onChanged, 'KB chatbot bindings after detach')
+    setDetachTarget(undefined)
     toast({ type: 'success', message: t('kb.chatbotDetachSuccess') })
   }
 
@@ -124,7 +194,13 @@ function KnowledgeBaseChatbotBindings({
         </span>
       </summary>
       <section className="mt-3" data-cy="kb-chatbot-bindings">
-        <p className="text-sm text-slate-600">{t('kb.chatbotsDescription')}</p>
+        <p className="text-sm text-slate-600">
+          {t(
+            perModeKbLinksEnabled === false
+              ? 'kb.chatbotsDescription'
+              : 'kb.chatbotsModeSourcesDescription'
+          )}
+        </p>
         {/* The chatbots page validates this id against the lecturer's own
             knowledge bases before offering to connect it. */}
         <Link
@@ -155,53 +231,86 @@ function KnowledgeBaseChatbotBindings({
           />
         ) : (
           <>
-            <div
-              className="mt-4 flex flex-col items-end gap-3 sm:flex-row"
-              data-cy="kb-chatbot-attach-form"
-            >
-              <div className="w-full flex-1">
-                <SelectField
-                  label={t('kb.chatbotSelectLabel')}
-                  items={bindings.map((binding) => ({
-                    value: binding.chatbotId,
-                    label: binding.chatbotName,
-                  }))}
-                  value={selectedChatbotId}
-                  onChange={setSelectedChatbotId}
-                  placeholder={t('kb.chatbotSelectPlaceholder')}
-                  disabled={mutating}
+            {capabilityResolved ? (
+              <div
+                className="mt-4 flex flex-col items-end gap-3 sm:flex-row"
+                data-cy="kb-chatbot-attach-form"
+              >
+                <div className="w-full flex-1">
+                  <SelectField
+                    label={t('kb.chatbotSelectLabel')}
+                    items={(perModeKbLinksEnabled
+                      ? unlinkedChatbots
+                      : bindings
+                    ).map((binding) => ({
+                      value: binding.chatbotId,
+                      label: binding.chatbotName,
+                    }))}
+                    value={selectedChatbotId}
+                    onChange={setSelectedChatbotId}
+                    placeholder={t('kb.chatbotSelectPlaceholder')}
+                    disabled={mutating}
+                  />
+                </div>
+                <Button
+                  primary
+                  disabled={!selectedChatbotId || mutating}
+                  onClick={handleAttach}
+                  data={{ cy: 'attach-kb-chatbot' }}
+                >
+                  <Button.Label>
+                    {perModeKbLinksEnabled
+                      ? t('kb.attachChatbot')
+                      : selectedOtherKnowledgeBase
+                        ? t('kb.replaceChatbot')
+                        : t('kb.attachChatbot')}
+                  </Button.Label>
+                </Button>
+              </div>
+            ) : (
+              <div
+                data-cy="kb-chatbot-attach-capability"
+                data-state={perModeKbLinksCapabilityError ? 'error' : 'loading'}
+              >
+                <UserNotification
+                  type={perModeKbLinksCapabilityError ? 'error' : 'info'}
+                  className={{ root: 'mt-4' }}
+                  message={
+                    perModeKbLinksCapabilityError
+                      ? t('kb.chatbotsLoadError')
+                      : t('shared.generic.loading')
+                  }
                 />
               </div>
-              <Button
-                primary
-                disabled={!selectedChatbotId || mutating}
-                onClick={handleAttach}
-                data={{ cy: 'attach-kb-chatbot' }}
-              >
-                <Button.Label>
-                  {replacing ? t('kb.replaceChatbot') : t('kb.attachChatbot')}
-                </Button.Label>
-              </Button>
-            </div>
+            )}
 
-            {replacing ? (
-              <UserNotification
-                type="warning"
-                className={{ root: 'mt-3' }}
-                message={t('kb.chatbotReplacementWarning', {
-                  kbName: replacementKb?.name ?? '',
-                })}
-                data={{ cy: 'kb-chatbot-replacement-warning' }}
-              />
+            {perModeKbLinksEnabled === true && unlinkedChatbots.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-600">
+                {t('kb.allChatbotsLinked')}
+              </p>
             ) : null}
-            {/* Connections are not part of a chatbot revision, so a change for
-                a published chatbot reaches students without review. */}
-            {selectedBinding?.chatbotStatus === ChatbotStatus.Published ? (
+            {(perModeKbLinksEnabled === true &&
+              linkedBindings.some(
+                ({ binding }) =>
+                  binding.chatbotStatus === ChatbotStatus.Published
+              )) ||
+            (perModeKbLinksEnabled === false &&
+              selectedBinding?.chatbotStatus === ChatbotStatus.Published) ? (
               <UserNotification
                 type="warning"
                 className={{ root: 'mt-3' }}
                 message={t('kb.chatbotLiveChangeWarning')}
                 data={{ cy: 'kb-chatbot-live-change-warning' }}
+              />
+            ) : null}
+            {perModeKbLinksEnabled === false && selectedOtherKnowledgeBase ? (
+              <UserNotification
+                type="warning"
+                className={{ root: 'mt-3' }}
+                message={t('kb.chatbotReplacementWarning', {
+                  kbName: selectedOtherKnowledgeBase.name,
+                })}
+                data={{ cy: 'kb-chatbot-replacement-warning' }}
               />
             ) : null}
 
@@ -218,15 +327,20 @@ function KnowledgeBaseChatbotBindings({
                 </p>
               ) : (
                 <ul className="mt-2 divide-y divide-slate-200">
-                  {linkedBindings.map((binding) => (
+                  {linkedBindings.map(({ binding, link }) => (
                     <li
                       key={binding.chatbotId}
-                      className="flex items-center justify-between gap-3 py-3"
+                      className="flex flex-wrap items-center justify-between gap-3 py-3"
                       data-cy={`kb-linked-chatbot-${binding.chatbotId}`}
                     >
                       <span className="flex min-w-0 flex-col">
-                        <span className="break-words font-medium">
+                        <span className="flex flex-wrap items-center gap-2 break-words font-medium">
                           {binding.chatbotName}
+                          {perModeKbLinksEnabled === true && link.isDefault ? (
+                            <Badge className="bg-primary-100 text-white">
+                              {t('kb.chatbotDefaultBadge')}
+                            </Badge>
+                          ) : null}
                         </span>
                         {binding.chatbotStatus === ChatbotStatus.Published ? (
                           <span
@@ -237,13 +351,46 @@ function KnowledgeBaseChatbotBindings({
                           </span>
                         ) : null}
                       </span>
-                      <Button
-                        disabled={mutating}
-                        onClick={() => handleDetach(binding.chatbotId)}
-                        data={{ cy: `detach-kb-chatbot-${binding.chatbotId}` }}
-                      >
-                        <Button.Label>{t('kb.detachChatbot')}</Button.Label>
-                      </Button>
+                      <span className="flex flex-wrap gap-2">
+                        {perModeKbLinksEnabled === true ? (
+                          <Button
+                            disabled={mutating}
+                            onClick={() =>
+                              void handleSetDefault(
+                                binding.chatbotId,
+                                link.isDefault
+                              )
+                            }
+                            data={{
+                              cy: `${link.isDefault ? 'clear' : 'set'}-kb-chatbot-default-${binding.chatbotId}`,
+                            }}
+                          >
+                            <Button.Label>
+                              {link.isDefault
+                                ? t('kb.clearChatbotDefault')
+                                : t('kb.makeChatbotDefault')}
+                            </Button.Label>
+                          </Button>
+                        ) : null}
+                        <Button
+                          disabled={mutating}
+                          onClick={() =>
+                            setDetachTarget({
+                              chatbotId: binding.chatbotId,
+                              chatbotName: binding.chatbotName,
+                              linkId: link.linkId,
+                              modeNames: link.modeBacklinks.map(
+                                ({ name }) => name
+                              ),
+                            })
+                          }
+                          data={{
+                            cy: `detach-kb-chatbot-${binding.chatbotId}`,
+                          }}
+                        >
+                          <Button.Label>{t('kb.detachChatbot')}</Button.Label>
+                        </Button>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -251,6 +398,38 @@ function KnowledgeBaseChatbotBindings({
             </div>
           </>
         )}
+        {detachTarget ? (
+          <Modal
+            open
+            onClose={() => setDetachTarget(undefined)}
+            title={t('kb.chatbotDetachTitle')}
+            primaryLabel={t('kb.detachChatbot')}
+            primaryButtonStyle="destructive"
+            primaryLoading={detaching}
+            onPrimaryAction={handleDetach}
+            secondaryLabel={t('shared.generic.cancel')}
+            onSecondaryAction={() => setDetachTarget(undefined)}
+            dataContent={{ cy: 'kb-chatbot-detach-modal' }}
+            dataPrimaryAction={{ cy: 'confirm-kb-chatbot-detach' }}
+            dataSecondaryAction={{ cy: 'cancel-kb-chatbot-detach' }}
+          >
+            <p>
+              {t('kb.chatbotDetachDescription', {
+                name: detachTarget.chatbotName,
+              })}
+            </p>
+            <div className="mt-3 space-y-2 text-sm">
+              <p>
+                {t('kb.chatbotDetachAffectedModes', {
+                  modes:
+                    detachTarget.modeNames.join(', ') ||
+                    t('shared.generic.none'),
+                })}
+              </p>
+              <p>{t('kb.chatbotDetachConsequence')}</p>
+            </div>
+          </Modal>
+        ) : null}
       </section>
     </details>
   )

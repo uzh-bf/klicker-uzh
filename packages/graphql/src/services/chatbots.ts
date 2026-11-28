@@ -41,6 +41,8 @@ import {
 } from './chatbotCreditPolicy.js'
 import { getKbMetricsMap } from './knowledge.js'
 
+const PER_MODE_KB_LINKS_ENABLED_ENV = 'PER_MODE_KB_LINKS_ENABLED'
+
 const chatModelSchema = z
   .object({
     id: z.string().min(1),
@@ -570,6 +572,8 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
     customModeConfig: normalizeChatbotCustomModeConfig(
       chatbot.customModeConfig
     ),
+    perModeKbLinksEnabled:
+      process.env[PER_MODE_KB_LINKS_ENABLED_ENV] === 'true',
     allowedModelIds: normalizeAllowedModelIds(
       chatbot.allowedModelIds,
       chatbot.modelSelection,
@@ -926,6 +930,46 @@ async function lockChatbotRevision(
   await prisma.$queryRaw<{ id: string }[]>(
     Prisma.sql`SELECT "id" FROM "public"."Chatbot" WHERE "id" = ${chatbotId}::uuid FOR UPDATE`
   )
+}
+
+async function assertRevisionKnowledgeBaseLinks(
+  tx: Prisma.TransactionClient,
+  chatbot: ChatbotRevisionRecord,
+  revision: ChatbotAuthoringRevision
+) {
+  const selectedModes = (revision.customModeConfig?.modes ?? []).filter(
+    (mode) => mode.knowledgeBaseLinkId != null
+  )
+  if (selectedModes.length === 0) return
+
+  const selectedLinkIds = [
+    ...new Set(
+      selectedModes.flatMap((mode) =>
+        mode.knowledgeBaseLinkId ? [mode.knowledgeBaseLinkId] : []
+      )
+    ),
+  ]
+  const availableLinks = await tx.kBChatbot.findMany({
+    where: {
+      id: { in: selectedLinkIds },
+      chatbotId: chatbot.id,
+      isEnabled: true,
+      kb: { ownerId: chatbot.ownerId, deletedAt: null },
+    },
+    select: { id: true },
+  })
+  const availableLinkIds = new Set(availableLinks.map((link) => link.id))
+  const unavailableMode = selectedModes.find(
+    (mode) =>
+      mode.knowledgeBaseLinkId != null &&
+      !availableLinkIds.has(mode.knowledgeBaseLinkId)
+  )
+  if (unavailableMode) {
+    throw chatbotError(
+      `Custom mode "${unavailableMode.name}" selects an unavailable knowledge-base link`,
+      'BAD_USER_INPUT'
+    )
+  }
 }
 
 function assertExpectedRevisionVersion(
@@ -1469,6 +1513,7 @@ export async function saveChatbotRevision(
         ),
       }
     }
+    await assertRevisionKnowledgeBaseLinks(tx, chatbot, next)
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1751,6 +1796,7 @@ export async function submitChatbotRevision(
       true,
       chatbot.systemPrompts
     )
+    await assertRevisionKnowledgeBaseLinks(tx, chatbot, completeRevision)
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1918,6 +1964,7 @@ export async function approveChatbotRevision(
       true,
       chatbot.systemPrompts
     )
+    await assertRevisionKnowledgeBaseLinks(tx, chatbot, completeRevision)
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1981,6 +2028,16 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
       },
       course: { select: { id: true, name: true } },
       disclaimer: { select: { title: true, introText: true } },
+      knowledgeBases: {
+        where: { isEnabled: true, kb: { deletedAt: null } },
+        select: {
+          id: true,
+          kbId: true,
+          isDefault: true,
+          kb: { select: { id: true, name: true } },
+        },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      },
       mcpConfigurations: {
         select: {
           chatMode: true,
@@ -1996,28 +2053,45 @@ export async function getPendingChatbotPublications(ctx: ContextWithUser) {
   })
 
   return chatbots.map(
-    ({ owner, disclaimer, mcpConfigurations, ...chatbot }) => ({
-      ownerShortname: owner.shortname,
-      ownerEmail: owner.email,
-      ownerPublishingEnabled: owner.aiFeaturesEnabled,
-      disclaimerTitle: disclaimer?.title ?? null,
-      disclaimerIntroText: disclaimer?.introText ?? null,
-      chatbot: shapeChatbotResponse(chatbot),
-      tools: mcpConfigurations.map((config) => ({
-        serverName: config.mcpServer.name,
-        chatMode: config.chatMode,
-        enabled: config.isEnabled && config.mcpServer.isActive,
-        // Empty/null allow-lists allow all tools in the existing MCP client.
-        // Unknown shapes stay null so review never mislabels them as unrestricted.
-        allowedTools:
-          config.allowedTools == null
-            ? []
-            : Array.isArray(config.allowedTools) &&
-                config.allowedTools.every((tool) => typeof tool === 'string')
-              ? (config.allowedTools as string[])
+    ({ owner, disclaimer, mcpConfigurations, knowledgeBases, ...chatbot }) => {
+      const enabledKnowledgeBases = knowledgeBases.map((link) => ({
+        id: link.kb.id,
+        kbId: link.kb.id,
+        linkId: link.id,
+        name: link.kb.name,
+        isDefault: link.isDefault,
+      }))
+
+      return {
+        ownerShortname: owner.shortname,
+        ownerEmail: owner.email,
+        ownerPublishingEnabled: owner.aiFeaturesEnabled,
+        disclaimerTitle: disclaimer?.title ?? null,
+        disclaimerIntroText: disclaimer?.introText ?? null,
+        chatbot: {
+          ...shapeChatbotResponse(chatbot),
+          enabledKnowledgeBases,
+          enabledKnowledgeBase:
+            enabledKnowledgeBases.length === 1
+              ? (enabledKnowledgeBases[0] ?? null)
               : null,
-      })),
-    })
+        },
+        tools: mcpConfigurations.map((config) => ({
+          serverName: config.mcpServer.name,
+          chatMode: config.chatMode,
+          enabled: config.isEnabled && config.mcpServer.isActive,
+          // Empty/null allow-lists allow all tools in the existing MCP client.
+          // Unknown shapes stay null so review never mislabels them as unrestricted.
+          allowedTools:
+            config.allowedTools == null
+              ? []
+              : Array.isArray(config.allowedTools) &&
+                  config.allowedTools.every((tool) => typeof tool === 'string')
+                ? (config.allowedTools as string[])
+                : null,
+        })),
+      }
+    }
   )
 }
 
@@ -2042,8 +2116,12 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
+          id: true,
+          kbId: true,
+          isDefault: true,
           kb: { select: { id: true, name: true } },
         },
+        orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
       },
     },
     orderBy: { updatedAt: 'desc' },
@@ -2164,9 +2242,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
-    const enabledKnowledgeBases = chatbot.knowledgeBases.map(({ kb }) => ({
-      ...kb,
-      metrics: kbMetricsById.get(kb.id) ?? null,
+    const enabledKnowledgeBases = chatbot.knowledgeBases.map((link) => ({
+      id: link.kb.id,
+      kbId: link.kb.id,
+      linkId: link.id,
+      name: link.kb.name,
+      isDefault: link.isDefault,
+      metrics: kbMetricsById.get(link.kb.id) ?? null,
     }))
 
     return {

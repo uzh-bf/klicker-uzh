@@ -1,3 +1,4 @@
+import { resolveOwnerPreviewModeConfigurations } from '@/src/lib/server/previewAuthoringConfig'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus } from '@klicker-uzh/prisma/client'
 import { authorizeIdentityForChatbot } from '@/src/lib/server/apiGuards'
@@ -9,8 +10,13 @@ import {
 } from '@/src/lib/server/knowledgeGraphRuntime'
 import { GUEST_ACCOUNT_TYPE } from '@/src/lib/server/ltiGuest'
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
+import { resolveEffectiveMCPConfigurations } from '@/src/lib/server/effectiveChatModes'
 import type { GraphQueryDependencies } from './graphAssistedDocQuery'
 import type { MCPRequestContext } from './mcpClients'
+import {
+  resolveModeKnowledgeBaseScope,
+  ownedKnowledgeBaseLinks,
+} from './mcpScope'
 
 export function graphQueryDependencies(
   context: MCPRequestContext
@@ -25,44 +31,103 @@ export function graphQueryDependencies(
       } else {
         await validateParticipantScope(context)
       }
+      if (!context.chatMode) throw new RequiredMCPUnavailableError()
       const chatbot = await prisma.chatbot.findUnique({
         where: { id: context.chatbotId },
         select: {
           knowledgeGraphRetrievalEnabled: true,
           ownerId: true,
           status: true,
+          customModeConfig: true,
+          standardModeConfig: true,
+          draftConfig: true,
           knowledgeBases: {
-            where: { isEnabled: true, kb: { deletedAt: null } },
             select: {
+              id: true,
               kbId: true,
-              kb: { select: { knowledgeGraphEnabled: true } },
+              isEnabled: true,
+              isDefault: true,
+              kb: {
+                select: {
+                  deletedAt: true,
+                  ownerId: true,
+                  knowledgeGraphEnabled: true,
+                  name: true,
+                },
+              },
             },
+            orderBy: { id: 'asc' },
+          },
+          mcpConfigurations: {
+            select: {
+              allowedTools: true,
+              chatMode: true,
+              isEnabled: true,
+              parameters: true,
+              priority: true,
+              mcpServer: { select: { id: true, name: true } },
+            },
+            orderBy: { priority: 'asc' },
           },
         },
       })
-      const actual =
-        chatbot?.knowledgeBases.map((binding) => binding.kbId).sort() ?? []
-      const expected = [...(context.kbIds ?? [])].sort()
       if (
         !chatbot ||
         (ownerPreview &&
           (chatbot.ownerId !== context.ownerPreviewUserId ||
-            chatbot.status === ChatbotStatus.PAUSED)) ||
-        actual.length === 0 ||
+            chatbot.status === ChatbotStatus.PAUSED))
+      ) {
+        throw new RequiredMCPUnavailableError()
+      }
+
+      let scope
+      try {
+        scope = resolveModeKnowledgeBaseScope({
+          customModeConfig: ownerPreview
+            ? resolveOwnerPreviewModeConfigurations(chatbot).customModeConfig
+            : chatbot.customModeConfig,
+          selectedMode: context.chatMode,
+          knowledgeBaseLinks: ownedKnowledgeBaseLinks(
+            chatbot.knowledgeBases,
+            chatbot.ownerId
+          ),
+          configurations: chatbot.mcpConfigurations,
+          effectiveConfigurations: resolveEffectiveMCPConfigurations(
+            chatbot.mcpConfigurations,
+            context.chatMode
+          ),
+        })
+      } catch {
+        throw new RequiredMCPUnavailableError()
+      }
+
+      const actual = scope.kbIds ?? []
+      const expected = [...(context.kbIds ?? [])].sort()
+      if (
+        actual.length !== 1 ||
+        expected.length !== 1 ||
         actual.length !== expected.length ||
-        actual.some((id, index) => id !== expected[index])
+        actual.some((id, index) => id !== expected[index]) ||
+        // The mode's live link must still be the one the document tool was
+        // admitted for, so a re-pointed default cannot redirect graph hints.
+        (scope.link
+          ? context.kbLinkId !== scope.link.id
+          : context.kbLinkId !== undefined)
       )
         throw new RequiredMCPUnavailableError()
       publication = undefined
       if (
         !chatbot.knowledgeGraphRetrievalEnabled ||
         !(await isChatbotGraphRetrievalEnabled(chatbot.ownerId)) ||
-        actual.length !== 1 ||
-        !chatbot.knowledgeBases[0]?.kb.knowledgeGraphEnabled
+        !scope.link ||
+        scope.link.kb?.knowledgeGraphEnabled !== true
       )
         return { enabled: false }
       try {
-        const candidate = await getPublishedKnowledgeGraph(prisma, actual[0]!)
+        const candidate = await getPublishedKnowledgeGraph(
+          prisma,
+          scope.link.kbId
+        )
         if (!candidate.isStale) publication = candidate
       } catch {
         /* Missing or unavailable graph preserves authorized document retrieval. */

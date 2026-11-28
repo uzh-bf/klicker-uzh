@@ -25,9 +25,11 @@ type Preview = { image: CourseImage; bytes: Buffer; toolCallId: string }
 export function createCourseImageVision({
   kbIds,
   readImage,
+  revalidateScope,
 }: {
   kbIds: readonly string[]
   readImage: (image: CourseImage) => Promise<Buffer>
+  revalidateScope?: () => Promise<void>
 }) {
   const pending = new Map<string, Promise<Preview | null>>()
   let modelInputKeys = new Set<string>()
@@ -46,6 +48,7 @@ export function createCourseImageVision({
     toolCallId: string
   ): Promise<Preview | null> {
     try {
+      await revalidateScope?.()
       const original = await readImage(image)
       if (original.length > 10_000_000) return null
       const decoder = sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })

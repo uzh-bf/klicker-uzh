@@ -1,12 +1,11 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { resolveMcpScope } from '../../services/mcpScope'
+import { readMessageKnowledgeBaseScope } from './currentChatModeSource'
 import {
   type ChatSourcePart,
   normalizeSourcesFromParts,
 } from '../sources/normalizeSources'
 import { selectedVideoFrames, type VideoFrame } from '../sources/videoFrames'
 import { withVideoSourceFrames } from '../sources/videoSourceMedia'
-import { resolveEffectiveMCPConfigurations } from './effectiveChatModes'
 
 /** Resolve displayed or source-preview frames within the owned message and current KB scope. */
 export async function resolveAuthorizedVideoFrame({
@@ -29,7 +28,7 @@ export async function resolveAuthorizedVideoFrame({
       role: 'assistant',
       thread: { participantId, chatbotId },
     },
-    select: { content: true, chatMode: true },
+    select: { content: true, chatMode: true, createdAt: true },
   })
   if (!message || !Array.isArray(message.content)) return undefined
 
@@ -43,17 +42,13 @@ export async function resolveAuthorizedVideoFrame({
   )
   if (!frame) return undefined
 
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: { mcpConfigurations: { include: { mcpServer: true } } },
+  // The producing mode and its original live link must still resolve to the
+  // frame's source; otherwise the stored marker alone cannot authorize a read.
+  const kbIds = await readMessageKnowledgeBaseScope({
+    chatbotId,
+    chatMode: message.chatMode,
+    content: message.content,
+    createdAt: message.createdAt,
   })
-  const allConfigs = chatbot?.mcpConfigurations ?? []
-  const configs = allConfigs.filter((config) => config.isEnabled !== false)
-  const mode = message.chatMode ?? 'tutor'
-  const kbIds = resolveMcpScope(
-    configs,
-    mode,
-    resolveEffectiveMCPConfigurations(allConfigs, mode)
-  )
   return kbIds?.includes(frame.kb_id) ? frame : undefined
 }

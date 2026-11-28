@@ -151,10 +151,77 @@ afterEach(() => vi.unstubAllEnvs())
 
 describe('chatbot graph binding selection', () => {
   const secondKbId = '44444444-4444-4444-8444-444444444444'
-  const bindings = [
-    { kbId, kb: { name: 'First synthetic graph' } },
-    { kbId: secondKbId, kb: { name: 'Second synthetic graph' } },
+  const linkId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  const secondLinkId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+  const links = [
+    {
+      id: linkId,
+      kbId,
+      isEnabled: true,
+      isDefault: true,
+      kb: {
+        deletedAt: null,
+        ownerId: 'owner-id',
+        knowledgeGraphEnabled: true,
+        name: 'First synthetic graph',
+      },
+    },
+    {
+      id: secondLinkId,
+      kbId: secondKbId,
+      isEnabled: true,
+      isDefault: false,
+      kb: {
+        deletedAt: null,
+        ownerId: 'owner-id',
+        knowledgeGraphEnabled: true,
+        name: 'Second synthetic graph',
+      },
+    },
   ]
+  const kbServer = { id: 'kb-server', name: 'KB' }
+  const tutorConfiguration = {
+    chatMode: 'tutor',
+    isEnabled: true,
+    allowedTools: ['doc_query'],
+    parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
+    priority: 0,
+    mcpServer: kbServer,
+  }
+  const customModeConfig = {
+    modes: [
+      { key: 'cm_first', name: 'First mode', knowledgeBaseLinkId: linkId },
+      {
+        key: 'cm_second',
+        name: 'Second mode',
+        knowledgeBaseLinkId: secondLinkId,
+      },
+    ],
+  }
+  const choices = links.map(({ kbId: id, kb }) => ({ id, name: kb.name }))
+
+  function clientWith({
+    knowledgeBases,
+    mcpConfigurations = [tutorConfiguration],
+    modes = customModeConfig,
+  }: {
+    knowledgeBases: unknown[]
+    mcpConfigurations?: unknown[]
+    modes?: unknown
+  }) {
+    return {
+      chatbot: {
+        findUnique: vi.fn().mockResolvedValue({
+          customModeConfig: modes,
+          ownerId: 'owner-id',
+          standardModeConfig: null,
+          systemPrompts: null,
+          knowledgeBases,
+          mcpConfigurations,
+        }),
+      },
+    }
+  }
 
   async function reader() {
     return vi.importActual<
@@ -162,41 +229,26 @@ describe('chatbot graph binding selection', () => {
     >('../src/lib/server/knowledgeGraphRuntime')
   }
 
-  it('requires an explicit choice for multiple attached graphs', async () => {
+  it('requires an explicit choice for multiple visible graphs', async () => {
     const runtime = await reader()
-    const findMany = vi.fn().mockResolvedValue(bindings)
     await expect(
       runtime.getPublishedKnowledgeGraphForChatbot(
-        { kBChatbot: { findMany } } as never,
+        clientWith({ knowledgeBases: links }) as never,
         chatbotId
       )
-    ).rejects.toMatchObject({
-      choices: bindings.map(({ kbId: id, kb }) => ({ id, name: kb.name })),
-    })
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          chatbotId,
-          isEnabled: true,
-          kb: { deletedAt: null, knowledgeGraphEnabled: true },
-        },
-      })
-    )
+    ).rejects.toMatchObject({ choices })
     expect(boundaries.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
   })
 
-  it.each([
-    kbId,
-    undefined,
-  ])('reads an eligible single graph with choice %s', async (choice) => {
+  it('reads a single visible graph without a choice', async () => {
     const runtime = await reader()
-    const client = {
-      kBChatbot: { findMany: vi.fn().mockResolvedValue([bindings[0]]) },
-    }
+    const client = clientWith({
+      knowledgeBases: [links[0]],
+      modes: { modes: [customModeConfig.modes[0]] },
+    })
     await runtime.getPublishedKnowledgeGraphForChatbot(
       client as never,
-      chatbotId,
-      choice
+      chatbotId
     )
     expect(boundaries.getPublishedKnowledgeGraph).toHaveBeenCalledWith(
       client,
@@ -204,11 +256,9 @@ describe('chatbot graph binding selection', () => {
     )
   })
 
-  it('reads the explicitly chosen graph rather than the first binding', async () => {
+  it('reads the explicitly chosen graph rather than the default', async () => {
     const runtime = await reader()
-    const client = {
-      kBChatbot: { findMany: vi.fn().mockResolvedValue(bindings) },
-    }
+    const client = clientWith({ knowledgeBases: links })
     await runtime.getPublishedKnowledgeGraphForChatbot(
       client as never,
       chatbotId,
@@ -220,17 +270,11 @@ describe('chatbot graph binding selection', () => {
     )
   })
 
-  it.each(
-    [[], [bindings[0]]].map((available) => ({ available }))
-  )('rejects a foreign or detached graph before publication lookup', async ({
-    available,
-  }) => {
+  it('rejects a foreign or detached graph before publication lookup', async () => {
     const runtime = await reader()
     await expect(
       runtime.getPublishedKnowledgeGraphForChatbot(
-        {
-          kBChatbot: { findMany: vi.fn().mockResolvedValue(available) },
-        } as never,
+        clientWith({ knowledgeBases: [links[0]] }) as never,
         chatbotId,
         secondKbId
       )
@@ -238,11 +282,27 @@ describe('chatbot graph binding selection', () => {
     expect(boundaries.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
   })
 
+  it('reports an unavailable graph, without lookup, when no source is attached', async () => {
+    const runtime = await reader()
+    await expect(
+      runtime.getPublishedKnowledgeGraphForChatbot(
+        clientWith({ knowledgeBases: [] }) as never,
+        chatbotId,
+        secondKbId
+      )
+    ).rejects.toMatchObject({ code: 'EMPTY' })
+    expect(boundaries.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
+  })
+
   it('preserves unavailable state when no graph is attached', async () => {
     const runtime = await reader()
     await expect(
       runtime.getPublishedKnowledgeGraphForChatbot(
-        { kBChatbot: { findMany: vi.fn().mockResolvedValue([]) } } as never,
+        clientWith({
+          knowledgeBases: [],
+          mcpConfigurations: [],
+          modes: null,
+        }) as never,
         chatbotId
       )
     ).rejects.toMatchObject({ code: 'EMPTY' })

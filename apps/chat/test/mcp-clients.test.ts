@@ -198,8 +198,8 @@ describe('MCP runtime policy', () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer transport-token',
-          'X-Doc-Query-Scope-Token': 'Bearer scope-token',
         },
+        fetch: expect.any(Function),
         redirect: 'error',
       },
     })

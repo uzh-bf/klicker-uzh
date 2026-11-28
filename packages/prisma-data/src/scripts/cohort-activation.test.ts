@@ -379,6 +379,12 @@ class MemoryStore implements ActivationStore {
       .map((row) => this.copy(row))
   }
 
+  lockedChatbotIds: string[] = []
+
+  async lockChatbot(chatbotId: string) {
+    this.lockedChatbotIds.push(chatbotId)
+  }
+
   async createKnowledgeBase(data: ActivationKnowledgeBaseCreate) {
     this.writes += 1
     const row = {
@@ -423,7 +429,10 @@ class MemoryStore implements ActivationStore {
     return this.copy(row)
   }
 
-  async updateBinding(snapshot: ActivationBindingRecord, isEnabled: boolean) {
+  async updateBinding(
+    snapshot: ActivationBindingRecord,
+    state: { isEnabled: boolean; isDefault: boolean }
+  ) {
     const current = this.bindings.get(snapshot.id)
     if (
       !current ||
@@ -433,7 +442,8 @@ class MemoryStore implements ActivationStore {
     }
     const updated = {
       ...current,
-      isEnabled,
+      isEnabled: state.isEnabled,
+      isDefault: state.isDefault,
       updatedAt: this.nextDate(),
     }
     this.bindings.set(updated.id, updated)
@@ -891,6 +901,11 @@ describe('cohort activation operator', () => {
             JSON.stringify({ required: true, toolAlias: 'doc_query' })
       )
     ).toBe(true)
+    expect(
+      [...store.bindings.values()].every(
+        (binding) => !binding.isEnabled && !binding.isDefault
+      )
+    ).toBe(true)
     const second = await prepareCohortActivation(
       store,
       manifest,
@@ -944,6 +959,7 @@ describe('cohort activation operator', () => {
     })
     expect(switched.status).toBe('switched')
     expect(store.bindingForChatbot(firstId)!.isEnabled).toBe(true)
+    expect(store.bindingForChatbot(firstId)!.isDefault).toBe(true)
     expect(
       store.targetConfigForChatbot(firstId).every((config) => config.isEnabled)
     ).toBe(true)
@@ -967,6 +983,7 @@ describe('cohort activation operator', () => {
     })
     expect(afterFailedSwitch.status).toBe('switched')
     expect(store.bindingForChatbot(firstId)!.isEnabled).toBe(true)
+    expect(store.bindingForChatbot(firstId)!.isDefault).toBe(true)
     expect(store.bindingForChatbot(secondId)!.isEnabled).toBe(false)
 
     const rolledBack = await rollbackCohortChatbot(store, manifest, {
@@ -975,7 +992,9 @@ describe('cohort activation operator', () => {
     })
     expect(rolledBack.status).toBe('rolled_back')
     expect(
-      [...store.bindings.values()].every((binding) => !binding.isEnabled)
+      [...store.bindings.values()].every(
+        (binding) => !binding.isEnabled && !binding.isDefault
+      )
     ).toBe(true)
     expect([...store.sourceConfigs.values()]).toEqual(legacyBefore)
     expect(store.legacyUpdates).toBe(0)
@@ -1124,19 +1143,20 @@ describe('cohort activation operator', () => {
     ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_STATE' }))
   })
 
-  it('refuses enabled alternative bindings during switch and rollback validation', async () => {
+  it('refuses another enabled binding while additive links are off', async () => {
     await prepareCohortActivation(
       store,
       manifest,
       options(receiptStore, manifest)
     )
     const chatbotId = chatbotIdForAlias(manifest, 'chatbot-001')
-    const switchAlternative = await store.createBinding({
+    const alternative = await store.createBinding({
       kbId: uuid(8800),
       chatbotId,
       isEnabled: false,
+      isDefault: false,
     })
-    store.bindings.get(switchAlternative.id)!.isEnabled = true
+    store.bindings.get(alternative.id)!.isEnabled = true
     await expect(
       switchCohortChatbot(store, manifest, {
         ...options(receiptStore, manifest),
@@ -1145,32 +1165,110 @@ describe('cohort activation operator', () => {
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'ENABLED_KB_CONFLICT' })
     )
+    expect(store.bindingForChatbot(chatbotId)!).toMatchObject({
+      isEnabled: false,
+      isDefault: false,
+    })
+  })
 
-    const cleanStore = new MemoryStore(manifest)
-    const cleanReceipts = new MemoryReceiptStore()
+  it('keeps a secondary link through switch and rollback once additive links are on', async () => {
     await prepareCohortActivation(
-      cleanStore,
+      store,
       manifest,
-      options(cleanReceipts, manifest)
+      options(receiptStore, manifest)
     )
-    await switchCohortChatbot(cleanStore, manifest, {
-      ...options(cleanReceipts, manifest),
+    const chatbotId = chatbotIdForAlias(manifest, 'chatbot-001')
+    const alternative = await store.createBinding({
+      kbId: uuid(8800),
+      chatbotId,
+      isEnabled: false,
+      isDefault: false,
+    })
+    store.bindings.get(alternative.id)!.isEnabled = true
+    await switchCohortChatbot(store, manifest, {
+      ...options(receiptStore, manifest),
+      chatbotAlias: 'chatbot-001',
+      allowSecondaryLinks: true,
+    })
+    expect(store.lockedChatbotIds).toContain(chatbotId)
+    expect(store.bindingForChatbot(chatbotId)!).toMatchObject({
+      isEnabled: true,
+      isDefault: true,
+    })
+    expect(store.bindings.get(alternative.id)).toMatchObject({
+      isEnabled: true,
+      isDefault: false,
+    })
+
+    await rollbackCohortChatbot(store, manifest, {
+      ...options(receiptStore, manifest),
       chatbotAlias: 'chatbot-001',
     })
-    const rollbackAlternative = await cleanStore.createBinding({
-      kbId: uuid(8801),
-      chatbotId: chatbotIdForAlias(manifest, 'chatbot-001'),
+    expect(store.bindingForChatbot(chatbotId)!).toMatchObject({
       isEnabled: false,
+      isDefault: false,
     })
-    cleanStore.bindings.get(rollbackAlternative.id)!.isEnabled = true
+    expect(store.bindings.get(alternative.id)).toMatchObject({
+      isEnabled: true,
+      isDefault: false,
+    })
+  })
+
+  it('never demotes an existing default during a switch', async () => {
+    await prepareCohortActivation(
+      store,
+      manifest,
+      options(receiptStore, manifest)
+    )
+    const chatbotId = chatbotIdForAlias(manifest, 'chatbot-001')
+    const existingDefault = await store.createBinding({
+      kbId: uuid(8800),
+      chatbotId,
+      isEnabled: false,
+      isDefault: false,
+    })
+    Object.assign(store.bindings.get(existingDefault.id)!, {
+      isEnabled: true,
+      isDefault: true,
+    })
     await expect(
-      rollbackCohortChatbot(cleanStore, manifest, {
-        ...options(cleanReceipts, manifest),
+      switchCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
         chatbotAlias: 'chatbot-001',
+        allowSecondaryLinks: true,
       })
     ).rejects.toThrowError(
-      expect.objectContaining({ code: 'ENABLED_KB_CONFLICT' })
+      expect.objectContaining({ code: 'DEFAULT_KB_CONFLICT' })
     )
+    expect(store.bindings.get(existingDefault.id)).toMatchObject({
+      isEnabled: true,
+      isDefault: true,
+    })
+  })
+
+  it('refuses a switch that would exceed the enabled-link limit', async () => {
+    await prepareCohortActivation(
+      store,
+      manifest,
+      options(receiptStore, manifest)
+    )
+    const chatbotId = chatbotIdForAlias(manifest, 'chatbot-001')
+    for (let offset = 0; offset < 32; offset += 1) {
+      const link = await store.createBinding({
+        kbId: uuid(8800 + offset),
+        chatbotId,
+        isEnabled: false,
+        isDefault: false,
+      })
+      store.bindings.get(link.id)!.isEnabled = true
+    }
+    await expect(
+      switchCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
+        chatbotAlias: 'chatbot-001',
+        allowSecondaryLinks: true,
+      })
+    ).rejects.toThrowError(expect.objectContaining({ code: 'KB_LINK_LIMIT' }))
   })
 
   it('refuses an untracked partial target inventory', async () => {

@@ -1,0 +1,5 @@
+mutation AddKbLinkToChatbot($kbId: ID!, $chatbotId: ID!) {
+  addKbLinkToChatbot(kbId: $kbId, chatbotId: $chatbotId) {
+    chatbotId
+  }
+}

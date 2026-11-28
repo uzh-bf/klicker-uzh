@@ -3,7 +3,7 @@ import { getPrisma } from '../global-setup.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
 import { mockGrowthBookFeatureFlags } from '../util/fixtures/manage.js'
-import { URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
+import { COURSE_ID_TEST, URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 
 const PREFIX = 'E2E KB Setup'
 const CHATBOT_NAME = `${PREFIX} Chatbot`
@@ -92,6 +92,17 @@ test.describe('Chatbot knowledge base setup', () => {
     await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
       KB_NAME
     )
+    const prisma = await getPrisma()
+    const kb = await prisma.kB.findFirstOrThrow({
+      where: { ownerId: USER_ID_TEST, name: KB_NAME },
+    })
+    const kbLink = await prisma.kBChatbot.findFirstOrThrow({
+      where: { chatbotId, kbId: kb.id },
+    })
+    const rowDisclosure = page.getByTestId(`chatbot-kb-row-toggle-${kb.id}`)
+    await expect(rowDisclosure).toHaveAttribute('aria-expanded', 'false')
+    await rowDisclosure.click()
+    await expect(rowDisclosure).toHaveAttribute('aria-expanded', 'true')
 
     // The knowledge base page leads back to the chatbot's setup.
     await page.getByTestId('chatbot-kb-open').click()
@@ -113,8 +124,25 @@ test.describe('Chatbot knowledge base setup', () => {
       page.getByTestId('chatbot-section-materials')
     ).not.toHaveAttribute('data-status', 'warning')
 
-    // Choosing the empty option disconnects the material.
+    // Review the impact while the source is still connected.
+    let detachVariables: Record<string, unknown> | undefined
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const operationName =
+        new URL(request.url()).searchParams.get('operationName') ??
+        request.postDataJSON()?.operationName
+      if (operationName === 'DetachKbFromChatbot') {
+        detachVariables = request.postDataJSON()?.variables
+      }
+      await route.fallback()
+    })
     await selectOption(page, '[data-cy="chatbot-kb-select"]', NO_KB_OPTION)
+    await expect(page.getByTestId('chatbot-kb-detach-modal')).toBeVisible()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+    await page.getByTestId('confirm-chatbot-kb-detach').click()
+    await expect.poll(() => detachVariables?.expectedLinkId).toBe(kbLink.id)
     await expect(page.getByTestId('chatbot-section-materials')).toHaveAttribute(
       'data-status',
       'warning'
@@ -141,10 +169,6 @@ test.describe('Chatbot knowledge base setup', () => {
         .getByTestId(`chatbot-${CHATBOT_NAME}`)
         .getByTestId('kb-materials-readiness')
     ).toBeVisible()
-    const prisma = await getPrisma()
-    const kb = await prisma.kB.findFirstOrThrow({
-      where: { ownerId: USER_ID_TEST, name: KB_NAME },
-    })
     await page.goto(`${manageUrl}/resources/knowledgeBases`)
     await expect(
       page
@@ -194,6 +218,140 @@ test.describe('Chatbot knowledge base setup', () => {
       KB_NAME
     )
     await expect(chatbotNameField).toHaveCount(0)
+  })
+
+  test('keeps attach unavailable when the mode-link capability cannot load', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const kb = await prisma.kB.create({
+      data: { name: KB_NAME, ownerId: USER_ID_TEST },
+    })
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: CHATBOT_NAME,
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: { chatbotId: chatbot.id, kbId: kb.id, isEnabled: true },
+    })
+
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const operationName =
+        new URL(request.url()).searchParams.get('operationName') ??
+        request.postDataJSON()?.operationName
+      if (operationName !== 'QGetChatbotsInfoWithKnowledgeBases') {
+        await route.fallback()
+        return
+      }
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          errors: [{ message: 'Synthetic capability failure' }],
+        }),
+      })
+    })
+
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/knowledgeBases/${kb.id}`
+    )
+    await page.getByTestId('kb-chatbot-settings').locator('summary').click()
+    await expect(
+      page.getByTestId('kb-chatbot-attach-capability')
+    ).toHaveAttribute('data-state', 'error')
+    await expect(page.getByTestId('attach-kb-chatbot')).toHaveCount(0)
+  })
+
+  test('sends the observed link id when detaching from the knowledge-base page', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const kb = await prisma.kB.create({
+      data: { name: KB_NAME, ownerId: USER_ID_TEST },
+    })
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: CHATBOT_NAME,
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+      },
+    })
+    const link = await prisma.kBChatbot.create({
+      data: { chatbotId: chatbot.id, kbId: kb.id, isEnabled: true },
+    })
+    let detachVariables: Record<string, unknown> | undefined
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const operationName =
+        new URL(request.url()).searchParams.get('operationName') ??
+        request.postDataJSON()?.operationName
+      if (operationName === 'DetachKbFromChatbot') {
+        detachVariables = request.postDataJSON()?.variables
+      }
+      await route.fallback()
+    })
+
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/knowledgeBases/${kb.id}`
+    )
+    await page.getByTestId('kb-chatbot-settings').locator('summary').click()
+    await page.getByTestId(`detach-kb-chatbot-${chatbot.id}`).click()
+    await page.getByTestId('confirm-kb-chatbot-detach').click()
+    await expect.poll(() => detachVariables?.expectedLinkId).toBe(link.id)
+  })
+
+  test('warns before changing links on a published chatbot', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const kb = await prisma.kB.create({
+      data: { name: KB_NAME, ownerId: USER_ID_TEST },
+    })
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: CHATBOT_NAME,
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_TEST,
+        status: 'PUBLISHED',
+        publishedAt: new Date('2026-01-01T12:00:00Z'),
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: {
+        chatbotId: chatbot.id,
+        kbId: kb.id,
+        isEnabled: true,
+        isDefault: true,
+      },
+    })
+
+    await page.route('**/api/graphql*', async (route) => {
+      const request = route.request()
+      const operationName =
+        new URL(request.url()).searchParams.get('operationName') ??
+        request.postDataJSON()?.operationName
+      if (operationName !== 'QGetChatbotsInfoWithKnowledgeBases') {
+        await route.fallback()
+        return
+      }
+      const response = await route.fetch()
+      const json = await response.json()
+      for (const item of json.data?.getChatbotsInfo ?? []) {
+        item.perModeKbLinksEnabled = true
+      }
+      await route.fulfill({ response, json })
+    })
+
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/knowledgeBases/${kb.id}`
+    )
+    await page.getByTestId('kb-chatbot-settings').locator('summary').click()
+    await expect(
+      page.getByTestId('kb-chatbot-live-change-warning')
+    ).toBeVisible()
   })
 
   test('offers no way back for a chatbot the lecturer does not own', async ({

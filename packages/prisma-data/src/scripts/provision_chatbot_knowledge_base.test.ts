@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  assertRollbackTarget,
   buildSnapshot,
   DOC_QUERY_TOOL_ALIAS,
   equalJson,
+  MAX_CHATBOT_KB_LINKS,
   ProvisionFailure,
   type ProvisionState,
   parseArgs,
@@ -82,6 +84,7 @@ function baseState(overrides: Partial<ProvisionState> = {}): ProvisionState {
 }
 
 const TARGET = {
+  allowSecondaryLinks: true,
   kbId: KB_ID,
   kbName: KB_NAME,
   legacyServerName: LEGACY_SERVER_NAME,
@@ -147,6 +150,8 @@ describe('provision plan', () => {
     expect(plan.refusal).toBeNull()
     expect(plan.createKb).toBe(true)
     expect(plan.createBinding).toBe(true)
+    expect(plan.replaceDisabledBinding).toBe(false)
+    expect(plan.setDefault).toBe(true)
     expect(
       plan.configUpdates.map(({ parametersChanged }) => parametersChanged)
     ).toEqual([false, false])
@@ -165,7 +170,14 @@ describe('provision plan', () => {
           ownerId: OWNER_ID,
           deletedAt: null,
         },
-        bindings: [{ id: randomUUID(), kbId: KB_ID, isEnabled: true }],
+        bindings: [
+          {
+            id: randomUUID(),
+            kbId: KB_ID,
+            isEnabled: true,
+            isDefault: true,
+          },
+        ],
         legacyServer: {
           id: LEGACY_SERVER_ID,
           name: LEGACY_SERVER_NAME,
@@ -186,6 +198,8 @@ describe('provision plan', () => {
     expect(plan.refusal).toBeNull()
     expect(plan.createKb).toBe(false)
     expect(plan.createBinding).toBe(false)
+    expect(plan.replaceDisabledBinding).toBe(false)
+    expect(plan.setDefault).toBe(false)
     expect(plan.legacyConfigDisables).toEqual([])
     expect(plan.deactivateLegacyServer).toBe(false)
   })
@@ -244,9 +258,14 @@ describe('provision plan', () => {
     ],
     ['kb_name_conflict', { kbNameConflictIds: [CONFLICT_KB_ID] }],
     [
-      'binding_conflict',
+      'link_limit_reached',
       {
-        bindings: [{ id: randomUUID(), kbId: FOREIGN_KB_ID, isEnabled: true }],
+        bindings: Array.from({ length: MAX_CHATBOT_KB_LINKS }, (_, index) => ({
+          id: randomUUID(),
+          kbId: index === 0 ? FOREIGN_KB_ID : randomUUID(),
+          isEnabled: true,
+          isDefault: index === 0,
+        })),
       },
     ],
     ['kb_config_missing', { kbServerConfigs: [] }],
@@ -293,6 +312,78 @@ describe('provision plan', () => {
     expect(plan.refusal).toBe(code)
     expect(plan.configUpdates).toEqual([])
     expect(plan.legacyConfigDisables).toEqual([])
+  })
+
+  it('makes the target the default without disabling secondary links', () => {
+    const targetLinkId = randomUUID()
+    const secondaryLinkId = randomUUID()
+    const state = baseState({
+      kbById: {
+        id: KB_ID,
+        name: KB_NAME,
+        ownerId: OWNER_ID,
+        deletedAt: null,
+      },
+      bindings: [
+        {
+          id: secondaryLinkId,
+          kbId: FOREIGN_KB_ID,
+          isEnabled: true,
+          isDefault: true,
+        },
+        {
+          id: targetLinkId,
+          kbId: KB_ID,
+          isEnabled: true,
+          isDefault: false,
+        },
+      ],
+    })
+    expect(
+      planProvision(state, { ...TARGET, allowSecondaryLinks: false }).refusal
+    ).toBe('binding_conflict')
+    const plan = planProvision(state, { ...TARGET, allowSecondaryLinks: true })
+
+    expect(plan.refusal).toBeNull()
+    expect(plan.createBinding).toBe(false)
+    expect(plan.replaceDisabledBinding).toBe(false)
+    expect(plan.setDefault).toBe(true)
+    expect(
+      plan.configUpdates.every(({ parameters }) => 'kb_id' in parameters)
+    ).toBe(true)
+  })
+
+  it('replaces a disabled historical target link with a fresh default', () => {
+    const plan = planProvision(
+      baseState({
+        kbById: {
+          id: KB_ID,
+          name: KB_NAME,
+          ownerId: OWNER_ID,
+          deletedAt: null,
+        },
+        bindings: [
+          {
+            id: randomUUID(),
+            kbId: KB_ID,
+            isEnabled: false,
+            isDefault: false,
+          },
+          {
+            id: randomUUID(),
+            kbId: FOREIGN_KB_ID,
+            isEnabled: true,
+            isDefault: true,
+          },
+        ],
+      }),
+      TARGET
+    )
+
+    expect(plan.refusal).toBeNull()
+    expect(plan.createBinding).toBe(false)
+    expect(plan.replaceDisabledBinding).toBe(true)
+    expect(plan.setDefault).toBe(true)
   })
 
   it('keeps a legacy server that other chatbots still enable', () => {
@@ -360,6 +451,72 @@ describe('provision arguments', () => {
 })
 
 describe('provision snapshot', () => {
+  it('records every link so rollback can retain secondaries and defaults', () => {
+    const targetLinkId = randomUUID()
+    const secondaryLinkId = randomUUID()
+    const state = baseState({
+      bindings: [
+        {
+          id: secondaryLinkId,
+          kbId: FOREIGN_KB_ID,
+          isEnabled: true,
+          isDefault: true,
+        },
+        {
+          id: targetLinkId,
+          kbId: KB_ID,
+          isEnabled: false,
+          isDefault: false,
+        },
+      ],
+    })
+    const plan = planProvision(
+      baseState({
+        kbById: {
+          id: KB_ID,
+          name: KB_NAME,
+          ownerId: OWNER_ID,
+          deletedAt: null,
+        },
+        bindings: state.bindings,
+      }),
+      TARGET
+    )
+    const snapshot = buildSnapshot(
+      {
+        ...state,
+        kbById: {
+          id: KB_ID,
+          name: KB_NAME,
+          ownerId: OWNER_ID,
+          deletedAt: null,
+        },
+      },
+      plan,
+      {
+        chatbotId: CHATBOT_ID,
+        kbId: KB_ID,
+        kbName: KB_NAME,
+      }
+    )
+
+    expect(snapshot.bindings).toEqual([
+      {
+        id: secondaryLinkId,
+        kbId: FOREIGN_KB_ID,
+        isEnabled: true,
+        isDefault: true,
+      },
+      {
+        id: targetLinkId,
+        kbId: KB_ID,
+        isEnabled: false,
+        isDefault: false,
+      },
+    ])
+    expect(parseSnapshot(JSON.stringify(snapshot))).toEqual(snapshot)
+  })
+
   it('round-trips the pre-apply state', () => {
     const state = baseState()
     const plan = planProvision(state, TARGET)
@@ -372,6 +529,53 @@ describe('provision snapshot', () => {
     expect(snapshot.binding).toBeNull()
     expect(snapshot.configs).toHaveLength(2)
     expect(parseSnapshot(JSON.stringify(snapshot))).toEqual(snapshot)
+  })
+
+  it('keeps legacy rollback compatible while rejecting an ambiguous relink', () => {
+    const priorTargetId = randomUUID()
+    const currentTargetId = randomUUID()
+    const snapshotFor = (isEnabled: boolean) =>
+      parseSnapshot(
+        JSON.stringify(
+          buildSnapshot(
+            baseState({
+              bindings: [
+                {
+                  id: priorTargetId,
+                  kbId: KB_ID,
+                  isEnabled,
+                  isDefault: isEnabled,
+                },
+              ],
+            }),
+            planProvision(baseState(), TARGET),
+            {
+              chatbotId: CHATBOT_ID,
+              kbId: KB_ID,
+              kbName: KB_NAME,
+            }
+          )
+        )
+      )
+
+    const enabledLegacySnapshot = snapshotFor(true)
+    expect(enabledLegacySnapshot.appliedBindingId).toBeUndefined()
+    expect(() =>
+      assertRollbackTarget(enabledLegacySnapshot, { id: priorTargetId })
+    ).not.toThrow()
+    expect(() =>
+      assertRollbackTarget(enabledLegacySnapshot, { id: currentTargetId })
+    ).toThrow('legacy snapshot cannot verify a relinked target')
+
+    expect(() =>
+      assertRollbackTarget(snapshotFor(false), { id: currentTargetId })
+    ).toThrow(ProvisionFailure)
+    expect(() =>
+      assertRollbackTarget(
+        { ...snapshotFor(false), appliedBindingId: currentTargetId },
+        { id: currentTargetId }
+      )
+    ).not.toThrow()
   })
 
   it('refuses a snapshot from another contract version or shape', () => {

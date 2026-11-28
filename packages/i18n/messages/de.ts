@@ -922,6 +922,7 @@ export default {
       confirm: 'Bestätigen',
       close: 'Schliessen',
       approve: 'Genehmigen',
+      none: 'Keine',
       apply: 'Anwenden',
       sendAnswer: 'Antwort senden',
       begin: 'Beginnen',
@@ -2362,6 +2363,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileSize: 'Dateigrösse',
     createdAt: 'Erstellt',
     chatbotsTitle: 'Verknüpfte Chatbots',
+    chatbotsModeSourcesDescription:
+      'Verknüpfen Sie diese Wissensbasis mit einem Chatbot, um sie bei einem benutzerdefinierten Modus auswählen zu können.',
     chatbotsDescription:
       'Wählen Sie, welcher Chatbot diese Wissensdatenbank verwenden kann. Ein Chatbot kann jeweils eine Wissensdatenbank verwenden.',
     chatbotsLoadError: 'Die Chatbots konnten nicht geladen werden.',
@@ -2385,6 +2388,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
     chatbotDetachError:
       'Die Verknüpfung des Chatbots konnte nicht aufgehoben werden.',
+    chatbotDefaultBadge: 'Standard',
+    chatbotDefaultSuccess: 'Die Standard-Wissensdatenbank wurde geändert.',
+    chatbotDefaultCleared: 'Die Standard-Wissensdatenbank wurde entfernt.',
+    chatbotDefaultError:
+      'Die Standard-Wissensdatenbank konnte nicht geändert werden.',
+    allChatbotsLinked:
+      'Diese Wissensdatenbank ist mit allen Chatbots verknüpft.',
+    makeChatbotDefault: 'Als Standard',
+    clearChatbotDefault: 'Standard entfernen',
+    chatbotDetachTitle: 'Chatbot trennen',
+    chatbotDetachDescription:
+      '„{name}“ von dieser Wissensdatenbank trennen? Bestehende Verknüpfungen und Standards anderer Chatbots bleiben unverändert.',
+    defaultChangeImpact:
+      'Ein Wechsel der Standard-Wissensbasis betrifft Standardmodi mit Kursmaterial und diese benutzerdefinierten Modi: {modes}.',
+    chatbotDetachAffectedModes:
+      'Freigegebene oder entworfene eigene Modi, die diese Quelle verwenden: {modes}.',
+    chatbotDetachConsequence:
+      'Betroffene Verweise bleiben sichtbar nicht verfügbar, bis eine Lehrperson eine andere Quelle auswählt. Neue Abrufe enden sofort.',
     previewAccessError:
       'Der Wissensdatenbank-Arbeitsbereich ist für Ihr Konto noch nicht verfügbar.',
     graphTitle: 'Wissensgraph',
@@ -5446,6 +5467,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSectionRequest: 'Veröffentlichung beantragen',
       chatbotSummaryMaterialsNone:
         'Es ist keine Wissensdatenbank verbunden. Antworten nutzen allgemeines Modellwissen.',
+      chatbotSummaryMaterialsNoDefault:
+        'Es ist keine Standard-Wissensdatenbank festgelegt. Modi, die dem Chatbot-Standard folgen, antworten ohne Abruf.',
       chatbotSummaryMaterialsConnected: 'Nutzt die Wissensdatenbank {name}.',
       chatbotSummaryMaterialsReadiness:
         '{total, plural, =0 {Sie enthält noch keine Ressourcen.} one {{ready} von 1 Ressource ist bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.} other {{ready} von # Ressourcen {ready, plural, one {ist} other {sind}} bereit{failed, plural, =0 {} other {, # fehlgeschlagen}}.}}',
@@ -5511,6 +5534,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotKnowledgeBaseConnect: 'Verknüpfen',
       chatbotKnowledgeBaseReplace: 'Ersetzen',
       chatbotKnowledgeBaseDisconnect: 'Verknüpfung aufheben',
+      chatbotKnowledgeBaseAddLink: 'Wissensdatenbank hinzufügen',
+      chatbotKnowledgeBaseNoneLinked:
+        'Mit diesem Chatbot ist noch keine Wissensdatenbank verknüpft.',
+      chatbotKnowledgeBaseDefaultBadge: 'Standard',
+      chatbotKnowledgeBaseDefaultNamed: 'Standard des Chatbots ({kbName})',
+      chatbotKnowledgeBaseDefaultNone:
+        'Standard des Chatbots (kein Standard gesetzt)',
+      chatbotKnowledgeBaseUnavailable: 'Nicht verfügbare Wissensdatenbank',
+      chatbotKnowledgeBaseMakeDefault: 'Als Standard',
+      chatbotKnowledgeBaseClearDefault: 'Standard entfernen',
+      chatbotKnowledgeBaseDefaultSuccess:
+        'Die Standard-Wissensdatenbank wurde geändert.',
+      chatbotKnowledgeBaseDefaultCleared:
+        'Die Standard-Wissensdatenbank wurde entfernt.',
+      chatbotKnowledgeBaseDefaultError:
+        'Die Standard-Wissensdatenbank konnte nicht geändert werden.',
+      chatbotKnowledgeBaseDetachTitle: 'Wissensdatenbank trennen',
+      chatbotKnowledgeBaseDetachDescription:
+        '„{kbName}“ von diesem Chatbot trennen?',
+      chatbotKnowledgeBaseDetachApprovedModes:
+        'Freigegebene eigene Modi, die diese Verknüpfung ausdrücklich verwenden: {modes}.',
+      chatbotKnowledgeBaseDetachDraftModes:
+        'Entwürfe eigener Modi, die diese Verknüpfung ausdrücklich verwenden: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultApprovedModes:
+        'Freigegebene Standard- und eigene Modi, die diese Standardquelle verwenden: {modes}.',
+      chatbotKnowledgeBaseDetachDefaultDraftModes:
+        'Entwürfe von Standard- und eigenen Modi, die diese Standardquelle verwenden: {modes}.',
+      chatbotKnowledgeBaseDetachConsequence:
+        'Das Entfernen wirkt für neue Abrufe und Medienzugriffe. Bestehende nicht verfügbare Verweise bleiben sichtbar, bis sie neu zugewiesen werden.',
       chatbotKnowledgeBaseReplacementWarning:
         'Dieser Chatbot verwendet derzeit „{kbName}“. Wenn Sie eine andere Wissensdatenbank verknüpfen, wird diese ersetzt.',
       chatbotKnowledgeBaseLiveChangeNote:
@@ -5530,6 +5582,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotKnowledgeBaseCardReusable:
         'Eine Wissensdatenbank ist eine wiederverwendbare Sammlung von Materialien. Auch andere Chatbots können sie nutzen.',
       chatbotKnowledgeBaseCardOpen: 'Wissensdatenbank öffnen',
+      chatbotKnowledgeBaseDetailsFor: 'Details zu {name}',
+      chatbotKnowledgeBaseActionsFor: 'Aktionen für {name}',
+      chatbotKnowledgeBaseNoResources: 'Keine Materialien',
+      chatbotKnowledgeBaseReadyCount:
+        '{ready, number} von {total, number} bereit',
       chatbotKnowledgeBaseCardResources: 'Ressourcen',
       chatbotKnowledgeBaseCardReady: 'Bereit',
       chatbotKnowledgeBaseCardProcessing: 'In Verarbeitung',
@@ -5622,6 +5679,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotCustomModeMeetingClockElapsed: 'Vergangene Minuten',
       chatbotCustomModeMeetingClockElapsedAndTime:
         'Vergangene Minuten und Uhrzeit',
+      chatbotCustomModeKnowledgeBase: 'Wissensdatenbank',
+      chatbotCustomModeKnowledgeBaseDescription:
+        'Wählen Sie für diesen Modus eine verknüpfte Quelle oder folgen Sie dem Standard des Chatbots. Die ausgewählte Quelle wird mit dem Modus geprüft.',
+      chatbotCustomModeKnowledgeBaseInheritNamed:
+        'Standard des Chatbots verwenden ({kbName})',
+      chatbotCustomModeKnowledgeBaseInheritNone:
+        'Standard des Chatbots verwenden (kein Standard gesetzt)',
+      chatbotCustomModeKnowledgeBaseOptionDefault: '{kbName} (Standard)',
+      chatbotCustomModeKnowledgeBaseChanged:
+        'Wissensdatenbank geändert: {previous} → {current}',
       chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
       chatbotCustomModeRemove: 'Entfernen',
       chatbotCustomModesLimit:
@@ -5835,6 +5902,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
       chatbotListKnowledgeBase: 'Materialien: {kbName}',
+      chatbotListNoDefaultKnowledgeBase:
+        'Materialien: kein Standard ausgewählt.',
       chatbotListNoKnowledgeBase: 'Noch keine Materialien verknüpft.',
       chatbotStatusDraft: 'Entwurf',
       chatbotStatusPendingApproval: 'Ausstehende Freigabe',

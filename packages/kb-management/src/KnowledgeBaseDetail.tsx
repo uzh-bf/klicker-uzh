@@ -17,6 +17,8 @@ function KnowledgeBaseDetail({
   kbId,
   backLink,
   advanced = false,
+  perModeKbLinksEnabled,
+  perModeKbLinksCapabilityError = false,
 }: {
   kbId: string
   // Advanced mode adds usage and quota figures, resource search and filters,
@@ -24,6 +26,8 @@ function KnowledgeBaseDetail({
   // panel. The simple page keeps what a lecturer needs to describe the
   // materials, add them and see that they are ready.
   advanced?: boolean
+  perModeKbLinksEnabled?: boolean
+  perModeKbLinksCapabilityError?: boolean
   // A banner leading back, for example to the chatbot whose materials are
   // being prepared. The caller owns and validates the target.
   backLink?: { href: string; label: string; message: string }
@@ -244,7 +248,12 @@ function KnowledgeBaseDetail({
         }}
       />
       {advanced ? <KnowledgeBaseImportedSourceList kbId={kbId} /> : null}
-      <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
+      <KnowledgeBaseChatbotBindings
+        kbId={kbId}
+        onChanged={refreshMetrics}
+        perModeKbLinksEnabled={perModeKbLinksEnabled}
+        perModeKbLinksCapabilityError={perModeKbLinksCapabilityError}
+      />
       {advanced ? <KnowledgeGraphPanel kbId={kbId} /> : null}
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal

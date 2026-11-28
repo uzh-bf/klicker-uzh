@@ -176,8 +176,8 @@ export async function seedResponseExamples(prisma: Prisma.PrismaClient) {
   })
 
   await prisma.kBChatbot.updateMany({
-    where: { chatbotId: CHATBOT_ID_TEST },
-    data: { isEnabled: false },
+    where: { chatbotId: CHATBOT_ID_TEST, isDefault: true },
+    data: { isDefault: false },
   })
   await prisma.kBChatbot.upsert({
     where: {
@@ -191,8 +191,9 @@ export async function seedResponseExamples(prisma: Prisma.PrismaClient) {
       kbId: RESPONSE_EXAMPLE_KB_ID,
       chatbotId: CHATBOT_ID_TEST,
       isEnabled: true,
+      isDefault: true,
     },
-    update: { isEnabled: true },
+    update: { isEnabled: true, isDefault: true },
   })
 
   const set = await prisma.responseExampleSet.upsert({

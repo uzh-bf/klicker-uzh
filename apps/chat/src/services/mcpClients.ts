@@ -61,9 +61,13 @@ export interface MCPRequestContext {
   ownerPreviewUserId?: string
   courseId?: string
   authMode: AuthMode
+  chatMode?: string
   kbIds?: readonly string[]
+  kbLinkId?: string
   sessionId?: string
   knowledgeGraphRetrievalEnabled?: boolean
+  /** Re-reads the selected live link before every scope-token mint. */
+  revalidateKnowledgeBaseScope?: () => Promise<void>
 }
 
 export interface MCPRequestOptions {
@@ -174,13 +178,12 @@ function createBaseHeaders(): Record<string, string> {
   }) as Record<string, string>
 }
 
-async function applyDocQueryAuthHeaders(
-  headers: Record<string, string>,
+function resolveDocQueryBearerAuth(
   server: MCPServerConfig,
   context: MCPRequestContext,
   authType: string
-): Promise<boolean> {
-  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
+): { authorization: string; kbIds: string[]; sessionId: string } | undefined {
+  if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return undefined
   if (!context.kbIds || !context.sessionId) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
@@ -196,22 +199,76 @@ async function applyDocQueryAuthHeaders(
 
   assertDocQueryTransportSecurity(server.url)
 
-  const kbIds = normalizeDocQueryKbIds(context.kbIds)
-  headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
-  const token = await signDocQueryScopeToken({
-    kbIds,
-    chatbotId: context.chatbotId,
+  return {
+    authorization: `Bearer ${safeDecrypt(server.authSecret)}`,
+    kbIds: normalizeDocQueryKbIds(context.kbIds),
     sessionId: context.sessionId,
+  }
+}
+
+async function signBearerRequestScope(
+  context: MCPRequestContext,
+  auth: NonNullable<ReturnType<typeof resolveDocQueryBearerAuth>>
+) {
+  await context.revalidateKnowledgeBaseScope?.()
+  return signDocQueryScopeToken({
+    kbIds: auth.kbIds,
+    chatbotId: context.chatbotId,
+    sessionId: auth.sessionId,
     jti: randomUUID(),
   })
-  headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
-  return true
 }
 
 interface MCPTransportRequest {
   url: string
   headers: Record<string, string>
   fetch?: DocQueryScopedFetch
+}
+
+/**
+ * Legacy KB transport keeps its stored bearer, but mints scoped access anew
+ * for every request after checking the live link.
+ */
+function createDocQueryBearerTransport(
+  server: MCPServerConfig,
+  context: MCPRequestContext
+): MCPTransportRequest | undefined {
+  const auth = resolveDocQueryBearerAuth(
+    server,
+    context,
+    server.authType.toLowerCase()
+  )
+  if (!auth) return undefined
+  const endpoint = new URL(server.url)
+
+  return {
+    url: server.url,
+    headers: Object.assign(createBaseHeaders(), {
+      Authorization: auth.authorization,
+    }),
+    fetch: async (input, init) => {
+      const requestUrl = input instanceof Request ? input.url : input
+      if (new URL(requestUrl, endpoint).href !== endpoint.href) {
+        throw new Error('Knowledge base transport target mismatch')
+      }
+      const token = await signBearerRequestScope(context, auth)
+
+      const headers = new Headers(
+        input instanceof Request ? input.headers : undefined
+      )
+      new Headers(init?.headers).forEach((value, name) => {
+        headers.set(name, value)
+      })
+      headers.set('Authorization', auth.authorization)
+      headers.set(DOC_QUERY_SCOPE_TOKEN_HEADER, `Bearer ${token}`)
+
+      return fetch(input, {
+        ...init,
+        headers,
+        redirect: 'error',
+      })
+    },
+  }
 }
 
 /**
@@ -251,6 +308,7 @@ function createScopedDocQueryTransport(
       chatbotId: context.chatbotId,
       sessionId: context.sessionId,
       signToken: signDocQueryScopeToken,
+      revalidateScope: context.revalidateKnowledgeBaseScope,
     }),
   }
 }
@@ -265,7 +323,11 @@ export async function createAuthHeaders(
   const baseHeaders = createBaseHeaders()
   const authType = server.authType.toLowerCase()
 
-  if (await applyDocQueryAuthHeaders(baseHeaders, server, context, authType)) {
+  const bearer = resolveDocQueryBearerAuth(server, context, authType)
+  if (bearer) {
+    baseHeaders.Authorization = bearer.authorization
+    baseHeaders[DOC_QUERY_SCOPE_TOKEN_HEADER] =
+      `Bearer ${await signBearerRequestScope(context, bearer)}`
     return baseHeaders
   }
 
@@ -405,18 +467,20 @@ export async function createMCPClient(
   )
 
   try {
-    const scopedTransport = createScopedDocQueryTransport(server, context)
-    const headers = scopedTransport
-      ? scopedTransport.headers
+    const docQueryTransport =
+      createScopedDocQueryTransport(server, context) ??
+      createDocQueryBearerTransport(server, context)
+    const headers = docQueryTransport
+      ? docQueryTransport.headers
       : await createAuthHeaders(server, context)
 
     const client = await createSDKMCPClient({
       transport: {
         type: 'http',
-        url: scopedTransport ? scopedTransport.url : server.url,
+        url: docQueryTransport ? docQueryTransport.url : server.url,
         headers,
         redirect: 'error',
-        ...(scopedTransport?.fetch ? { fetch: scopedTransport.fetch } : {}),
+        ...(docQueryTransport?.fetch ? { fetch: docQueryTransport.fetch } : {}),
       },
       ...(options.requestTimeoutMs !== undefined
         ? { initializationOptions: { timeout: options.requestTimeoutMs } }
