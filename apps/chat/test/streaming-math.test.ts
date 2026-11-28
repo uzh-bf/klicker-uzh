@@ -5,6 +5,7 @@ import {
   escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
+  protectEscapedDollars,
 } from '../src/lib/markdown/streamingMath'
 
 describe('streaming math scanner', () => {
@@ -161,6 +162,15 @@ describe('non-math dollar escaping', () => {
     expect(math).toContain('114.29')
     expect(() =>
       katex.renderToString(math ?? '', { throwOnError: true })
+    ).not.toThrow()
+  })
+
+  test('removes every dollar from formula content converted to $…$', () => {
+    const math = protectEscapedDollars('120/1.05 = \\$114.29')
+
+    expect(math).not.toContain('$')
+    expect(() =>
+      katex.renderToString(math, { throwOnError: true })
     ).not.toThrow()
   })
 

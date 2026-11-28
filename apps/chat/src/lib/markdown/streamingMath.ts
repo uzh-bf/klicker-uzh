@@ -271,7 +271,7 @@ function findInlineMathClose(input: string, opening: number) {
 // remark-math ignores backslash escapes inside inline math, so the `$` of an
 // escaped dollar such as `$120/1.05 = \$114.29$` would end the formula early.
 // KaTeX renders `\char36` as the same dollar sign without a `$` character.
-function protectEscapedDollars(math: string) {
+export function protectEscapedDollars(math: string) {
   return math.replace(/(?<!\\)((?:\\\\)*)\\\$/g, (_, evenBackslashes) => {
     return `${evenBackslashes}\\char36 `
   })

@@ -32,6 +32,7 @@ import {
   escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
+  protectEscapedDollars,
 } from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
 import { CitationChip } from './citation-chip'
@@ -315,12 +316,12 @@ export function normalizeCustomMathTags(input: string): string {
       // Convert [/inline]...[/inline] to $...$
       .replace(
         /\[\/inline\]([\s\S]*?)\[\/inline\]/g,
-        (_, content) => `$${content.trim()}$`
+        (_, content) => `$${protectEscapedDollars(content.trim())}$`
       )
       // Convert \( ... \) to $...$ (inline math) - handles both single and double backslashes
       .replace(
         /\\{1,2}\(([\s\S]*?)\\{1,2}\)/g,
-        (_, content) => `$${content.trim()}$`
+        (_, content) => `$${protectEscapedDollars(content.trim())}$`
       )
       // Convert \[ ... \] to $$...$$ (block math) - handles both single and double backslashes
       .replace(
