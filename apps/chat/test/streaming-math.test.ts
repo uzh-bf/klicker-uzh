@@ -1,9 +1,11 @@
+import katex from 'katex'
 import { describe, expect, test } from 'vitest'
 
 import {
   escapeNonMathDollars,
   hideIncompleteMath,
   inspectStreamingMath,
+  protectEscapedDollars,
 } from '../src/lib/markdown/streamingMath'
 
 describe('streaming math scanner', () => {
@@ -151,6 +153,25 @@ describe('non-math dollar escaping', () => {
     ],
   ])('escapes an amount before %s', (_, input, expected) => {
     expect(escapeNonMathDollars(input)).toBe(expected)
+  })
+
+  test('keeps an escaped currency dollar inside a formula renderable', () => {
+    const output = escapeNonMathDollars('| PV | $120/1.05 = \\$114.29$ |')
+    const math = output.match(/\$([^$]+)\$/)?.[1]
+
+    expect(math).toContain('114.29')
+    expect(() =>
+      katex.renderToString(math ?? '', { throwOnError: true })
+    ).not.toThrow()
+  })
+
+  test('removes every dollar from formula content converted to $…$', () => {
+    const math = protectEscapedDollars('120/1.05 = \\$114.29')
+
+    expect(math).not.toContain('$')
+    expect(() =>
+      katex.renderToString(math, { throwOnError: true })
+    ).not.toThrow()
   })
 
   test('escapes amounts in prose after a fenced code block', () => {
