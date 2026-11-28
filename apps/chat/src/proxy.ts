@@ -10,6 +10,7 @@ import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
+import { rejectCrossSiteWrite } from '@/src/lib/server/sameOriginWrite'
 
 function applyFrameAncestorsCSP(response: NextResponse) {
   const allowed = process.env.ALLOWED_FRAME_ANCESTORS
@@ -136,6 +137,14 @@ function passThroughWithScopedToken(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Every API write must come from the Chat origin itself; see
+  // `rejectCrossSiteWrite`. The Manage chat route is outside the matcher and
+  // applies the same check itself.
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    const crossSiteRejection = rejectCrossSiteWrite(request)
+    if (crossSiteRejection) return crossSiteRejection
+  }
 
   // The embedded Manage assistant and the eLearning handoff receive their locale
   // as a query parameter, but Chat's root layout resolves the active locale from

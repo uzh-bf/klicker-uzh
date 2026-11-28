@@ -12,6 +12,7 @@ import {
   tryAcquireManageChatRequest,
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
+import { rejectCrossSiteWrite } from '@/src/lib/server/sameOriginWrite'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import { MANAGE_ASSISTANT_CAPABILITY_HEADER } from '@/src/services/manageAssistantCapabilities'
 import {
@@ -69,6 +70,11 @@ function createManageAssistantModel(deploymentId: string) {
 }
 
 export async function POST(req: NextRequest) {
+  // The proxy matcher excludes this route, so it applies the shared API write
+  // check itself, before authentication or reading the body.
+  const crossSiteRejection = rejectCrossSiteWrite(req)
+  if (crossSiteRejection) return crossSiteRejection
+
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

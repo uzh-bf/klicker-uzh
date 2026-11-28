@@ -289,6 +289,35 @@ key. The live evaluator measures these behaviors through E3 grounding and E4
 proposal-quality judge cases; the current DeepEval 4.1.5 / `gpt-5.6-luna`
 baseline is recorded in `apps/chat/evaluation/manage-assistant/README.md`.
 
+### Cross-site write guard
+
+Participant session cookies use `SameSite=None` so Chat works inside LMS and
+PWA iframes, which means the browser also attaches them to requests another
+site starts. `rejectCrossSiteWrite` (`src/lib/server/sameOriginWrite.ts`)
+therefore accepts a `POST`, `PUT`, `PATCH` or `DELETE` only when the browser
+reports that it came from the Chat origin itself. `proxy.ts` applies it to
+every `/api/*` request before any other handling, so new routes are covered
+without per-route code. `POST /api/manage/chat` is outside the proxy matcher
+and calls the same helper before authentication. `GET`, `HEAD` and `OPTIONS`
+are never checked.
+
+- When `Origin` is present, its host must equal the request host
+  (`x-forwarded-host`, then `host`). `Origin: null` is rejected.
+- When `Origin` is absent, `Sec-Fetch-Site` must be `same-origin` or `none`.
+- A request with neither header is allowed. Browsers send at least one of them
+  on every cross-site write, so such a request comes from a non-browser client
+  (load tests, scripted checks) that carries its own credential.
+
+Rejected requests receive a generic `403`. The check compares against the host
+the request was addressed to rather than a configured origin, so production,
+staging and both local devrouter host shapes (`chat.klicker.localhost` and
+`chat.klicker.<workspace>.localhost`) work without configuration. Embedded Chat
+passes because the framed document runs on the Chat origin and calls its own
+API. No PWA, Manage or LMS origin is allowlisted: no sibling app calls the Chat
+API directly, and allowing an LMS origin would let any page on that LMS forge
+writes. A future cross-origin caller needs an explicit allowlist and a CORS
+decision, not a widening of this check.
+
 ## Student practice MCP (`apps/mcp-student`)
 
 Participant practice questions reach the chat through a second FastMCP server, not through the chat's own Prisma access. `apps/mcp-student` (default port 7080, `/mcp`) authenticates a **participant** JWT minted by `mintParticipantMcpJwt` (`src/lib/server/mcpAuthMint.ts`) and reads element data through the persisted GraphQL client rather than Prisma (`apps/mcp-student/src/graphqlClient.ts`).
