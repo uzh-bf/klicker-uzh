@@ -15,7 +15,11 @@
       "repository": "alibaba/open-code-review",
       "revision": "1672852136fc87748249d22bce0819f33419ea79",
       "sha256": "1d5decf90627353f1e7a2cad291d4ee4ec0a661d9724b93b2d7d5246f33462e2"
-    }
+    },
+    "source": "1672852136fc87748249d22bce0819f33419ea79",
+    "archive_sha256": "a1378ddc336bb874349ad47ad370fdf725e8db1dd03753d7df73347342ae093f",
+    "go": "1.26.9",
+    "patch_sha256": "24669a46c52abd4d85bda548897001ce08d8c35c9fe81b90dafe0993ce34bfc2"
   },
   "final": {
     "execution": "repository-owned",
@@ -25,15 +29,16 @@
     "patch_sha256": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0"
   },
   "assets": {
-    ".github/actions/ocr-review/action.yml": "d9b4cfcee9bad56df845b0a774404726799d18e2e0f795ab635d077b6a344e17",
-    ".github/scripts/ocr-controller.cjs": "38ca838cea70067b613f6ae9374ccb89ad75906fa23d9c708b1583c303e5dfa5",
-    ".github/scripts/ocr-draft-review.cjs": "f662fa13e266039ce34da601676dc48fd132b7aa1e8ccf58ac3c43eef5fa6a98",
-    ".github/scripts/ocr-mistral-adapter.cjs": "8bfc0592ce2e200de806561a44fc1c05cecdf9adaf52ea6c09a74e2ee035129a",
-    ".github/scripts/ocr-review-tools.cjs": "c8ed6a34dd280613ab7c5b72a0d43caacceaa6246a10f55f3b5c894f93f389b4",
+    ".github/actions/ocr-review/action.yml": "439b8b39e6bd5ef47ae0d0992dfc0a7dfa236bf5ab094db4d194239e90db9234",
+    ".github/scripts/ocr-controller.cjs": "8b9582ab4dda9ed5411da65930753de2925d34ed4da0da532b15be6779c254db",
+    ".github/scripts/ocr-draft-review.cjs": "647041d8350af8cd2c2976200d5e67bb8c3f3ad4fc6574543de6d13661134a10",
+    ".github/scripts/ocr-mistral-adapter.cjs": "0e0df0d37e6d4ac33ca6292da948ce2724d1050b67f58c5e5bf2beff36178e83",
+    ".github/scripts/ocr-review-tools.cjs": "0eeb1eb05949ef58f5904156c3063de244434f490999898863455d910b2f36d6",
     ".github/scripts/ocr-review-shared.cjs": "c12e084ae9bd5459791e8cd78e7c11b60eb494e8c6bb5804e7d223e5228c9676",
     ".github/scripts/ocr-runtime-config.cjs": "dfa184aff7e6ad048696086637223437adeee79ced4bcfa90139468c122f16b9",
-    ".github/scripts/install-patched-ocr.cjs": "b01194ff744f8c12426cc6bfb3a2fda45a9668dfae9a8b7a8074d6297420f309",
+    ".github/scripts/install-patched-ocr.cjs": "cd8ce3110803bc7b782d822ef276e822a08f482479fe91760cd638bc4372f7f4",
     ".github/open-code-review/ocr-compression.patch": "670d1782a56548f4a4571b6e6bbeb33c92ebcbe99247469ad1aa73329fc5e7c0",
-    ".agents/skills/ocr-reviewer/SKILL.md": "9e68df11891aebbec0e32439c05d6a66f429f693318d30ae94b3639097b29685"
+    ".agents/skills/ocr-reviewer/SKILL.md": "79cae07133835d4b7a712e50cf5d691af55caa7e341e1d906c285d57f5b94928",
+    ".github/open-code-review/ocr-second-pass.patch": "24669a46c52abd4d85bda548897001ce08d8c35c9fe81b90dafe0993ce34bfc2"
   }
 }

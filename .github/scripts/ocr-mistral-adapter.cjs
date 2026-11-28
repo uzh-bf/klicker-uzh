@@ -902,6 +902,20 @@ function translateMistralRequest(
   return translated
 }
 
+// Only a complete checkpoint can start a fresh draft pass. OCR can return
+// an ordinary tool error for a malformed task_done and continue the same pass.
+function isDraftCheckpoint(call) {
+  if (call.function.name !== 'task_done') return false
+  try {
+    const args = JSON.parse(call.function.arguments) ?? {}
+    return (
+      isPlainObject(args) && [undefined, 'DONE', 'FAILED'].includes(args.state)
+    )
+  } catch {
+    return false
+  }
+}
+
 function hasCompletionTool(body) {
   return (
     Array.isArray(body.tools) &&
@@ -1420,6 +1434,15 @@ async function startAdapter(options = {}) {
     options.finalPlanGuidance === true
       ? { responses: 0, usable: 0, length: 0, empty: 0, invalid_finish: 0 }
       : null
+  let firstWrapUpDispatch = null
+  const draftCompression = options.guardDraftCompression
+    ? { usable: 0, skipped: 0, repeat_skips: 0 }
+    : null
+  // A main-task key spans both review passes and survives history compression.
+  const continuations = new Map()
+  const maxContinuationTasks =
+    options.maxHistoryEntries ?? DEFAULT_MAX_HISTORY_ENTRIES
+  const skippedSnapshots = new Set()
   const pendingRequests = new Set()
   const active = new Set()
   const sockets = new Set()
@@ -1522,6 +1545,57 @@ async function startAdapter(options = {}) {
       return
     }
 
+    const toolFree =
+      !body.tools || (Array.isArray(body.tools) && body.tools.length === 0)
+    const planScope =
+      planGuidance && toolFree
+        ? /^[0-9a-f]{8}-plan_task-([0-9a-f]{16})$/.exec(
+            body.prompt_cache_key
+          )?.[1]
+        : null
+    if (planScope && options.singleFileOutline && !availability.reason) {
+      const outline = options.singleFileOutline(body.messages, planScope)
+      if (outline) {
+        planGuidance.local_outlines = (planGuidance.local_outlines ?? 0) + 1
+        sendJson(res, 200, {
+          model: profile.model,
+          choices: [
+            {
+              index: 0,
+              finish_reason: 'stop',
+              message: { role: 'assistant', content: outline },
+            },
+          ],
+        })
+        return
+      }
+    }
+
+    const requestBody = JSON.stringify(mistralBody)
+    const compressionSnapshot =
+      draftCompression &&
+      !availability.reason &&
+      toolFree &&
+      /^[0-9a-f]{8}-memory_compression_task-[0-9a-f]{16}$/.test(
+        body.prompt_cache_key
+      )
+        ? crypto.createHash('sha256').update(requestBody).digest('hex')
+        : null
+    if (compressionSnapshot && skippedSnapshots.has(compressionSnapshot)) {
+      draftCompression.repeat_skips++
+      sendJson(res, 200, {
+        model: profile.model,
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            message: { role: 'assistant', content: '' },
+          },
+        ],
+      })
+      return
+    }
+
     const main = hasCompletionTool(body)
     const kind = main ? 'main' : 'auxiliary'
     const counters = [diagnostics, requestTypes[kind]]
@@ -1593,7 +1667,6 @@ async function startAdapter(options = {}) {
     } else diagnostics.unattributed_requests += 1
     diagnostics[main ? 'main_requests' : 'auxiliary_requests'] += 1
     const startedAt = now()
-    const requestBody = JSON.stringify(mistralBody)
     const requestBytes = Buffer.byteLength(requestBody)
     for (const counter of counters) {
       counter.requests += 1
@@ -1617,6 +1690,15 @@ async function startAdapter(options = {}) {
       conversation,
       attempt,
     }
+    const mainTaskScope =
+      main && /^[0-9a-f]{8}-main_task-[0-9a-f]{16}$/.test(body.prompt_cache_key)
+    const tail = mistralBody.messages.at(-1)
+    const wrapUpTurn =
+      options.draftToolContinuation &&
+      mainTaskScope &&
+      tail?.role === 'user' &&
+      typeof tail.content === 'string' &&
+      tail.content.startsWith('[ocr:second-pass-wrap-up] ')
     let accepted = false
     const fail = (category) => {
       if (failureRecorded) return
@@ -1653,6 +1735,7 @@ async function startAdapter(options = {}) {
       const unavailable = providerAvailabilityError(availability.reason)
       if (unavailable) throw unavailable
       for (const counter of counters) counter.upstream_attempts += 1
+      if (wrapUpTurn) firstWrapUpDispatch ??= attempt
       journal.write({ ...receipt, event: 'dispatch' })
       const upstream = await fetchImpl(profile.url, {
         method: 'POST',
@@ -1750,18 +1833,62 @@ async function startAdapter(options = {}) {
           'completion was truncated'
         )
       }
+      const taskKey = mainTaskScope ? body.prompt_cache_key : null
+      const draftScope = options.draftToolContinuation && taskKey
+      const finalScope = options.finalReviewContinuation && taskKey
+      const continuation = taskKey && continuations.get(taskKey)
+      const canTrackTask =
+        continuation || continuations.size < maxContinuationTasks
+      let extraContinuation = false
       if (main && !choice.message.tool_calls?.length) {
         for (const counter of counters) counter.main_no_tool_responses += 1
-        // OCR 1.13.0 echoes a tool-free assistant turn before requesting its
-        // continuation. Permit one interrupted turn in that replayed chain;
-        // another tool-free answer still fails instead of retrying prose.
-        const canContinue =
+        // OCR prompts for a real tool call on its next budgeted loop iteration.
+        // A final-review scope survives transcript compression, so a missing
+        // echoed assistant message cannot renew the stop continuation.
+        const firstFinalStop =
+          finalScope &&
+          choice.finish_reason === 'stop' &&
+          !continuation?.finalNoTool
+        if (finalScope && canTrackTask) {
+          continuations.set(taskKey, { ...continuation, finalNoTool: true })
+        }
+        if (
+          continuation?.toolTurn &&
+          !continuation.extraUsed &&
           choice.finish_reason === 'length' &&
+          !choice.message.content.trim()
+        ) {
+          // restoreMessages has already authenticated the replayed assistant.
+          // Require a tool receipt from its latest issued turn in this pass.
+          // The pinned draft CLI may append its deadline notice after genuine
+          // receipts. It neither supplies a result nor invalidates those receipts.
+          const messages = wrapUpTurn
+            ? mistralBody.messages.slice(0, -1)
+            : mistralBody.messages
+          const last = messages.findLastIndex((entry) => entry.role !== 'tool')
+          const calls = messages[last]?.tool_calls
+          extraContinuation =
+            messages[last]?.role === 'assistant' &&
+            calls?.length > 0 &&
+            continuation.toolTurn === hashIdentity(calls) &&
+            messages
+              .slice(last + 1)
+              .some(
+                (result) =>
+                  typeof result.tool_call_id === 'string' &&
+                  result.tool_call_id.length > 0 &&
+                  calls.some((call) => call.id === result.tool_call_id)
+              )
+        }
+        const firstContinuation =
+          (!(draftScope || finalScope) || canTrackTask) &&
+          !continuation?.inPass &&
+          (choice.finish_reason === 'length' || firstFinalStop) &&
           !body.messages.some(
             (message) =>
               message.role === 'assistant' && !message.tool_calls?.length
           )
-        if (!canContinue) {
+        if (!firstContinuation && !extraContinuation) {
           fail(
             choice.finish_reason === 'length'
               ? 'length_no_tool'
@@ -1775,11 +1902,25 @@ async function startAdapter(options = {}) {
       }
       const message = payload.choices[0].message
       history.remember(body.messages, message, body.prompt_cache_key)
-      if (
-        planGuidance &&
-        /^[0-9a-f]{8}-plan_task-[0-9a-f]{16}$/.test(body.prompt_cache_key) &&
-        (!body.tools || (Array.isArray(body.tools) && body.tools.length === 0))
-      ) {
+      if (draftScope) {
+        if (!choice.message.tool_calls?.length) {
+          continuations.set(taskKey, {
+            ...continuations.get(taskKey),
+            extraUsed: extraContinuation || Boolean(continuation?.extraUsed),
+            inPass: true,
+            toolTurn: null,
+          })
+        } else if (continuation?.inPass) {
+          const calls = choice.message.tool_calls
+          continuation.toolTurn = null
+          if (choice.finish_reason === 'tool_calls') {
+            if (calls.some(isDraftCheckpoint)) continuation.inPass = false
+            else if (calls.every((call) => call.function.name !== 'task_done'))
+              continuation.toolTurn = hashIdentity(message.tool_calls)
+          }
+        }
+      }
+      if (planScope) {
         const outcome =
           choice.finish_reason === 'length'
             ? 'length'
@@ -1795,6 +1936,25 @@ async function startAdapter(options = {}) {
         // without turning this response into a retried HTTP error.
         if (outcome !== 'usable')
           choice.message = { role: 'assistant', content: '' }
+      }
+      if (compressionSnapshot) {
+        // Stock OCR retains working history on an empty summary. Strip private
+        // reasoning as well: its Content() accessor otherwise falls back to it.
+        const text = choice.message.content.trim()
+        const usable =
+          choice.finish_reason === 'stop' &&
+          !choice.message.tool_calls?.length &&
+          text.length > 0 &&
+          !/<\/?think>/i.test(text)
+        choice.message = { role: 'assistant', content: usable ? text : '' }
+        if (usable) {
+          draftCompression.usable++
+        } else {
+          draftCompression.skipped++
+          if (skippedSnapshots.size >= 256)
+            skippedSnapshots.delete(skippedSnapshots.values().next().value)
+          skippedSnapshots.add(compressionSnapshot)
+        }
       }
       if (normalized.usage) normalized.usage = billableUsage(normalized.usage)
       sendJson(res, 200, normalized)
@@ -1933,6 +2093,12 @@ async function startAdapter(options = {}) {
       })),
       history: history.diagnostics(),
       usage_events: journal.snapshot(),
+      ...(options.draftToolContinuation
+        ? { first_wrap_up_dispatch: firstWrapUpDispatch }
+        : {}),
+      ...(draftCompression
+        ? { draft_compression: { ...draftCompression } }
+        : {}),
       plan_guidance: planGuidance ? { ...planGuidance } : null,
     }
   }
@@ -1961,6 +2127,8 @@ function summarizePlanGuidance(record) {
         counters.invalid_finish
   )
     return 'OCR planning status=unavailable'
+  if (Number.isSafeInteger(counters.local_outlines))
+    fields.push('local_outlines')
   return `OCR planning status=complete ${fields.map((field) => `${field}=${counters[field]}`).join(' ')}`
 }
 
@@ -2896,7 +3064,11 @@ function createProgressFilter(write, onCompression = () => {}) {
         /^\[ocr\] compression_finished outcome=(rebuilt|unchanged|failed|cancelled) before_estimated_tokens=(\d{1,12}) after_estimated_tokens=(\d{1,12})$/.exec(
           line
         )
-      if (line.startsWith('[ocr] compression_')) {
+      if (line === '[ocr] second_pass_started') {
+        event = 'event=second_pass_started'
+      } else if (line === '[ocr] second_pass_completed') {
+        event = 'event=second_pass_completed'
+      } else if (line.startsWith('[ocr] compression_')) {
         let record = null
         if (line === '[ocr] compression_telemetry version=1') {
           record = { kind: 'ready' }
@@ -3215,6 +3387,10 @@ async function commandRun(args, options = {}) {
     apiKey,
     provider: profile.name,
     availability,
+    finalReviewContinuation:
+      Boolean(configPath) &&
+      argv[1] === 'review' &&
+      profile.name === 'moat-flash',
     onClose: (snapshot) => {
       executionReceipt = snapshot
     },

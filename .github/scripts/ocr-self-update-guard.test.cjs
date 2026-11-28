@@ -178,10 +178,13 @@ test('routes every main review through Flash while retaining separate advisor cr
   )
   assert.equal(publisher.with['persist-credentials'], false)
   const install = action.runs.steps.find((step) =>
-    step.run?.includes('npm install -g')
+    step.run?.includes('install-patched-ocr.cjs" draft ')
   )
-  assert.equal(install.env.OCR_PACKAGE, '${{ steps.release.outputs.package }}')
-  assert.ok(install.run.includes('npm install -g "${OCR_PACKAGE}"'))
+  const setup = action.runs.steps.find((step) =>
+    step.uses?.startsWith('actions/setup-go@')
+  )
+  assert.ok(setup, 'expected the pinned draft OCR build toolchain step')
+  assert.equal(setup.with['go-version'], manifest.draft.go)
   assert.equal(install.env.OCR_NO_UPDATE, '1')
   assert.equal(manifest.draft.package, '@alibaba-group/open-code-review@1.13.0')
   const summary = action.runs.steps.find((step) =>
