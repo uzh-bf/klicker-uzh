@@ -317,6 +317,8 @@ jobs:
           node --test .github/scripts/playwright-resource-sampler.test.cjs
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
+      - name: Check Git hook contracts
+        run: pnpm run check:git-hooks
       - name: Check local KB lifecycle contracts
         run: pnpm run check:local-kb
       - name: Check Next.js development configuration and readiness
