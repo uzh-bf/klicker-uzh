@@ -484,6 +484,48 @@ describe('validateManageChatRequest', () => {
     expect(result?.proposalTokens).toEqual([])
   })
 
+  test('keeps a feedback card turn in the history with its content', async () => {
+    const result = await validateManageChatRequest({
+      messages: [
+        textMessage('My draft paragraph'),
+        {
+          id: 'assistant-card',
+          parts: [
+            {
+              input: {},
+              output: {
+                kind: 'feedback',
+                content: {
+                  format: 'feedback/1',
+                  title: '',
+                  summary: '',
+                  strengths: [],
+                  criteria: [],
+                  improvements: [
+                    { label: 'Focus', comment: 'synthetic-marker', quote: '' },
+                  ],
+                  nextStep: '',
+                },
+              },
+              state: 'output-available',
+              toolCallId: 'tool-1',
+              type: 'tool-show_feedback',
+            },
+          ],
+          role: 'assistant',
+        },
+        textMessage('Make it more concrete'),
+      ],
+    })
+
+    const assistant = result?.messages.find(
+      (message) => message.role === 'assistant'
+    )
+    expect(assistant?.parts).toEqual([
+      { text: expect.stringContaining('synthetic-marker'), type: 'text' },
+    ])
+  })
+
   test('removes response-example receipts before model conversion', async () => {
     const result = await validateManageChatRequest({
       messages: [
