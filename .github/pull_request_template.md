@@ -19,6 +19,15 @@ ClickUp Task: [Link to ClickUp Task]
 - [ ] Run `pnpm run check:all` (linting, typechecking, formatting, syncpack)
 - [ ] Run target unit tests (`pnpm --filter <package> test`)
 
+### Test Hygiene (when tests change)
+
+- [ ] Named the behavior/risk and chose the cheapest adequate test layer
+- [ ] Kept meaningful failure, authorization, accessibility/focus, and navigation coverage
+- [ ] For removed, merged, or moved coverage: linked replacement/obsolete-contract evidence and a defect-detection check, or N/A
+- [ ] Reported first-attempt failures, retries, skips, and never-run checks honestly
+
+See [test hygiene](../docs/test-hygiene.md) for the review record and retirement gate.
+
 ### Manual/Visual Verification
 
 <!-- For any UI-facing changes, please embed before/after screenshots or screen recordings using the agent-browser tool. -->
@@ -27,4 +36,4 @@ ClickUp Task: [Link to ClickUp Task]
 
 ### Codebase Notes & Quality Check
 
-- [ ] Updated [CODEBASE_NOTES.md](project/CODEBASE_NOTES.md) if any new gotchas, architectural patterns, or non-obvious constraints were introduced/modified? (or N/A)
+- [ ] Updated the relevant [engineering guide](../docs/) and skill when a durable contract changed, or N/A
