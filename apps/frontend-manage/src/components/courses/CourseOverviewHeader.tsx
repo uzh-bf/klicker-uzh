@@ -24,9 +24,9 @@ import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { useCourseDuplicationStatus } from '../asyncTasks/AsyncTaskProvider'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
-import { useCourseDuplicationStatus } from './CourseDuplicationStatusProvider'
 import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
   type CourseDuplicationFormData,

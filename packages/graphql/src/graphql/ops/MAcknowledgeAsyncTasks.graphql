@@ -1,0 +1,3 @@
+mutation AcknowledgeAsyncTasks($ids: [String!]!) {
+  acknowledgeAsyncTasks(ids: $ids)
+}
