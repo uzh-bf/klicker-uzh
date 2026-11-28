@@ -323,6 +323,40 @@ test('Prettier resolution rejects an ancestor package', (t) => {
   assert.doesNotThrow(() => loadPrettier(f.root))
 })
 
+function scriptCheckFixture(t) {
+  const f = fixture(t)
+  commitFixtureFile(
+    f,
+    'package.json',
+    JSON.stringify({
+      scripts: {
+        'check:all': 'run-p --npm-path pnpm check:script check:git-hooks',
+        'check:script': 'node ./util/synthetic-check.mjs',
+        'check:git-hooks': 'node --test ./util/synthetic-hook.test.mjs',
+      },
+    }),
+    'synthetic script checks'
+  )
+  return f
+}
+
+test('application commits run script checks in the container without host tooling', async (t) => {
+  const f = scriptCheckFixture(t)
+  stageFixtureFile(f, 'apps/sample/notes.txt', 'synthetic\n')
+  await runHook('check', f.root, f.env)
+  assert.deepEqual(
+    f.calls().map((call) => call.args),
+    [['exec', f.root, '--', 'pnpm', 'run', 'check:script']]
+  )
+})
+
+test('tooling commits keep host contract checks and their host tooling', async (t) => {
+  const f = scriptCheckFixture(t)
+  stageFixtureFile(f, 'util/synthetic-check.mjs', '\n')
+  await assert.rejects(runHook('check', f.root, f.env), /checkout-local yaml/)
+  assert.deepEqual(f.calls(), [])
+})
+
 test('propagates failed check status', async (t) => {
   const f = fixture(t)
   await assert.rejects(

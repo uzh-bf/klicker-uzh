@@ -600,6 +600,34 @@ function runContainerCommand(root, environment, native, args) {
   run('devrouter', ['exec', root, '--', 'pnpm', ...args], options)
 }
 
+// Contract tests that drive host Git, a host devrouter binary or host-only
+// launchers. Every other `node`/`bash` check runs in the container in
+// container mode, so a linked worktree needs no host install to commit.
+export const HOST_CHECK_TASKS = Object.freeze([
+  'check:git-hooks',
+  'check:playwright-ci',
+  'check:playwright-host',
+])
+
+// Host contract tests cover repository tooling. A commit runs them only when
+// it stages tooling: a root-level file or a path under these directories.
+// CI runs them on every change.
+const HOST_CHECK_PATH_PREFIXES = Object.freeze([
+  '.devcontainer/',
+  '.github/',
+  '.husky/',
+  'playwright/',
+  'util/',
+])
+
+export function stagesTooling(paths) {
+  return paths.some(
+    (changedPath) =>
+      !changedPath.includes('/') ||
+      HOST_CHECK_PATH_PREFIXES.some((prefix) => changedPath.startsWith(prefix))
+  )
+}
+
 async function runCheck(root, environment, native) {
   const options = { cwd: root, env: cleanGitEnvironment(environment) }
   const container = (args) =>
@@ -607,13 +635,28 @@ async function runCheck(root, environment, native) {
   const { scripts } = JSON.parse(
     readFileSync(path.join(root, 'package.json'), 'utf8')
   )
-  if (
-    checkTasks(scripts['check:all']).some((task) =>
-      /^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')
-    )
+  const isScriptTask = (task) =>
+    /^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')
+  const runsOnHost = (task) =>
+    isScriptTask(task) && (native || HOST_CHECK_TASKS.includes(task))
+  const toolingStaged = stagesTooling(
+    git(root, environment, [
+      'diff',
+      '--cached',
+      '--name-only',
+      '-z',
+      '--no-renames',
+    ])
+      .split('\0')
+      .filter(Boolean)
   )
-    assertHostDependencies(root)
-  for (const task of checkTasks(scripts['check:all'])) {
+  const tasks = checkTasks(scripts['check:all']).filter((task) => {
+    if (native || toolingStaged || !HOST_CHECK_TASKS.includes(task)) return true
+    console.log(`[git-hook] Skipping ${task}: no tooling paths staged.`)
+    return false
+  })
+  if (tasks.some(runsOnHost)) assertHostDependencies(root)
+  for (const task of tasks) {
     if (task === 'check:format') {
       if (native) {
         run('pnpm', ['run', task], {
@@ -666,7 +709,7 @@ async function runCheck(root, environment, native) {
           container(['exec', ...prefix, `./${file}`])
         }
       }
-    } else if (/^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')) {
+    } else if (runsOnHost(task)) {
       // Host contract tests may create Git fixtures or invoke host devrouter.
       run('sh', ['-c', scripts[task]], options)
     } else {
