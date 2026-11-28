@@ -105,10 +105,78 @@ async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const COURSE_TIMEZONE = 'Europe/Zurich'
+
+function zurichDayStart(date: Date): Date {
+  const dateParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: COURSE_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+  const year = Number(dateParts.find((part) => part.type === 'year')?.value)
+  const month = Number(dateParts.find((part) => part.type === 'month')?.value)
+  const day = Number(dateParts.find((part) => part.type === 'day')?.value)
+  const utcMidnight = Date.UTC(year, month - 1, day)
+  const localParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: COURSE_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(utcMidnight))
+  const localYear = Number(
+    localParts.find((part) => part.type === 'year')?.value
+  )
+  const localMonth = Number(
+    localParts.find((part) => part.type === 'month')?.value
+  )
+  const localDay = Number(localParts.find((part) => part.type === 'day')?.value)
+  const localHour = Number(
+    localParts.find((part) => part.type === 'hour')?.value
+  )
+  const localMinute = Number(
+    localParts.find((part) => part.type === 'minute')?.value
+  )
+  const offset =
+    Date.UTC(localYear, localMonth - 1, localDay, localHour, localMinute) -
+    utcMidnight
+
+  return new Date(utcMidnight - offset)
+}
+
+async function initializeActiveStudyStreaks(
+  tx: PrismaMigrationClient
+): Promise<void> {
+  const trackingStartedAt = new Date()
+  const trackingDayStart = zurichDayStart(trackingStartedAt)
+
+  await tx.participation.updateMany({
+    where: {
+      isActive: true,
+      studyStreakTrackingStartedAt: null,
+      course: {
+        isGamificationEnabled: true,
+        isAssessmentEnabled: false,
+        endDate: { gte: trackingDayStart },
+      },
+    },
+    data: { studyStreakTrackingStartedAt: trackingStartedAt },
+  })
+}
+
 // Runtime data migrations that run once on backend startup. Entries are removed
 // again after they have been applied in every environment, so this list is
 // intentionally empty most of the time.
-const migrations: Migration[] = []
+const migrations: Migration[] = [
+  {
+    id: '20260824_initialize_active_study_streaks',
+    isIdempotent: true,
+    migrate: initializeActiveStudyStreaks,
+  },
+]
 
 async function runIdempotentMigration(
   prisma: PrismaClient,

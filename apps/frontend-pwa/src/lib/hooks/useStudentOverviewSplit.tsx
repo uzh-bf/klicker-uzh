@@ -1,4 +1,4 @@
-import {
+import type {
   ActivityInfo,
   Course,
   LiveQuiz,
@@ -13,9 +13,14 @@ type LocalCourseType = {
   displayName: string
   description?: string
   isSubscribed: boolean
+  isLeaderboardParticipant: boolean
   startDate: string
   endDate: string
   isGamificationEnabled: boolean
+  studyStreakCurrent: number
+  studyStreakQualifiedToday: boolean
+  studyStreakResponsesRemainingToday?: number | null
+  studyStreakFreezeBalance: number
 }
 
 type LocalLiveQuizType = Pick<LiveQuiz, 'id' | 'displayName'> & {
@@ -36,7 +41,14 @@ function useStudentOverviewSplit({
 }: {
   participations: (Pick<
     Participation,
-    'id' | 'completedMicroLearnings' | 'subscriptions'
+    | 'id'
+    | 'isActive'
+    | 'studyStreakCurrent'
+    | 'studyStreakQualifiedToday'
+    | 'studyStreakResponsesRemainingToday'
+    | 'studyStreakFreezeBalance'
+    | 'completedMicroLearnings'
+    | 'subscriptions'
   > & {
     course?:
       | (Pick<
@@ -88,6 +100,14 @@ function useStudentOverviewSplit({
                   endDate: participation.course?.endDate,
                   isGamificationEnabled:
                     participation.course?.isGamificationEnabled,
+                  isLeaderboardParticipant: participation.isActive,
+                  studyStreakCurrent: participation.studyStreakCurrent ?? 0,
+                  studyStreakQualifiedToday:
+                    participation.studyStreakQualifiedToday ?? false,
+                  studyStreakResponsesRemainingToday:
+                    participation.studyStreakResponsesRemainingToday,
+                  studyStreakFreezeBalance:
+                    participation.studyStreakFreezeBalance ?? 0,
                   isSubscribed:
                     (participation.subscriptions &&
                       participation.subscriptions.length > 0) ??
@@ -105,6 +125,14 @@ function useStudentOverviewSplit({
                 endDate: participation.course?.endDate,
                 isGamificationEnabled:
                   participation.course?.isGamificationEnabled,
+                isLeaderboardParticipant: participation.isActive,
+                studyStreakCurrent: participation.studyStreakCurrent ?? 0,
+                studyStreakQualifiedToday:
+                  participation.studyStreakQualifiedToday ?? false,
+                studyStreakResponsesRemainingToday:
+                  participation.studyStreakResponsesRemainingToday,
+                studyStreakFreezeBalance:
+                  participation.studyStreakFreezeBalance ?? 0,
                 isSubscribed:
                   (participation.subscriptions &&
                     participation.subscriptions.length > 0) ??

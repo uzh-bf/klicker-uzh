@@ -27,7 +27,8 @@
         "U-catalog.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
-        "Z-credential-verification.spec.ts"
+        "Z-credential-verification.spec.ts",
+        "student-gamification.spec.ts"
       ]
     },
     {

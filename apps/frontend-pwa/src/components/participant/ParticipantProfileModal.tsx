@@ -63,6 +63,7 @@ function ParticipantProfileModal({
             avatar={participant.avatar}
             username={participant.username}
             achievements={participant.achievements}
+            isSelf={participant.isSelf ?? false}
             showProfileDetails={
               participant.isProfilePublic || participant.isSelf
             }
