@@ -23,6 +23,7 @@ import {
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import * as QuestionPoolLabelPreviewService from '../services/questionPoolLabelPreview.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
@@ -92,6 +93,7 @@ import {
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
+import { QuestionPoolLabelPreview } from './questionPoolLabelPreview.js'
 import {
   AnswerCollection,
   AnswerCollectionEntry,
@@ -1736,6 +1738,21 @@ export const Mutation = builder.mutationType({
             return await LiveQuizService.deleteLiveQuiz(args, ctx)
           }
         ),
+      }),
+
+      requestQuestionPoolLabelPreview: t.withAuth(asUserFullAccess).field({
+        type: QuestionPoolLabelPreview,
+        args: {
+          elementId: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
+          elementVersion: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await QuestionPoolLabelPreviewService.requestQuestionPoolLabelPreview(
+            args,
+            ctx
+          )
+        },
       }),
 
       resetAssessmentLiveQuiz: t.withAuth(asUserFullAccess).field({

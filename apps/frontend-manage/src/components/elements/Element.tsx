@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   faArchive,
+  faChartLine,
   faEllipsis,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -33,6 +34,7 @@ import ElementEditModal, {
 } from './manipulation/ElementEditModal'
 import ElementRemovalModal from './manipulation/ElementRemovalModal'
 import RecoveryPrompt from './manipulation/RecoveryPrompt'
+import { isQuestionPoolLabelPreviewSupported } from './QuestionPoolLabelPreview'
 import useAvailableElementActions from './useAvailableElementActions'
 import useElementActions from './useElementActions'
 
@@ -65,6 +67,7 @@ interface ElementProps {
   hasSampleSolution: boolean
   tagfilter?: string[]
   refetchElements: () => Promise<void>
+  onPreviewQuestionLabels?: () => void
 }
 
 function Element({
@@ -80,6 +83,7 @@ function Element({
   hasSampleSolution,
   tagfilter = [],
   refetchElements,
+  onPreviewQuestionLabels,
 }: ElementProps): React.ReactElement {
   const t = useTranslations()
   const createdAt = dayjs(element.createdAt)
@@ -161,6 +165,20 @@ function Element({
     isRemovable: element.isRemovable ?? false,
     isShared: element.isShared ?? false,
   })
+  const displayedActions =
+    onPreviewQuestionLabels && isQuestionPoolLabelPreviewSupported(element.type)
+      ? [
+          {
+            id: 'previewQuestionLabels',
+            label: t('manage.questionPool.labelPreviewAction'),
+            icon: faChartLine,
+            onClick: onPreviewQuestionLabels,
+            disabled,
+            data: { cy: `preview-question-labels-${element.name}` },
+          },
+          ...availableActions,
+        ]
+      : availableActions
 
   return (
     <div className="flex items-center" data-cy={`element-item-${element.name}`}>
@@ -301,8 +319,8 @@ function Element({
             )}
             data-cy={`element-actions-${element.name}`}
           >
-            {availableActions
-              .slice(0, availableActions.length > 3 ? 2 : 3)
+            {displayedActions
+              .slice(0, displayedActions.length > 3 ? 2 : 3)
               .map((action) => {
                 return (
                   <IconActionTooltip
@@ -324,10 +342,10 @@ function Element({
                 )
               })}
 
-            {availableActions.length > 3 && (
+            {displayedActions.length > 3 && (
               <IconActionTooltip label={moreActionsLabel}>
                 <Dropdown
-                  items={availableActions.slice(2).map((action) => ({
+                  items={displayedActions.slice(2).map((action) => ({
                     id: `action-${element.id}-${action.label}`,
                     label: (
                       <div

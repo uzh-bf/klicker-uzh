@@ -2312,6 +2312,37 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
+      labelPreviewEnable: 'Question label preview',
+      labelPreviewDescription:
+        'Opt in to course-specific performance and AI labels. A preview is requested only when you open it for a single-choice or KPRIM question.',
+      labelPreviewCourse: 'Course context',
+      labelPreviewSelectCourse: 'Select an active course',
+      labelPreviewCoursesLoading: 'Loading courses…',
+      labelPreviewCoursesLoadError:
+        'The authorized courses could not be loaded.',
+      labelPreviewNoCourses: 'No active course is available for preview.',
+      labelPreviewAction: 'Preview question labels',
+      labelPreviewTitle: 'Question label preview',
+      labelPreviewContext: '{element} in {course}',
+      labelPreviewObserved: 'Observed in this course',
+      labelPreviewObservedDescription:
+        'One scored first attempt per participant and activity instance for this question revision.',
+      labelPreviewObservedUnavailable:
+        'No scored first attempts for this question revision in this course.',
+      labelPreviewFullCredit: 'Full-credit attempts',
+      labelPreviewRate: 'Full-credit rate',
+      labelPreviewBand: 'Difficulty band',
+      labelPreviewBandValue: 'D{band}',
+      labelPreviewAi: 'AI estimates',
+      labelPreviewAiDescription:
+        'Source-free estimates for the displayed question content.',
+      labelPreviewAiUnavailable:
+        'AI estimates are unavailable for this question revision.',
+      labelPreviewRaw: 'Raw estimate',
+      labelPreviewCalibrated: 'Calibrated estimate',
+      labelPreviewBloom: 'Bloom level',
+      labelPreviewError:
+        'The preview could not be generated. The question may have changed, or its type may not be supported. Close this preview and try again from the current question pool.',
       moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',

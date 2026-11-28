@@ -18,6 +18,7 @@ interface ElementListProps {
   onClearSearch: () => void
   onCreateElement: () => void
   refetchElements: () => Promise<void>
+  onPreviewQuestionLabels?: (element: ElementType) => void
 }
 
 function ElementList({
@@ -34,6 +35,7 @@ function ElementList({
   onClearSearch,
   onCreateElement,
   refetchElements,
+  onPreviewQuestionLabels,
 }: ElementListProps): React.ReactElement {
   const t = useTranslations()
   // const {
@@ -146,6 +148,11 @@ function ElementList({
           triggerSuccessToast={triggerSuccessToast}
           tagfilter={tagfilter}
           refetchElements={refetchElements}
+          onPreviewQuestionLabels={
+            onPreviewQuestionLabels
+              ? () => onPreviewQuestionLabels(element)
+              : undefined
+          }
         />
       ))}
       {/* {hasInitialized && hideSurvey === 'false' && (
